@@ -1,0 +1,25 @@
+{
+  "apiVersion": 1,
+  "trainingDayId": "2026-09-15",
+  "empty": {
+    "title": "Pas encore de données",
+    "message": "Connecte Garmin sur le web",
+    "code": "NO_CONTENT",
+    "webURL": "https://app.example/moi"
+  },
+  "verdict": {
+    "eyebrow": "Ce matin",
+    "headline": "Pas encore de données",
+    "subline": "Tenir",
+    "posture": "steady",
+    "confidencePct": 72,
+    "limitingCause": "Sommeil court"
+  },
+  "weather": {
+    "city": "Lyon",
+    "tempC": 12,
+    "condition": "Nuageux"
+  },
+  "sessions": [],
+  "signals": []
+}

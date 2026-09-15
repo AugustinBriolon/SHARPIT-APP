@@ -1,0 +1,16 @@
+{
+  "apiVersion": 1,
+  "trainingDayId": "2026-09-15",
+  "empty": null,
+  "verdict": {
+    "eyebrow": "Ce matin",
+    "headline": "Séance prévue",
+    "subline": "Tenir",
+    "posture": "steady",
+    "confidencePct": null,
+    "limitingCause": null
+  },
+  "weather": null,
+  "sessions": [],
+  "signals": []
+}
