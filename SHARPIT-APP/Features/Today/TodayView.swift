@@ -1,8 +1,17 @@
 import SwiftUI
 
 struct TodayView: View {
-    @State private var controller = TodayController()
+    @State private var controller: TodayController
     @State private var weather = LocationWeatherService()
+
+    init(
+        client: any TodayServing = FixtureTodayClient(),
+        tokenProvider: (() async throws -> String)? = nil
+    ) {
+        _controller = State(
+            initialValue: TodayController(client: client, tokenProvider: tokenProvider)
+        )
+    }
 
     var body: some View {
         NavigationStack {
@@ -23,6 +32,12 @@ struct TodayView: View {
                         Button("Réessayer") {
                             Task { await controller.load() }
                         }
+                    }
+                case .unauthorized:
+                    ContentUnavailableView {
+                        Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
+                    } description: {
+                        Text("Reconnecte-toi pour recharger le résumé.")
                     }
                 }
             }
@@ -65,17 +80,47 @@ struct TodayView: View {
 final class TodayController {
     var state: TodayScreenState = .loading
     private let client: any TodayServing
+    private let tokenProvider: (() async throws -> String)?
 
-    init(client: any TodayServing = FixtureTodayClient()) {
+    init(
+        client: any TodayServing = FixtureTodayClient(),
+        tokenProvider: (() async throws -> String)? = nil
+    ) {
         self.client = client
+        self.tokenProvider = tokenProvider
     }
 
     func load() async {
+        state = .loading
         do {
-            let payload = try await client.today(trainingDayId: TrainingDayId.today(), token: "")
+            let token: String
+            if let tokenProvider {
+                token = try await tokenProvider()
+            } else {
+                token = ""
+            }
+            let payload = try await client.today(trainingDayId: TrainingDayId.today(), token: token)
             state = TodayModel.state(from: payload)
+        } catch let error as SharpitAPIError where error == .unauthorized {
+            state = .unauthorized
         } catch {
-            state = .failed("Impossible de charger le résumé")
+            state = .failed(Self.failureMessage(for: error))
+        }
+    }
+
+    private static func failureMessage(for error: Error) -> String {
+        guard let apiError = error as? SharpitAPIError else {
+            return "Impossible de charger le résumé"
+        }
+        switch apiError {
+        case .badRequest:
+            return "Requête invalide"
+        case .server:
+            return "Le serveur n'a pas pu produire le résumé"
+        case .transport:
+            return "Réseau indisponible — vérifie yarn dev sur 127.0.0.1:3000"
+        case .unauthorized:
+            return "Session expirée"
         }
     }
 }
@@ -277,21 +322,5 @@ private extension V1TodayPosture {
         case .push: .green
         case .uncertain: .secondary
         }
-    }
-}
-
-extension TrainingDayId {
-    static func displayName(_ trainingDayId: String) -> String {
-        let parser = DateFormatter()
-        parser.calendar = Calendar(identifier: .gregorian)
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: trainingDayId) else {
-            return "Résumé"
-        }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.setLocalizedDateFormatFromTemplate("dMMM")
-        return formatter.string(from: date)
     }
 }

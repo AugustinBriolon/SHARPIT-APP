@@ -6,6 +6,17 @@
 	objectVersion = 90;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* ClerkKit in Frameworks */ = {
+			isa = PBXBuildFile;
+			productRef = A10000000000000000000011 /* ClerkKit */;
+		};
+		A10000000000000000000002 /* ClerkKitUI in Frameworks */ = {
+			isa = PBXBuildFile;
+			productRef = A10000000000000000000012 /* ClerkKitUI */;
+		};
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		000000000000000250000000 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -38,6 +49,8 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				A10000000000000000000001 /* ClerkKit in Frameworks */,
+				A10000000000000000000002 /* ClerkKitUI in Frameworks */,
 			);
 		};
 		000000000000000230000000 /* Frameworks */ = {
@@ -83,6 +96,10 @@
 				000000000000000000000010 /* SHARPIT-APP */,
 			);
 			name = "SHARPIT-APP";
+			packageProductDependencies = (
+				A10000000000000000000011 /* ClerkKit */,
+				A10000000000000000000012 /* ClerkKitUI */,
+			);
 			productName = SHARPIT;
 			productReference = 000000000000000000000120 /* SHARPIT.app */;
 			productType = "com.apple.product-type.application";
@@ -137,6 +154,9 @@
 			);
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A10000000000000000000010 /* XCRemoteSwiftPackageReference "clerk-ios" */,
+			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
 			projectDirPath = "";
@@ -321,6 +341,7 @@
 				AD_HOC_CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_ENTITLEMENTS = "SHARPIT-APP/SHARPIT.entitlements";
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
@@ -329,8 +350,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SHARPIT;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -361,6 +382,7 @@
 				AD_HOC_CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_ENTITLEMENTS = "SHARPIT-APP/SHARPIT.entitlements";
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
@@ -369,8 +391,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SHARPIT;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -483,6 +505,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A10000000000000000000010 /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/clerk/clerk-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A10000000000000000000011 /* ClerkKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10000000000000000000010 /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = ClerkKit;
+		};
+		A10000000000000000000012 /* ClerkKitUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10000000000000000000010 /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = ClerkKitUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 000000000000000000000000 /* Project object */;
 }

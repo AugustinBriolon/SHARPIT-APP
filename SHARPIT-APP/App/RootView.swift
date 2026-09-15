@@ -1,15 +1,14 @@
+import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct RootView: View {
-    var body: some View {
-        tabView
-            .modifier(LiquidTabBarModifier())
-    }
+    @Environment(Clerk.self) private var clerk
 
-    private var tabView: some View {
+    var body: some View {
         TabView {
             Tab("Résumé", systemImage: "sun.max") {
-                TodayView()
+                TodayView(client: SharpitClient(), tokenProvider: liveToken)
             }
             Tab("Plan", systemImage: "calendar") {
                 PlaceholderTab(title: "Plan")
@@ -21,9 +20,30 @@ struct RootView: View {
                 PlaceholderTab(title: "Activité")
             }
             Tab("Moi", systemImage: "person.crop.circle") {
-                PlaceholderTab(title: "Moi")
+                NavigationStack {
+                    List {
+                        Section {
+                            HStack {
+                                Text("Compte")
+                                Spacer()
+                                UserButton()
+                            }
+                        }
+                    }
+                    .navigationTitle("Moi")
+                    .modifier(LiquidNavChrome())
+                }
             }
         }
+        .modifier(LiquidTabBarModifier())
+    }
+
+    @MainActor
+    private func liveToken() async throws -> String {
+        guard let token = try await clerk.auth.getToken() else {
+            throw SharpitAPIError.unauthorized
+        }
+        return token
     }
 }
 

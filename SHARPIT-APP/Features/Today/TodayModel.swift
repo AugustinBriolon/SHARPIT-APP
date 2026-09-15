@@ -1,8 +1,9 @@
-enum TodayScreenState: Equatable {
+nonisolated enum TodayScreenState: Equatable, Sendable {
     case loading
     case loaded(V1TodayResponse)
     case empty(V1TodayEmpty)
     case failed(String)
+    case unauthorized
 }
 
 enum TodayModel {
