@@ -8,19 +8,25 @@ struct SessionPlate: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(alignment: .center, spacing: SharpitSpacing.xs) {
-                Image(systemName: session.kind == .done ? "checkmark.circle.fill" : "circle.dashed")
-                    .font(.title2)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(session.kind == .done ? Color.accentColor : .secondary)
-                    .scaleEffect(checkSettled || session.kind != .done ? 1.0 : 0.86)
-                    .opacity(checkSettled || session.kind != .done ? 1.0 : 0.4)
-                    .accessibilityHidden(true)
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xxs) {
+                if session.kind == .done {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.accentColor)
+                        .scaleEffect(checkSettled ? 1.0 : 0.86)
+                        .opacity(checkSettled ? 1.0 : 0.4)
+                        .accessibilityHidden(true)
+                }
                 VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                    tagRow
+                    if let meta = metaLine {
+                        Text(meta)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                     Text(session.title)
                         .font(.headline)
-                    if let subtitle = session.subtitle {
+                    if showsSubtitle, let subtitle = session.subtitle {
                         Text(subtitle)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -29,26 +35,29 @@ struct SessionPlate: View {
                 Spacer(minLength: 0)
             }
             if !session.metrics.isEmpty {
-                HStack(spacing: SharpitSpacing.md) {
+                HStack(alignment: .top, spacing: SharpitSpacing.md) {
                     ForEach(session.metrics, id: \.label) { metric in
-                        VStack(alignment: .leading, spacing: 2) {
+                        LabeledContent {
+                            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                                Text(metric.value)
+                                    .font(SharpitTypography.data())
+                                if !metric.unit.isEmpty {
+                                    Text(metric.unit)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        } label: {
                             Text(metric.label)
                                 .font(SharpitTypography.label())
                                 .tracking(SharpitTypography.labelTracking)
                                 .textCase(.uppercase)
                                 .foregroundStyle(.tertiary)
-                            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                                Text(metric.value)
-                                    .font(SharpitTypography.data())
-                                Text(metric.unit)
-                                    .font(.footnote.weight(.medium))
-                                    .foregroundStyle(.secondary)
-                            }
                         }
+                        .labeledContentStyle(SessionMetricStyle())
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(.leading, 36)
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -76,30 +85,26 @@ struct SessionPlate: View {
         }
     }
 
-    @ViewBuilder
-    private var tagRow: some View {
-        if session.sport != nil || session.priority {
-            HStack(spacing: 6) {
-                if let sport = session.sport {
-                    Text(sport)
-                        .font(SharpitTypography.label())
-                        .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.orange.opacity(0.15), in: Capsule())
-                }
-                if session.priority {
-                    Text("Prioritaire")
-                        .font(SharpitTypography.label())
-                        .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(SharpitInk.highlight.opacity(0.35), in: Capsule())
-                }
-            }
+    private var metaLine: String? {
+        var parts: [String] = []
+        if let sport = session.sport, !sport.isEmpty {
+            parts.append(sport)
         }
+        if session.priority {
+            parts.append("Prioritaire")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// Drop subtitle when it mostly repeats the metrics row.
+    private var showsSubtitle: Bool {
+        guard let subtitle = session.subtitle, !subtitle.isEmpty else { return false }
+        guard !session.metrics.isEmpty else { return true }
+        let metricTokens = session.metrics.flatMap { metric in
+            [metric.value, metric.unit].filter { !$0.isEmpty }
+        }
+        let hits = metricTokens.filter { subtitle.localizedCaseInsensitiveContains($0) }.count
+        return hits < 2
     }
 
     private func playDoneCelebration() {
@@ -117,9 +122,24 @@ struct SessionPlate: View {
     private var accessibilityLabel: String {
         let status = session.kind == .done ? "Faite" : "Prévue"
         let metrics = session.metrics.map { "\($0.label) \($0.value)\($0.unit)" }.joined(separator: ", ")
-        return [session.sport, session.priority ? "Prioritaire" : nil, session.title, session.subtitle, status, metrics]
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
-            .joined(separator: ", ")
+        return [
+            metaLine,
+            session.title,
+            showsSubtitle ? session.subtitle : nil,
+            status,
+            metrics,
+        ]
+        .compactMap { $0 }
+        .filter { !$0.isEmpty }
+        .joined(separator: ", ")
+    }
+}
+
+private struct SessionMetricStyle: LabeledContentStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            configuration.label
+            configuration.content
+        }
     }
 }

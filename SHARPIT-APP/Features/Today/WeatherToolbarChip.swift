@@ -4,22 +4,29 @@ struct WeatherToolbarChip: View {
     let service: LocationWeatherService
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: service.reading?.symbolName ?? "location")
-                .font(.subheadline.weight(.semibold))
+        HStack(spacing: 4) {
+            Image(systemName: symbolName)
+                .font(.body)
                 .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
             if let reading = service.reading {
                 Text("\(reading.temperatureCelsius)°")
-                    .font(.subheadline.monospacedDigit().weight(.semibold))
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
             }
-            Text(service.reading?.city ?? service.statusLine)
-                .font(.caption.weight(.medium))
-                .lineLimit(1)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .modifier(ToolbarItemGlass())
+        .padding(.horizontal, 8)
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
+    }
+
+    private var symbolName: String {
+        if let reading = service.reading {
+            return reading.symbolName
+        }
+        return "cloud.slash"
     }
 
     private var accessibilityText: String {
@@ -27,16 +34,5 @@ struct WeatherToolbarChip: View {
             return "\(reading.city), \(reading.temperatureCelsius) degrés, \(reading.condition)"
         }
         return service.statusLine
-    }
-}
-
-private struct ToolbarItemGlass: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content
-        } else {
-            content.sharpitGlassCapsule()
-        }
     }
 }

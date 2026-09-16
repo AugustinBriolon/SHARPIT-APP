@@ -18,7 +18,7 @@ final class LocationWeatherService {
 
     func start() {
         locator.onDenied = { [weak self] in
-            self?.statusLine = "Position off"
+            self?.statusLine = "Météo indisponible"
         }
         locator.onFix = { [weak self] location in
             guard let self else { return }
@@ -43,7 +43,7 @@ final class LocationWeatherService {
             statusLine = city
         } catch {
             reading = nil
-            statusLine = city
+            statusLine = "Météo indisponible"
         }
     }
 
