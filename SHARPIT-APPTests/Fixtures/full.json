@@ -8,7 +8,12 @@
     "subline": "Tenir",
     "posture": "steady",
     "confidencePct": 72,
-    "limitingCause": "Sommeil court"
+    "limitingCause": "Sommeil court",
+    "statusLabel": "FEU VERT",
+    "actionLine": "Entraîne-toi — légèrement",
+    "confidenceLabel": "ESTIMATION PARTIELLE",
+    "packTier": "PARTIAL",
+    "estimationGaps": ["Baseline HRV partielle (moins de 14 j)"]
   },
   "weather": {
     "city": "Lyon",
@@ -21,13 +26,13 @@
       "kind": "planned",
       "title": "Seuil 40 min",
       "subtitle": "Course",
+      "sport": "Course",
+      "priority": true,
       "metrics": [{ "label": "Durée", "value": "40", "unit": "min" }]
     }
   ],
   "signals": [
     { "key": "sleep", "score": "78", "caption": "Correct" },
-    { "key": "recovery", "score": "61", "caption": null },
-    { "key": "effort", "score": "—", "caption": null },
-    { "key": "adaptation", "score": "55", "caption": null }
+    { "key": "recovery", "score": "61", "caption": null }
   ]
 }

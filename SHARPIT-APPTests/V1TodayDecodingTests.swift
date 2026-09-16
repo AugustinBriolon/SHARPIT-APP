@@ -8,7 +8,11 @@ import Testing
     #expect(decoded.empty == nil)
     #expect(decoded.verdict.posture == .steady)
     #expect(decoded.sessions.first?.kind == .planned)
-    #expect(decoded.signals.count == 4)
+    #expect(decoded.signals.count == 2)
+    #expect(decoded.verdict.statusLabel == "FEU VERT")
+    #expect(decoded.verdict.packTier == .partial)
+    #expect(decoded.sessions.first?.sport == "Course")
+    #expect(decoded.sessions.first?.priority == true)
 }
 
 @Test func decodesEmptyNoContent() throws {

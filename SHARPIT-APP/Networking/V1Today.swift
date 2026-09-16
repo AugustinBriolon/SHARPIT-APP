@@ -28,6 +28,18 @@ nonisolated struct V1TodayVerdict: Codable, Sendable, Equatable {
     var posture: V1TodayPosture
     var confidencePct: Int?
     var limitingCause: String?
+    var statusLabel: String? = nil
+    var actionLine: String? = nil
+    var confidenceLabel: String? = nil
+    var packTier: V1TodayPackTier? = nil
+    var estimationGaps: [String]? = nil
+}
+
+nonisolated enum V1TodayPackTier: String, Codable, Sendable {
+    case full = "FULL"
+    case partial = "PARTIAL"
+    case low = "LOW"
+    case insufficient = "INSUFFICIENT"
 }
 
 nonisolated enum V1TodayPosture: String, Codable, Sendable {
@@ -49,6 +61,8 @@ nonisolated struct V1TodaySession: Codable, Sendable, Equatable, Identifiable {
     var title: String
     var subtitle: String?
     var metrics: [V1TodayMetric]
+    var sport: String? = nil
+    var priority: Bool? = nil
 }
 
 nonisolated enum V1TodaySessionKind: String, Codable, Sendable {
