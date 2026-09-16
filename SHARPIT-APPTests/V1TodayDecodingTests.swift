@@ -54,7 +54,7 @@ import Testing
     #expect(TrainingDayId.displayName("not-a-date") == "Résumé")
 }
 
-private func fixtureData(_ name: String) throws -> Data {
+func fixtureData(_ name: String) throws -> Data {
     let url = URL(filePath: #filePath)
         .deletingLastPathComponent()
         .appending(path: "Fixtures/\(name)")

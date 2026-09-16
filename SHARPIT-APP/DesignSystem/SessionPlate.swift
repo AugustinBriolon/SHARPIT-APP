@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SessionPlate: View {
-    let session: V1TodaySession
+    let session: SessionCardModel
     var celebrateDone: Bool = false
 
     @State private var checkSettled = false
@@ -16,7 +16,8 @@ struct SessionPlate: View {
                     .scaleEffect(checkSettled || session.kind != .done ? 1.0 : 0.86)
                     .opacity(checkSettled || session.kind != .done ? 1.0 : 0.4)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                    tagRow
                     Text(session.title)
                         .font(.headline)
                     if let subtitle = session.subtitle {
@@ -31,6 +32,11 @@ struct SessionPlate: View {
                 HStack(spacing: SharpitSpacing.md) {
                     ForEach(session.metrics, id: \.label) { metric in
                         VStack(alignment: .leading, spacing: 2) {
+                            Text(metric.label)
+                                .font(SharpitTypography.label())
+                                .tracking(SharpitTypography.labelTracking)
+                                .textCase(.uppercase)
+                                .foregroundStyle(.tertiary)
                             HStack(alignment: .firstTextBaseline, spacing: 3) {
                                 Text(metric.value)
                                     .font(SharpitTypography.data())
@@ -38,11 +44,6 @@ struct SessionPlate: View {
                                     .font(.footnote.weight(.medium))
                                     .foregroundStyle(.secondary)
                             }
-                            Text(metric.label)
-                                .font(SharpitTypography.label())
-                                .tracking(SharpitTypography.labelTracking)
-                                .textCase(.uppercase)
-                                .foregroundStyle(.tertiary)
                         }
                     }
                     Spacer(minLength: 0)
@@ -75,6 +76,32 @@ struct SessionPlate: View {
         }
     }
 
+    @ViewBuilder
+    private var tagRow: some View {
+        if session.sport != nil || session.priority {
+            HStack(spacing: 6) {
+                if let sport = session.sport {
+                    Text(sport)
+                        .font(SharpitTypography.label())
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.15), in: Capsule())
+                }
+                if session.priority {
+                    Text("Prioritaire")
+                        .font(SharpitTypography.label())
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(SharpitInk.highlight.opacity(0.35), in: Capsule())
+                }
+            }
+        }
+    }
+
     private func playDoneCelebration() {
         SharpitHaptics.play(.success)
         if SharpitMotion.reduceMotion {
@@ -90,7 +117,7 @@ struct SessionPlate: View {
     private var accessibilityLabel: String {
         let status = session.kind == .done ? "Faite" : "Prévue"
         let metrics = session.metrics.map { "\($0.label) \($0.value)\($0.unit)" }.joined(separator: ", ")
-        return [session.title, session.subtitle, status, metrics]
+        return [session.sport, session.priority ? "Prioritaire" : nil, session.title, session.subtitle, status, metrics]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
