@@ -10,32 +10,37 @@ struct RootView: View {
             Tab("Résumé", systemImage: "sun.max") {
                 TodayView(client: SharpitClient(), tokenProvider: liveToken)
             }
-            Tab("Plan", systemImage: "calendar") {
-                PlaceholderTab(title: "Plan")
+            Tab(ShellDestination.plan.title, systemImage: ShellDestination.plan.systemImage) {
+                InstrumentShellView(destination: .plan)
             }
-            Tab("Coach", systemImage: "bubble.left.and.bubble.right") {
-                PlaceholderTab(title: "Coach")
+            Tab(ShellDestination.coach.title, systemImage: ShellDestination.coach.systemImage) {
+                InstrumentShellView(destination: .coach)
             }
-            Tab("Activité", systemImage: "figure.run") {
-                PlaceholderTab(title: "Activité")
+            Tab(ShellDestination.activity.title, systemImage: ShellDestination.activity.systemImage) {
+                InstrumentShellView(destination: .activity)
             }
-            Tab("Moi", systemImage: "person.crop.circle") {
-                NavigationStack {
-                    List {
-                        Section {
-                            HStack {
-                                Text("Compte")
-                                Spacer()
-                                UserButton()
-                            }
-                        }
-                    }
-                    .navigationTitle("Moi")
-                    .modifier(LiquidNavChrome())
+            Tab(ShellDestination.me.title, systemImage: ShellDestination.me.systemImage) {
+                InstrumentShellView(destination: .me) {
+                    accountMark
                 }
             }
         }
         .modifier(LiquidTabBarModifier())
+    }
+
+    private var accountMark: some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            Image(systemName: "person.crop.circle.badge.checkmark")
+                .font(.title2)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+            UserButton()
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .sharpitGlassCard()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Compte")
     }
 
     @MainActor
