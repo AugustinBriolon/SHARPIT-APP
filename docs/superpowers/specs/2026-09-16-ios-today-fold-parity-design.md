@@ -1,7 +1,7 @@
 # SHARPIT iOS — Today fold parity (API + native)
 
 **Date:** 2026-09-16  
-**Status:** Accepted for planning  
+**Status:** Implemented  
 **Repos:** `SHARPIT-APP` (iOS) · `SHARPIT` (canonical API)  
 **Related:** [2026-09-15-ios-native-v1-design.md](./2026-09-15-ios-native-v1-design.md), [2026-09-16-ios-emotional-ux-design.md](./2026-09-16-ios-emotional-ux-design.md), SHARPIT `docs/design/DESIGN_LANGUAGE.md`
 
