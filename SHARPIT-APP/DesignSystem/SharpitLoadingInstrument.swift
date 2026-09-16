@@ -5,8 +5,8 @@ struct SharpitLoadingInstrument: View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 verdictSkeleton
-                sessionSkeleton
                 signalsSkeleton
+                sessionSkeleton
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.lg)
