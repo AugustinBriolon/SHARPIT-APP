@@ -111,22 +111,22 @@ Ink surface (dark olive / near-black), generous padding, large radius — mirror
 
 Contents (top → bottom):
 
-1. Status row: **dot** (packTier tone) + `statusLabel` uppercase mono/data  
+1. Status row: **dot** (decision tone from `statusLabel`, e.g. FEU VERT → lime) + `statusLabel` uppercase mono/data  
 2. `headline` — verdict weight (system rounded semi-bold until custom fonts land)  
 3. `actionLine` — secondary  
 4. Limiter — `LIMITÉ PAR · {cause}` uppercase data (non-interactive this tranche)  
 5. Confidence — **3 bars** from `confidencePct` (same thresholds as web `confidenceBarsFromPct`: 0 / 1–33 / 34–66 / 67–100) + `confidenceLabel`  
 6. Gaps — bullet list from `estimationGaps` (muted)
 
-**Pack tier dot tones (native):**
+**Status dot (native):** follows the feu label (`VERT` → lime, `ORANGE`/`JAUNE` → amber, `ROUGE` → muted) so “FEU VERT” is never paired with a caution dot.
 
-| packTier | Dot |
+**Pack tier bar tones (native, trust chrome):**
+
+| packTier | Bars |
 | --- | --- |
 | `FULL` / nil | Lime / highlight |
 | `PARTIAL` / `LOW` | Caution amber |
 | `INSUFFICIENT` | Muted gray on ink |
-
-Bars use the same tone family as the dot.
 
 ### 7.2 `SessionInstrumentCard`
 

@@ -79,7 +79,9 @@ private struct TodayFoldView: View {
     var sessionDoneCelebrations: Set<String> = []
     var onArrival: () -> Void = {}
 
-    @State private var arrival: TodayArrivalPhase = .hidden
+    /// Start on `.plate` so the first loaded frame keeps the ink plate visible
+    /// (avoids a blank jump after the skeleton).
+    @State private var arrival: TodayArrivalPhase = .plate
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -103,8 +105,12 @@ private struct TodayFoldView: View {
         .modifier(ScrollUnderGlass())
         .task {
             onArrival()
+            if reduceMotion || SharpitMotion.reduceMotion {
+                arrival = .idle
+                return
+            }
             await TodayArrivalDirector.run(
-                reduceMotion: reduceMotion,
+                reduceMotion: false,
                 gaugeCount: fold.gauges.count
             ) { phase in
                 arrival = phase

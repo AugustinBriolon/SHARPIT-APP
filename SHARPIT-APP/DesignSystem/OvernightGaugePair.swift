@@ -31,9 +31,9 @@ private struct OvernightGaugeCell: View {
     var body: some View {
         VStack(spacing: SharpitSpacing.xs) {
             ZStack {
-                OvernightTickArc(progress: 1, opacity: 0.12)
+                OvernightTickGauge(progress: 1, style: .track)
                 if let fraction {
-                    OvernightTickArc(progress: fraction, opacity: 0.9)
+                    OvernightTickGauge(progress: fraction, style: .fill)
                 }
                 VStack(spacing: 2) {
                     AnimatedScoreText(score: gauge.score)
@@ -42,8 +42,9 @@ private struct OvernightGaugeCell: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
+                .offset(y: 10)
             }
-            .frame(height: 88)
+            .frame(height: 96)
             Text(title)
                 .font(SharpitTypography.label())
                 .tracking(SharpitTypography.labelTracking)
@@ -73,28 +74,68 @@ private struct OvernightGaugeCell: View {
     }
 }
 
-private struct OvernightTickArc: View {
+private enum OvernightTickStyle {
+    case track
+    case fill
+}
+
+/// Semicircle tick gauge — geometry aligned with web overnight cards (π → 0).
+private struct OvernightTickGauge: View {
     let progress: Double
-    var opacity: Double = 1
+    var style: OvernightTickStyle = .fill
+
+    private static let tickCount = 52
 
     @State private var animated: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(paused: true)) { _ in
-            Canvas { context, size in
-                let inset: CGFloat = 8
-                let rect = CGRect(
-                    x: inset,
-                    y: inset,
-                    width: size.width - inset * 2,
-                    height: size.height - inset * 2
+        Canvas { context, size in
+            let cx = size.width / 2
+            let cy = size.height * 0.72
+            let radius = min(size.width, size.height) * 0.38
+            let rInner = radius - 3
+            let rOuter = radius + 3
+            let start = Double.pi
+            let end = 0.0
+            let score = Double(animated) * 100
+
+            for index in 0..<Self.tickCount {
+                let t = Double(index) / Double(Self.tickCount - 1)
+                let angle = start + (end - start) * t
+                let tickScore = t * 100
+                let lit = style == .track || tickScore <= score + 0.01
+                guard lit || style == .track else { continue }
+
+                var path = Path()
+                path.move(
+                    to: CGPoint(
+                        x: cx + rInner * Foundation.cos(angle),
+                        y: cy - rInner * Foundation.sin(angle)
+                    )
                 )
-                let path = Path(ellipseIn: rect)
+                path.addLine(
+                    to: CGPoint(
+                        x: cx + rOuter * Foundation.cos(angle),
+                        y: cy - rOuter * Foundation.sin(angle)
+                    )
+                )
+
+                let stroke: Color = {
+                    switch style {
+                    case .track:
+                        return Color.primary.opacity(0.14)
+                    case .fill where tickScore >= score - 14:
+                        return SharpitInk.highlight.opacity(0.95)
+                    case .fill:
+                        return Color.primary.opacity(0.85)
+                    }
+                }()
+
                 context.stroke(
-                    path.trimmedPath(from: 0.55, to: 0.55 + 0.4 * animated),
-                    with: .color(.primary.opacity(opacity)),
-                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    path,
+                    with: .color(stroke),
+                    style: StrokeStyle(lineWidth: 1.6, lineCap: .round)
                 )
             }
         }
@@ -105,7 +146,7 @@ private struct OvernightTickArc: View {
     }
 
     private func animate(to value: CGFloat) {
-        if SharpitMotion.reduceMotion || reduceMotion {
+        if style == .track || SharpitMotion.reduceMotion || reduceMotion {
             animated = value
             return
         }

@@ -5,7 +5,10 @@ struct SharpitLoadingInstrument: View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 InkVerdictPlate(plate: .placeholder, placeholder: true)
-                SessionPlate(session: .placeholder)
+                VStack(alignment: .leading, spacing: 10) {
+                    SharpitEyebrow("Séance")
+                    SessionPlate(session: .placeholder)
+                }
                 OvernightGaugePair(gauges: OvernightGaugeModel.placeholders)
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
@@ -27,7 +30,7 @@ private extension InkPlateModel {
             limitingCause: "Sommeil court",
             confidencePct: 72,
             confidenceLabel: "ESTIMATION PARTIELLE",
-            packTier: .partial,
+            packTier: .full,
             estimationGaps: ["Baseline"],
             posture: .steady
         )
@@ -41,7 +44,11 @@ private extension SessionCardModel {
             kind: .planned,
             title: "Seuil 40 min",
             subtitle: nil,
-            metrics: [V1TodayMetric(label: "Durée", value: "40", unit: "min")],
+            metrics: [
+                V1TodayMetric(label: "Intensité", value: "Endurance", unit: ""),
+                V1TodayMetric(label: "Durée", value: "40", unit: "min"),
+                V1TodayMetric(label: "Charge", value: "50", unit: "TSS"),
+            ],
             sport: "Course",
             priority: true
         )
@@ -51,8 +58,8 @@ private extension SessionCardModel {
 private extension OvernightGaugeModel {
     static var placeholders: [OvernightGaugeModel] {
         [
-            OvernightGaugeModel(key: .sleep, score: "88", caption: nil),
-            OvernightGaugeModel(key: .recovery, score: "88", caption: nil),
+            OvernightGaugeModel(key: .sleep, score: "66", caption: "Nuit dernière"),
+            OvernightGaugeModel(key: .recovery, score: "55", caption: "Frein · sommeil"),
         ]
     }
 }

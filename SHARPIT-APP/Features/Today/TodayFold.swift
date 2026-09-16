@@ -53,7 +53,8 @@ enum PackTierTone: Equatable {
     case caution
     case muted
 
-    static func dot(for tier: V1TodayPackTier?) -> PackTierTone {
+    /// Confidence bars / trust chrome — mirrors web `packTierConfidenceBarsTone`.
+    static func bars(for tier: V1TodayPackTier?) -> PackTierTone {
         switch tier {
         case .partial, .low:
             return .caution
@@ -62,6 +63,18 @@ enum PackTierTone: Equatable {
         case .full, .none:
             return .highlight
         }
+    }
+
+    /// Status row dot — follows the go/stop label, not packTier (PARTIAL stays amber on bars only).
+    static func statusDot(for statusLabel: String) -> PackTierTone {
+        let label = statusLabel.uppercased()
+        if label.contains("ROUGE") || label.contains("STOP") {
+            return .muted
+        }
+        if label.contains("ORANGE") || label.contains("JAUNE") || label.contains("AMBRE") {
+            return .caution
+        }
+        return .highlight
     }
 }
 

@@ -16,11 +16,17 @@ import Testing
     #expect(ConfidenceBars.filled(fromPct: 67) == 3)
 }
 
-@Test func packTierDotTone() {
-    #expect(PackTierTone.dot(for: .full) == .highlight)
-    #expect(PackTierTone.dot(for: .partial) == .caution)
-    #expect(PackTierTone.dot(for: .insufficient) == .muted)
-    #expect(PackTierTone.dot(for: nil) == .highlight)
+@Test func packTierBarsTone() {
+    #expect(PackTierTone.bars(for: .full) == .highlight)
+    #expect(PackTierTone.bars(for: .partial) == .caution)
+    #expect(PackTierTone.bars(for: .insufficient) == .muted)
+    #expect(PackTierTone.bars(for: nil) == .highlight)
+}
+
+@Test func statusDotFollowsFeuLabelNotPackTier() {
+    #expect(PackTierTone.statusDot(for: "FEU VERT") == .highlight)
+    #expect(PackTierTone.statusDot(for: "FEU ORANGE") == .caution)
+    #expect(PackTierTone.statusDot(for: "FEU ROUGE") == .muted)
 }
 
 @Test func foldMapsPlateTrustFields() throws {

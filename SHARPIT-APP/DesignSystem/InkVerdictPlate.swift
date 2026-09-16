@@ -13,7 +13,8 @@ struct InkVerdictPlate: View {
     var revealed: Bool = true
     var placeholder: Bool = false
 
-    private var tone: PackTierTone { PackTierTone.dot(for: plate.packTier) }
+    private var statusTone: PackTierTone { PackTierTone.statusDot(for: plate.statusLabel) }
+    private var barsTone: PackTierTone { PackTierTone.bars(for: plate.packTier) }
     private var filledBars: Int { ConfidenceBars.filled(fromPct: plate.confidencePct) }
 
     var body: some View {
@@ -94,15 +95,16 @@ struct InkVerdictPlate: View {
         .padding(.top, 4)
     }
 
-    private var dotColor: Color {
+    private var dotColor: Color { inkColor(for: statusTone) }
+    private var barColor: Color { inkColor(for: barsTone) }
+
+    private func inkColor(for tone: PackTierTone) -> Color {
         switch tone {
         case .highlight: SharpitInk.highlight
         case .caution: SharpitInk.caution
         case .muted: SharpitInk.foreground.opacity(0.4)
         }
     }
-
-    private var barColor: Color { dotColor }
 }
 
 #Preview {
