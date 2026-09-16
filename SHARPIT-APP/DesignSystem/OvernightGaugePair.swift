@@ -22,19 +22,19 @@ private struct OvernightGaugeCell: View {
     }
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.xs) {
-            ZStack {
-                OvernightArcGauge(progress: fraction ?? 0, hasScore: fraction != nil)
-                VStack(spacing: 2) {
-                    AnimatedScoreText(score: gauge.score)
-                        .opacity(pulse ? 0.55 : 1)
-                    Text("sur 100")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .offset(y: 16)
+        VStack(spacing: SharpitSpacing.xxs) {
+            OvernightArcGauge(progress: fraction ?? 0, hasScore: fraction != nil)
+                .frame(maxWidth: .infinity)
+                .aspectRatio(2.1, contentMode: .fit)
+
+            VStack(spacing: 1) {
+                AnimatedScoreText(score: gauge.score)
+                    .opacity(pulse ? 0.55 : 1)
+                Text("sur 100")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
-            .frame(height: 108)
+
             Text(title)
                 .font(SharpitTypography.label())
                 .tracking(SharpitTypography.labelTracking)
@@ -65,12 +65,13 @@ private struct OvernightGaugeCell: View {
 }
 
 /// Top semicircle: faded full track + darker fill that stops at score.
-/// Uses `Circle.trim` (not `Path.addArc`) so partial progress never takes the long way around.
+/// Uses `Circle.trim` so partial progress never takes the long way around.
 private struct OvernightArcGauge: View {
     let progress: Double
     var hasScore: Bool = true
 
     private let lineWidth: CGFloat = 12
+    private let tipSize: CGFloat = 10
 
     private var clamped: CGFloat {
         CGFloat(min(max(progress, 0), 1))
@@ -78,18 +79,19 @@ private struct OvernightArcGauge: View {
 
     var body: some View {
         GeometryReader { geo in
-            let side = min(geo.size.width, geo.size.height)
-            let radius = (side - lineWidth) / 2
+            // Diameter spans full width; frame is half-height so only the top semicircle shows.
+            let diameter = geo.size.width
+            let pathRadius = diameter / 2
 
             ZStack {
-                semicircleTrack(trimEnd: 0.5)
+                semicircle(trimEnd: 0.5)
                     .stroke(
                         Color.primary.opacity(0.16),
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                     )
 
                 if hasScore {
-                    semicircleTrack(trimEnd: 0.5 * clamped)
+                    semicircle(trimEnd: 0.5 * clamped)
                         .stroke(
                             Color.primary.opacity(0.9),
                             style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
@@ -97,18 +99,20 @@ private struct OvernightArcGauge: View {
 
                     Circle()
                         .fill(SharpitInk.highlight)
-                        .frame(width: 10, height: 10)
-                        .offset(OvernightArcMath.tipOffset(progress: clamped, radius: radius))
+                        .frame(width: tipSize, height: tipSize)
+                        // Path radius = stroke centerline (Circle stroke is centered on the path).
+                        .offset(OvernightArcMath.tipOffset(progress: clamped, radius: pathRadius))
                         .accessibilityHidden(true)
                 }
             }
-            .frame(width: side, height: side)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .frame(width: diameter, height: diameter)
+            // Center on the bottom edge, inset by half stroke so caps/tip stay inside the slot.
+            .position(x: geo.size.width / 2, y: geo.size.height - lineWidth / 2)
         }
     }
 
     /// Bottom half of a circle, rotated 180° → top semicircle (left → top → right).
-    private func semicircleTrack(trimEnd: CGFloat) -> some Shape {
+    private func semicircle(trimEnd: CGFloat) -> some Shape {
         Circle()
             .trim(from: 0, to: trimEnd)
             .rotation(.degrees(180))
@@ -116,7 +120,7 @@ private struct OvernightArcGauge: View {
 }
 
 enum OvernightArcMath {
-    /// Tip on the top semicircle: progress 0 at left, 0.5 at top, 1 at right.
+    /// Tip on the stroke centerline: progress 0 at left, 0.5 at top, 1 at right.
     static func tipOffset(progress: CGFloat, radius: CGFloat) -> CGSize {
         let t = Double(min(max(progress, 0), 1))
         let angle = Double.pi * (1 - t)
