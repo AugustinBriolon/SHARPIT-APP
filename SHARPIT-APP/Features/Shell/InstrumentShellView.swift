@@ -19,7 +19,7 @@ struct InstrumentShellView<Accessory: View>: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ScrollView(.vertical) {
                 VStack(spacing: SharpitSpacing.section) {
                     InstrumentHeroMark(
                         symbolName: destination.systemImage,
@@ -45,6 +45,7 @@ struct InstrumentShellView<Accessory: View>: View {
                     accessory()
                         .opacity(revealed ? 1 : 0)
                 }
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, SharpitSpacing.pageInset)
                 .padding(.bottom, SharpitSpacing.lg)
             }

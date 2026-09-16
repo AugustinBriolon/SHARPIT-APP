@@ -41,6 +41,30 @@ import Testing
     #expect(abs(right.height) < 0.01)
 }
 
+@Test func overnightArcTipStaysOnCircleDuringProgress() {
+    let radius: CGFloat = 100
+    for step in 0...10 {
+        let t = CGFloat(step) / 10
+        let offset = OvernightArcMath.tipOffset(progress: t, radius: radius)
+        let distance = (offset.width * offset.width + offset.height * offset.height).squareRoot()
+        #expect(abs(distance - radius) < 0.01)
+    }
+}
+
+@Test func overnightGaugeScoreLiftUsesGoldenMinorSegment() {
+    let bowl: CGFloat = 100
+    let block: CGFloat = 44
+    let lift = OvernightGaugeLayout.scoreLift(bowlHeight: bowl, scoreBlockHeight: block)
+    let expected = SharpitRatio.minor(of: bowl - block)
+    #expect(abs(lift - expected) < 0.01)
+    #expect(lift > 0)
+    #expect(lift < bowl / 2)
+}
+
+@Test func progressFractionMapsZeroScore() {
+    #expect(AnimatedScoreText.progressFraction(from: "0") == 0)
+}
+
 
 @Test func foldMapsPlateTrustFields() throws {
     let response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))

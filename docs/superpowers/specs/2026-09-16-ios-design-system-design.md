@@ -17,6 +17,7 @@ Scope for this foundation: **tokens + reusable components + refactor of Résumé
 2. **Earned density** — high information, impeccable structure.
 3. **Temporal permanence** — no trend chrome; prefer system materials and typography that age well.
 4. **Apple chrome, SHARPIT content** — tab bar / nav / glass are system; verdict, signals, and plates carry brand meaning.
+5. **Golden ratio (φ)** — spacing ladder, optical splits (major/minor), and in-component air derive from `SharpitRatio` (`φ ≈ 1.618`). No ad-hoc gaps when a φ step or split applies.
 
 Mental model: precision instrument (chronograph / clinical readout), not gamified tracker.
 
@@ -63,9 +64,22 @@ No decorative purple gradients. Semantic color is reserved for posture meaning.
 
 Use system SF; do not embed Syne/Plex on iOS in this foundation (web may differ). Instrument feel comes from hierarchy and tabular figures, not custom fonts yet.
 
-### 4.3 Spacing
+### 4.3 Spacing & ratio
 
-Scale: **8 / 12 / 14 / 16 / 20 / 28**. Horizontal page inset **20**. Glass card padding **18**, corner radius **24**.
+**Foundation:** `SharpitRatio` (`φ`, `major(of:)`, `minor(of:)`, `step(_:power:)`).
+
+**Ladder** (base `8` × φⁿ, plus one octave at `sm`):
+
+| Token | Value | Derivation |
+| --- | --- | --- |
+| `xxs` | 8 | base |
+| `xs` | 13 | ≈ 8φ |
+| `sm` | 16 | 2 × base (octave) |
+| `md` / `pageInset` / `section` / `cardPadding` | 21 | ≈ 8φ² |
+| `lg` | 34 | ≈ 8φ³ |
+| `cardRadius` | 25 | major(40) |
+
+Optical divisions inside components (e.g. overnight gauge score lift) use `SharpitRatio.minor(of:)` / `major(of:)` — never a private copy of φ.
 
 ### 4.4 Surfaces
 

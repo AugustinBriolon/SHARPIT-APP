@@ -1,14 +1,20 @@
 import ClerkKit
 import ClerkKitUI
+import SwiftData
 import SwiftUI
 
 struct RootView: View {
     @Environment(Clerk.self) private var clerk
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         TabView {
             Tab("Résumé", systemImage: "sun.max") {
-                TodayView(client: SharpitClient(), tokenProvider: liveToken)
+                TodayView(
+                    client: SharpitClient(),
+                    tokenProvider: liveToken,
+                    modelContext: modelContext
+                )
             }
             Tab(ShellDestination.plan.title, systemImage: ShellDestination.plan.systemImage) {
                 InstrumentShellView(destination: .plan)
@@ -25,6 +31,7 @@ struct RootView: View {
                 }
             }
         }
+        .background(SharpitCanvasBackground())
         .modifier(LiquidTabBarModifier())
     }
 

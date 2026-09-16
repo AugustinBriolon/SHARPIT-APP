@@ -170,9 +170,9 @@ Rules (unchanged emotional contract):
 
 Loading: **structure-matched** placeholders of the same three blocks (ink / session / gauges), redacted — causal order identical to loaded fold.
 
-## 9. SwiftData (tranche 2 — not blocking)
+## 9. SwiftData (tranche 2)
 
-After fold ships:
+Cold launch paints the last successful day snapshot, then refreshes from the network.
 
 ```swift
 @Model
@@ -184,10 +184,11 @@ final class TodayDaySnapshot {
 }
 ```
 
-- Explicit `save()` after successful fetch  
-- `#Unique` once; no `description` property  
-- `ModelContext` stays on MainActor; network `actor` returns `Data` / DTO only  
-- Cold launch: show snapshot → refresh → replace
+- Explicit `save()` after successful fetch (`TodaySnapshotRepository`)
+- `#Unique` once; no `description` property
+- `ModelContext` stays on MainActor; network returns DTO only
+- Cold launch: show snapshot → refresh → replace; transport failure keeps stale snapshot
+- Bootstrap: `SharpitPersistence.makeContainer()` on `SharpitApp`
 
 ## 10. Testing
 

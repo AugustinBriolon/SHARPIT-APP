@@ -1,0 +1,27 @@
+---
+description: SHARPIT golden-ratio (φ) design foundation — spacing, splits, optical layout
+alwaysApply: true
+---
+
+# Sharpit golden ratio
+
+φ (`SharpitRatio`) is a **base design law** for this app — not a one-off gauge trick.
+
+## Source of truth
+
+- Swift: `SHARPIT-APP/DesignSystem/SharpitTheme.swift` → `SharpitRatio` + φ-derived `SharpitSpacing`
+- Spec: `docs/superpowers/specs/2026-09-16-ios-design-system-design.md` § design principles / spacing
+
+## Rules
+
+1. **Never invent raw spacing** (`padding(17)`, `spacing: 9`, magic offsets) when a `SharpitSpacing` token or `SharpitRatio.major/minor/step` expresses the intent.
+2. **Splits** (air above vs below, side vs side, hero vs body): use `SharpitRatio.major(of:)` / `minor(of:)`.
+3. **New rungs on the spacing ladder**: derive with `SharpitRatio.step(SharpitSpacing.base, power:)` and round via `SharpitRatio.rounded` — do not pick arbitrary points.
+4. **Component-local layout math** (gauges, plates, cards) must call `SharpitRatio`, not redefine `phi`.
+5. **Motion durations** may stay on `SharpitMotion`; spatial composition stays on `SharpitRatio`.
+
+## Anti-patterns
+
+- Hardcoded `1.618` / `0.618` / `0.382` outside `SharpitRatio`
+- Parallel `enum FooLayout { static let phi = … }` duplicates
+- “Close enough” gaps that ignore the token ladder

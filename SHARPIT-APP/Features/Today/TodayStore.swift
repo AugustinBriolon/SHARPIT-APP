@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 import SwiftUI
 
 @MainActor
@@ -19,13 +20,16 @@ final class TodayStore {
 
     private let client: any TodayServing
     private let tokenProvider: (() async throws -> String)?
+    private let modelContext: ModelContext?
 
     init(
         client: any TodayServing = FixtureTodayClient(),
-        tokenProvider: (() async throws -> String)? = nil
+        tokenProvider: (() async throws -> String)? = nil,
+        modelContext: ModelContext? = nil
     ) {
         self.client = client
         self.tokenProvider = tokenProvider
+        self.modelContext = modelContext
     }
 
     var phaseIdentity: String {
@@ -51,9 +55,9 @@ final class TodayStore {
     }
 
     func load(resetToLoading: Bool) async {
-        if resetToLoading {
-            phase = .loading
-        }
+        let dayId = TrainingDayId.today()
+        let hadCache = hydrateFromSnapshotIfNeeded(dayId: dayId, resetToLoading: resetToLoading)
+
         do {
             let token: String
             if let tokenProvider {
@@ -61,24 +65,21 @@ final class TodayStore {
             } else {
                 token = ""
             }
-            let payload = try await client.today(trainingDayId: TrainingDayId.today(), token: token)
-            switch TodayModel.state(from: payload) {
-            case .loading:
-                phase = .loading
-            case .loaded(let response):
-                phase = .loaded(TodayFoldMapper.map(response))
-            case .empty(let empty):
-                phase = .empty(empty)
-            case .failed(let message):
-                phase = .failed(message)
-            case .unauthorized:
-                phase = .unauthorized
-            }
+            let payload = try await client.today(trainingDayId: dayId, token: token)
+            apply(payload)
+            persistSnapshot(payload)
         } catch is CancellationError {
             return
         } catch let error as SharpitAPIError where error == .unauthorized {
             phase = .unauthorized
         } catch {
+            // Keep stale snapshot on transport failure when we already painted it.
+            if hadCache, case .loaded = phase {
+                return
+            }
+            if case .loaded = phase {
+                return
+            }
             phase = .failed(Self.failureMessage(for: error))
         }
     }
@@ -100,6 +101,50 @@ final class TodayStore {
         markNewSessionDones(in: fold)
         if let confidence = fold.plate.confidencePct {
             SharpitWinStore.setLastConfidence(confidence, trainingDayId: fold.trainingDayId)
+        }
+    }
+
+    @discardableResult
+    private func hydrateFromSnapshotIfNeeded(dayId: String, resetToLoading: Bool) -> Bool {
+        guard let modelContext else {
+            if resetToLoading { phase = .loading }
+            return false
+        }
+        do {
+            if let cached = try TodaySnapshotRepository.load(trainingDayId: dayId, context: modelContext) {
+                apply(cached)
+                return true
+            }
+        } catch {
+            // Corrupt cache — fall through to network / loading.
+        }
+        if resetToLoading {
+            phase = .loading
+        }
+        return false
+    }
+
+    private func apply(_ payload: V1TodayResponse) {
+        switch TodayModel.state(from: payload) {
+        case .loading:
+            phase = .loading
+        case .loaded(let response):
+            phase = .loaded(TodayFoldMapper.map(response))
+        case .empty(let empty):
+            phase = .empty(empty)
+        case .failed(let message):
+            phase = .failed(message)
+        case .unauthorized:
+            phase = .unauthorized
+        }
+    }
+
+    private func persistSnapshot(_ payload: V1TodayResponse) {
+        guard let modelContext else { return }
+        do {
+            try TodaySnapshotRepository.save(payload, context: modelContext)
+        } catch {
+            // Persistence failure must not break the live fold.
         }
     }
 

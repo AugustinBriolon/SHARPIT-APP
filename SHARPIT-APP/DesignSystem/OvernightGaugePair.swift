@@ -17,23 +17,34 @@ private struct OvernightGaugeCell: View {
     let gauge: OvernightGaugeModel
     var pulse: Bool = false
 
-    private var fraction: Double? {
-        AnimatedScoreText.progressFraction(from: gauge.score)
+    @State private var displayedProgress: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var targetFraction: CGFloat {
+        CGFloat(AnimatedScoreText.progressFraction(from: gauge.score) ?? 0)
     }
 
     var body: some View {
         VStack(spacing: SharpitSpacing.xxs) {
-            OvernightArcGauge(progress: fraction ?? 0, hasScore: fraction != nil)
-                .frame(maxWidth: .infinity)
-                .aspectRatio(2.1, contentMode: .fit)
+            GeometryReader { geo in
+                let bowlHeight = geo.size.height
+                let lift = OvernightGaugeLayout.scoreLift(bowlHeight: bowlHeight)
 
-            VStack(spacing: 1) {
-                AnimatedScoreText(score: gauge.score)
-                    .opacity(pulse ? 0.55 : 1)
-                Text("sur 100")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                ZStack(alignment: .bottom) {
+                    OvernightArcGauge(progress: displayedProgress)
+
+                    VStack(spacing: 1) {
+                        AnimatedScoreText(score: gauge.score, animation: SharpitMotion.gaugeFill)
+                            .opacity(pulse ? 0.55 : 1)
+                        Text("sur 100")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .offset(y: -lift)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .aspectRatio(OvernightGaugeLayout.bowlAspectRatio, contentMode: .fit)
 
             Text(title)
                 .font(SharpitTypography.label())
@@ -53,6 +64,20 @@ private struct OvernightGaugeCell: View {
         .sharpitGlassCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title), \(gauge.score)")
+        .onAppear { animateFill(to: targetFraction) }
+        .onChange(of: gauge.score) { _, _ in
+            animateFill(to: targetFraction)
+        }
+    }
+
+    private func animateFill(to value: CGFloat) {
+        if SharpitMotion.reduceMotion || reduceMotion {
+            displayedProgress = value
+            return
+        }
+        SharpitMotion.run(SharpitMotion.gaugeFill) {
+            displayedProgress = value
+        }
     }
 
     private var title: String {
@@ -65,21 +90,18 @@ private struct OvernightGaugeCell: View {
 }
 
 /// Top semicircle: faded full track + darker fill that stops at score.
-/// Uses `Circle.trim` so partial progress never takes the long way around.
 private struct OvernightArcGauge: View {
-    let progress: Double
-    var hasScore: Bool = true
+    let progress: CGFloat
 
     private let lineWidth: CGFloat = 12
     private let tipSize: CGFloat = 10
 
     private var clamped: CGFloat {
-        CGFloat(min(max(progress, 0), 1))
+        min(max(progress, 0), 1)
     }
 
     var body: some View {
         GeometryReader { geo in
-            // Diameter spans full width; frame is half-height so only the top semicircle shows.
             let diameter = geo.size.width
             let pathRadius = diameter / 2
 
@@ -90,28 +112,20 @@ private struct OvernightArcGauge: View {
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                     )
 
-                if hasScore {
-                    semicircle(trimEnd: 0.5 * clamped)
-                        .stroke(
-                            Color.primary.opacity(0.9),
-                            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                        )
+                semicircle(trimEnd: 0.5 * clamped)
+                    .stroke(
+                        Color.primary.opacity(0.9),
+                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+                    )
 
-                    Circle()
-                        .fill(SharpitInk.highlight)
-                        .frame(width: tipSize, height: tipSize)
-                        // Path radius = stroke centerline (Circle stroke is centered on the path).
-                        .offset(OvernightArcMath.tipOffset(progress: clamped, radius: pathRadius))
-                        .accessibilityHidden(true)
-                }
+                // Animatable progress → tip stays on the arc (not a Cartesian chord).
+                OvernightArcTip(progress: clamped, radius: pathRadius, size: tipSize)
             }
             .frame(width: diameter, height: diameter)
-            // Center on the bottom edge, inset by half stroke so caps/tip stay inside the slot.
             .position(x: geo.size.width / 2, y: geo.size.height - lineWidth / 2)
         }
     }
 
-    /// Bottom half of a circle, rotated 180° → top semicircle (left → top → right).
     private func semicircle(trimEnd: CGFloat) -> some Shape {
         Circle()
             .trim(from: 0, to: trimEnd)
@@ -119,8 +133,41 @@ private struct OvernightArcGauge: View {
     }
 }
 
+/// Tip whose `animatableData` is progress, so SwiftUI interpolates the angle
+/// and recomputes polar offset each frame (avoids chord shortcuts through the bowl).
+private struct OvernightArcTip: View, Animatable {
+    var progress: CGFloat
+    var radius: CGFloat
+    var size: CGFloat
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    var body: some View {
+        Circle()
+            .fill(SharpitInk.highlight)
+            .frame(width: size, height: size)
+            .offset(OvernightArcMath.tipOffset(progress: progress, radius: radius))
+            .accessibilityHidden(true)
+    }
+}
+
+enum OvernightGaugeLayout {
+    /// Width / height of the arc+score bowl (≈ 2φ / φ… kept optical, not strict φ).
+    static let bowlAspectRatio: CGFloat = 2.05
+    /// Approximate score + "sur 100" block height used for lift math.
+    static let scoreBlockHeight: CGFloat = 44
+
+    /// Lift score from the diameter into the bowl (minor φ segment of free air).
+    static func scoreLift(bowlHeight: CGFloat, scoreBlockHeight: CGFloat = scoreBlockHeight) -> CGFloat {
+        let free = max(0, bowlHeight - scoreBlockHeight)
+        return SharpitRatio.minor(of: free)
+    }
+}
+
 enum OvernightArcMath {
-    /// Tip on the stroke centerline: progress 0 at left, 0.5 at top, 1 at right.
     static func tipOffset(progress: CGFloat, radius: CGFloat) -> CGSize {
         let t = Double(min(max(progress, 0), 1))
         let angle = Double.pi * (1 - t)

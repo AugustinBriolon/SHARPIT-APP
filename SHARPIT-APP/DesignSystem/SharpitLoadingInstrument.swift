@@ -2,20 +2,25 @@ import SwiftUI
 
 struct SharpitLoadingInstrument: View {
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                InkVerdictPlate(plate: .placeholder, placeholder: true)
-                VStack(alignment: .leading, spacing: 10) {
-                    SharpitEyebrow("Séance")
-                    SessionPlate(session: .placeholder, showPriorityTag: false)
+                Group {
+                    InkVerdictPlate(plate: .placeholder, placeholder: true)
+                    VStack(alignment: .leading, spacing: 10) {
+                        SharpitEyebrow("Séance")
+                        SessionPlate(session: .placeholder, showPriorityTag: false)
+                    }
                 }
+                .redacted(reason: .placeholder)
+
+                // Live empty gauges: tip at 0, score at 0 — fill animates on load.
                 OvernightGaugePair(gauges: OvernightGaugeModel.placeholders)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.lg)
         }
         .modifier(ScrollUnderGlass())
-        .redacted(reason: .placeholder)
         .allowsHitTesting(false)
         .accessibilityLabel("Chargement du résumé")
     }
@@ -58,8 +63,8 @@ private extension SessionCardModel {
 private extension OvernightGaugeModel {
     static var placeholders: [OvernightGaugeModel] {
         [
-            OvernightGaugeModel(key: .sleep, score: "66", caption: "Nuit dernière"),
-            OvernightGaugeModel(key: .recovery, score: "55", caption: "Frein · sommeil"),
+            OvernightGaugeModel(key: .sleep, score: "0", caption: "Nuit dernière"),
+            OvernightGaugeModel(key: .recovery, score: "0", caption: "Frein · sommeil"),
         ]
     }
 }

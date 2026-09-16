@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 struct TodayView: View {
@@ -6,10 +7,15 @@ struct TodayView: View {
 
     init(
         client: any TodayServing = FixtureTodayClient(),
-        tokenProvider: (() async throws -> String)? = nil
+        tokenProvider: (() async throws -> String)? = nil,
+        modelContext: ModelContext? = nil
     ) {
         _store = State(
-            initialValue: TodayStore(client: client, tokenProvider: tokenProvider)
+            initialValue: TodayStore(
+                client: client,
+                tokenProvider: tokenProvider,
+                modelContext: modelContext
+            )
         )
     }
 
@@ -74,7 +80,7 @@ private struct TodayFoldView: View {
     var onArrival: () -> Void = {}
 
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 InkVerdictPlate(plate: fold.plate, revealed: true)
                 evidenceSection
@@ -82,6 +88,7 @@ private struct TodayFoldView: View {
                     OvernightGaugePair(gauges: fold.gauges, pulseScores: pulseScores)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.lg)
         }

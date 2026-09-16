@@ -6,6 +6,7 @@ enum SharpitMotion {
     static let fadeDuration: TimeInterval = 0.28
     static let staggerStep: TimeInterval = 0.048
     static let countUpDuration: TimeInterval = 0.42
+    static let gaugeFillDuration: TimeInterval = 0.72
 
     static var reduceMotion: Bool {
         UIAccessibility.isReduceMotionEnabled
@@ -23,6 +24,14 @@ enum SharpitMotion {
             return .easeOut(duration: 0.01)
         }
         return .easeOut(duration: fadeDuration)
+    }
+
+    /// Overnight gauges: empty → filled with a smooth ease-in-out.
+    static var gaugeFill: Animation {
+        if reduceMotion {
+            return .easeOut(duration: 0.01)
+        }
+        return .easeInOut(duration: gaugeFillDuration)
     }
 
     static func staggerDelay(index: Int) -> TimeInterval {

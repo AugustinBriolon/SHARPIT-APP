@@ -27,9 +27,12 @@ struct ScrollUnderGlass: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
-            content.scrollEdgeEffectStyle(.soft, for: .top)
+            content
+                .scrollEdgeEffectStyle(.soft, for: .top)
+                .scrollBounceBehavior(.basedOnSize, axes: .vertical)
         } else {
             content
+                .scrollBounceBehavior(.basedOnSize, axes: .vertical)
         }
     }
 }
