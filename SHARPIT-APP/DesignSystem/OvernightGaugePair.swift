@@ -32,9 +32,9 @@ private struct OvernightGaugeCell: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
-                .offset(y: 14)
+                .offset(y: 16)
             }
-            .frame(height: 104)
+            .frame(height: 108)
             Text(title)
                 .font(SharpitTypography.label())
                 .tracking(SharpitTypography.labelTracking)
@@ -64,84 +64,65 @@ private struct OvernightGaugeCell: View {
     }
 }
 
-/// Thick semicircle: muted track for unfinished range, solid fill for score.
+/// Top semicircle: faded full track + darker fill that stops at score.
+/// Uses `Circle.trim` (not `Path.addArc`) so partial progress never takes the long way around.
 private struct OvernightArcGauge: View {
     let progress: Double
     var hasScore: Bool = true
+
+    private let lineWidth: CGFloat = 12
 
     private var clamped: CGFloat {
         CGFloat(min(max(progress, 0), 1))
     }
 
     var body: some View {
-        ZStack {
-            OvernightSemicircle(progress: 1)
-                .stroke(
-                    Color.primary.opacity(0.12),
-                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
-                )
-            if hasScore {
-                OvernightSemicircle(progress: clamped)
+        GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
+            let radius = (side - lineWidth) / 2
+
+            ZStack {
+                semicircleTrack(trimEnd: 0.5)
                     .stroke(
-                        Color.primary.opacity(0.9),
-                        style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                        Color.primary.opacity(0.16),
+                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                     )
-                OvernightSemicircleTip(progress: clamped)
-                    .fill(SharpitInk.highlight)
+
+                if hasScore {
+                    semicircleTrack(trimEnd: 0.5 * clamped)
+                        .stroke(
+                            Color.primary.opacity(0.9),
+                            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+                        )
+
+                    Circle()
+                        .fill(SharpitInk.highlight)
+                        .frame(width: 10, height: 10)
+                        .offset(OvernightArcMath.tipOffset(progress: clamped, radius: radius))
+                        .accessibilityHidden(true)
+                }
             }
+            .frame(width: side, height: side)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
     }
+
+    /// Bottom half of a circle, rotated 180° → top semicircle (left → top → right).
+    private func semicircleTrack(trimEnd: CGFloat) -> some Shape {
+        Circle()
+            .trim(from: 0, to: trimEnd)
+            .rotation(.degrees(180))
+    }
 }
 
-/// Full semicircle from left (π) to right (0) through the top.
-private struct OvernightSemicircle: Shape, Sendable {
-    var progress: CGFloat = 1
-
-    nonisolated var animatableData: CGFloat {
-        get { progress }
-        set { progress = newValue }
-    }
-
-    nonisolated func path(in rect: CGRect) -> Path {
-        let geometry = OvernightArcGeometry(rect: rect)
-        var path = Path()
-        path.addArc(
-            center: geometry.center,
-            radius: geometry.radius,
-            startAngle: .radians(.pi),
-            endAngle: .radians(.pi * (1 - Double(progress))),
-            clockwise: false
+enum OvernightArcMath {
+    /// Tip on the top semicircle: progress 0 at left, 0.5 at top, 1 at right.
+    static func tipOffset(progress: CGFloat, radius: CGFloat) -> CGSize {
+        let t = Double(min(max(progress, 0), 1))
+        let angle = Double.pi * (1 - t)
+        return CGSize(
+            width: radius * Foundation.cos(angle),
+            height: -radius * Foundation.sin(angle)
         )
-        return path
-    }
-}
-
-private struct OvernightSemicircleTip: Shape, Sendable {
-    var progress: CGFloat
-
-    nonisolated var animatableData: CGFloat {
-        get { progress }
-        set { progress = newValue }
-    }
-
-    nonisolated func path(in rect: CGRect) -> Path {
-        guard progress > 0.01 else { return Path() }
-        let geometry = OvernightArcGeometry(rect: rect)
-        let angle = Double.pi * (1 - Double(progress))
-        let point = CGPoint(
-            x: geometry.center.x + geometry.radius * Foundation.cos(angle),
-            y: geometry.center.y - geometry.radius * Foundation.sin(angle)
-        )
-        return Path(ellipseIn: CGRect(x: point.x - 4, y: point.y - 4, width: 8, height: 8))
-    }
-}
-
-private struct OvernightArcGeometry: Sendable {
-    let center: CGPoint
-    let radius: CGFloat
-
-    nonisolated init(rect: CGRect) {
-        radius = min(rect.width, rect.height) * 0.40
-        center = CGPoint(x: rect.midX, y: rect.midY + radius * 0.32)
     }
 }

@@ -29,6 +29,18 @@ import Testing
     #expect(SessionPriorityPolicy.showsTag(sessionCount: 2, priority: false) == false)
 }
 
+@Test func overnightArcTipMapsScoreAlongTopSemicircle() {
+    let left = OvernightArcMath.tipOffset(progress: 0, radius: 100)
+    let top = OvernightArcMath.tipOffset(progress: 0.5, radius: 100)
+    let right = OvernightArcMath.tipOffset(progress: 1, radius: 100)
+    #expect(abs(left.width + 100) < 0.01)
+    #expect(abs(left.height) < 0.01)
+    #expect(abs(top.width) < 0.01)
+    #expect(abs(top.height + 100) < 0.01)
+    #expect(abs(right.width - 100) < 0.01)
+    #expect(abs(right.height) < 0.01)
+}
+
 
 @Test func foldMapsPlateTrustFields() throws {
     let response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
