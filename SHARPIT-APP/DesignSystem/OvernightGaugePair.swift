@@ -2,19 +2,12 @@ import SwiftUI
 
 struct OvernightGaugePair: View {
     let gauges: [OvernightGaugeModel]
-    var revealed: Bool = true
     var pulseScores: Bool = false
 
     var body: some View {
         HStack(spacing: SharpitSpacing.xxs) {
-            ForEach(Array(gauges.enumerated()), id: \.element.id) { index, gauge in
+            ForEach(gauges) { gauge in
                 OvernightGaugeCell(gauge: gauge, pulse: pulseScores)
-                    .opacity(revealed ? 1 : 0)
-                    .offset(y: revealed ? 0 : 8)
-                    .animation(
-                        SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: index)),
-                        value: revealed
-                    )
             }
         }
     }
@@ -39,9 +32,9 @@ private struct OvernightGaugeCell: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
-                .offset(y: 12)
+                .offset(y: 14)
             }
-            .frame(height: 100)
+            .frame(height: 104)
             Text(title)
                 .font(SharpitTypography.label())
                 .tracking(SharpitTypography.labelTracking)
@@ -71,43 +64,31 @@ private struct OvernightGaugeCell: View {
     }
 }
 
-/// Continuous semicircle stroke (π → 0) with light tick underlay.
+/// Thick semicircle: muted track for unfinished range, solid fill for score.
 private struct OvernightArcGauge: View {
     let progress: Double
     var hasScore: Bool = true
 
-    @State private var animated: CGFloat = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private var clamped: CGFloat {
+        CGFloat(min(max(progress, 0), 1))
+    }
 
     var body: some View {
         ZStack {
-            OvernightTickUnderlay()
-                .opacity(0.35)
-            OvernightSemicircle()
-                .stroke(Color.primary.opacity(0.12), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            OvernightSemicircle(progress: 1)
+                .stroke(
+                    Color.primary.opacity(0.12),
+                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                )
             if hasScore {
-                OvernightSemicircle(progress: animated)
+                OvernightSemicircle(progress: clamped)
                     .stroke(
-                        Color.primary.opacity(0.88),
-                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                        Color.primary.opacity(0.9),
+                        style: StrokeStyle(lineWidth: 10, lineCap: .round)
                     )
-                OvernightSemicircleTip(progress: animated)
+                OvernightSemicircleTip(progress: clamped)
                     .fill(SharpitInk.highlight)
             }
-        }
-        .onAppear { animate(to: CGFloat(min(max(progress, 0), 1))) }
-        .onChange(of: progress) { _, newValue in
-            animate(to: CGFloat(min(max(newValue, 0), 1)))
-        }
-    }
-
-    private func animate(to value: CGFloat) {
-        if SharpitMotion.reduceMotion || reduceMotion {
-            animated = value
-            return
-        }
-        SharpitMotion.run(.easeOut(duration: SharpitMotion.countUpDuration)) {
-            animated = value
         }
     }
 }
@@ -151,41 +132,7 @@ private struct OvernightSemicircleTip: Shape, Sendable {
             x: geometry.center.x + geometry.radius * Foundation.cos(angle),
             y: geometry.center.y - geometry.radius * Foundation.sin(angle)
         )
-        return Path(ellipseIn: CGRect(x: point.x - 3.5, y: point.y - 3.5, width: 7, height: 7))
-    }
-}
-
-private struct OvernightTickUnderlay: View {
-    private static let tickCount = 26
-
-    var body: some View {
-        Canvas { context, size in
-            let geometry = OvernightArcGeometry(rect: CGRect(origin: .zero, size: size))
-            let rInner = geometry.radius - 7
-            let rOuter = geometry.radius - 2
-            for index in 0..<Self.tickCount {
-                let t = Double(index) / Double(Self.tickCount - 1)
-                let angle = Double.pi * (1 - t)
-                var path = Path()
-                path.move(
-                    to: CGPoint(
-                        x: geometry.center.x + rInner * Foundation.cos(angle),
-                        y: geometry.center.y - rInner * Foundation.sin(angle)
-                    )
-                )
-                path.addLine(
-                    to: CGPoint(
-                        x: geometry.center.x + rOuter * Foundation.cos(angle),
-                        y: geometry.center.y - rOuter * Foundation.sin(angle)
-                    )
-                )
-                context.stroke(
-                    path,
-                    with: .color(.primary.opacity(0.18)),
-                    style: StrokeStyle(lineWidth: 1.2, lineCap: .round)
-                )
-            }
-        }
+        return Path(ellipseIn: CGRect(x: point.x - 4, y: point.y - 4, width: 8, height: 8))
     }
 }
 
@@ -194,7 +141,7 @@ private struct OvernightArcGeometry: Sendable {
     let radius: CGFloat
 
     nonisolated init(rect: CGRect) {
-        radius = min(rect.width, rect.height) * 0.42
-        center = CGPoint(x: rect.midX, y: rect.midY + radius * 0.28)
+        radius = min(rect.width, rect.height) * 0.40
+        center = CGPoint(x: rect.midX, y: rect.midY + radius * 0.32)
     }
 }

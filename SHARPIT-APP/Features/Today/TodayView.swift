@@ -19,7 +19,6 @@ struct TodayView: View {
                 switch store.phase {
                 case .loading:
                     SharpitLoadingInstrument()
-                        .transition(.opacity)
                 case .loaded(let fold):
                     TodayFoldView(
                         fold: fold,
@@ -27,10 +26,8 @@ struct TodayView: View {
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
                         onArrival: { store.handleArrivalWins(fold: fold) }
                     )
-                    .transition(.opacity)
                 case .empty(let empty):
                     TodayEmptyView(empty: empty)
-                        .transition(.opacity)
                 case .failed(let message):
                     ContentUnavailableView {
                         Label("Résumé indisponible", systemImage: "wifi.slash")
@@ -41,20 +38,17 @@ struct TodayView: View {
                             Task { await store.load(resetToLoading: true) }
                         }
                     }
-                    .transition(.opacity)
                 case .unauthorized:
                     ContentUnavailableView {
                         Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
                     } description: {
                         Text("Reconnecte-toi pour recharger le résumé.")
                     }
-                    .transition(.opacity)
                 }
             }
-            .animation(SharpitMotion.fade, value: store.phaseIdentity)
             .background(SharpitCanvasBackground(posture: store.loadedPosture))
             .navigationTitle(store.navigationTitle)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -79,43 +73,20 @@ private struct TodayFoldView: View {
     var sessionDoneCelebrations: Set<String> = []
     var onArrival: () -> Void = {}
 
-    /// Start on `.plate` so the first loaded frame keeps the ink plate visible
-    /// (avoids a blank jump after the skeleton).
-    @State private var arrival: TodayArrivalPhase = .plate
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                InkVerdictPlate(plate: fold.plate, revealed: arrival.showsPlate)
+                InkVerdictPlate(plate: fold.plate, revealed: true)
                 evidenceSection
-                    .opacity(arrival.showsSession ? 1 : 0)
-                    .offset(y: arrival.showsSession ? 0 : 10)
                 if !fold.gauges.isEmpty {
-                    OvernightGaugePair(
-                        gauges: fold.gauges,
-                        revealed: arrival.showsGauges,
-                        pulseScores: pulseScores
-                    )
+                    OvernightGaugePair(gauges: fold.gauges, pulseScores: pulseScores)
                 }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.lg)
         }
         .modifier(ScrollUnderGlass())
-        .task {
-            onArrival()
-            if reduceMotion || SharpitMotion.reduceMotion {
-                arrival = .idle
-                return
-            }
-            await TodayArrivalDirector.run(
-                reduceMotion: false,
-                gaugeCount: fold.gauges.count
-            ) { phase in
-                arrival = phase
-            }
-        }
+        .task { onArrival() }
     }
 
     @ViewBuilder
@@ -131,6 +102,10 @@ private struct TodayFoldView: View {
                 ForEach(fold.sessions) { session in
                     SessionPlate(
                         session: session,
+                        showPriorityTag: SessionPriorityPolicy.showsTag(
+                            sessionCount: fold.sessions.count,
+                            priority: session.priority
+                        ),
                         celebrateDone: sessionDoneCelebrations.contains(session.id)
                     )
                 }

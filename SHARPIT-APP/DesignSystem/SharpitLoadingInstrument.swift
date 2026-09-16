@@ -7,7 +7,7 @@ struct SharpitLoadingInstrument: View {
                 InkVerdictPlate(plate: .placeholder, placeholder: true)
                 VStack(alignment: .leading, spacing: 10) {
                     SharpitEyebrow("Séance")
-                    SessionPlate(session: .placeholder)
+                    SessionPlate(session: .placeholder, showPriorityTag: false)
                 }
                 OvernightGaugePair(gauges: OvernightGaugeModel.placeholders)
             }

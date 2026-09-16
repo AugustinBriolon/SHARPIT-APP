@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SessionPlate: View {
     let session: SessionCardModel
+    /// Show "Prioritaire" only when several sessions compete (caller decides).
+    var showPriorityTag: Bool = false
     var celebrateDone: Bool = false
 
     @State private var checkSettled = false
@@ -19,11 +21,7 @@ struct SessionPlate: View {
                         .accessibilityHidden(true)
                 }
                 VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                    if let meta = metaLine {
-                        Text(meta)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                    tagRow
                     Text(session.title)
                         .font(.headline)
                     if showsSubtitle, let subtitle = session.subtitle {
@@ -85,15 +83,32 @@ struct SessionPlate: View {
         }
     }
 
-    private var metaLine: String? {
-        var parts: [String] = []
-        if let sport = session.sport, !sport.isEmpty {
-            parts.append(sport)
+    @ViewBuilder
+    private var tagRow: some View {
+        if session.sport != nil || showPriorityTag {
+            HStack(spacing: 6) {
+                if let sport = session.sport, !sport.isEmpty {
+                    Text(sport)
+                        .font(SharpitTypography.label())
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SharpitSportTone.foreground(for: sport))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(SharpitSportTone.background(for: sport), in: Capsule())
+                }
+                if showPriorityTag {
+                    Text("Prioritaire")
+                        .font(SharpitTypography.label())
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.primary.opacity(0.06), in: Capsule())
+                }
+            }
         }
-        if session.priority {
-            parts.append("Prioritaire")
-        }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     /// Drop subtitle when it mostly repeats the metrics row.
@@ -123,7 +138,8 @@ struct SessionPlate: View {
         let status = session.kind == .done ? "Faite" : "Prévue"
         let metrics = session.metrics.map { "\($0.label) \($0.value)\($0.unit)" }.joined(separator: ", ")
         return [
-            metaLine,
+            session.sport,
+            showPriorityTag ? "Prioritaire" : nil,
             session.title,
             showsSubtitle ? session.subtitle : nil,
             status,
@@ -132,6 +148,50 @@ struct SessionPlate: View {
         .compactMap { $0 }
         .filter { !$0.isEmpty }
         .joined(separator: ", ")
+    }
+}
+
+enum SessionPriorityPolicy {
+    static func showsTag(sessionCount: Int, priority: Bool) -> Bool {
+        sessionCount > 1 && priority
+    }
+}
+
+enum SharpitSportTone {
+    static func background(for sport: String) -> Color {
+        switch normalized(sport) {
+        case let s where s.contains("course") || s.contains("run"):
+            return Color.orange.opacity(0.18)
+        case let s where s.contains("velo") || s.contains("cycl") || s.contains("bike"):
+            return Color.blue.opacity(0.14)
+        case let s where s.contains("natation") || s.contains("swim"):
+            return Color.cyan.opacity(0.16)
+        case let s where s.contains("force") || s.contains("muscu") || s.contains("gym"):
+            return Color.purple.opacity(0.14)
+        default:
+            return Color.primary.opacity(0.08)
+        }
+    }
+
+    static func foreground(for sport: String) -> Color {
+        switch normalized(sport) {
+        case let s where s.contains("course") || s.contains("run"):
+            return Color.orange
+        case let s where s.contains("velo") || s.contains("cycl") || s.contains("bike"):
+            return Color.blue
+        case let s where s.contains("natation") || s.contains("swim"):
+            return Color.cyan
+        case let s where s.contains("force") || s.contains("muscu") || s.contains("gym"):
+            return Color.purple
+        default:
+            return Color.secondary
+        }
+    }
+
+    private static func normalized(_ sport: String) -> String {
+        sport
+            .folding(options: .diacriticInsensitive, locale: .current)
+            .lowercased()
     }
 }
 

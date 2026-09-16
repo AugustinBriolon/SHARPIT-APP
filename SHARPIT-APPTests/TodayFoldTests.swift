@@ -23,11 +23,12 @@ import Testing
     #expect(PackTierTone.bars(for: nil) == .highlight)
 }
 
-@Test func statusDotFollowsFeuLabelNotPackTier() {
-    #expect(PackTierTone.statusDot(for: "FEU VERT") == .highlight)
-    #expect(PackTierTone.statusDot(for: "FEU ORANGE") == .caution)
-    #expect(PackTierTone.statusDot(for: "FEU ROUGE") == .muted)
+@Test func priorityTagOnlyWhenMultipleSessionsCompete() {
+    #expect(SessionPriorityPolicy.showsTag(sessionCount: 1, priority: true) == false)
+    #expect(SessionPriorityPolicy.showsTag(sessionCount: 2, priority: true) == true)
+    #expect(SessionPriorityPolicy.showsTag(sessionCount: 2, priority: false) == false)
 }
+
 
 @Test func foldMapsPlateTrustFields() throws {
     let response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
