@@ -17,12 +17,18 @@ Device installs, Associated Domains, and WeatherKit still need a personal Apple 
 
 ## Build & test
 
+```bash
+xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' test
+```
+
 ## Architecture
 
 - Auth: ClerkKit + ClerkKitUI (`AuthGate` → `AuthView` sheet)
 - Shell: five tabs (Résumé / Plan / Coach / Activité / Moi)
 - Résumé: `GET /api/v1/today` via `SharpitClient` + Bearer token from `clerk.auth.getToken()`
 - Weather chip: WeatherKit + Core Location (not API weather)
+- Design system: `SHARPIT-APP/DesignSystem/` (tokens + instrument components). Spec: `docs/superpowers/specs/2026-09-16-ios-design-system-design.md`
 - Spec / plan: `docs/superpowers/`
 
 Native never calls `/api/presentation/*`. See SHARPIT ADR-040.

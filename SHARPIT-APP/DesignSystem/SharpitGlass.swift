@@ -13,26 +13,13 @@ extension View {
     @ViewBuilder
     func sharpitGlassCard() -> some View {
         if #available(iOS 26.0, *) {
-            glassEffect(.regular, in: .rect(cornerRadius: 24))
+            glassEffect(.regular, in: .rect(cornerRadius: SharpitSpacing.cardRadius))
         } else {
-            background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            background(
+                .ultraThinMaterial,
+                in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous)
+            )
         }
-    }
-}
-
-struct SharpitEyebrow: View {
-    let text: String
-
-    init(_ text: String) {
-        self.text = text
-    }
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 11, weight: .semibold))
-            .tracking(1.6)
-            .textCase(.uppercase)
-            .foregroundStyle(.secondary)
     }
 }
 
