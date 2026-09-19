@@ -74,6 +74,8 @@ struct TodayView: View {
 }
 
 private struct TodayFoldView: View {
+    @Environment(ShellRouter.self) private var router
+
     let fold: TodayFold
     var pulseScores: Bool = false
     var sessionDoneCelebrations: Set<String> = []
@@ -88,7 +90,9 @@ private struct TodayFoldView: View {
                     OvernightGaugePair(gauges: fold.gauges, pulseScores: pulseScores)
                 }
                 if let consistency = fold.consistency, !consistency.days.isEmpty {
-                    ConsistencyStrip(consistency: consistency)
+                    ConsistencyStrip(consistency: consistency) {
+                        router.select(.plan)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

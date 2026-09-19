@@ -233,6 +233,8 @@ private enum DetailPhase {
 }
 
 private struct ActivityDetailContent: View {
+    @Environment(ShellRouter.self) private var router
+
     let detail: V1ActivityDetail
     let streamPayload: V1ActivityStreamPayload?
     let appeared: Bool
@@ -288,6 +290,18 @@ private struct ActivityDetailContent: View {
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(0.18), value: appeared)
+
+            // The session the athlete is reading is exactly what they would ask about.
+            CoachDiscussButton(title: "Discuter de cette séance") {
+                router.discussWithCoach(
+                    about: CoachDiscuss.describe(
+                        .activity(activityId: detail.id),
+                        name: detail.title ?? detail.type.label
+                    )
+                )
+            }
+            .opacity(appeared ? 1 : 0)
+            .animation(SharpitMotion.reveal.delay(0.22), value: appeared)
 
             if hasSessionSummaryData {
                 sessionSummary

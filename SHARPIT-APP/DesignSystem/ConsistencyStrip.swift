@@ -8,10 +8,31 @@ import SwiftUI
 /// morning: have I trained lately, and what does this week look like.
 struct ConsistencyStrip: View {
     let consistency: V1TodayConsistency
+    /// Opening the week is the natural next question after "have I trained lately".
+    var onOpenPlan: (() -> Void)?
 
     var body: some View {
+        Button {
+            onOpenPlan?()
+        } label: {
+            content
+        }
+        .buttonStyle(.plain)
+        .disabled(onOpenPlan == nil)
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Régularité")
+            HStack {
+                SharpitEyebrow("Régularité")
+                Spacer(minLength: 0)
+                if onOpenPlan != nil {
+                    Image(systemName: "chevron.right")
+                        .font(SharpitTypography.label)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .accessibilityHidden(true)
+                }
+            }
 
             HStack(spacing: SharpitSpacing.xxs) {
                 ForEach(consistency.days) { day in
@@ -28,6 +49,8 @@ struct ConsistencyStrip: View {
         .sharpitSurface(.panel)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(onOpenPlan == nil ? [] : .isButton)
+        .accessibilityHint(onOpenPlan == nil ? "" : "Ouvre le plan de la semaine")
     }
 
     /// Plain counting, no encouragement: the design law rules out motivational micro-copy,

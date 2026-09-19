@@ -7,31 +7,53 @@ struct RootView: View {
     @Environment(Clerk.self) private var clerk
     @Environment(\.modelContext) private var modelContext
 
+    /// Owned here so a surface can send the athlete to another tab — the regularity strip
+    /// opening Plan, any "Discuter avec le coach" button opening Coach with its subject.
+    @State private var router = ShellRouter()
+
     var body: some View {
-        TabView {
-            Tab("Résumé", systemImage: "sun.max") {
+        TabView(selection: $router.selectedTab) {
+            Tab("Résumé", systemImage: "sun.max", value: ShellTab.today) {
                 TodayView(
                     client: SharpitClient(),
                     tokenProvider: liveToken,
                     modelContext: modelContext
                 )
             }
-            Tab(ShellDestination.plan.title, systemImage: ShellDestination.plan.systemImage) {
+            Tab(
+                ShellDestination.plan.title,
+                systemImage: ShellDestination.plan.systemImage,
+                value: ShellTab.plan
+            ) {
                 PlanView(
                     client: PlannedSessionClient(),
                     tokenProvider: liveToken
                 )
             }
-            Tab(ShellDestination.coach.title, systemImage: ShellDestination.coach.systemImage) {
-                InstrumentShellView(destination: .coach)
+            Tab(
+                ShellDestination.coach.title,
+                systemImage: ShellDestination.coach.systemImage,
+                value: ShellTab.coach
+            ) {
+                InstrumentShellView(destination: .coach) {
+                    CoachContextPreview(context: router.pendingCoachContext)
+                }
             }
-            Tab(ShellDestination.activity.title, systemImage: ShellDestination.activity.systemImage) {
+            Tab(
+                ShellDestination.activity.title,
+                systemImage: ShellDestination.activity.systemImage,
+                value: ShellTab.activity
+            ) {
                 ActivityView(
                     client: ActivityClient(),
                     tokenProvider: liveToken
                 )
             }
-            Tab(ShellDestination.me.title, systemImage: ShellDestination.me.systemImage) {
+            Tab(
+                ShellDestination.me.title,
+                systemImage: ShellDestination.me.systemImage,
+                value: ShellTab.me
+            ) {
                 InstrumentShellView(destination: .me) {
                     accountMark
                 }
@@ -39,6 +61,7 @@ struct RootView: View {
         }
         .background(SharpitCanvasBackground())
         .tint(SharpitColor.primary)
+        .environment(router)
         .modifier(LiquidTabBarModifier())
     }
 

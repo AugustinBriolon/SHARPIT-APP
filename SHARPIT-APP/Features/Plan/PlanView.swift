@@ -82,7 +82,10 @@ struct PlanView: View {
     let client: any PlannedSessionServing
     let tokenProvider: () async throws -> String
 
+    @Environment(ShellRouter.self) private var router
+    @Environment(\.openURL) private var openURL
     @State private var store: PlanStore
+    @State private var selectedSession: V1PlannedSessionItem?
 
     init(client: any PlannedSessionServing, tokenProvider: @escaping () async throws -> String) {
         self.client = client
@@ -95,7 +98,8 @@ struct PlanView: View {
             Group {
                 switch store.phase {
                 case .loading: PlanLoadingView()
-                case .loaded(let sessions): PlanWeekContent(store: store, sessions: sessions)
+                case .loaded(let sessions):
+                    PlanWeekContent(store: store, sessions: sessions) { selectedSession = $0 }
                 case .error(let message):
                     ContentUnavailableView {
                         Label("Plan indisponible", systemImage: "wifi.slash")
@@ -116,15 +120,71 @@ struct PlanView: View {
             .navigationTitle("Plan")
             .navigationBarTitleDisplayMode(.large)
             .modifier(LiquidNavChrome())
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    PlanActionsMenu(
+                        onOpenWeb: { path in openURL(APIConfiguration.baseURL.appending(path: path)) },
+                        onDiscussWithCoach: {
+                            router.discussWithCoach(
+                                about: CoachDiscuss.describe(.planning(horizonDays: 7))
+                            )
+                        }
+                    )
+                }
+            }
+            .sheet(item: $selectedSession) { session in
+                PlannedSessionDrawer(session: session) { context in
+                    router.discussWithCoach(about: context)
+                }
+            }
             .refreshable { await store.load() }
             .task { await store.load() }
         }
     }
 }
 
+/// The week's actions, gathered behind one control.
+///
+/// The three planning actions are web surfaces the app does not have yet, so they open
+/// the web rather than pretending to exist here — the paths mirror the web's own routes.
+/// "Discuter avec le coach" stays native: it hands the week to the Coach tab as context.
+private struct PlanActionsMenu: View {
+    let onOpenWeb: (String) -> Void
+    let onDiscussWithCoach: () -> Void
+
+    var body: some View {
+        Menu {
+            Button {
+                onOpenWeb("/plan")
+            } label: {
+                Label("Consulter le plan macro", systemImage: "map")
+            }
+            Button {
+                onOpenWeb("/plan/semaine")
+            } label: {
+                Label("Remplir ma semaine", systemImage: "square.and.pencil")
+            }
+            Button {
+                onOpenWeb("/plan/adaptation")
+            } label: {
+                Label("Ajuster le planning", systemImage: "slider.horizontal.3")
+            }
+            Divider()
+            Button(action: onDiscussWithCoach) {
+                Label("Discuter avec le coach", systemImage: "bubble.left.and.bubble.right")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(SharpitTypography.bodyEmphasis)
+        }
+        .accessibilityLabel("Actions du plan")
+    }
+}
+
 private struct PlanWeekContent: View {
     let store: PlanStore
     let sessions: [V1PlannedSessionItem]
+    let onSelect: (V1PlannedSessionItem) -> Void
 
     var body: some View {
         ScrollView {
@@ -132,16 +192,20 @@ private struct PlanWeekContent: View {
                 PlanWeekHeader(store: store)
                 PlanWeekStrip(store: store)
                 if let focusSession = store.focusSession(from: sessions) {
-                    PlanFocusSession(
-                        session: focusSession,
-                        isToday: Calendar.current.isDateInToday(focusSession.date)
-                    )
+                    Button { onSelect(focusSession) } label: {
+                        PlanFocusSession(
+                            session: focusSession,
+                            isToday: Calendar.current.isDateInToday(focusSession.date)
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
                 VStack(spacing: 0) {
                     ForEach(store.weekDays, id: \.self) { day in
                         PlanDayRow(
                             day: day,
-                            sessions: store.sessions(on: day, from: sessions)
+                            sessions: store.sessions(on: day, from: sessions),
+                            onSelect: onSelect
                         )
                     }
                 }
@@ -269,9 +333,6 @@ private struct PlanFocusSession: View {
                 if let duration = session.durationMin {
                     PlanFocusMetric(label: "Durée", value: "\(duration) min")
                 }
-                if let load = session.load {
-                    PlanFocusMetric(label: "Charge", value: "\(Int(load.rounded())) TSS")
-                }
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -312,6 +373,7 @@ private struct PlanFocusMetric: View {
 private struct PlanDayRow: View {
     let day: Date
     let sessions: [V1PlannedSessionItem]
+    let onSelect: (V1PlannedSessionItem) -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
@@ -335,7 +397,12 @@ private struct PlanDayRow: View {
                     .padding(.top, 11)
             } else {
                 VStack(spacing: SharpitSpacing.xxs) {
-                    ForEach(sessions) { session in PlanSessionCard(session: session) }
+                    ForEach(sessions) { session in
+                        Button { onSelect(session) } label: {
+                            PlanSessionCard(session: session)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
             Spacer(minLength: 0)
@@ -372,14 +439,15 @@ private struct PlanSessionCard: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
             }
             Spacer(minLength: 0)
-            if let load = session.load {
-                Text("\(Int(load.rounded())) TSS")
-                    .font(.subheadline.weight(.bold).monospacedDigit())
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
+            Image(systemName: "chevron.right")
+                .font(SharpitTypography.label)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .accessibilityHidden(true)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, SharpitSpacing.xxs)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
