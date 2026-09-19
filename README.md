@@ -15,6 +15,19 @@ Clerk requires Keychain. Builds use **Sign to Run Locally** (`CODE_SIGN_IDENTITY
 
 Device installs, Associated Domains, and WeatherKit still need a personal Apple Development team (avoid on this managed Mac until signing works).
 
+## Brand fonts
+
+Syne, IBM Plex Sans and JetBrains Mono (all SIL OFL 1.1) carry most of the SHARPIT
+identity. They are not committed yet:
+
+```bash
+./scripts/fetch-brand-fonts.sh
+```
+
+The files land in `SHARPIT-APP/Resources/Fonts` and `SharpitFonts.register()` picks up
+whatever is in the bundle at launch — no Info.plist or project change needed. Until then
+`SharpitTypography` falls back to the system face: the layout is right, the identity is not.
+
 ## Build & test
 
 ```bash
@@ -28,7 +41,12 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 - Shell: five tabs (Résumé / Plan / Coach / Activité / Moi)
 - Résumé: `GET /api/v1/today` via `SharpitClient` + Bearer token from `clerk.auth.getToken()`
 - Weather chip: WeatherKit + Core Location (not API weather)
-- Design system: `SHARPIT-APP/DesignSystem/` (tokens + instrument components). Spec: `docs/superpowers/specs/2026-09-16-ios-design-system-design.md`
+- Design system: `SHARPIT-APP/DesignSystem/`. Colour and radius are **generated** from the
+  web design system — edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or
+  `../SHARPIT/src/app/globals.css`, run `yarn tokens:ios` there, and commit the regenerated
+  `SharpitTokens.generated.swift` ([ADR-041](../SHARPIT/docs/adr/ADR-041-ios-design-tokens-generated-from-web.md)).
+  Spec: `docs/superpowers/specs/2026-09-16-ios-design-system-design.md` (tokens, typography
+  and spacing sections superseded by ADR-041)
 - Spec / plan: `docs/superpowers/`
 
 Native never calls `/api/presentation/*`. See SHARPIT ADR-040.
