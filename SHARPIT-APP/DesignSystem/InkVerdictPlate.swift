@@ -41,16 +41,6 @@ struct InkVerdictPlate: View {
             if plate.confidenceLabel != nil || plate.confidencePct != nil {
                 confidenceRow
             }
-
-            if !plate.estimationGaps.isEmpty {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                    ForEach(plate.estimationGaps, id: \.self) { gap in
-                        Text("· \(gap)")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(mutedInk)
-                    }
-                }
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
@@ -58,7 +48,25 @@ struct InkVerdictPlate: View {
         .opacity(revealed ? 1 : 0)
         .offset(y: revealed ? 0 : 12)
         .redacted(reason: placeholder ? .placeholder : [])
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    /// The plate reads the estimation gaps aloud even though it no longer prints them:
+    /// honesty about limits is a product feature, a five-bullet list under a verdict is
+    /// not. The list belongs to a drill-down, not to the first thing seen in the morning.
+    private var accessibilityLabel: String {
+        [
+            plate.statusLabel,
+            plate.headline,
+            plate.actionLine,
+            plate.limitingCause.map { "Limité par \($0)" },
+            plate.confidenceLabel,
+            plate.estimationGaps.isEmpty ? nil : plate.estimationGaps.joined(separator: ", "),
+        ]
+        .compactMap { $0 }
+        .filter { !$0.isEmpty }
+        .joined(separator: ". ")
     }
 
     /// Secondary text on the ink band: the band's own foreground, held back.

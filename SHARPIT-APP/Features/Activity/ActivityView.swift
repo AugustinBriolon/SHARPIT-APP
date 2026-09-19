@@ -108,7 +108,7 @@ private struct ActivityListContent: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                ActivityIntro(count: activities.count)
+                ActivityIntro()
 
                 ForEach(Array(groupedActivities.enumerated()), id: \.element.0) { groupIndex, group in
                     VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -153,27 +153,20 @@ private struct ActivityListContent: View {
     }
 }
 
+/// The badge that used to sit here counted the rows the client had fetched — the
+/// request asks for `limit=30`, so it read "30" on every full page regardless of what
+/// the athlete had actually done. An invented metric, and the design law forbids those.
 private struct ActivityIntro: View {
-    let count: Int
-
     var body: some View {
-        HStack(alignment: .lastTextBaseline) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Ce que tu as fait")
-                    .font(.title2.weight(.semibold))
-                Text("Les dernières séances, sans le bruit du plan.")
-                    .font(.subheadline)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            Spacer()
-            Text("\(count)")
-                .font(SharpitTypography.data)
-                .foregroundStyle(SharpitColor.highlightForeground)
-                .padding(.horizontal, SharpitSpacing.sm)
-                .padding(.vertical, SharpitSpacing.xs)
-                .background(SharpitColor.highlight, in: Capsule())
-                .accessibilityLabel("\(count) activités")
+        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+            Text("Ce que tu as fait")
+                .font(SharpitTypography.pageTitle)
+                .tracking(SharpitTypography.pageTitleTracking)
+            Text("Les dernières séances, sans le bruit du plan.")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, SharpitSpacing.xs)
     }
 }

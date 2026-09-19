@@ -45,6 +45,9 @@ private struct OvernightGaugeCell: View {
             }
             .frame(maxWidth: .infinity)
             .aspectRatio(OvernightGaugeLayout.bowlAspectRatio, contentMode: .fit)
+            // The arc is stroked with a round cap, so without this inset the two
+            // ends sit flush against the panel's hairline.
+            .padding(.horizontal, SharpitSpacing.sm)
 
             Text(title)
                 .font(SharpitTypography.label)

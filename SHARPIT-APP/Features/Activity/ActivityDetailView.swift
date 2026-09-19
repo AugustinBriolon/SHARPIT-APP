@@ -434,10 +434,11 @@ private struct ActivityDetailContent: View {
 
     private var coachAnalysis: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Analyse du coach")
+            SharpitEyebrow("Analyse du coach", systemImage: "sparkles")
             if let narrative = detail.narrativeAnalysis {
-                Label("Lecture personnalisée", systemImage: "sparkles").font(.headline)
-                Text(narrative.headline).font(.title3.weight(.semibold))
+                Text(narrative.headline)
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
                 Text(narrative.narrative).font(.body).lineSpacing(4)
             } else if detail.plannedSession?.analysis != nil {
                 Label("Conformité déjà analysée", systemImage: "checkmark.seal")
@@ -1160,47 +1161,40 @@ private struct SubjectiveEditorSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
-                    VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SharpitSpacing.xl) {
+                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                         Text("Comment s’est passée la séance ?")
-                            .font(.title2.weight(.bold))
+                            .font(SharpitTypography.pageTitle)
+                            .tracking(SharpitTypography.pageTitleTracking)
                         Text("Ces deux repères permettent à SHARPIT d’affiner ton suivi.")
-                            .font(.subheadline)
+                            .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("EFFORT PERÇU")
-                            .font(.caption.weight(.bold))
-                            .tracking(1.1)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                        HStack(alignment: .lastTextBaseline, spacing: 8) {
+                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                        SharpitEyebrow("Effort perçu")
+                        HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xs) {
                             Text(selectedRPE.map(String.init) ?? "—")
-                                .font(.system(size: 42, weight: .bold, design: .rounded))
+                                .font(SharpitTypography.pageTitle)
+                                .tracking(SharpitTypography.pageTitleTracking)
                             Text("/ 10")
-                                .font(.headline)
+                                .font(SharpitTypography.meta)
                                 .foregroundStyle(SharpitColor.mutedForeground)
                         }
                         RatingGrid(values: Array(1...10), selection: $selectedRPE) { value in
                             Text("\(value)")
                         }
                     }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("RESSENTI")
-                            .font(.caption.weight(.bold))
-                            .tracking(1.1)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                        RatingGrid(values: Array(1...5), selection: $selectedFeeling) { value in
-                            Text(feelingLabel(value))
-                                .minimumScaleFactor(0.7)
-                        }
-                        if let selectedFeeling {
-                            Text(feelingLabel(selectedFeeling))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.tint)
+                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                        SharpitEyebrow("Ressenti")
+                        // One full-width row per option. In a five-column grid
+                        // "Très mauvais" wrapped to two cramped lines, and the label
+                        // had to be repeated underneath to be readable at all.
+                        RatingRows(values: Array(1...5), selection: $selectedFeeling) { value in
+                            feelingLabel(value)
                         }
                     }
                 }
-                .padding(24)
+                .padding(SharpitSpacing.lg)
             }
             .navigationTitle("Évaluer la séance")
             .navigationBarTitleDisplayMode(.inline)
@@ -1240,23 +1234,77 @@ private struct SubjectiveEditorSheet: View {
     }
 }
 
+/// A vertical single-choice list — for options whose labels are words, not digits.
+private struct RatingRows<Value: Hashable>: View {
+    let values: [Value]
+    @Binding var selection: Value?
+    let label: (Value) -> String
+
+    var body: some View {
+        VStack(spacing: SharpitSpacing.xs) {
+            ForEach(values, id: \.self) { value in
+                let isSelected = selection == value
+                Button { selection = value } label: {
+                    HStack(spacing: SharpitSpacing.sm) {
+                        Text(label(value))
+                            .font(SharpitTypography.bodyEmphasis)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                        if isSelected {
+                            Image(systemName: "checkmark")
+                                .font(SharpitTypography.label)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .foregroundStyle(
+                        isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground
+                    )
+                    .padding(.horizontal, SharpitSpacing.md)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                    .background(
+                        isSelected ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt,
+                        in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            }
+        }
+    }
+}
+
 private struct RatingGrid<Value: Hashable, Content: View>: View {
     let values: [Value]
     @Binding var selection: Value?
     @ViewBuilder let content: (Value) -> Content
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: 8), count: min(values.count, 5)), spacing: 8) {
+        LazyVGrid(
+            columns: Array(
+                repeating: GridItem(.flexible(minimum: 0), spacing: SharpitSpacing.xs),
+                count: min(values.count, 5)
+            ),
+            spacing: SharpitSpacing.xs
+        ) {
             ForEach(values, id: \.self) { value in
                 Button { selection = value } label: {
                     content(value)
-                        .font(.subheadline.weight(.semibold))
+                        .font(SharpitTypography.bodyEmphasis)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .foregroundStyle(selection == value ? .white : .primary)
+                        .frame(height: 52)
+                        .foregroundStyle(
+                            selection == value
+                                ? SharpitColor.primaryForeground
+                                : SharpitColor.foreground
+                        )
                         .background(
-                            selection == value ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt,
-                            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            selection == value
+                                ? SharpitColor.primary
+                                : SharpitColor.analysisSurfaceAlt,
+                            in: RoundedRectangle(
+                                cornerRadius: SharpitRadius.panel,
+                                style: .continuous
+                            )
                         )
                 }
                 .buttonStyle(.plain)
