@@ -96,7 +96,7 @@ private struct OvernightGaugeCell: View {
 private struct OvernightArcGauge: View {
     let progress: CGFloat
 
-    private let lineWidth: CGFloat = 12
+    private let lineWidth = OvernightGaugeLayout.arcLineWidth
     private let tipSize: CGFloat = 10
 
     private var clamped: CGFloat {
@@ -105,8 +105,18 @@ private struct OvernightArcGauge: View {
 
     var body: some View {
         GeometryReader { geo in
-            let diameter = geo.size.width
-            let pathRadius = diameter / 2
+            // The radius has to answer to both dimensions. Deriving it from the width
+            // alone made the arc taller than its own box — a semicircle of diameter w
+            // needs w/2 of height, and the bowl was shorter than that, so the apex
+            // overflowed upward and sat on the panel's edge.
+            let pathRadius = max(
+                0,
+                min(
+                    geo.size.width / 2 - lineWidth / 2,
+                    geo.size.height - lineWidth
+                )
+            )
+            let diameter = pathRadius * 2
 
             ZStack {
                 semicircle(trimEnd: 0.5)
@@ -161,8 +171,16 @@ private struct OvernightArcTip: View, Animatable {
 }
 
 enum OvernightGaugeLayout {
-    /// Width / height of the arc+score bowl (≈ 2φ / φ… kept optical, not strict φ).
-    static let bowlAspectRatio: CGFloat = 2.05
+    /// Stroke width of the arc, shared with the layout math below.
+    static let arcLineWidth: CGFloat = 12
+
+    /// Width / height of the arc+score bowl.
+    ///
+    /// A semicircle inscribed in the bowl needs `width / 2` of height before its cap;
+    /// at 2.05 the bowl was shorter than that and the arc had nowhere to go but out of
+    /// the top. 1.62 leaves roughly a `sm` step of air above the apex, matching the
+    /// horizontal inset so the arc is framed evenly on three sides.
+    static let bowlAspectRatio: CGFloat = 1.62
     /// Approximate score + "sur 100" block height used for lift math.
     static let scoreBlockHeight: CGFloat = 44
 
