@@ -6,7 +6,7 @@ import SwiftUI
 final class PlanStore {
     enum Phase {
         case loading
-        case loaded([V1PlannedSessionItem])
+        case loaded([PlanEntry])
         case error(String)
         case unauthorized
     }
@@ -15,11 +15,17 @@ final class PlanStore {
     var weekStart: Date
 
     private let client: any PlannedSessionServing
+    private let activityClient: any ActivityServing
     private let tokenProvider: () async throws -> String
     private let calendar: Calendar
 
-    init(client: any PlannedSessionServing, tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any PlannedSessionServing,
+        activityClient: any ActivityServing,
+        tokenProvider: @escaping () async throws -> String
+    ) {
         self.client = client
+        self.activityClient = activityClient
         self.tokenProvider = tokenProvider
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "fr_FR")
@@ -32,14 +38,44 @@ final class PlanStore {
         (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
     }
 
-    func sessions(on day: Date, from sessions: [V1PlannedSessionItem]) -> [V1PlannedSessionItem] {
-        sessions.filter { calendar.isDate($0.date, inSameDayAs: day) }
+    /// Three weeks of days, so the strip can be scrolled into the past and the future
+    /// instead of paged by a pair of chevrons.
+    var stripDays: [Date] {
+        guard let start = calendar.date(byAdding: .day, value: -7, to: weekStart) else {
+            return weekDays
+        }
+        return (0..<21).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
     }
 
-    /// Next actionable session in the visible week: today or later. Never highlights past sessions.
-    func focusSession(from sessions: [V1PlannedSessionItem], now: Date = Date()) -> V1PlannedSessionItem? {
+    func isInVisibleWeek(_ day: Date) -> Bool {
+        // Half-open on purpose: `endOfDay` of the last day is midnight on the next one,
+        // which would let the following Monday count as an eighth day of the week.
+        let start = calendar.startOfDay(for: weekStart)
+        guard let nextWeek = calendar.date(byAdding: .day, value: 7, to: start) else { return false }
+        return day >= start && day < nextWeek
+    }
+
+    func showWeek(containing day: Date) {
+        guard let start = calendar.dateInterval(of: .weekOfYear, for: day)?.start,
+              !calendar.isDate(start, inSameDayAs: weekStart)
+        else { return }
+        weekStart = start
+        Task { await load() }
+    }
+
+    func entries(on day: Date, from entries: [PlanEntry]) -> [PlanEntry] {
+        entries.filter { calendar.isDate($0.date, inSameDayAs: day) }
+    }
+
+    /// Next actionable session in the visible week: today or later, and still to be done.
+    /// Never highlights the past, and never a session already absorbed by an activity.
+    func focusSession(from entries: [PlanEntry], now: Date = Date()) -> V1PlannedSessionItem? {
         let startOfToday = calendar.startOfDay(for: now)
-        return sessions
+        return entries
+            .compactMap { entry -> V1PlannedSessionItem? in
+                guard case .planned(let session) = entry else { return nil }
+                return session
+            }
             .filter { $0.date >= startOfToday }
             .sorted { lhs, rhs in
                 if calendar.isDateInToday(lhs.date) != calendar.isDateInToday(rhs.date) {
@@ -61,13 +97,29 @@ final class PlanStore {
         Task { await load() }
     }
 
+    private func endOfDay(_ day: Date) -> Date {
+        calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: day)) ?? day
+    }
+
     func load() async {
         do {
             guard let end = calendar.date(byAdding: .day, value: 6, to: weekStart) else { return }
             let token = try await tokenProvider()
-            let sessions = try await client.plannedSessions(from: weekStart, to: end, token: token)
+            async let planned = client.plannedSessions(from: weekStart, to: end, token: token)
+            // The week's activities carry their own link back to the plan, so the merge
+            // needs no extra endpoint. A failure here degrades to the prescription alone
+            // rather than emptying the week.
+            async let recorded = try? activityClient.activities(token: token)
+
+            let entries = PlanEntryBuilder.entries(
+                planned: try await planned,
+                activities: (await recorded ?? []).filter { activity in
+                    activity.date >= weekStart && activity.date <= endOfDay(end)
+                },
+                calendar: calendar
+            )
             withAnimation(SharpitMotion.reveal) {
-                phase = .loaded(sessions)
+                phase = .loaded(entries)
             }
         } catch is CancellationError {
         } catch let error as SharpitAPIError where error == .unauthorized {
@@ -80,6 +132,7 @@ final class PlanStore {
 
 struct PlanView: View {
     let client: any PlannedSessionServing
+    let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
 
     @Environment(ShellRouter.self) private var router
@@ -87,10 +140,21 @@ struct PlanView: View {
     @State private var store: PlanStore
     @State private var selectedSession: V1PlannedSessionItem?
 
-    init(client: any PlannedSessionServing, tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any PlannedSessionServing,
+        activityClient: any ActivityServing,
+        tokenProvider: @escaping () async throws -> String
+    ) {
         self.client = client
+        self.activityClient = activityClient
         self.tokenProvider = tokenProvider
-        _store = State(initialValue: PlanStore(client: client, tokenProvider: tokenProvider))
+        _store = State(
+            initialValue: PlanStore(
+                client: client,
+                activityClient: activityClient,
+                tokenProvider: tokenProvider
+            )
+        )
     }
 
     var body: some View {
@@ -98,8 +162,13 @@ struct PlanView: View {
             Group {
                 switch store.phase {
                 case .loading: PlanLoadingView()
-                case .loaded(let sessions):
-                    PlanWeekContent(store: store, sessions: sessions) { selectedSession = $0 }
+                case .loaded(let entries):
+                    PlanWeekContent(
+                        store: store,
+                        entries: entries,
+                        activityClient: activityClient,
+                        tokenProvider: tokenProvider
+                    ) { selectedSession = $0 }
                 case .error(let message):
                     ContentUnavailableView {
                         Label("Plan indisponible", systemImage: "wifi.slash")
@@ -183,7 +252,9 @@ private struct PlanActionsMenu: View {
 
 private struct PlanWeekContent: View {
     let store: PlanStore
-    let sessions: [V1PlannedSessionItem]
+    let entries: [PlanEntry]
+    let activityClient: any ActivityServing
+    let tokenProvider: () async throws -> String
     let onSelect: (V1PlannedSessionItem) -> Void
 
     var body: some View {
@@ -191,7 +262,7 @@ private struct PlanWeekContent: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 PlanWeekHeader(store: store)
                 PlanWeekStrip(store: store)
-                if let focusSession = store.focusSession(from: sessions) {
+                if let focusSession = store.focusSession(from: entries) {
                     Button { onSelect(focusSession) } label: {
                         PlanFocusSession(
                             session: focusSession,
@@ -204,7 +275,9 @@ private struct PlanWeekContent: View {
                     ForEach(store.weekDays, id: \.self) { day in
                         PlanDayRow(
                             day: day,
-                            sessions: store.sessions(on: day, from: sessions),
+                            entries: store.entries(on: day, from: entries),
+                            activityClient: activityClient,
+                            tokenProvider: tokenProvider,
                             onSelect: onSelect
                         )
                     }
@@ -221,38 +294,31 @@ private struct PlanWeekHeader: View {
     let store: PlanStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(weekRange)
-                        .font(SharpitTypography.verdict)
-                        .tracking(SharpitTypography.verdictTracking)
-                    Text("Ton rythme des prochains jours")
-                        .font(.subheadline)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-                Spacer()
-                HStack(spacing: 4) {
-                    weekButton(symbol: "chevron.left", label: "Semaine précédente") {
-                        store.moveWeek(by: -1)
-                    }
-                    weekButton(symbol: "chevron.right", label: "Semaine suivante") {
-                        store.moveWeek(by: 1)
-                    }
-                }
-            }
+        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+            Text(weekRange)
+                .font(SharpitTypography.verdict)
+                .tracking(SharpitTypography.verdictTracking)
+                .foregroundStyle(SharpitColor.foreground)
+            Text("Ton rythme des prochains jours")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
             Button("Revenir à cette semaine") {
                 store.resetToCurrentWeek()
             }
-            .font(.caption.weight(.semibold))
+            .font(SharpitTypography.meta)
             .foregroundStyle(SharpitColor.primary)
             .opacity(isCurrentWeek ? 0 : 1)
             .disabled(isCurrentWeek)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var isCurrentWeek: Bool {
-        Calendar.current.isDate(store.weekStart, equalTo: Calendar.current.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now, toGranularity: .weekOfYear)
+        Calendar.current.isDate(
+            store.weekStart,
+            equalTo: Calendar.current.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now,
+            toGranularity: .weekOfYear
+        )
     }
 
     private var weekRange: String {
@@ -260,51 +326,75 @@ private struct PlanWeekHeader: View {
             return store.weekStart.sharpitFormatted(.dateTime.day().month(.wide))
         }
         let formatter = DateIntervalFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = SharpitLocale.french
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: store.weekStart, to: end)
             .replacingOccurrences(of: " 2026", with: "")
     }
-
-    private func weekButton(symbol: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.subheadline.weight(.bold))
-                .frame(width: 34, height: 34)
-                .background(Color.primary.opacity(0.06), in: Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-    }
 }
 
+/// The week, scrolled rather than paged.
+///
+/// Two chevron buttons used to move the week. A horizontal strip says the same thing with
+/// the gesture the content already invites, and shows the neighbouring weeks instead of
+/// hiding them behind a control.
 private struct PlanWeekStrip: View {
     let store: PlanStore
 
     var body: some View {
-        HStack(spacing: 5) {
-            ForEach(store.weekDays, id: \.self) { day in
-                let isToday = Calendar.current.isDateInToday(day)
-                VStack(spacing: 6) {
-                    Text(day.sharpitFormatted(.dateTime.weekday(.narrow)))
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                    Text(day.sharpitFormatted(.dateTime.day()))
-                        .font(.subheadline.weight(.bold).monospacedDigit())
-                        .foregroundStyle(isToday ? SharpitColor.inkSurfaceForeground : SharpitColor.foreground)
-                        .frame(width: 32, height: 32)
-                        .background(isToday ? SharpitColor.inkSurface : Color.clear, in: Circle())
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: SharpitSpacing.xs) {
+                    ForEach(store.stripDays, id: \.self) { day in
+                        PlanStripDay(day: day, isSelected: store.isInVisibleWeek(day))
+                            .id(day)
+                            .onTapGesture { store.showWeek(containing: day) }
+                    }
                 }
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, SharpitSpacing.pageInset)
+            }
+            .scrollClipDisabled()
+            .padding(.vertical, SharpitSpacing.sm)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(SharpitColor.analysisBorder)
+                    .frame(height: 1)
+            }
+            .onAppear { proxy.scrollTo(store.weekStart, anchor: .leading) }
+            .onChange(of: store.weekStart) { _, start in
+                withAnimation(SharpitMotion.reveal) { proxy.scrollTo(start, anchor: .leading) }
             }
         }
-        .padding(.vertical, 10)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(SharpitColor.analysisBorder)
-                .frame(height: 1)
+        // The strip spans the screen; the page inset lives on its content instead.
+        .padding(.horizontal, -SharpitSpacing.pageInset)
+    }
+}
+
+private struct PlanStripDay: View {
+    let day: Date
+    let isSelected: Bool
+
+    private var isToday: Bool { Calendar.current.isDateInToday(day) }
+
+    var body: some View {
+        VStack(spacing: SharpitSpacing.xxs) {
+            Text(day.sharpitFormatted(.dateTime.weekday(.narrow)))
+                .font(SharpitTypography.label)
+                .tracking(SharpitTypography.labelTracking)
+                .foregroundStyle(SharpitColor.mutedForeground)
+            Text(day.sharpitFormatted(.dateTime.day()))
+                .font(SharpitTypography.instrument)
+                .foregroundStyle(
+                    isToday ? SharpitColor.inkSurfaceForeground : SharpitColor.foreground
+                )
+                .frame(width: 34, height: 34)
+                .background(isToday ? SharpitColor.inkSurface : Color.clear, in: Circle())
         }
+        .opacity(isSelected ? 1 : 0.4)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -326,7 +416,9 @@ private struct PlanFocusSession: View {
                     .foregroundStyle(SharpitColor.primary)
             }
             Text(session.title ?? session.displayType)
-                .font(.title2.weight(.bold))
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(2)
             HStack(spacing: SharpitSpacing.md) {
                 PlanFocusMetric(label: "Sport", value: session.displayType)
@@ -341,13 +433,6 @@ private struct PlanFocusSession: View {
             SharpitColor.analysisSurfaceAlt,
             in: RoundedRectangle(cornerRadius: SharpitRadius.panelLarge, style: .continuous)
         )
-        .overlay(alignment: .topLeading) {
-            Capsule()
-                .fill(SharpitColor.primary)
-                .frame(width: 38, height: 4)
-                .padding(.leading, SharpitSpacing.cardPadding)
-                .padding(.top, 1)
-        }
         .accessibilityElement(children: .combine)
     }
 }
@@ -372,42 +457,52 @@ private struct PlanFocusMetric: View {
 
 private struct PlanDayRow: View {
     let day: Date
-    let sessions: [V1PlannedSessionItem]
+    let entries: [PlanEntry]
+    let activityClient: any ActivityServing
+    let tokenProvider: () async throws -> String
     let onSelect: (V1PlannedSessionItem) -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            VStack(spacing: 3) {
+            VStack(spacing: SharpitSpacing.xxs) {
                 Text(day.sharpitFormatted(.dateTime.weekday(.abbreviated)))
                     .font(SharpitTypography.eyebrow)
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
                 Text(day.sharpitFormatted(.dateTime.day()))
-                    .font(.title3.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(Calendar.current.isDateInToday(day) ? SharpitColor.primary : SharpitColor.foreground)
+                    .font(SharpitTypography.data)
+                    .tracking(SharpitTypography.dataTracking)
+                    .foregroundStyle(
+                        Calendar.current.isDateInToday(day)
+                            ? SharpitColor.primary
+                            : SharpitColor.foreground
+                    )
             }
             .frame(width: 42)
             Rectangle()
                 .fill(SharpitColor.analysisBorder)
                 .frame(width: 1)
-            if sessions.isEmpty {
+
+            if entries.isEmpty {
                 Text("Repos")
-                    .font(.subheadline)
+                    .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                    .padding(.top, 11)
+                    .padding(.top, SharpitSpacing.sm)
             } else {
-                VStack(spacing: SharpitSpacing.xxs) {
-                    ForEach(sessions) { session in
-                        Button { onSelect(session) } label: {
-                            PlanSessionCard(session: session)
-                        }
-                        .buttonStyle(.plain)
+                VStack(spacing: SharpitSpacing.xs) {
+                    ForEach(entries) { entry in
+                        PlanEntryRow(
+                            entry: entry,
+                            activityClient: activityClient,
+                            tokenProvider: tokenProvider,
+                            onSelect: onSelect
+                        )
                     }
                 }
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 13)
+        .padding(.vertical, SharpitSpacing.sm)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(SharpitColor.analysisBorder)
@@ -417,25 +512,142 @@ private struct PlanDayRow: View {
     }
 }
 
+/// A done session opens its own screen; a prescription opens a drawer, because there is
+/// nothing recorded to read yet.
+private struct PlanEntryRow: View {
+    let entry: PlanEntry
+    let activityClient: any ActivityServing
+    let tokenProvider: () async throws -> String
+    let onSelect: (V1PlannedSessionItem) -> Void
+
+    var body: some View {
+        switch entry {
+        case .executed(let executed):
+            NavigationLink {
+                ActivityDetailView(
+                    activity: executed.activity.id,
+                    initialActivity: executed.activity,
+                    client: activityClient,
+                    tokenProvider: tokenProvider
+                )
+            } label: {
+                PlanExecutedCard(entry: executed)
+            }
+            .buttonStyle(.plain)
+        case .planned(let session):
+            Button { onSelect(session) } label: {
+                PlanSessionCard(session: session, state: .planned)
+            }
+            .buttonStyle(.plain)
+        case .missed(let session):
+            Button { onSelect(session) } label: {
+                PlanSessionCard(session: session, state: .missed)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+/// What was done. When it came from the plan, the execution score rides along — that is
+/// the whole reason the activity absorbs its prescription instead of sitting next to it.
+private struct PlanExecutedCard: View {
+    let entry: PlanExecutedEntry
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Image(systemName: entry.activity.type.symbolName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(SharpitSportTone.accent(for: entry.activity.type))
+                .frame(width: 28, height: 28)
+
+            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                Text(entry.activity.title ?? entry.activity.type.label)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(2)
+                HStack(spacing: SharpitSpacing.xs) {
+                    Text(entry.activity.type.label)
+                    if let duration = entry.activity.duration {
+                        Text("\(Int((duration / 60).rounded())) min")
+                    }
+                }
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+            }
+
+            Spacer(minLength: 0)
+
+            if let score = entry.complianceScore {
+                PlanComplianceMark(score: score)
+            } else {
+                Image(systemName: "checkmark")
+                    .font(SharpitTypography.label)
+                    .foregroundStyle(SharpitColor.primary)
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.vertical, SharpitSpacing.xxs)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var accessibilityLabel: String {
+        var parts = ["Séance réalisée", entry.activity.title ?? entry.activity.type.label]
+        if let score = entry.complianceScore {
+            parts.append("exécution \(Int(score.rounded())) sur 100")
+        }
+        return parts.joined(separator: ", ")
+    }
+}
+
+/// The execution score, as a number rather than a ring — `design.md` keeps radial gauges
+/// out of list rows.
+private struct PlanComplianceMark: View {
+    let score: Double
+
+    var body: some View {
+        Text("\(Int(score.rounded()))")
+            .font(SharpitTypography.instrument)
+            .foregroundStyle(SharpitColor.primaryForeground)
+            .padding(.horizontal, SharpitSpacing.xs)
+            .padding(.vertical, SharpitSpacing.xxs)
+            .background(SharpitColor.primary, in: Capsule())
+            .accessibilityHidden(true)
+    }
+}
+
 private struct PlanSessionCard: View {
+    enum State {
+        case planned
+        case missed
+    }
+
     let session: V1PlannedSessionItem
+    var state: State = .planned
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
             Image(systemName: session.symbolName)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(SharpitColor.primary)
+                .foregroundStyle(
+                    state == .missed ? SharpitColor.mutedForeground : SharpitColor.primary
+                )
                 .frame(width: 28, height: 28)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                 Text(session.title ?? session.displayType)
-                    .font(.subheadline.weight(.semibold))
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(
+                        state == .missed ? SharpitColor.mutedForeground : SharpitColor.foreground
+                    )
                     .lineLimit(2)
-                HStack(spacing: 8) {
+                HStack(spacing: SharpitSpacing.xs) {
                     Text(session.displayType)
                     if let durationMin = session.durationMin { Text("\(durationMin) min") }
-                    if let intensity = session.intensity { Text(intensity.capitalized) }
+                    if state == .missed { Text("Non réalisée") }
                 }
-                .font(.caption)
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
             }
             Spacer(minLength: 0)

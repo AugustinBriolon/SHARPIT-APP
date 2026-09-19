@@ -27,6 +27,7 @@ struct RootView: View {
             ) {
                 PlanView(
                     client: PlannedSessionClient(),
+                    activityClient: ActivityClient(),
                     tokenProvider: liveToken
                 )
             }

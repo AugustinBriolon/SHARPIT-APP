@@ -10,31 +10,78 @@ private struct StubPlannedSessionClient: PlannedSessionServing {
     }
 }
 
-@MainActor
-@Test func planStoreKeepsCalendarWhenWeekIsEmpty() async {
-    let store = PlanStore(client: StubPlannedSessionClient(sessions: []), tokenProvider: { "" })
-    await store.load()
-    guard case .loaded(let sessions) = store.phase else {
-        Issue.record("expected loaded phase with empty sessions, not a separate empty screen")
-        return
+private struct StubActivityClient: ActivityServing {
+    var activities: [V1ActivityListItem] = []
+
+    func activities(token: String) async throws -> [V1ActivityListItem] { activities }
+
+    func activity(id: String, token: String) async throws -> V1ActivityDetail {
+        throw SharpitAPIError.server
     }
-    #expect(sessions.isEmpty)
+
+    func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload {
+        throw SharpitAPIError.server
+    }
+
+    func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail {
+        throw SharpitAPIError.server
+    }
+
+    func updateSubjective(id: String, rpe: Double?, feeling: String?, token: String) async throws {}
+}
+
+private func store(
+    planned: [V1PlannedSessionItem] = [],
+    activities: [V1ActivityListItem] = []
+) -> PlanStore {
+    PlanStore(
+        client: StubPlannedSessionClient(sessions: planned),
+        activityClient: StubActivityClient(activities: activities),
+        tokenProvider: { "" }
+    )
 }
 
 @MainActor
-@Test func planFocusSessionIgnoresPastSessions() {
-    let store = PlanStore(client: StubPlannedSessionClient(sessions: []), tokenProvider: { "" })
+@Test func planStoreKeepsCalendarWhenWeekIsEmpty() async {
+    let planStore = store()
+    await planStore.load()
+    guard case .loaded(let entries) = planStore.phase else {
+        Issue.record("expected loaded phase with empty entries, not a separate empty screen")
+        return
+    }
+    #expect(entries.isEmpty)
+}
+
+@MainActor
+@Test func planFocusSessionIgnoresPastAndDoneSessions() {
+    let planStore = store()
     let calendar = Calendar(identifier: .gregorian)
     let now = Date()
     let today = calendar.startOfDay(for: now)
     let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
     let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
 
-    let past = V1PlannedSessionItem(id: "past", date: yesterday, title: "Hier", type: "RUN")
-    let upcoming = V1PlannedSessionItem(id: "next", date: tomorrow, title: "Demain", type: "BIKE")
-    let todaySession = V1PlannedSessionItem(id: "today", date: today, title: "Aujourd'hui", type: "SWIM")
+    let past = PlanEntry.missed(
+        V1PlannedSessionItem(id: "past", date: yesterday, title: "Hier", type: "RUN")
+    )
+    let upcoming = PlanEntry.planned(
+        V1PlannedSessionItem(id: "next", date: tomorrow, title: "Demain", type: "BIKE")
+    )
+    let todaySession = PlanEntry.planned(
+        V1PlannedSessionItem(id: "today", date: today, title: "Aujourd'hui", type: "SWIM")
+    )
 
-    #expect(store.focusSession(from: [past], now: now) == nil)
-    #expect(store.focusSession(from: [past, upcoming], now: now)?.id == "next")
-    #expect(store.focusSession(from: [upcoming, todaySession], now: now)?.id == "today")
+    #expect(planStore.focusSession(from: [past], now: now) == nil)
+    #expect(planStore.focusSession(from: [past, upcoming], now: now)?.id == "next")
+    #expect(planStore.focusSession(from: [upcoming, todaySession], now: now)?.id == "today")
+}
+
+@MainActor
+@Test func theStripSpansThreeWeeksAroundTheVisibleOne() {
+    let planStore = store()
+
+    #expect(planStore.stripDays.count == 21)
+    #expect(planStore.stripDays.filter { planStore.isInVisibleWeek($0) }.count == 7)
+    #expect(planStore.stripDays.first! < planStore.weekStart)
+    #expect(planStore.stripDays.last! > planStore.weekStart)
 }
