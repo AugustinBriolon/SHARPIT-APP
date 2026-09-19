@@ -76,3 +76,28 @@ enum PlanEntryBuilder {
         return (executed + remaining).sorted { $0.date < $1.date }
     }
 }
+
+/// What one day of the week strip says at a glance.
+///
+/// The strip is an index, not a second copy of the list: it answers "which days did I
+/// train, which are still ahead, which did I miss" and nothing more. The precedence is
+/// deliberate — a day where something was done reads as done, even if a second
+/// prescription that day went unanswered, because the row below carries that detail.
+enum PlanDayStatus: Equatable, Sendable {
+    case executed
+    case planned
+    case missed
+
+    static func status(of entries: [PlanEntry]) -> PlanDayStatus? {
+        if entries.contains(where: { if case .executed = $0 { true } else { false } }) {
+            return .executed
+        }
+        if entries.contains(where: { if case .planned = $0 { true } else { false } }) {
+            return .planned
+        }
+        if entries.contains(where: { if case .missed = $0 { true } else { false } }) {
+            return .missed
+        }
+        return nil
+    }
+}

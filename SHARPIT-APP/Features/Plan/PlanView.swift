@@ -1,135 +1,6 @@
 import Observation
 import SwiftUI
 
-@MainActor
-@Observable
-final class PlanStore {
-    enum Phase {
-        case loading
-        case loaded([PlanEntry])
-        case error(String)
-        case unauthorized
-    }
-
-    var phase: Phase = .loading
-    var weekStart: Date
-
-    private let client: any PlannedSessionServing
-    private let activityClient: any ActivityServing
-    private let tokenProvider: () async throws -> String
-    private let calendar: Calendar
-
-    init(
-        client: any PlannedSessionServing,
-        activityClient: any ActivityServing,
-        tokenProvider: @escaping () async throws -> String
-    ) {
-        self.client = client
-        self.activityClient = activityClient
-        self.tokenProvider = tokenProvider
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = Locale(identifier: "fr_FR")
-        calendar.firstWeekday = 2
-        self.calendar = calendar
-        self.weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-    }
-
-    var weekDays: [Date] {
-        (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
-    }
-
-    /// Three weeks of days, so the strip can be scrolled into the past and the future
-    /// instead of paged by a pair of chevrons.
-    var stripDays: [Date] {
-        guard let start = calendar.date(byAdding: .day, value: -7, to: weekStart) else {
-            return weekDays
-        }
-        return (0..<21).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
-    }
-
-    func isInVisibleWeek(_ day: Date) -> Bool {
-        // Half-open on purpose: `endOfDay` of the last day is midnight on the next one,
-        // which would let the following Monday count as an eighth day of the week.
-        let start = calendar.startOfDay(for: weekStart)
-        guard let nextWeek = calendar.date(byAdding: .day, value: 7, to: start) else { return false }
-        return day >= start && day < nextWeek
-    }
-
-    func showWeek(containing day: Date) {
-        guard let start = calendar.dateInterval(of: .weekOfYear, for: day)?.start,
-              !calendar.isDate(start, inSameDayAs: weekStart)
-        else { return }
-        weekStart = start
-        Task { await load() }
-    }
-
-    func entries(on day: Date, from entries: [PlanEntry]) -> [PlanEntry] {
-        entries.filter { calendar.isDate($0.date, inSameDayAs: day) }
-    }
-
-    /// Next actionable session in the visible week: today or later, and still to be done.
-    /// Never highlights the past, and never a session already absorbed by an activity.
-    func focusSession(from entries: [PlanEntry], now: Date = Date()) -> V1PlannedSessionItem? {
-        let startOfToday = calendar.startOfDay(for: now)
-        return entries
-            .compactMap { entry -> V1PlannedSessionItem? in
-                guard case .planned(let session) = entry else { return nil }
-                return session
-            }
-            .filter { $0.date >= startOfToday }
-            .sorted { lhs, rhs in
-                if calendar.isDateInToday(lhs.date) != calendar.isDateInToday(rhs.date) {
-                    return calendar.isDateInToday(lhs.date)
-                }
-                return lhs.date < rhs.date
-            }
-            .first
-    }
-
-    func moveWeek(by value: Int) {
-        guard let date = calendar.date(byAdding: .weekOfYear, value: value, to: weekStart) else { return }
-        weekStart = date
-        Task { await load() }
-    }
-
-    func resetToCurrentWeek() {
-        weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-        Task { await load() }
-    }
-
-    private func endOfDay(_ day: Date) -> Date {
-        calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: day)) ?? day
-    }
-
-    func load() async {
-        do {
-            guard let end = calendar.date(byAdding: .day, value: 6, to: weekStart) else { return }
-            let token = try await tokenProvider()
-            async let planned = client.plannedSessions(from: weekStart, to: end, token: token)
-            // The week's activities carry their own link back to the plan, so the merge
-            // needs no extra endpoint. A failure here degrades to the prescription alone
-            // rather than emptying the week.
-            async let recorded = try? activityClient.activities(token: token)
-
-            let entries = PlanEntryBuilder.entries(
-                planned: try await planned,
-                activities: (await recorded ?? []).filter { activity in
-                    activity.date >= weekStart && activity.date <= endOfDay(end)
-                },
-                calendar: calendar
-            )
-            withAnimation(SharpitMotion.reveal) {
-                phase = .loaded(entries)
-            }
-        } catch is CancellationError {
-        } catch let error as SharpitAPIError where error == .unauthorized {
-            phase = .unauthorized
-        } catch {
-            phase = .error(error.localizedDescription)
-        }
-    }
-}
-
 struct PlanView: View {
     let client: any PlannedSessionServing
     let activityClient: any ActivityServing
@@ -139,6 +10,7 @@ struct PlanView: View {
     @Environment(\.openURL) private var openURL
     @State private var store: PlanStore
     @State private var selectedSession: V1PlannedSessionItem?
+    @State private var showingCalendar = false
 
     init(
         client: any PlannedSessionServing,
@@ -159,35 +31,25 @@ struct PlanView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                switch store.phase {
-                case .loading: PlanLoadingView()
-                case .loaded(let entries):
-                    PlanWeekContent(
-                        store: store,
-                        entries: entries,
-                        activityClient: activityClient,
-                        tokenProvider: tokenProvider
-                    ) { selectedSession = $0 }
-                case .error(let message):
-                    ContentUnavailableView {
-                        Label("Plan indisponible", systemImage: "wifi.slash")
-                    } description: {
-                        Text(message)
-                    } actions: {
-                        Button("Réessayer") { Task { await store.load() } }
-                    }
-                case .unauthorized:
-                    ContentUnavailableView {
-                        Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
-                    } description: {
-                        Text("Reconnecte-toi pour retrouver ton plan.")
-                    }
+            VStack(spacing: 0) {
+                // Fixed above the pager: neither moves when the week does, so neither can
+                // fight the pages' own gestures.
+                VStack(spacing: SharpitSpacing.xs) {
+                    PlanWeekHeader(store: store) { showingCalendar = true }
+                    PlanWeekStrip(store: store)
                 }
+                .padding(.horizontal, SharpitSpacing.pageInset)
+
+                PlanWeekPager(
+                    store: store,
+                    activityClient: activityClient,
+                    tokenProvider: tokenProvider,
+                    onSelect: { selectedSession = $0 }
+                )
             }
             .background(SharpitCanvasBackground())
             .navigationTitle("Plan")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -206,8 +68,15 @@ struct PlanView: View {
                     router.discussWithCoach(about: context)
                 }
             }
-            .refreshable { await store.load() }
-            .task { await store.load() }
+            .sheet(isPresented: $showingCalendar) {
+                PlanCalendarSheet(store: store)
+            }
+            .task { await store.loadAroundSelection() }
+            // Every way of changing week — swipe, the strip's "Aujourd'hui", the calendar —
+            // ends in `selectedOffset`, so loading follows from that one change.
+            .onChange(of: store.selectedOffset) { _, _ in
+                Task { await store.loadAroundSelection() }
+            }
         }
     }
 }
@@ -250,151 +119,142 @@ private struct PlanActionsMenu: View {
     }
 }
 
+/// The weeks, side by side, one screen wide each.
+///
+/// A paging scroll view positioned by id rather than `TabView(.page)`. With fifty-odd
+/// pages and a starting selection in the middle, the tab view started on the wrong page
+/// and drifted to another while the neighbours loaded — a selection binding it wrote to
+/// itself during the initial layout. Here the position is only ever set by us.
+private struct PlanWeekPager: View {
+    let store: PlanStore
+    let activityClient: any ActivityServing
+    let tokenProvider: () async throws -> String
+    let onSelect: (V1PlannedSessionItem) -> Void
+
+    @State private var position: Int?
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            LazyHStack(spacing: 0) {
+                ForEach(PlanStore.offsets, id: \.self) { offset in
+                    PlanWeekPage(
+                        store: store,
+                        offset: offset,
+                        activityClient: activityClient,
+                        tokenProvider: tokenProvider,
+                        onSelect: onSelect
+                    )
+                    .containerRelativeFrame(.horizontal)
+                    .id(offset)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollIndicators(.hidden)
+        .scrollPosition(id: $position)
+        .onAppear { position = store.selectedOffset }
+        // Swiping writes `position`; the strip, the calendar and "Aujourd'hui" write the
+        // store. Each side follows the other, and equality checks stop the echo.
+        .onChange(of: position) { _, new in
+            guard let new, new != store.selectedOffset else { return }
+            store.selectedOffset = new
+        }
+        .onChange(of: store.selectedOffset) { _, new in
+            guard new != position else { return }
+            withAnimation(SharpitMotion.reveal) { position = new }
+        }
+    }
+}
+
+/// One week of the pager. It reads its own state, so a page that has not loaded yet shows
+/// a skeleton while its neighbours are already on screen.
+private struct PlanWeekPage: View {
+    let store: PlanStore
+    let offset: Int
+    let activityClient: any ActivityServing
+    let tokenProvider: () async throws -> String
+    let onSelect: (V1PlannedSessionItem) -> Void
+
+    var body: some View {
+        switch store.phase(forOffset: offset) {
+        case .loading:
+            PlanLoadingView()
+        case .loaded(let entries):
+            PlanWeekContent(
+                store: store,
+                offset: offset,
+                entries: entries,
+                activityClient: activityClient,
+                tokenProvider: tokenProvider,
+                onSelect: onSelect
+            )
+        case .error(let message):
+            ContentUnavailableView {
+                Label("Plan indisponible", systemImage: "wifi.slash")
+            } description: {
+                Text(message)
+            } actions: {
+                Button("Réessayer") { Task { await store.load(offset: offset, force: true) } }
+            }
+        case .unauthorized:
+            ContentUnavailableView {
+                Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
+            } description: {
+                Text("Reconnecte-toi pour retrouver ton plan.")
+            }
+        }
+    }
+}
+
 private struct PlanWeekContent: View {
     let store: PlanStore
+    let offset: Int
     let entries: [PlanEntry]
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let onSelect: (V1PlannedSessionItem) -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                PlanWeekHeader(store: store)
-                PlanWeekStrip(store: store)
-                if let focusSession = store.focusSession(from: entries) {
-                    Button { onSelect(focusSession) } label: {
-                        PlanFocusSession(
-                            session: focusSession,
-                            isToday: Calendar.current.isDateInToday(focusSession.date)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-                VStack(spacing: 0) {
-                    ForEach(store.weekDays, id: \.self) { day in
-                        PlanDayRow(
-                            day: day,
-                            entries: store.entries(on: day, from: entries),
-                            activityClient: activityClient,
-                            tokenProvider: tokenProvider,
-                            onSelect: onSelect
-                        )
-                    }
-                }
-            }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.bottom, SharpitSpacing.lg)
-        }
-        .modifier(ScrollUnderGlass())
-    }
-}
-
-private struct PlanWeekHeader: View {
-    let store: PlanStore
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            Text(weekRange)
-                .font(SharpitTypography.verdict)
-                .tracking(SharpitTypography.verdictTracking)
-                .foregroundStyle(SharpitColor.foreground)
-            Text("Ton rythme des prochains jours")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-            Button("Revenir à cette semaine") {
-                store.resetToCurrentWeek()
-            }
-            .font(SharpitTypography.meta)
-            .foregroundStyle(SharpitColor.primary)
-            .opacity(isCurrentWeek ? 0 : 1)
-            .disabled(isCurrentWeek)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var isCurrentWeek: Bool {
-        Calendar.current.isDate(
-            store.weekStart,
-            equalTo: Calendar.current.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now,
-            toGranularity: .weekOfYear
-        )
-    }
-
-    private var weekRange: String {
-        guard let end = Calendar.current.date(byAdding: .day, value: 6, to: store.weekStart) else {
-            return store.weekStart.sharpitFormatted(.dateTime.day().month(.wide))
-        }
-        let formatter = DateIntervalFormatter()
-        formatter.locale = SharpitLocale.french
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: store.weekStart, to: end)
-            .replacingOccurrences(of: " 2026", with: "")
-    }
-}
-
-/// The week, scrolled rather than paged.
-///
-/// Two chevron buttons used to move the week. A horizontal strip says the same thing with
-/// the gesture the content already invites, and shows the neighbouring weeks instead of
-/// hiding them behind a control.
-private struct PlanWeekStrip: View {
-    let store: PlanStore
-
-    var body: some View {
         ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: SharpitSpacing.xs) {
-                    ForEach(store.stripDays, id: \.self) { day in
-                        PlanStripDay(day: day, isSelected: store.isInVisibleWeek(day))
+            ScrollView {
+                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                    if let focusSession = store.focusSession(from: entries) {
+                        Button { onSelect(focusSession) } label: {
+                            PlanFocusSession(
+                                session: focusSession,
+                                isToday: Calendar.current.isDateInToday(focusSession.date)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    VStack(spacing: 0) {
+                        ForEach(store.weekDays(forOffset: offset), id: \.self) { day in
+                            PlanDayRow(
+                                day: day,
+                                entries: store.entries(on: day, from: entries),
+                                activityClient: activityClient,
+                                tokenProvider: tokenProvider,
+                                onSelect: onSelect
+                            )
                             .id(day)
-                            .onTapGesture { store.showWeek(containing: day) }
+                        }
                     }
                 }
                 .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.top, SharpitSpacing.md)
+                .padding(.bottom, SharpitSpacing.lg)
             }
-            .scrollClipDisabled()
-            .padding(.vertical, SharpitSpacing.sm)
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(SharpitColor.analysisBorder)
-                    .frame(height: 1)
-            }
-            .onAppear { proxy.scrollTo(store.weekStart, anchor: .leading) }
-            .onChange(of: store.weekStart) { _, start in
-                withAnimation(SharpitMotion.reveal) { proxy.scrollTo(start, anchor: .leading) }
+            .modifier(ScrollUnderGlass())
+            .refreshable { await store.load(offset: offset, force: true) }
+            // Only the visible page answers: the strip belongs to the selected week, and
+            // a neighbour scrolling in the dark would be wasted work.
+            .onChange(of: store.scrollTarget) { _, target in
+                guard offset == store.selectedOffset, let target else { return }
+                withAnimation(SharpitMotion.reveal) { proxy.scrollTo(target, anchor: .top) }
+                store.scrollTarget = nil
             }
         }
-        // The strip spans the screen; the page inset lives on its content instead.
-        .padding(.horizontal, -SharpitSpacing.pageInset)
-    }
-}
-
-private struct PlanStripDay: View {
-    let day: Date
-    let isSelected: Bool
-
-    private var isToday: Bool { Calendar.current.isDateInToday(day) }
-
-    var body: some View {
-        VStack(spacing: SharpitSpacing.xxs) {
-            Text(day.sharpitFormatted(.dateTime.weekday(.narrow)))
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .foregroundStyle(SharpitColor.mutedForeground)
-            Text(day.sharpitFormatted(.dateTime.day()))
-                .font(SharpitTypography.instrument)
-                .foregroundStyle(
-                    isToday ? SharpitColor.inkSurfaceForeground : SharpitColor.foreground
-                )
-                .frame(width: 34, height: 34)
-                .background(isToday ? SharpitColor.inkSurface : Color.clear, in: Circle())
-        }
-        .opacity(isSelected ? 1 : 0.4)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
     }
 }
 
