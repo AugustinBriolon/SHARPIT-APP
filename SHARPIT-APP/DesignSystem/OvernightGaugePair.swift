@@ -25,9 +25,13 @@ private struct OvernightGaugeCell: View {
     }
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.xxs) {
+        // Three tiers, three gaps: inside the score block, between the label and its
+        // caption, and a larger one separating the bowl from the words under it. They
+        // were all `xxs` before, which is why the arc, the label and the caption read
+        // as one crowded block.
+        VStack(spacing: SharpitSpacing.sm) {
             OvernightArcGauge(progress: displayedProgress) {
-                VStack(spacing: 1) {
+                VStack(spacing: SharpitSpacing.xxs) {
                     AnimatedScoreText(score: gauge.score, animation: SharpitMotion.gaugeFill)
                         .opacity(pulse ? 0.55 : 1)
                     Text("sur 100")
@@ -39,19 +43,21 @@ private struct OvernightGaugeCell: View {
             .aspectRatio(OvernightGaugeLayout.bowlAspectRatio, contentMode: .fit)
             // The arc is stroked with a round cap, so without this inset the two
             // ends sit flush against the panel's hairline.
-            .padding(.horizontal, SharpitSpacing.sm)
+            .padding(.horizontal, SharpitSpacing.xs)
 
-            Text(title)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
-            if let caption = gauge.caption {
-                Text(caption)
-                    .font(SharpitTypography.meta)
+            VStack(spacing: SharpitSpacing.xxs) {
+                Text(title)
+                    .font(SharpitTypography.label)
+                    .tracking(SharpitTypography.labelTracking)
+                    .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
+                if let caption = gauge.caption {
+                    Text(caption)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -135,13 +141,14 @@ private struct OvernightArcGauge<Content: View>: View {
             .frame(width: diameter, height: diameter)
             .position(x: geo.size.width / 2, y: baseline)
 
-            // Anchored by its base, not its centre: centring let a tall score block
-            // hang below the baseline and collide with the label under the bowl.
+            // Centred in the bowl: the midpoint between the apex and the baseline.
+            // Anything else — a fixed offset, a fraction of the box — leaves the gap
+            // above the number and the gap below it unequal, which is what read as
+            // crushed however much air the box itself had.
             content
-                .frame(
-                    width: geo.size.width,
-                    height: max(0, baseline - OvernightGaugeLayout.scoreLift(radius: pathRadius)),
-                    alignment: .bottom
+                .position(
+                    x: geo.size.width / 2,
+                    y: baseline - OvernightGaugeLayout.scoreCentre(radius: pathRadius)
                 )
         }
     }
@@ -181,21 +188,26 @@ enum OvernightGaugeLayout {
     /// Stroke width of the arc, shared with the layout math below.
     static let arcLineWidth: CGFloat = 12
 
+    /// Air kept between the arc's apex and the top of the bowl.
+    static let apexAir: CGFloat = SharpitSpacing.md
+
     /// Width / height of the arc+score bowl.
     ///
-    /// A semicircle needs `width / 2` of height before its cap. At 2.05 the bowl was
-    /// shorter than that, so the arc overflowed the top; shrinking the arc to fit
-    /// instead only pulled it down onto the score. The bowl is now tall enough to hold
-    /// a full-width arc plus a `sm` step of air above the apex, matching the horizontal
-    /// inset so the arc is framed evenly on three sides.
-    static let bowlAspectRatio: CGFloat = 1.74
+    /// The bowl must clear the radius plus the stroke's cap plus `apexAir`, which is
+    /// `width / 2 + apexAir`. A ratio cannot express an additive term, so it is chosen to
+    /// satisfy the inequality at the *narrowest* width a two-up row produces — a value
+    /// tuned to one width leaves the narrow case with no air at all. Earlier values were
+    /// picked first and the geometry made to fit them, so the arc either overflowed the
+    /// top (2.05) or had to be shrunk onto the score.
+    static let bowlAspectRatio: CGFloat = 1.55
 
-    /// How far the score sits above the arc's baseline.
+    /// How far above the baseline the score block is centred.
     ///
-    /// A minor φ segment of a minor φ segment of the radius (≈ 0.15 r) — low enough in
-    /// the bowl to leave the apex its air, high enough not to sit on the baseline.
-    static func scoreLift(radius: CGFloat) -> CGFloat {
-        SharpitRatio.minor(of: SharpitRatio.minor(of: radius))
+    /// Half the radius is the midpoint of the bowl, which leaves the same air above the
+    /// number as below it. The score reads as sitting *in* the arc rather than hanging
+    /// from it.
+    static func scoreCentre(radius: CGFloat) -> CGFloat {
+        radius / 2
     }
 }
 

@@ -51,34 +51,34 @@ import Testing
     }
 }
 
-@Test func overnightGaugeScoreLiftFollowsTheArcNotTheBox() {
-    // The lift used to derive from the bowl's height, so growing the box moved the
-    // score away from the arc it belongs to. It now scales with the radius.
+@Test func overnightScoreSitsAtTheMidpointOfTheBowl() {
+    // Equal air above the number and below it. A fraction picked any other way leaves
+    // the block hugging either the apex or the baseline.
     let radius: CGFloat = 74
-    let lift = OvernightGaugeLayout.scoreLift(radius: radius)
+    let centre = OvernightGaugeLayout.scoreCentre(radius: radius)
 
-    #expect(abs(lift - SharpitRatio.minor(of: SharpitRatio.minor(of: radius))) < 0.01)
-    #expect(lift > 0)
-    // Low enough in the bowl that the apex keeps its air.
-    #expect(lift < radius / 4)
+    #expect(centre == radius / 2)
+    #expect(abs((radius - centre) - centre) < 0.01)
 }
 
-@Test func overnightGaugeScoreLiftScalesWithTheRadius() {
+@Test func overnightScoreCentreScalesWithTheRadius() {
     #expect(
-        OvernightGaugeLayout.scoreLift(radius: 148)
-            > OvernightGaugeLayout.scoreLift(radius: 74)
+        OvernightGaugeLayout.scoreCentre(radius: 148)
+            > OvernightGaugeLayout.scoreCentre(radius: 74)
     )
-    #expect(OvernightGaugeLayout.scoreLift(radius: 0) == 0)
+    #expect(OvernightGaugeLayout.scoreCentre(radius: 0) == 0)
 }
 
-@Test func overnightBowlIsTallEnoughForAFullWidthArc() {
-    // height = width / ratio must clear the radius plus the stroke's cap, or the arc
-    // overflows the panel — which is exactly what 2.05 did.
-    let width: CGFloat = 160
-    let height = width / OvernightGaugeLayout.bowlAspectRatio
-    let radius = width / 2 - OvernightGaugeLayout.arcLineWidth / 2
+@Test func overnightBowlClearsTheArcPlusItsApexAir() {
+    // height = width / ratio must clear the radius, the stroke's cap and the air above
+    // the apex — otherwise the arc overflows the panel, which is what 2.05 did.
+    for width in [CGFloat(130), 160, 190] {
+        let height = width / OvernightGaugeLayout.bowlAspectRatio
+        let radius = width / 2 - OvernightGaugeLayout.arcLineWidth / 2
+        let needed = radius + OvernightGaugeLayout.arcLineWidth / 2 + OvernightGaugeLayout.apexAir
 
-    #expect(height > radius + OvernightGaugeLayout.arcLineWidth / 2)
+        #expect(height >= needed - 1)
+    }
 }
 
 @Test func progressFractionMapsZeroScore() {
