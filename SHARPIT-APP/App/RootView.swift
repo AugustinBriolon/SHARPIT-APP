@@ -62,6 +62,9 @@ struct RootView: View {
         .background(SharpitCanvasBackground())
         .tint(SharpitColor.primary)
         .environment(router)
+        // Every string in this app is French, and so is the web's. Left to the device
+        // locale the date strips rendered "M T W T F S S" under French copy.
+        .environment(\.locale, Locale(identifier: "fr_FR"))
         .modifier(LiquidTabBarModifier())
     }
 

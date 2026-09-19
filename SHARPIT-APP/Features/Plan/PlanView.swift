@@ -257,7 +257,7 @@ private struct PlanWeekHeader: View {
 
     private var weekRange: String {
         guard let end = Calendar.current.date(byAdding: .day, value: 6, to: store.weekStart) else {
-            return store.weekStart.formatted(.dateTime.day().month(.wide))
+            return store.weekStart.sharpitFormatted(.dateTime.day().month(.wide))
         }
         let formatter = DateIntervalFormatter()
         formatter.locale = Locale(identifier: "fr_FR")
@@ -287,10 +287,10 @@ private struct PlanWeekStrip: View {
             ForEach(store.weekDays, id: \.self) { day in
                 let isToday = Calendar.current.isDateInToday(day)
                 VStack(spacing: 6) {
-                    Text(day.formatted(.dateTime.weekday(.narrow)))
+                    Text(day.sharpitFormatted(.dateTime.weekday(.narrow)))
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(SharpitColor.mutedForeground)
-                    Text(day.formatted(.dateTime.day()))
+                    Text(day.sharpitFormatted(.dateTime.day()))
                         .font(.subheadline.weight(.bold).monospacedDigit())
                         .foregroundStyle(isToday ? SharpitColor.inkSurfaceForeground : SharpitColor.foreground)
                         .frame(width: 32, height: 32)
@@ -378,11 +378,11 @@ private struct PlanDayRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
             VStack(spacing: 3) {
-                Text(day.formatted(.dateTime.weekday(.abbreviated)))
+                Text(day.sharpitFormatted(.dateTime.weekday(.abbreviated)))
                     .font(SharpitTypography.eyebrow)
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                Text(day.formatted(.dateTime.day()))
+                Text(day.sharpitFormatted(.dateTime.day()))
                     .font(.title3.weight(.semibold).monospacedDigit())
                     .foregroundStyle(Calendar.current.isDateInToday(day) ? SharpitColor.primary : SharpitColor.foreground)
             }

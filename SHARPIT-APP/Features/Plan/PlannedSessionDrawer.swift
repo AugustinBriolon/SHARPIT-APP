@@ -69,7 +69,7 @@ struct PlannedSessionDrawer: View {
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
                 Spacer(minLength: 0)
-                Text(session.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                Text(session.date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
