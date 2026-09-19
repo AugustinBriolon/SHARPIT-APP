@@ -51,14 +51,34 @@ import Testing
     }
 }
 
-@Test func overnightGaugeScoreLiftUsesGoldenMinorSegment() {
-    let bowl: CGFloat = 100
-    let block: CGFloat = 44
-    let lift = OvernightGaugeLayout.scoreLift(bowlHeight: bowl, scoreBlockHeight: block)
-    let expected = SharpitRatio.minor(of: bowl - block)
-    #expect(abs(lift - expected) < 0.01)
+@Test func overnightGaugeScoreLiftFollowsTheArcNotTheBox() {
+    // The lift used to derive from the bowl's height, so growing the box moved the
+    // score away from the arc it belongs to. It now scales with the radius.
+    let radius: CGFloat = 74
+    let lift = OvernightGaugeLayout.scoreLift(radius: radius)
+
+    #expect(abs(lift - SharpitRatio.minor(of: SharpitRatio.minor(of: radius))) < 0.01)
     #expect(lift > 0)
-    #expect(lift < bowl / 2)
+    // Low enough in the bowl that the apex keeps its air.
+    #expect(lift < radius / 4)
+}
+
+@Test func overnightGaugeScoreLiftScalesWithTheRadius() {
+    #expect(
+        OvernightGaugeLayout.scoreLift(radius: 148)
+            > OvernightGaugeLayout.scoreLift(radius: 74)
+    )
+    #expect(OvernightGaugeLayout.scoreLift(radius: 0) == 0)
+}
+
+@Test func overnightBowlIsTallEnoughForAFullWidthArc() {
+    // height = width / ratio must clear the radius plus the stroke's cap, or the arc
+    // overflows the panel — which is exactly what 2.05 did.
+    let width: CGFloat = 160
+    let height = width / OvernightGaugeLayout.bowlAspectRatio
+    let radius = width / 2 - OvernightGaugeLayout.arcLineWidth / 2
+
+    #expect(height > radius + OvernightGaugeLayout.arcLineWidth / 2)
 }
 
 @Test func progressFractionMapsZeroScore() {

@@ -130,19 +130,30 @@ private func hex(_ color: Color, style: UIUserInterfaceStyle = .light) -> String
     #expect(SharpitTypography.sectionTitleTracking < 0)
 }
 
-@Test func theRampResolvesWhetherOrNotTheBrandFacesAreEmbedded() {
-    // The bundle may not carry Syne/Plex/JetBrains yet; the ramp must still produce a
-    // font rather than trapping on a missing PostScript name.
-    let styles = [
-        SharpitTypography.verdict, SharpitTypography.pageTitle, SharpitTypography.sectionTitle,
-        SharpitTypography.cardTitle, SharpitTypography.body, SharpitTypography.meta,
-        SharpitTypography.label, SharpitTypography.instrument, SharpitTypography.data,
-    ]
-    #expect(styles.count == 9)
+@Test func theBrandTypefacesAreInTheBundle() {
+    // Without these three the app still lays out correctly but stops looking like
+    // SHARPIT, which is a regression no snapshot of the layout would catch.
+    SharpitFonts.register()
+    #expect(SharpitFontFamily.heading.isEmbedded)
+    #expect(SharpitFontFamily.body.isEmbedded)
+    #expect(SharpitFontFamily.data.isEmbedded)
 }
 
-@Test func anUnembeddedFamilyResolvesToNil() {
-    for family in [SharpitFontFamily.heading, .body, .data] where !family.isEmbedded {
-        #expect(family.resolvedName(for: .bold) == nil || family.resolvedName(for: .regular) == nil)
-    }
+@Test func everyWeightTheRampAsksForResolves() {
+    SharpitFonts.register()
+    #expect(SharpitFontFamily.heading.resolvedName(for: .medium) == "Syne-Medium")
+    #expect(SharpitFontFamily.heading.resolvedName(for: .semibold) == "Syne-SemiBold")
+    #expect(SharpitFontFamily.heading.resolvedName(for: .bold) == "Syne-Bold")
+    #expect(SharpitFontFamily.body.resolvedName(for: .regular) == "IBMPlexSans-Regular")
+    #expect(SharpitFontFamily.body.resolvedName(for: .medium) == "IBMPlexSans-Medium")
+    #expect(SharpitFontFamily.body.resolvedName(for: .semibold) == "IBMPlexSans-SemiBold")
+    #expect(SharpitFontFamily.data.resolvedName(for: .regular) == "JetBrainsMono-Regular")
+    #expect(SharpitFontFamily.data.resolvedName(for: .medium) == "JetBrainsMono-Medium")
+}
+
+@Test func aWeightTheFamilyDoesNotCarryResolvesToNil() {
+    // The heading family ships 500/600/700 only — asking for regular must fall back
+    // rather than resolve to a face that is not there.
+    #expect(SharpitFontFamily.heading.resolvedName(for: .regular) == nil)
+    #expect(SharpitFontFamily.data.resolvedName(for: .bold) == nil)
 }

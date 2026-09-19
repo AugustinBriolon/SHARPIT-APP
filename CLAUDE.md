@@ -34,9 +34,23 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 Requirements: Xcode 27 / Swift 6 language mode, iOS 27 simulator (Liquid Glass), Clerk
 Native API enabled with the same publishable key as the web app.
 
-The app talks to a local web instance: run `yarn dev` in `../SHARPIT` so
-`http://127.0.0.1:3000` answers. `APIConfiguration.baseURL` switches on `#if DEBUG`; the
-release origin is still a `REPLACE_PRODUCTION_ORIGIN` placeholder.
+### Where the data comes from
+
+The app talks to the web app over HTTP and never to the database directly. Domain logic,
+the Clerk session and athlete scoping all live server-side, so a client holding database
+credentials would bypass every one of them and would have to re-implement the Core.
+
+`APIConfiguration.baseURL` reads `SHARPIT_API_ORIGIN` from the environment first, so the
+origin is set per scheme (Run → Arguments → Environment Variables) with no rebuild:
+
+- **Local full stack** — `docker compose up -d` then `yarn dev` in `../SHARPIT`. Default
+  when the variable is unset in DEBUG.
+- **Deployed instance** — set `SHARPIT_API_ORIGIN` to a Vercel preview or production
+  origin. Real data, no Docker, no local Next. This is the answer to "why do I need the
+  whole local chain to see a screen".
+- **No server at all** — `FixtureTodayClient` serves the bundled JSON for pure UI work.
+
+The release origin is still a `REPLACE_PRODUCTION_ORIGIN` placeholder.
 
 ### Signing
 

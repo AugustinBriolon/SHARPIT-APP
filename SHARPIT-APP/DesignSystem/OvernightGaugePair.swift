@@ -26,21 +26,13 @@ private struct OvernightGaugeCell: View {
 
     var body: some View {
         VStack(spacing: SharpitSpacing.xxs) {
-            GeometryReader { geo in
-                let bowlHeight = geo.size.height
-                let lift = OvernightGaugeLayout.scoreLift(bowlHeight: bowlHeight)
-
-                ZStack(alignment: .bottom) {
-                    OvernightArcGauge(progress: displayedProgress)
-
-                    VStack(spacing: 1) {
-                        AnimatedScoreText(score: gauge.score, animation: SharpitMotion.gaugeFill)
-                            .opacity(pulse ? 0.55 : 1)
-                        Text("sur 100")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-                    .offset(y: -lift)
+            OvernightArcGauge(progress: displayedProgress) {
+                VStack(spacing: 1) {
+                    AnimatedScoreText(score: gauge.score, animation: SharpitMotion.gaugeFill)
+                        .opacity(pulse ? 0.55 : 1)
+                    Text("sur 100")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -92,9 +84,15 @@ private struct OvernightGaugeCell: View {
     }
 }
 
-/// Top semicircle: faded full track + darker fill that stops at score.
-private struct OvernightArcGauge: View {
+/// Top semicircle — faded full track, darker fill stopping at the score, and whatever
+/// the caller puts in the bowl.
+///
+/// The score used to be a sibling view offset by a fraction of the *box* height while the
+/// arc sized itself from the *width*. The two could not stay in proportion: change the
+/// box and the number drifted toward the arc. Both now derive from one radius.
+private struct OvernightArcGauge<Content: View>: View {
     let progress: CGFloat
+    @ViewBuilder let content: Content
 
     private let lineWidth = OvernightGaugeLayout.arcLineWidth
     private let tipSize: CGFloat = 10
@@ -105,10 +103,9 @@ private struct OvernightArcGauge: View {
 
     var body: some View {
         GeometryReader { geo in
-            // The radius has to answer to both dimensions. Deriving it from the width
-            // alone made the arc taller than its own box — a semicircle of diameter w
-            // needs w/2 of height, and the bowl was shorter than that, so the apex
-            // overflowed upward and sat on the panel's edge.
+            // The radius answers to both dimensions. Deriving it from the width alone
+            // made the arc taller than its own box, so the apex overflowed upward and
+            // sat on the panel's edge.
             let pathRadius = max(
                 0,
                 min(
@@ -117,6 +114,7 @@ private struct OvernightArcGauge: View {
                 )
             )
             let diameter = pathRadius * 2
+            let baseline = geo.size.height - lineWidth / 2
 
             ZStack {
                 semicircle(trimEnd: 0.5)
@@ -135,7 +133,16 @@ private struct OvernightArcGauge: View {
                 OvernightArcTip(progress: clamped, radius: pathRadius, size: tipSize)
             }
             .frame(width: diameter, height: diameter)
-            .position(x: geo.size.width / 2, y: geo.size.height - lineWidth / 2)
+            .position(x: geo.size.width / 2, y: baseline)
+
+            // Anchored by its base, not its centre: centring let a tall score block
+            // hang below the baseline and collide with the label under the bowl.
+            content
+                .frame(
+                    width: geo.size.width,
+                    height: max(0, baseline - OvernightGaugeLayout.scoreLift(radius: pathRadius)),
+                    alignment: .bottom
+                )
         }
     }
 
@@ -176,18 +183,19 @@ enum OvernightGaugeLayout {
 
     /// Width / height of the arc+score bowl.
     ///
-    /// A semicircle inscribed in the bowl needs `width / 2` of height before its cap;
-    /// at 2.05 the bowl was shorter than that and the arc had nowhere to go but out of
-    /// the top. 1.62 leaves roughly a `sm` step of air above the apex, matching the
-    /// horizontal inset so the arc is framed evenly on three sides.
-    static let bowlAspectRatio: CGFloat = 1.62
-    /// Approximate score + "sur 100" block height used for lift math.
-    static let scoreBlockHeight: CGFloat = 44
+    /// A semicircle needs `width / 2` of height before its cap. At 2.05 the bowl was
+    /// shorter than that, so the arc overflowed the top; shrinking the arc to fit
+    /// instead only pulled it down onto the score. The bowl is now tall enough to hold
+    /// a full-width arc plus a `sm` step of air above the apex, matching the horizontal
+    /// inset so the arc is framed evenly on three sides.
+    static let bowlAspectRatio: CGFloat = 1.74
 
-    /// Lift score from the diameter into the bowl (minor φ segment of free air).
-    static func scoreLift(bowlHeight: CGFloat, scoreBlockHeight: CGFloat = scoreBlockHeight) -> CGFloat {
-        let free = max(0, bowlHeight - scoreBlockHeight)
-        return SharpitRatio.minor(of: free)
+    /// How far the score sits above the arc's baseline.
+    ///
+    /// A minor φ segment of a minor φ segment of the radius (≈ 0.15 r) — low enough in
+    /// the bowl to leave the apex its air, high enough not to sit on the baseline.
+    static func scoreLift(radius: CGFloat) -> CGFloat {
+        SharpitRatio.minor(of: SharpitRatio.minor(of: radius))
     }
 }
 

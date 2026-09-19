@@ -28,6 +28,39 @@ FAMILIES=(
 
 mkdir -p "$DESTINATION"
 
+# Reads name ID 6 (PostScript name) out of a TrueType `name` table.
+postscript_name() {
+  python3 - "$1" <<'PYTHON'
+import struct, sys
+
+data = open(sys.argv[1], 'rb').read()
+table_count = struct.unpack('>H', data[4:6])[0]
+offset, name_offset = 12, None
+for _ in range(table_count):
+    tag = data[offset:offset + 4]
+    table_offset, _length = struct.unpack('>II', data[offset + 8:offset + 16])
+    if tag == b'name':
+        name_offset = table_offset
+    offset += 16
+
+if name_offset is None:
+    raise SystemExit(1)
+
+table = data[name_offset:]
+record_count, strings_offset = struct.unpack('>HH', table[2:6])
+for index in range(record_count):
+    platform, _encoding, _language, name_id, length, string_offset = struct.unpack(
+        '>HHHHHH', table[6 + index * 12:18 + index * 12]
+    )
+    if name_id != 6:
+        continue
+    raw = table[strings_offset + string_offset:strings_offset + string_offset + length]
+    print(raw.decode('utf-16-be') if platform == 3 else raw.decode('latin-1'))
+    break
+PYTHON
+}
+
+
 for entry in "${FAMILIES[@]}"; do
   family="${entry%%:*}"
   weights="${entry##*:}"
@@ -43,15 +76,23 @@ for entry in "${FAMILIES[@]}"; do
   fi
 
   while IFS= read -r url; do
-    name="$(basename "$url")"
+    temporary="${DESTINATION}/.download.ttf"
+    curl -fsSL -o "$temporary" "$url"
+
+    # Google serves opaque hashed filenames. Name each file after the PostScript
+    # name it actually carries — that is the name `SharpitTypography` asks for, so a
+    # mismatch becomes visible in a directory listing instead of at runtime.
+    name="$(postscript_name "$temporary")"
+    if [[ -z "$name" ]]; then
+      echo "  could not read a PostScript name from ${url}" >&2
+      rm -f "$temporary"
+      exit 1
+    fi
     echo "  ${name}"
-    curl -fsSL -o "${DESTINATION}/${name}" "$url"
+    mv "$temporary" "${DESTINATION}/${name}.ttf"
   done <<<"$urls"
 done
 
 echo
-echo "Fonts written to ${DESTINATION}."
-echo "Verify the PostScript names the app asks for:"
-echo "  fc-scan --format '%{postscriptname}\\n' ${DESTINATION}/*.ttf"
-echo "They must include Syne-Medium, Syne-SemiBold, Syne-Bold, IBMPlexSans-Regular,"
-echo "IBMPlexSans-Medium, IBMPlexSans-SemiBold, JetBrainsMono-Regular, JetBrainsMono-Medium."
+echo "Fonts written to ${DESTINATION}:"
+ls -1 "${DESTINATION}"/*.ttf | xargs -n1 basename

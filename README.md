@@ -7,7 +7,9 @@ Native iPhone client for [SHARPIT](https://github.com/AugustinBriolon/SHARPIT) �
 - Xcode 27 / Swift 6 language mode
 - iPhone simulator (prefer iOS 27 for Liquid Glass)
 - Clerk Native API enabled; same publishable key as the web app
-- Local API: sibling repo SHARPIT with `yarn dev` on `http://127.0.0.1:3000`
+- An API origin: either the sibling repo SHARPIT running locally (`docker compose up -d`
+  then `yarn dev`, serving `http://127.0.0.1:3000`), or a deployed instance via the
+  `SHARPIT_API_ORIGIN` environment variable — see [Pointing at a server](#pointing-at-a-server)
 
 ## Signing (simulator)
 
@@ -27,6 +29,21 @@ identity. They are not committed yet:
 The files land in `SHARPIT-APP/Resources/Fonts` and `SharpitFonts.register()` picks up
 whatever is in the bundle at launch — no Info.plist or project change needed. Until then
 `SharpitTypography` falls back to the system face: the layout is right, the identity is not.
+
+## Pointing at a server
+
+The app speaks to the web app over `/api`, never to the database — the domain logic, the
+Clerk session and athlete scoping are all server-side.
+
+`APIConfiguration.baseURL` reads `SHARPIT_API_ORIGIN` from the environment before falling
+back, so you can switch target without touching code. Set it in the scheme under
+Run → Arguments → Environment Variables:
+
+| Goal | Setting |
+| --- | --- |
+| Real data, no local stack | `SHARPIT_API_ORIGIN` = a deployed origin |
+| Local full stack | leave unset (DEBUG defaults to `http://127.0.0.1:3000`) |
+| UI work, no server | use `FixtureTodayClient` |
 
 ## Build & test
 

@@ -1,11 +1,29 @@
 import Foundation
 
 enum APIConfiguration {
+    /// Environment variable read at launch, so the origin can be switched from the Xcode
+    /// scheme (Run → Arguments → Environment Variables) without editing or rebuilding.
+    ///
+    /// Point it at a deployed instance — a Vercel preview, or production — when you do
+    /// not want the local chain of Docker → Postgres → `yarn dev` running just to see
+    /// real data. The app always talks to the web app over `/api`, never to the database:
+    /// the domain logic, the Clerk session and the athlete scoping all live server-side,
+    /// and a client holding database credentials would have none of them.
+    private static let originVariable = "SHARPIT_API_ORIGIN"
+
+    private static let localDevelopmentOrigin = URL(string: "http://127.0.0.1:3000")!
+
     static var baseURL: URL {
+        if let configured = ProcessInfo.processInfo.environment[originVariable],
+           let url = URL(string: configured.trimmingCharacters(in: .whitespacesAndNewlines)),
+           url.scheme != nil {
+            return url
+        }
+
         #if DEBUG
-        URL(string: "http://127.0.0.1:3000")!
+        return localDevelopmentOrigin
         #else
-        URL(string: "https://REPLACE_PRODUCTION_ORIGIN")!
+        return URL(string: "https://REPLACE_PRODUCTION_ORIGIN")!
         #endif
     }
 }
