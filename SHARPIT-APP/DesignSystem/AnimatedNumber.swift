@@ -3,7 +3,7 @@ import SwiftUI
 struct AnimatedNumber: View {
     let value: Double
     var decimals: Int = 0
-    var font: Font = SharpitTypography.data()
+    var font: Font = SharpitTypography.data
     var animation: Animation = .easeOut(duration: SharpitMotion.countUpDuration)
 
     @State private var displayed: Double = 0
@@ -47,7 +47,7 @@ struct AnimatedScoreText: View {
             AnimatedNumber(value: numeric.value, decimals: numeric.decimals, animation: animation)
         } else {
             Text(score)
-                .font(SharpitTypography.data())
+                .font(SharpitTypography.data)
                 .monospacedDigit()
         }
     }

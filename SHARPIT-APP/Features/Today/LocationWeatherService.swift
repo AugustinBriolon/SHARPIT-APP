@@ -1,7 +1,7 @@
 import CoreLocation
 import WeatherKit
 
-struct AppleWeatherReading: Equatable, Sendable {
+struct AppleWeatherReading: Codable, Equatable, Sendable {
     var city: String
     var temperatureCelsius: Int
     var condition: String
@@ -15,8 +15,19 @@ final class LocationWeatherService {
 
     @ObservationIgnored
     private let locator = LocationFixBroker()
+    @ObservationIgnored
+    private var hasStarted = false
+
+    init() {
+        if let cached = Self.cachedReading() {
+            reading = cached.reading
+            statusLine = cached.reading.city
+        }
+    }
 
     func start() {
+        guard !hasStarted else { return }
+        hasStarted = true
         locator.onDenied = { [weak self] in
             self?.statusLine = "Météo indisponible"
         }
@@ -29,21 +40,24 @@ final class LocationWeatherService {
     }
 
     private func refresh(from location: CLLocation) async {
-        let city = await reverseGeocode(location) ?? "Ici"
+        async let city = reverseGeocode(location)
+        async let weather = WeatherService.shared.weather(for: location)
+
         do {
-            let weather = try await WeatherService.shared.weather(for: location)
-            let current = weather.currentWeather
+            let current = try await weather.currentWeather
             let celsius = current.temperature.converted(to: .celsius).value
             reading = AppleWeatherReading(
-                city: city,
+                city: await city ?? "Ici",
                 temperatureCelsius: Int(celsius.rounded()),
                 condition: current.condition.description,
                 symbolName: current.symbolName
             )
-            statusLine = city
+            statusLine = reading?.city ?? "Météo"
+            Self.storeCachedReading(reading)
         } catch {
-            reading = nil
-            statusLine = "Météo indisponible"
+            if reading == nil {
+                statusLine = "Météo indisponible"
+            }
         }
     }
 
@@ -54,6 +68,32 @@ final class LocationWeatherService {
                 continuation.resume(returning: city)
             }
         }
+    }
+
+    private struct CachedReading: Codable {
+        let reading: AppleWeatherReading
+        let savedAt: Date
+    }
+
+    private static let cacheKey = "sharpit.weather.current"
+    private static let cacheLifetime: TimeInterval = 15 * 60
+
+    private static func cachedReading() -> CachedReading? {
+        guard
+            let data = UserDefaults.standard.data(forKey: cacheKey),
+            let cached = try? JSONDecoder().decode(CachedReading.self, from: data),
+            Date().timeIntervalSince(cached.savedAt) < cacheLifetime
+        else {
+            return nil
+        }
+        return cached
+    }
+
+    private static func storeCachedReading(_ reading: AppleWeatherReading?) {
+        guard let reading else { return }
+        let cached = CachedReading(reading: reading, savedAt: Date())
+        guard let data = try? JSONEncoder().encode(cached) else { return }
+        UserDefaults.standard.set(data, forKey: cacheKey)
     }
 }
 

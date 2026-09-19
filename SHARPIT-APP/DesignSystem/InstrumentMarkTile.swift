@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Icon-first glass tile — primary visual unit for shell destinations.
+/// Icon-first tile — the primary visual unit for shell destinations that have no screen yet.
 struct InstrumentMarkTile: View {
     let symbolName: String
     let label: String
@@ -8,23 +8,29 @@ struct InstrumentMarkTile: View {
 
     var body: some View {
         VStack(spacing: SharpitSpacing.xs) {
-            Image(systemName: symbolName)
-                .font(.system(size: 28, weight: .medium))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(dimmed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-                .frame(height: 36)
+            ZStack {
+                Circle()
+                    .fill(SharpitColor.accent)
+                    .frame(width: 48, height: 48)
+
+                Image(systemName: symbolName)
+                    .font(.system(size: 24, weight: .medium))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(dimmed ? SharpitColor.mutedForeground : SharpitColor.primary)
+            }
+
             Text(label)
-                .font(SharpitTypography.label())
+                .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SharpitColor.mutedForeground)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, SharpitSpacing.md)
-        .padding(.horizontal, SharpitSpacing.xxs)
-        .sharpitGlassCard()
+        .padding(.horizontal, SharpitSpacing.xs)
+        .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(label)
     }
@@ -36,15 +42,22 @@ struct InstrumentHeroMark: View {
 
     var body: some View {
         VStack(spacing: SharpitSpacing.md) {
-            Image(systemName: symbolName)
-                .font(.system(size: 64, weight: .ultraLight))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.primary.opacity(0.85))
+            ZStack {
+                Circle()
+                    .fill(SharpitColor.highlight)
+                    .frame(width: 108, height: 108)
+
+                Image(systemName: symbolName)
+                    .font(.system(size: 42, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(SharpitColor.highlightForeground)
+            }
+
             Text(cue)
-                .font(SharpitTypography.eyebrow())
+                .font(SharpitTypography.eyebrow)
                 .tracking(SharpitTypography.eyebrowTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SharpitColor.mutedForeground)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, SharpitSpacing.lg)

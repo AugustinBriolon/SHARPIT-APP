@@ -1,13 +1,11 @@
 import SwiftUI
 
-enum SharpitInk {
-    static let surface = Color(red: 0.11, green: 0.12, blue: 0.09)
-    static let foreground = Color.white.opacity(0.92)
-    static let muted = Color.white.opacity(0.55)
-    static let highlight = Color(red: 0.83, green: 1.0, blue: 0.20)
-    static let caution = Color.orange
-}
-
+/// The Today verdict plate — the first and largest thing on the morning screen.
+///
+/// It is the web's ink band: `surface-ink`, which is Forest on light and Lime on dark, so
+/// the verdict is the one inverted surface in the app. No gradient, no drop shadow — the
+/// plate separates itself from the canvas by inversion, which is the strongest available
+/// separation and the one the web already uses.
 struct InkVerdictPlate: View {
     let plate: InkPlateModel
     var revealed: Bool = true
@@ -18,63 +16,78 @@ struct InkVerdictPlate: View {
     private var filledBars: Int { ConfidenceBars.filled(fromPct: plate.confidencePct) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             statusRow
+
             Text(plate.headline)
-                .font(SharpitTypography.verdict())
+                .font(SharpitTypography.verdict)
                 .tracking(SharpitTypography.verdictTracking)
-                .foregroundStyle(SharpitInk.foreground)
-                .lineSpacing(2)
+                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+
             if let action = plate.actionLine, !action.isEmpty {
                 Text(action)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(SharpitInk.foreground.opacity(0.82))
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.82))
             }
+
             if let cause = plate.limitingCause, !cause.isEmpty {
                 Text("Limité par · \(cause)")
-                    .font(SharpitTypography.label())
+                    .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
-                    .foregroundStyle(SharpitInk.muted)
+                    .foregroundStyle(mutedInk)
             }
+
             if plate.confidenceLabel != nil || plate.confidencePct != nil {
                 confidenceRow
             }
+
             if !plate.estimationGaps.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                     ForEach(plate.estimationGaps, id: \.self) { gap in
                         Text("· \(gap)")
-                            .font(.caption2)
-                            .foregroundStyle(SharpitInk.muted)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(mutedInk)
                     }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
-        .background(SharpitInk.surface, in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
+        .sharpitSurface(.ink)
         .opacity(revealed ? 1 : 0)
         .offset(y: revealed ? 0 : 12)
         .redacted(reason: placeholder ? .placeholder : [])
         .accessibilityElement(children: .combine)
     }
 
+    /// Secondary text on the ink band: the band's own foreground, held back.
+    private var mutedInk: Color {
+        SharpitColor.inkSurfaceForeground.opacity(0.62)
+    }
+
     private var statusRow: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(dotColor)
-                .frame(width: 10, height: 10)
-            Text(plate.statusLabel)
-                .font(SharpitTypography.label())
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitInk.muted)
+        HStack(spacing: SharpitSpacing.xs) {
+            HStack(spacing: SharpitSpacing.xs) {
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: 8, height: 8)
+                Text(plate.statusLabel)
+                    .font(SharpitTypography.label)
+                    .tracking(SharpitTypography.labelTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(mutedInk)
+            }
+            .padding(.horizontal, SharpitSpacing.sm)
+            .padding(.vertical, SharpitSpacing.xxs + 2)
+            .background(dotColor.opacity(0.12), in: Capsule())
+
             Spacer(minLength: 0)
         }
     }
 
     private var confidenceRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SharpitSpacing.xs) {
             HStack(alignment: .bottom, spacing: 3) {
                 ForEach(1...3, id: \.self) { level in
                     RoundedRectangle(cornerRadius: 1.5, style: .continuous)
@@ -85,24 +98,26 @@ struct InkVerdictPlate: View {
             .accessibilityHidden(true)
             if let label = plate.confidenceLabel {
                 Text(label)
-                    .font(SharpitTypography.label())
+                    .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
-                    .foregroundStyle(SharpitInk.muted)
+                    .foregroundStyle(mutedInk)
             }
             Spacer(minLength: 0)
         }
-        .padding(.top, 4)
+        .padding(.top, SharpitSpacing.xxs)
     }
 
     private var dotColor: Color { inkColor(for: statusTone) }
     private var barColor: Color { inkColor(for: barsTone) }
 
+    /// Tones resolved *on the ink band*, where `--ink-accent` is the legible accent:
+    /// Lime on Forest in light mode, Forest on Lime in dark.
     private func inkColor(for tone: PackTierTone) -> Color {
         switch tone {
-        case .highlight: SharpitInk.highlight
-        case .caution: SharpitInk.caution
-        case .muted: SharpitInk.foreground.opacity(0.4)
+        case .highlight: SharpitColor.inkAccent
+        case .caution: SharpitColor.signalCaution
+        case .muted: SharpitColor.inkSurfaceForeground.opacity(0.4)
         }
     }
 }
@@ -122,4 +137,5 @@ struct InkVerdictPlate: View {
         )
     )
     .padding()
+    .background(SharpitCanvasBackground())
 }

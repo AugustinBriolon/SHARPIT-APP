@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// `text-label` used as a section marker — uppercase, tracked, muted.
 struct SharpitEyebrow: View {
     let text: String
 
@@ -9,9 +10,9 @@ struct SharpitEyebrow: View {
 
     var body: some View {
         Text(text)
-            .font(SharpitTypography.eyebrow())
+            .font(SharpitTypography.eyebrow)
             .tracking(SharpitTypography.eyebrowTracking)
             .textCase(.uppercase)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(SharpitColor.mutedForeground)
     }
 }

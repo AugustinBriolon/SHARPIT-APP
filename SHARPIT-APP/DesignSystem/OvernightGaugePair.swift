@@ -5,7 +5,7 @@ struct OvernightGaugePair: View {
     var pulseScores: Bool = false
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.xxs) {
+        HStack(spacing: SharpitSpacing.xs) {
             ForEach(gauges) { gauge in
                 OvernightGaugeCell(gauge: gauge, pulse: pulseScores)
             }
@@ -37,8 +37,8 @@ private struct OvernightGaugeCell: View {
                         AnimatedScoreText(score: gauge.score, animation: SharpitMotion.gaugeFill)
                             .opacity(pulse ? 0.55 : 1)
                         Text("sur 100")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
                     }
                     .offset(y: -lift)
                 }
@@ -47,21 +47,21 @@ private struct OvernightGaugeCell: View {
             .aspectRatio(OvernightGaugeLayout.bowlAspectRatio, contentMode: .fit)
 
             Text(title)
-                .font(SharpitTypography.label())
+                .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SharpitColor.mutedForeground)
             if let caption = gauge.caption {
                 Text(caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(SharpitSpacing.cardPadding)
-        .sharpitGlassCard()
+        .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title), \(gauge.score)")
         .onAppear { animateFill(to: targetFraction) }
@@ -108,13 +108,13 @@ private struct OvernightArcGauge: View {
             ZStack {
                 semicircle(trimEnd: 0.5)
                     .stroke(
-                        Color.primary.opacity(0.16),
+                        SharpitColor.radialTrack,
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                     )
 
                 semicircle(trimEnd: 0.5 * clamped)
                     .stroke(
-                        Color.primary.opacity(0.9),
+                        SharpitColor.primary,
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                     )
 
@@ -147,9 +147,12 @@ private struct OvernightArcTip: View, Animatable {
 
     var body: some View {
         Circle()
-            .fill(SharpitInk.highlight)
+            .fill(SharpitColor.primary)
             .frame(width: size, height: size)
             .offset(OvernightArcMath.tipOffset(progress: progress, radius: radius))
+            // At zero there is no progress to mark, and a dot parked on the left
+            // cap reads as a stray mark rather than as an empty gauge.
+            .opacity(progress > 0 ? 1 : 0)
             .accessibilityHidden(true)
     }
 }

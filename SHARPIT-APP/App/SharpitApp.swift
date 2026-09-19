@@ -7,6 +7,7 @@ struct SharpitApp: App {
     private let modelContainer: ModelContainer
 
     init() {
+        SharpitFonts.register()
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
         do {
             modelContainer = try SharpitPersistence.makeContainer()

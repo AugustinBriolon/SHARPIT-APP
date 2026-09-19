@@ -15,7 +15,7 @@ struct SessionPlate: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title3)
                         .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(SharpitColor.primary)
                         .scaleEffect(checkSettled ? 1.0 : 0.86)
                         .opacity(checkSettled ? 1.0 : 0.4)
                         .accessibilityHidden(true)
@@ -23,11 +23,12 @@ struct SessionPlate: View {
                 VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                     tagRow
                     Text(session.title)
-                        .font(.headline)
+                        .font(SharpitTypography.cardTitle)
+                        .tracking(SharpitTypography.cardTitleTracking)
                     if showsSubtitle, let subtitle = session.subtitle {
                         Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
                     }
                 }
                 Spacer(minLength: 0)
@@ -38,19 +39,19 @@ struct SessionPlate: View {
                         LabeledContent {
                             HStack(alignment: .firstTextBaseline, spacing: 3) {
                                 Text(metric.value)
-                                    .font(SharpitTypography.data())
+                                    .font(SharpitTypography.data)
                                 if !metric.unit.isEmpty {
                                     Text(metric.unit)
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
+                                        .font(SharpitTypography.meta)
+                                        .foregroundStyle(SharpitColor.mutedForeground)
                                 }
                             }
                         } label: {
                             Text(metric.label)
-                                .font(SharpitTypography.label())
+                                .font(SharpitTypography.label)
                                 .tracking(SharpitTypography.labelTracking)
                                 .textCase(.uppercase)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(SharpitColor.mutedForeground)
                         }
                         .labeledContentStyle(SessionMetricStyle())
                     }
@@ -59,7 +60,7 @@ struct SessionPlate: View {
             }
         }
         .padding(SharpitSpacing.cardPadding)
-        .sharpitGlassCard()
+        .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .onAppear {
@@ -86,23 +87,24 @@ struct SessionPlate: View {
     @ViewBuilder
     private var tagRow: some View {
         if session.sport != nil || showPriorityTag {
-            HStack(spacing: 6) {
+            HStack(spacing: SharpitSpacing.xs) {
                 if let sport = session.sport, !sport.isEmpty {
                     Text(sport)
-                        .font(SharpitTypography.label())
+                        .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
-                        .foregroundStyle(SharpitSportTone.foreground(for: sport))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .foregroundStyle(SharpitSportTone.accent(for: sport))
+                        .padding(.horizontal, SharpitSpacing.xs)
+                        .padding(.vertical, SharpitSpacing.xxs)
                         .background(SharpitSportTone.background(for: sport), in: Capsule())
+                        .overlay(Capsule().strokeBorder(SharpitSportTone.border(for: sport), lineWidth: SharpitStroke.hairline))
                 }
                 if showPriorityTag {
                     Text("Prioritaire")
-                        .font(SharpitTypography.label())
+                        .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SharpitColor.mutedForeground)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Color.primary.opacity(0.06), in: Capsule())
@@ -154,44 +156,6 @@ struct SessionPlate: View {
 enum SessionPriorityPolicy {
     static func showsTag(sessionCount: Int, priority: Bool) -> Bool {
         sessionCount > 1 && priority
-    }
-}
-
-enum SharpitSportTone {
-    static func background(for sport: String) -> Color {
-        switch normalized(sport) {
-        case let s where s.contains("course") || s.contains("run"):
-            return Color.orange.opacity(0.18)
-        case let s where s.contains("velo") || s.contains("cycl") || s.contains("bike"):
-            return Color.blue.opacity(0.14)
-        case let s where s.contains("natation") || s.contains("swim"):
-            return Color.cyan.opacity(0.16)
-        case let s where s.contains("force") || s.contains("muscu") || s.contains("gym"):
-            return Color.purple.opacity(0.14)
-        default:
-            return Color.primary.opacity(0.08)
-        }
-    }
-
-    static func foreground(for sport: String) -> Color {
-        switch normalized(sport) {
-        case let s where s.contains("course") || s.contains("run"):
-            return Color.orange
-        case let s where s.contains("velo") || s.contains("cycl") || s.contains("bike"):
-            return Color.blue
-        case let s where s.contains("natation") || s.contains("swim"):
-            return Color.cyan
-        case let s where s.contains("force") || s.contains("muscu") || s.contains("gym"):
-            return Color.purple
-        default:
-            return Color.secondary
-        }
-    }
-
-    private static func normalized(_ sport: String) -> String {
-        sport
-            .folding(options: .diacriticInsensitive, locale: .current)
-            .lowercased()
     }
 }
 

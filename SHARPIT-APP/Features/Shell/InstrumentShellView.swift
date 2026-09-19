@@ -8,8 +8,8 @@ struct InstrumentShellView<Accessory: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let columns = [
-        GridItem(.flexible(), spacing: SharpitSpacing.xxs),
-        GridItem(.flexible(), spacing: SharpitSpacing.xxs),
+        GridItem(.flexible(), spacing: SharpitSpacing.sm),
+        GridItem(.flexible(), spacing: SharpitSpacing.sm),
     ]
 
     init(destination: ShellDestination, @ViewBuilder accessory: @escaping () -> Accessory = { EmptyView() }) {
@@ -21,14 +21,17 @@ struct InstrumentShellView<Accessory: View>: View {
         NavigationStack {
             ScrollView(.vertical) {
                 VStack(spacing: SharpitSpacing.section) {
-                    InstrumentHeroMark(
-                        symbolName: destination.systemImage,
-                        cue: destination.horizonCue
-                    )
-                    .opacity(revealed ? 1 : 0)
-                    .offset(y: revealed ? 0 : 10)
+                    VStack(spacing: SharpitSpacing.md) {
+                        InstrumentHeroMark(
+                            symbolName: destination.systemImage,
+                            cue: destination.horizonCue
+                        )
+                        .opacity(revealed ? 1 : 0)
+                        .offset(y: revealed ? 0 : 10)
+                    }
+                    .padding(.top, SharpitSpacing.md)
 
-                    LazyVGrid(columns: columns, spacing: SharpitSpacing.xxs) {
+                    LazyVGrid(columns: columns, spacing: SharpitSpacing.sm) {
                         ForEach(Array(destination.surfaces.enumerated()), id: \.element.id) { index, surface in
                             InstrumentMarkTile(
                                 symbolName: surface.symbolName,
@@ -42,14 +45,16 @@ struct InstrumentShellView<Accessory: View>: View {
                             )
                         }
                     }
+
                     accessory()
                         .opacity(revealed ? 1 : 0)
+                        .offset(y: revealed ? 0 : 8)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, SharpitSpacing.pageInset)
                 .padding(.bottom, SharpitSpacing.lg)
             }
-            .background(SharpitCanvasBackground(posture: nil))
+            .background(SharpitCanvasBackground())
             .modifier(ScrollUnderGlass())
             .navigationTitle(destination.title)
             .navigationBarTitleDisplayMode(.large)

@@ -42,11 +42,6 @@ final class TodayStore {
         }
     }
 
-    var loadedPosture: V1TodayPosture? {
-        if case .loaded(let fold) = phase { return fold.plate.posture }
-        return nil
-    }
-
     var navigationTitle: String {
         if case .loaded(let fold) = phase {
             return TrainingDayId.displayName(fold.trainingDayId)

@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// Golden-ratio foundation for SHARPIT layout, spacing, and optical divisions.
+/// Optical ratios for divisions *inside* a component.
 ///
-/// Every spatial relationship (padding ladders, section gaps, in-bowl score lift,
-/// major/minor splits) must derive from `SharpitRatio` — never hardcode ad-hoc gaps
-/// when a φ split or φ step expresses the same intent.
+/// φ used to be this app's spacing law. It is not any more (ADR-041): a 13 / 21 / 34 pt
+/// ladder fights UIKit's 4/8 pt grid and the system layout margins, and the mismatch is
+/// what read as unfinished. φ keeps the job it is good at — splitting the air inside a
+/// gauge or a plate — and `SharpitSpacing` owns the space between things.
 enum SharpitRatio {
     /// φ = (1 + √5) / 2
     static let phi: CGFloat = 1.618033988749895
@@ -19,50 +20,56 @@ enum SharpitRatio {
     /// Smaller part of a φ split (≈ 38.2% of `whole`).
     static func minor(of whole: CGFloat) -> CGFloat { whole * minorFactor }
 
-    /// `base * φ^power`, rounded to the nearest display point.
-    static func step(_ base: CGFloat, power: Int) -> CGFloat {
-        let value = base * Foundation.pow(phi, CGFloat(power))
-        return value.rounded()
-    }
-
     static func rounded(_ value: CGFloat) -> CGFloat { value.rounded() }
 }
 
-/// Spacing ladder derived from base 8 × φⁿ (with one octave step at `sm`).
+/// Spacing on the Apple 4/8 pt grid, named after the web's density tiers.
+///
+/// `design.md` describes three densities — dense for metrics (12–16), standard for
+/// panels (20–24), airy for explanations (32–48). The ladder below is those tiers
+/// snapped to the grid the platform already aligns everything else to.
 enum SharpitSpacing {
-    /// Rhythm root — all φ steps grow from here.
-    static let base: CGFloat = 8
+    /// Hairline gaps inside a control.
+    static let xxs: CGFloat = 4
+    /// Dense — between a figure and its label.
+    static let xs: CGFloat = 8
+    /// Dense — between rows of metrics.
+    static let sm: CGFloat = 12
+    /// Standard — panel padding, the default gap.
+    static let md: CGFloat = 16
+    /// Standard — between sections of a screen.
+    static let lg: CGFloat = 24
+    /// Airy — around an explanation, or below the last section.
+    static let xl: CGFloat = 32
 
-    static let xxs: CGFloat = base // 8
-    static let xs: CGFloat = SharpitRatio.step(base, power: 1) // 13 ≈ 8φ
-    static let sm: CGFloat = base * 2 // 16 — octave companion
-    static let md: CGFloat = SharpitRatio.step(base, power: 2) // 21 ≈ 8φ²
+    /// System layout margin on iPhone; screen content aligns to it.
     static let pageInset: CGFloat = md
-    static let section: CGFloat = md
-    static let lg: CGFloat = SharpitRatio.step(base, power: 3) // 34 ≈ 8φ³
+    /// Gap between the causal-column sections of a screen.
+    static let section: CGFloat = lg
     static let cardPadding: CGFloat = md
-    /// Corner radius ≈ major segment of 40pt optical square.
-    static let cardRadius: CGFloat = SharpitRatio.rounded(SharpitRatio.major(of: 40))
+
+    /// `BRAND.radius` — the web card radius, exported to Swift.
+    static let cardRadius: CGFloat = SharpitTokens.radius
+    /// Radius for chips and other controls nested inside a card.
+    static let chipRadius: CGFloat = SharpitTokens.radius * 0.75
 }
 
-enum SharpitTypography {
-    static func eyebrow() -> Font { .system(size: 11, weight: .semibold) }
-    /// Tracking ≈ φ (optical, not geometric).
-    static var eyebrowTracking: CGFloat { SharpitRatio.rounded(SharpitRatio.phi * 10) / 10 }
-    static func verdict() -> Font { .system(size: 36, weight: .semibold) }
-    static var verdictTracking: CGFloat { -0.8 }
-    static func label() -> Font { .system(size: 10, weight: .semibold) }
-    static var labelTracking: CGFloat { SharpitRatio.rounded(SharpitRatio.majorFactor * 10) / 10 }
-    static func data() -> Font { .title3.monospacedDigit().weight(.semibold) }
+/// Hairline weights. The web draws its separation with a 1px border, not a shadow.
+enum SharpitStroke {
+    static let hairline: CGFloat = 1
 }
 
+/// Posture colors, mapped onto the web's semantic signal tokens.
+///
+/// `design.md`: colour is emotional state, and `RECOVER` uses protective sage — never
+/// punitive red. So `protect` takes caution amber, not `signalRisk`.
 enum SharpitPostureStyle {
     static func color(for posture: V1TodayPosture) -> Color {
         switch posture {
-        case .protect: .orange
-        case .steady: Color.accentColor
-        case .push: .green
-        case .uncertain: .secondary
+        case .protect: SharpitColor.signalCaution
+        case .steady: SharpitColor.primary
+        case .push: SharpitColor.signalRecovery
+        case .uncertain: SharpitColor.signalNeutral
         }
     }
 }

@@ -17,13 +17,19 @@ struct RootView: View {
                 )
             }
             Tab(ShellDestination.plan.title, systemImage: ShellDestination.plan.systemImage) {
-                InstrumentShellView(destination: .plan)
+                PlanView(
+                    client: PlannedSessionClient(),
+                    tokenProvider: liveToken
+                )
             }
             Tab(ShellDestination.coach.title, systemImage: ShellDestination.coach.systemImage) {
                 InstrumentShellView(destination: .coach)
             }
             Tab(ShellDestination.activity.title, systemImage: ShellDestination.activity.systemImage) {
-                InstrumentShellView(destination: .activity)
+                ActivityView(
+                    client: ActivityClient(),
+                    tokenProvider: liveToken
+                )
             }
             Tab(ShellDestination.me.title, systemImage: ShellDestination.me.systemImage) {
                 InstrumentShellView(destination: .me) {
@@ -32,6 +38,7 @@ struct RootView: View {
             }
         }
         .background(SharpitCanvasBackground())
+        .tint(SharpitColor.primary)
         .modifier(LiquidTabBarModifier())
     }
 
@@ -40,12 +47,12 @@ struct RootView: View {
             Image(systemName: "person.crop.circle.badge.checkmark")
                 .font(.title2)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SharpitColor.mutedForeground)
             Spacer(minLength: 0)
             UserButton()
         }
         .padding(SharpitSpacing.cardPadding)
-        .sharpitGlassCard()
+        .sharpitSurface(.panel)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Compte")
     }
@@ -66,7 +73,7 @@ private struct LiquidTabBarModifier: ViewModifier {
             content.tabBarMinimizeBehavior(.onScrollDown)
         } else {
             content
-                .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+                .toolbarBackground(.thinMaterial, for: .tabBar)
                 .toolbarBackground(.visible, for: .tabBar)
         }
     }

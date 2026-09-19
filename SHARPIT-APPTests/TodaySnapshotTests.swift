@@ -42,7 +42,10 @@ import Testing
 @Test func storeHydratesFromSnapshotBeforeNetwork() async throws {
     let container = try SharpitPersistence.makeContainer(inMemory: true)
     let context = ModelContext(container)
-    let response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
+    var response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
+    // The store asks the cache for *today*, so the fixture has to be filed under today —
+    // otherwise the test only passes on the day the fixture was captured.
+    response.trainingDayId = TrainingDayId.today()
     try TodaySnapshotRepository.save(response, context: context)
 
     let client = FailingTodayClient()

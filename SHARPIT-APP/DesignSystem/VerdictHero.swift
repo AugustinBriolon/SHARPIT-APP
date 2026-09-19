@@ -6,7 +6,7 @@ struct VerdictHero: View {
     var pulseScores: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(alignment: .firstTextBaseline) {
                 SharpitEyebrow(verdict.eyebrow)
                 Spacer(minLength: 0)
@@ -17,13 +17,13 @@ struct VerdictHero: View {
                     .accessibilityLabel(verdict.posture.rawValue)
             }
             Text(verdict.headline)
-                .font(SharpitTypography.verdict())
+                .font(SharpitTypography.verdict)
                 .tracking(SharpitTypography.verdictTracking)
                 .lineSpacing(2)
             if !verdict.subline.isEmpty {
                 Text(verdict.subline)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.mutedForeground)
             }
             if let confidence = verdict.confidencePct {
                 ConfidenceRing(
@@ -34,14 +34,14 @@ struct VerdictHero: View {
             }
             if let cause = verdict.limitingCause {
                 Label(cause, systemImage: "target")
-                    .font(.footnote)
-                    .foregroundStyle(.tertiary)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
                     .labelStyle(.titleAndIcon)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, SharpitSpacing.xxs)
-        .padding(.bottom, 4)
+        .padding(.bottom, SharpitSpacing.xxs)
         .opacity(revealed ? 1 : 0)
         .offset(y: revealed ? 0 : 12)
         .accessibilityElement(children: .combine)
@@ -64,7 +64,7 @@ struct ConfidenceRing: View {
         HStack(spacing: SharpitSpacing.xs) {
             ZStack {
                 Circle()
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 3)
+                    .stroke(SharpitColor.radialTrack, lineWidth: 3)
                 Circle()
                     .trim(from: 0, to: progress)
                     .stroke(
@@ -73,15 +73,15 @@ struct ConfidenceRing: View {
                     )
                     .rotationEffect(.degrees(-90))
                 Text("\(percent)")
-                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .font(SharpitTypography.instrument)
                     .contentTransition(reduceMotion ? .identity : .numericText())
             }
             .frame(width: 36, height: 36)
             Text("Confiance")
-                .font(SharpitTypography.label())
+                .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(SharpitColor.mutedForeground)
             Spacer(minLength: 0)
         }
         .opacity(pulse ? 0.55 : 1)

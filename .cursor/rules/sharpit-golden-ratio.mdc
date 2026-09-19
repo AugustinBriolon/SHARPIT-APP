@@ -1,27 +1,46 @@
 ---
-description: SHARPIT golden-ratio (φ) design foundation — spacing, splits, optical layout
+description: SHARPIT design foundation — where design values come from, spacing, optical ratios
 alwaysApply: true
 ---
 
-# Sharpit golden ratio
-
-φ (`SharpitRatio`) is a **base design law** for this app — not a one-off gauge trick.
+# Sharpit design foundation
 
 ## Source of truth
 
-- Swift: `SHARPIT-APP/DesignSystem/SharpitTheme.swift` → `SharpitRatio` + φ-derived `SharpitSpacing`
-- Spec: `docs/superpowers/specs/2026-09-16-ios-design-system-design.md` § design principles / spacing
+Design values come from the **web** design system, never from this repository (ADR-041).
+
+- Generated tokens: `SHARPIT-APP/DesignSystem/SharpitTokens.generated.swift` — never hand-edit.
+  To change a colour, edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or
+  `../SHARPIT/src/app/globals.css` and run `yarn tokens:ios` there.
+- Native layer: `SharpitTheme` (spacing, posture), `SharpitTypography` (type ramp),
+  `SharpitSurface` (surfaces and radii).
+- Law: `../SHARPIT/design.md`, `../SHARPIT/docs/design/DESIGN_LANGUAGE.md`.
 
 ## Rules
 
-1. **Never invent raw spacing** (`padding(17)`, `spacing: 9`, magic offsets) when a `SharpitSpacing` token or `SharpitRatio.major/minor/step` expresses the intent.
-2. **Splits** (air above vs below, side vs side, hero vs body): use `SharpitRatio.major(of:)` / `minor(of:)`.
-3. **New rungs on the spacing ladder**: derive with `SharpitRatio.step(SharpitSpacing.base, power:)` and round via `SharpitRatio.rounded` — do not pick arbitrary points.
-4. **Component-local layout math** (gauges, plates, cards) must call `SharpitRatio`, not redefine `phi`.
-5. **Motion durations** may stay on `SharpitMotion`; spatial composition stays on `SharpitRatio`.
+1. **No raw colour in a view.** `Color.blue`, `Color.accentColor`, `.secondary`,
+   `.white.opacity(…)` are all wrong answers. Use a `SharpitColor` token.
+2. **No raw spacing** (`padding(17)`, `spacing: 9`) when a `SharpitSpacing` token says it.
+   The ladder is 4 / 8 / 12 / 16 / 24 / 32 — the Apple grid, not a φ ladder.
+3. **No ad-hoc typography** (`.font(.headline)`, `.font(.system(size: 13))`) in a feature
+   file. Use the `SharpitTypography` ramp, which mirrors the web's `text-*` utilities.
+4. **Surfaces go through `sharpitSurface(_:)`** — flat fill, hairline border. No gradient
+   fills, no drop shadows: elevation is expressed by luminosity.
+5. **Liquid Glass is chrome only** — tab bar, navigation bar, toolbar. Never behind content.
+
+## φ — demoted, not deleted
+
+φ (`SharpitRatio`) used to be this app's spacing law. A 13 / 21 / 34 pt ladder fought
+UIKit's 4/8 pt grid and the system layout margins, and the mismatch is what read as
+unfinished. φ keeps the job it is good at:
+
+- **Allowed:** optical divisions *inside* a component — `SharpitRatio.major(of:)` /
+  `minor(of:)` for the score lift inside a gauge bowl, a hero/body split within one view.
+- **Not allowed:** the gap between two components, page insets, card padding, radii.
 
 ## Anti-patterns
 
 - Hardcoded `1.618` / `0.618` / `0.382` outside `SharpitRatio`
-- Parallel `enum FooLayout { static let phi = … }` duplicates
-- “Close enough” gaps that ignore the token ladder
+- A parallel `enum FooPalette { static let … = Color(red:…) }`
+- Editing `SharpitTokens.generated.swift` instead of the web source
+- Teal / cyan "health app" hues, streak chrome, radial gauges dominating a hero

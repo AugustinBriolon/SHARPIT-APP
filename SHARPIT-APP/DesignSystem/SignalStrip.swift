@@ -6,7 +6,7 @@ struct SignalStrip: View {
     var pulseScores: Bool = false
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.xxs) {
+        HStack(spacing: SharpitSpacing.xs) {
             ForEach(Array(signals.enumerated()), id: \.element.id) { index, signal in
                 SignalCell(signal: signal, pulse: pulseScores)
                     .opacity(revealed ? 1 : 0)
@@ -33,22 +33,22 @@ struct SignalCell: View {
             Image(systemName: signal.key.instrumentSymbol)
                 .font(.system(size: 18, weight: .semibold))
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SharpitColor.mutedForeground)
             AnimatedScoreText(score: signal.score)
                 .opacity(pulse ? 0.55 : 1)
             SignalTrack(fraction: fraction)
             Text(signal.key.instrumentLabel)
-                .font(SharpitTypography.label())
+                .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(SharpitColor.mutedForeground)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, SharpitSpacing.xs)
-        .padding(.horizontal, 4)
-        .sharpitGlassCard()
+        .padding(.vertical, SharpitSpacing.sm)
+        .padding(.horizontal, SharpitSpacing.xxs)
+        .sharpitSurface(.chip)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(signal.key.instrumentLabel), \(signal.score)")
     }
@@ -64,10 +64,10 @@ struct SignalTrack: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.primary.opacity(0.08))
+                    .fill(SharpitColor.radialTrack)
                 if let fraction {
                     Capsule()
-                        .fill(Color.primary.opacity(0.35))
+                        .fill(SharpitColor.primary)
                         .frame(width: max(geo.size.width * fill, fraction > 0 ? 2 : 0))
                 }
             }

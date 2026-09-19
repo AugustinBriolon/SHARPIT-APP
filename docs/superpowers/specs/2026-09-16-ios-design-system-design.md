@@ -5,6 +5,13 @@
 **Repos:** `SHARPIT-APP`  
 **Related:** [2026-09-15-ios-native-v1-design.md](./2026-09-15-ios-native-v1-design.md), SHARPIT `docs/design/DESIGN_LANGUAGE.md`
 
+> **Superseded in part (2026-09-19) — see SHARPIT [ADR-041](../../../../SHARPIT/docs/adr/ADR-041-ios-design-tokens-generated-from-web.md).**
+> Sections **4.1 Color**, **4.2 Typography** and **4.3 Spacing & ratio** no longer hold.
+> Color tokens are generated from the web design system, the three brand typefaces are
+> embedded, and the spacing ladder follows the Apple 4/8 pt grid (φ is retained only as an
+> optical ratio inside components). The rest of this spec — approach, components,
+> composition rule, screen structure — remains current.
+
 ## 1. Goal
 
 Establish a **native-first SwiftUI design system** that sits on Apple chrome (Liquid Glass, system navigation) and adds a **SHARPIT instrument layer** so Résumé feels precise, calm, and distinctive — not a generic fitness dashboard and not a web clone.

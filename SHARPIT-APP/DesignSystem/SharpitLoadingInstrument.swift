@@ -6,7 +6,7 @@ struct SharpitLoadingInstrument: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 Group {
                     InkVerdictPlate(plate: .placeholder, placeholder: true)
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                         SharpitEyebrow("Séance")
                         SessionPlate(session: .placeholder, showPriorityTag: false)
                     }

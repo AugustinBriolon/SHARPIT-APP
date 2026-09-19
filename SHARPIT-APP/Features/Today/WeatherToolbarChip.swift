@@ -1,38 +1,38 @@
 import SwiftUI
 
+/// Apple Weather for the athlete's current location, as a toolbar chip.
+///
+/// The chip draws its own `chip-surface` capsule rather than relying on the toolbar's
+/// Liquid Glass — nested inside the system glass wrapper its content rendered invisible.
+/// When there is no reading it renders nothing at all: an empty capsule in the corner is
+/// chrome that says less than the space it takes.
 struct WeatherToolbarChip: View {
     let service: LocationWeatherService
 
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: symbolName)
-                .font(.body)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.secondary)
-            if let reading = service.reading {
+        if let reading = service.reading {
+            Label {
                 Text("\(reading.temperatureCelsius)°")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .font(SharpitTypography.instrument)
+                    .foregroundStyle(SharpitColor.foreground)
+            } icon: {
+                Image(systemName: reading.symbolName)
+                    .imageScale(.small)
+                    .foregroundStyle(SharpitColor.primary)
             }
+            .labelStyle(.titleAndIcon)
+            .padding(.horizontal, SharpitSpacing.sm)
+            .padding(.vertical, SharpitSpacing.xs)
+            .background(SharpitColor.chipSurface, in: Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(SharpitColor.analysisBorder, lineWidth: SharpitStroke.hairline)
+            )
+            .contentShape(Capsule())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(
+                "\(reading.city), \(reading.temperatureCelsius) degrés, \(reading.condition)"
+            )
         }
-        .padding(.horizontal, 8)
-        .frame(minWidth: 44, minHeight: 44)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityText)
-    }
-
-    private var symbolName: String {
-        if let reading = service.reading {
-            return reading.symbolName
-        }
-        return "cloud.slash"
-    }
-
-    private var accessibilityText: String {
-        if let reading = service.reading {
-            return "\(reading.city), \(reading.temperatureCelsius) degrés, \(reading.condition)"
-        }
-        return service.statusLine
     }
 }

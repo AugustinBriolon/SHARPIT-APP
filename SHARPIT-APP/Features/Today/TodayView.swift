@@ -52,7 +52,7 @@ struct TodayView: View {
                     }
                 }
             }
-            .background(SharpitCanvasBackground(posture: store.loadedPosture))
+            .background(SharpitCanvasBackground())
             .navigationTitle(store.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
