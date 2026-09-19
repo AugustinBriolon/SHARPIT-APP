@@ -95,3 +95,37 @@ import Testing
     #expect(fold.sessions.first?.sport == "Course")
     #expect(fold.sessions.first?.priority == true)
 }
+
+// MARK: - Consistency
+
+@Test func foldCarriesConsistencyFromThePayload() throws {
+    let response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
+    let fold = TodayFoldMapper.map(response)
+
+    let consistency = try #require(fold.consistency)
+    #expect(consistency.days.count == 8)
+    #expect(consistency.thisWeekSessionCount == 2)
+    #expect(consistency.days.filter(\.isToday).count == 1)
+}
+
+@Test func consistencyDaysAreUniquelyIdentified() throws {
+    let response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
+    let consistency = try #require(response.consistency)
+
+    #expect(Set(consistency.days.map(\.id)).count == consistency.days.count)
+}
+
+@Test func aPayloadWithoutConsistencyStillDecodes() throws {
+    // Snapshots cached before the field existed must not fail to decode — the strip is
+    // simply absent for them.
+    let data = try fixtureData("full.json")
+    var json = try #require(
+        try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    )
+    json.removeValue(forKey: "consistency")
+    let stripped = try JSONSerialization.data(withJSONObject: json)
+
+    let response = try JSONDecoder().decode(V1TodayResponse.self, from: stripped)
+    #expect(response.consistency == nil)
+    #expect(TodayFoldMapper.map(response).consistency == nil)
+}

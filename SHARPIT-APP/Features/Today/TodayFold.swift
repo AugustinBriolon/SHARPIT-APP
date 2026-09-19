@@ -5,6 +5,7 @@ struct TodayFold: Sendable, Equatable {
     var plate: InkPlateModel
     var sessions: [SessionCardModel]
     var gauges: [OvernightGaugeModel]
+    var consistency: V1TodayConsistency?
     var weather: V1TodayWeather?
 }
 
@@ -112,6 +113,7 @@ enum TodayFoldMapper {
                 .map {
                     OvernightGaugeModel(key: $0.key, score: $0.score, caption: $0.caption)
                 },
+            consistency: response.consistency,
             weather: response.weather
         )
     }

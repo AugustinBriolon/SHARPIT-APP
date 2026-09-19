@@ -87,6 +87,9 @@ private struct TodayFoldView: View {
                 if !fold.gauges.isEmpty {
                     OvernightGaugePair(gauges: fold.gauges, pulseScores: pulseScores)
                 }
+                if let consistency = fold.consistency, !consistency.days.isEmpty {
+                    ConsistencyStrip(consistency: consistency)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SharpitSpacing.pageInset)

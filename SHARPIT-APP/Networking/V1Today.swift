@@ -8,6 +8,29 @@ nonisolated struct V1TodayResponse: Codable, Sendable, Equatable {
     var weather: V1TodayWeather?
     var sessions: [V1TodaySession]
     var signals: [V1TodaySignal]
+    /// Optional so a snapshot cached before this field existed still decodes.
+    var consistency: V1TodayConsistency? = nil
+}
+
+/// Regularity, computed server-side from the athlete's recent activities.
+///
+/// The web derives the same window in the browser; both read one calculation so the two
+/// surfaces cannot disagree about which days are marked.
+nonisolated struct V1TodayConsistency: Codable, Sendable, Equatable {
+    var days: [V1TodayConsistencyDay]
+    var thisWeekSessionCount: Int
+}
+
+nonisolated struct V1TodayConsistencyDay: Codable, Sendable, Equatable, Identifiable {
+    /// `yyyy-MM-dd`, and unique within the window.
+    var date: String
+    var weekdayLabel: String
+    var dayOfMonth: Int
+    var hasActivity: Bool
+    var isToday: Bool
+    var isFuture: Bool
+
+    var id: String { date }
 }
 
 nonisolated struct V1TodayEmpty: Codable, Sendable, Equatable {

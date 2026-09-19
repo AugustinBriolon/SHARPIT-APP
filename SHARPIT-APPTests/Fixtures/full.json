@@ -13,7 +13,9 @@
     "actionLine": "Entraîne-toi — légèrement",
     "confidenceLabel": "ESTIMATION PARTIELLE",
     "packTier": "PARTIAL",
-    "estimationGaps": ["Baseline HRV partielle (moins de 14 j)"]
+    "estimationGaps": [
+      "Baseline HRV partielle (moins de 14 j)"
+    ]
   },
   "weather": {
     "city": "Lyon",
@@ -28,11 +30,94 @@
       "subtitle": "Course",
       "sport": "Course",
       "priority": true,
-      "metrics": [{ "label": "Durée", "value": "40", "unit": "min" }]
+      "metrics": [
+        {
+          "label": "Durée",
+          "value": "40",
+          "unit": "min"
+        }
+      ]
     }
   ],
   "signals": [
-    { "key": "sleep", "score": "78", "caption": "Correct" },
-    { "key": "recovery", "score": "61", "caption": null }
-  ]
+    {
+      "key": "sleep",
+      "score": "78",
+      "caption": "Correct"
+    },
+    {
+      "key": "recovery",
+      "score": "61",
+      "caption": null
+    }
+  ],
+  "consistency": {
+    "days": [
+      {
+        "date": "2026-09-10",
+        "weekdayLabel": "J",
+        "dayOfMonth": 10,
+        "hasActivity": true,
+        "isToday": false,
+        "isFuture": false
+      },
+      {
+        "date": "2026-09-11",
+        "weekdayLabel": "V",
+        "dayOfMonth": 11,
+        "hasActivity": false,
+        "isToday": false,
+        "isFuture": false
+      },
+      {
+        "date": "2026-09-12",
+        "weekdayLabel": "S",
+        "dayOfMonth": 12,
+        "hasActivity": true,
+        "isToday": false,
+        "isFuture": false
+      },
+      {
+        "date": "2026-09-13",
+        "weekdayLabel": "D",
+        "dayOfMonth": 13,
+        "hasActivity": false,
+        "isToday": false,
+        "isFuture": false
+      },
+      {
+        "date": "2026-09-14",
+        "weekdayLabel": "L",
+        "dayOfMonth": 14,
+        "hasActivity": true,
+        "isToday": false,
+        "isFuture": false
+      },
+      {
+        "date": "2026-09-15",
+        "weekdayLabel": "M",
+        "dayOfMonth": 15,
+        "hasActivity": true,
+        "isToday": true,
+        "isFuture": false
+      },
+      {
+        "date": "2026-09-16",
+        "weekdayLabel": "M",
+        "dayOfMonth": 16,
+        "hasActivity": false,
+        "isToday": false,
+        "isFuture": true
+      },
+      {
+        "date": "2026-09-17",
+        "weekdayLabel": "J",
+        "dayOfMonth": 17,
+        "hasActivity": false,
+        "isToday": false,
+        "isFuture": true
+      }
+    ],
+    "thisWeekSessionCount": 2
+  }
 }
