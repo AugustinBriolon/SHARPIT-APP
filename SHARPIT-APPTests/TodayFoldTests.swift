@@ -29,55 +29,72 @@ import Testing
     #expect(SessionPriorityPolicy.showsTag(sessionCount: 2, priority: false) == false)
 }
 
-@Test func overnightArcTipMapsScoreAlongTopSemicircle() {
-    let left = OvernightArcMath.tipOffset(progress: 0, radius: 100)
-    let top = OvernightArcMath.tipOffset(progress: 0.5, radius: 100)
-    let right = OvernightArcMath.tipOffset(progress: 1, radius: 100)
-    #expect(abs(left.width + 100) < 0.01)
-    #expect(abs(left.height) < 0.01)
-    #expect(abs(top.width) < 0.01)
-    #expect(abs(top.height + 100) < 0.01)
-    #expect(abs(right.width - 100) < 0.01)
-    #expect(abs(right.height) < 0.01)
+@Test func tickDialSweepsTheTopSemicircle() {
+    let geometry = SharpitTickGaugeGeometry.self
+    let first = geometry.point(angle: geometry.angle(at: 0), radius: geometry.radiusOuter)
+    let last = geometry.point(
+        angle: geometry.angle(at: geometry.tickCount - 1),
+        radius: geometry.radiusOuter
+    )
+
+    // Left end, right end, both on the centre line.
+    #expect(abs(first.x - (geometry.centreX - geometry.radiusOuter)) < 0.01)
+    #expect(abs(first.y - geometry.centreY) < 0.01)
+    #expect(abs(last.x - (geometry.centreX + geometry.radiusOuter)) < 0.01)
+    #expect(abs(last.y - geometry.centreY) < 0.01)
 }
 
-@Test func overnightArcTipStaysOnCircleDuringProgress() {
-    let radius: CGFloat = 100
-    for step in 0...10 {
-        let t = CGFloat(step) / 10
-        let offset = OvernightArcMath.tipOffset(progress: t, radius: radius)
-        let distance = (offset.width * offset.width + offset.height * offset.height).squareRoot()
-        #expect(abs(distance - radius) < 0.01)
+@Test func everyTickStaysOnItsRadius() {
+    let geometry = SharpitTickGaugeGeometry.self
+    for index in 0..<geometry.tickCount {
+        let point = geometry.point(angle: geometry.angle(at: index), radius: geometry.radiusOuter)
+        let dx = point.x - geometry.centreX
+        let dy = point.y - geometry.centreY
+        #expect(abs((dx * dx + dy * dy).squareRoot() - geometry.radiusOuter) < 0.01)
+        // The dial is the top half only.
+        #expect(point.y <= geometry.centreY + 0.01)
     }
 }
 
-@Test func overnightScoreSitsAtTheMidpointOfTheBowl() {
-    // Equal air above the number and below it. A fraction picked any other way leaves
-    // the block hugging either the apex or the baseline.
-    let radius: CGFloat = 74
-    let centre = OvernightGaugeLayout.scoreCentre(radius: radius)
+@Test func theThumbSitsBetweenTheTickRadii() {
+    let geometry = SharpitTickGaugeGeometry.self
+    let thumb = geometry.thumb(forScore: 60)
+    let dx = thumb.x - geometry.centreX
+    let dy = thumb.y - geometry.centreY
+    let distance = (dx * dx + dy * dy).squareRoot()
 
-    #expect(centre == radius / 2)
-    #expect(abs((radius - centre) - centre) < 0.01)
+    #expect(distance > geometry.radiusInner)
+    #expect(distance < geometry.radiusOuter)
 }
 
-@Test func overnightScoreCentreScalesWithTheRadius() {
-    #expect(
-        OvernightGaugeLayout.scoreCentre(radius: 148)
-            > OvernightGaugeLayout.scoreCentre(radius: 74)
-    )
-    #expect(OvernightGaugeLayout.scoreCentre(radius: 0) == 0)
+@Test func ticksLightUpToTheScoreAndNoFurther() {
+    // Mirrors the web's overnightTickStroke: unread dial is all border, a read one lights
+    // every tick at or below the score and leaves the rest as track.
+    let unread = SharpitTickTone.stroke(at: 10, score: nil)
+    #expect(unread == SharpitColor.analysisBorder)
+
+    let geometry = SharpitTickGaugeGeometry.self
+    for index in 0..<geometry.tickCount {
+        let tickScore = geometry.tickScore(at: index)
+        let stroke = SharpitTickTone.stroke(at: index, score: 60)
+        if tickScore > 60 {
+            #expect(stroke == SharpitColor.analysisBorder)
+        } else {
+            #expect(stroke != SharpitColor.analysisBorder)
+        }
+    }
 }
 
-@Test func overnightBowlClearsTheArcPlusItsApexAir() {
-    // height = width / ratio must clear the radius, the stroke's cap and the air above
-    // the apex — otherwise the arc overflows the panel, which is what 2.05 did.
-    for width in [CGFloat(130), 160, 190] {
-        let height = width / OvernightGaugeLayout.bowlAspectRatio
-        let radius = width / 2 - OvernightGaugeLayout.arcLineWidth / 2
-        let needed = radius + OvernightGaugeLayout.arcLineWidth / 2 + OvernightGaugeLayout.apexAir
+@Test func theTicksApproachingTheScoreTakeTheHighlight() {
+    let geometry = SharpitTickGaugeGeometry.self
+    let justBelow = (0..<geometry.tickCount).filter { index in
+        let score = geometry.tickScore(at: index)
+        return score <= 60 && score >= 60 - SharpitTickTone.highlightBand
+    }
 
-        #expect(height >= needed - 1)
+    #expect(!justBelow.isEmpty)
+    for index in justBelow {
+        #expect(SharpitTickTone.stroke(at: index, score: 60) == SharpitColor.highlight)
     }
 }
 

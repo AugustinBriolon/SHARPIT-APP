@@ -5,7 +5,7 @@ struct OvernightGaugePair: View {
     var pulseScores: Bool = false
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.xs) {
+        HStack(alignment: .top, spacing: SharpitSpacing.xs) {
             ForEach(gauges) { gauge in
                 OvernightGaugeCell(gauge: gauge, pulse: pulseScores)
             }
@@ -13,211 +13,128 @@ struct OvernightGaugePair: View {
     }
 }
 
+/// One overnight readout, composed as the web composes it: the instrument's name on top,
+/// the dial centred under it at a capped width, the baseline note at the foot.
+///
+/// The name used to sit *under* the dial, and the dial filled the card's full width. Both
+/// were wrong, and no amount of spacing rescued them — a title below its instrument reads
+/// as a caption for whatever follows, and an edge-to-edge dial has no air to give.
 private struct OvernightGaugeCell: View {
     let gauge: OvernightGaugeModel
     var pulse: Bool = false
 
-    @State private var displayedProgress: CGFloat = 0
+    @State private var displayedScore: CGFloat?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var targetFraction: CGFloat {
-        CGFloat(AnimatedScoreText.progressFraction(from: gauge.score) ?? 0)
+    /// The web caps the dial and centres it (`max-w-36` → `max-w-52`) rather than letting
+    /// it fill the card. That cap is what gives the instrument its margin.
+    private let dialMaxWidth: CGFloat = 150
+
+    private var targetScore: CGFloat? {
+        AnimatedScoreText.progressFraction(from: gauge.score).map { CGFloat($0 * 100) }
     }
 
     var body: some View {
-        // Three tiers, three gaps: inside the score block, between the label and its
-        // caption, and a larger one separating the bowl from the words under it. They
-        // were all `xxs` before, which is why the arc, the label and the caption read
-        // as one crowded block.
-        VStack(spacing: SharpitSpacing.sm) {
-            OvernightArcGauge(progress: displayedProgress) {
-                VStack(spacing: SharpitSpacing.xxs) {
-                    AnimatedScoreText(score: gauge.score, animation: SharpitMotion.gaugeFill)
-                        .opacity(pulse ? 0.55 : 1)
-                    Text("sur 100")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .aspectRatio(OvernightGaugeLayout.bowlAspectRatio, contentMode: .fit)
-            // The arc is stroked with a round cap, so without this inset the two
-            // ends sit flush against the panel's hairline.
-            .padding(.horizontal, SharpitSpacing.xs)
-
-            VStack(spacing: SharpitSpacing.xxs) {
-                Text(title)
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
+        VStack(spacing: SharpitSpacing.md) {
+            header
+            dial
+            if let caption = gauge.caption {
+                Text(caption)
+                    .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                if let caption = gauge.caption {
-                    Text(caption)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panel)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title), \(gauge.score)")
-        .onAppear { animateFill(to: targetFraction) }
-        .onChange(of: gauge.score) { _, _ in
-            animateFill(to: targetFraction)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .onAppear { reveal(to: targetScore) }
+        .onChange(of: gauge.score) { _, _ in reveal(to: targetScore) }
+    }
+
+    private var header: some View {
+        HStack(spacing: SharpitSpacing.xxs + 2) {
+            Image(systemName: gauge.key.instrumentSymbol)
+                .font(SharpitTypography.label)
+                .foregroundStyle(SharpitColor.primary)
+            Text(title)
+                .font(SharpitTypography.label)
+                .tracking(SharpitTypography.labelTracking)
+                .textCase(.uppercase)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private var dial: some View {
+        ZStack(alignment: .top) {
+            SharpitTickGauge(score: displayedScore)
+
+            GeometryReader { geo in
+                readout
+                    .frame(width: geo.size.width)
+                    .position(
+                        x: geo.size.width / 2,
+                        y: geo.size.height * SharpitTickGaugeGeometry.readoutTopFraction
+                            + readoutHeight / 2
+                    )
+            }
+        }
+        .frame(maxWidth: dialMaxWidth)
+        .aspectRatio(SharpitTickGaugeGeometry.aspectRatio, contentMode: .fit)
+    }
+
+    /// Approximate height of the score block, used to hang it from its top edge the way
+    /// the web's absolutely positioned readout hangs from `top-[44%]`.
+    private var readoutHeight: CGFloat { 50 }
+
+    private var readout: some View {
+        VStack(spacing: SharpitSpacing.xxs) {
+            Text(scoreDisplay)
+                .font(SharpitTypography.gaugeScore)
+                .tracking(SharpitTypography.gaugeScoreTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .opacity(displayedScore == nil ? 0.45 : (pulse ? 0.55 : 1))
+                .contentTransition(reduceMotion ? .identity : .numericText())
+            Text("sur 100")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
         }
     }
 
-    private func animateFill(to value: CGFloat) {
-        if SharpitMotion.reduceMotion || reduceMotion {
-            displayedProgress = value
+    private var scoreDisplay: String {
+        guard let displayedScore else { return "—" }
+        return String(Int(displayedScore.rounded()))
+    }
+
+    private func reveal(to value: CGFloat?) {
+        guard !SharpitMotion.reduceMotion, !reduceMotion else {
+            displayedScore = value
             return
         }
         SharpitMotion.run(SharpitMotion.gaugeFill) {
-            displayedProgress = value
+            displayedScore = value
         }
+    }
+
+    private var accessibilityLabel: String {
+        [title, "\(gauge.score) sur 100", gauge.caption]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
     }
 
     private var title: String {
         switch gauge.key {
-        case .sleep: "Score sommeil"
-        case .recovery: "Score récupération"
+        case .sleep: "Sommeil"
+        case .recovery: "Récupération"
         case .effort, .adaptation: gauge.key.instrumentLabel
         }
-    }
-}
-
-/// Top semicircle — faded full track, darker fill stopping at the score, and whatever
-/// the caller puts in the bowl.
-///
-/// The score used to be a sibling view offset by a fraction of the *box* height while the
-/// arc sized itself from the *width*. The two could not stay in proportion: change the
-/// box and the number drifted toward the arc. Both now derive from one radius.
-private struct OvernightArcGauge<Content: View>: View {
-    let progress: CGFloat
-    @ViewBuilder let content: Content
-
-    private let lineWidth = OvernightGaugeLayout.arcLineWidth
-    private let tipSize: CGFloat = 10
-
-    private var clamped: CGFloat {
-        min(max(progress, 0), 1)
-    }
-
-    var body: some View {
-        GeometryReader { geo in
-            // The radius answers to both dimensions. Deriving it from the width alone
-            // made the arc taller than its own box, so the apex overflowed upward and
-            // sat on the panel's edge.
-            let pathRadius = max(
-                0,
-                min(
-                    geo.size.width / 2 - lineWidth / 2,
-                    geo.size.height - lineWidth
-                )
-            )
-            let diameter = pathRadius * 2
-            let baseline = geo.size.height - lineWidth / 2
-
-            ZStack {
-                semicircle(trimEnd: 0.5)
-                    .stroke(
-                        SharpitColor.radialTrack,
-                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                    )
-
-                semicircle(trimEnd: 0.5 * clamped)
-                    .stroke(
-                        SharpitColor.primary,
-                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                    )
-
-                // Animatable progress → tip stays on the arc (not a Cartesian chord).
-                OvernightArcTip(progress: clamped, radius: pathRadius, size: tipSize)
-            }
-            .frame(width: diameter, height: diameter)
-            .position(x: geo.size.width / 2, y: baseline)
-
-            // Centred in the bowl: the midpoint between the apex and the baseline.
-            // Anything else — a fixed offset, a fraction of the box — leaves the gap
-            // above the number and the gap below it unequal, which is what read as
-            // crushed however much air the box itself had.
-            content
-                .position(
-                    x: geo.size.width / 2,
-                    y: baseline - OvernightGaugeLayout.scoreCentre(radius: pathRadius)
-                )
-        }
-    }
-
-    private func semicircle(trimEnd: CGFloat) -> some Shape {
-        Circle()
-            .trim(from: 0, to: trimEnd)
-            .rotation(.degrees(180))
-    }
-}
-
-/// Tip whose `animatableData` is progress, so SwiftUI interpolates the angle
-/// and recomputes polar offset each frame (avoids chord shortcuts through the bowl).
-private struct OvernightArcTip: View, Animatable {
-    var progress: CGFloat
-    var radius: CGFloat
-    var size: CGFloat
-
-    var animatableData: CGFloat {
-        get { progress }
-        set { progress = newValue }
-    }
-
-    var body: some View {
-        Circle()
-            .fill(SharpitColor.primary)
-            .frame(width: size, height: size)
-            .offset(OvernightArcMath.tipOffset(progress: progress, radius: radius))
-            // At zero there is no progress to mark, and a dot parked on the left
-            // cap reads as a stray mark rather than as an empty gauge.
-            .opacity(progress > 0 ? 1 : 0)
-            .accessibilityHidden(true)
-    }
-}
-
-enum OvernightGaugeLayout {
-    /// Stroke width of the arc, shared with the layout math below.
-    static let arcLineWidth: CGFloat = 12
-
-    /// Air kept between the arc's apex and the top of the bowl.
-    static let apexAir: CGFloat = SharpitSpacing.md
-
-    /// Width / height of the arc+score bowl.
-    ///
-    /// The bowl must clear the radius plus the stroke's cap plus `apexAir`, which is
-    /// `width / 2 + apexAir`. A ratio cannot express an additive term, so it is chosen to
-    /// satisfy the inequality at the *narrowest* width a two-up row produces — a value
-    /// tuned to one width leaves the narrow case with no air at all. Earlier values were
-    /// picked first and the geometry made to fit them, so the arc either overflowed the
-    /// top (2.05) or had to be shrunk onto the score.
-    static let bowlAspectRatio: CGFloat = 1.55
-
-    /// How far above the baseline the score block is centred.
-    ///
-    /// Half the radius is the midpoint of the bowl, which leaves the same air above the
-    /// number as below it. The score reads as sitting *in* the arc rather than hanging
-    /// from it.
-    static func scoreCentre(radius: CGFloat) -> CGFloat {
-        radius / 2
-    }
-}
-
-enum OvernightArcMath {
-    static func tipOffset(progress: CGFloat, radius: CGFloat) -> CGSize {
-        let t = Double(min(max(progress, 0), 1))
-        let angle = Double.pi * (1 - t)
-        return CGSize(
-            width: radius * Foundation.cos(angle),
-            height: -radius * Foundation.sin(angle)
-        )
     }
 }

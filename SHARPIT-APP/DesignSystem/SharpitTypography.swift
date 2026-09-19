@@ -102,6 +102,13 @@ enum SharpitTypography {
     static var data: Font { instrument(size: 20, weight: .medium, relativeTo: .title3) }
     static var dataTracking: CGFloat { tracking(em: -0.02, size: 20) }
 
+    /// The gauge readout — the web sets this one apart from `text-data` at
+    /// `text-[1.75rem]`, because a dial's number is the largest figure on the screen.
+    /// Medium rather than the web's semibold: JetBrains Mono ships 400/500 here, and the
+    /// brand face at 500 beats a system fallback at 600.
+    static var gaugeScore: Font { instrument(size: 28, weight: .medium, relativeTo: .title) }
+    static var gaugeScoreTracking: CGFloat { tracking(em: -0.02, size: 28) }
+
     /// CSS tracking is relative to the font size; SwiftUI's is absolute.
     static func tracking(em: CGFloat, size: CGFloat) -> CGFloat {
         em * size
