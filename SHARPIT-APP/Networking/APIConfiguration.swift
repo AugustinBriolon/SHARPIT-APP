@@ -19,7 +19,7 @@ enum APIConfiguration {
     /// real data. The app always talks to the web app over `/api`, never to the database:
     /// the domain logic, the Clerk session and the athlete scoping all live server-side,
     /// and a client holding database credentials would have none of them.
-    static var baseURL: URL {
+    nonisolated static var baseURL: URL {
         let bundleValue = Bundle.main.object(forInfoDictionaryKey: bundleKey) as? String
         guard let url = resolve(
             environment: ProcessInfo.processInfo.environment,
