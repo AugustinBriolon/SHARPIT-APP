@@ -5,8 +5,18 @@ import SwiftUI
 struct JournalView: View {
     @State private var store: JournalStore
     @State private var showsPrefs = false
+    @State private var showsWellness = false
 
-    init(client: any JournalServing, tokenProvider: @escaping () async throws -> String) {
+    private let wellness: any WellnessServing
+    private let tokenProvider: () async throws -> String
+
+    init(
+        client: any JournalServing,
+        wellness: any WellnessServing,
+        tokenProvider: @escaping () async throws -> String
+    ) {
+        self.wellness = wellness
+        self.tokenProvider = tokenProvider
         _store = State(initialValue: JournalStore(client: client, tokenProvider: tokenProvider))
     }
 
@@ -28,6 +38,15 @@ struct JournalView: View {
             }
             .sheet(isPresented: $showsPrefs) {
                 JournalPrefsDrawer(store: store)
+            }
+            .sheet(isPresented: $showsWellness) {
+                MorningWellnessSheet(
+                    client: wellness,
+                    tokenProvider: tokenProvider,
+                    trainingDayId: store.trainingDayId
+                ) { label in
+                    store.applyMoodLabel(label)
+                }
             }
             .task { await store.load() }
             .onDisappear {
@@ -79,7 +98,11 @@ struct JournalView: View {
                     if !trackables.isEmpty {
                         JournalSection(title: category.label) {
                             ForEach(trackables) { trackable in
-                                JournalTrackableRow(trackable: trackable, store: store)
+                                JournalTrackableRow(
+                                    trackable: trackable,
+                                    store: store,
+                                    onOpenWellness: { showsWellness = true }
+                                )
                             }
                         }
                     }
@@ -140,6 +163,7 @@ private struct JournalSection<Content: View>: View {
 private struct JournalTrackableRow: View {
     let trackable: JournalTrackable
     @Bindable var store: JournalStore
+    var onOpenWellness: () -> Void = {}
 
     var body: some View {
         switch trackable.kind {
@@ -170,10 +194,52 @@ private struct JournalTrackableRow: View {
                 store.adjustHydration(by: delta * 250)
             }
         case .mood:
-            JournalMoodRow(label: trackable.label, selected: store.mood) { mood in
-                store.setMood(mood)
-            }
+            JournalWellnessRow(label: trackable.label, moodLabel: store.moodLabel, onOpen: onOpenWellness)
         }
+    }
+}
+
+/// Mood is the visible end of the morning check-in, not a field of its own: tapping it
+/// opens the four scales the web asks together.
+private struct JournalWellnessRow: View {
+    let label: String
+    let moodLabel: String?
+    let onOpen: () -> Void
+
+    var body: some View {
+        Button(action: onOpen) {
+            HStack(spacing: SharpitSpacing.sm) {
+                Image(systemName: "face.smiling")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .frame(width: 24)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(label)
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text(moodLabel ?? "Ressenti du matin non renseigné")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(
+                            moodLabel == nil ? SharpitColor.mutedForeground : SharpitColor.primary
+                        )
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .accessibilityHidden(true)
+            }
+            .padding(SharpitSpacing.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.panel)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -201,18 +267,78 @@ private struct JournalFactorRow: View {
 
             Spacer(minLength: SharpitSpacing.xs)
 
-            Picker(label, selection: Binding(get: { state }, set: onChange)) {
-                Text("—").tag(JournalFactorState.unset)
-                Text("Non").tag(JournalFactorState.no)
-                Text("Oui").tag(JournalFactorState.yes)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 150)
+            JournalAnswerToggle(state: state, onChange: onChange)
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
+    }
+}
+
+private extension JournalFactorState {
+    /// The selection dot follows the answer: a recorded "non" reads as settled, an
+    /// unanswered day stays quiet, a recorded "oui" is what the day now carries.
+    var tone: Color {
+        switch self {
+        case .no: SharpitColor.signalNeutral
+        case .unset: SharpitColor.analysisBorder
+        case .yes: SharpitColor.primary
+        }
+    }
+
+    var onTone: Color {
+        self == .unset ? SharpitColor.foreground : SharpitColor.primaryForeground
+    }
+}
+
+/// Non, unanswered, Oui — in that order. Unanswered is a real third choice and not the
+/// absence of one: the analyses only weigh an explicit answer, so an athlete has to be
+/// able to go back to "not said".
+private struct JournalAnswerToggle: View {
+    let state: JournalFactorState
+    let onChange: (JournalFactorState) -> Void
+
+    @Namespace private var selection
+
+    var body: some View {
+        HStack(spacing: 0) {
+            segment(.no, title: "Non", accessibilityTitle: "Non")
+            segment(.unset, title: "—", accessibilityTitle: "Non renseigné")
+            segment(.yes, title: "Oui", accessibilityTitle: "Oui")
+        }
+        .padding(2)
+        .background(Capsule().fill(SharpitColor.chipSurface))
+        .overlay(
+            Capsule().strokeBorder(SharpitColor.analysisBorder, lineWidth: SharpitStroke.hairline)
+        )
+        .animation(.snappy(duration: 0.18), value: state)
+    }
+
+    private func segment(
+        _ value: JournalFactorState,
+        title: String,
+        accessibilityTitle: String
+    ) -> some View {
+        let isSelected = state == value
+        return Button {
+            onChange(value)
+        } label: {
+            Text(title)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(isSelected ? value.onTone : SharpitColor.mutedForeground)
+                .frame(width: 42, height: 30)
+                .background {
+                    if isSelected {
+                        Capsule()
+                            .fill(value.tone)
+                            .matchedGeometryEffect(id: "selection", in: selection)
+                    }
+                }
+                .contentShape(.capsule)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityTitle)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
 
@@ -271,48 +397,5 @@ private struct JournalStepperRow: View {
         .sharpitSurface(.panel)
         .accessibilityElement(children: .contain)
         .accessibilityValue(value)
-    }
-}
-
-private struct JournalMoodRow: View {
-    let label: String
-    let selected: JournalMood?
-    let onPick: (JournalMood?) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            Text(label)
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
-
-            HStack(spacing: SharpitSpacing.xxs) {
-                ForEach(JournalMood.allCases) { mood in
-                    Button {
-                        onPick(selected == mood ? nil : mood)
-                    } label: {
-                        VStack(spacing: 2) {
-                            Image(systemName: mood.symbolName)
-                                .font(SharpitTypography.body)
-                            Text(mood.label)
-                                .font(SharpitTypography.meta)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, SharpitSpacing.xs)
-                        .foregroundStyle(
-                            selected == mood ? SharpitColor.primary : SharpitColor.mutedForeground
-                        )
-                        .sharpitSurface(selected == mood ? .panelAlt : .chip)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(mood.label)
-                    .accessibilityAddTraits(selected == mood ? [.isButton, .isSelected] : .isButton)
-                }
-            }
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }

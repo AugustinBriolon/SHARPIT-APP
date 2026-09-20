@@ -13,16 +13,19 @@ struct TodayView: View {
     /// that cannot save is worse than no control.
     @State private var activityStatusStore: ActivityStatusStore?
     private let journalClient: (any JournalServing)?
+    private let wellnessClient: (any WellnessServing)?
 
     init(
         client: any TodayServing = FixtureTodayClient(),
         tokenProvider: (() async throws -> String)? = nil,
         modelContext: ModelContext? = nil,
         activityStatusClient: (any ActivityStatusServing)? = nil,
-        journalClient: (any JournalServing)? = nil
+        journalClient: (any JournalServing)? = nil,
+        wellnessClient: (any WellnessServing)? = nil
     ) {
         self.tokenProvider = tokenProvider
         self.journalClient = tokenProvider == nil ? nil : journalClient
+        self.wellnessClient = tokenProvider == nil ? nil : wellnessClient
         _store = State(
             initialValue: TodayStore(
                 client: client,
@@ -83,9 +86,13 @@ struct TodayView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    if let journalClient, let tokenProvider {
+                    if let journalClient, let wellnessClient, let tokenProvider {
                         NavigationLink {
-                            JournalView(client: journalClient, tokenProvider: tokenProvider)
+                            JournalView(
+                                client: journalClient,
+                                wellness: wellnessClient,
+                                tokenProvider: tokenProvider
+                            )
                         } label: {
                             Label("Journal", systemImage: "book.closed")
                         }

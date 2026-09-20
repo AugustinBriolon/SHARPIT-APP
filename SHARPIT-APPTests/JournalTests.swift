@@ -104,11 +104,10 @@ private func prefs(_ json: String) throws -> JournalPrefs {
     #expect(entry?.caffeineMg == 0)
 }
 
-/// The label is what the web stores, so an entry written on either side reads the same.
+/// The journal stores the mood's label, not a code, so both sides must spell it alike.
 @Test func moodsCarryTheWebsVocabulary() {
-    #expect(JournalMood(rawValue: "Très bas") == .veryLow)
-    #expect(JournalMood(rawValue: "Top") == .top)
-    #expect(JournalMood.allCases.map(\.rawValue) == ["Très bas", "Bas", "Correct", "Bien", "Top"])
+    let labels = WellnessScore.allCases.map { WellnessDimension.mood.label(for: $0) }
+    #expect(labels == ["Très bas", "Bas", "Correct", "Bien", "Top"])
 }
 
 // MARK: - Store
@@ -204,7 +203,7 @@ private actor StubJournalClient: JournalServing {
     )
     await store.load()
 
-    store.setMood(.good)
+    store.applyMoodLabel("Bien")
     await store.flushPendingSave()
 
     #expect(await client.saveCount() == 1)

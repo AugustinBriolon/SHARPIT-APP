@@ -15,6 +15,7 @@ struct RootView: View {
     private let plannedSessionClient = PlannedSessionClient()
     private let activityStatusClient = ActivityStatusClient()
     private let journalClient = JournalClient()
+    private let wellnessClient = WellnessClient()
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -24,7 +25,8 @@ struct RootView: View {
                     tokenProvider: liveToken,
                     modelContext: modelContext,
                     activityStatusClient: activityStatusClient,
-                    journalClient: journalClient
+                    journalClient: journalClient,
+                    wellnessClient: wellnessClient
                 )
             }
             Tab(

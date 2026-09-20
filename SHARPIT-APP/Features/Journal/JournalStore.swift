@@ -74,9 +74,11 @@ final class JournalStore {
         visibleTrackables.isEmpty && visibleCustomItems.isEmpty
     }
 
-    var mood: JournalMood? {
-        entry.moodLabel.flatMap(JournalMood.init(rawValue:))
+    var moodLabel: String? {
+        entry.moodLabel
     }
+
+    var trainingDayId: String { entry.trainingDayId }
 
     // MARK: Writing the day
 
@@ -93,9 +95,10 @@ final class JournalStore {
         scheduleSave()
     }
 
-    func setMood(_ mood: JournalMood?) {
-        entry.moodLabel = mood?.rawValue
-        SharpitHaptics.play(.light)
+    /// Echoes the morning check-in's mood onto the day, as the web does. The journal
+    /// does not own the value — the check-in does — it only shows what was answered.
+    func applyMoodLabel(_ label: String) {
+        entry.moodLabel = label
         scheduleSave()
     }
 
