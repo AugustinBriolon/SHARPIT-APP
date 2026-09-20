@@ -8,7 +8,7 @@ import Foundation
 ///
 /// Only the kinds iOS can currently reach are modelled. Adding one is a case plus its
 /// label — the same shape the web's registry has.
-enum CoachDiscussTarget: Equatable, Hashable, Sendable {
+nonisolated enum CoachDiscussTarget: Equatable, Hashable, Sendable {
     case today
     case plannedSession(sessionId: String)
     case activity(activityId: String)
@@ -31,7 +31,7 @@ enum CoachDiscussTarget: Equatable, Hashable, Sendable {
 /// carries and to let the athlete drop it before sending. This is a tag, not a prefilled
 /// prompt: the athlete still writes their own question, and the coach is told what they
 /// were looking at.
-struct CoachDiscussContext: Equatable, Hashable, Sendable, Identifiable {
+nonisolated struct CoachDiscussContext: Equatable, Hashable, Sendable, Identifiable {
     let target: CoachDiscussTarget
     /// What is attached, in the athlete's words.
     let label: String
@@ -57,7 +57,7 @@ struct CoachDiscussContext: Equatable, Hashable, Sendable, Identifiable {
     }
 }
 
-enum CoachDiscuss {
+nonisolated enum CoachDiscuss {
     /// Planning window in plain French — shared by the chip and the coach prompt.
     static func planningHorizonLabel(_ horizonDays: Int) -> String {
         switch horizonDays {

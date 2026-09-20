@@ -36,9 +36,7 @@ struct RootView: View {
                 systemImage: ShellDestination.coach.systemImage,
                 value: ShellTab.coach
             ) {
-                InstrumentShellView(destination: .coach) {
-                    CoachContextPreview(context: router.pendingCoachContext)
-                }
+                CoachView(client: CoachChatClient(), tokenProvider: liveToken)
             }
             Tab(
                 ShellDestination.activity.title,

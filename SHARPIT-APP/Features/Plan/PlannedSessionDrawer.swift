@@ -15,6 +15,11 @@ struct PlannedSessionPreview: Identifiable, Equatable {
     let date: Date?
     let metrics: [PlannedSessionMetric]
     let notes: String?
+    /// What to actually do. Empty when the surface has no structure to show.
+    let steps: [V1PlannedSessionStep]
+    /// True when the breakdown was inferred from duration and intensity rather than
+    /// written — worth saying, because the athlete did not choose it.
+    let stepsAreDerived: Bool
 
     var id: String { sessionId ?? title }
 }
@@ -43,7 +48,9 @@ extension PlannedSessionPreview {
             symbolName: session.symbolName,
             date: session.date,
             metrics: metrics,
-            notes: session.notes
+            notes: session.notes,
+            steps: session.breakdown?.steps ?? [],
+            stepsAreDerived: session.breakdown?.derived ?? false
         )
     }
 
@@ -62,7 +69,11 @@ extension PlannedSessionPreview {
                     value: $0.unit.isEmpty ? $0.value : "\($0.value) \($0.unit)"
                 )
             },
-            notes: card.subtitle
+            notes: card.subtitle,
+            // Today's payload carries the line, not the prescription behind it. The
+            // breakdown arrives with the plan, so it is shown there.
+            steps: [],
+            stepsAreDerived: false
         )
     }
 }
@@ -86,6 +97,12 @@ struct PlannedSessionDrawer: View {
                     if !preview.metrics.isEmpty {
                         metricsRow
                     }
+                    if !preview.steps.isEmpty {
+                        PlannedSessionBreakdownList(
+                            steps: preview.steps,
+                            derived: preview.stepsAreDerived
+                        )
+                    }
                     if let notes = preview.notes, !notes.isEmpty {
                         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                             SharpitEyebrow("Consigne")
@@ -101,7 +118,10 @@ struct PlannedSessionDrawer: View {
                     // Without an id the coach cannot be told *which* session, and a tag
                     // naming the wrong one is worse than no tag.
                     if let sessionId = preview.sessionId {
-                        CoachDiscussButton(title: "Discuter avec le coach") {
+                        CoachDiscussButton(
+                            title: "Discuter de cette séance",
+                            subtitle: "Le coach verra la séance que tu regardes"
+                        ) {
                             onDiscussWithCoach(
                                 CoachDiscuss.describe(
                                     .plannedSession(sessionId: sessionId),
@@ -177,31 +197,63 @@ struct PlannedSessionDrawer: View {
 
 /// The button that hands a subject to the coach.
 ///
-/// It appears wherever the athlete might want to ask about what they are looking at. What
-/// travels is a tag naming the subject, never a prefilled question.
+/// A row, not a filled block. The old version was a solid Forest slab with an arrow at
+/// each end, which read as the loudest thing on a screen whose job is the session — and
+/// the design law reserves filled surfaces for the verdict. This carries the same weight
+/// as the panels around it: flat fill, hairline border, one leading mark.
 struct CoachDiscussButton: View {
     let title: String
+    var subtitle: String?
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: SharpitSpacing.xs) {
+            HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: "bubble.left.and.bubble.right")
-                    .font(SharpitTypography.label)
-                Text(title)
                     .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.primary)
+                    .frame(width: 28, height: 28)
+                    .background(SharpitColor.chipSurface, in: Circle())
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.leading)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+
                 Spacer(minLength: 0)
-                Image(systemName: "arrow.up.right")
+
+                Image(systemName: "chevron.right")
                     .font(SharpitTypography.label)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .accessibilityHidden(true)
             }
-            .foregroundStyle(SharpitColor.primaryForeground)
-            .padding(.horizontal, SharpitSpacing.md)
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .background(
-                SharpitColor.primary,
-                in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-            )
+            .padding(SharpitSpacing.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.panel)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
+}
+
+#Preview {
+    VStack(spacing: SharpitSpacing.md) {
+        CoachDiscussButton(
+            title: "Discuter de cette séance",
+            subtitle: "Le coach verra ce que tu regardes"
+        ) {}
+        CoachDiscussButton(title: "Discuter avec le coach") {}
+    }
+    .padding()
+    .background(SharpitCanvasBackground())
 }
