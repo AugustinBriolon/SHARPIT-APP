@@ -24,6 +24,9 @@
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* SHARPIT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SHARPIT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		000000000000000200000000 /* SHARPIT-APPTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SHARPIT-APPTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000301 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		000000000000000000000302 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		000000000000000000000303 /* Info-Extra.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Extra.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -60,8 +63,19 @@
 			children = (
 				000000000000000000000010 /* SHARPIT-APP */,
 				000000000000000000000210 /* SHARPIT-APPTests */,
+				000000000000000000000300 /* Config */,
 				000000000000000000000020 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		000000000000000000000300 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000301 /* Debug.xcconfig */,
+				000000000000000000000302 /* Release.xcconfig */,
+				000000000000000000000303 /* Info-Extra.plist */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		000000000000000000000020 /* Products */ = {
@@ -199,6 +213,7 @@
 /* Begin XCBuildConfiguration section */
 		000000000000000011000000 /* Debug configuration for PBXProject "SHARPIT-APP" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 000000000000000000000301 /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -269,6 +284,7 @@
 		};
 		000000000000000012000000 /* Release configuration for PBXProject "SHARPIT-APP" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 000000000000000000000302 /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -343,6 +359,7 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/Info-Extra.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = SHARPIT;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
@@ -385,6 +402,7 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/Info-Extra.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = SHARPIT;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;

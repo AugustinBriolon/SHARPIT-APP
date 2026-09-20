@@ -1,0 +1,7 @@
+// Where the app reaches the web app. `//` starts a comment in an xcconfig, so the
+// slashes of the scheme are split with an empty `$()`.
+SHARPIT_API_ORIGIN = http:/$()/127.0.0.1:3000
+
+// Per-machine override, gitignored. Put `SHARPIT_API_ORIGIN = https:/$()/…` there to run
+// a Debug build on a phone against a deployed instance.
+#include? "Local.xcconfig"

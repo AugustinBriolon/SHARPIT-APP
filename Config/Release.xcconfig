@@ -1,0 +1,3 @@
+// `//` starts a comment in an xcconfig, so the slashes of the scheme are split with an
+// empty `$()`.
+SHARPIT_API_ORIGIN = https:/$()/sharpit.vercel.app

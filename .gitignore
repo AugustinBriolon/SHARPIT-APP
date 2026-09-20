@@ -11,3 +11,6 @@ xcuserdata/
 .qa-screenshots/
 .agents/
 skills-lock.json
+
+# Per-machine build override (see Config/Debug.xcconfig)
+Config/Local.xcconfig
