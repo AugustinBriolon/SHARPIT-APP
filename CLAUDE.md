@@ -96,14 +96,28 @@ in `V1Today.swift` / `V1Activities.swift` / `V1PlannedSessions.swift` and mirror
 API payloads.
 
 Only `/api/v1/today` is a real versioned contract today. `ActivityClient`,
-`PlannedSessionClient`, `CoachChatClient` and `CoachConversationClient` call web-internal
-routes (`/api/activities`, `/api/planned-sessions` including `…/:id/link`, `/api/coach/chat`,
-`/api/coach/conversations`); treat that as known debt, not as a pattern to copy.
+`PlannedSessionClient`, `CoachChatClient`, `CoachConversationClient`, `ActivityStatusClient`
+and `JournalClient` call web-internal routes (`/api/activities`, `/api/planned-sessions`
+including `…/:id/link`, `/api/coach/chat`, `/api/coach/conversations`, `/api/activity-status`,
+`/api/day-journal`, `/api/journal-prefs`); treat that as known debt, not as a pattern to copy.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON
 (`CoachMessage.stored`) and is sent back as it came, because the web writes parts the app
 does not model — tool calls — and a save from the phone must not strip them.
+
+**Journal.** `JournalView` asks for the day signals the athlete turned on, and
+`JournalPrefsDrawer` chooses them. Preferences are kept as the raw JSON the server sent
+(`JournalPrefs.raw`): the web stores keys the app does not model — automatic items fed by
+device sync, diet flags, thresholds — and the server rebuilds its enable map from defaults
+for every key a payload omits, so sending back only what the app renders would silently
+reset the rest. The catalogue in `JournalTrackables.swift` therefore covers the signals the
+app can render, never all of the web's.
+
+**Activity status.** The mode chip in Today's toolbar writes `/api/activity-status` on every
+pick — no explicit save, as on the web. A deadline that has passed is resolved back to
+`active` server-side on read, so the app never expires one itself. Trips are not modelled:
+the app carries `travelId` back unchanged rather than inventing one.
 
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation
 layer is web-only; the app maps domain payloads itself.

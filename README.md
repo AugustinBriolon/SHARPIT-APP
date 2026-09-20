@@ -82,6 +82,11 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   missed can be linked by hand from the planned session's drawer.
 - Coach: `/api/coach/chat` streams the answer; the conversation is kept server-side through
   `/api/coach/conversations`, and the history sheet lists, reopens and deletes them
+- Journal: the day's signals via `/api/day-journal`, and what it asks for via
+  `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
+  render — the web's automatic items, diet flags, thresholds — survive a save from the phone
+- Activity status: the training mode (actif / en pause / blessé / malade) via
+  `/api/activity-status`, written on every pick from Today's toolbar
 - Weather chip: WeatherKit + Core Location (not API weather)
 - Design system: `SHARPIT-APP/DesignSystem/`. Colour and radius are **generated** from the
   web design system — edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or
