@@ -169,7 +169,9 @@ private struct ActivityStatusOptionRow: View {
                     Text(status.label)
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.foreground)
-                    Text(isSelected ? status.planningImpact : status.hint)
+                    // The same line whether or not it is picked: a description that
+                    // rewrites itself on selection reads as a different option.
+                    Text(status.hint)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .multilineTextAlignment(.leading)
