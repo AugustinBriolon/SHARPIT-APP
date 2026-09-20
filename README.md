@@ -11,11 +11,26 @@ Native iPhone client for [SHARPIT](https://github.com/AugustinBriolon/SHARPIT) �
   (`docker compose up -d` then `yarn dev`, serving `http://127.0.0.1:3000`), Release builds
   use `https://sharpit.vercel.app` — see [Pointing at a server](#pointing-at-a-server)
 
-## Signing (simulator)
+## Signing
 
-Clerk requires Keychain. Builds use **Sign to Run Locally** (`CODE_SIGN_IDENTITY=-`, `CODE_SIGNING_ALLOWED=YES`). Fully unsigned apps crash at launch with OSStatus `-34018`.
+**Simulator.** Clerk requires Keychain, so simulator builds use **Sign to Run Locally**
+(`CODE_SIGN_IDENTITY=-`). Fully unsigned apps crash at launch with OSStatus `-34018`.
 
-Device installs, Associated Domains, and WeatherKit still need a personal Apple Development team (avoid on this managed Mac until signing works).
+**iPhone.** The app target supports `iphoneos`, and device builds sign with the Apple
+Development identity of your team. The team is per machine, so it lives in the gitignored
+`Config/Local.xcconfig`, next to the API origin:
+
+```
+SHARPIT_API_ORIGIN = https:/$()/sharpit.vercel.app
+DEVELOPMENT_TEAM = <your team id>
+```
+
+Find the team id in Xcode → Settings → Accounts, or with
+`defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier`. Then pick the phone as the
+run destination and press Run. On the phone, enable Developer Mode (Settings → Privacy &
+Security), and trust the developer under Settings → General → VPN & Device Management the
+first time. A free Personal Team signs for 7 days. Associated Domains and WeatherKit need a
+paid team and are not in the entitlements yet.
 
 ## Brand fonts
 

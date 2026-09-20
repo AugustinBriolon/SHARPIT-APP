@@ -61,9 +61,15 @@ key and is a separate step.
 
 ### Signing
 
-Builds use **Sign to Run Locally** (`CODE_SIGN_IDENTITY=-`, `CODE_SIGNING_ALLOWED=YES`)
-because Clerk needs the Keychain — a fully unsigned app crashes at launch with OSStatus
-`-34018`. Device installs, Associated Domains and WeatherKit need a real development team.
+Simulator builds use **Sign to Run Locally** (`CODE_SIGN_IDENTITY=-`,
+`CODE_SIGNING_ALLOWED=YES`) because Clerk needs the Keychain — a fully unsigned app crashes
+at launch with OSStatus `-34018`. The identity is conditional on the SDK
+(`CODE_SIGN_IDENTITY[sdk=iphonesimulator*]`), so a device build signs with `Apple Development`
+instead.
+
+The app target supports `iphoneos` as well as the simulator. The team is not in the project:
+each machine sets `DEVELOPMENT_TEAM` in the gitignored `Config/Local.xcconfig`, which also
+holds the API origin override. Associated Domains and WeatherKit still need a paid team.
 
 ## Architecture
 
