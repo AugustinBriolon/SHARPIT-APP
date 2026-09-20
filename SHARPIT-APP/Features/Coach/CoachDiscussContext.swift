@@ -57,6 +57,41 @@ nonisolated struct CoachDiscussContext: Equatable, Hashable, Sendable, Identifia
     }
 }
 
+nonisolated extension CoachDiscussContext {
+    /// Rebuilds the context of a stored turn from its metadata.
+    ///
+    /// The server keeps the kind and the target id, not the name the athlete saw, so the label
+    /// degrades to the kind alone. Nil for a kind the app cannot reach, which reads as an
+    /// ordinary turn.
+    init?(storedMetadata metadata: JSONValue) {
+        guard let kind = metadata["discussKind"]?.string else { return nil }
+
+        let target: CoachDiscussTarget
+        switch kind {
+        case "today":
+            target = .today
+        case "planned-session":
+            guard let id = metadata["sessionId"]?.string else { return nil }
+            target = .plannedSession(sessionId: id)
+        case "activity":
+            guard let id = metadata["activityId"]?.string else { return nil }
+            target = .activity(activityId: id)
+        case "planning":
+            // A number when the web wrote it, a string when this app did.
+            let days: Int? = switch metadata["horizonDays"] {
+            case .number(let value)?: Int(value)
+            case .string(let value)?: Int(value)
+            default: nil
+            }
+            guard let days else { return nil }
+            target = .planning(horizonDays: days)
+        default:
+            return nil
+        }
+        self = CoachDiscuss.describe(target)
+    }
+}
+
 nonisolated enum CoachDiscuss {
     /// Planning window in plain French — shared by the chip and the coach prompt.
     static func planningHorizonLabel(_ horizonDays: Int) -> String {

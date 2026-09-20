@@ -12,12 +12,44 @@ nonisolated struct CoachMessage: Identifiable, Sendable, Equatable {
     var text: String
     /// What the athlete had attached when they sent this. Only ever on a user turn.
     var context: CoachDiscussContext?
+    /// The turn exactly as the server stored it, for a conversation opened from history.
+    /// Saving sends this back rather than the text alone, so parts the app cannot show — the
+    /// web's tool calls, say — survive a save from the phone.
+    let stored: JSONValue?
 
-    init(id: String = UUID().uuidString, role: Role, text: String, context: CoachDiscussContext? = nil) {
+    init(
+        id: String = UUID().uuidString,
+        role: Role,
+        text: String,
+        context: CoachDiscussContext? = nil,
+        stored: JSONValue? = nil
+    ) {
         self.id = id
         self.role = role
         self.text = text
         self.context = context
+        self.stored = stored
+    }
+
+    /// Reads a stored UI message. Nil for a turn the app has no place for (a system message,
+    /// say), which is left out of the thread rather than shown wrong.
+    init?(stored: JSONValue) {
+        guard let id = stored["id"]?.string,
+              let role = stored["role"]?.string.flatMap(Role.init(rawValue:))
+        else { return nil }
+
+        let text = (stored["parts"]?.array ?? [])
+            .filter { $0["type"]?.string == "text" }
+            .compactMap { $0["text"]?.string }
+            .joined(separator: "\n\n")
+
+        self.init(
+            id: id,
+            role: role,
+            text: text,
+            context: role == .user ? stored["metadata"].flatMap(CoachDiscussContext.init(storedMetadata:)) : nil,
+            stored: stored
+        )
     }
 }
 

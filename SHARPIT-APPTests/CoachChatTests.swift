@@ -78,7 +78,7 @@ import Testing
 
 // MARK: - Store
 
-private struct StubCoachClient: CoachChatServing {
+struct StubCoachClient: CoachChatServing {
     var deltas: [String] = []
     var failure: (any Error)?
 

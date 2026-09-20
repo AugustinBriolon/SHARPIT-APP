@@ -12,6 +12,8 @@ final class CoachStore {
     private(set) var messages: [CoachMessage] = []
     private(set) var isReplying = false
     private(set) var failure: String?
+    /// The server's id for this conversation, once it has been saved. Nil for a new one.
+    private(set) var conversationId: String?
 
     /// What the next message will carry. Set when the athlete arrives from another screen,
     /// and droppable before sending.
@@ -20,10 +22,17 @@ final class CoachStore {
     var draft = ""
 
     private let client: any CoachChatServing
+    /// Nil where nothing is kept, in previews: the conversation then lives only on screen.
+    private let conversations: (any CoachConversationServing)?
     private let tokenProvider: (() async throws -> String)?
 
-    init(client: any CoachChatServing, tokenProvider: (() async throws -> String)?) {
+    init(
+        client: any CoachChatServing,
+        conversations: (any CoachConversationServing)? = nil,
+        tokenProvider: (() async throws -> String)?
+    ) {
         self.client = client
+        self.conversations = conversations
         self.tokenProvider = tokenProvider
     }
 
@@ -75,6 +84,8 @@ final class CoachStore {
             if messages.last?.role == .assistant, messages.last?.text.isEmpty == true {
                 messages.removeLast()
                 failure = "Le coach n'a pas répondu. Réessaie."
+            } else {
+                await persist(token: token)
             }
         } catch is CancellationError {
         } catch let error as SharpitAPIError where error == .unauthorized {
@@ -84,6 +95,56 @@ final class CoachStore {
             dropEmptyAnswer()
             failure = "La réponse n'a pas abouti. Réessaie."
         }
+    }
+
+    /// Starts again from an empty thread. Refused while an answer is arriving, which would
+    /// otherwise land in a conversation the athlete has already left.
+    func startNewConversation() {
+        guard !isReplying else { return }
+        messages = []
+        conversationId = nil
+        pendingContext = nil
+        draft = ""
+        failure = nil
+    }
+
+    /// Replaces the thread with a saved conversation. True when it is open.
+    @discardableResult
+    func open(conversationId id: String) async -> Bool {
+        guard !isReplying, let conversations, let tokenProvider else { return false }
+        do {
+            let conversation = try await conversations.conversation(id: id, token: try await tokenProvider())
+            messages = conversation.messages
+            conversationId = conversation.id
+            pendingContext = nil
+            draft = ""
+            failure = nil
+            return true
+        } catch {
+            failure = "Cette conversation n'a pas pu être ouverte."
+            return false
+        }
+    }
+
+    /// A conversation was deleted from history. If it is the one on screen, the thread goes
+    /// with it — keeping it would leave the next answer saved into nothing.
+    func forget(conversationId id: String) {
+        guard conversationId == id else { return }
+        startNewConversation()
+    }
+
+    /// Saves the whole thread after an answer, the way the web does: created on the first
+    /// exchange, then replaced. A failure is not shown — the answer is on screen and the next
+    /// one saves the whole thread again, so nothing is lost by waiting.
+    private func persist(token: String) async {
+        guard let conversations else { return }
+        do {
+            if let conversationId {
+                try await conversations.save(id: conversationId, messages: messages, token: token)
+            } else {
+                conversationId = try await conversations.create(messages: messages, token: token)
+            }
+        } catch {}
     }
 
     private func dropEmptyAnswer() {

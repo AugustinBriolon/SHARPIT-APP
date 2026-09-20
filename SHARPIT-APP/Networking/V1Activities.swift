@@ -414,7 +414,8 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
     }
 }
 
-private extension Date {
+extension Date {
+    /// The API's ISO-8601 timestamps, with or without fractional seconds.
     nonisolated static func fromAPI(_ value: String) throws -> Date {
         let fractional = ISO8601DateFormatter()
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

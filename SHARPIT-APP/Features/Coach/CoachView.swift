@@ -9,10 +9,26 @@ import SwiftUI
 struct CoachView: View {
     @Environment(ShellRouter.self) private var router
     @State private var store: CoachStore
+    @State private var showingHistory = false
     @FocusState private var composerIsFocused: Bool
 
-    init(client: any CoachChatServing, tokenProvider: (() async throws -> String)?) {
-        _store = State(initialValue: CoachStore(client: client, tokenProvider: tokenProvider))
+    private let conversations: any CoachConversationServing
+    private let tokenProvider: (() async throws -> String)?
+
+    init(
+        client: any CoachChatServing,
+        conversations: any CoachConversationServing,
+        tokenProvider: (() async throws -> String)?
+    ) {
+        self.conversations = conversations
+        self.tokenProvider = tokenProvider
+        _store = State(
+            initialValue: CoachStore(
+                client: client,
+                conversations: conversations,
+                tokenProvider: tokenProvider
+            )
+        )
     }
 
     var body: some View {
@@ -25,6 +41,41 @@ struct CoachView: View {
             .navigationTitle("Coach")
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        composerIsFocused = false
+                        showingHistory = true
+                    } label: {
+                        Label("Historique", systemImage: "clock.arrow.circlepath")
+                    }
+                    .disabled(tokenProvider == nil)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        store.startNewConversation()
+                    } label: {
+                        Label("Nouvelle conversation", systemImage: "square.and.pencil")
+                    }
+                    // Nothing to leave when the thread is empty, and an answer arriving
+                    // would land in the conversation the athlete just walked out of.
+                    .disabled(store.isEmpty || store.isReplying)
+                }
+            }
+            .sheet(isPresented: $showingHistory) {
+                if let tokenProvider {
+                    CoachHistoryView(
+                        store: CoachHistoryStore(
+                            conversations: conversations,
+                            tokenProvider: tokenProvider,
+                            onDeleted: { store.forget(conversationId: $0) }
+                        ),
+                        currentConversationId: store.conversationId
+                    ) { summary in
+                        Task { await store.open(conversationId: summary.id) }
+                    }
+                }
+            }
         }
         // The subject travels from wherever the athlete pressed "discuter", and is taken
         // once so returning later cannot silently re-attach a stale one.

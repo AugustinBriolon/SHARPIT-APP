@@ -40,7 +40,11 @@ struct RootView: View {
                 systemImage: ShellDestination.coach.systemImage,
                 value: ShellTab.coach
             ) {
-                CoachView(client: CoachChatClient(), tokenProvider: liveToken)
+                CoachView(
+                    client: CoachChatClient(),
+                    conversations: CoachConversationClient(),
+                    tokenProvider: liveToken
+                )
             }
             Tab(
                 ShellDestination.activity.title,
