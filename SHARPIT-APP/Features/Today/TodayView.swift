@@ -9,18 +9,31 @@ struct TodayView: View {
     /// fixtures, where a done session has nothing to fetch.
     private let tokenProvider: (() async throws -> String)?
 
+    /// Nil without a token: the mode chip and the journal both write, and a control
+    /// that cannot save is worse than no control.
+    @State private var activityStatusStore: ActivityStatusStore?
+    private let journalClient: (any JournalServing)?
+
     init(
         client: any TodayServing = FixtureTodayClient(),
         tokenProvider: (() async throws -> String)? = nil,
-        modelContext: ModelContext? = nil
+        modelContext: ModelContext? = nil,
+        activityStatusClient: (any ActivityStatusServing)? = nil,
+        journalClient: (any JournalServing)? = nil
     ) {
         self.tokenProvider = tokenProvider
+        self.journalClient = tokenProvider == nil ? nil : journalClient
         _store = State(
             initialValue: TodayStore(
                 client: client,
                 tokenProvider: tokenProvider,
                 modelContext: modelContext
             )
+        )
+        _activityStatusStore = State(
+            initialValue: activityStatusClient.flatMap { client in
+                tokenProvider.map { ActivityStatusStore(client: client, tokenProvider: $0) }
+            }
         )
     }
 
@@ -64,6 +77,20 @@ struct TodayView: View {
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if let activityStatusStore {
+                        ActivityStatusButton(store: activityStatusStore)
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    if let journalClient, let tokenProvider {
+                        NavigationLink {
+                            JournalView(client: journalClient, tokenProvider: tokenProvider)
+                        } label: {
+                            Label("Journal", systemImage: "book.closed")
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     WeatherToolbarChip(service: weather)
                 }

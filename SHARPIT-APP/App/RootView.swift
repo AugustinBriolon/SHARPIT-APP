@@ -13,6 +13,8 @@ struct RootView: View {
 
     /// One client for reading the plan and for linking, so both share a session.
     private let plannedSessionClient = PlannedSessionClient()
+    private let activityStatusClient = ActivityStatusClient()
+    private let journalClient = JournalClient()
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -20,7 +22,9 @@ struct RootView: View {
                 TodayView(
                     client: SharpitClient(),
                     tokenProvider: liveToken,
-                    modelContext: modelContext
+                    modelContext: modelContext,
+                    activityStatusClient: activityStatusClient,
+                    journalClient: journalClient
                 )
             }
             Tab(
