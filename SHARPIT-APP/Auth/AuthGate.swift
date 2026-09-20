@@ -13,7 +13,7 @@ struct AuthGate<SignedIn: View>: View {
                 signedIn()
             } else {
                 ContentUnavailableView {
-                    Label("SHARPIT", systemImage: "figure.run")
+                    Label("SharpIt", systemImage: "figure.run")
                 } description: {
                     Text("Connecte-toi pour ouvrir ton résumé du jour.")
                 } actions: {
