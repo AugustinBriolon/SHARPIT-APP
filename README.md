@@ -61,7 +61,12 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 
 - Auth: ClerkKit + ClerkKitUI (`AuthGate` → `AuthView` sheet)
 - Shell: five tabs (Résumé / Plan / Coach / Activité / Moi)
-- Résumé: `GET /api/v1/today` via `SharpitClient` + Bearer token from `clerk.auth.getToken()`
+- Résumé: `GET /api/v1/today` via `SharpitClient` + Bearer token from `clerk.auth.getToken()`.
+  The server links the day's finished activities to their planned sessions on that read
+  ([ADR-042](../SHARPIT/docs/adr/ADR-042-today-links-activities-on-read.md)); a session it
+  missed can be linked by hand from the planned session's drawer.
+- Coach: `/api/coach/chat` streams the answer; the conversation is kept server-side through
+  `/api/coach/conversations`, and the history sheet lists, reopens and deletes them
 - Weather chip: WeatherKit + Core Location (not API weather)
 - Design system: `SHARPIT-APP/DesignSystem/`. Colour and radius are **generated** from the
   web design system — edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or

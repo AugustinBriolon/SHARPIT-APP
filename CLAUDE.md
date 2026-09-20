@@ -89,10 +89,15 @@ typography, colors or spacing — that belongs to `DesignSystem/`.
 in `V1Today.swift` / `V1Activities.swift` / `V1PlannedSessions.swift` and mirror the web
 API payloads.
 
-Only `/api/v1/today` is a real versioned contract today. `ActivityClient` and
-`PlannedSessionClient` call web-internal routes (`/api/activities`,
-`/api/planned-sessions`, including `/api/planned-sessions/:id/link`); treat that as known
-debt, not as a pattern to copy.
+Only `/api/v1/today` is a real versioned contract today. `ActivityClient`,
+`PlannedSessionClient`, `CoachChatClient` and `CoachConversationClient` call web-internal
+routes (`/api/activities`, `/api/planned-sessions` including `…/:id/link`, `/api/coach/chat`,
+`/api/coach/conversations`); treat that as known debt, not as a pattern to copy.
+
+**Coach history.** The server keeps the conversations and the client saves the whole thread
+after each answer, as the web does. A turn opened from history keeps its stored JSON
+(`CoachMessage.stored`) and is sent back as it came, because the web writes parts the app
+does not model — tool calls — and a save from the phone must not strip them.
 
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation
 layer is web-only; the app maps domain payloads itself.
