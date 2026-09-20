@@ -126,12 +126,17 @@ enum TrainingDayId {
         return String(format: "%04d-%02d-%02d", year, month, day)
     }
 
-    static func displayName(_ trainingDayId: String) -> String {
+    /// Local midnight of the day, or nil when the id is not `yyyy-MM-dd`.
+    static func date(_ trainingDayId: String) -> Date? {
         let parser = DateFormatter()
         parser.calendar = Calendar(identifier: .gregorian)
         parser.locale = Locale(identifier: "en_US_POSIX")
         parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: trainingDayId) else {
+        return parser.date(from: trainingDayId)
+    }
+
+    static func displayName(_ trainingDayId: String) -> String {
+        guard let date = date(trainingDayId) else {
             return "Résumé"
         }
         let formatter = DateFormatter()

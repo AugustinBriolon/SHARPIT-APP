@@ -11,6 +11,9 @@ struct RootView: View {
     /// opening Plan, any "Discuter avec le coach" button opening Coach with its subject.
     @State private var router = ShellRouter()
 
+    /// One client for reading the plan and for linking, so both share a session.
+    private let plannedSessionClient = PlannedSessionClient()
+
     var body: some View {
         TabView(selection: $router.selectedTab) {
             Tab("Résumé", systemImage: "sun.max", value: ShellTab.today) {
@@ -26,7 +29,8 @@ struct RootView: View {
                 value: ShellTab.plan
             ) {
                 PlanView(
-                    client: PlannedSessionClient(),
+                    client: plannedSessionClient,
+                    linker: plannedSessionClient,
                     activityClient: ActivityClient(),
                     tokenProvider: liveToken
                 )

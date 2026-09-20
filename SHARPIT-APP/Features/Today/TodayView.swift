@@ -36,7 +36,8 @@ struct TodayView: View {
                         pulseScores: store.pulseScores,
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
                         tokenProvider: tokenProvider,
-                        onArrival: { store.handleArrivalWins(fold: fold) }
+                        onArrival: { store.handleArrivalWins(fold: fold) },
+                        onSessionLinked: { Task { await store.refresh() } }
                     )
                 case .empty(let empty):
                     TodayEmptyView(empty: empty)
@@ -87,6 +88,8 @@ private struct TodayFoldView: View {
     var sessionDoneCelebrations: Set<String> = []
     var tokenProvider: (() async throws -> String)?
     var onArrival: () -> Void = {}
+    /// Called once a prescription has been linked, so Today reloads and shows it as done.
+    var onSessionLinked: () -> Void = {}
 
     @State private var selectedPreview: PlannedSessionPreview?
 
@@ -110,11 +113,23 @@ private struct TodayFoldView: View {
         }
         .modifier(ScrollUnderGlass())
         .sheet(item: $selectedPreview) { preview in
-            PlannedSessionDrawer(preview: preview) { context in
+            PlannedSessionDrawer(preview: preview, linking: linkContext) { context in
                 router.discussWithCoach(about: context)
             }
         }
         .task { onArrival() }
+    }
+
+    /// Nil without a token: a fixture-backed Today has nothing to link against.
+    private var linkContext: SessionLinkContext? {
+        guard let tokenProvider else { return nil }
+        return SessionLinkContext(
+            referenceDate: TrainingDayId.date(fold.trainingDayId) ?? .now,
+            activities: ActivityClient(),
+            linker: PlannedSessionClient(),
+            tokenProvider: tokenProvider,
+            onLinked: onSessionLinked
+        )
     }
 
     @ViewBuilder

@@ -20,6 +20,14 @@ protocol ActivityServing: Sendable {
     func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload
     func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail
     func updateSubjective(id: String, rpe: Double?, feeling: String?, token: String) async throws
+    /// Forgets the cached list. Linking a session changes what each activity says about its
+    /// plan, and a list read afterwards must not repeat the old answer.
+    func invalidateActivities() async
+}
+
+extension ActivityServing {
+    /// Most conformers hold no cache, so the default is to have nothing to forget.
+    func invalidateActivities() async {}
 }
 
 actor ActivityClient: ActivityServing {
@@ -63,6 +71,10 @@ actor ActivityClient: ActivityServing {
         let stream: V1ActivityStreamPayload = try await request(path: "/api/activities/\(id)/streams", queryItems: [], token: token)
         streamCache[id] = stream
         return stream
+    }
+
+    func invalidateActivities() {
+        activitiesCache = nil
     }
 
     func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail {

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct PlanView: View {
     let client: any PlannedSessionServing
+    let linker: any PlannedSessionLinking
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
 
@@ -14,10 +15,12 @@ struct PlanView: View {
 
     init(
         client: any PlannedSessionServing,
+        linker: any PlannedSessionLinking,
         activityClient: any ActivityServing,
         tokenProvider: @escaping () async throws -> String
     ) {
         self.client = client
+        self.linker = linker
         self.activityClient = activityClient
         self.tokenProvider = tokenProvider
         _store = State(
@@ -64,7 +67,16 @@ struct PlanView: View {
                 }
             }
             .sheet(item: $selectedSession) { session in
-                PlannedSessionDrawer(preview: PlannedSessionPreview(session: session)) { context in
+                PlannedSessionDrawer(
+                    preview: PlannedSessionPreview(session: session),
+                    linking: SessionLinkContext(
+                        referenceDate: session.date,
+                        activities: activityClient,
+                        linker: linker,
+                        tokenProvider: tokenProvider,
+                        onLinked: { Task { await store.load() } }
+                    )
+                ) { context in
                     router.discussWithCoach(about: context)
                 }
             }

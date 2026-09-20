@@ -85,9 +85,12 @@ extension PlannedSessionPreview {
 /// sense before it happens: asking the coach about it.
 struct PlannedSessionDrawer: View {
     let preview: PlannedSessionPreview
+    /// Nil where the screen cannot link, so the action is absent rather than dead.
+    var linking: SessionLinkContext?
     let onDiscussWithCoach: (CoachDiscussContext) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @State private var showingLinkPicker = false
 
     var body: some View {
         NavigationStack {
@@ -114,6 +117,16 @@ struct PlannedSessionDrawer: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(SharpitSpacing.cardPadding)
                         .sharpitSurface(.panel)
+                    }
+                    // Same reason as the coach button: linking needs to know *which* session.
+                    if preview.sessionId != nil, linking != nil {
+                        DrawerActionRow(
+                            symbolName: "link",
+                            title: "Lier à une séance réalisée",
+                            subtitle: "Si elle n'a pas été rapprochée toute seule"
+                        ) {
+                            showingLinkPicker = true
+                        }
                     }
                     // Without an id the coach cannot be told *which* session, and a tag
                     // naming the wrong one is worse than no tag.
@@ -146,6 +159,14 @@ struct PlannedSessionDrawer: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showingLinkPicker) {
+            if let sessionId = preview.sessionId, let linking {
+                SessionLinkPicker(sessionId: sessionId, context: linking) {
+                    linking.onLinked()
+                    dismiss()
+                }
+            }
+        }
     }
 
     private var header: some View {
@@ -195,13 +216,14 @@ struct PlannedSessionDrawer: View {
     }
 }
 
-/// The button that hands a subject to the coach.
+/// A row that does one thing to the session in the drawer.
 ///
-/// A row, not a filled block. The old version was a solid Forest slab with an arrow at
+/// A row, not a filled block. The old coach button was a solid Forest slab with an arrow at
 /// each end, which read as the loudest thing on a screen whose job is the session — and
 /// the design law reserves filled surfaces for the verdict. This carries the same weight
 /// as the panels around it: flat fill, hairline border, one leading mark.
-struct CoachDiscussButton: View {
+struct DrawerActionRow: View {
+    let symbolName: String
     let title: String
     var subtitle: String?
     let action: () -> Void
@@ -209,7 +231,7 @@ struct CoachDiscussButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "bubble.left.and.bubble.right")
+                Image(systemName: symbolName)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.primary)
                     .frame(width: 28, height: 28)
@@ -243,6 +265,22 @@ struct CoachDiscussButton: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// The button that hands a subject to the coach.
+struct CoachDiscussButton: View {
+    let title: String
+    var subtitle: String?
+    let action: () -> Void
+
+    var body: some View {
+        DrawerActionRow(
+            symbolName: "bubble.left.and.bubble.right",
+            title: title,
+            subtitle: subtitle,
+            action: action
+        )
     }
 }
 
