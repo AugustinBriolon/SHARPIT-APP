@@ -40,17 +40,24 @@ The app talks to the web app over HTTP and never to the database directly. Domai
 the Clerk session and athlete scoping all live server-side, so a client holding database
 credentials would bypass every one of them and would have to re-implement the Core.
 
-`APIConfiguration.baseURL` reads `SHARPIT_API_ORIGIN` from the environment first, so the
-origin is set per scheme (Run → Arguments → Environment Variables) with no rebuild:
+The origin belongs to the build, not to Xcode: `Config/Debug.xcconfig` and
+`Config/Release.xcconfig` set `SHARPIT_API_ORIGIN`, `Config/Info-Extra.plist` copies it into
+the Info.plist as `SharpitAPIOrigin`, and `APIConfiguration.baseURL` reads it. A
+`SHARPIT_API_ORIGIN` environment variable still overrides it, but only when Xcode launches
+the app — a home-screen or TestFlight launch never sees it, which is why it cannot be the
+only mechanism. In an xcconfig `//` starts a comment, so write `https:/$()/host`.
 
-- **Local full stack** — `docker compose up -d` then `yarn dev` in `../SHARPIT`. Default
-  when the variable is unset in DEBUG.
-- **Deployed instance** — set `SHARPIT_API_ORIGIN` to a Vercel preview or production
-  origin. Real data, no Docker, no local Next. This is the answer to "why do I need the
-  whole local chain to see a screen".
+- **Local full stack** — `docker compose up -d` then `yarn dev` in `../SHARPIT`. Debug
+  default (`http://127.0.0.1:3000`).
+- **Deployed instance** — Release points at `https://sharpit.vercel.app`. To run a Debug
+  build against it, put `SHARPIT_API_ORIGIN = https:/$()/sharpit.vercel.app` in
+  `Config/Local.xcconfig` (gitignored), or set the variable in the scheme for the
+  simulator. Real data, no Docker, no local Next.
 - **No server at all** — `FixtureTodayClient` serves the bundled JSON for pure UI work.
 
-The release origin is still a `REPLACE_PRODUCTION_ORIGIN` placeholder.
+Clerk is still the development instance (`pk_test_…`), the same one the deployed web app
+uses, so the app's token is accepted there. A production Clerk instance needs a `pk_live_…`
+key and is a separate step.
 
 ### Signing
 

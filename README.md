@@ -7,9 +7,9 @@ Native iPhone client for [SHARPIT](https://github.com/AugustinBriolon/SHARPIT) �
 - Xcode 27 / Swift 6 language mode
 - iPhone simulator (prefer iOS 27 for Liquid Glass)
 - Clerk Native API enabled; same publishable key as the web app
-- An API origin: either the sibling repo SHARPIT running locally (`docker compose up -d`
-  then `yarn dev`, serving `http://127.0.0.1:3000`), or a deployed instance via the
-  `SHARPIT_API_ORIGIN` environment variable — see [Pointing at a server](#pointing-at-a-server)
+- An API origin: Debug builds use the sibling repo SHARPIT running locally
+  (`docker compose up -d` then `yarn dev`, serving `http://127.0.0.1:3000`), Release builds
+  use `https://sharpit.vercel.app` — see [Pointing at a server](#pointing-at-a-server)
 
 ## Signing (simulator)
 
@@ -35,15 +35,20 @@ whatever is in the bundle at launch — no Info.plist or project change needed. 
 The app speaks to the web app over `/api`, never to the database — the domain logic, the
 Clerk session and athlete scoping are all server-side.
 
-`APIConfiguration.baseURL` reads `SHARPIT_API_ORIGIN` from the environment before falling
-back, so you can switch target without touching code. Set it in the scheme under
-Run → Arguments → Environment Variables:
+Each build carries its own origin, set in `Config/*.xcconfig` and copied into the
+Info.plist as `SharpitAPIOrigin`, so a build opened from the home screen or TestFlight
+knows where to go. `APIConfiguration.baseURL` lets a `SHARPIT_API_ORIGIN` environment
+variable override it, which only exists when Xcode launches the app.
 
 | Goal | Setting |
 | --- | --- |
-| Real data, no local stack | `SHARPIT_API_ORIGIN` = a deployed origin |
-| Local full stack | leave unset (DEBUG defaults to `http://127.0.0.1:3000`) |
+| Local full stack | Debug default, `http://127.0.0.1:3000` |
+| Production on a phone or TestFlight | Release default, `https://sharpit.vercel.app` |
+| Debug build against a deployed instance | `SHARPIT_API_ORIGIN = https:/$()/…` in `Config/Local.xcconfig` (gitignored) |
+| Simulator against a preview, no rebuild | `SHARPIT_API_ORIGIN` in the scheme: Run → Arguments → Environment Variables |
 | UI work, no server | use `FixtureTodayClient` |
+
+`//` starts a comment in an xcconfig, so write the scheme's slashes as `https:/$()/host`.
 
 ## Build & test
 
