@@ -136,7 +136,7 @@ actor CoachChatClient: CoachChatServing {
             "parts": [["type": "text", "text": message.text]],
         ]
         if let context = message.context {
-            wire["metadata"] = context.metadata
+            wire["metadata"] = context.metadata.mapValues(\.foundationObject)
         }
         return wire
     }

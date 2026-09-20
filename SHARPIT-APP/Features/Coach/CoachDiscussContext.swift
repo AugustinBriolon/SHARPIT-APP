@@ -43,17 +43,21 @@ nonisolated struct CoachDiscussContext: Equatable, Hashable, Sendable, Identifia
     ///
     /// Client-supplied and therefore untrusted: the server shape-checks it, scopes every
     /// lookup to the signed-in athlete, and re-checks entitlements before acting on it.
-    var metadata: [String: String] {
+    /// Typed as JSON rather than strings because the server compares the horizon against
+    /// numbers: a `"7"` fails that check and the message is read as an ordinary question.
+    var metadata: [String: JSONValue] {
+        var fields: [String: JSONValue] = ["discussKind": .string(target.kind)]
         switch target {
         case .today:
-            ["discussKind": target.kind]
+            break
         case .plannedSession(let sessionId):
-            ["discussKind": target.kind, "sessionId": sessionId]
+            fields["sessionId"] = .string(sessionId)
         case .activity(let activityId):
-            ["discussKind": target.kind, "activityId": activityId]
+            fields["activityId"] = .string(activityId)
         case .planning(let horizonDays):
-            ["discussKind": target.kind, "horizonDays": String(horizonDays)]
+            fields["horizonDays"] = .number(Double(horizonDays))
         }
+        return fields
     }
 }
 

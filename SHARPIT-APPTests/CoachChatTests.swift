@@ -70,6 +70,21 @@ import Testing
     #expect(parts?.first?["text"] == "Alors ?")
 }
 
+/// The server reads the horizon against a set of numbers, so a string "7" is rejected and the
+/// message is treated as an ordinary conversation — the coach is never told the window.
+@Test func aPlanningHorizonTravelsAsAJSONNumber() throws {
+    let context = CoachDiscuss.describe(.planning(horizonDays: 7))
+    let wire = CoachChatClient.wireMessage(CoachMessage(role: .user, text: "Et ma semaine ?", context: context))
+
+    let body = try JSONSerialization.data(withJSONObject: ["messages": [wire]])
+    let sent = try JSONSerialization.jsonObject(with: body) as? [String: Any]
+    let metadata = ((sent?["messages"] as? [[String: Any]])?.first?["metadata"]) as? [String: Any]
+
+    #expect(metadata?["discussKind"] as? String == "planning")
+    // `as? Int` does not convert a string, so this fails if the horizon is sent as text.
+    #expect(metadata?["horizonDays"] as? Int == 7)
+}
+
 @Test func aMessageWithoutASubjectCarriesNoMetadata() {
     let wire = CoachChatClient.wireMessage(CoachMessage(role: .user, text: "Salut"))
 

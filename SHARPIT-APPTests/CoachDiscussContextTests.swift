@@ -54,18 +54,19 @@ import Testing
 
 @Test func metadataCarriesTheKindAndItsTargetId() {
     let activity = CoachDiscuss.describe(.activity(activityId: "a-1")).metadata
-    #expect(activity["discussKind"] == "activity")
-    #expect(activity["activityId"] == "a-1")
+    #expect(activity["discussKind"] == .string("activity"))
+    #expect(activity["activityId"] == .string("a-1"))
 
     let planned = CoachDiscuss.describe(.plannedSession(sessionId: "s-1")).metadata
-    #expect(planned["discussKind"] == "planned-session")
-    #expect(planned["sessionId"] == "s-1")
+    #expect(planned["discussKind"] == .string("planned-session"))
+    #expect(planned["sessionId"] == .string("s-1"))
 
     let planning = CoachDiscuss.describe(.planning(horizonDays: 7)).metadata
-    #expect(planning["discussKind"] == "planning")
-    #expect(planning["horizonDays"] == "7")
+    #expect(planning["discussKind"] == .string("planning"))
+    // A number, not "7": the server checks it against a set of numbers.
+    #expect(planning["horizonDays"] == .number(7))
 
-    #expect(CoachDiscuss.describe(.today).metadata == ["discussKind": "today"])
+    #expect(CoachDiscuss.describe(.today).metadata == ["discussKind": .string("today")])
 }
 
 @MainActor
