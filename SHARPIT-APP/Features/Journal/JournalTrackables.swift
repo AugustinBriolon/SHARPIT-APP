@@ -1,7 +1,7 @@
 import Foundation
 
 /// The drawer's filter chips, in the web's order.
-enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
+nonisolated enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
     case bienEtre = "bien_etre"
     case sante
     case medicament
@@ -33,7 +33,7 @@ enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
 /// the day. The web's catalogue is larger: its automatic items are filled by device sync,
 /// its diet flags and nutrition panel read other endpoints. Those stay out of this list
 /// and out of the app's screens, but their preferences survive a save — see `JournalPrefs`.
-struct JournalTrackable: Identifiable, Equatable, Sendable {
+nonisolated struct JournalTrackable: Identifiable, Equatable, Sendable {
     enum Kind: Equatable, Sendable {
         /// A yes / no / unanswered signal stored in the day's factor bag.
         case factor
@@ -49,7 +49,7 @@ struct JournalTrackable: Identifiable, Equatable, Sendable {
     var kind: Kind = .factor
 }
 
-enum JournalCatalogue {
+nonisolated enum JournalCatalogue {
     static let all: [JournalTrackable] = [
         // Bien-être — the three day basics, which are values rather than signals.
         JournalTrackable(
@@ -189,30 +189,4 @@ enum JournalCatalogue {
     }
 
     static let customSymbolName = "sparkles"
-}
-
-/// The moods the web offers, worst to best, so a picker reads as a scale.
-///
-/// The raw value is the string stored on the day: the web writes the label itself
-/// rather than a code, so an entry saved from either side reads the same.
-enum JournalMood: String, CaseIterable, Identifiable, Sendable {
-    case veryLow = "Très bas"
-    case low = "Bas"
-    case ok = "Correct"
-    case good = "Bien"
-    case top = "Top"
-
-    var id: String { rawValue }
-
-    var label: String { rawValue }
-
-    var symbolName: String {
-        switch self {
-        case .veryLow: "cloud.heavyrain"
-        case .low: "cloud.rain"
-        case .ok: "cloud.sun"
-        case .good: "sun.max"
-        case .top: "sparkles"
-        }
-    }
 }

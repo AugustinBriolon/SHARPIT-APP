@@ -8,7 +8,7 @@ import SwiftUI
 import UIKit
 
 /// A resolved sRGB color, exported from the web token set.
-struct SharpitRGBA: Equatable, Sendable {
+nonisolated struct SharpitRGBA: Equatable, Sendable {
     let red: Double
     let green: Double
     let blue: Double
@@ -16,7 +16,13 @@ struct SharpitRGBA: Equatable, Sendable {
 }
 
 /// Semantic colors, light and dark, mirroring `:root` and `.dark` in `globals.css`.
-enum SharpitColor {
+///
+/// `nonisolated`, and not by preference: UIKit calls a dynamic color's trait closure on
+/// whichever thread resolves it, and SwiftUI resolves colors on its own renderer thread.
+/// Under main-actor-by-default the closure — and the lazy init of every constant below —
+/// would assert the main queue and trap there. Colors are pure values; they have no
+/// business on an actor.
+nonisolated enum SharpitColor {
     /// `--background`
     static let background = dynamic(
         light: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000),
@@ -290,7 +296,7 @@ enum SharpitColor {
 
 /// Sport identity, from `SPORT_IDENTITY_HEX` — one chromatic family per activity type.
 /// Never Lime Pulse: the highlight stays brand punctuation for the product, not for a sport.
-enum SharpitSportColor {
+nonisolated enum SharpitSportColor {
     /// `SPORT_IDENTITY_HEX.RUN`
     static let run = SharpitRGBA(red: 0.9176, green: 0.3451, blue: 0.0471, alpha: 1.0000)
 
@@ -318,7 +324,7 @@ enum SharpitSportColor {
 }
 
 /// Non-color primitives exported from `brand-tokens.ts`.
-enum SharpitTokens {
+nonisolated enum SharpitTokens {
     /// `BRAND.radius` — card and control radius.
     static let radius: CGFloat = 16.0000
 }
