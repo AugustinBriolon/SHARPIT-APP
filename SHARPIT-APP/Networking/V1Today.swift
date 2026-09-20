@@ -86,6 +86,9 @@ nonisolated struct V1TodaySession: Codable, Sendable, Equatable, Identifiable {
     var metrics: [V1TodayMetric]
     var sport: String? = nil
     var priority: Bool? = nil
+    /// The prescription this line stands for. Distinct from `id`: a brick line is
+    /// identified by its group, so only this addresses the session itself.
+    var plannedSessionId: String? = nil
 }
 
 nonisolated enum V1TodaySessionKind: String, Codable, Sendable {

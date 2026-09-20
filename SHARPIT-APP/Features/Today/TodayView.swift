@@ -5,11 +5,16 @@ struct TodayView: View {
     @State private var store: TodayStore
     @State private var weather = LocationWeatherService()
 
+    /// Kept so an activity opened from here can load itself. Nil in previews and
+    /// fixtures, where a done session has nothing to fetch.
+    private let tokenProvider: (() async throws -> String)?
+
     init(
         client: any TodayServing = FixtureTodayClient(),
         tokenProvider: (() async throws -> String)? = nil,
         modelContext: ModelContext? = nil
     ) {
+        self.tokenProvider = tokenProvider
         _store = State(
             initialValue: TodayStore(
                 client: client,
@@ -30,6 +35,7 @@ struct TodayView: View {
                         fold: fold,
                         pulseScores: store.pulseScores,
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
+                        tokenProvider: tokenProvider,
                         onArrival: { store.handleArrivalWins(fold: fold) }
                     )
                 case .empty(let empty):
@@ -79,7 +85,10 @@ private struct TodayFoldView: View {
     let fold: TodayFold
     var pulseScores: Bool = false
     var sessionDoneCelebrations: Set<String> = []
+    var tokenProvider: (() async throws -> String)?
     var onArrival: () -> Void = {}
+
+    @State private var selectedPreview: PlannedSessionPreview?
 
     var body: some View {
         ScrollView(.vertical) {
@@ -100,6 +109,11 @@ private struct TodayFoldView: View {
             .padding(.bottom, SharpitSpacing.lg)
         }
         .modifier(ScrollUnderGlass())
+        .sheet(item: $selectedPreview) { preview in
+            PlannedSessionDrawer(preview: preview) { context in
+                router.discussWithCoach(about: context)
+            }
+        }
         .task { onArrival() }
     }
 
@@ -114,16 +128,70 @@ private struct TodayFoldView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SharpitEyebrow("Séance")
                 ForEach(fold.sessions) { session in
-                    SessionPlate(
+                    TodaySessionLink(
                         session: session,
                         showPriorityTag: SessionPriorityPolicy.showsTag(
                             sessionCount: fold.sessions.count,
                             priority: session.priority
                         ),
-                        celebrateDone: sessionDoneCelebrations.contains(session.id)
+                        celebrateDone: sessionDoneCelebrations.contains(session.id),
+                        tokenProvider: tokenProvider,
+                        onOpenPreview: { selectedPreview = $0 }
                     )
                 }
             }
+        }
+    }
+}
+
+
+/// Today's session line, made openable.
+///
+/// The same rule as the plan, because it is the same object seen from another screen: a
+/// session that was done opens its own record, a prescription opens the drawer. Today
+/// carries no activity payload, so the detail screen loads it from the id.
+private struct TodaySessionLink: View {
+    let session: SessionCardModel
+    let showPriorityTag: Bool
+    let celebrateDone: Bool
+    let tokenProvider: (() async throws -> String)?
+    let onOpenPreview: (PlannedSessionPreview) -> Void
+
+    private var plate: some View {
+        SessionPlate(
+            session: session,
+            showPriorityTag: showPriorityTag,
+            celebrateDone: celebrateDone
+        )
+    }
+
+    var body: some View {
+        switch session.kind {
+        case .done:
+            // Only when the screen can actually fetch it. A fixture-backed Today has no
+            // token, and a link that dead-ends is worse than a plate that does not move.
+            if let tokenProvider {
+                NavigationLink {
+                    ActivityDetailView(
+                        activity: session.id,
+                        initialActivity: nil,
+                        client: ActivityClient(),
+                        tokenProvider: tokenProvider
+                    )
+                } label: {
+                    plate
+                }
+                .buttonStyle(.plain)
+            } else {
+                plate
+            }
+        case .planned:
+            Button {
+                onOpenPreview(PlannedSessionPreview(card: session))
+            } label: {
+                plate
+            }
+            .buttonStyle(.plain)
         }
     }
 }

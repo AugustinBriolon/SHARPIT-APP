@@ -105,10 +105,18 @@ final class PlanStore {
         entries.filter { calendar.isDate($0.date, inSameDayAs: day) }
     }
 
-    /// What the strip shows for `day` in the selected week, if that week has loaded.
-    func status(on day: Date) -> PlanDayStatus? {
-        guard case .loaded(let entries) = phase else { return nil }
+    /// What the strip shows for `day`, if that day's week has loaded.
+    ///
+    /// Takes the offset rather than reading the selection, because the strip pages the
+    /// same weeks as the content: a neighbouring page must draw its own dots while it
+    /// scrolls past, not the selected week's.
+    func status(on day: Date, offset: Int) -> PlanDayStatus? {
+        guard case .loaded(let entries) = phase(forOffset: offset) else { return nil }
         return PlanDayStatus.status(of: self.entries(on: day, from: entries))
+    }
+
+    func status(on day: Date) -> PlanDayStatus? {
+        status(on: day, offset: selectedOffset)
     }
 
     /// Next actionable session in the visible week: today or later, and still to be done.

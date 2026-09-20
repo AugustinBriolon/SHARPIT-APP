@@ -36,7 +36,8 @@
           "value": "40",
           "unit": "min"
         }
-      ]
+      ],
+      "plannedSessionId": "ps-s1"
     }
   ],
   "signals": [

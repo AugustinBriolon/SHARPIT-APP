@@ -49,29 +49,68 @@ struct PlanWeekHeader: View {
     }
 }
 
-/// The seven days of the selected week, fixed.
+/// The weeks, one page of seven days at a time.
 ///
-/// An index into the list below, not a control that moves the week: it never scrolls, so
-/// it cannot fight the page's own gestures. Each day carries a dot — done, still ahead,
-/// or missed — and tapping a day scrolls the list to it.
+/// Snapped, so a drag always lands on a whole week — never between two. It moves the week
+/// rather than merely indexing it, which is what a horizontal strip of dates promises.
+/// Tapping a day inside the visible week scrolls the list to it.
+///
+/// It shares `selectedOffset` with the content pager, so dragging either moves both.
 struct PlanWeekStrip: View {
     let store: PlanStore
 
+    @State private var position: Int?
+    /// A horizontal `ScrollView` has no intrinsic height and would otherwise swallow the
+    /// screen. Scaled so the row still follows Dynamic Type.
+    @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 64
+
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(store.weekDays, id: \.self) { day in
-                Button { store.scrollTarget = day } label: {
-                    PlanStripDay(day: day, status: store.status(on: day))
+        ScrollView(.horizontal) {
+            LazyHStack(spacing: 0) {
+                ForEach(PlanStore.offsets, id: \.self) { offset in
+                    PlanStripWeek(store: store, offset: offset)
+                        .containerRelativeFrame(.horizontal)
+                        .id(offset)
                 }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
             }
+            .scrollTargetLayout()
         }
+        .scrollTargetBehavior(.paging)
+        .scrollIndicators(.hidden)
+        .scrollPosition(id: $position)
+        .frame(height: rowHeight)
         .padding(.vertical, SharpitSpacing.sm)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(SharpitColor.analysisBorder)
                 .frame(height: 1)
+        }
+        .onAppear { position = store.selectedOffset }
+        // Each side follows the other; the equality checks stop the echo.
+        .onChange(of: position) { _, new in
+            guard let new, new != store.selectedOffset else { return }
+            store.selectedOffset = new
+        }
+        .onChange(of: store.selectedOffset) { _, new in
+            guard new != position else { return }
+            withAnimation(SharpitMotion.reveal) { position = new }
+        }
+    }
+}
+
+private struct PlanStripWeek: View {
+    let store: PlanStore
+    let offset: Int
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(store.weekDays(forOffset: offset), id: \.self) { day in
+                Button { store.scrollTarget = day } label: {
+                    PlanStripDay(day: day, status: store.status(on: day, offset: offset))
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+            }
         }
     }
 }

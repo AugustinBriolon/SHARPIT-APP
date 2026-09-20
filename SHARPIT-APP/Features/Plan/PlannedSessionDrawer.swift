@@ -1,12 +1,79 @@
 import SwiftUI
 
+/// A prescription, as any screen can describe it.
+///
+/// Plan holds a `V1PlannedSessionItem`; Today holds a `SessionCardModel` projected for
+/// display. Both open the same drawer, so both map into this rather than the drawer
+/// growing a second initialiser — or, worse, Today growing a second drawer.
+struct PlannedSessionPreview: Identifiable, Equatable {
+    /// Addresses the prescription itself. Absent when the surface only knows a display
+    /// line (a brick's group, say), which is why the coach button is conditional.
+    let sessionId: String?
+    let title: String
+    let sport: String
+    let symbolName: String
+    let date: Date?
+    let metrics: [PlannedSessionMetric]
+    let notes: String?
+
+    var id: String { sessionId ?? title }
+}
+
+struct PlannedSessionMetric: Equatable {
+    let label: String
+    let value: String
+}
+
+extension PlannedSessionPreview {
+    init(session: V1PlannedSessionItem) {
+        // Charge/TSS is deliberately absent — a planning number, not something the athlete
+        // acts on before a session.
+        var metrics: [PlannedSessionMetric] = []
+        if let durationMin = session.durationMin {
+            metrics.append(PlannedSessionMetric(label: "Durée", value: "\(durationMin) min"))
+        }
+        if let intensity = session.intensity, !intensity.isEmpty {
+            metrics.append(PlannedSessionMetric(label: "Intensité", value: intensity.capitalized))
+        }
+
+        self.init(
+            sessionId: session.id,
+            title: session.title ?? session.displayType,
+            sport: session.displayType,
+            symbolName: session.symbolName,
+            date: session.date,
+            metrics: metrics,
+            notes: session.notes
+        )
+    }
+
+    /// Today's own line. Its metrics are already resolved for display, so they travel as
+    /// they are rather than being recomputed from a shape Today does not have.
+    init(card: SessionCardModel) {
+        self.init(
+            sessionId: card.plannedSessionId,
+            title: card.title,
+            sport: card.sport ?? "Séance",
+            symbolName: SharpitSportTone.symbolName(for: card.sport ?? ""),
+            date: nil,
+            metrics: card.metrics.map {
+                PlannedSessionMetric(
+                    label: $0.label,
+                    value: $0.unit.isEmpty ? $0.value : "\($0.value) \($0.unit)"
+                )
+            },
+            notes: card.subtitle
+        )
+    }
+}
+
 /// What a planned session holds, in a sheet.
 ///
 /// A planned session has no detail screen to open — there is nothing recorded yet, only
 /// an intention. A drawer says what is prescribed and offers the one action that makes
 /// sense before it happens: asking the coach about it.
 struct PlannedSessionDrawer: View {
-    let session: V1PlannedSessionItem
+    let preview: PlannedSessionPreview
     let onDiscussWithCoach: (CoachDiscussContext) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -16,10 +83,10 @@ struct PlannedSessionDrawer: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                     header
-                    if !metrics.isEmpty {
+                    if !preview.metrics.isEmpty {
                         metricsRow
                     }
-                    if let notes = session.notes, !notes.isEmpty {
+                    if let notes = preview.notes, !notes.isEmpty {
                         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                             SharpitEyebrow("Consigne")
                             Text(notes)
@@ -31,14 +98,18 @@ struct PlannedSessionDrawer: View {
                         .padding(SharpitSpacing.cardPadding)
                         .sharpitSurface(.panel)
                     }
-                    CoachDiscussButton(title: "Discuter avec le coach") {
-                        onDiscussWithCoach(
-                            CoachDiscuss.describe(
-                                .plannedSession(sessionId: session.id),
-                                name: session.title ?? session.displayType
+                    // Without an id the coach cannot be told *which* session, and a tag
+                    // naming the wrong one is worse than no tag.
+                    if let sessionId = preview.sessionId {
+                        CoachDiscussButton(title: "Discuter avec le coach") {
+                            onDiscussWithCoach(
+                                CoachDiscuss.describe(
+                                    .plannedSession(sessionId: sessionId),
+                                    name: preview.title
+                                )
                             )
-                        )
-                        dismiss()
+                            dismiss()
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -60,20 +131,22 @@ struct PlannedSessionDrawer: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             HStack(spacing: SharpitSpacing.xs) {
-                Image(systemName: session.symbolName)
+                Image(systemName: preview.symbolName)
                     .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitSportTone.accent(for: session.displayType))
-                Text(session.displayType)
+                    .foregroundStyle(SharpitSportTone.accent(for: preview.sport))
+                Text(preview.sport)
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
                 Spacer(minLength: 0)
-                Text(session.date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                if let date = preview.date {
+                    Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
             }
-            Text(session.title ?? session.displayType)
+            Text(preview.title)
                 .font(SharpitTypography.pageTitle)
                 .tracking(SharpitTypography.pageTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
@@ -82,7 +155,7 @@ struct PlannedSessionDrawer: View {
 
     private var metricsRow: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.md) {
-            ForEach(metrics, id: \.label) { metric in
+            ForEach(preview.metrics, id: \.label) { metric in
                 VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                     Text(metric.label)
                         .font(SharpitTypography.label)
@@ -99,19 +172,6 @@ struct PlannedSessionDrawer: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panel)
-    }
-
-    /// Charge/TSS is deliberately absent — it is a planning number, not something the
-    /// athlete acts on before a session.
-    private var metrics: [(label: String, value: String)] {
-        var rows: [(label: String, value: String)] = []
-        if let durationMin = session.durationMin {
-            rows.append(("Durée", "\(durationMin) min"))
-        }
-        if let intensity = session.intensity, !intensity.isEmpty {
-            rows.append(("Intensité", intensity.capitalized))
-        }
-        return rows
     }
 }
 

@@ -29,6 +29,8 @@ struct SessionCardModel: Sendable, Equatable, Identifiable {
     var metrics: [V1TodayMetric]
     var sport: String?
     var priority: Bool
+    /// Set on a planned line, and only when the prescription can be addressed on its own.
+    var plannedSessionId: String?
 }
 
 struct OvernightGaugeModel: Sendable, Equatable, Identifiable {
@@ -105,7 +107,8 @@ enum TodayFoldMapper {
                     subtitle: session.subtitle,
                     metrics: session.metrics,
                     sport: session.sport,
-                    priority: session.priority ?? false
+                    priority: session.priority ?? false,
+                    plannedSessionId: session.plannedSessionId
                 )
             },
             gauges: response.signals

@@ -36,9 +36,9 @@ struct PlanView: View {
                 // fight the pages' own gestures.
                 VStack(spacing: SharpitSpacing.xs) {
                     PlanWeekHeader(store: store) { showingCalendar = true }
+                        .padding(.horizontal, SharpitSpacing.pageInset)
                     PlanWeekStrip(store: store)
                 }
-                .padding(.horizontal, SharpitSpacing.pageInset)
 
                 PlanWeekPager(
                     store: store,
@@ -64,7 +64,7 @@ struct PlanView: View {
                 }
             }
             .sheet(item: $selectedSession) { session in
-                PlannedSessionDrawer(session: session) { context in
+                PlannedSessionDrawer(preview: PlannedSessionPreview(session: session)) { context in
                     router.discussWithCoach(about: context)
                 }
             }

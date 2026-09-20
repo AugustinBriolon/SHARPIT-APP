@@ -40,6 +40,12 @@ enum SharpitSportTone {
         border(for: type(forLabel: sport))
     }
 
+    /// The glyph for a sport named in prose, resolved through the same mapping as its
+    /// colour so a card cannot show one sport's icon in another's hue.
+    static func symbolName(for sport: String) -> String {
+        type(forLabel: sport).symbolName
+    }
+
     // MARK: - Mapping
 
     private static func token(for type: V1ActivityType) -> SharpitRGBA {
