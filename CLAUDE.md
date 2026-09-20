@@ -91,7 +91,8 @@ API payloads.
 
 Only `/api/v1/today` is a real versioned contract today. `ActivityClient` and
 `PlannedSessionClient` call web-internal routes (`/api/activities`,
-`/api/planned-sessions`); treat that as known debt, not as a pattern to copy.
+`/api/planned-sessions`, including `/api/planned-sessions/:id/link`); treat that as known
+debt, not as a pattern to copy.
 
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation
 layer is web-only; the app maps domain payloads itself.
