@@ -205,7 +205,6 @@ struct CoachView: View {
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.xs)
         .padding(.bottom, SharpitSpacing.sm)
-        .background(.bar)
         .animation(SharpitMotion.reveal, value: composerIsFocused)
     }
 
