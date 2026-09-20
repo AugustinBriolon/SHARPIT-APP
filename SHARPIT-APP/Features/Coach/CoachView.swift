@@ -9,6 +9,7 @@ import SwiftUI
 struct CoachView: View {
     @Environment(ShellRouter.self) private var router
     @State private var store: CoachStore
+    @FocusState private var composerIsFocused: Bool
 
     init(client: any CoachChatServing, tokenProvider: (() async throws -> String)?) {
         _store = State(initialValue: CoachStore(client: client, tokenProvider: tokenProvider))
@@ -56,14 +57,27 @@ struct CoachView: View {
                 .padding(.vertical, SharpitSpacing.md)
             }
             .modifier(ScrollUnderGlass())
+            // Reading is the signal that writing is over: the keyboard follows the drag
+            // down rather than waiting to be dismissed.
+            .scrollDismissesKeyboard(.interactively)
             // Anchored to the bottom only once there is a thread to follow; an empty
             // screen anchored there pins its invitation to the composer.
             .defaultScrollAnchor(store.isEmpty ? .top : .bottom)
             .onChange(of: store.messages.last?.text) { _, _ in
-                guard let last = store.messages.last?.id else { return }
-                withAnimation(SharpitMotion.reveal) { proxy.scrollTo(last, anchor: .bottom) }
+                scrollToLatest(proxy)
+            }
+            // The keyboard going down uncovers the thread; the newest turn is what the
+            // athlete was writing about, so it is what should be under their eyes.
+            .onChange(of: composerIsFocused) { _, focused in
+                guard !focused else { return }
+                scrollToLatest(proxy)
             }
         }
+    }
+
+    private func scrollToLatest(_ proxy: ScrollViewProxy) {
+        guard let last = store.messages.last?.id else { return }
+        withAnimation(SharpitMotion.reveal) { proxy.scrollTo(last, anchor: .bottom) }
     }
 
     /// The last assistant turn, while it is still filling in.
@@ -79,10 +93,38 @@ struct CoachView: View {
             }
 
             HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
+                // The explicit way down, for the athlete who is neither scrolling nor
+                // sending. In the row rather than in a keyboard toolbar, which floated
+                // over the send button. Only while writing — otherwise it is a control
+                // that does nothing.
+                if composerIsFocused {
+                    Button {
+                        composerIsFocused = false
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(SharpitTypography.bodyEmphasis)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .frame(width: 40, height: 40)
+                            .background(SharpitColor.analysisSurfaceAlt, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Masquer le clavier")
+                    .transition(.scale.combined(with: .opacity))
+                }
+
                 TextField("Pose ta question", text: $store.draft, axis: .vertical)
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(1...5)
+                    .focused($composerIsFocused)
+                    // A vertical-axis field treats Return as a newline, so `onSubmit`
+                    // never fires. Catching the newline is what makes Return behave the
+                    // way the keyboard's own key promises.
+                    .onChange(of: store.draft) { _, new in
+                        guard new.contains("\n") else { return }
+                        store.draft = new.replacingOccurrences(of: "\n", with: "")
+                        submit()
+                    }
                     .padding(.horizontal, SharpitSpacing.md)
                     .padding(.vertical, SharpitSpacing.sm)
                     .background(SharpitColor.analysisSurfaceAlt, in: Capsule())
@@ -94,9 +136,7 @@ struct CoachView: View {
                     )
                     .submitLabel(.send)
 
-                Button {
-                    Task { await store.send() }
-                } label: {
+                Button(action: submit) {
                     Image(systemName: store.isReplying ? "stop.fill" : "arrow.up")
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.primaryForeground)
@@ -115,6 +155,16 @@ struct CoachView: View {
         .padding(.top, SharpitSpacing.xs)
         .padding(.bottom, SharpitSpacing.sm)
         .background(.bar)
+        .animation(SharpitMotion.reveal, value: composerIsFocused)
+    }
+
+    /// Return and the send button do the same thing: put the keyboard away, and send when
+    /// there is something to send. Lowering it on an empty field is deliberate — the
+    /// athlete asked to stop writing, and the thread is what they want to see.
+    private func submit() {
+        composerIsFocused = false
+        guard store.canSend else { return }
+        Task { await store.send() }
     }
 }
 
@@ -149,10 +199,10 @@ private struct CoachMessageRow: View {
         case .assistant:
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 SharpitEyebrow("Coach")
-                Text(message.text)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
+                // The coach writes markdown; rendering it as literal asterisks would be
+                // the app failing to read its own answer.
+                SharpitMarkdownText(markdown: message.text)
+                    .textSelection(.enabled)
                 if isStreaming {
                     CoachWritingMark()
                 }
