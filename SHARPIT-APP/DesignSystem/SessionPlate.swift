@@ -11,15 +11,6 @@ struct SessionPlate: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xxs) {
-                if session.kind == .done {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(SharpitColor.primary)
-                        .scaleEffect(checkSettled ? 1.0 : 0.86)
-                        .opacity(checkSettled ? 1.0 : 0.4)
-                        .accessibilityHidden(true)
-                }
                 VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                     tagRow
                     Text(session.title)
@@ -86,7 +77,7 @@ struct SessionPlate: View {
 
     @ViewBuilder
     private var tagRow: some View {
-        if session.sport != nil || showPriorityTag {
+        if session.sport != nil || showPriorityTag || session.kind == .done {
             HStack(spacing: SharpitSpacing.xs) {
                 if let sport = session.sport, !sport.isEmpty {
                     Text(sport)
@@ -108,6 +99,18 @@ struct SessionPlate: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Color.primary.opacity(0.06), in: Capsule())
+                }
+                if session.kind == .done {
+                    // Opposite the sport tag on the same line: the badge says what the
+                    // session was, the mark says it happened — they read as one row.
+                    Spacer(minLength: SharpitSpacing.xs)
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(SharpitColor.primary)
+                        .scaleEffect(checkSettled ? 1.0 : 0.86)
+                        .opacity(checkSettled ? 1.0 : 0.4)
+                        .accessibilityHidden(true)
                 }
             }
         }
