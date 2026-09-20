@@ -1,24 +1,40 @@
 {
   "fill" : {
-    "automatic-gradient" : "srgb:0.1098,0.2275,0.0745,1.0"
+    "automatic-gradient" : "extended-gray:1.00000,1.00000"
   },
   "groups" : [
     {
       "layers" : [
         {
-          "image-name" : "pulse.svg",
-          "name" : "Pulse"
+          "blend-mode" : "normal",
+          "fill" : {
+            "automatic-gradient" : "display-p3:0.51315,1.00000,0.51745,1.00000"
+          },
+          "image-name" : "circle.hexagonpath.fill.png",
+          "name" : "circle.hexagonpath.fill",
+          "position" : {
+            "scale" : 0.59,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         }
-      ]
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.3
+      }
     }
   ],
   "supported-platforms" : {
     "circles" : [
       "watchOS"
     ],
-    "squares" : [
-      "iOS",
-      "macOS"
-    ]
+    "squares" : "shared"
   }
 }
