@@ -69,7 +69,8 @@ struct ActivityDetailView: View {
                                     onGenerateNarrative: { Task { await generateNarrative() } },
                                     splits: activitySplits(for: detail),
                                     onShowCompliance: { showingCompliance = true },
-                                    onShowSubjective: { openSubjective(for: detail) }
+                                    onShowSubjective: { openSubjective(for: detail) },
+                                    clearsBackButton: false
                                 )
                                 .frame(width: proxy.size.width, alignment: .leading)
                             }
@@ -89,7 +90,8 @@ struct ActivityDetailView: View {
                             onGenerateNarrative: { Task { await generateNarrative() } },
                             splits: activitySplits(for: detail),
                             onShowCompliance: { showingCompliance = true },
-                            onShowSubjective: { openSubjective(for: detail) }
+                            onShowSubjective: { openSubjective(for: detail) },
+                            clearsBackButton: true
                         )
                         .frame(width: proxy.size.width, alignment: .leading)
                     }
@@ -240,6 +242,9 @@ private struct ActivityDetailContent: View {
     let splits: [ActivitySplit]
     let onShowCompliance: () -> Void
     let onShowSubjective: () -> Void
+    /// Without a map the panel starts at the top of the screen, under the floating back
+    /// button, and has to leave room for it. Below a map it does not.
+    let clearsBackButton: Bool
     @State private var selectedChartMetrics: [ActivityChartMetric] = [.heartRate]
 
     var body: some View {
@@ -261,10 +266,31 @@ private struct ActivityDetailContent: View {
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
                     .tracking(-0.8)
                     .lineLimit(3)
+
+                // The session the athlete is reading is exactly what they would ask about,
+                // so the way to ask sits with its title rather than below the analysis.
+                HStack(spacing: SharpitSpacing.sm) {
+                    CoachDiscussButton(title: "Discuter de cette séance") {
+                        router.discussWithCoach(
+                            about: CoachDiscuss.describe(
+                                .activity(activityId: detail.id),
+                                name: detail.title ?? detail.type.label
+                            )
+                        )
+                    }
+                    Spacer(minLength: 0)
+                    if let weather = detail.weather, let weatherLabel = V1ActivityWeather(rawValue: weather).label {
+                        Label(weatherLabel, systemImage: "cloud.sun")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.top, SharpitSpacing.xxs)
             }
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 12)
-            .padding(.top, 56)
+            .padding(.top, clearsBackButton ? 56 : 0)
 
             contextSection
                 .opacity(appeared ? 1 : 0)
@@ -287,21 +313,6 @@ private struct ActivityDetailContent: View {
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 4)), value: appeared)
-
-            // The session the athlete is reading is exactly what they would ask about.
-            CoachDiscussButton(
-                title: "Discuter de cette séance",
-                subtitle: "Le coach voit déjà la séance et ton ressenti"
-            ) {
-                router.discussWithCoach(
-                    about: CoachDiscuss.describe(
-                        .activity(activityId: detail.id),
-                        name: detail.title ?? detail.type.label
-                    )
-                )
-            }
-            .opacity(appeared ? 1 : 0)
-            .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 5)), value: appeared)
 
             if hasSessionSummaryData {
                 sessionSummary
@@ -381,24 +392,23 @@ private struct ActivityDetailContent: View {
     /// What the athlete said about the session and how it matched the plan. Both open a
     /// drawer, so both are drawn as raised tiles with a chevron — weather, which opens
     /// nothing, stays a flat chip below them.
+    /// What the athlete said about the session and how it matched the plan, side by side:
+    /// two short readouts share one row instead of each leaving half a line empty.
     private var contextSection: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitEyebrow("Ta séance")
-
-            SessionFeedbackTile(
-                rpe: detail.rpe.map { Int($0.rounded()) },
-                feeling: SessionFeeling(stored: detail.feeling),
-                accent: tone,
-                action: onShowSubjective
-            )
-
-            if let analysis = detail.plannedSession?.analysis {
-                ComplianceTile(analysis: analysis, action: onShowCompliance)
+            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+                SessionFeedbackTile(
+                    rpe: detail.rpe.map { Int($0.rounded()) },
+                    feeling: SessionFeeling(stored: detail.feeling),
+                    accent: tone,
+                    action: onShowSubjective
+                )
+                if let analysis = detail.plannedSession?.analysis {
+                    ComplianceTile(analysis: analysis, action: onShowCompliance)
+                }
             }
-
-            if let weather = detail.weather, let weatherLabel = V1ActivityWeather(rawValue: weather).label {
-                ContextChip(title: weatherLabel, symbol: "cloud.sun")
-            }
+            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -1132,20 +1142,6 @@ private struct RoutePointMarker: View {
             .frame(width: 13, height: 13)
             .overlay(Circle().stroke(stroke, lineWidth: 3))
             .shadow(color: .black.opacity(0.2), radius: 3)
-    }
-}
-
-private struct ContextChip: View {
-    let title: String
-    let symbol: String
-
-    var body: some View {
-        Label(title, systemImage: symbol)
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(SharpitColor.mutedForeground)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(SharpitElevatedColor.panelOnSheet, in: Capsule())
     }
 }
 

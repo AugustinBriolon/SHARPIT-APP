@@ -2,109 +2,90 @@ import SwiftUI
 
 // MARK: - Tiles on the detail page
 
+/// A half-width readout that opens a drawer: a caption with a chevron on top, the value
+/// below. Both tiles of a row stretch to the taller one.
+private struct ReadoutTile<Value: View>: View {
+    let caption: String
+    let action: () -> Void
+    @ViewBuilder let value: Value
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                HStack(spacing: SharpitSpacing.xxs) {
+                    Text(caption)
+                        .font(SharpitTypography.label)
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(SharpitTypography.label)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .accessibilityHidden(true)
+                }
+                value
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            }
+            .padding(SharpitSpacing.md)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .sharpitSurface(.panel)
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
 /// Effort and feeling are one answer — "how did it go" — so they share one tile and one
-/// drawer. Unrated, the tile turns into the page's invitation to rate.
+/// drawer. Unrated, the value becomes the invitation to rate.
 struct SessionFeedbackTile: View {
     let rpe: Int?
     let feeling: SessionFeeling?
     let accent: Color
     let action: () -> Void
 
-    private var isRated: Bool { rpe != nil || feeling != nil }
-
     var body: some View {
-        Button(action: action) {
-            if isRated {
-                rated
-                    .padding(SharpitSpacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .sharpitSurface(.panel)
-            } else {
-                invitation
-                    .padding(SharpitSpacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        accent.opacity(0.10),
-                        in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    )
-            }
-        }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Ouvre l'évaluation de la séance")
-    }
-
-    private var rated: some View {
-        HStack(spacing: SharpitSpacing.md) {
-            ScaleReadout(
-                label: "Effort",
-                value: rpe,
-                outOf: 10,
-                tone: rpe.map(SessionFeedbackTone.effort) ?? SharpitColor.mutedForeground
-            )
-            Rectangle()
-                .fill(SharpitColor.analysisGrid)
-                .frame(width: 1, height: 40)
-            ScaleReadout(
-                label: "Ressenti",
-                value: feeling?.rawValue,
-                outOf: 5,
-                tone: feeling.map(SessionFeedbackTone.feeling) ?? SharpitColor.mutedForeground
-            )
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.mutedForeground)
-        }
-    }
-
-    private var invitation: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: "hand.tap.fill")
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(accent)
-                .frame(width: 40, height: 40)
-                .background(accent.opacity(0.16), in: Circle())
-                .symbolEffect(.bounce, options: .nonRepeating)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Note ta séance")
+        ReadoutTile(caption: "Effort · Ressenti", action: action) {
+            if rpe == nil && feeling == nil {
+                Label("Noter", systemImage: "plus.circle.fill")
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text("Effort et ressenti, deux touches")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(accent)
+                    .symbolEffect(.bounce, options: .nonRepeating)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.md) {
+                    ScaleReadout(
+                        value: rpe,
+                        outOf: 10,
+                        tone: rpe.map(SessionFeedbackTone.effort) ?? SharpitColor.mutedForeground
+                    )
+                    ScaleReadout(
+                        value: feeling?.rawValue,
+                        outOf: 5,
+                        tone: feeling.map(SessionFeedbackTone.feeling) ?? SharpitColor.mutedForeground
+                    )
+                }
             }
-            Spacer(minLength: 0)
-            Image(systemName: "plus.circle.fill")
-                .font(.title2)
-                .foregroundStyle(accent)
         }
+        .accessibilityHint("Ouvre l'évaluation de la séance")
     }
 }
 
 private struct ScaleReadout: View {
-    let label: String
     let value: Int?
     let outOf: Int
     let tone: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value.map(String.init) ?? "—")
-                    .font(SharpitTypography.gaugeScore)
-                    .tracking(SharpitTypography.gaugeScoreTracking)
-                    .foregroundStyle(tone)
-                    .contentTransition(.numericText())
-                Text("/\(outOf)")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            Text(label)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
+        HStack(alignment: .firstTextBaseline, spacing: 1) {
+            Text(value.map(String.init) ?? "—")
+                .font(SharpitTypography.gaugeScore)
+                .tracking(SharpitTypography.gaugeScoreTracking)
+                .foregroundStyle(tone)
+                .contentTransition(.numericText())
+            Text("/\(outOf)")
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
         }
     }
@@ -120,40 +101,25 @@ struct ComplianceTile: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: SharpitSpacing.md) {
-                ZStack {
-                    SharpitScoreRing(fraction: (analysis.complianceScore ?? 0) / 100, tone: tone)
+        ReadoutTile(caption: "Conformité", action: action) {
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
-                        .font(SharpitTypography.instrument)
+                        .font(SharpitTypography.gaugeScore)
+                        .tracking(SharpitTypography.gaugeScoreTracking)
                         .foregroundStyle(tone)
-                }
-                .frame(width: 48, height: 48)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Conformité au plan")
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
+                    Text("%")
+                        .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
-                    Text(verdict?.label ?? "Voir l'analyse")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
                 }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                if let verdict {
+                    Label(verdict.label, systemImage: verdict.symbolName)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(verdict.tone)
+                        .lineLimit(2)
+                }
             }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
         }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
     }
 }
 

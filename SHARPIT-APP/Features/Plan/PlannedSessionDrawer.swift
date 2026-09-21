@@ -97,6 +97,19 @@ struct PlannedSessionDrawer: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                     header
+                    // Without an id the coach cannot be told *which* session, and a tag
+                    // naming the wrong one is worse than no tag.
+                    if let sessionId = preview.sessionId {
+                        CoachDiscussButton(title: "Discuter de cette séance") {
+                            onDiscussWithCoach(
+                                CoachDiscuss.describe(
+                                    .plannedSession(sessionId: sessionId),
+                                    name: preview.title
+                                )
+                            )
+                            dismiss()
+                        }
+                    }
                     if !preview.metrics.isEmpty {
                         metricsRow
                     }
@@ -126,22 +139,6 @@ struct PlannedSessionDrawer: View {
                             subtitle: "Si elle n'a pas été rapprochée toute seule"
                         ) {
                             showingLinkPicker = true
-                        }
-                    }
-                    // Without an id the coach cannot be told *which* session, and a tag
-                    // naming the wrong one is worse than no tag.
-                    if let sessionId = preview.sessionId {
-                        CoachDiscussButton(
-                            title: "Discuter de cette séance",
-                            subtitle: "Le coach verra la séance que tu regardes"
-                        ) {
-                            onDiscussWithCoach(
-                                CoachDiscuss.describe(
-                                    .plannedSession(sessionId: sessionId),
-                                    name: preview.title
-                                )
-                            )
-                            dismiss()
                         }
                     }
                 }
@@ -269,11 +266,11 @@ struct DrawerActionRow: View {
     }
 }
 
-/// The button that hands a subject to the coach — the one call to action a screen carries,
-/// so it takes the ink band and stands apart from the rows around it (ADR 0003).
+/// The way to hand a subject to the coach. A tinted pill near the top of the screen: it
+/// is found because of where it sits and the one accent it carries, not because of its
+/// size (ADR 0003).
 struct CoachDiscussButton: View {
     let title: String
-    var subtitle: String?
     let action: () -> Void
 
     var body: some View {
@@ -281,47 +278,30 @@ struct CoachDiscussButton: View {
             SharpitHaptics.play(.soft)
             action()
         } label: {
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "bubble.left.and.text.bubble.right.fill")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .frame(width: 40, height: 40)
-                    .background(SharpitColor.inkSurfaceForeground.opacity(0.14), in: Circle())
+            HStack(spacing: SharpitSpacing.xs) {
+                Image(systemName: "bubble.left.and.text.bubble.right")
+                    .imageScale(.small)
                     .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .multilineTextAlignment(.leading)
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(SharpitTypography.meta)
-                            .opacity(0.78)
-                            .multilineTextAlignment(.leading)
-                    }
-                }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "arrow.right")
-                    .font(SharpitTypography.bodyEmphasis)
+                Text(title)
+                    .lineLimit(1)
+                Image(systemName: "arrow.up.right")
+                    .imageScale(.small)
                     .accessibilityHidden(true)
             }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.ink)
+            .font(SharpitTypography.bodyEmphasis)
+            .foregroundStyle(SharpitColor.primary)
+            .padding(.horizontal, SharpitSpacing.sm)
+            .padding(.vertical, SharpitSpacing.xs)
+            .background(SharpitColor.primary.opacity(0.10), in: Capsule())
         }
         .buttonStyle(.sharpitPressable)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Ouvre le coach avec ce sujet")
     }
 }
 
 #Preview {
     VStack(spacing: SharpitSpacing.md) {
-        CoachDiscussButton(
-            title: "Discuter de cette séance",
-            subtitle: "Le coach verra ce que tu regardes"
-        ) {}
+        CoachDiscussButton(title: "Discuter de cette séance") {}
         CoachDiscussButton(title: "Discuter avec le coach") {}
     }
     .padding()
