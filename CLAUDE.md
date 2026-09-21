@@ -139,10 +139,16 @@ The source of truth is the web design system, not this repo:
 - Values: `../SHARPIT/src/lib/brand/brand-tokens.ts` and `../SHARPIT/src/app/globals.css`
 
 Genre is **instrument-editorial**: a precision readout, not a fitness dashboard. That
-implies flat surfaces with a hairline border, elevation expressed through luminosity rather
-than drop shadows, color reserved for semantic state, and no decorative gradients or
-washes. Apple chrome (tab bar, navigation, Liquid Glass) stays system; brand meaning lives
-in the content.
+implies color reserved for semantic state and no decorative gradients or washes. Apple
+chrome (tab bar, navigation, Liquid Glass) stays system; brand meaning lives in the content.
+
+Elevation is where the app departs from the web (`docs/adr/0002`): surfaces have no
+hairline border; on light they lift with a soft neutral shadow (`sharpitShadow`), on dark by
+luminosity only. Every sheet uses `.sharpitSheet()` so none falls back to system black, and
+no screen uses `Color(uiColor: .systemBackground)`.
+
+Motion: `SharpitMotion.selection` for controls under the finger, `reveal` for content
+arriving; `staggerDelay(index:)` is capped, so use it instead of hard-coded delays.
 
 Screen structure follows the web causal column: state → evidence → recommendation →
 projection → limit → confidence.

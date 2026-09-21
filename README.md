@@ -94,6 +94,10 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   `SharpitTokens.generated.swift` ([ADR-041](../SHARPIT/docs/adr/ADR-041-ios-design-tokens-generated-from-web.md)).
   Spec: `docs/superpowers/specs/2026-09-16-ios-design-system-design.md` (tokens, typography
   and spacing sections superseded by ADR-041)
+- Elevation diverges from the web: no hairline borders, soft shadows on light, luminosity on
+  dark, and every sheet raised off black through `.sharpitSheet()`
+  ([ADR 0002](docs/adr/0002-soft-shadow-elevation-instead-of-hairline-borders.md))
+- ADRs specific to the native client: `docs/adr/`
 - Spec / plan: `docs/superpowers/`
 
 Native never calls `/api/presentation/*`. See SHARPIT ADR-040.
