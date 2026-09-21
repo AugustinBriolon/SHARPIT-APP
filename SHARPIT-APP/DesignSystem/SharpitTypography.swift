@@ -109,6 +109,10 @@ enum SharpitTypography {
     static var gaugeScore: Font { instrument(size: 28, weight: .medium, relativeTo: .title) }
     static var gaugeScoreTracking: CGFloat { tracking(em: -0.02, size: 28) }
 
+    /// The one number a drill-down screen is about — the night's score, the day's readiness.
+    static var heroScore: Font { instrument(size: 56, weight: .medium, relativeTo: .largeTitle) }
+    static var heroScoreTracking: CGFloat { tracking(em: -0.03, size: 56) }
+
     /// CSS tracking is relative to the font size; SwiftUI's is absolute.
     static func tracking(em: CGFloat, size: CGFloat) -> CGFloat {
         em * size

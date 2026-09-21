@@ -14,6 +14,7 @@ struct TodayView: View {
     @State private var activityStatusStore: ActivityStatusStore?
     private let journalClient: (any JournalServing)?
     private let wellnessClient: (any WellnessServing)?
+    private let signalClient: (any SleepServing & RecoveryServing)?
 
     init(
         client: any TodayServing = FixtureTodayClient(),
@@ -21,8 +22,10 @@ struct TodayView: View {
         modelContext: ModelContext? = nil,
         activityStatusClient: (any ActivityStatusServing)? = nil,
         journalClient: (any JournalServing)? = nil,
-        wellnessClient: (any WellnessServing)? = nil
+        wellnessClient: (any WellnessServing)? = nil,
+        signalClient: (any SleepServing & RecoveryServing)? = nil
     ) {
+        self.signalClient = tokenProvider == nil ? nil : signalClient
         self.tokenProvider = tokenProvider
         self.journalClient = tokenProvider == nil ? nil : journalClient
         self.wellnessClient = tokenProvider == nil ? nil : wellnessClient
@@ -52,6 +55,7 @@ struct TodayView: View {
                         pulseScores: store.pulseScores,
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
                         tokenProvider: tokenProvider,
+                        signalClient: signalClient,
                         onArrival: { store.handleArrivalWins(fold: fold) },
                         onSessionLinked: { Task { await store.refresh() } }
                     )
@@ -121,11 +125,13 @@ private struct TodayFoldView: View {
     var pulseScores: Bool = false
     var sessionDoneCelebrations: Set<String> = []
     var tokenProvider: (() async throws -> String)?
+    var signalClient: (any SleepServing & RecoveryServing)?
     var onArrival: () -> Void = {}
     /// Called once a prescription has been linked, so Today reloads and shows it as done.
     var onSessionLinked: () -> Void = {}
 
     @State private var selectedPreview: PlannedSessionPreview?
+    @State private var openedSignal: V1TodaySignalKey?
 
     var body: some View {
         ScrollView(.vertical) {
@@ -133,7 +139,11 @@ private struct TodayFoldView: View {
                 InkVerdictPlate(plate: fold.plate, revealed: true)
                 evidenceSection
                 if !fold.gauges.isEmpty {
-                    OvernightGaugePair(gauges: fold.gauges, pulseScores: pulseScores)
+                    OvernightGaugePair(
+                        gauges: fold.gauges,
+                        pulseScores: pulseScores,
+                        onSelect: signalClient == nil ? nil : { openedSignal = $0 }
+                    )
                 }
                 if let consistency = fold.consistency, !consistency.days.isEmpty {
                     ConsistencyStrip(consistency: consistency) {
@@ -146,12 +156,29 @@ private struct TodayFoldView: View {
             .padding(.bottom, SharpitSpacing.lg)
         }
         .modifier(ScrollUnderGlass())
+        .navigationDestination(item: $openedSignal) { key in
+            signalDetail(for: key)
+        }
         .sheet(item: $selectedPreview) { preview in
             PlannedSessionDrawer(preview: preview, linking: linkContext) { context in
                 router.discussWithCoach(about: context)
             }
         }
         .task { onArrival() }
+    }
+
+    @ViewBuilder
+    private func signalDetail(for key: V1TodaySignalKey) -> some View {
+        if let signalClient, let tokenProvider {
+            switch key {
+            case .sleep:
+                SleepView(client: signalClient, tokenProvider: tokenProvider)
+            case .recovery:
+                RecoveryView(client: signalClient, tokenProvider: tokenProvider)
+            case .effort, .adaptation:
+                EmptyView()
+            }
+        }
     }
 
     /// Nil without a token: a fixture-backed Today has nothing to link against.

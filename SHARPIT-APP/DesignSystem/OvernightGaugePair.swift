@@ -3,11 +3,21 @@ import SwiftUI
 struct OvernightGaugePair: View {
     let gauges: [OvernightGaugeModel]
     var pulseScores: Bool = false
+    /// When set, each gauge opens the screen behind it.
+    var onSelect: ((V1TodaySignalKey) -> Void)?
 
     var body: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.xs) {
             ForEach(gauges) { gauge in
-                OvernightGaugeCell(gauge: gauge, pulse: pulseScores)
+                if let onSelect {
+                    Button { onSelect(gauge.key) } label: {
+                        OvernightGaugeCell(gauge: gauge, pulse: pulseScores, opensDetail: true)
+                    }
+                    .buttonStyle(.sharpitPressable)
+                    .accessibilityAddTraits(.isButton)
+                } else {
+                    OvernightGaugeCell(gauge: gauge, pulse: pulseScores)
+                }
             }
         }
     }
@@ -22,6 +32,7 @@ struct OvernightGaugePair: View {
 private struct OvernightGaugeCell: View {
     let gauge: OvernightGaugeModel
     var pulse: Bool = false
+    var opensDetail = false
 
     @State private var displayedScore: CGFloat?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -68,6 +79,12 @@ private struct OvernightGaugeCell: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
+            if opensDetail {
+                Image(systemName: "chevron.right")
+                    .font(SharpitTypography.label)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .accessibilityHidden(true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }

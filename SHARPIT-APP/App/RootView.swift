@@ -26,7 +26,8 @@ struct RootView: View {
                     modelContext: modelContext,
                     activityStatusClient: activityStatusClient,
                     journalClient: journalClient,
-                    wellnessClient: wellnessClient
+                    wellnessClient: wellnessClient,
+                    signalClient: SharpitClient()
                 )
             }
             Tab(
