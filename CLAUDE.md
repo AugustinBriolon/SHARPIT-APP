@@ -147,6 +147,11 @@ hairline border; on light they lift with a soft neutral shadow (`sharpitShadow`)
 luminosity only. Every sheet uses `.sharpitSheet()` so none falls back to system black, and
 no screen uses `Color(uiColor: .systemBackground)`.
 
+Color and affordance (`docs/adr/0003`): numbers take semantic tones from
+`SessionFeedbackTone`, anything that opens something is a raised tile with a chevron and
+`.buttonStyle(.sharpitPressable)`, and `CoachDiscussButton` is the one filled call to
+action. Session feeling is written in the web's words (`SessionFeeling.storedValue`).
+
 Motion: `SharpitMotion.selection` for controls under the finger, `reveal` for content
 arriving; `staggerDelay(index:)` is capped, so use it instead of hard-coded delays.
 
