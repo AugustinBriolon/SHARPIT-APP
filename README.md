@@ -82,6 +82,9 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   missed can be linked by hand from the planned session's drawer.
 - Coach: `/api/coach/chat` streams the answer; the conversation is kept server-side through
   `/api/coach/conversations`, and the history sheet lists, reopens and deletes them
+- Sommeil / Récupération: drill-downs opened from the Today gauges, read from
+  `/api/v1/sleep` and `/api/v1/recovery` (projections of the web's view models), with a day
+  picker shared with Plan
 - Journal: the day's signals via `/api/day-journal`, and what it asks for via
   `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
   render — the web's automatic items, diet flags, thresholds — survive a save from the phone

@@ -95,7 +95,8 @@ typography, colors or spacing — that belongs to `DesignSystem/`.
 in `V1Today.swift` / `V1Activities.swift` / `V1PlannedSessions.swift` and mirror the web
 API payloads.
 
-Only `/api/v1/today` is a real versioned contract today. `ActivityClient`,
+The real versioned contracts are `/api/v1/today`, `/api/v1/sleep` and `/api/v1/recovery`, all
+served by `SharpitClient` behind one protocol per resource. `ActivityClient`,
 `PlannedSessionClient`, `CoachChatClient`, `CoachConversationClient`, `ActivityStatusClient`
 and `JournalClient` call web-internal routes (`/api/activities`, `/api/planned-sessions`
 including `…/:id/link`, `/api/coach/chat`, `/api/coach/conversations`, `/api/activity-status`,
@@ -118,6 +119,11 @@ app can render, never all of the web's.
 pick — no explicit save, as on the web. A deadline that has passed is resolved back to
 `active` server-side on read, so the app never expires one itself. Trips are not modelled:
 the app carries `travelId` back unchanged rather than inventing one.
+
+**Day drill-downs.** Sleep and Recovery open from the Today gauges. Both are a
+`DayResourceStore` inside `DayDetailScaffold`, which pins the day picker
+(`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
+day's drill-down is a v1 resource plus a sections view, not a new store.
 
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation
 layer is web-only; the app maps domain payloads itself.
