@@ -237,7 +237,7 @@ private struct JournalWellnessRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .sharpitSurface(.panel)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }
@@ -276,18 +276,22 @@ private struct JournalFactorRow: View {
 }
 
 private extension JournalFactorState {
-    /// The selection dot follows the answer: a recorded "non" reads as settled, an
-    /// unanswered day stays quiet, a recorded "oui" is what the day now carries.
+    /// The selection pill follows the answer: a recorded "non" reads red, an unanswered
+    /// day stays quiet, a recorded "oui" is what the day now carries.
     var tone: Color {
         switch self {
-        case .no: SharpitColor.signalNeutral
+        case .no: SharpitColor.signalRisk
         case .unset: SharpitElevatedColor.control
         case .yes: SharpitColor.primary
         }
     }
 
     var onTone: Color {
-        self == .unset ? SharpitColor.foreground : SharpitColor.primaryForeground
+        switch self {
+        case .no: .white
+        case .unset: SharpitColor.foreground
+        case .yes: SharpitColor.primaryForeground
+        }
     }
 }
 
@@ -367,6 +371,8 @@ private struct JournalStepperRow: View {
                 Text(value)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
+                    .contentTransition(.numericText())
+                    .animation(SharpitMotion.selection, value: value)
             }
 
             Spacer(minLength: 0)
@@ -376,9 +382,11 @@ private struct JournalStepperRow: View {
                     onStep(-1)
                 } label: {
                     Image(systemName: "minus")
-                        .frame(width: 30, height: 30)
-                        .contentShape(.rect)
+                        .frame(width: 34, height: 34)
+                        .background(SharpitColor.primary.opacity(0.12), in: Circle())
+                        .contentShape(.circle)
                 }
+                .buttonStyle(.sharpitPressable)
                 .disabled(!canDecrement)
                 .accessibilityLabel("Retirer")
 
@@ -386,13 +394,14 @@ private struct JournalStepperRow: View {
                     onStep(1)
                 } label: {
                     Image(systemName: "plus")
-                        .frame(width: 30, height: 30)
-                        .contentShape(.rect)
+                        .frame(width: 34, height: 34)
+                        .background(SharpitColor.primary.opacity(0.12), in: Circle())
+                        .contentShape(.circle)
                 }
+                .buttonStyle(.sharpitPressable)
                 .accessibilityLabel("Ajouter")
             }
             .font(SharpitTypography.bodyEmphasis)
-            .buttonStyle(.plain)
             .foregroundStyle(SharpitColor.primary)
         }
         .padding(SharpitSpacing.cardPadding)

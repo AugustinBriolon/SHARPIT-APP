@@ -108,11 +108,13 @@ final class JournalStore {
     /// Steps match the web's: one cup of coffee, one large glass.
     func adjustCaffeine(by delta: Int) {
         entry.caffeineMg = max(0, (entry.caffeineMg ?? 0) + delta)
+        SharpitHaptics.play(.light)
         scheduleSave()
     }
 
     func adjustHydration(by delta: Int) {
         entry.hydrationMl = max(0, (entry.hydrationMl ?? 0) + delta)
+        SharpitHaptics.play(.light)
         scheduleSave()
     }
 
