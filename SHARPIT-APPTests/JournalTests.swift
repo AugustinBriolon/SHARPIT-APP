@@ -116,16 +116,19 @@ private actor StubJournalClient: JournalServing {
     private var entry: V1DayJournalEntry
     private var storedPrefs: JournalPrefs
     private let isPro: Bool
+    private let saveLatency: Duration
     private(set) var entrySaves = 0
 
     init(
         entry: V1DayJournalEntry = V1DayJournalEntry(trainingDayId: "2026-09-20"),
         prefs: JournalPrefs = .empty,
-        isPro: Bool = false
+        isPro: Bool = false,
+        saveLatency: Duration = .zero
     ) {
         self.entry = entry
         storedPrefs = prefs
         self.isPro = isPro
+        self.saveLatency = saveLatency
     }
 
     func dayJournal(trainingDayId _: String, token _: String) async throws -> V1DayJournalEntry {
@@ -138,6 +141,7 @@ private actor StubJournalClient: JournalServing {
     ) async throws -> V1DayJournalEntry {
         entrySaves += 1
         self.entry = entry
+        try await Task.sleep(for: saveLatency)
         return entry
     }
 
@@ -208,6 +212,33 @@ private actor StubJournalClient: JournalServing {
 
     #expect(await client.saveCount() == 1)
     #expect(store.entry.moodLabel == "Bien")
+}
+
+/// The server echoes what it was sent. A tap made while that request is in flight must
+/// survive the echo, on screen and in the next write.
+@MainActor
+@Test func aTapDuringASaveIsNotRevertedByTheEcho() async throws {
+    let client = StubJournalClient(saveLatency: .milliseconds(200))
+    let store = JournalStore(
+        client: client,
+        tokenProvider: { "token" },
+        trainingDayId: "2026-09-20",
+        saveDelay: .seconds(60)
+    )
+    await store.load()
+
+    store.set(factorId: "alcohol", to: .yes)
+    let firstSave = Task { await store.flushPendingSave() }
+    try await Task.sleep(for: .milliseconds(50))
+    store.set(factorId: "sauna", to: .yes)
+    await firstSave.value
+
+    #expect(store.entry.state(of: "sauna") == .yes)
+
+    await store.flushPendingSave()
+    let reloaded = try await client.dayJournal(trainingDayId: "2026-09-20", token: "token")
+    #expect(reloaded.state(of: "alcohol") == .yes)
+    #expect(reloaded.state(of: "sauna") == .yes)
 }
 
 @MainActor

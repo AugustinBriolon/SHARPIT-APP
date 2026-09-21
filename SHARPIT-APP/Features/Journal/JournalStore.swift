@@ -26,6 +26,9 @@ final class JournalStore {
     private let tokenProvider: () async throws -> String
     private let saveDelay: Duration
     private var pendingSave: Task<Void, Never>?
+    /// Bumped on every local edit, so a save can tell whether the athlete tapped again
+    /// while its request was in flight.
+    private var localRevision = 0
 
     init(
         client: any JournalServing,
@@ -114,6 +117,7 @@ final class JournalStore {
     }
 
     private func scheduleSave() {
+        localRevision += 1
         saveFailure = nil
         pendingSave?.cancel()
         pendingSave = Task { [weak self, saveDelay] in
@@ -133,9 +137,16 @@ final class JournalStore {
     }
 
     private func saveEntry() async {
+        let sentRevision = localRevision
         do {
             let token = try await tokenProvider()
-            entry = try await client.saveDayJournal(entry, token: token)
+            let saved = try await client.saveDayJournal(entry, token: token)
+            // A tap made during the request is newer than the server's echo: adopting the
+            // echo would flip that answer back on screen, and the next save would send the
+            // reverted value.
+            if localRevision == sentRevision {
+                entry = saved
+            }
             saveFailure = nil
         } catch is CancellationError {
         } catch {
