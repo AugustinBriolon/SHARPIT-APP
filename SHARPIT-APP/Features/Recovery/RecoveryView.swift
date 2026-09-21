@@ -61,10 +61,6 @@ struct RecoverySections: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            CoachDiscussButton(title: "Discuter de ma récupération") {
-                router.discussWithCoach(about: CoachDiscuss.describe(.today))
-            }
-
             SharpitHeroScore(score: recovery.readinessScore, label: recovery.signal.label, tone: tone)
 
             HStack(spacing: SharpitSpacing.xs) {
@@ -83,6 +79,12 @@ struct RecoverySections: View {
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
+
+            // The score is read first; the way to ask about it comes once it has been read.
+            CoachDiscussButton(title: "Discuter de ma récupération") {
+                router.discussWithCoach(about: CoachDiscuss.describe(.today))
+            }
+            .padding(.top, SharpitSpacing.xxs)
         }
     }
 }
