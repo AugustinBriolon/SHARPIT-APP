@@ -49,6 +49,37 @@ nonisolated enum ProfileFieldFormat {
         return rest == 0 ? "\(hours) h" : "\(hours) h \(String(format: "%02d", rest))"
     }
 
+    /// `510` → `"8,5"`. The server stores a sleep target in minutes; the web types it in
+    /// hours, in quarter steps, and so does the app.
+    static func hours(_ minutes: Int?) -> String {
+        guard let minutes, minutes > 0 else { return "" }
+        return decimal(Double(minutes) / 60)
+    }
+
+    /// `"8,5"` → `510`, rounded to the minute as the web rounds it.
+    static func parseHours(_ text: String) -> Int? {
+        guard let hours = parseDecimal(text) else { return nil }
+        let minutes = Int((hours * 60).rounded())
+        return minutes > 0 ? minutes : nil
+    }
+
+    /// `1990-04-12`, the day the server's `@db.Date` reads.
+    ///
+    /// UTC, because that is the calendar the column stores: a local midnight in Paris is the
+    /// previous day there. No time and no zone marker either — the web parses a birth date
+    /// with `^(\d{4})-(\d{2})-(\d{2})$` and rejects anything longer.
+    static func isoDay(_ date: Date?) -> String? {
+        guard let date else { return nil }
+        return date.formatted(.iso8601.year().month().day().dateSeparator(.dash))
+    }
+
+    /// Two birth dates are the same when they name the same UTC day. Comparing instants
+    /// would resend an unchanged date on every save, because the server answers midnight UTC
+    /// and a picker holds whatever moment it was given.
+    static func isSameDay(_ lhs: Date?, _ rhs: Date?) -> Bool {
+        isoDay(lhs) == isoDay(rhs)
+    }
+
     static func integer(_ value: Int?) -> String {
         value.map(String.init) ?? ""
     }

@@ -17,8 +17,12 @@ struct RootView: View {
     private let journalClient = JournalClient()
     private let wellnessClient = WellnessClient()
     private let sharpitClient = SharpitClient()
+    /// One client for Profil, Seuils, Corps and the reading density, so they share a session.
+    private let profileClient = AthleteProfileClient()
     /// Shared by Today, which sends on each sync, and Moi, where it is switched on.
     @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
+    /// The reading density, read once and handed to every surface through the environment.
+    @State private var displayMode = DisplayModeStore(client: AthleteProfileClient())
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -76,6 +80,8 @@ struct RootView: View {
                 MeView(
                     appleHealth: appleHealth,
                     syncClient: sharpitClient,
+                    profileClient: profileClient,
+                    displayMode: displayMode,
                     tokenProvider: liveToken
                 ) {
                     accountMark
@@ -85,6 +91,10 @@ struct RootView: View {
         .background(SharpitCanvasBackground())
         .tint(SharpitColor.primary)
         .environment(router)
+        // Read once for the whole app: every surface that shows a technical figure asks this
+        // rather than the profile (ADR 0006).
+        .environment(\.displayMode, displayMode)
+        .task { await displayMode.load(tokenProvider: liveToken) }
         // Every string in this app is French, and so is the web's. Left to the device
         // locale the date strips rendered "M T W T F S S" under French copy.
         .environment(\.locale, Locale(identifier: "fr_FR"))
