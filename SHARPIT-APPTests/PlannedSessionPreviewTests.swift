@@ -26,19 +26,6 @@ import Testing
     #expect(preview.metrics.contains { $0.label == "Intensité" && $0.value == "Seuil" })
 }
 
-@Test func aPlanPreviewOmitsCharge() {
-    // A planning number, not something the athlete acts on before a session.
-    let session = V1PlannedSessionItem(
-        id: "ps-1",
-        date: Date(),
-        type: "RUN",
-        durationMin: 40,
-        load: 85
-    )
-
-    #expect(PlannedSessionPreview(session: session).metrics.allSatisfy { $0.label != "Charge" })
-}
-
 @Test func aTodayCardCarriesItsPrescriptionIdNotItsLineId() {
     // A brick line is identified by its group; only `plannedSessionId` addresses the
     // session, and the drawer's coach tag depends on getting that right.

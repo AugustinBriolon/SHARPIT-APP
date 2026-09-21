@@ -276,6 +276,16 @@ enum ActivityFormat {
         "\(Int(seconds / 60))'\(String(format: "%02d", Int(seconds.rounded()) % 60))\"/km"
     }
 
+    /// Session load, in the words of the reading it is shown in (ADR 0006).
+    ///
+    /// Visible in both readings: the magnitude is not the barrier, the acronym is — so the
+    /// essential reading keeps the number and calls it « charge », exactly as the web's
+    /// `formatTrainingLoad` does.
+    static func trainingLoad(_ load: Double, isExpertReading: Bool) -> String {
+        let rounded = Int(load.rounded())
+        return isExpertReading ? "\(rounded) TSS" : "charge \(rounded)"
+    }
+
     static func primaryMetric(_ activity: V1ActivityListItem) -> String? {
         guard let distanceM = activity.distanceM, distanceM > 0 else { return nil }
         return distanceM >= 10_000

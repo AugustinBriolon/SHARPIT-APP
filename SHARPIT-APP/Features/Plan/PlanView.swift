@@ -8,6 +8,7 @@ struct PlanView: View {
     let tokenProvider: () async throws -> String
 
     @Environment(ShellRouter.self) private var router
+    @Environment(\.isExpertReading) private var isExpertReading
     @Environment(\.openURL) private var openURL
     @State private var store: PlanStore
     @State private var selectedSession: V1PlannedSessionItem?
@@ -68,7 +69,7 @@ struct PlanView: View {
             }
             .sheet(item: $selectedSession) { session in
                 PlannedSessionDrawer(
-                    preview: PlannedSessionPreview(session: session),
+                    preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
                     linking: SessionLinkContext(
                         referenceDate: session.date,
                         activities: activityClient,

@@ -233,6 +233,7 @@ private enum DetailPhase {
 
 private struct ActivityDetailContent: View {
     @Environment(ShellRouter.self) private var router
+    @Environment(\.isExpertReading) private var isExpertReading
 
     let detail: V1ActivityDetail
     let streamPayload: V1ActivityStreamPayload?
@@ -386,6 +387,14 @@ private struct ActivityDetailContent: View {
         if let elevation = detail.elevationM, detail.type != .swim && detail.type != .strength { metrics.append(.init(label: "Dénivelé", value: "\(Int(elevation.rounded()))", unit: "m")) }
         if detail.type == .swim, let pace = detail.avgPaceSecPer100m { metrics.append(.init(label: "Allure", value: ActivityFormat.pace(pace), unit: "/100 m")) }
         else if detail.type != .strength, let pace = detail.paceSecPerKm { metrics.append(.init(label: "Allure", value: ActivityFormat.pace(pace), unit: "/km")) }
+        // Last, because it is what the session cost rather than what it was (ADR 0006).
+        if let load = detail.load, load > 0 {
+            metrics.append(.init(
+                label: isExpertReading ? "TSS" : "Charge",
+                value: "\(Int(load.rounded()))",
+                unit: nil
+            ))
+        }
         return metrics
     }
 

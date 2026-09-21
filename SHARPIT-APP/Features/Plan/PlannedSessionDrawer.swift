@@ -30,15 +30,23 @@ struct PlannedSessionMetric: Equatable {
 }
 
 extension PlannedSessionPreview {
-    init(session: V1PlannedSessionItem) {
-        // Charge/TSS is deliberately absent — a planning number, not something the athlete
-        // acts on before a session.
+    /// `isExpertReading` is passed rather than read from the environment: a preview is built
+    /// outside any view, by the screen that owns the sheet.
+    init(session: V1PlannedSessionItem, isExpertReading: Bool = false) {
         var metrics: [PlannedSessionMetric] = []
         if let durationMin = session.durationMin {
             metrics.append(PlannedSessionMetric(label: "Durée", value: "\(durationMin) min"))
         }
         if let intensity = session.intensity, !intensity.isEmpty {
             metrics.append(PlannedSessionMetric(label: "Intensité", value: intensity.capitalized))
+        }
+        // What the session is expected to cost. Shown in both readings, named for the one it
+        // is read in (ADR 0006, reversing the omission this comment used to record).
+        if let load = session.load, load > 0 {
+            metrics.append(PlannedSessionMetric(
+                label: isExpertReading ? "TSS" : "Charge",
+                value: "\(Int(load.rounded()))"
+            ))
         }
 
         self.init(
