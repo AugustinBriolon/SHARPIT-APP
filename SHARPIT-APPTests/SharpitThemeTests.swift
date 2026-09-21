@@ -157,3 +157,35 @@ private func hex(_ color: Color, style: UIUserInterfaceStyle = .light) -> String
     #expect(SharpitFontFamily.heading.resolvedName(for: .regular) == nil)
     #expect(SharpitFontFamily.data.resolvedName(for: .bold) == nil)
 }
+
+// MARK: - Elevation
+
+private func luminance(_ color: Color, style: UIUserInterfaceStyle) -> CGFloat {
+    let (red, green, blue, _) = channels(color, style: style)
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+/// A sheet on dark took the system's black; it now sits one step above the canvas.
+@Test func aSheetIsNeverBlackAndSitsAboveTheCanvasOnDark() {
+    #expect(hex(SharpitElevatedColor.sheet, style: .dark) == hex(SharpitColor.card, style: .dark))
+    #expect(
+        luminance(SharpitElevatedColor.sheet, style: .dark)
+            > luminance(SharpitColor.background, style: .dark)
+    )
+    #expect(hex(SharpitElevatedColor.sheet) == hex(SharpitColor.background))
+}
+
+/// Panels inside a sheet must lift again, or they sink into the sheet's own tone.
+@Test func aPanelOnASheetLiftsAboveTheSheetOnDark() {
+    #expect(
+        luminance(SharpitElevatedColor.panelOnSheet, style: .dark)
+            > luminance(SharpitElevatedColor.sheet, style: .dark)
+    )
+    #expect(hex(SharpitElevatedColor.panelOnSheet) == hex(SharpitColor.analysisSurface))
+}
+
+@Test func onlyTheSelectedStyleStaysFlat() {
+    #expect(SharpitSurfaceStyle.panel.shadow != nil)
+    #expect(SharpitSurfaceStyle.chip.shadow != nil)
+    #expect(SharpitSurfaceStyle.panelAlt.shadow == nil)
+}

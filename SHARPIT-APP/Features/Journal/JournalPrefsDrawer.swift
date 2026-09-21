@@ -48,6 +48,7 @@ struct JournalPrefsDrawer: View {
             }
         }
         .presentationDetents([.large])
+        .sharpitSheet()
         .presentationDragIndicator(.visible)
     }
 

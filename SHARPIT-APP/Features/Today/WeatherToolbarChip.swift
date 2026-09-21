@@ -23,11 +23,7 @@ struct WeatherToolbarChip: View {
             .labelStyle(.titleAndIcon)
             .padding(.horizontal, SharpitSpacing.sm)
             .padding(.vertical, SharpitSpacing.xs)
-            .background(SharpitColor.chipSurface, in: Capsule())
-            .overlay(
-                Capsule()
-                    .strokeBorder(SharpitColor.analysisBorder, lineWidth: SharpitStroke.hairline)
-            )
+            .background(Capsule().fill(SharpitColor.chipSurface).sharpitShadow(.control))
             .contentShape(Capsule())
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(

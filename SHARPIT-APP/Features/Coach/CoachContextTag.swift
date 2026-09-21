@@ -33,10 +33,7 @@ struct CoachContextTag: View {
         }
         .padding(.horizontal, SharpitSpacing.sm)
         .padding(.vertical, SharpitSpacing.xs)
-        .background(SharpitColor.chipSurface, in: Capsule())
-        .overlay(
-            Capsule().strokeBorder(SharpitColor.analysisBorder, lineWidth: SharpitStroke.hairline)
-        )
+        .background(Capsule().fill(SharpitColor.chipSurface).sharpitShadow(.control))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Contexte joint : \(context.label)")
     }

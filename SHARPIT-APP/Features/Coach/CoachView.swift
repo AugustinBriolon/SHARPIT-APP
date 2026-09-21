@@ -179,12 +179,6 @@ struct CoachView: View {
                     .padding(.horizontal, SharpitSpacing.md)
                     .padding(.vertical, SharpitSpacing.sm)
                     .background(SharpitColor.analysisSurfaceAlt, in: Capsule())
-                    .overlay(
-                        Capsule().strokeBorder(
-                            SharpitColor.analysisBorder,
-                            lineWidth: SharpitStroke.hairline
-                        )
-                    )
                     .submitLabel(.send)
 
                 Button(action: submit) {

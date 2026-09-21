@@ -86,6 +86,7 @@ private struct ActivityStatusDrawer: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .sharpitSheet()
         .presentationDragIndicator(.visible)
         .onAppear(perform: syncFromStore)
     }

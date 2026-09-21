@@ -32,6 +32,7 @@ struct CoachHistoryView: View {
                 }
         }
         .presentationDetents([.medium, .large])
+        .sharpitSheet()
         .presentationDragIndicator(.visible)
         .task { await store.load() }
     }

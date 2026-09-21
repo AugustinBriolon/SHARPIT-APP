@@ -229,6 +229,7 @@ struct PlanCalendarSheet: View {
             }
         }
         .presentationDetents([.medium])
+        .sharpitSheet()
         .presentationDragIndicator(.visible)
     }
 }

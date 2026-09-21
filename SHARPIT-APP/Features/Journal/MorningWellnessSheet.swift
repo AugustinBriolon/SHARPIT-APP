@@ -38,6 +38,7 @@ struct MorningWellnessSheet: View {
                 }
         }
         .presentationDetents([.large])
+        .sharpitSheet()
         .presentationDragIndicator(.visible)
         .task { await store.load() }
     }

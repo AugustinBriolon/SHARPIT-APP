@@ -158,6 +158,7 @@ struct PlannedSessionDrawer: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .sharpitSheet()
         .presentationDragIndicator(.visible)
         .sheet(isPresented: $showingLinkPicker) {
             if let sessionId = preview.sessionId, let linking {
@@ -221,7 +222,7 @@ struct PlannedSessionDrawer: View {
 /// A row, not a filled block. The old coach button was a solid Forest slab with an arrow at
 /// each end, which read as the loudest thing on a screen whose job is the session — and
 /// the design law reserves filled surfaces for the verdict. This carries the same weight
-/// as the panels around it: flat fill, hairline border, one leading mark.
+/// as the panels around it: the panel surface, one leading mark.
 struct DrawerActionRow: View {
     let symbolName: String
     let title: String

@@ -111,7 +111,7 @@ struct ActivityDetailView: View {
                 }
             }
         }
-        .background(Color(uiColor: .systemBackground))
+        .background(SharpitCanvasBackground())
         .modifier(ScrollUnderGlass())
         .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .topLeading) {
@@ -130,6 +130,7 @@ struct ActivityDetailView: View {
                         analysis: analysis
                     )
                     .presentationDetents([.medium, .large])
+                    .sharpitSheet()
                     .presentationDragIndicator(.visible)
                 }
             }
@@ -144,6 +145,7 @@ struct ActivityDetailView: View {
                         }
                     )
                     .presentationDetents([.medium])
+                    .sharpitSheet()
                     .presentationDragIndicator(.visible)
                 }
             }
@@ -338,9 +340,11 @@ private struct ActivityDetailContent: View {
         .padding(.bottom, SharpitSpacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            Color(uiColor: .systemBackground).opacity(0.98),
-            in: RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(SharpitElevatedColor.sheet)
+                .sharpitShadow(.panel)
         )
+        .environment(\.sharpitElevation, .sheet)
         .foregroundStyle(SharpitColor.foreground)
     }
 
@@ -1098,7 +1102,7 @@ private struct DetailMetric: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
-        .background(.white.opacity(0.48), in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
+        .background(SharpitElevatedColor.panelOnSheet, in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
     }
 }
 
@@ -1148,7 +1152,7 @@ private struct SubjectiveTagButton: View {
             }
             .padding(.horizontal, 11)
             .frame(height: 36)
-            .background(.white.opacity(0.48), in: Capsule())
+            .background(SharpitElevatedColor.panelOnSheet, in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -1454,7 +1458,7 @@ private struct ContextChip: View {
             .foregroundStyle(SharpitColor.mutedForeground)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .background(.white.opacity(0.48), in: Capsule())
+            .background(SharpitElevatedColor.panelOnSheet, in: Capsule())
     }
 }
 
@@ -1530,9 +1534,11 @@ private struct ActivityDetailLoadingSheet: View {
         .padding(.bottom, SharpitSpacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            Color(uiColor: .systemBackground).opacity(0.98),
-            in: RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(SharpitElevatedColor.sheet)
+                .sharpitShadow(.panel)
         )
+        .environment(\.sharpitElevation, .sheet)
         .redacted(reason: .placeholder)
     }
 }
