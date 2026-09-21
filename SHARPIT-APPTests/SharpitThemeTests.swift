@@ -197,3 +197,9 @@ private func luminance(_ color: Color, style: UIUserInterfaceStyle) -> CGFloat {
     #expect(hex(label) == hex(raw))
     #expect(luminance(label, style: .dark) > luminance(raw, style: .dark) + 0.15)
 }
+
+/// A hub divider has to start where the row's text does, or the column of icons is cut in two.
+@Test func hubDividersStartWhereTheRowTextDoes() {
+    #expect(SharpitHubRowMetrics.textInset
+            == SharpitSpacing.md + SharpitHubRowMetrics.iconSize + SharpitSpacing.sm)
+}
