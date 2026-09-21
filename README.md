@@ -85,6 +85,9 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 - Sommeil / Récupération: drill-downs opened from the Today gauges, read from
   `/api/v1/sleep` and `/api/v1/recovery` (projections of the web's view models), with a day
   picker shared with Plan
+- Freshness: Today starts a provider pull on launch, foreground and pull-to-refresh
+  (`/api/v1/sync`), and Moi can switch on Apple Health as a gap-filling source, with a
+  diagnostic of what Apple Health holds ([ADR 0005](docs/adr/0005-app-started-sync-and-apple-health.md))
 - Journal: the day's signals via `/api/day-journal`, and what it asks for via
   `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
   render — the web's automatic items, diet flags, thresholds — survive a save from the phone

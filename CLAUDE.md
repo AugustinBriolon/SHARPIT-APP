@@ -95,8 +95,9 @@ typography, colors or spacing — that belongs to `DesignSystem/`.
 in `V1Today.swift` / `V1Activities.swift` / `V1PlannedSessions.swift` and mirror the web
 API payloads.
 
-The real versioned contracts are `/api/v1/today`, `/api/v1/sleep` and `/api/v1/recovery`, all
-served by `SharpitClient` behind one protocol per resource. `ActivityClient`,
+The real versioned contracts are `/api/v1/today`, `/api/v1/sleep`, `/api/v1/recovery`,
+`/api/v1/sync`, `/api/v1/sync-status` and `/api/v1/health-samples`, all served by
+`SharpitClient` behind one protocol per resource. `ActivityClient`,
 `PlannedSessionClient`, `CoachChatClient`, `CoachConversationClient`, `ActivityStatusClient`
 and `JournalClient` call web-internal routes (`/api/activities`, `/api/planned-sessions`
 including `…/:id/link`, `/api/coach/chat`, `/api/coach/conversations`, `/api/activity-status`,
@@ -131,6 +132,12 @@ layer is web-only; the app maps domain payloads itself.
 **Persistence.** SwiftData, one model: `TodayDaySnapshot` keyed by `trainingDayId`, storing
 the raw encoded `V1TodayResponse`. `TodaySnapshotRepository` is the only accessor, so Today
 renders instantly offline before the network answers.
+
+**Freshness.** The app starts provider pulls itself (`ProviderSyncStore`, `/api/v1/sync`)
+on launch, foreground and pull-to-refresh, and can send Apple Health day summaries
+(`AppleHealthSource`, `/api/v1/health-samples`) when the athlete switches it on in Moi.
+Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`, SHARPIT
+ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`.
 
 **Weather** comes from WeatherKit + Core Location (`LocationWeatherService`), never from
 the API.
