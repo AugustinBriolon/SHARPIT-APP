@@ -56,6 +56,17 @@ extension PlannedSessionPreview {
 
     /// Today's own line. Its metrics are already resolved for display, so they travel as
     /// they are rather than being recomputed from a shape Today does not have.
+    /// The breakdown of `sessionId` among the sessions of a day, nil when it is not there
+    /// or carries none.
+    static func breakdown(
+        of sessionId: String,
+        in sessions: [V1PlannedSessionItem]
+    ) -> V1PlannedSessionBreakdown? {
+        guard let breakdown = sessions.first(where: { $0.id == sessionId })?.breakdown,
+              !breakdown.steps.isEmpty else { return nil }
+        return breakdown
+    }
+
     init(card: SessionCardModel) {
         self.init(
             sessionId: card.plannedSessionId,
@@ -87,10 +98,23 @@ struct PlannedSessionDrawer: View {
     let preview: PlannedSessionPreview
     /// Nil where the screen cannot link, so the action is absent rather than dead.
     var linking: SessionLinkContext?
+    /// Fetches the session's breakdown when the preview arrived without one — Today's
+    /// payload carries the line, not the prescription behind it.
+    var loadBreakdown: (() async -> V1PlannedSessionBreakdown?)?
     let onDiscussWithCoach: (CoachDiscussContext) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var showingLinkPicker = false
+    @State private var loadedBreakdown: V1PlannedSessionBreakdown?
+    @State private var isLoadingBreakdown = false
+
+    private var steps: [V1PlannedSessionStep] {
+        preview.steps.isEmpty ? loadedBreakdown?.steps ?? [] : preview.steps
+    }
+
+    private var stepsAreDerived: Bool {
+        preview.steps.isEmpty ? loadedBreakdown?.derived ?? false : preview.stepsAreDerived
+    }
 
     var body: some View {
         NavigationStack {
@@ -113,11 +137,16 @@ struct PlannedSessionDrawer: View {
                     if !preview.metrics.isEmpty {
                         metricsRow
                     }
-                    if !preview.steps.isEmpty {
-                        PlannedSessionBreakdownList(
-                            steps: preview.steps,
-                            derived: preview.stepsAreDerived
-                        )
+                    if !steps.isEmpty {
+                        PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    } else if isLoadingBreakdown {
+                        HStack(spacing: SharpitSpacing.xs) {
+                            ProgressView()
+                            Text("Chargement du déroulé…")
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.mutedForeground)
+                        }
                     }
                     if let notes = preview.notes, !notes.isEmpty {
                         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -146,6 +175,8 @@ struct PlannedSessionDrawer: View {
                 .padding(SharpitSpacing.pageInset)
             }
             .background(SharpitCanvasBackground())
+            .animation(SharpitMotion.reveal, value: steps.count)
+            .task { await fetchBreakdownIfMissing() }
             .navigationTitle("Séance prévue")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -167,12 +198,19 @@ struct PlannedSessionDrawer: View {
         }
     }
 
+    private func fetchBreakdownIfMissing() async {
+        guard preview.steps.isEmpty, loadedBreakdown == nil, let loadBreakdown else { return }
+        isLoadingBreakdown = true
+        loadedBreakdown = await loadBreakdown()
+        isLoadingBreakdown = false
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             HStack(spacing: SharpitSpacing.xs) {
                 Image(systemName: preview.symbolName)
                     .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitSportTone.accent(for: preview.sport))
+                    .foregroundStyle(SharpitSportTone.label(for: preview.sport))
                 Text(preview.sport)
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)

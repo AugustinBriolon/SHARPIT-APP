@@ -160,7 +160,11 @@ private struct TodayFoldView: View {
             signalDetail(for: key)
         }
         .sheet(item: $selectedPreview) { preview in
-            PlannedSessionDrawer(preview: preview, linking: linkContext) { context in
+            PlannedSessionDrawer(
+                preview: preview,
+                linking: linkContext,
+                loadBreakdown: breakdownLoader(for: preview)
+            ) { context in
                 router.discussWithCoach(about: context)
             }
         }
@@ -178,6 +182,19 @@ private struct TodayFoldView: View {
             case .effort, .adaptation:
                 EmptyView()
             }
+        }
+    }
+
+    /// Reads the plan for the day to find what Today's line leaves out. Nil without a token
+    /// or a session id — there is then nothing to look up.
+    private func breakdownLoader(for preview: PlannedSessionPreview) -> (() async -> V1PlannedSessionBreakdown?)? {
+        guard let tokenProvider, let sessionId = preview.sessionId else { return nil }
+        let day = TrainingDayId.date(fold.trainingDayId) ?? .now
+        return {
+            guard let token = try? await tokenProvider(),
+                  let sessions = try? await PlannedSessionClient().plannedSessions(from: day, to: day, token: token)
+            else { return nil }
+            return PlannedSessionPreview.breakdown(of: sessionId, in: sessions)
         }
     }
 

@@ -119,3 +119,26 @@ import Testing
 
     #expect(response.sessions.first?.plannedSessionId == nil)
 }
+
+// MARK: - Breakdown fetched for Today's line
+
+private func plannedItems() throws -> [V1PlannedSessionItem] {
+    let json = """
+    [
+      { "id": "a", "date": "2026-09-21T00:00:00.000Z", "title": "Vélo", "type": "BIKE",
+        "breakdown": { "steps": [], "derived": true, "warnings": [] } },
+      { "id": "b", "date": "2026-09-21T00:00:00.000Z", "title": "Renfo", "type": "STRENGTH",
+        "breakdown": { "steps": [{ "key": "s1", "label": "Squat", "detail": "4 × 8", "target": null, "repeat": 1, "notes": null }],
+                       "derived": false, "warnings": [] } }
+    ]
+    """
+    return try JSONDecoder().decode([V1PlannedSessionItem].self, from: Data(json.utf8))
+}
+
+/// Today's line carries no prescription; the drawer finds it among the day's sessions.
+@Test func theBreakdownOfTodaysLineIsFoundAmongTheDaysSessions() throws {
+    let sessions = try plannedItems()
+    #expect(PlannedSessionPreview.breakdown(of: "b", in: sessions)?.steps.map(\.label) == ["Squat"])
+    #expect(PlannedSessionPreview.breakdown(of: "a", in: sessions) == nil)
+    #expect(PlannedSessionPreview.breakdown(of: "missing", in: sessions) == nil)
+}
