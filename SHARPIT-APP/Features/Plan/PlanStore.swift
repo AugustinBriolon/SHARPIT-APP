@@ -21,6 +21,8 @@ final class PlanStore {
     /// instead of an infinite one, which is where paging bugs live.
     static let offsets: ClosedRange<Int> = -26...26
 
+    let weekCalendar = SharpitWeeks(offsets: PlanStore.offsets)
+
     var selectedOffset = 0
     /// A day the strip asked the list to scroll to. Consumed by the visible page.
     var scrollTarget: Date?
@@ -30,7 +32,7 @@ final class PlanStore {
     private let client: any PlannedSessionServing
     private let activityClient: any ActivityServing
     private let tokenProvider: () async throws -> String
-    private let calendar: Calendar
+    private var calendar: Calendar { weekCalendar.calendar }
 
     init(
         client: any PlannedSessionServing,
@@ -40,36 +42,23 @@ final class PlanStore {
         self.client = client
         self.activityClient = activityClient
         self.tokenProvider = tokenProvider
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = SharpitLocale.french
-        calendar.firstWeekday = 2
-        self.calendar = calendar
     }
 
     // MARK: - Weeks
 
-    private var currentWeekStart: Date {
-        calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? calendar.startOfDay(for: Date())
-    }
-
     func weekStart(forOffset offset: Int) -> Date {
-        calendar.date(byAdding: .day, value: offset * 7, to: currentWeekStart) ?? currentWeekStart
+        weekCalendar.weekStart(forOffset: offset)
     }
 
     /// The offset of the week containing `day`, clamped to the pager's range.
     func offset(forWeekContaining day: Date) -> Int {
-        let start = calendar.dateInterval(of: .weekOfYear, for: day)?.start ?? day
-        let days = calendar.dateComponents([.day], from: currentWeekStart, to: start).day ?? 0
-        // Rounded, not truncated: a daylight-saving change makes a week 167 or 169 hours.
-        let weeks = Int((Double(days) / 7).rounded())
-        return min(max(weeks, Self.offsets.lowerBound), Self.offsets.upperBound)
+        weekCalendar.offset(forWeekContaining: day)
     }
 
     var weekStart: Date { weekStart(forOffset: selectedOffset) }
 
     func weekDays(forOffset offset: Int) -> [Date] {
-        let start = weekStart(forOffset: offset)
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
+        weekCalendar.weekDays(forOffset: offset)
     }
 
     var weekDays: [Date] { weekDays(forOffset: selectedOffset) }
@@ -77,11 +66,7 @@ final class PlanStore {
     var isCurrentWeek: Bool { selectedOffset == 0 }
 
     /// The range the calendar sheet may pick from — the pager's own bounds.
-    var selectableDates: ClosedRange<Date> {
-        let first = weekStart(forOffset: Self.offsets.lowerBound)
-        let last = weekDays(forOffset: Self.offsets.upperBound).last ?? first
-        return first...last
-    }
+    var selectableDates: ClosedRange<Date> { weekCalendar.selectableDates }
 
     // MARK: - Navigation
 
