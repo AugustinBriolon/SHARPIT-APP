@@ -4,7 +4,5 @@
 <dict>
 	<key>SharpitAPIOrigin</key>
 	<string>$(SHARPIT_API_ORIGIN)</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.</string>
 </dict>
 </plist>

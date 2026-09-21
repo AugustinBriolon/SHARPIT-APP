@@ -71,7 +71,7 @@
 		000000000000000000000020 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000120 /* SHARPIT.app */,
+				000000000000000000000120 /* SharpIt.app */,
 				000000000000000200000000 /* SHARPIT-APPTests.xctest */,
 			);
 			name = Products;
@@ -364,6 +364,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = SharpIt;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -408,6 +409,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = SharpIt;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
