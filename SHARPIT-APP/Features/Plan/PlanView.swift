@@ -238,7 +238,7 @@ private struct PlanWeekContent: View {
                                 isToday: Calendar.current.isDateInToday(focusSession.date)
                             )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.sharpitPressable)
                     }
                     VStack(spacing: 0) {
                         ForEach(store.weekDays(forOffset: offset), id: \.self) { day in
@@ -405,17 +405,17 @@ private struct PlanEntryRow: View {
             } label: {
                 PlanExecutedCard(entry: executed)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.sharpitPressable)
         case .planned(let session):
             Button { onSelect(session) } label: {
                 PlanSessionCard(session: session, state: .planned)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.sharpitPressable)
         case .missed(let session):
             Button { onSelect(session) } label: {
                 PlanSessionCard(session: session, state: .missed)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.sharpitPressable)
         }
     }
 }

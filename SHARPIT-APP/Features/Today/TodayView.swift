@@ -230,7 +230,7 @@ private struct TodaySessionLink: View {
                 } label: {
                     plate
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.sharpitPressable)
             } else {
                 plate
             }
@@ -240,7 +240,7 @@ private struct TodaySessionLink: View {
             } label: {
                 plate
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.sharpitPressable)
         }
     }
 }

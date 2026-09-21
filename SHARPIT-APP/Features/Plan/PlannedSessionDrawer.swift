@@ -263,25 +263,56 @@ struct DrawerActionRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .sharpitSurface(.panel)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }
 }
 
-/// The button that hands a subject to the coach.
+/// The button that hands a subject to the coach — the one call to action a screen carries,
+/// so it takes the ink band and stands apart from the rows around it (ADR 0003).
 struct CoachDiscussButton: View {
     let title: String
     var subtitle: String?
     let action: () -> Void
 
     var body: some View {
-        DrawerActionRow(
-            symbolName: "bubble.left.and.bubble.right",
-            title: title,
-            subtitle: subtitle,
-            action: action
-        )
+        Button {
+            SharpitHaptics.play(.soft)
+            action()
+        } label: {
+            HStack(spacing: SharpitSpacing.sm) {
+                Image(systemName: "bubble.left.and.text.bubble.right.fill")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .frame(width: 40, height: 40)
+                    .background(SharpitColor.inkSurfaceForeground.opacity(0.14), in: Circle())
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .multilineTextAlignment(.leading)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(SharpitTypography.meta)
+                            .opacity(0.78)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "arrow.right")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .accessibilityHidden(true)
+            }
+            .padding(SharpitSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.ink)
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
 

@@ -124,7 +124,7 @@ private struct ActivityListContent: View {
                             } label: {
                                 ActivityRow(activity: activity)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.sharpitPressable)
                             .opacity(appeared ? 1 : 0)
                             .offset(y: appeared ? 0 : 10)
                             .animation(
