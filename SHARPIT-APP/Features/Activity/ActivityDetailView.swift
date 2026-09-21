@@ -14,7 +14,7 @@ struct ActivityDetailView: View {
     @State private var streamPayload: V1ActivityStreamPayload?
     @State private var isEnriching = false
     @State private var showingCompliance = false
-    @State private var showingSubjective = false
+    @State private var subjectiveStore: ActivitySubjectiveStore?
     @Environment(\.dismiss) private var dismiss
 
     init(
@@ -69,7 +69,7 @@ struct ActivityDetailView: View {
                                     onGenerateNarrative: { Task { await generateNarrative() } },
                                     splits: activitySplits(for: detail),
                                     onShowCompliance: { showingCompliance = true },
-                                    onShowSubjective: { showingSubjective = true }
+                                    onShowSubjective: { openSubjective(for: detail) }
                                 )
                                 .frame(width: proxy.size.width, alignment: .leading)
                             }
@@ -89,7 +89,7 @@ struct ActivityDetailView: View {
                             onGenerateNarrative: { Task { await generateNarrative() } },
                             splits: activitySplits(for: detail),
                             onShowCompliance: { showingCompliance = true },
-                            onShowSubjective: { showingSubjective = true }
+                            onShowSubjective: { openSubjective(for: detail) }
                         )
                         .frame(width: proxy.size.width, alignment: .leading)
                     }
@@ -134,20 +134,11 @@ struct ActivityDetailView: View {
                     .presentationDragIndicator(.visible)
                 }
             }
-            .sheet(isPresented: $showingSubjective) {
-                if case .loaded(let detail) = phase {
-                    SubjectiveEditorSheet(
-                        rpe: detail.rpe,
-                        feeling: detail.feeling,
-                        isSaving: false,
-                        onSave: { rpe, feeling in
-                            Task { await saveSubjective(rpe: rpe, feeling: feeling) }
-                        }
-                    )
-                    .presentationDetents([.medium])
+            .sheet(item: $subjectiveStore) { store in
+                SubjectiveEditorSheet(store: store)
+                    .presentationDetents([.fraction(0.72), .large])
                     .sharpitSheet()
                     .presentationDragIndicator(.visible)
-                }
             }
             .buttonStyle(.plain)
             .padding(.leading, 16)
@@ -160,17 +151,21 @@ struct ActivityDetailView: View {
         }
     }
 
-    @MainActor
-    private func saveSubjective(rpe: Double?, feeling: String?) async {
-            do {
-                let token = try await tokenProvider()
-                try await client.updateSubjective(id: activity, rpe: rpe, feeling: feeling, token: token)
-                showingSubjective = false
-                await load()
-            } catch is CancellationError {
-            } catch {
+    private func openSubjective(for detail: V1ActivityDetail) {
+        subjectiveStore = ActivitySubjectiveStore(
+            activityId: detail.id,
+            rpe: detail.rpe,
+            feeling: detail.feeling,
+            client: client,
+            tokenProvider: tokenProvider,
+            onSaved: { rpe, feeling in
+                guard case .loaded(let current) = phase else { return }
+                withAnimation(SharpitMotion.selection) {
+                    phase = .loaded(current.withSubjective(rpe: rpe, feeling: feeling))
+                }
             }
-        }
+        )
+    }
 
     private func activitySplits(for detail: V1ActivityDetail) -> [ActivitySplit] {
         guard detail.type.supportsSplits else { return [] }
@@ -294,7 +289,10 @@ private struct ActivityDetailContent: View {
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 4)), value: appeared)
 
             // The session the athlete is reading is exactly what they would ask about.
-            CoachDiscussButton(title: "Discuter de cette séance") {
+            CoachDiscussButton(
+                title: "Discuter de cette séance",
+                subtitle: "Le coach voit déjà la séance et ton ressenti"
+            ) {
                 router.discussWithCoach(
                     about: CoachDiscuss.describe(
                         .activity(activityId: detail.id),
@@ -380,74 +378,29 @@ private struct ActivityDetailContent: View {
         return metrics
     }
 
+    /// What the athlete said about the session and how it matched the plan. Both open a
+    /// drawer, so both are drawn as raised tiles with a chevron — weather, which opens
+    /// nothing, stays a flat chip below them.
     private var contextSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                SubjectiveTagButton(
-                    title: subjectiveValue,
-                    symbol: "face.smiling",
-                    tone: tone,
-                    action: onShowSubjective
-                )
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("Ta séance")
 
-                if let analysis = detail.plannedSession?.analysis {
-                    SubjectiveTagButton(
-                        title: "Conformité \(analysis.complianceScore.map { "\(Int($0.rounded()))%" } ?? "À voir")",
-                        symbol: "checkmark.seal",
-                        tone: tone,
-                        action: onShowCompliance
-                    )
-                }
+            SessionFeedbackTile(
+                rpe: detail.rpe.map { Int($0.rounded()) },
+                feeling: SessionFeeling(stored: detail.feeling),
+                accent: tone,
+                action: onShowSubjective
+            )
+
+            if let analysis = detail.plannedSession?.analysis {
+                ComplianceTile(analysis: analysis, action: onShowCompliance)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
             if let weather = detail.weather, let weatherLabel = V1ActivityWeather(rawValue: weather).label {
                 ContextChip(title: weatherLabel, symbol: "cloud.sun")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var subjectiveValue: String {
-        switch (detail.rpe, detail.feeling) {
-        case let (rpe?, feeling?) where !feeling.isEmpty:
-            "RPE \(Int(rpe.rounded())) · \(feeling)"
-        case let (rpe?, _):
-            "RPE \(Int(rpe.rounded())) · à compléter"
-        case let (_, feeling?) where !feeling.isEmpty:
-            "RPE à compléter · \(feeling)"
-        default:
-            "Ajouter maintenant"
-        }
-    }
-
-    private func plannedComparison(analysis: V1PlannedSessionAnalysis) -> some View {
-        Button(action: onShowCompliance) {
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.title3)
-                    .foregroundStyle(tone)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Conformité au plan")
-                        .font(.subheadline.weight(.semibold))
-                    Text(detail.plannedSession?.title ?? "Séance planifiée")
-                        .font(.caption)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-                Spacer()
-                if let score = analysis.complianceScore {
-                    Text("\(Int(score.rounded()))%")
-                        .font(.title3.weight(.bold).monospacedDigit())
-                        .foregroundStyle(tone)
-                }
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
     }
 
     private var coachAnalysis: some View {
@@ -481,7 +434,7 @@ private struct ActivityDetailContent: View {
                     .padding(.vertical, 12)
                     .background(tone, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.sharpitPressable)
                 .disabled(isGeneratingNarrative)
             }
         }
@@ -1015,74 +968,6 @@ private struct ActivityMetricToggleLabel: View {
     }
 }
 
-private struct ComplianceDetailSheet: View {
-    let title: String
-    let analysis: V1PlannedSessionAnalysis
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        SharpitEyebrow("Conformité au plan")
-                        Text(title)
-                            .font(.title2.weight(.semibold))
-                    }
-
-                    if let score = analysis.complianceScore {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text("\(Int(score.rounded()))%")
-                                .font(.system(size: 48, weight: .bold, design: .rounded))
-                            Text("conforme")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                    }
-
-                    if let verdict = analysis.verdict, !verdict.isEmpty {
-                        DetailCallout(title: "Verdict", text: verdict)
-                    }
-                    if let summary = analysis.summary, !summary.isEmpty {
-                        DetailCallout(title: "Résumé", text: summary)
-                    }
-                    if let remarks = analysis.remarks, !remarks.isEmpty {
-                        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                            SharpitEyebrow("Observations")
-                            ForEach(remarks, id: \.self) { remark in
-                                Label(remark, systemImage: "arrow.right")
-                                    .font(.body)
-                            }
-                        }
-                    }
-                    if let recommendation = analysis.recommendation, !recommendation.isEmpty {
-                        DetailCallout(title: "Recommandation", text: recommendation)
-                    }
-                }
-                .padding(SharpitSpacing.pageInset)
-            }
-            .navigationTitle("Plan")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-}
-
-private struct DetailCallout: View {
-    let title: String
-    let text: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SharpitEyebrow(title)
-            Text(text)
-                .font(.body)
-                .lineSpacing(3)
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-}
-
 private struct DetailMetric: View {
     let label: String
     let value: String
@@ -1130,204 +1015,6 @@ private struct ActivityHeroMetric: View {
             if let unit = metric.unit { Text(unit).font(.caption).foregroundStyle(SharpitColor.mutedForeground) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct SubjectiveTagButton: View {
-    let title: String
-    let symbol: String
-    let tone: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: symbol)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(tone)
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 11)
-            .frame(height: 36)
-            .background(SharpitElevatedColor.panelOnSheet, in: Capsule())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct SubjectiveEditorSheet: View {
-    let rpe: Double?
-    let feeling: String?
-    let isSaving: Bool
-    let onSave: (Double?, String?) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var selectedRPE: Int?
-    @State private var selectedFeeling: Int?
-
-    init(rpe: Double?, feeling: String?, isSaving: Bool, onSave: @escaping (Double?, String?) -> Void) {
-        self.rpe = rpe
-        self.feeling = feeling
-        self.isSaving = isSaving
-        self.onSave = onSave
-        _selectedRPE = State(initialValue: rpe.map { Int($0.rounded()) })
-        _selectedFeeling = State(initialValue: Self.feelingIndex(feeling))
-    }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xl) {
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        Text("Comment s’est passée la séance ?")
-                            .font(SharpitTypography.pageTitle)
-                            .tracking(SharpitTypography.pageTitleTracking)
-                        Text("Ces deux repères permettent à SHARPIT d’affiner ton suivi.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                        SharpitEyebrow("Effort perçu")
-                        HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xs) {
-                            Text(selectedRPE.map(String.init) ?? "—")
-                                .font(SharpitTypography.pageTitle)
-                                .tracking(SharpitTypography.pageTitleTracking)
-                            Text("/ 10")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                        RatingGrid(values: Array(1...10), selection: $selectedRPE) { value in
-                            Text("\(value)")
-                        }
-                    }
-                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                        SharpitEyebrow("Ressenti")
-                        // One full-width row per option. In a five-column grid
-                        // "Très mauvais" wrapped to two cramped lines, and the label
-                        // had to be repeated underneath to be readable at all.
-                        RatingRows(values: Array(1...5), selection: $selectedFeeling) { value in
-                            feelingLabel(value)
-                        }
-                    }
-                }
-                .padding(SharpitSpacing.lg)
-            }
-            .navigationTitle("Évaluer la séance")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Annuler") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") {
-                        onSave(
-                            selectedRPE.map(Double.init) ?? rpe,
-                            selectedFeeling.map(feelingLabel) ?? feeling
-                        )
-                    }
-                    .disabled(isSaving || (selectedRPE == nil && selectedFeeling == nil))
-                }
-            }
-        }
-    }
-
-    private static func feelingIndex(_ value: String?) -> Int? {
-        guard let value else { return nil }
-        let normalized = value.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        if normalized.contains("tres mauvais") || normalized == "mauvais" { return 1 }
-        if normalized.contains("moyen") { return 3 }
-        if normalized.contains("tres bien") || normalized.contains("excellent") { return 5 }
-        if normalized == "bien" { return 4 }
-        return nil
-    }
-
-    private func feelingLabel(_ value: Int) -> String {
-        switch value {
-        case 1: "Très mauvais"
-        case 2: "Mauvais"
-        case 3: "Moyen"
-        case 4: "Bien"
-        default: "Très bien"
-        }
-    }
-}
-
-/// A vertical single-choice list — for options whose labels are words, not digits.
-private struct RatingRows<Value: Hashable>: View {
-    let values: [Value]
-    @Binding var selection: Value?
-    let label: (Value) -> String
-
-    var body: some View {
-        VStack(spacing: SharpitSpacing.xs) {
-            ForEach(values, id: \.self) { value in
-                let isSelected = selection == value
-                Button { selection = value } label: {
-                    HStack(spacing: SharpitSpacing.sm) {
-                        Text(label(value))
-                            .font(SharpitTypography.bodyEmphasis)
-                            .multilineTextAlignment(.leading)
-                        Spacer(minLength: 0)
-                        if isSelected {
-                            Image(systemName: "checkmark")
-                                .font(SharpitTypography.label)
-                                .accessibilityHidden(true)
-                        }
-                    }
-                    .foregroundStyle(
-                        isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground
-                    )
-                    .padding(.horizontal, SharpitSpacing.md)
-                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                    .background(
-                        isSelected ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt,
-                        in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-            }
-        }
-    }
-}
-
-private struct RatingGrid<Value: Hashable, Content: View>: View {
-    let values: [Value]
-    @Binding var selection: Value?
-    @ViewBuilder let content: (Value) -> Content
-
-    var body: some View {
-        LazyVGrid(
-            columns: Array(
-                repeating: GridItem(.flexible(minimum: 0), spacing: SharpitSpacing.xs),
-                count: min(values.count, 5)
-            ),
-            spacing: SharpitSpacing.xs
-        ) {
-            ForEach(values, id: \.self) { value in
-                Button { selection = value } label: {
-                    content(value)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .foregroundStyle(
-                            selection == value
-                                ? SharpitColor.primaryForeground
-                                : SharpitColor.foreground
-                        )
-                        .background(
-                            selection == value
-                                ? SharpitColor.primary
-                                : SharpitColor.analysisSurfaceAlt,
-                            in: RoundedRectangle(
-                                cornerRadius: SharpitRadius.panel,
-                                style: .continuous
-                            )
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-        }
     }
 }
 
