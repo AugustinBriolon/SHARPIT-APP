@@ -4,7 +4,7 @@ Date: 2026-09-21
 
 ## Status
 
-Accepted
+Superseded by [ADR-0004](0004-semantic-color-and-a-tinted-coach-pill.md)
 
 ## Context
 

@@ -97,8 +97,8 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 - Elevation diverges from the web: no hairline borders, soft shadows on light, luminosity on
   dark, and every sheet raised off black through `.sharpitSheet()`
   ([ADR 0002](docs/adr/0002-soft-shadow-elevation-instead-of-hairline-borders.md))
-- Semantic color, pressable tiles and the filled coach call to action
-  ([ADR 0003](docs/adr/0003-semantic-color-and-a-filled-coach-call-to-action.md))
+- Semantic color, pressable tiles and the coach pill under each title
+  ([ADR 0004](docs/adr/0004-semantic-color-and-a-tinted-coach-pill.md))
 - Activity detail: effort and feeling are rated in one drawer that saves on each tap
   (`ActivitySubjectiveStore`); compliance opens a drawer with the verdict in words
 - ADRs specific to the native client: `docs/adr/`
