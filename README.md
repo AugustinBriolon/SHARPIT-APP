@@ -93,6 +93,15 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   render — the web's automatic items, diet flags, thresholds — survive a save from the phone
 - Activity status: the training mode (actif / en pause / blessé / malade) via
   `/api/activity-status`, written on every pick from Today's toolbar
+- Moi: a grouped hub mirroring the web's Réglages — Modèle (Corps, Seuils & repères),
+  Compte (Profil), Préférences (densité de lecture), Données (Garmin, Apple Santé,
+  diagnostic), À propos. Profil and Seuils edit `/api/athlete-profile` through a partial
+  PATCH that names only the fields the athlete changed; Corps reads `/api/body-composition`
+  and is read-only, since a weigh-in is written by a scale
+- Reading density: `displayMode` (essentiel / expert) read once into a `DisplayModeStore` in
+  the environment. It chooses what is shown and how it is named, never what is measured;
+  session load is visible in both readings, as « charge 78 » or « 78 TSS »
+  ([ADR 0006](docs/adr/0006-reading-density-governs-the-technical-layer.md))
 - Weather chip: WeatherKit + Core Location (not API weather)
 - Design system: `SHARPIT-APP/DesignSystem/`. Colour and radius are **generated** from the
   web design system — edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or
@@ -103,6 +112,8 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 - Elevation diverges from the web: no hairline borders, soft shadows on light, luminosity on
   dark, and every sheet raised off black through `.sharpitSheet()`
   ([ADR 0002](docs/adr/0002-soft-shadow-elevation-instead-of-hairline-borders.md))
+- Hubs and forms: `SharpitHubGroup` draws a titled plate of destinations and owns the
+  separators between them; `SharpitFieldGroup` / `SharpitField` are its form counterpart
 - Semantic color, pressable tiles and the coach pill under each title
   ([ADR 0004](docs/adr/0004-semantic-color-and-a-tinted-coach-pill.md))
 - Activity detail: effort and feeling are rated in one drawer that saves on each tap

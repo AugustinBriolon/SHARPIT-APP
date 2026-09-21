@@ -98,10 +98,12 @@ API payloads.
 The real versioned contracts are `/api/v1/today`, `/api/v1/sleep`, `/api/v1/recovery`,
 `/api/v1/sync`, `/api/v1/sync-status` and `/api/v1/health-samples`, all served by
 `SharpitClient` behind one protocol per resource. `ActivityClient`,
-`PlannedSessionClient`, `CoachChatClient`, `CoachConversationClient`, `ActivityStatusClient`
-and `JournalClient` call web-internal routes (`/api/activities`, `/api/planned-sessions`
-including `…/:id/link`, `/api/coach/chat`, `/api/coach/conversations`, `/api/activity-status`,
-`/api/day-journal`, `/api/journal-prefs`); treat that as known debt, not as a pattern to copy.
+`PlannedSessionClient`, `CoachChatClient`, `CoachConversationClient`, `ActivityStatusClient`,
+`JournalClient` and `AthleteProfileClient` call web-internal routes (`/api/activities`,
+`/api/planned-sessions` including `…/:id/link`, `/api/coach/chat`, `/api/coach/conversations`,
+`/api/activity-status`, `/api/day-journal`, `/api/journal-prefs`, `/api/athlete-profile`
+including `…/threshold-history`, `/api/body-composition`); treat that as known debt, not as a
+pattern to copy.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON
@@ -138,6 +140,21 @@ on launch, foreground and pull-to-refresh, and can send Apple Health day summari
 (`AppleHealthSource`, `/api/v1/health-samples`) when the athlete switches it on in Moi.
 Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`, SHARPIT
 ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`.
+
+**Moi.** A grouped hub of the web's Réglages surfaces (`SharpitHubGroup`): Modèle, Compte,
+Préférences, Données, À propos. Profil and Seuils & repères edit the profile through
+`AthleteProfilePatch`, which carries only the fields the athlete changed — an absent key means
+"leave it" and an explicit `null` means "clear it", a distinction a `Codable` struct of
+optionals cannot express. The web's validator records why: a PATCH that materialised the
+fields it had not been given once wiped an athlete's thresholds on a one-field save. Corps is
+read-only; a weigh-in is written by a scale.
+
+**Reading density.** `displayMode` (`essential` / `expert`) is read once into a
+`DisplayModeStore` in the environment; a surface asks `\.isExpertReading` rather than the
+profile (`docs/adr/0006`). It governs what is shown and how it is named, never what is
+measured — session load appears in both readings, as « charge 78 » or « 78 TSS », mirroring
+the web's `formatTrainingLoad`. It is a reading preference, not an access tier: `tier`
+(FREE / PRO) gates features, the density gates nothing.
 
 **Weather** comes from WeatherKit + Core Location (`LocationWeatherService`), never from
 the API.
