@@ -16,6 +16,9 @@ struct RootView: View {
     private let activityStatusClient = ActivityStatusClient()
     private let journalClient = JournalClient()
     private let wellnessClient = WellnessClient()
+    private let sharpitClient = SharpitClient()
+    /// Shared by Today, which sends on each sync, and Moi, where it is switched on.
+    @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -27,8 +30,9 @@ struct RootView: View {
                     activityStatusClient: activityStatusClient,
                     journalClient: journalClient,
                     wellnessClient: wellnessClient,
-                    signalClient: SharpitClient(),
-                    syncClient: SharpitClient()
+                    signalClient: sharpitClient,
+                    syncClient: sharpitClient,
+                    appleHealth: appleHealth
                 )
             }
             Tab(
@@ -69,7 +73,11 @@ struct RootView: View {
                 systemImage: ShellDestination.me.systemImage,
                 value: ShellTab.me
             ) {
-                InstrumentShellView(destination: .me) {
+                MeView(
+                    appleHealth: appleHealth,
+                    syncClient: sharpitClient,
+                    tokenProvider: liveToken
+                ) {
                     accountMark
                 }
             }

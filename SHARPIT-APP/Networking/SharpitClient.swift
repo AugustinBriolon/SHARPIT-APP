@@ -16,7 +16,12 @@ nonisolated protocol SyncServing: Sendable {
     func sync(token: String) async throws -> V1SyncStatus
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing {
+/// Sends day summaries read from Apple Health; the server fills only what no provider wrote.
+nonisolated protocol HealthUploadServing: Sendable {
+    func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int
+}
+
+actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -47,6 +52,17 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing {
         try await send(V1SyncStatus.self, path: "/api/v1/sync", method: "POST", token: token, timeout: 240)
     }
 
+    func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int {
+        let body = try JSONEncoder().encode(HealthUpload(source: "apple-health", days: days))
+        return try await send(
+            HealthUploadResult.self,
+            path: "/api/v1/health-samples",
+            method: "POST",
+            token: token,
+            body: body
+        ).updatedDays
+    }
+
     /// Every v1 read so far is one training day of one resource.
     private func day<Payload: Decodable>(
         _ type: Payload.Type,
@@ -69,7 +85,8 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing {
         method: String,
         query: [URLQueryItem] = [],
         token: String,
-        timeout: TimeInterval = 60
+        timeout: TimeInterval = 60,
+        body: Data? = nil
     ) async throws -> Payload {
         guard var components = URLComponents(
             url: baseURL.appending(path: path),
@@ -84,6 +101,10 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing {
         request.httpMethod = method
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
 
         let data: Data
         let response: URLResponse
@@ -98,7 +119,7 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing {
             break
         case 400:
             throw SharpitAPIError.badRequest
-        case 401:
+        case 401, 403:
             throw SharpitAPIError.unauthorized
         case 429:
             throw SharpitAPIError.rateLimited
@@ -112,4 +133,13 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing {
             throw SharpitAPIError.server
         }
     }
+}
+
+private nonisolated struct HealthUpload: Encodable {
+    let source: String
+    let days: [HealthDailySummary]
+}
+
+private nonisolated struct HealthUploadResult: Decodable {
+    let updatedDays: Int
 }

@@ -117,7 +117,7 @@ nonisolated enum V1TodaySignalKey: String, Codable, Sendable {
     case adaptation
 }
 
-enum TrainingDayId {
+nonisolated enum TrainingDayId {
     static func today(in calendar: Calendar = .current, now: Date = .now) -> String {
         let parts = calendar.dateComponents([.year, .month, .day], from: now)
         guard let year = parts.year, let month = parts.month, let day = parts.day else {

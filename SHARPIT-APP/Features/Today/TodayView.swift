@@ -6,6 +6,7 @@ struct TodayView: View {
     @State private var weather = LocationWeatherService()
     /// Nil without a token or a client: a fixture-backed Today has nothing to pull.
     @State private var sync: ProviderSyncStore?
+    private let appleHealth: AppleHealthSource?
     @Environment(\.scenePhase) private var scenePhase
 
     /// Kept so an activity opened from here can load itself. Nil in previews and
@@ -27,8 +28,10 @@ struct TodayView: View {
         journalClient: (any JournalServing)? = nil,
         wellnessClient: (any WellnessServing)? = nil,
         signalClient: (any SleepServing & RecoveryServing)? = nil,
-        syncClient: (any SyncServing)? = nil
+        syncClient: (any SyncServing)? = nil,
+        appleHealth: AppleHealthSource? = nil
     ) {
+        self.appleHealth = tokenProvider == nil ? nil : appleHealth
         _sync = State(initialValue: syncClient.flatMap { client in
             tokenProvider.map { ProviderSyncStore(client: client, tokenProvider: $0) }
         })
@@ -138,6 +141,11 @@ extension TodayView {
     /// Pulls the providers — always when asked, otherwise only when the last pull is stale —
     /// and reloads Today when fresh data came in.
     fileprivate func pullProviders(force: Bool) async {
+        // Apple Health first: it is on the phone and answers in seconds, while the
+        // provider pull can take a minute.
+        if let appleHealth, let tokenProvider, await appleHealth.send(token: tokenProvider) {
+            await store.refresh()
+        }
         guard let sync else { return }
         let pulled = force ? await sync.syncNow() : await sync.syncIfStale()
         if pulled { await store.refresh() }
