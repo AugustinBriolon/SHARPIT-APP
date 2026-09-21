@@ -34,6 +34,12 @@ import Testing
     }
 }
 
+@Test func sharpitMotionStaggerStopsGrowingOnLongLists() {
+    let capped = SharpitMotion.staggerDelay(index: SharpitMotion.maxStaggeredItems)
+    #expect(SharpitMotion.staggerDelay(index: 30) == capped)
+    #expect(SharpitMotion.staggerDelay(index: -2) == 0)
+}
+
 @Test func winStoreConsumesOnce() {
     SharpitWinStore.resetForTests()
     let key = SharpitWinStore.arrivalKey(trainingDayId: "2099-01-01")

@@ -274,24 +274,24 @@ private struct ActivityDetailContent: View {
             contextSection
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
-                .animation(SharpitMotion.reveal.delay(0.04), value: appeared)
+                .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 1)), value: appeared)
 
             metricGrid
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
-                .animation(SharpitMotion.reveal.delay(0.06), value: appeared)
+                .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 2)), value: appeared)
 
             if detail.type == .triathlon, !detail.multisportLegs.isEmpty {
                 multisportLegsSection
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 12)
-                    .animation(SharpitMotion.reveal.delay(0.1), value: appeared)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 3)), value: appeared)
             }
 
             coachAnalysis
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
-                .animation(SharpitMotion.reveal.delay(0.18), value: appeared)
+                .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 4)), value: appeared)
 
             // The session the athlete is reading is exactly what they would ask about.
             CoachDiscussButton(title: "Discuter de cette séance") {
@@ -303,13 +303,13 @@ private struct ActivityDetailContent: View {
                 )
             }
             .opacity(appeared ? 1 : 0)
-            .animation(SharpitMotion.reveal.delay(0.22), value: appeared)
+            .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 5)), value: appeared)
 
             if hasSessionSummaryData {
                 sessionSummary
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 12)
-                    .animation(SharpitMotion.reveal.delay(0.24), value: appeared)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 6)), value: appeared)
             }
 
             if !splits.isEmpty {
@@ -320,7 +320,7 @@ private struct ActivityDetailContent: View {
                 )
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 12)
-                    .animation(SharpitMotion.reveal.delay(0.3), value: appeared)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 7)), value: appeared)
             }
 
             if !availableChartMetrics.isEmpty {
@@ -332,7 +332,7 @@ private struct ActivityDetailContent: View {
                 )
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
-                .animation(SharpitMotion.reveal.delay(0.36), value: appeared)
+                .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 8)), value: appeared)
             }
         }
         .padding(.horizontal, SharpitSpacing.pageInset)

@@ -281,7 +281,7 @@ private extension JournalFactorState {
     var tone: Color {
         switch self {
         case .no: SharpitColor.signalNeutral
-        case .unset: SharpitColor.analysisBorder
+        case .unset: SharpitElevatedColor.control
         case .yes: SharpitColor.primary
         }
     }
@@ -294,11 +294,17 @@ private extension JournalFactorState {
 /// Non, unanswered, Oui — in that order. Unanswered is a real third choice and not the
 /// absence of one: the analyses only weigh an explicit answer, so an athlete has to be
 /// able to go back to "not said".
+///
+/// The selection is one pill that slides between fixed slots, never a view inserted and
+/// removed per segment: an inserted view cross-fades on top of the move, which is what
+/// made the answer feel like it arrived late.
 private struct JournalAnswerToggle: View {
     let state: JournalFactorState
     let onChange: (JournalFactorState) -> Void
 
-    @Namespace private var selection
+    private static let order: [JournalFactorState] = [.no, .unset, .yes]
+    private static let segmentSize = CGSize(width: 42, height: 30)
+    private static let inset: CGFloat = 2
 
     var body: some View {
         HStack(spacing: 0) {
@@ -306,12 +312,16 @@ private struct JournalAnswerToggle: View {
             segment(.unset, title: "—", accessibilityTitle: "Non renseigné")
             segment(.yes, title: "Oui", accessibilityTitle: "Oui")
         }
-        .padding(2)
-        .background(Capsule().fill(SharpitColor.chipSurface))
-        .overlay(
-            Capsule().strokeBorder(SharpitColor.analysisBorder, lineWidth: SharpitStroke.hairline)
-        )
-        .animation(.snappy(duration: 0.18), value: state)
+        .background(alignment: .leading) {
+            Capsule()
+                .fill(state.tone)
+                .frame(width: Self.segmentSize.width, height: Self.segmentSize.height)
+                .sharpitShadow(.control)
+                .offset(x: CGFloat(Self.order.firstIndex(of: state) ?? 1) * Self.segmentSize.width)
+        }
+        .padding(Self.inset)
+        .background(Capsule().fill(SharpitColor.analysisGrid))
+        .animation(SharpitMotion.selection, value: state)
     }
 
     private func segment(
@@ -326,14 +336,7 @@ private struct JournalAnswerToggle: View {
             Text(title)
                 .font(SharpitTypography.meta)
                 .foregroundStyle(isSelected ? value.onTone : SharpitColor.mutedForeground)
-                .frame(width: 42, height: 30)
-                .background {
-                    if isSelected {
-                        Capsule()
-                            .fill(value.tone)
-                            .matchedGeometryEffect(id: "selection", in: selection)
-                    }
-                }
+                .frame(width: Self.segmentSize.width, height: Self.segmentSize.height)
                 .contentShape(.capsule)
         }
         .buttonStyle(.plain)
