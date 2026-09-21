@@ -12,7 +12,10 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            DayDetailDatePicker(selectedDay: store.selectedDay) { day in
+            DayDetailDatePicker(
+                selectedDay: store.selectedDay,
+                hasData: store.hasData(on:)
+            ) { day in
                 Task { await store.select(day) }
             }
             phaseView

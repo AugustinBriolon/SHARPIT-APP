@@ -176,3 +176,19 @@ private actor DayRecorder {
 
     #expect(store.phase == .failed("failed"))
 }
+
+/// The picker marks each day from the histories already loaded, without another request.
+@MainActor
+@Test func loadedHistoryTellsWhichDaysHoldData() async throws {
+    let payload = try decodedSleep()
+    let store = DayResourceStore<V1SleepResponse>(
+        failureMessage: "failed",
+        tokenProvider: { "t" },
+        day: try #require(TrainingDayId.date("2026-09-21"))
+    ) { _, _ in payload }
+    await store.load()
+
+    #expect(store.hasData(on: try #require(TrainingDayId.date("2026-09-21"))) == true)
+    #expect(store.hasData(on: try #require(TrainingDayId.date("2026-09-20"))) == false)
+    #expect(store.hasData(on: try #require(TrainingDayId.date("2026-09-01"))) == nil)
+}

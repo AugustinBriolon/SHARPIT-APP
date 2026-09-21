@@ -4,10 +4,21 @@ import Observation
 /// A v1 resource read for one training day, which may come back empty.
 nonisolated protocol V1DayResource: Decodable, Equatable, Sendable {
     var empty: V1DayEmpty? { get }
+    /// Whether each day of the payload's history carried data, by training day id.
+    var dataByDay: [String: Bool] { get }
 }
 
-extension V1SleepResponse: V1DayResource {}
-extension V1RecoveryResponse: V1DayResource {}
+nonisolated extension V1SleepResponse: V1DayResource {
+    var dataByDay: [String: Bool] {
+        Dictionary(history.map { ($0.date, $0.minutes != nil) }, uniquingKeysWith: { $1 })
+    }
+}
+
+nonisolated extension V1RecoveryResponse: V1DayResource {
+    var dataByDay: [String: Bool] {
+        Dictionary(history.map { ($0.date, $0.hrv != nil || $0.restingHr != nil) }, uniquingKeysWith: { $1 })
+    }
+}
 
 /// Loads one day of a drill-down resource — the night behind the sleep score, the signals
 /// behind readiness. The screens differ; how they load and fail does not.
@@ -27,6 +38,9 @@ final class DayResourceStore<Payload: V1DayResource> {
     private(set) var selectedDay: Date
     /// True while another day loads over the one on screen, which stays until it arrives.
     private(set) var isSwitchingDay = false
+    /// Which days are known to hold data, gathered from every history loaded so far. A day
+    /// outside every window loaded is simply unknown.
+    private(set) var dataByDay: [String: Bool] = [:]
 
     private let fetch: @Sendable (_ trainingDayId: String, _ token: String) async throws -> Payload
     private let tokenProvider: () async throws -> String
@@ -43,6 +57,11 @@ final class DayResourceStore<Payload: V1DayResource> {
         self.tokenProvider = tokenProvider
         selectedDay = day
         self.fetch = fetch
+    }
+
+    /// Nil when the day is outside every history loaded so far.
+    func hasData(on day: Date) -> Bool? {
+        dataByDay[TrainingDayId.today(now: day)]
     }
 
     func load() async {
@@ -65,6 +84,7 @@ final class DayResourceStore<Payload: V1DayResource> {
             let token = try await tokenProvider()
             let payload = try await fetch(requestedDay, token)
             // A quicker answer for a day picked since must not be overwritten by this one.
+            dataByDay.merge(payload.dataByDay) { _, new in new }
             guard requestedDay == trainingDayId else { return }
             phase = payload.empty.map(Phase.empty) ?? .loaded(payload)
         } catch is CancellationError {
