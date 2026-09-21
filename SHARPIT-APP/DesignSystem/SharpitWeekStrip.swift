@@ -10,6 +10,19 @@ struct SharpitWeekStrip<DayCell: View>: View {
     let weeks: SharpitWeeks
     @ViewBuilder let dayCell: (Date) -> DayCell
 
+    init(
+        weekOffset: Binding<Int>,
+        weeks: SharpitWeeks,
+        @ViewBuilder dayCell: @escaping (Date) -> DayCell
+    ) {
+        _weekOffset = weekOffset
+        self.weeks = weeks
+        self.dayCell = dayCell
+        _position = State(initialValue: weekOffset.wrappedValue)
+    }
+
+    /// Seeded at creation: set later, in `onAppear`, a lazy stack has not laid out its pages
+    /// yet and the strip opens on the neighbouring week.
     @State private var position: Int?
     /// A horizontal `ScrollView` has no intrinsic height and would otherwise swallow the
     /// screen. Scaled so the row still follows Dynamic Type.
@@ -36,7 +49,6 @@ struct SharpitWeekStrip<DayCell: View>: View {
         .scrollPosition(id: $position)
         .frame(height: rowHeight)
         .padding(.vertical, SharpitSpacing.sm)
-        .onAppear { position = weekOffset }
         // Each side follows the other; the equality checks stop the echo.
         .onChange(of: position) { _, new in
             guard let new, new != weekOffset else { return }
