@@ -632,7 +632,7 @@ private extension V1ActivityType {
 }
 
 private func activityTone(_ type: V1ActivityType) -> Color {
-    SharpitSportTone.accent(for: type)
+    SharpitSportTone.label(for: type)
 }
 
 private struct ActivitySplit: Identifiable, Equatable {

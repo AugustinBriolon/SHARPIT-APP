@@ -189,3 +189,11 @@ private func luminance(_ color: Color, style: UIUserInterfaceStyle) -> CGFloat {
     #expect(SharpitSurfaceStyle.chip.shadow != nil)
     #expect(SharpitSurfaceStyle.panelAlt.shadow == nil)
 }
+
+/// A sport's word on dark must stand clear of the canvas: the rose strength tag did not.
+@Test func sportLabelsLiftOnDarkAndStayTrueOnLight() {
+    let raw = SharpitSportTone.accent(for: .strength)
+    let label = SharpitSportTone.label(for: .strength)
+    #expect(hex(label) == hex(raw))
+    #expect(luminance(label, style: .dark) > luminance(raw, style: .dark) + 0.15)
+}

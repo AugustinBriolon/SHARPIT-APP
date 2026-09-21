@@ -229,7 +229,7 @@ private struct ActivityRow: View {
         .accessibilityHint("Ouvrir le détail")
     }
 
-    private var tone: Color { SharpitSportTone.accent(for: activity.type) }
+    private var tone: Color { SharpitSportTone.label(for: activity.type) }
 }
 
 private struct ActivityListLoading: View {

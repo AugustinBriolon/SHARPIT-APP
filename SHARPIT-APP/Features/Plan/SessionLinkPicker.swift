@@ -115,7 +115,7 @@ private struct SessionLinkCandidateRow: View {
         HStack(spacing: SharpitSpacing.sm) {
             Image(systemName: candidate.symbolName)
                 .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitSportTone.accent(for: candidate.sport))
+                .foregroundStyle(SharpitSportTone.label(for: candidate.sport))
                 .frame(width: 28, height: 28)
                 .accessibilityHidden(true)
 

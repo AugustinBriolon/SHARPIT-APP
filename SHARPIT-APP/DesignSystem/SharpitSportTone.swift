@@ -14,6 +14,13 @@ enum SharpitSportTone {
         SharpitSportColor.color(token(for: type))
     }
 
+    /// Text drawn in the sport's hue — a tag's word, a glyph on a chip. On dark the raw hue
+    /// sits too close to the canvas (a rose strength tag read at barely 3:1), so it is
+    /// lifted toward the foreground, as the web lightens to its `-300` shade there.
+    static func label(for type: V1ActivityType) -> Color {
+        SharpitElevatedColor.adaptive(light: accent(for: type), dark: accent(for: type), darkLift: 0.45)
+    }
+
     /// Chip fill — the web's `bg-{hue}-500/20`.
     static func background(for type: V1ActivityType) -> Color {
         accent(for: type).opacity(0.2)
@@ -30,6 +37,10 @@ enum SharpitSportTone {
     /// as a typed enum, so the label is matched before falling back to `.other`.
     static func accent(for sport: String) -> Color {
         accent(for: type(forLabel: sport))
+    }
+
+    static func label(for sport: String) -> Color {
+        label(for: type(forLabel: sport))
     }
 
     static func background(for sport: String) -> Color {

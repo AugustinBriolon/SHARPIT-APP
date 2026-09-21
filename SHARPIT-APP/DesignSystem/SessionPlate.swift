@@ -84,7 +84,7 @@ struct SessionPlate: View {
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
-                        .foregroundStyle(SharpitSportTone.accent(for: sport))
+                        .foregroundStyle(SharpitSportTone.label(for: sport))
                         .padding(.horizontal, SharpitSpacing.xs)
                         .padding(.vertical, SharpitSpacing.xxs)
                         .background(SharpitSportTone.background(for: sport), in: Capsule())

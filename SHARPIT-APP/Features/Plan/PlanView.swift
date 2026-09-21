@@ -429,7 +429,7 @@ private struct PlanExecutedCard: View {
         HStack(spacing: SharpitSpacing.sm) {
             Image(systemName: entry.activity.type.symbolName)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(SharpitSportTone.accent(for: entry.activity.type))
+                .foregroundStyle(SharpitSportTone.label(for: entry.activity.type))
                 .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
