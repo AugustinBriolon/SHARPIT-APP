@@ -29,8 +29,11 @@ Find the team id in Xcode → Settings → Accounts, or with
 `defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier`. Then pick the phone as the
 run destination and press Run. On the phone, enable Developer Mode (Settings → Privacy &
 Security), and trust the developer under Settings → General → VPN & Device Management the
-first time. A free Personal Team signs for 7 days. Associated Domains and WeatherKit need a
-paid team and are not in the entitlements yet.
+first time. A free Personal Team signs for 7 days.
+
+WeatherKit, HealthKit and CloudKit are entitled and need a paid team; on a free Personal Team
+the app still builds and runs, but the weather chip reads "Météo indisponible", Apple Health
+cannot be enabled, and the cache stays device-local. Associated Domains is not entitled yet.
 
 ## Brand fonts
 
@@ -90,7 +93,10 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   diagnostic of what Apple Health holds ([ADR 0005](docs/adr/0005-app-started-sync-and-apple-health.md))
 - Journal: the day's signals via `/api/day-journal`, and what it asks for via
   `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
-  render — the web's automatic items, diet flags, thresholds — survive a save from the phone
+  render — diet flags, the nutrition panel, thresholds — survive a save from the phone.
+  Sections follow when a signal happened (Journée, Checklist auto, Nuit dernière, Signaux du
+  jour), and the automatic checklist is read from `/api/journal/day-signals` rather than
+  recomputed — the thresholds and sport rules live on the web
 - Activity status: the training mode (actif / en pause / blessé / malade) via
   `/api/activity-status`, written on every pick from Today's toolbar
 - Moi: a grouped hub mirroring the web's Réglages — Modèle (Corps, Seuils & repères),
@@ -102,6 +108,11 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   the environment. It chooses what is shown and how it is named, never what is measured;
   session load is visible in both readings, as « charge 78 » or « 78 TSS »
   ([ADR 0006](docs/adr/0006-reading-density-governs-the-technical-layer.md))
+- Local cache: SwiftData snapshots of a day's Today and journal, so both screens paint before
+  the network answers and offline. The server stays the source of truth — a write always goes
+  to `/api` and the cache is written from its echo — and the cache replicates through the
+  athlete's private iCloud
+  ([ADR 0007](docs/adr/0007-icloud-replicates-the-read-cache-only.md))
 - Weather chip: WeatherKit + Core Location (not API weather)
 - Design system: `SHARPIT-APP/DesignSystem/`. Colour and radius are **generated** from the
   web design system — edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or

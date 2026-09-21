@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// The day's journal: what the athlete did, took or felt, beside the numbers the
@@ -13,11 +14,18 @@ struct JournalView: View {
     init(
         client: any JournalServing,
         wellness: any WellnessServing,
-        tokenProvider: @escaping () async throws -> String
+        tokenProvider: @escaping () async throws -> String,
+        modelContext: ModelContext? = nil
     ) {
         self.wellness = wellness
         self.tokenProvider = tokenProvider
-        _store = State(initialValue: JournalStore(client: client, tokenProvider: tokenProvider))
+        _store = State(
+            initialValue: JournalStore(
+                client: client,
+                tokenProvider: tokenProvider,
+                modelContext: modelContext
+            )
+        )
     }
 
     var body: some View {
@@ -93,36 +101,85 @@ struct JournalView: View {
                     .padding(.top, SharpitSpacing.xl)
                 }
 
-                ForEach(JournalCategory.allCases) { category in
-                    let trackables = store.visibleTrackables.filter { $0.category == category }
-                    if !trackables.isEmpty {
-                        JournalSection(title: category.label) {
-                            ForEach(trackables) { trackable in
-                                JournalTrackableRow(
-                                    trackable: trackable,
-                                    store: store,
-                                    onOpenWellness: { showsWellness = true }
-                                )
-                            }
-                        }
-                    }
-                }
+                // The web's order, top to bottom: the day's values, then the night that
+                // ended this morning, then the day's own signals. Grouped by when a signal
+                // happened rather than by what kind of thing it is — an athlete answers a
+                // journal in the order they lived it.
+                dayMetricsSection
+                checklistSection
+                priorNightSection
+                daySignalsSection
+            }
+            .padding(SharpitSpacing.pageInset)
+        }
+    }
 
-                if !store.visibleCustomItems.isEmpty {
-                    JournalSection(title: "Personnalisé") {
-                        ForEach(store.visibleCustomItems) { item in
-                            JournalFactorRow(
-                                label: item.label,
-                                symbolName: JournalCatalogue.customSymbolName,
-                                state: store.entry.state(of: item.id)
-                            ) { newState in
-                                store.set(factorId: item.id, to: newState)
-                            }
-                        }
+    /// Caféine, Humeur, Hydratation — values the athlete sets, not answers they give.
+    @ViewBuilder
+    private var dayMetricsSection: some View {
+        let metrics = store.visibleTrackables.filter { $0.kind == .caffeine || $0.kind == .mood || $0.kind == .hydration }
+        if !metrics.isEmpty {
+            JournalSection(title: "Journée") {
+                ForEach(metrics) { trackable in
+                    JournalTrackableRow(
+                        trackable: trackable,
+                        store: store,
+                        onOpenWellness: { showsWellness = true }
+                    )
+                }
+            }
+        }
+    }
+
+    /// What the devices reported, already decided server-side. Read-only: no toggle, no
+    /// chevron and no pressable tile, because nothing here opens or changes (ADR 0004).
+    @ViewBuilder
+    private var checklistSection: some View {
+        if !store.checklist.isEmpty {
+            JournalSection(
+                title: "Checklist auto",
+                hint: "Dérivée de tes données santé et activités — lecture seule."
+            ) {
+                ForEach(store.checklist) { item in
+                    JournalChecklistRow(item: item)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var priorNightSection: some View {
+        let trackables = store.priorNightTrackables
+        if !trackables.isEmpty {
+            JournalSection(title: "Nuit dernière", hint: "De la veille au réveil (J-1 → J).") {
+                ForEach(trackables) { trackable in
+                    JournalTrackableRow(trackable: trackable, store: store)
+                }
+            }
+        }
+    }
+
+    /// The day's own signals, with the athlete's own items after them — a trackable they
+    /// wrote themselves has no window, so it belongs to the day.
+    @ViewBuilder
+    private var daySignalsSection: some View {
+        let trackables = store.dayTrackables
+        let custom = store.visibleCustomItems
+        if !trackables.isEmpty || !custom.isEmpty {
+            JournalSection(title: "Signaux du jour") {
+                ForEach(trackables) { trackable in
+                    JournalTrackableRow(trackable: trackable, store: store)
+                }
+                ForEach(custom) { item in
+                    JournalFactorRow(
+                        label: item.label,
+                        symbolName: JournalCatalogue.customSymbolName,
+                        state: store.entry.state(of: item.id)
+                    ) { newState in
+                        store.set(factorId: item.id, to: newState)
                     }
                 }
             }
-            .padding(SharpitSpacing.pageInset)
         }
     }
 }
@@ -132,7 +189,7 @@ struct JournalView: View {
 private struct JournalLoadingRows: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Bien-être")
+            SharpitEyebrow("Journée")
             ForEach(0..<5, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
                     .fill(SharpitColor.analysisSurface)
@@ -149,11 +206,18 @@ private struct JournalLoadingRows: View {
 
 private struct JournalSection<Content: View>: View {
     let title: String
+    var hint: String?
     @ViewBuilder let content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             SharpitEyebrow(title)
+            if let hint {
+                Text(hint)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -195,6 +259,10 @@ private struct JournalTrackableRow: View {
             }
         case .mood:
             JournalWellnessRow(label: trackable.label, moodLabel: store.moodLabel, onOpen: onOpenWellness)
+        case .auto:
+            // A derived line carries no answer, so it has no row here: the checklist section
+            // renders it from the server's verdict instead.
+            EmptyView()
         }
     }
 }
@@ -240,6 +308,62 @@ private struct JournalWellnessRow: View {
         .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// One derived line: whether the day met a threshold, and by how much.
+private struct JournalChecklistRow: View {
+    let item: V1JournalAutoChecklistItem
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Image(systemName: item.status.symbolName)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(item.status.tone)
+                .frame(width: 28, height: 28)
+                .background(item.status.tone.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(item.label)
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.foreground)
+                if let detail = item.detail, !detail.isEmpty {
+                    Text(detail)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        // Italic for a line with nothing behind it, so a missing measure does
+                        // not read as a measured zero.
+                        .italic(item.status == .unavailable)
+                        .monospacedDigit()
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private extension JournalAutoStatus {
+    var symbolName: String {
+        switch self {
+        case .done: "checkmark"
+        case .missed: "minus"
+        case .unavailable: "circle.dashed"
+        }
+    }
+
+    /// Only a met threshold takes the brand tone. A missed one stays quiet: the athlete did
+    /// not fail, they simply did not reach it, and the journal never scolds.
+    var tone: Color {
+        switch self {
+        case .done: SharpitColor.primary
+        case .missed, .unavailable: SharpitColor.mutedForeground
+        }
     }
 }
 

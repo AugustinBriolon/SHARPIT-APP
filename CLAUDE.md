@@ -69,7 +69,13 @@ instead.
 
 The app target supports `iphoneos` as well as the simulator. The team is not in the project:
 each machine sets `DEVELOPMENT_TEAM` in the gitignored `Config/Local.xcconfig`, which also
-holds the API origin override. Associated Domains and WeatherKit still need a paid team.
+holds the API origin override.
+
+WeatherKit, HealthKit and CloudKit are all entitled in `SharpIt.entitlements` and all need a
+paid team. Xcode reissues the managed profile when an entitlement is added, so a capability that
+silently does nothing — the weather chip reading "Météo indisponible" was exactly this — usually
+means the entitlement is missing rather than the code being wrong. Associated Domains is still
+not entitled.
 
 ## Architecture
 
@@ -101,7 +107,8 @@ The real versioned contracts are `/api/v1/today`, `/api/v1/sleep`, `/api/v1/reco
 `PlannedSessionClient`, `CoachChatClient`, `CoachConversationClient`, `ActivityStatusClient`,
 `JournalClient` and `AthleteProfileClient` call web-internal routes (`/api/activities`,
 `/api/planned-sessions` including `…/:id/link`, `/api/coach/chat`, `/api/coach/conversations`,
-`/api/activity-status`, `/api/day-journal`, `/api/journal-prefs`, `/api/athlete-profile`
+`/api/activity-status`, `/api/day-journal`, `/api/journal/day-signals`, `/api/journal-prefs`,
+`/api/athlete-profile`
 including `…/threshold-history`, `/api/body-composition`); treat that as known debt, not as a
 pattern to copy.
 
@@ -112,11 +119,21 @@ does not model — tool calls — and a save from the phone must not strip them.
 
 **Journal.** `JournalView` asks for the day signals the athlete turned on, and
 `JournalPrefsDrawer` chooses them. Preferences are kept as the raw JSON the server sent
-(`JournalPrefs.raw`): the web stores keys the app does not model — automatic items fed by
-device sync, diet flags, thresholds — and the server rebuilds its enable map from defaults
-for every key a payload omits, so sending back only what the app renders would silently
-reset the rest. The catalogue in `JournalTrackables.swift` therefore covers the signals the
-app can render, never all of the web's.
+(`JournalPrefs.raw`): the web stores keys the app does not model — diet flags, nutrition
+panel, thresholds — and the server rebuilds its enable map from defaults for every key a
+payload omits, so sending back only what the app renders would silently reset the rest. The
+catalogue in `JournalTrackables.swift` therefore covers the signals the app can render, never
+all of the web's.
+
+Sections follow *when* a signal happened, not what kind of thing it is: Journée (the three
+metrics), Checklist auto, Nuit dernière, Signaux du jour. `JournalDayWindow` is its own axis
+beside `JournalCategory`, which still drives the drawer's filters — the web separates them
+too, so one cannot be derived from the other. The automatic checklist is read from
+`/api/journal/day-signals` and never recomputed: the thresholds, the sports that count as
+cardio and the minutes summed per activity all live in the web's `journal-auto-checklist.ts`,
+and a second implementation would diverge the first time a threshold moved. Its lines are
+read-only, so they carry no toggle and no chevron, and the route is called only when the
+athlete enabled one.
 
 **Activity status.** The mode chip in Today's toolbar writes `/api/activity-status` on every
 pick — no explicit save, as on the web. A deadline that has passed is resolved back to
@@ -131,9 +148,18 @@ day's drill-down is a v1 resource plus a sections view, not a new store.
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation
 layer is web-only; the app maps domain payloads itself.
 
-**Persistence.** SwiftData, one model: `TodayDaySnapshot` keyed by `trainingDayId`, storing
-the raw encoded `V1TodayResponse`. `TodaySnapshotRepository` is the only accessor, so Today
-renders instantly offline before the network answers.
+**Persistence.** SwiftData, two models keyed by `trainingDayId`: `TodayDaySnapshot` holds the raw
+encoded `V1TodayResponse`, `JournalDaySnapshot` holds a day's entry, preferences and derived
+checklist. One repository each, and they are the only accessors, so both screens paint offline
+before the network answers.
+
+The cache is never the truth — the server is. A write goes to `/api`, the cache is written from
+the server's echo and never merged with it. It replicates through the athlete's **private**
+CloudKit database (`docs/adr/0007`), which costs the schema a `#Unique`: CloudKit refuses one, so
+each repository resolves a day by fetching every row for it sorted by `fetchedAt` descending,
+keeping the newest and deleting the rest. Every attribute has a default and every payload is
+optional for the same reason. An in-memory container skips CloudKit, so a test never reaches the
+network.
 
 **Freshness.** The app starts provider pulls itself (`ProviderSyncStore`, `/api/v1/sync`)
 on launch, foreground and pull-to-refresh, and can send Apple Health day summaries

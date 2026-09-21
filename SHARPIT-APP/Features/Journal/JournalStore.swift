@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 
 /// The day's journal and the preferences that decide what it asks for.
 ///
@@ -18,6 +19,9 @@ final class JournalStore {
     private(set) var entry: V1DayJournalEntry
     private(set) var prefs: JournalPrefs = .empty
     private(set) var isPro = false
+    /// The derived lines, read-only and possibly empty: the checklist is a reading of the
+    /// day's devices, so its absence never stops the athlete recording their own answers.
+    private(set) var checklist: [V1JournalAutoChecklistItem] = []
     /// Set when a write did not land. The answer stays on screen either way — losing
     /// what the athlete just tapped would be worse than showing it unsaved.
     private(set) var saveFailure: String?
@@ -25,6 +29,8 @@ final class JournalStore {
     private let client: any JournalServing
     private let tokenProvider: () async throws -> String
     private let saveDelay: Duration
+    /// Optional so a preview or a test can run without a store, as `TodayStore` does.
+    private let modelContext: ModelContext?
     private var pendingSave: Task<Void, Never>?
     /// Bumped on every local edit, so a save can tell whether the athlete tapped again
     /// while its request was in flight.
@@ -34,18 +40,24 @@ final class JournalStore {
         client: any JournalServing,
         tokenProvider: @escaping () async throws -> String,
         trainingDayId: String = TrainingDayId.today(),
-        saveDelay: Duration = .milliseconds(700)
+        saveDelay: Duration = .milliseconds(700),
+        modelContext: ModelContext? = nil
     ) {
         self.client = client
         self.tokenProvider = tokenProvider
         self.saveDelay = saveDelay
+        self.modelContext = modelContext
         entry = V1DayJournalEntry(trainingDayId: trainingDayId)
     }
 
     // MARK: Reading
 
     func load() async {
-        if phase != .ready { phase = .loading }
+        // Paint the last day the app saw before asking the network, so the journal opens on
+        // content. The cache is never the truth — every answer still goes to the server — it
+        // only decides what fills the screen while the request is in flight.
+        let hadCache = hydrateFromCache()
+        if !hadCache, phase != .ready { phase = .loading }
         do {
             let token = try await tokenProvider()
             async let prefsResult = client.journalPrefs(token: token)
@@ -58,10 +70,69 @@ final class JournalStore {
             prefs = loadedPrefs
             isPro = loadedIsPro
             phase = .ready
+            // After the preferences, because they decide whether it is worth asking.
+            await loadChecklist(token: token)
+            persistCache()
         } catch is CancellationError {
         } catch {
-            phase = .failed(Self.message(for: error, fallback: "Ton journal n'a pas pu être chargé."))
+            let message = Self.message(for: error, fallback: "Ton journal n'a pas pu être chargé.")
+            // A painted cache survives a failed refresh: replacing yesterday's answers with a
+            // full-screen error would lose what the athlete already recorded from view.
+            if hadCache {
+                saveFailure = message
+            } else {
+                phase = .failed(message)
+            }
         }
+    }
+
+    @discardableResult
+    private func hydrateFromCache() -> Bool {
+        guard let modelContext else { return false }
+        guard let cached = try? JournalSnapshotRepository.load(
+            trainingDayId: entry.trainingDayId,
+            context: modelContext
+        ), !cached.isEmpty else { return false }
+
+        if let cachedEntry = cached.entry { entry = cachedEntry }
+        if let cachedPrefs = cached.prefs { prefs = cachedPrefs }
+        checklist = cached.signals?.checklist ?? []
+        phase = .ready
+        return true
+    }
+
+    private func persistCache() {
+        guard let modelContext else { return }
+        // Persistence failure must not break a journal that is already on screen.
+        try? JournalSnapshotRepository.save(
+            trainingDayId: entry.trainingDayId,
+            entry: entry,
+            prefs: prefs,
+            signals: V1JournalDaySignals(trainingDayId: entry.trainingDayId, checklist: checklist),
+            context: modelContext
+        )
+    }
+
+    /// Reads the derived lines, and only when the athlete turned one on.
+    ///
+    /// Never throws onward: a failed read leaves the checklist empty and the journal usable.
+    /// It is the one part of the screen the athlete cannot act on, so it is also the one part
+    /// whose absence is not worth an error.
+    private func loadChecklist(token: String) async {
+        guard prefs.hasAnyAutoItem else {
+            // Nothing enabled: the section is gone, so whatever was cached is stale.
+            checklist = []
+            return
+        }
+        guard let signals = try? await client.journalDaySignals(
+            trainingDayId: entry.trainingDayId,
+            token: token
+        ) else {
+            // Keep what is on screen. Clearing here would erase a checklist the cache had
+            // already painted, and the next `persistCache` would write that emptiness back.
+            return
+        }
+        checklist = signals.checklist
     }
 
     /// The trackables the athlete turned on, in catalogue order, then their own items.
@@ -69,12 +140,30 @@ final class JournalStore {
         JournalCatalogue.all.filter { prefs.isEnabled($0.id) }
     }
 
+    /// The signals that describe the night ending this morning, as the web's "Nuit dernière"
+    /// section shows them.
+    var priorNightTrackables: [JournalTrackable] {
+        factorTrackables(in: .priorNight)
+    }
+
+    /// The signals that describe the day itself. The three day metrics are excluded: they are
+    /// values with their own section, not yes / no answers.
+    var dayTrackables: [JournalTrackable] {
+        factorTrackables(in: .calendarDay)
+    }
+
+    private func factorTrackables(in window: JournalDayWindow) -> [JournalTrackable] {
+        visibleTrackables.filter { $0.kind == .factor && $0.window == window }
+    }
+
     var visibleCustomItems: [JournalCustomItem] {
         prefs.customItems.filter(\.enabled)
     }
 
+    /// True when there is nothing on screen at all. The checklist counts: an athlete who
+    /// enabled only derived lines has a journal to read, even with nothing to answer.
     var hasNothingToShow: Bool {
-        visibleTrackables.isEmpty && visibleCustomItems.isEmpty
+        visibleTrackables.isEmpty && visibleCustomItems.isEmpty && checklist.isEmpty
     }
 
     var moodLabel: String? {
@@ -150,6 +239,9 @@ final class JournalStore {
                 entry = saved
             }
             saveFailure = nil
+            // Written from the server's echo, so the cache holds what was accepted rather
+            // than what was tapped.
+            persistCache()
         } catch is CancellationError {
         } catch {
             saveFailure = Self.message(for: error, fallback: "Journal non enregistré. Réessaie.")
@@ -204,6 +296,9 @@ final class JournalStore {
             prefs = result.prefs
             isPro = result.isPro
             saveFailure = nil
+            // Turning a derived line on or off changes what the checklist should show.
+            await loadChecklist(token: token)
+            persistCache()
         } catch {
             prefs = previous
             saveFailure = Self.message(for: error, fallback: "Préférences non enregistrées. Réessaie.")

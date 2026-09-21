@@ -19,6 +19,9 @@ struct TodayView: View {
     private let journalClient: (any JournalServing)?
     private let wellnessClient: (any WellnessServing)?
     private let signalClient: (any SleepServing & RecoveryServing)?
+    /// Held as well as handed to the store, because the journal opened from here caches its
+    /// own day and needs the same context.
+    private let modelContext: ModelContext?
 
     init(
         client: any TodayServing = FixtureTodayClient(),
@@ -32,6 +35,7 @@ struct TodayView: View {
         appleHealth: AppleHealthSource? = nil
     ) {
         self.appleHealth = tokenProvider == nil ? nil : appleHealth
+        self.modelContext = modelContext
         _sync = State(initialValue: syncClient.flatMap { client in
             tokenProvider.map { ProviderSyncStore(client: client, tokenProvider: $0) }
         })
@@ -106,7 +110,8 @@ struct TodayView: View {
                             JournalView(
                                 client: journalClient,
                                 wellness: wellnessClient,
-                                tokenProvider: tokenProvider
+                                tokenProvider: tokenProvider,
+                                modelContext: modelContext
                             )
                         } label: {
                             Label("Journal", systemImage: "book.closed")

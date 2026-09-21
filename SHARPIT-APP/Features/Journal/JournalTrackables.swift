@@ -2,6 +2,7 @@ import Foundation
 
 /// The drawer's filter chips, in the web's order.
 nonisolated enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
+    case automatique
     case bienEtre = "bien_etre"
     case sante
     case medicament
@@ -15,6 +16,7 @@ nonisolated enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
+        case .automatique: "Automatique"
         case .sante: "État de santé"
         case .medicament: "Médicament"
         case .nutrition: "Nutrition"
@@ -25,6 +27,21 @@ nonisolated enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
         case .bienEtre: "Bien-être"
         }
     }
+}
+
+/// When a signal happened.
+///
+/// Its own axis rather than a reading of `JournalCategory`: the category answers "what kind
+/// of thing is this" and drives the drawer's filters, the window answers "when did it happen"
+/// and drives the screen's order. They happen to coincide today — every Sommeil signal is a
+/// night signal — but the web already separates them (`hydration_quality` sits in its sleep
+/// group with a day window), so deriving one from the other would break on the next signal
+/// the web adds.
+nonisolated enum JournalDayWindow: Hashable, Sendable {
+    /// The training day itself.
+    case calendarDay
+    /// The night that ends on this training day: the evening of J-1 through waking on J.
+    case priorNight
 }
 
 /// One thing the athlete can record on a day.
@@ -40,6 +57,9 @@ nonisolated struct JournalTrackable: Identifiable, Equatable, Sendable {
         case caffeine
         case mood
         case hydration
+        /// Derived from the devices, never answered: the athlete turns it on in the drawer
+        /// and reads it in the checklist. It carries no state on the day's entry.
+        case auto
     }
 
     let id: String
@@ -47,10 +67,79 @@ nonisolated struct JournalTrackable: Identifiable, Equatable, Sendable {
     let category: JournalCategory
     let symbolName: String
     var kind: Kind = .factor
+    var window: JournalDayWindow = .calendarDay
 }
 
 nonisolated enum JournalCatalogue {
     static let all: [JournalTrackable] = [
+        // Automatique — read from the devices, never answered. Their order is the web's and
+        // is the order the checklist renders in, so `JournalAutoItem.ids` has to match.
+        JournalTrackable(
+            id: "steps_10k",
+            label: "Pas (objectif)",
+            category: .automatique,
+            symbolName: "figure.walk",
+            kind: .auto
+        ),
+        JournalTrackable(
+            id: "stress_ok",
+            label: "Stress sous cible",
+            category: .automatique,
+            symbolName: "waveform.path.ecg",
+            kind: .auto
+        ),
+        JournalTrackable(
+            id: "nap",
+            label: "Sieste",
+            category: .automatique,
+            symbolName: "moon",
+            kind: .auto
+        ),
+        JournalTrackable(
+            id: "cardio_20",
+            label: "Cardio",
+            category: .automatique,
+            symbolName: "heart.fill",
+            kind: .auto
+        ),
+        JournalTrackable(
+            id: "strength_20",
+            label: "Force",
+            category: .automatique,
+            symbolName: "dumbbell",
+            kind: .auto
+        ),
+        JournalTrackable(
+            id: "sleep_target",
+            label: "Sommeil ≥ cible",
+            category: .automatique,
+            symbolName: "bed.double",
+            kind: .auto
+        ),
+        JournalTrackable(
+            id: "body_battery_ok",
+            label: "Body Battery",
+            category: .automatique,
+            symbolName: "battery.75percent",
+            kind: .auto
+        ),
+        JournalTrackable(
+            id: "hydration_sync",
+            label: "Hydratation (sync)",
+            category: .automatique,
+            symbolName: "drop.triangle",
+            kind: .auto
+        ),
+        // Shown although nothing feeds it yet: the web lists it too, always as "Données
+        // absentes", and hiding it here would make the two clients disagree.
+        JournalTrackable(
+            id: "outdoor_minutes",
+            label: "Temps outdoor",
+            category: .automatique,
+            symbolName: "sun.max",
+            kind: .auto
+        ),
+
         // Bien-être — the three day basics, which are values rather than signals.
         JournalTrackable(
             id: "metric_caffeine",
@@ -133,14 +222,57 @@ nonisolated enum JournalCatalogue {
             symbolName: "drop.fill"
         ),
 
-        // Sommeil
-        JournalTrackable(id: "late_meal", label: "Repas tardif", category: .sommeil, symbolName: "fork.knife.circle"),
-        JournalTrackable(id: "device_in_bed", label: "Écran au lit", category: .sommeil, symbolName: "iphone"),
-        JournalTrackable(id: "shared_bed", label: "Lit partagé", category: .sommeil, symbolName: "person.2"),
-        JournalTrackable(id: "earplugs", label: "Bouchons d'oreille", category: .sommeil, symbolName: "ear"),
-        JournalTrackable(id: "sleep_mask", label: "Masque de sommeil", category: .sommeil, symbolName: "eye.slash"),
-        JournalTrackable(id: "pet_in_room", label: "Animal dans la chambre", category: .sommeil, symbolName: "pawprint"),
-        JournalTrackable(id: "melatonin", label: "Mélatonine", category: .sommeil, symbolName: "moon.zzz"),
+        // Sommeil — the seven the web files in the prior-night window. They describe the
+        // night that ends this morning, so the screen groups them apart from the day.
+        JournalTrackable(
+            id: "late_meal",
+            label: "Repas tardif",
+            category: .sommeil,
+            symbolName: "fork.knife.circle",
+            window: .priorNight
+        ),
+        JournalTrackable(
+            id: "device_in_bed",
+            label: "Écran au lit",
+            category: .sommeil,
+            symbolName: "iphone",
+            window: .priorNight
+        ),
+        JournalTrackable(
+            id: "shared_bed",
+            label: "Lit partagé",
+            category: .sommeil,
+            symbolName: "person.2",
+            window: .priorNight
+        ),
+        JournalTrackable(
+            id: "earplugs",
+            label: "Bouchons d'oreille",
+            category: .sommeil,
+            symbolName: "ear",
+            window: .priorNight
+        ),
+        JournalTrackable(
+            id: "sleep_mask",
+            label: "Masque de sommeil",
+            category: .sommeil,
+            symbolName: "eye.slash",
+            window: .priorNight
+        ),
+        JournalTrackable(
+            id: "pet_in_room",
+            label: "Animal dans la chambre",
+            category: .sommeil,
+            symbolName: "pawprint",
+            window: .priorNight
+        ),
+        JournalTrackable(
+            id: "melatonin",
+            label: "Mélatonine",
+            category: .sommeil,
+            symbolName: "moon.zzz",
+            window: .priorNight
+        ),
 
         // Style de vie
         JournalTrackable(
@@ -186,6 +318,10 @@ nonisolated enum JournalCatalogue {
 
     static func inCategory(_ category: JournalCategory) -> [JournalTrackable] {
         all.filter { $0.category == category }
+    }
+
+    static func inWindow(_ window: JournalDayWindow) -> [JournalTrackable] {
+        all.filter { $0.window == window }
     }
 
     static let customSymbolName = "sparkles"

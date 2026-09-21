@@ -3,6 +3,7 @@ import Foundation
 nonisolated protocol JournalServing: Sendable {
     func dayJournal(trainingDayId: String, token: String) async throws -> V1DayJournalEntry
     func saveDayJournal(_ entry: V1DayJournalEntry, token: String) async throws -> V1DayJournalEntry
+    func journalDaySignals(trainingDayId: String, token: String) async throws -> V1JournalDaySignals
     func journalPrefs(token: String) async throws -> (prefs: JournalPrefs, isPro: Bool)
     func saveJournalPrefs(
         _ prefs: JournalPrefs,
@@ -58,6 +59,35 @@ actor JournalClient: JournalServing {
         var saved = envelope.entry ?? entry
         saved.trainingDayId = entry.trainingDayId
         return saved
+    }
+
+    /// The derived half of the day: the automatic checklist, decided server-side.
+    ///
+    /// Same `day=` parameter as `dayJournal` above, because it answers about the same day.
+    /// Note the rest of the app sends `trainingDayId` instead — these two journal routes are
+    /// web-internal and predate that convention.
+    func journalDaySignals(
+        trainingDayId: String,
+        token: String
+    ) async throws -> V1JournalDaySignals {
+        guard var components = URLComponents(
+            url: baseURL.appending(path: "/api/journal/day-signals"),
+            resolvingAgainstBaseURL: false
+        ) else {
+            throw SharpitAPIError.server
+        }
+        components.queryItems = [URLQueryItem(name: "day", value: trainingDayId)]
+        guard let url = components.url else { throw SharpitAPIError.server }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        var signals = try decode(V1JournalDaySignals.self, from: try await send(request))
+        // A day with nothing derived comes back without its own id, as the entry does.
+        signals.trainingDayId = trainingDayId
+        return signals
     }
 
     func journalPrefs(token: String) async throws -> (prefs: JournalPrefs, isPro: Bool) {
