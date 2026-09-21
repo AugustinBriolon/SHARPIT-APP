@@ -182,9 +182,11 @@ final class TodayStore {
         case .server:
             return "Le serveur n'a pas pu produire le résumé"
         case .transport:
-            return "Réseau indisponible — vérifie yarn dev sur 127.0.0.1:3000"
+            return "Réseau indisponible"
         case .unauthorized:
             return "Session expirée"
+        case .rateLimited:
+            return "Trop de requêtes — réessaie dans un instant"
         }
     }
 }

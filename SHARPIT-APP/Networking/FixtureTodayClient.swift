@@ -9,6 +9,8 @@ enum SharpitAPIError: Error, Equatable {
     case badRequest
     case server
     case transport
+    /// The server refused because the same request ran moments ago.
+    case rateLimited
 }
 
 struct FixtureTodayClient: TodayServing {

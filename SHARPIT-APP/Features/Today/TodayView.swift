@@ -4,6 +4,9 @@ import SwiftUI
 struct TodayView: View {
     @State private var store: TodayStore
     @State private var weather = LocationWeatherService()
+    /// Nil without a token or a client: a fixture-backed Today has nothing to pull.
+    @State private var sync: ProviderSyncStore?
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Kept so an activity opened from here can load itself. Nil in previews and
     /// fixtures, where a done session has nothing to fetch.
@@ -23,8 +26,12 @@ struct TodayView: View {
         activityStatusClient: (any ActivityStatusServing)? = nil,
         journalClient: (any JournalServing)? = nil,
         wellnessClient: (any WellnessServing)? = nil,
-        signalClient: (any SleepServing & RecoveryServing)? = nil
+        signalClient: (any SleepServing & RecoveryServing)? = nil,
+        syncClient: (any SyncServing)? = nil
     ) {
+        _sync = State(initialValue: syncClient.flatMap { client in
+            tokenProvider.map { ProviderSyncStore(client: client, tokenProvider: $0) }
+        })
         self.signalClient = tokenProvider == nil ? nil : signalClient
         self.tokenProvider = tokenProvider
         self.journalClient = tokenProvider == nil ? nil : journalClient
@@ -56,6 +63,7 @@ struct TodayView: View {
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
                         tokenProvider: tokenProvider,
                         signalClient: signalClient,
+                        sync: sync,
                         onArrival: { store.handleArrivalWins(fold: fold) },
                         onSessionLinked: { Task { await store.refresh() } }
                     )
@@ -109,12 +117,30 @@ struct TodayView: View {
             .refreshable {
                 await store.refresh()
                 weather.start()
+                // The pull can take a minute; the gesture ends on what the server has now,
+                // and the screen reloads once the providers have answered.
+                Task { await pullProviders(force: true) }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                Task { await pullProviders(force: false) }
             }
             .task {
                 await store.load(resetToLoading: true)
+                Task { await pullProviders(force: false) }
                 weather.start()
             }
         }
+    }
+}
+
+extension TodayView {
+    /// Pulls the providers — always when asked, otherwise only when the last pull is stale —
+    /// and reloads Today when fresh data came in.
+    fileprivate func pullProviders(force: Bool) async {
+        guard let sync else { return }
+        let pulled = force ? await sync.syncNow() : await sync.syncIfStale()
+        if pulled { await store.refresh() }
     }
 }
 
@@ -126,6 +152,7 @@ private struct TodayFoldView: View {
     var sessionDoneCelebrations: Set<String> = []
     var tokenProvider: (() async throws -> String)?
     var signalClient: (any SleepServing & RecoveryServing)?
+    var sync: ProviderSyncStore?
     var onArrival: () -> Void = {}
     /// Called once a prescription has been linked, so Today reloads and shows it as done.
     var onSessionLinked: () -> Void = {}
@@ -136,6 +163,9 @@ private struct TodayFoldView: View {
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                if let sync {
+                    SyncStatusLine(sync: sync)
+                }
                 InkVerdictPlate(plate: fold.plate, revealed: true)
                 evidenceSection
                 if !fold.gauges.isEmpty {
