@@ -33,8 +33,10 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     private var phaseView: some View {
         switch store.phase {
         case .loading:
-            ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ScrollView {
+                DayDetailSkeleton()
+                    .padding(.top, SharpitSpacing.md)
+            }
         case .loaded(let payload):
             ScrollView {
                 content(payload)
@@ -59,5 +61,56 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
         case .unauthorized:
             ContentUnavailableView("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
         }
+    }
+}
+
+/// The causal column's shape — hero, two tiles, a panel, a chart — before the day answers.
+/// Sleep and Recovery both open this way, so one skeleton covers both (`docs/adr/0008`).
+private struct DayDetailSkeleton: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            hero
+            panel(height: 140)
+            panel(height: 160)
+        }
+        .padding(.horizontal, SharpitSpacing.pageInset)
+        .redacted(reason: .placeholder)
+        .accessibilityHidden(true)
+    }
+
+    private var hero: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Text("78")
+                    .font(SharpitTypography.heroScore)
+                    .tracking(SharpitTypography.heroScoreTracking)
+                Text("/100")
+                    .font(SharpitTypography.meta)
+            }
+            HStack(spacing: SharpitSpacing.sm) {
+                statTile
+                statTile
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(SharpitColor.mutedForeground)
+    }
+
+    private var statTile: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("REPÈRE")
+                .font(SharpitTypography.label)
+            Text("00 h 00")
+                .font(SharpitTypography.instrument)
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+    }
+
+    private func panel(height: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: SharpitRadius.panel)
+            .fill(SharpitColor.mutedForeground.opacity(0.12))
+            .frame(height: height)
     }
 }

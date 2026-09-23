@@ -66,12 +66,13 @@ struct TodayView: View {
                 case .loaded(let fold):
                     TodayFoldView(
                         fold: fold,
+                        hasCompletedArrival: store.hasCompletedArrival,
                         pulseScores: store.pulseScores,
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
                         tokenProvider: tokenProvider,
                         signalClient: signalClient,
-                        sync: sync,
                         onArrival: { store.handleArrivalWins(fold: fold) },
+                        onArrivalCompleted: { store.markArrivalCompleted() },
                         onSessionLinked: { Task { await store.refresh() } }
                     )
                 case .empty(let empty):
@@ -98,6 +99,7 @@ struct TodayView: View {
             .navigationTitle(store.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
+            .sharpitSyncToast(sync)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let activityStatusStore {
@@ -134,7 +136,8 @@ struct TodayView: View {
                 Task { await pullProviders(force: false) }
             }
             .task {
-                await store.load(resetToLoading: true)
+                let shouldReset = !store.hasCompletedArrival && store.phase == .loading
+                await store.load(resetToLoading: shouldReset)
                 Task { await pullProviders(force: false) }
                 weather.start()
             }
@@ -159,45 +162,102 @@ extension TodayView {
 
 private struct TodayFoldView: View {
     @Environment(ShellRouter.self) private var router
+    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
 
     let fold: TodayFold
+    var hasCompletedArrival: Bool = false
     var pulseScores: Bool = false
     var sessionDoneCelebrations: Set<String> = []
     var tokenProvider: (() async throws -> String)?
     var signalClient: (any SleepServing & RecoveryServing)?
-    var sync: ProviderSyncStore?
     var onArrival: () -> Void = {}
+    var onArrivalCompleted: () -> Void = {}
     /// Called once a prescription has been linked, so Today reloads and shows it as done.
     var onSessionLinked: () -> Void = {}
 
     @State private var selectedPreview: PlannedSessionPreview?
     @State private var openedSignal: V1TodaySignalKey?
+    @State private var consecutiveWeeks: Int? = nil
+    @State private var sleepOverrideCaption: String? = nil
+
+    /// Arrival phase drives the staggered reveal of each section.
+    @State private var phase: TodayArrivalPhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(
+        fold: TodayFold,
+        hasCompletedArrival: Bool = false,
+        pulseScores: Bool = false,
+        sessionDoneCelebrations: Set<String> = [],
+        tokenProvider: (() async throws -> String)? = nil,
+        signalClient: (any SleepServing & RecoveryServing)? = nil,
+        onArrival: @escaping () -> Void = {},
+        onArrivalCompleted: @escaping () -> Void = {},
+        onSessionLinked: @escaping () -> Void = {}
+    ) {
+        self.fold = fold
+        self.hasCompletedArrival = hasCompletedArrival
+        self.pulseScores = pulseScores
+        self.sessionDoneCelebrations = sessionDoneCelebrations
+        self.tokenProvider = tokenProvider
+        self.signalClient = signalClient
+        self.onArrival = onArrival
+        self.onArrivalCompleted = onArrivalCompleted
+        self.onSessionLinked = onSessionLinked
+        _phase = State(initialValue: hasCompletedArrival ? .idle : .hidden)
+    }
 
     var body: some View {
         ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                if let sync {
-                    SyncStatusLine(sync: sync)
-                }
-                InkVerdictPlate(plate: fold.plate, revealed: true)
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                InkVerdictPlate(plate: fold.plate, revealed: phase.showsPlate)
+
                 evidenceSection
+                    .opacity(phase.showsSession ? 1 : 0)
+                    .offset(y: phase.showsSession ? 0 : 18)
+                    .animation(
+                        reduceMotion ? .easeOut(duration: 0.01)
+                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.06),
+                        value: phase.showsSession
+                    )
+
                 if !fold.gauges.isEmpty {
                     OvernightGaugePair(
                         gauges: fold.gauges,
+                        sleepOverrideCaption: sleepOverrideCaption,
                         pulseScores: pulseScores,
+                        animated: !hasCompletedArrival,
                         onSelect: signalClient == nil ? nil : { openedSignal = $0 }
+                    )
+                    .opacity(phase.showsGauges ? 1 : 0)
+                    .offset(y: phase.showsGauges ? 0 : 18)
+                    .animation(
+                        reduceMotion ? .easeOut(duration: 0.01)
+                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.08),
+                        value: phase.showsGauges
                     )
                 }
                 if let consistency = fold.consistency, !consistency.days.isEmpty {
-                    ConsistencyStrip(consistency: consistency) {
+                    ConsistencyStrip(
+                        consistency: consistency,
+                        consecutiveWeeks: consecutiveWeeks
+                    ) {
                         router.select(.plan)
                     }
+                    .opacity(phase.showsGauges ? 1 : 0)
+                    .offset(y: phase.showsGauges ? 0 : 18)
+                    .animation(
+                        reduceMotion ? .easeOut(duration: 0.01)
+                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.14),
+                        value: phase.showsGauges
+                    )
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.lg)
+            .containerRelativeFrame(.horizontal, alignment: .leading)
         }
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .modifier(ScrollUnderGlass())
         .navigationDestination(item: $openedSignal) { key in
             signalDetail(for: key)
@@ -206,13 +266,98 @@ private struct TodayFoldView: View {
             PlannedSessionDrawer(
                 preview: preview,
                 linking: linkContext,
+                watchPush: watchPushContext,
                 loadBreakdown: breakdownLoader(for: preview)
             ) { context in
                 router.discussWithCoach(about: context)
             }
         }
-        .task { onArrival() }
+        .task {
+            if !hasCompletedArrival {
+                onArrival()
+                await TodayArrivalDirector.run(
+                    reduceMotion: reduceMotion,
+                    gaugeCount: fold.gauges.count
+                ) { phase = $0 }
+                onArrivalCompleted()
+            } else {
+                phase = .idle
+            }
+            await loadTelemetryEnrichments()
+        }
     }
+
+    private func loadTelemetryEnrichments() async {
+        guard let tokenProvider else { return }
+        guard let token = try? await tokenProvider() else { return }
+
+        // 1. Calculate consecutive active weeks
+        let activityClient = ActivityClient()
+        if let activities = try? await activityClient.activities(forceRefresh: true, token: token) {
+            let streak = ActivityStreakCalculator.consecutiveWeeksWithActivity(
+                activities: activities,
+                referenceDate: .now
+            )
+            consecutiveWeeks = streak
+        }
+
+        // 2. Calculate sleep target missing duration
+        if let signalClient,
+           let sleep = try? await signalClient.sleep(trainingDayId: fold.trainingDayId, token: token) {
+            let delta = sleep.targetDeltaMin ?? (sleep.durationMin.map { $0 - sleep.targetMin })
+            if let delta {
+                if delta < -0.5 {
+                    sleepOverrideCaption = "Manque · \(SleepReadout.duration(abs(delta)))"
+                } else {
+                    sleepOverrideCaption = "Objectif · Atteint"
+                }
+            }
+        } else if let profile = try? await AthleteProfileClient().athleteProfile(token: token),
+                  let targetMin = profile.sleepTargetMinutes, targetMin > 0,
+                  let sleepGauge = fold.gauges.first(where: { $0.key == .sleep }),
+                  let caption = sleepGauge.caption,
+                  let durationMin = parseDurationMinutes(from: caption) {
+            let delta = Double(durationMin - targetMin)
+            if delta < -0.5 {
+                sleepOverrideCaption = "Manque · \(SleepReadout.duration(abs(delta)))"
+            } else {
+                sleepOverrideCaption = "Objectif · Atteint"
+            }
+        }
+    }
+
+    private func parseDurationMinutes(from text: String) -> Int? {
+        var totalMinutes = 0
+        var foundAny = false
+
+        if let hRange = text.range(of: #"\b(\d+)\s*h"#, options: .regularExpression) {
+            let match = String(text[hRange])
+            let digits = match.filter(\.isNumber)
+            if let h = Int(digits) {
+                totalMinutes += h * 60
+                foundAny = true
+            }
+        }
+
+        if let mRange = text.range(of: #"h\s*(\d+)"#, options: .regularExpression) {
+            let match = String(text[mRange])
+            let digits = match.filter(\.isNumber)
+            if let m = Int(digits) {
+                totalMinutes += m
+                foundAny = true
+            }
+        } else if let minRange = text.range(of: #"\b(\d+)\s*min"#, options: .regularExpression) {
+            let match = String(text[minRange])
+            let digits = match.filter(\.isNumber)
+            if let m = Int(digits) {
+                totalMinutes += m
+                foundAny = true
+            }
+        }
+
+        return foundAny ? totalMinutes : nil
+    }
+
 
     @ViewBuilder
     private func signalDetail(for key: V1TodaySignalKey) -> some View {
@@ -249,20 +394,33 @@ private struct TodayFoldView: View {
             activities: ActivityClient(),
             linker: PlannedSessionClient(),
             tokenProvider: tokenProvider,
-            onLinked: onSessionLinked
+            onLinked: {
+                selectedPreview = nil
+                toastCenter?.show(
+                    "Séance liée avec succès",
+                    symbol: "link",
+                    tone: .success,
+                    autoDismissAfter: 3.0
+                )
+                onSessionLinked()
+            }
+        )
+    }
+
+    private var watchPushContext: SessionWatchPushContext? {
+        guard let tokenProvider else { return nil }
+        return SessionWatchPushContext(
+            pusher: PlannedSessionClient(),
+            tokenProvider: tokenProvider
         )
     }
 
     @ViewBuilder
     private var evidenceSection: some View {
         if fold.sessions.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                SharpitEyebrow("Séance")
-                RestDayPlate()
-            }
+            RestDayPlate()
         } else {
-            VStack(alignment: .leading, spacing: 10) {
-                SharpitEyebrow("Séance")
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 ForEach(fold.sessions) { session in
                     TodaySessionLink(
                         session: session,

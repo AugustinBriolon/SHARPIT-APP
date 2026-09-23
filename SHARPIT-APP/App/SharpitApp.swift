@@ -1,4 +1,5 @@
 import ClerkKit
+import ClerkKitUI
 import SwiftData
 import SwiftUI
 
@@ -23,6 +24,7 @@ struct SharpitApp: App {
                 RootView()
             }
             .environment(Clerk.shared)
+            .environment(\.clerkTheme, .sharpit)
         }
         .modelContainer(modelContainer)
     }

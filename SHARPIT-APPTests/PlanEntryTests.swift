@@ -158,3 +158,31 @@ private func entries(
 
     #expect(Set(result.map(\.id)).count == result.count)
 }
+
+@Test func aPlannedSessionWithActivityIdIsAbsorbedEvenIfActivityHasNoBacklink() {
+    // When the planned session was linked on server (activityId or completed set),
+    // it must not appear as missed/planned even if the activity didn't carry the link yet.
+    let linkedPlanned = V1PlannedSessionItem(
+        id: "p1",
+        date: yesterday,
+        title: "Sortie longue",
+        type: "RUN",
+        completed: true,
+        activityId: "a1"
+    )
+    let plainActivity = activity("a1", on: yesterday)
+
+    let result = entries(
+        planned: [linkedPlanned],
+        activities: [plainActivity]
+    )
+
+    #expect(result.count == 1)
+    guard case .executed(let executed) = result[0] else {
+        Issue.record("expected executed entry")
+        return
+    }
+    #expect(executed.wasPlanned)
+    #expect(executed.plannedTitle == "Sortie longue")
+}
+

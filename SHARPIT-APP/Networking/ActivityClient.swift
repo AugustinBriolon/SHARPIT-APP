@@ -16,6 +16,7 @@ enum ActivityClientError: Error, Equatable, LocalizedError {
 
 protocol ActivityServing: Sendable {
     func activities(token: String) async throws -> [V1ActivityListItem]
+    func activities(forceRefresh: Bool, token: String) async throws -> [V1ActivityListItem]
     func activity(id: String, token: String) async throws -> V1ActivityDetail
     func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload
     func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail
@@ -26,6 +27,9 @@ protocol ActivityServing: Sendable {
 }
 
 extension ActivityServing {
+    func activities(forceRefresh: Bool, token: String) async throws -> [V1ActivityListItem] {
+        try await activities(token: token)
+    }
     /// Most conformers hold no cache, so the default is to have nothing to forget.
     func invalidateActivities() async {}
 }
@@ -43,12 +47,16 @@ actor ActivityClient: ActivityServing {
     }
 
     func activities(token: String) async throws -> [V1ActivityListItem] {
-        if let activitiesCache {
+        try await activities(forceRefresh: false, token: token)
+    }
+
+    func activities(forceRefresh: Bool, token: String) async throws -> [V1ActivityListItem] {
+        if !forceRefresh, let activitiesCache {
             return activitiesCache
         }
         let activities: [V1ActivityListItem] = try await request(
             path: "/api/activities",
-            queryItems: [URLQueryItem(name: "limit", value: "30")],
+            queryItems: [],
             token: token
         )
         activitiesCache = activities
@@ -133,6 +141,7 @@ actor ActivityClient: ActivityServing {
 
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         request.httpBody = body
         request.setValue("Bear" + "er " + token, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")

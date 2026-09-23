@@ -11,6 +11,10 @@ struct InkVerdictPlate: View {
     var revealed: Bool = true
     var placeholder: Bool = false
 
+    /// Drives the 2-beat status dot pulse that fires once the plate is fully revealed.
+    @State private var dotPulse = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var statusTone: PackTierTone { PackTierTone.statusDot(for: plate.statusLabel) }
     private var barsTone: PackTierTone { PackTierTone.bars(for: plate.packTier) }
     private var filledBars: Int { ConfidenceBars.filled(fromPct: plate.confidencePct) }
@@ -45,11 +49,32 @@ struct InkVerdictPlate: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.ink)
+        // Spring scale-up reveal: plate arrives with physical weight.
         .opacity(revealed ? 1 : 0)
-        .offset(y: revealed ? 0 : 12)
+        .scaleEffect(revealed ? 1 : 0.94, anchor: .top)
+        .offset(y: revealed ? 0 : 10)
+        .animation(
+            reduceMotion ? .easeOut(duration: 0.01)
+                : .spring(response: 0.38, dampingFraction: 0.78),
+            value: revealed
+        )
         .redacted(reason: placeholder ? .placeholder : [])
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+        .onChange(of: revealed) { _, isRevealed in
+            guard isRevealed, !reduceMotion else { return }
+            // Fire dot pulse after the plate spring settles (~400 ms).
+            Task {
+                try? await Task.sleep(for: .milliseconds(400))
+                withAnimation(.easeInOut(duration: 0.22)) { dotPulse = true }
+                try? await Task.sleep(for: .milliseconds(300))
+                withAnimation(.easeInOut(duration: 0.22)) { dotPulse = false }
+                try? await Task.sleep(for: .milliseconds(260))
+                withAnimation(.easeInOut(duration: 0.22)) { dotPulse = true }
+                try? await Task.sleep(for: .milliseconds(300))
+                withAnimation(.easeInOut(duration: 0.22)) { dotPulse = false }
+            }
+        }
     }
 
     /// The plate reads the estimation gaps aloud even though it no longer prints them:
@@ -80,6 +105,8 @@ struct InkVerdictPlate: View {
                 Circle()
                     .fill(dotColor)
                     .frame(width: 8, height: 8)
+                    // 2-beat pulse fires once the plate spring settles.
+                    .scaleEffect(dotPulse ? 1.35 : 1.0)
                 Text(plate.statusLabel)
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)

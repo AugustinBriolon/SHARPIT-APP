@@ -22,6 +22,7 @@ struct RestDayPlate: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panel)
+        .sharpitCardSpecularBorder()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Repos. Le Twin valide la récupération — pas de séance prévue.")
     }

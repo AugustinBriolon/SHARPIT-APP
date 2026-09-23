@@ -21,24 +21,6 @@ private func sample(
     HealthSleepSample(start: start, end: end, stage: stage, source: source)
 }
 
-// MARK: - Coverage
-
-@Test func coverageGradesEachSignalAndNamesGarmin() {
-    let rows = HealthCoverage.rows(
-        readings: [
-            .sleep: HealthSignalReading(sources: ["Connect"], days: Set((1...14).map { "d\($0)" })),
-            .restingHeartRate: HealthSignalReading(sources: ["Connect"], days: ["d1", "d2"]),
-        ],
-        windowDays: 14
-    )
-    let byId = Dictionary(uniqueKeysWithValues: rows.map { ($0.signal, $0) })
-    #expect(byId[.sleep]?.verdict == .covered)
-    #expect(byId[.sleep]?.fromGarmin == true)
-    #expect(byId[.restingHeartRate]?.verdict == .partial)
-    #expect(byId[.heartRateVariability]?.verdict == .missing)
-    #expect(byId[.bodyBattery]?.verdict == .noEquivalent)
-}
-
 // MARK: - Nights
 
 @Test func aNightIsBuiltFromItsStagesAndDatedOnWaking() throws {
@@ -109,7 +91,6 @@ private final class StubReader: HealthReading, @unchecked Sendable {
 
     var isAvailable: Bool { available }
     func requestAuthorization() async throws { if let authorizationError { throw authorizationError } }
-    func reading(for signal: HealthSignal, since: Date) async -> HealthSignalReading { .empty }
     func dailySummaries(since: Date) async -> [HealthDailySummary] { days }
 }
 
@@ -169,13 +150,4 @@ private func source(_ reader: StubReader, _ recorder: UploadRecorder) -> AppleHe
     let apple = source(StubReader(), recorder)
     await apple.enable(token: { "t" })
     #expect(apple.state == .idle)
-}
-
-@MainActor
-@Test func theDiagnosticSaysWhenHealthIsUnavailable() async {
-    let reader = StubReader()
-    reader.available = false
-    let store = HealthCoverageStore(reader: reader)
-    await store.run()
-    #expect(store.phase == .unavailable)
 }

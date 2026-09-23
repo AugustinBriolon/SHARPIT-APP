@@ -86,4 +86,24 @@ extension View {
     func sharpitSurface(_ style: SharpitSurfaceStyle) -> some View {
         modifier(SharpitSurfaceModifier(style: style))
     }
+
+    /// Applies the signature high-precision specular top-edge light highlight on panel cards.
+    func sharpitCardSpecularBorder(radius: CGFloat = SharpitRadius.panel) -> some View {
+        overlay(
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.35),
+                            Color.white.opacity(0.06),
+                            Color.black.opacity(0.05)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 0.75
+                )
+        )
+    }
 }
+

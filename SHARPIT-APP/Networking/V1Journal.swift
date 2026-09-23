@@ -41,6 +41,13 @@ nonisolated struct V1DayJournalEntry: Equatable, Sendable {
     func state(of factorId: String) -> JournalFactorState {
         factors[factorId] ?? .unset
     }
+
+    var hasAnyAnswer: Bool {
+        factors.values.contains { $0 != .unset } ||
+        moodLabel != nil ||
+        (hydrationMl ?? 0) > 0 ||
+        (caffeineMg ?? 0) > 0
+    }
 }
 
 nonisolated extension V1DayJournalEntry: Codable {

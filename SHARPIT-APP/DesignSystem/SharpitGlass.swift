@@ -15,6 +15,16 @@ extension View {
             background(.ultraThinMaterial, in: Capsule())
         }
     }
+
+    /// A circular toolbar-level control in liquid glass.
+    @ViewBuilder
+    func sharpitGlassCircle() -> some View {
+        if #available(iOS 26.0, *) {
+            glassEffect(.regular, in: .circle)
+        } else {
+            background(.ultraThinMaterial, in: Circle())
+        }
+    }
 }
 
 struct ScrollUnderGlass: ViewModifier {

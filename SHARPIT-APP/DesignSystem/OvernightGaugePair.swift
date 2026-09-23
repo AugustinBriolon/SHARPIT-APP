@@ -2,65 +2,106 @@ import SwiftUI
 
 struct OvernightGaugePair: View {
     let gauges: [OvernightGaugeModel]
+    var sleepOverrideCaption: String? = nil
     var pulseScores: Bool = false
+    var animated: Bool = true
     /// When set, each gauge opens the screen behind it.
     var onSelect: ((V1TodaySignalKey) -> Void)?
 
     var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.xs) {
+        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
             ForEach(gauges) { gauge in
+                let override = (gauge.key == .sleep) ? sleepOverrideCaption : nil
                 if let onSelect {
                     Button { onSelect(gauge.key) } label: {
-                        OvernightGaugeCell(gauge: gauge, pulse: pulseScores, opensDetail: true)
+                        OvernightGaugeCell(
+                            gauge: gauge,
+                            overrideCaption: override,
+                            pulse: pulseScores,
+                            opensDetail: true,
+                            animated: animated
+                        )
                     }
                     .buttonStyle(.sharpitPressable)
                     .accessibilityAddTraits(.isButton)
+                    .frame(maxWidth: .infinity)
                 } else {
-                    OvernightGaugeCell(gauge: gauge, pulse: pulseScores)
+                    OvernightGaugeCell(
+                        gauge: gauge,
+                        overrideCaption: override,
+                        pulse: pulseScores,
+                        animated: animated
+                    )
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
     }
 }
 
-/// One overnight readout, composed as the web composes it: the instrument's name on top,
-/// the dial centred under it at a capped width, the baseline note at the foot.
-///
-/// The name used to sit *under* the dial, and the dial filled the card's full width. Both
-/// were wrong, and no amount of spacing rescued them — a title below its instrument reads
-/// as a caption for whatever follows, and an edge-to-edge dial has no air to give.
+/// One overnight readout, composed with Apple-grade hierarchy and Golden Ratio spatial balance:
+/// - Header: tinted micro-badge icon + uppercase category label + subtle disclosure chevron
+/// - Center: preserved 52-tick gauge arc with nested tabular score and refined sub-label
+/// - Footer: structured telemetry capsule highlighting key metrics (e.g. sleep duration, HRV)
 private struct OvernightGaugeCell: View {
     let gauge: OvernightGaugeModel
+    var overrideCaption: String? = nil
     var pulse: Bool = false
     var opensDetail = false
+    var animated: Bool = true
 
     @State private var displayedScore: CGFloat?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// The web caps the dial and centres it (`max-w-36` → `max-w-52`) rather than letting
-    /// it fill the card. That cap is what gives the instrument its margin.
-    private let dialMaxWidth: CGFloat = 150
+    init(
+        gauge: OvernightGaugeModel,
+        overrideCaption: String? = nil,
+        pulse: Bool = false,
+        opensDetail: Bool = false,
+        animated: Bool = true
+    ) {
+        self.gauge = gauge
+        self.overrideCaption = overrideCaption
+        self.pulse = pulse
+        self.opensDetail = opensDetail
+        self.animated = animated
+        let target = AnimatedScoreText.progressFraction(from: gauge.score).map { CGFloat($0 * 100) }
+        _displayedScore = State(initialValue: animated ? nil : target)
+    }
+
+    /// Dial maximum width to give proper margin within the card.
+    private let dialMaxWidth: CGFloat = 146
 
     private var targetScore: CGFloat? {
         AnimatedScoreText.progressFraction(from: gauge.score).map { CGFloat($0 * 100) }
     }
 
+    private var displayCaption: String? {
+        guard var text = (overrideCaption ?? gauge.caption) else { return nil }
+        if gauge.key == .recovery {
+            text = text.replacingOccurrences(of: "VFC", with: "Système nerveux")
+            text = text.replacingOccurrences(of: "vfc", with: "Système nerveux")
+        }
+        return text
+    }
+
     var body: some View {
-        VStack(spacing: SharpitSpacing.md) {
+        VStack(spacing: 0) {
             header
+
+            Spacer(minLength: SharpitSpacing.sm)
+
             dial
-            if let caption = gauge.caption {
-                Text(caption)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
+
+            Spacer(minLength: SharpitSpacing.sm)
+
+            footCaption
         }
         .frame(maxWidth: .infinity)
-        .padding(SharpitSpacing.cardPadding)
+        .padding(.horizontal, SharpitSpacing.sm + 2)
+        .padding(.vertical, SharpitSpacing.sm + 2)
         .sharpitSurface(.panel)
+        .sharpitCardSpecularBorder()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .onAppear { reveal(to: targetScore) }
@@ -68,25 +109,45 @@ private struct OvernightGaugeCell: View {
     }
 
     private var header: some View {
-        HStack(spacing: SharpitSpacing.xxs + 2) {
-            Image(systemName: gauge.key.instrumentSymbol)
-                .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.primary)
+        HStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(tintColor.opacity(0.12))
+                    .frame(width: 22, height: 22)
+                Image(systemName: gauge.key.instrumentSymbol)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(tintColor)
+            }
+
             Text(title)
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.foreground.opacity(0.85))
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 2)
+
             if opensDetail {
                 Image(systemName: "chevron.right")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
                     .accessibilityHidden(true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var tintColor: Color {
+        switch gauge.key {
+        case .sleep:
+            SharpitColor.primary
+        case .recovery:
+            SharpitColor.signalRecovery
+        case .effort, .adaptation:
+            SharpitColor.primary
+        }
     }
 
     private var dial: some View {
@@ -107,12 +168,11 @@ private struct OvernightGaugeCell: View {
         .aspectRatio(SharpitTickGaugeGeometry.aspectRatio, contentMode: .fit)
     }
 
-    /// Approximate height of the score block, used to hang it from its top edge the way
-    /// the web's absolutely positioned readout hangs from `top-[44%]`.
+    /// Approximate height of the score block, used to hang it from its top edge.
     private var readoutHeight: CGFloat { 50 }
 
     private var readout: some View {
-        VStack(spacing: SharpitSpacing.xxs) {
+        VStack(spacing: 1) {
             Text(scoreDisplay)
                 .font(SharpitTypography.gaugeScore)
                 .tracking(SharpitTypography.gaugeScoreTracking)
@@ -120,9 +180,56 @@ private struct OvernightGaugeCell: View {
                 .opacity(displayedScore == nil ? 0.45 : (pulse ? 0.55 : 1))
                 .contentTransition(reduceMotion ? .identity : .numericText())
             Text("sur 100")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.85))
         }
+    }
+
+    private var footCaption: some View {
+        Group {
+            if let caption = displayCaption, !caption.isEmpty {
+                HStack(spacing: 3) {
+                    if let bulletRange = caption.range(of: "·") {
+                        let prefix = String(caption[..<bulletRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+                        let suffix = String(caption[bulletRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+
+                        Text(prefix)
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .lineLimit(1)
+
+                        Text("·")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
+
+                        Text(suffix)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .lineLimit(1)
+                    } else {
+                        Text(caption)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(SharpitColor.secondary.opacity(0.55))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .strokeBorder(SharpitColor.border.opacity(0.06), lineWidth: 0.5)
+                        )
+                )
+            } else {
+                Color.clear
+                    .frame(height: 24)
+            }
+        }
+        .frame(height: 24)
     }
 
     private var scoreDisplay: String {
@@ -131,7 +238,7 @@ private struct OvernightGaugeCell: View {
     }
 
     private func reveal(to value: CGFloat?) {
-        guard !SharpitMotion.reduceMotion, !reduceMotion else {
+        guard animated, !SharpitMotion.reduceMotion, !reduceMotion else {
             displayedScore = value
             return
         }
@@ -141,7 +248,7 @@ private struct OvernightGaugeCell: View {
     }
 
     private var accessibilityLabel: String {
-        [title, "\(gauge.score) sur 100", gauge.caption]
+        [title, "\(gauge.score) sur 100", displayCaption]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
@@ -154,4 +261,19 @@ private struct OvernightGaugeCell: View {
         case .effort, .adaptation: gauge.key.instrumentLabel
         }
     }
+}
+
+#Preview("Overnight Gauge Pair") {
+    VStack(spacing: 20) {
+        OvernightGaugePair(
+            gauges: [
+                OvernightGaugeModel(key: .sleep, score: "79", caption: "Nuit dernière · 6h 54m"),
+                OvernightGaugeModel(key: .recovery, score: "20", caption: "Frein · VFC"),
+            ],
+            sleepOverrideCaption: "Manque · 1 h 06",
+            onSelect: { _ in }
+        )
+    }
+    .padding()
+    .background(SharpitColor.background)
 }

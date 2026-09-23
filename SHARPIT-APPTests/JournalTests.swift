@@ -351,6 +351,22 @@ private actor StubJournalClient: JournalServing {
     #expect(store.dayTrackables.map(\.id) == ["sauna"])
 }
 
+@MainActor
+@Test func dayTrackablesAreSortedByCategory() async throws {
+    let client = StubJournalClient(
+        prefs: try prefs("""
+        { "version": 2,
+          "enabled": { "sauna": true, "headache": true, "creatine": true, "alcohol": true } }
+        """)
+    )
+    let store = JournalStore(client: client, tokenProvider: { "token" })
+
+    await store.load()
+
+    // .sante (headache) -> .nutrition (alcohol) -> .complement (creatine) -> .bienEtre (sauna)
+    #expect(store.dayTrackables.map(\.id) == ["headache", "alcohol", "creatine", "sauna"])
+}
+
 /// Caféine, Humeur and Hydratation are values with their own section, so neither list of
 /// yes / no answers may carry them.
 @MainActor
@@ -728,3 +744,68 @@ private struct FailingJournalClient: JournalServing {
 
     #expect(store.checklist.isEmpty)
 }
+
+// MARK: - Date Selection & New Metrics
+
+@MainActor
+@Test func setCaffeineAndSetHydrationStoreExactValues() async {
+    let store = JournalStore(
+        client: StubJournalClient(),
+        tokenProvider: { "token" },
+        trainingDayId: "2026-09-20",
+        saveDelay: .seconds(60)
+    )
+    await store.load()
+
+    store.setCaffeine(160)
+    store.setHydration(1250)
+
+    #expect(store.entry.caffeineMg == 160)
+    #expect(store.entry.hydrationMl == 1250)
+
+    store.setCaffeine(-10)
+    #expect(store.entry.caffeineMg == 0)
+}
+
+@Test func entryHasAnyAnswerReturnsTrueWhenAnyDataPresent() {
+    var entry = V1DayJournalEntry(trainingDayId: "2026-09-20")
+    #expect(!entry.hasAnyAnswer)
+
+    entry.factors["alcohol"] = .yes
+    #expect(entry.hasAnyAnswer)
+
+    entry.factors.removeAll()
+    #expect(!entry.hasAnyAnswer)
+
+    entry.moodLabel = "Bien"
+    #expect(entry.hasAnyAnswer)
+
+    entry.moodLabel = nil
+    entry.caffeineMg = 80
+    #expect(entry.hasAnyAnswer)
+
+    entry.caffeineMg = 0
+    entry.hydrationMl = 500
+    #expect(entry.hasAnyAnswer)
+}
+
+@MainActor
+@Test func selectDateChangesSelectedDateAndFlushesPending() async {
+    let client = StubJournalClient()
+    let store = JournalStore(
+        client: client,
+        tokenProvider: { "token" },
+        trainingDayId: "2026-09-20",
+        saveDelay: .seconds(60)
+    )
+    await store.load()
+
+    store.set(factorId: "alcohol", to: .yes)
+
+    let newDate = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+    await store.selectDate(newDate)
+
+    #expect(Calendar.current.isDate(store.selectedDate, inSameDayAs: newDate))
+    #expect(await client.saveCount() == 1)
+}
+

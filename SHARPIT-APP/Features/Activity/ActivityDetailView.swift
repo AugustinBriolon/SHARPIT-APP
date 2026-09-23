@@ -15,6 +15,9 @@ struct ActivityDetailView: View {
     @State private var isEnriching = false
     @State private var showingCompliance = false
     @State private var subjectiveStore: ActivitySubjectiveStore?
+    @State private var isMapExpanded = false
+    @State private var mapCameraPosition: MapCameraPosition = .automatic
+    @State private var mapStyleSelection: MapStyleOption = .standard
     @Environment(\.dismiss) private var dismiss
 
     init(
@@ -47,9 +50,21 @@ struct ActivityDetailView: View {
                     ZStack(alignment: .top) {
                         Group {
                             if let stream = detail.stream, stream.available, !stream.route.isEmpty {
-                                ActivityRouteHero(route: stream.route, tone: activityTone(detail.type))
+                                ActivityRouteHero(
+                                    route: stream.route,
+                                    tone: activityTone(detail.type),
+                                    isExpanded: isMapExpanded,
+                                    position: $mapCameraPosition,
+                                    mapStyle: mapStyleSelection.mapStyle
+                                )
                             } else if !route.isEmpty {
-                                ActivityRouteHero(route: route, tone: activityTone(detail.type))
+                                ActivityRouteHero(
+                                    route: route,
+                                    tone: activityTone(detail.type),
+                                    isExpanded: isMapExpanded,
+                                    position: $mapCameraPosition,
+                                    mapStyle: mapStyleSelection.mapStyle
+                                )
                             } else {
                                 ActivityRouteLoadingSurface()
                             }
@@ -60,6 +75,14 @@ struct ActivityDetailView: View {
                             VStack(spacing: 0) {
                                 Color.clear
                                     .frame(height: proxy.size.height * 0.62)
+                                    .contentShape(Rectangle())
+                                    .allowsHitTesting(!isMapExpanded)
+                                    .onTapGesture {
+                                        guard !route.isEmpty else { return }
+                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                            isMapExpanded = true
+                                        }
+                                    }
 
                                 ActivityDetailContent(
                                     detail: detail,
@@ -70,14 +93,24 @@ struct ActivityDetailView: View {
                                     splits: activitySplits(for: detail),
                                     onShowCompliance: { showingCompliance = true },
                                     onShowSubjective: { openSubjective(for: detail) },
-                                    clearsBackButton: false
+                                    clearsBackButton: false,
+                                    isMapExpanded: isMapExpanded,
+                                    onExpandToggle: {
+                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                            isMapExpanded.toggle()
+                                        }
+                                    }
                                 )
                                 .frame(width: proxy.size.width, alignment: .leading)
                             }
                             .frame(width: proxy.size.width, alignment: .leading)
                         }
-                        .scrollIndicators(.hidden)
+                        .scrollIndicators(isMapExpanded ? .hidden : .visible)
                         .scrollBounceBehavior(.basedOnSize)
+                        .offset(y: isMapExpanded ? proxy.size.height : 0)
+                        .opacity(isMapExpanded ? 0 : 1)
+                        .allowsHitTesting(!isMapExpanded)
+                        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: isMapExpanded)
                     }
                     .ignoresSafeArea()
                 } else {
@@ -91,7 +124,9 @@ struct ActivityDetailView: View {
                             splits: activitySplits(for: detail),
                             onShowCompliance: { showingCompliance = true },
                             onShowSubjective: { openSubjective(for: detail) },
-                            clearsBackButton: true
+                            clearsBackButton: true,
+                            isMapExpanded: false,
+                            onExpandToggle: {}
                         )
                         .frame(width: proxy.size.width, alignment: .leading)
                     }
@@ -116,38 +151,133 @@ struct ActivityDetailView: View {
         .background(SharpitCanvasBackground())
         .modifier(ScrollUnderGlass())
         .toolbar(.hidden, for: .navigationBar)
+        .enableInteractivePopGesture()
         .overlay(alignment: .topLeading) {
             Button {
-                dismiss()
+                if isMapExpanded {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                        isMapExpanded = false
+                    }
+                } else {
+                    dismiss()
+                }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(SharpitColor.foreground)
                     .frame(width: 48, height: 48)
                     .background(.ultraThinMaterial, in: Circle())
-            }
-            .sheet(isPresented: $showingCompliance) {
-                if case .loaded(let detail) = phase, let analysis = detail.plannedSession?.analysis {
-                    ComplianceDetailSheet(
-                        title: detail.plannedSession?.title ?? "Séance planifiée",
-                        analysis: analysis
-                    )
-                    .presentationDetents([.medium, .large])
-                    .sharpitSheet()
-                    .presentationDragIndicator(.visible)
-                }
-            }
-            .sheet(item: $subjectiveStore) { store in
-                SubjectiveEditorSheet(store: store)
-                    .presentationDetents([.fraction(0.72), .large])
-                    .sharpitSheet()
-                    .presentationDragIndicator(.visible)
+                    .sharpitShadow(.control)
             }
             .buttonStyle(.plain)
             .padding(.leading, 16)
             .padding(.top, 12)
-            .accessibilityLabel("Retour")
+            .accessibilityLabel(isMapExpanded ? "Réduire la carte" : "Retour")
         }
+        .overlay(alignment: .topTrailing) {
+            if case .loaded(let detail) = phase {
+                let route = detail.stream?.route.isEmpty == false
+                    ? detail.stream?.route ?? []
+                    : streamPayload?.route ?? []
+                if !route.isEmpty {
+                    HStack(spacing: 8) {
+                        if isMapExpanded {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.35)) {
+                                    mapCameraPosition = .region(computeRouteRegion(for: route))
+                                }
+                            } label: {
+                                Image(systemName: "location.viewfinder")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundStyle(SharpitColor.foreground)
+                                    .frame(width: 44, height: 44)
+                                    .background(.ultraThinMaterial, in: Circle())
+                                    .sharpitShadow(.control)
+                            }
+                            .accessibilityLabel("Recentrer la carte")
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity),
+                                removal: .scale.combined(with: .opacity)
+                            ))
 
+                            Menu {
+                                Picker("Style de carte", selection: $mapStyleSelection) {
+                                    ForEach(MapStyleOption.allCases) { option in
+                                        Text(option.rawValue).tag(option)
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "square.2.layers.3d")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(SharpitColor.foreground)
+                                    .frame(width: 44, height: 44)
+                                    .background(.ultraThinMaterial, in: Circle())
+                                    .sharpitShadow(.control)
+                            }
+                            .accessibilityLabel("Style de carte")
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity),
+                                removal: .scale.combined(with: .opacity)
+                            ))
+                        }
+
+                        Button {
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                isMapExpanded.toggle()
+                            }
+                        } label: {
+                            Image(systemName: isMapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(SharpitColor.foreground)
+                                .frame(width: 48, height: 48)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .sharpitShadow(.control)
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                        .accessibilityLabel(isMapExpanded ? "Réduire la carte" : "Agrandir la carte")
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 16)
+                    .padding(.top, 12)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isMapExpanded)
+                }
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if isMapExpanded, case .loaded(let detail) = phase {
+                CollapsedActivityBottomBar(
+                    detail: detail,
+                    tone: activityTone(detail.type),
+                    onExpand: {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                            isMapExpanded = false
+                        }
+                    }
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                    removal: .move(edge: .bottom).combined(with: .opacity)
+                ))
+                .zIndex(10)
+            }
+        }
+        .sheet(isPresented: $showingCompliance) {
+            if case .loaded(let detail) = phase, let analysis = detail.plannedSession?.analysis {
+                ComplianceDetailSheet(
+                    title: detail.plannedSession?.title ?? "Séance planifiée",
+                    analysis: analysis
+                )
+                .presentationDetents([.medium, .large])
+                .sharpitSheet()
+                .presentationDragIndicator(.visible)
+            }
+        }
+        .sheet(item: $subjectiveStore) { store in
+            SubjectiveEditorSheet(store: store)
+                .presentationDetents([.fraction(0.72), .large])
+                .sharpitSheet()
+                .presentationDragIndicator(.visible)
+        }
         .task {
             await load()
         }
@@ -176,6 +306,10 @@ struct ActivityDetailView: View {
             totalDuration: detail.duration,
             segmentDistance: detail.type == .bike ? 5_000 : 1_000
         )
+    }
+
+    private func effectiveDistance(for detail: V1ActivityDetail) -> Double? {
+        detail.distanceM ?? streamPayload?.stats?.totalDistance
     }
 
     @MainActor
@@ -246,10 +380,36 @@ private struct ActivityDetailContent: View {
     /// Without a map the panel starts at the top of the screen, under the floating back
     /// button, and has to leave room for it. Below a map it does not.
     let clearsBackButton: Bool
+    var isMapExpanded: Bool = false
+    var onExpandToggle: () -> Void = {}
     @State private var selectedChartMetrics: [ActivityChartMetric] = [.heartRate]
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            if !clearsBackButton {
+                HStack {
+                    Spacer()
+                    Capsule()
+                        .fill(SharpitColor.mutedForeground.opacity(0.35))
+                        .frame(width: 38, height: 5)
+                    Spacer()
+                }
+                .padding(.top, -6)
+                .padding(.bottom, -6)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onExpandToggle()
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 15)
+                        .onEnded { value in
+                            if value.translation.height > 20 {
+                                onExpandToggle()
+                            }
+                        }
+                )
+            }
+
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 HStack {
                     Label(detail.type.label, systemImage: detail.type.symbolName)
@@ -288,6 +448,12 @@ private struct ActivityDetailContent: View {
                     }
                 }
                 .padding(.top, SharpitSpacing.xxs)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if isMapExpanded {
+                    onExpandToggle()
+                }
             }
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 12)
@@ -350,11 +516,17 @@ private struct ActivityDetailContent: View {
         .padding(.bottom, SharpitSpacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(SharpitElevatedColor.sheet)
-                .sharpitShadow(.panel)
+            Group {
+                if clearsBackButton {
+                    Color.clear
+                } else {
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(SharpitElevatedColor.sheet)
+                        .sharpitShadow(.panel)
+                }
+            }
         )
-        .environment(\.sharpitElevation, .sheet)
+        .environment(\.sharpitElevation, clearsBackButton ? .base : .sheet)
         .foregroundStyle(SharpitColor.foreground)
     }
 
@@ -415,6 +587,8 @@ private struct ActivityDetailContent: View {
                 )
                 if let analysis = detail.plannedSession?.analysis {
                     ComplianceTile(analysis: analysis, action: onShowCompliance)
+                } else if detail.plannedSession != nil {
+                    CompliancePendingTile()
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -430,12 +604,6 @@ private struct ActivityDetailContent: View {
                     .font(SharpitTypography.sectionTitle)
                     .tracking(SharpitTypography.sectionTitleTracking)
                 Text(narrative.narrative).font(.body).lineSpacing(4)
-            } else if detail.plannedSession?.analysis != nil {
-                Label("Conformité déjà analysée", systemImage: "checkmark.seal")
-                    .font(.headline)
-                Text("Le comparatif détaillé avec ta séance planifiée est affiché juste au-dessus.")
-                    .font(.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
             } else {
                 Label("Ton retour est prêt à être généré", systemImage: "sparkles").font(.headline)
                 Text("SHARPIT peut croiser ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")
@@ -1059,44 +1227,52 @@ private struct SummarySignal: View {
     }
 }
 
+private func computeRouteRegion(for route: [V1ActivityCoordinate]) -> MKCoordinateRegion {
+    let coordinates = route.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+    let latitudes = coordinates.map(\.latitude)
+    let longitudes = coordinates.map(\.longitude)
+    guard
+        let minLatitude = latitudes.min(),
+        let maxLatitude = latitudes.max(),
+        let minLongitude = longitudes.min(),
+        let maxLongitude = longitudes.max()
+    else {
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 45.764, longitude: 4.835),
+            span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
+        )
+    }
+
+    return MKCoordinateRegion(
+        center: CLLocationCoordinate2D(
+            latitude: (minLatitude + maxLatitude) / 2,
+            longitude: (minLongitude + maxLongitude) / 2
+        ),
+        span: MKCoordinateSpan(
+            latitudeDelta: max(maxLatitude - minLatitude, 0.008) * 1.35,
+            longitudeDelta: max(maxLongitude - minLongitude, 0.008) * 1.35
+        )
+    )
+}
+
 private struct ActivityRouteHero: View {
     let route: [V1ActivityCoordinate]
     let tone: Color
+    var isExpanded: Bool = false
+    @Binding var position: MapCameraPosition
+    var mapStyle: MapStyle = .standard(elevation: .realistic)
 
     private var coordinates: [CLLocationCoordinate2D] {
         route.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
     }
 
     private var region: MKCoordinateRegion {
-        let latitudes = coordinates.map(\.latitude)
-        let longitudes = coordinates.map(\.longitude)
-        guard
-            let minLatitude = latitudes.min(),
-            let maxLatitude = latitudes.max(),
-            let minLongitude = longitudes.min(),
-            let maxLongitude = longitudes.max()
-        else {
-            return MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 45.764, longitude: 4.835),
-                span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-            )
-        }
-
-        return MKCoordinateRegion(
-            center: CLLocationCoordinate2D(
-                latitude: (minLatitude + maxLatitude) / 2,
-                longitude: (minLongitude + maxLongitude) / 2
-            ),
-            span: MKCoordinateSpan(
-                latitudeDelta: max(maxLatitude - minLatitude, 0.008) * 1.35,
-                longitudeDelta: max(maxLongitude - minLongitude, 0.008) * 1.35
-            )
-        )
+        computeRouteRegion(for: route)
     }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            Map(initialPosition: .region(region), interactionModes: []) {
+            Map(position: $position, interactionModes: isExpanded ? .all : []) {
                 MapPolyline(coordinates: coordinates)
                     .stroke(tone, lineWidth: 5)
                 if let start = coordinates.first {
@@ -1110,15 +1286,27 @@ private struct ActivityRouteHero: View {
                     }
                 }
             }
-            .mapStyle(.standard(elevation: .realistic))
+            .mapStyle(mapStyle)
+            .mapControls {
+                if isExpanded {
+                    MapScaleView()
+                    MapCompass()
+                    MapPitchToggle()
+                }
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .allowsHitTesting(false)
+            .allowsHitTesting(isExpanded)
 
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.container, edges: .horizontal)
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: isExpanded ? .contain : .ignore)
         .accessibilityLabel("Tracé GPS de l’activité, \(route.count) points")
+        .onAppear {
+            if !route.isEmpty {
+                position = .region(region)
+            }
+        }
     }
 }
 
@@ -1232,5 +1420,94 @@ private struct ActivityDetailLoadingSheet: View {
         )
         .environment(\.sharpitElevation, .sheet)
         .redacted(reason: .placeholder)
+    }
+}
+
+struct CollapsedActivityBottomBar: View {
+    let detail: V1ActivityDetail
+    let tone: Color
+    let onExpand: () -> Void
+
+    var subtitleText: String {
+        var parts: [String] = [detail.type.label]
+        if let dist = detail.distanceM, dist > 0 {
+            parts.append(dist >= 1000 ? String(format: "%.1f km", dist / 1000) : "\(Int(dist.rounded())) m")
+        }
+        if let elev = detail.elevationM, elev > 0 {
+            parts.append("\(Int(elev.rounded())) m D+")
+        }
+        if let dur = detail.duration, dur > 0 {
+            parts.append(ActivityFormat.duration(dur))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Capsule()
+                .fill(SharpitColor.mutedForeground.opacity(0.35))
+                .frame(width: 38, height: 5)
+                .padding(.top, 10)
+
+            HStack(spacing: 12) {
+                Image(systemName: detail.type.symbolName)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(tone)
+                    .frame(width: 38, height: 38)
+                    .background(tone.opacity(0.12), in: Circle())
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(detail.title ?? detail.type.label)
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1)
+
+                    Text(subtitleText)
+                        .font(.caption)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 4) {
+                    Text("Détails")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(SharpitColor.secondary.opacity(0.7), in: Capsule())
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+        }
+        .frame(maxWidth: .infinity)
+        .background(
+            SharpitElevatedColor.sheet
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 24, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 24, style: .continuous))
+                .sharpitShadow(.panel)
+                .ignoresSafeArea(edges: .bottom)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onExpand()
+        }
+        .gesture(
+            DragGesture(minimumDistance: 10)
+                .onEnded { value in
+                    if value.translation.height < -10 {
+                        onExpand()
+                    }
+                }
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Tiroir réduit. \(detail.title ?? detail.type.label). Appuyer pour afficher les détails.")
+        .accessibilityAction {
+            onExpand()
+        }
     }
 }

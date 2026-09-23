@@ -4,6 +4,7 @@ import SwiftUI
 struct JournalPrefsDrawer: View {
     @Bindable var store: JournalStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
 
     @State private var filter: JournalCategory?
     @State private var newCustomLabel = ""
@@ -21,6 +22,7 @@ struct JournalPrefsDrawer: View {
                                 JournalPrefsToggleRow(
                                     label: trackable.label,
                                     symbolName: trackable.symbolName,
+                                    iconColor: trackable.category.color,
                                     isOn: store.prefs.isEnabled(trackable.id),
                                     isBlocked: isBlocked(enabled: store.prefs.isEnabled(trackable.id))
                                 ) { enabled in
@@ -50,6 +52,16 @@ struct JournalPrefsDrawer: View {
         .presentationDetents([.large])
         .sharpitSheet()
         .presentationDragIndicator(.visible)
+        .onChange(of: store.saveFailure) { _, failure in
+            if let failure {
+                toastCenter?.show(
+                    failure,
+                    symbol: "exclamationmark.triangle.fill",
+                    tone: .error,
+                    autoDismissAfter: 3.5
+                )
+            }
+        }
     }
 
     private var categories: [JournalCategory] {
@@ -58,11 +70,6 @@ struct JournalPrefsDrawer: View {
 
     @ViewBuilder
     private var quotaLine: some View {
-        if let failure = store.saveFailure {
-            Text(failure)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.signalCaution)
-        }
         if !store.isPro {
             // The count covers items the app does not list — the web's automatic and
             // diet trackables — so it matches what the athlete sees on the web.
@@ -78,7 +85,7 @@ struct JournalPrefsDrawer: View {
 
     private var filterChips: some View {
         ScrollView(.horizontal) {
-            HStack(spacing: SharpitSpacing.xxs) {
+            HStack(spacing: SharpitSpacing.xs) {
                 JournalFilterChip(label: "Tous", isSelected: filter == nil) { filter = nil }
                 ForEach(JournalCategory.allCases) { category in
                     JournalFilterChip(label: category.label, isSelected: filter == category) {
@@ -119,6 +126,7 @@ struct JournalPrefsDrawer: View {
                 JournalPrefsToggleRow(
                     label: item.label,
                     symbolName: JournalCatalogue.customSymbolName,
+                    iconColor: SharpitColor.primary,
                     isOn: item.enabled,
                     isBlocked: isBlocked(enabled: item.enabled)
                 ) { enabled in
@@ -171,11 +179,20 @@ private struct JournalFilterChip: View {
     var body: some View {
         Button(action: onTap) {
             Text(label)
-                .font(SharpitTypography.meta)
+                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                .padding(.horizontal, SharpitSpacing.sm)
-                .padding(.vertical, SharpitSpacing.xs)
-                .sharpitSurface(isSelected ? .panelAlt : .chip)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background {
+                    Capsule()
+                        .fill(isSelected ? SharpitColor.primary.opacity(0.12) : SharpitColor.analysisGrid.opacity(0.5))
+                }
+                .overlay {
+                    if isSelected {
+                        Capsule()
+                            .strokeBorder(SharpitColor.primary.opacity(0.35), lineWidth: 1)
+                    }
+                }
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
@@ -185,6 +202,7 @@ private struct JournalFilterChip: View {
 private struct JournalPrefsToggleRow: View {
     let label: String
     let symbolName: String
+    var iconColor: Color = SharpitColor.mutedForeground
     let isOn: Bool
     let isBlocked: Bool
     let onChange: (Bool) -> Void
@@ -194,7 +212,7 @@ private struct JournalPrefsToggleRow: View {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: symbolName)
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(iconColor)
                     .frame(width: 24)
                     .accessibilityHidden(true)
                 Text(label)

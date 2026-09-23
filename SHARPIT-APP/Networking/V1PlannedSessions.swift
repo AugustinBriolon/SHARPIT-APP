@@ -9,13 +9,23 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     let intensity: String?
     let load: Double?
     let notes: String?
+    let goalId: String?
+    let completed: Bool?
+    let activityId: String?
+    let activity: V1PlannedSessionActivitySummary?
     /// What to actually do, with endurance targets already resolved against the athlete's
     /// thresholds. Server-side, so the app cannot promise a band a watch push would not
     /// send. Absent on payloads written before the field existed.
     let breakdown: V1PlannedSessionBreakdown?
+    /// Last Garmin Connect workout created from this session.
+    let garminWorkoutId: String?
+    let garminWorkoutScheduledDate: String?
+    let garminWorkoutPushedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id, date, title, type, durationMin, intensity, load, notes, breakdown
+        case goalId, completed, activityId, activity
+        case garminWorkoutId, garminWorkoutScheduledDate, garminWorkoutPushedAt
     }
 
     init(
@@ -27,7 +37,14 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         intensity: String? = nil,
         load: Double? = nil,
         notes: String? = nil,
-        breakdown: V1PlannedSessionBreakdown? = nil
+        goalId: String? = nil,
+        completed: Bool? = nil,
+        activityId: String? = nil,
+        activity: V1PlannedSessionActivitySummary? = nil,
+        breakdown: V1PlannedSessionBreakdown? = nil,
+        garminWorkoutId: String? = nil,
+        garminWorkoutScheduledDate: String? = nil,
+        garminWorkoutPushedAt: Date? = nil
     ) {
         self.id = id
         self.date = date
@@ -37,7 +54,14 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         self.intensity = intensity
         self.load = load
         self.notes = notes
+        self.goalId = goalId
+        self.completed = completed
+        self.activityId = activityId
+        self.activity = activity
         self.breakdown = breakdown
+        self.garminWorkoutId = garminWorkoutId
+        self.garminWorkoutScheduledDate = garminWorkoutScheduledDate
+        self.garminWorkoutPushedAt = garminWorkoutPushedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -50,9 +74,51 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         intensity = try container.decodeIfPresent(String.self, forKey: .intensity)
         load = try container.decodeIfPresent(Double.self, forKey: .load)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        goalId = try container.decodeIfPresent(String.self, forKey: .goalId)
+        completed = try container.decodeIfPresent(Bool.self, forKey: .completed)
+        activityId = try container.decodeIfPresent(String.self, forKey: .activityId)
+        activity = try container.decodeIfPresent(V1PlannedSessionActivitySummary.self, forKey: .activity)
         breakdown = try container.decodeIfPresent(
             V1PlannedSessionBreakdown.self,
             forKey: .breakdown
+        )
+        if let stringId = try? container.decodeIfPresent(String.self, forKey: .garminWorkoutId) {
+            garminWorkoutId = stringId
+        } else if let intId = try? container.decodeIfPresent(Int.self, forKey: .garminWorkoutId) {
+            garminWorkoutId = String(intId)
+        } else {
+            garminWorkoutId = nil
+        }
+        garminWorkoutScheduledDate = try container.decodeIfPresent(String.self, forKey: .garminWorkoutScheduledDate)
+        if let pushedString = try container.decodeIfPresent(String.self, forKey: .garminWorkoutPushedAt) {
+            garminWorkoutPushedAt = try? Date.fromPlannedAPI(pushedString)
+        } else {
+            garminWorkoutPushedAt = nil
+        }
+    }
+
+    func withGarminPush(
+        workoutId: String?,
+        scheduledDate: String?,
+        pushedAt: Date?
+    ) -> V1PlannedSessionItem {
+        V1PlannedSessionItem(
+            id: id,
+            date: date,
+            title: title,
+            type: type,
+            durationMin: durationMin,
+            intensity: intensity,
+            load: load,
+            notes: notes,
+            goalId: goalId,
+            completed: completed,
+            activityId: activityId,
+            activity: activity,
+            breakdown: breakdown,
+            garminWorkoutId: workoutId ?? garminWorkoutId,
+            garminWorkoutScheduledDate: scheduledDate ?? garminWorkoutScheduledDate,
+            garminWorkoutPushedAt: pushedAt ?? garminWorkoutPushedAt
         )
     }
 
@@ -157,5 +223,19 @@ nonisolated struct V1PlannedSessionStep: Decodable, Sendable, Hashable, Identifi
         target = try container.decodeIfPresent(String.self, forKey: .target)
         repeatCount = try container.decodeIfPresent(Int.self, forKey: .repeatCount) ?? 1
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
+    }
+}
+
+nonisolated struct V1PlannedSessionActivitySummary: Decodable, Sendable, Hashable, Identifiable {
+    let id: String
+    let duration: Double?
+    let load: Double?
+    let type: String?
+
+    init(id: String, duration: Double? = nil, load: Double? = nil, type: String? = nil) {
+        self.id = id
+        self.duration = duration
+        self.load = load
+        self.type = type
     }
 }

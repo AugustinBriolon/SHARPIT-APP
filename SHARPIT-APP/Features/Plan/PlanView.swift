@@ -4,24 +4,31 @@ import SwiftUI
 struct PlanView: View {
     let client: any PlannedSessionServing
     let linker: any PlannedSessionLinking
+    let watchPusher: any PlannedSessionWatchPushing
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
 
     @Environment(ShellRouter.self) private var router
     @Environment(\.isExpertReading) private var isExpertReading
     @Environment(\.openURL) private var openURL
+    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var store: PlanStore
     @State private var selectedSession: V1PlannedSessionItem?
     @State private var showingCalendar = false
+    @State private var showingMacroPlan = false
+    @State private var showingGenerator = false
+    @State private var showingAdapter = false
 
     init(
         client: any PlannedSessionServing,
         linker: any PlannedSessionLinking,
+        watchPusher: (any PlannedSessionWatchPushing)? = nil,
         activityClient: any ActivityServing,
         tokenProvider: @escaping () async throws -> String
     ) {
         self.client = client
         self.linker = linker
+        self.watchPusher = watchPusher ?? (client as? (any PlannedSessionWatchPushing)) ?? PlannedSessionClient()
         self.activityClient = activityClient
         self.tokenProvider = tokenProvider
         _store = State(
@@ -58,7 +65,9 @@ struct PlanView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     PlanActionsMenu(
-                        onOpenWeb: { path in openURL(APIConfiguration.baseURL.appending(path: path)) },
+                        onOpenMacroPlan: { showingMacroPlan = true },
+                        onOpenGenerator: { showingGenerator = true },
+                        onOpenAdapter: { showingAdapter = true },
                         onDiscussWithCoach: {
                             router.discussWithCoach(
                                 about: CoachDiscuss.describe(.planning(horizonDays: 7))
@@ -75,7 +84,23 @@ struct PlanView: View {
                         activities: activityClient,
                         linker: linker,
                         tokenProvider: tokenProvider,
-                        onLinked: { Task { await store.load() } }
+                        onLinked: {
+                            selectedSession = nil
+                            toastCenter?.show(
+                                "Séance liée avec succès",
+                                symbol: "link",
+                                tone: .success,
+                                autoDismissAfter: 3.0
+                            )
+                            Task { await store.reload(around: session.date) }
+                        }
+                    ),
+                    watchPush: SessionWatchPushContext(
+                        pusher: watchPusher,
+                        tokenProvider: tokenProvider,
+                        onPushed: { _ in
+                            Task { await store.reload(around: session.date) }
+                        }
                     )
                 ) { context in
                     router.discussWithCoach(about: context)
@@ -83,6 +108,21 @@ struct PlanView: View {
             }
             .sheet(isPresented: $showingCalendar) {
                 PlanCalendarSheet(store: store)
+            }
+            .sheet(isPresented: $showingMacroPlan) {
+                MacroPlanSheet(tokenProvider: tokenProvider) {
+                    Task { await store.loadAroundSelection() }
+                }
+            }
+            .sheet(isPresented: $showingGenerator) {
+                PlanGeneratorSheet(tokenProvider: tokenProvider) {
+                    Task { await store.loadAroundSelection() }
+                }
+            }
+            .sheet(isPresented: $showingAdapter) {
+                PlanAdapterSheet(tokenProvider: tokenProvider) {
+                    Task { await store.loadAroundSelection() }
+                }
             }
             .task { await store.loadAroundSelection() }
             // Every way of changing week — swipe, the strip's "Aujourd'hui", the calendar —
@@ -96,28 +136,23 @@ struct PlanView: View {
 
 /// The week's actions, gathered behind one control.
 ///
-/// The three planning actions are web surfaces the app does not have yet, so they open
-/// the web rather than pretending to exist here — the paths mirror the web's own routes.
-/// "Discuter avec le coach" stays native: it hands the week to the Coach tab as context.
+/// Native sheets for the three key planning operations (macro plan, fill week, adapt plan)
+/// and direct bridge to discussion with the Coach.
 private struct PlanActionsMenu: View {
-    let onOpenWeb: (String) -> Void
+    let onOpenMacroPlan: () -> Void
+    let onOpenGenerator: () -> Void
+    let onOpenAdapter: () -> Void
     let onDiscussWithCoach: () -> Void
 
     var body: some View {
         Menu {
-            Button {
-                onOpenWeb("/plan")
-            } label: {
+            Button(action: onOpenMacroPlan) {
                 Label("Consulter le plan macro", systemImage: "map")
             }
-            Button {
-                onOpenWeb("/plan/semaine")
-            } label: {
-                Label("Remplir ma semaine", systemImage: "square.and.pencil")
+            Button(action: onOpenGenerator) {
+                Label("Remplir ma semaine", systemImage: "calendar.badge.plus")
             }
-            Button {
-                onOpenWeb("/plan/adaptation")
-            } label: {
+            Button(action: onOpenAdapter) {
                 Label("Ajuster le planning", systemImage: "slider.horizontal.3")
             }
             Divider()
@@ -284,6 +319,12 @@ private struct PlanFocusSession: View {
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
                 Spacer()
+                if session.garminWorkoutId != nil {
+                    Image(systemName: "applewatch.side.right")
+                        .font(SharpitTypography.label)
+                        .foregroundStyle(SharpitColor.primary)
+                        .accessibilityLabel("Sur la montre Garmin")
+                }
                 Image(systemName: session.symbolName)
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(SharpitColor.primary)
@@ -443,6 +484,11 @@ private struct PlanExecutedCard: View {
                     if let duration = entry.activity.duration {
                         Text("\(Int((duration / 60).rounded())) min")
                     }
+                    if let plannedTitle = entry.plannedTitle {
+                        Text("·")
+                        Text("Prévu : \(plannedTitle)")
+                            .lineLimit(1)
+                    }
                 }
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
@@ -452,6 +498,17 @@ private struct PlanExecutedCard: View {
 
             if let score = entry.complianceScore {
                 PlanComplianceMark(score: score)
+            } else if entry.wasPlanned {
+                HStack(spacing: 3) {
+                    Image(systemName: "link")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text("Liée")
+                        .font(SharpitTypography.meta)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(SharpitColor.primary.opacity(0.12), in: Capsule())
+                .foregroundStyle(SharpitColor.primary)
             } else {
                 Image(systemName: "checkmark")
                     .font(SharpitTypography.label)
@@ -524,6 +581,12 @@ private struct PlanSessionCard: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
             }
             Spacer(minLength: 0)
+            if session.garminWorkoutId != nil {
+                Image(systemName: "applewatch.side.right")
+                    .font(SharpitTypography.label)
+                    .foregroundStyle(SharpitColor.primary)
+                    .accessibilityLabel("Sur la montre Garmin")
+            }
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.label)
                 .foregroundStyle(SharpitColor.mutedForeground)

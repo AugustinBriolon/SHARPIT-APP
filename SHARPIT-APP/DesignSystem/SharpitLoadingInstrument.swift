@@ -3,13 +3,10 @@ import SwiftUI
 struct SharpitLoadingInstrument: View {
     var body: some View {
         ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 Group {
                     InkVerdictPlate(plate: .placeholder, placeholder: true)
-                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                        SharpitEyebrow("Séance")
-                        SessionPlate(session: .placeholder, showPriorityTag: false)
-                    }
+                    SessionPlate(session: .placeholder, showPriorityTag: false)
                 }
                 .redacted(reason: .placeholder)
 

@@ -32,7 +32,7 @@ enum SharpitPersistence {
     /// An in-memory store skips CloudKit entirely: a test must not reach the network, and a
     /// preview has no account.
     static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
-        let schema = Schema([TodayDaySnapshot.self, JournalDaySnapshot.self])
+        let schema = Schema([TodayDaySnapshot.self, JournalDaySnapshot.self, CachedResponse.self])
         let configuration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: inMemory,

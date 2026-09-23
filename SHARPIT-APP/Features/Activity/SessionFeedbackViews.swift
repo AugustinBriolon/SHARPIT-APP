@@ -123,6 +123,50 @@ struct ComplianceTile: View {
     }
 }
 
+/// A matching tile shown when a planned session is linked to the activity, but the compliance
+/// analysis calculation has not finished yet.
+struct CompliancePendingTile: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            HStack(spacing: SharpitSpacing.xxs) {
+                Text("Conformité")
+                    .font(SharpitTypography.label)
+                    .tracking(SharpitTypography.labelTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Image(systemName: "hourglass")
+                    .font(SharpitTypography.label)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .symbolEffect(.pulse)
+                    .accessibilityHidden(true)
+            }
+            HStack(alignment: .center, spacing: SharpitSpacing.xs) {
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .tint(SharpitColor.mutedForeground)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Calcul en cours…")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1)
+                    Text("Séance planifiée")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        }
+        .padding(SharpitSpacing.md)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .sharpitSurface(.panel)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Conformité : Calcul en cours")
+    }
+}
+
 // MARK: - Effort and feeling drawer
 
 /// Two scales, no buttons: each tap saves. Closing the drawer writes anything still pending.

@@ -17,6 +17,11 @@ final class TodayStore {
     var phase: Phase = .loading
     var pulseScores = false
     var sessionDoneCelebrations: Set<String> = []
+    var hasCompletedArrival = false
+
+    func markArrivalCompleted() {
+        hasCompletedArrival = true
+    }
 
     private let client: any TodayServing
     private let tokenProvider: (() async throws -> String)?

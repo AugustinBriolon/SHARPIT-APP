@@ -25,16 +25,18 @@ final class JournalStore {
     /// Set when a write did not land. The answer stays on screen either way — losing
     /// what the athlete just tapped would be worse than showing it unsaved.
     private(set) var saveFailure: String?
+    private(set) var selectedDate: Date
+    private(set) var completedDayIds: Set<String> = []
 
     private let client: any JournalServing
     private let tokenProvider: () async throws -> String
     private let saveDelay: Duration
     /// Optional so a preview or a test can run without a store, as `TodayStore` does.
     private let modelContext: ModelContext?
-    private var pendingSave: Task<Void, Never>?
+    @ObservationIgnored private var pendingSave: Task<Void, Never>?
     /// Bumped on every local edit, so a save can tell whether the athlete tapped again
     /// while its request was in flight.
-    private var localRevision = 0
+    @ObservationIgnored private var localRevision = 0
 
     init(
         client: any JournalServing,
@@ -47,7 +49,9 @@ final class JournalStore {
         self.tokenProvider = tokenProvider
         self.saveDelay = saveDelay
         self.modelContext = modelContext
+        self.selectedDate = TrainingDayId.date(trainingDayId) ?? .now
         entry = V1DayJournalEntry(trainingDayId: trainingDayId)
+        loadCompletedDayIds()
     }
 
     // MARK: Reading
@@ -153,7 +157,16 @@ final class JournalStore {
     }
 
     private func factorTrackables(in window: JournalDayWindow) -> [JournalTrackable] {
-        visibleTrackables.filter { $0.kind == .factor && $0.window == window }
+        visibleTrackables
+            .filter { $0.kind == .factor && $0.window == window }
+            .enumerated()
+            .sorted { lhs, rhs in
+                if lhs.element.category.sortOrder != rhs.element.category.sortOrder {
+                    return lhs.element.category.sortOrder < rhs.element.category.sortOrder
+                }
+                return lhs.offset < rhs.offset
+            }
+            .map(\.element)
     }
 
     var visibleCustomItems: [JournalCustomItem] {
@@ -172,11 +185,77 @@ final class JournalStore {
 
     var trainingDayId: String { entry.trainingDayId }
 
+    // MARK: Date Navigation & Completion
+
+    private func loadCompletedDayIds() {
+        guard let modelContext else { return }
+        let descriptor = FetchDescriptor<JournalDaySnapshot>()
+        guard let snapshots = try? modelContext.fetch(descriptor) else { return }
+        var ids: Set<String> = []
+        for snapshot in snapshots {
+            guard let data = snapshot.entryJSON,
+                  let cachedEntry = try? JSONDecoder().decode(V1DayJournalEntry.self, from: data) else { continue }
+            if cachedEntry.hasAnyAnswer {
+                ids.insert(snapshot.trainingDayId)
+            }
+        }
+        completedDayIds = ids
+    }
+
+    func isDayCompleted(date: Date) -> Bool {
+        let id = TrainingDayId.today(now: date)
+        if id == entry.trainingDayId {
+            return entry.hasAnyAnswer
+        }
+        return completedDayIds.contains(id)
+    }
+
+    private func updateCompletionState() {
+        if entry.hasAnyAnswer {
+            completedDayIds.insert(entry.trainingDayId)
+        } else {
+            completedDayIds.remove(entry.trainingDayId)
+        }
+    }
+
+    func selectDate(_ date: Date) async {
+        guard !Calendar.current.isDate(date, inSameDayAs: selectedDate) else { return }
+        await flushPendingSave()
+        selectedDate = date
+        let newDayId = TrainingDayId.today(now: date)
+        entry = V1DayJournalEntry(trainingDayId: newDayId)
+        checklist = []
+        saveFailure = nil
+
+        let hadCache = hydrateFromCache()
+        if !hadCache {
+            phase = .loading
+        }
+
+        do {
+            let token = try await tokenProvider()
+            entry = try await client.dayJournal(trainingDayId: newDayId, token: token)
+            phase = .ready
+            await loadChecklist(token: token)
+            persistCache()
+            updateCompletionState()
+        } catch is CancellationError {
+        } catch {
+            let message = Self.message(for: error, fallback: "Impossible de charger le journal pour ce jour.")
+            if hadCache {
+                saveFailure = message
+            } else {
+                phase = .failed(message)
+            }
+        }
+    }
+
     // MARK: Writing the day
 
     func cycle(factorId: String) {
         entry.factors[factorId] = entry.state(of: factorId).next
         SharpitHaptics.play(.light)
+        updateCompletionState()
         scheduleSave()
     }
 
@@ -184,6 +263,7 @@ final class JournalStore {
         guard entry.state(of: factorId) != state else { return }
         entry.factors[factorId] = state
         SharpitHaptics.play(.light)
+        updateCompletionState()
         scheduleSave()
     }
 
@@ -191,6 +271,7 @@ final class JournalStore {
     /// does not own the value — the check-in does — it only shows what was answered.
     func applyMoodLabel(_ label: String) {
         entry.moodLabel = label
+        updateCompletionState()
         scheduleSave()
     }
 
@@ -198,18 +279,40 @@ final class JournalStore {
     func adjustCaffeine(by delta: Int) {
         entry.caffeineMg = max(0, (entry.caffeineMg ?? 0) + delta)
         SharpitHaptics.play(.light)
+        updateCompletionState()
+        scheduleSave()
+    }
+
+    func setCaffeine(_ mg: Int) {
+        let clamped = max(0, mg)
+        guard (entry.caffeineMg ?? 0) != clamped else { return }
+        entry.caffeineMg = clamped
+        SharpitHaptics.play(.light)
+        updateCompletionState()
         scheduleSave()
     }
 
     func adjustHydration(by delta: Int) {
         entry.hydrationMl = max(0, (entry.hydrationMl ?? 0) + delta)
         SharpitHaptics.play(.light)
+        updateCompletionState()
+        scheduleSave()
+    }
+
+    func setHydration(_ ml: Int) {
+        let clamped = max(0, ml)
+        guard (entry.hydrationMl ?? 0) != clamped else { return }
+        entry.hydrationMl = clamped
+        SharpitHaptics.play(.light)
+        updateCompletionState()
         scheduleSave()
     }
 
     private func scheduleSave() {
         localRevision += 1
-        saveFailure = nil
+        if saveFailure != nil {
+            saveFailure = nil
+        }
         pendingSave?.cancel()
         pendingSave = Task { [weak self, saveDelay] in
             try? await Task.sleep(for: saveDelay)

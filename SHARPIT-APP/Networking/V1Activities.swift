@@ -71,6 +71,32 @@ nonisolated struct V1ActivityListItem: Decodable, Sendable, Hashable, Identifiab
         elevationM = metrics?.elevationM
     }
 
+    init(
+        id: String = UUID().uuidString,
+        type: V1ActivityType = .run,
+        date: Date,
+        title: String? = nil,
+        duration: Double? = nil,
+        load: Double? = nil,
+        rpe: Double? = nil,
+        weather: String? = nil,
+        distanceM: Double? = nil,
+        elevationM: Double? = nil,
+        plannedSession: V1ActivityPlannedSession? = nil
+    ) {
+        self.id = id
+        self.type = type
+        self.date = date
+        self.title = title
+        self.duration = duration
+        self.load = load
+        self.rpe = rpe
+        self.weather = weather
+        self.distanceM = distanceM
+        self.elevationM = elevationM
+        self.plannedSession = plannedSession
+    }
+
     private static func metricsKey(for type: V1ActivityType) -> CodingKeys {
         switch type {
         case .run: .runMetrics
@@ -439,5 +465,13 @@ extension Date {
             return date
         }
         throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Invalid activity date"))
+    }
+
+    /// The inverse of `fromAPI`, for a payload the app writes itself rather than sends —
+    /// today, only its own read cache (`docs/adr/0007`).
+    nonisolated var toAPI: String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: self)
     }
 }

@@ -1,5 +1,4 @@
 import ClerkKit
-import ClerkKitUI
 import SwiftData
 import SwiftUI
 
@@ -23,6 +22,8 @@ struct RootView: View {
     @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
     /// The reading density, read once and handed to every surface through the environment.
     @State private var displayMode = DisplayModeStore(client: AthleteProfileClient())
+    /// The app's one toast slot — a sync starting or failing, wherever the athlete is.
+    @State private var toastCenter = SharpitToastCenter()
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -82,15 +83,18 @@ struct RootView: View {
                     syncClient: sharpitClient,
                     profileClient: profileClient,
                     displayMode: displayMode,
-                    tokenProvider: liveToken
+                    tokenProvider: liveToken,
+                    modelContext: modelContext
                 ) {
-                    accountMark
+                    AccountHeader()
                 }
             }
         }
         .background(SharpitCanvasBackground())
+        .overlay(alignment: .top) { SharpitToastHost(center: toastCenter) }
         .tint(SharpitColor.primary)
         .environment(router)
+        .environment(toastCenter)
         // Read once for the whole app: every surface that shows a technical figure asks this
         // rather than the profile (ADR 0006).
         .environment(\.displayMode, displayMode)
@@ -99,21 +103,6 @@ struct RootView: View {
         // locale the date strips rendered "M T W T F S S" under French copy.
         .environment(\.locale, Locale(identifier: "fr_FR"))
         .modifier(LiquidTabBarModifier())
-    }
-
-    private var accountMark: some View {
-        HStack(spacing: SharpitSpacing.xs) {
-            Image(systemName: "person.crop.circle.badge.checkmark")
-                .font(.title2)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(SharpitColor.mutedForeground)
-            Spacer(minLength: 0)
-            UserButton()
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Compte")
     }
 
     @MainActor

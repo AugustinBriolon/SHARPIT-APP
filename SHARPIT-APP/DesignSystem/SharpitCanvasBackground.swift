@@ -1,18 +1,27 @@
 import SwiftUI
 
-/// The page canvas — Snow White on light, Forest Night on dark. Inside a sheet it takes
-/// the sheet's raised tone, so a screen pushed or embedded there never shows black.
+/// The page canvas — Snow White on light, Forest Night on dark — with a subtle dot-grid
+/// texture and two soft brand halos for depth.
 ///
-/// It is flat on purpose. The previous canvas carried a posture-tinted gradient and two
-/// radial halos; `design.md` forbids decorative washes without informational function,
-/// and the tint belongs to the verdict plate, which is the thing whose state it describes.
+/// The texture follows the same rule as the previous flat canvas: no posture-tinted colour
+/// wash with informational function. The dot grid and halos are pure material — they give
+/// the screen a sense of physical surface without encoding any data state.
 struct SharpitCanvasBackground: View {
     @Environment(\.sharpitElevation) private var elevation
 
     var body: some View {
-        switch elevation {
-        case .base: SharpitColor.background.ignoresSafeArea()
-        case .sheet: SharpitElevatedColor.sheet.ignoresSafeArea()
+        ZStack {
+            // Base flat colour — same as before.
+            switch elevation {
+            case .base: SharpitColor.background.ignoresSafeArea()
+            case .sheet: SharpitElevatedColor.sheet.ignoresSafeArea()
+            }
+
+            // Texture layer: only on the main canvas, not inside sheets.
+            if elevation == .base {
+                SharpitCanvasTexture()
+                    .ignoresSafeArea()
+            }
         }
     }
 }

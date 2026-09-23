@@ -20,6 +20,7 @@ struct SessionLinkPicker: View {
     let onLinked: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
 
     init(sessionId: String, context: SessionLinkContext, onLinked: @escaping () -> Void) {
         _store = State(
@@ -51,6 +52,16 @@ struct SessionLinkPicker: View {
         .sharpitSheet()
         .presentationDragIndicator(.visible)
         .task { await store.load() }
+        .onChange(of: store.phase) { _, phase in
+            if case .failed(let message) = phase, !store.candidates.isEmpty {
+                toastCenter?.show(
+                    message,
+                    symbol: "exclamationmark.triangle.fill",
+                    tone: .error,
+                    autoDismissAfter: 3.5
+                )
+            }
+        }
     }
 
     @ViewBuilder
@@ -81,18 +92,12 @@ struct SessionLinkPicker: View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 SharpitEyebrow("Choisis la séance qui l'a réalisée")
-                if case .failed(let message) = store.phase {
-                    Text(message)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.signalCaution)
-                }
                 ForEach(store.candidates) { candidate in
                     Button {
                         Task {
                             guard await store.link(candidate) else { return }
                             SharpitHaptics.play(.soft)
                             onLinked()
-                            dismiss()
                         }
                     } label: {
                         SessionLinkCandidateRow(candidate: candidate)

@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// One value the athlete types, on a panel: the name, the entry, a hint or the reason it
-/// was refused.
+/// One value the athlete types, as a row of a grouped list: the name on the left, the entry
+/// on the right, a hint or the reason it was refused underneath.
 ///
-/// The label sits above the field rather than beside it, as the web's forms do: a threshold
-/// name is longer than the number it holds, and a two-column row would push `Vitesse
-/// critique natation` onto two lines beside a four-character value.
+/// A row and not a panel (`docs/adr/0008`): inside a grouped list the row already is the
+/// surface, and a second one set into it is elevation inside elevation. The whole row is the
+/// target — a label is not a dead zone — and it is at least 44pt tall at any text size.
 struct SharpitField: View {
     let label: String
     @Binding var text: String
@@ -17,72 +17,46 @@ struct SharpitField: View {
     var hint: String?
     var error: String?
 
+    @FocusState private var isFocused: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            Text(label)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Text(label)
+                    .accessibilityHidden(true)
+                Spacer(minLength: SharpitSpacing.xs)
                 TextField(placeholder, text: $text)
-                    .font(SharpitTypography.data)
-                    .tracking(SharpitTypography.dataTracking)
+                    .font(SharpitTypography.instrument)
+                    .multilineTextAlignment(.trailing)
                     .keyboardType(keyboard)
-                    .textFieldStyle(.plain)
                     .submitLabel(.done)
+                    .focused($isFocused)
+                    .accessibilityLabel(label)
+                    .accessibilityHint(error ?? hint ?? "")
                 if let unit {
                     Text(unit)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
+                        .accessibilityHidden(true)
                 }
             }
-            .padding(.horizontal, SharpitSpacing.sm)
-            .padding(.vertical, SharpitSpacing.xs + 2)
-            .sharpitSurface(.chip)
             if let error {
-                Text(error)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalRisk)
-                    .fixedSize(horizontal: false, vertical: true)
+                SharpitListFooter(error, tone: SharpitColor.signalRisk)
             } else if let hint {
-                Text(hint)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
+                SharpitListFooter(hint)
             }
         }
-    }
-}
-
-/// A group of fields on one panel, under a title — the form counterpart of
-/// `SharpitHubGroup`.
-struct SharpitFieldGroup<Content: View>: View {
-    let title: String
-    var note: String?
-    @ViewBuilder let fields: Content
-
-    init(_ title: String, note: String? = nil, @ViewBuilder fields: () -> Content) {
-        self.title = title
-        self.note = note
-        self.fields = fields()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(title)
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                fields
-                if let note {
-                    Text(note)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
-        }
+        .padding(.vertical, SharpitSpacing.xs)
+        .frame(minHeight: SharpitSpacing.minimumTouchTarget, alignment: .center)
+        .contentShape(.rect)
+        .onTapGesture { isFocused = true }
+        // The row's own vertical inset would stack on the 44pt floor and leave the row taller
+        // than its neighbours; the floor is the row, so the target is the whole of it.
+        .listRowInsets(EdgeInsets(
+            top: 0,
+            leading: SharpitSpacing.md,
+            bottom: 0,
+            trailing: SharpitSpacing.md
+        ))
     }
 }

@@ -1,11 +1,17 @@
 import Foundation
 
+/// The athlete's practiced sports, as stored in AthleteProfile.practicedSports.
+nonisolated struct V1AthletePracticedSports: Codable, Sendable, Equatable {
+    var version: Int = 1
+    var sports: [String] = []
+}
+
 /// The athlete's stable attributes, as `/api/athlete-profile` returns them.
 ///
 /// Read as a whole, written one field at a time — see `AthleteProfilePatch`. The row holds
 /// more than this (equipment, journal preferences, practiced sports, consents); the app
 /// decodes what it renders and never sends back what it did not read.
-nonisolated struct V1AthleteProfile: Decodable, Sendable, Equatable {
+nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     /// Reading density: `essential` or `expert`.
     var displayMode: String?
     var tier: String?
@@ -28,6 +34,8 @@ nonisolated struct V1AthleteProfile: Decodable, Sendable, Equatable {
     var vo2maxRunning: Int?
     var vo2maxCycling: Int?
     var thresholdsSyncedAt: Date?
+    var equipment: V1AthleteEquipment?
+    var practicedSports: V1AthletePracticedSports?
 
     var isExpertReading: Bool { displayMode == AthleteProfileField.expertDisplayMode }
     var isPro: Bool { tier == "PRO" }
@@ -48,7 +56,9 @@ nonisolated struct V1AthleteProfile: Decodable, Sendable, Equatable {
         defaultPoolLengthM: Int? = nil,
         vo2maxRunning: Int? = nil,
         vo2maxCycling: Int? = nil,
-        thresholdsSyncedAt: Date? = nil
+        thresholdsSyncedAt: Date? = nil,
+        equipment: V1AthleteEquipment? = nil,
+        practicedSports: V1AthletePracticedSports? = nil
     ) {
         self.displayMode = displayMode
         self.tier = tier
@@ -66,6 +76,8 @@ nonisolated struct V1AthleteProfile: Decodable, Sendable, Equatable {
         self.vo2maxRunning = vo2maxRunning
         self.vo2maxCycling = vo2maxCycling
         self.thresholdsSyncedAt = thresholdsSyncedAt
+        self.equipment = equipment
+        self.practicedSports = practicedSports
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -73,6 +85,7 @@ nonisolated struct V1AthleteProfile: Decodable, Sendable, Equatable {
         case sleepTargetMinutes, sleepBedtimeTargetMin
         case ftpW, maxHr, lthr, runThresholdPaceSecPerKm, swimCssSecPer100m
         case defaultPoolLengthM, vo2maxRunning, vo2maxCycling, thresholdsSyncedAt
+        case equipment, practicedSports
     }
 
     init(from decoder: Decoder) throws {
@@ -93,6 +106,8 @@ nonisolated struct V1AthleteProfile: Decodable, Sendable, Equatable {
         vo2maxRunning = try container.decodeIfPresent(Int.self, forKey: .vo2maxRunning)
         vo2maxCycling = try container.decodeIfPresent(Int.self, forKey: .vo2maxCycling)
         thresholdsSyncedAt = Self.date(in: container, forKey: .thresholdsSyncedAt)
+        equipment = try container.decodeIfPresent(V1AthleteEquipment.self, forKey: .equipment)
+        practicedSports = try container.decodeIfPresent(V1AthletePracticedSports.self, forKey: .practicedSports)
     }
 
     /// `birthDate` is a Prisma `@db.Date` and serialises as `1990-04-12T00:00:00.000Z`,
@@ -106,6 +121,30 @@ nonisolated struct V1AthleteProfile: Decodable, Sendable, Equatable {
             return nil
         }
         return try? Date.fromAPI(raw)
+    }
+
+    /// Written only for the app's own cache (`docs/adr/0007`) — the server never reads this
+    /// encoding back, so it need only round-trip through `init(from:)` above.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(displayMode, forKey: .displayMode)
+        try container.encodeIfPresent(tier, forKey: .tier)
+        try container.encodeIfPresent(heightCm, forKey: .heightCm)
+        try container.encodeIfPresent(birthDate?.toAPI, forKey: .birthDate)
+        try container.encodeIfPresent(targetWeightKg, forKey: .targetWeightKg)
+        try container.encodeIfPresent(sleepTargetMinutes, forKey: .sleepTargetMinutes)
+        try container.encodeIfPresent(sleepBedtimeTargetMin, forKey: .sleepBedtimeTargetMin)
+        try container.encodeIfPresent(ftpW, forKey: .ftpW)
+        try container.encodeIfPresent(maxHr, forKey: .maxHr)
+        try container.encodeIfPresent(lthr, forKey: .lthr)
+        try container.encodeIfPresent(runThresholdPaceSecPerKm, forKey: .runThresholdPaceSecPerKm)
+        try container.encodeIfPresent(swimCssSecPer100m, forKey: .swimCssSecPer100m)
+        try container.encodeIfPresent(defaultPoolLengthM, forKey: .defaultPoolLengthM)
+        try container.encodeIfPresent(vo2maxRunning, forKey: .vo2maxRunning)
+        try container.encodeIfPresent(vo2maxCycling, forKey: .vo2maxCycling)
+        try container.encodeIfPresent(thresholdsSyncedAt?.toAPI, forKey: .thresholdsSyncedAt)
+        try container.encodeIfPresent(equipment, forKey: .equipment)
+        try container.encodeIfPresent(practicedSports, forKey: .practicedSports)
     }
 }
 
@@ -128,6 +167,8 @@ nonisolated enum AthleteProfileField: String, CaseIterable, Sendable {
     case runThresholdPaceSecPerKm
     case swimCssSecPer100m
     case defaultPoolLengthM
+    case equipment
+    case practicedSports
 
     static let expertDisplayMode = "expert"
     static let essentialDisplayMode = "essential"
@@ -146,6 +187,37 @@ nonisolated struct AthleteProfilePatch: Equatable, Sendable {
     init() {}
 
     var isEmpty: Bool { fields.isEmpty }
+
+    /// Records an equipment inventory update.
+    mutating func setEquipment(_ equipment: V1AthleteEquipment?) {
+        guard let equipment else {
+            fields[AthleteProfileField.equipment.rawValue] = .null
+            return
+        }
+        var obj: [String: JSONValue] = [
+            "version": .number(Double(equipment.version)),
+            "owned": .array(equipment.owned.map { .string($0) })
+        ]
+        if let venue = equipment.strengthVenue {
+            obj["strengthVenue"] = .string(venue)
+        } else {
+            obj["strengthVenue"] = .null
+        }
+        fields[AthleteProfileField.equipment.rawValue] = .object(obj)
+    }
+
+    /// Records a practiced sports update.
+    mutating func setPracticedSports(_ practicedSports: V1AthletePracticedSports?) {
+        guard let practicedSports else {
+            fields[AthleteProfileField.practicedSports.rawValue] = .null
+            return
+        }
+        let obj: [String: JSONValue] = [
+            "version": .number(Double(practicedSports.version)),
+            "sports": .array(practicedSports.sports.map { .string($0) })
+        ]
+        fields[AthleteProfileField.practicedSports.rawValue] = .object(obj)
+    }
 
     /// Records a field the athlete changed. `nil` clears it server-side.
     mutating func set(_ field: AthleteProfileField, _ value: JSONValue?) {

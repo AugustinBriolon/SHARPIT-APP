@@ -68,9 +68,7 @@ struct ActivityView: View {
         do {
             let token = try await tokenProvider()
             let activities = try await client.activities(token: token)
-            withAnimation(SharpitMotion.reveal) {
-                phase = activities.isEmpty ? .empty : .loaded(activities)
-            }
+            phase = activities.isEmpty ? .empty : .loaded(activities)
         } catch is CancellationError {
             return
         } catch let error as SharpitAPIError where error == .unauthorized {
@@ -94,7 +92,6 @@ private enum ActivityPhase {
 private struct ActivityListContent: View {
     let activities: [V1ActivityListItem]
     @Binding var selectedActivity: V1ActivityListItem?
-    @State private var appeared = false
 
     private var groupedActivities: [(String, [V1ActivityListItem])] {
         let groups = Dictionary(grouping: activities) {
@@ -110,7 +107,7 @@ private struct ActivityListContent: View {
             LazyVStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 ActivityIntro()
 
-                ForEach(Array(groupedActivities.enumerated()), id: \.element.0) { groupIndex, group in
+                ForEach(groupedActivities, id: \.0) { group in
                     VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                         Text(group.0)
                             .font(SharpitTypography.eyebrow)
@@ -118,21 +115,13 @@ private struct ActivityListContent: View {
                             .textCase(.uppercase)
                             .foregroundStyle(SharpitColor.mutedForeground)
 
-                        ForEach(Array(group.1.enumerated()), id: \.element.id) { index, activity in
+                        ForEach(group.1) { activity in
                             Button {
                                 selectedActivity = activity
                             } label: {
                                 ActivityRow(activity: activity)
                             }
                             .buttonStyle(.sharpitPressable)
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 10)
-                            .animation(
-                                SharpitMotion.reveal.delay(
-                                    SharpitMotion.staggerDelay(index: groupIndex + index)
-                                ),
-                                value: appeared
-                            )
                         }
                     }
                 }
@@ -141,15 +130,6 @@ private struct ActivityListContent: View {
             .padding(.bottom, SharpitSpacing.lg)
         }
         .modifier(ScrollUnderGlass())
-        .onAppear {
-            guard !SharpitMotion.reduceMotion else {
-                appeared = true
-                return
-            }
-            SharpitMotion.run {
-                appeared = true
-            }
-        }
     }
 }
 

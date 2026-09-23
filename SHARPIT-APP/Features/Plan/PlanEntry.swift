@@ -52,15 +52,24 @@ enum PlanEntryBuilder {
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> [PlanEntry] {
-        let absorbed = Set(activities.compactMap { $0.plannedSession?.id })
+        var absorbed = Set(activities.compactMap { $0.plannedSession?.id })
+        for session in planned {
+            if session.activityId != nil || session.completed == true {
+                absorbed.insert(session.id)
+            }
+        }
         let startOfToday = calendar.startOfDay(for: now)
 
         let executed = activities.map { activity in
-            PlanEntry.executed(
+            let matchingPlanned = planned.first { $0.activityId == activity.id || $0.id == activity.plannedSession?.id }
+            let title = activity.plannedSession?.title ?? matchingPlanned?.title ?? (matchingPlanned != nil ? matchingPlanned?.displayType : nil)
+            let score = activity.plannedSession?.analysis?.complianceScore
+
+            return PlanEntry.executed(
                 PlanExecutedEntry(
                     activity: activity,
-                    plannedTitle: activity.plannedSession?.title,
-                    complianceScore: activity.plannedSession?.analysis?.complianceScore
+                    plannedTitle: title,
+                    complianceScore: score
                 )
             )
         }

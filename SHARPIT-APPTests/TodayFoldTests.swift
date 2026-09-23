@@ -146,3 +146,111 @@ import Testing
     #expect(response.consistency == nil)
     #expect(TodayFoldMapper.map(response).consistency == nil)
 }
+
+// MARK: - Activity Streak Calculator
+
+@Test func activityStreakReturnsZeroForEmptyActivities() {
+    let streak = ActivityStreakCalculator.consecutiveWeeksWithActivity(
+        activities: [],
+        referenceDate: Date()
+    )
+    #expect(streak == 0)
+}
+
+@Test func activityStreakCountsCurrentWeekAndPastWeeks() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.firstWeekday = 2 // Monday
+    calendar.timeZone = TimeZone(identifier: "UTC")!
+
+    // Wednesday, 2026-09-23
+    var components = DateComponents()
+    components.year = 2026
+    components.month = 9
+    components.day = 23
+    components.hour = 12
+    let refDate = calendar.date(from: components)!
+
+    // Current week: 2026-09-21 (Mon) to 2026-09-27 (Sun)
+    // Week -1: 2026-09-14 to 2026-09-20
+    // Week -2: 2026-09-07 to 2026-09-13
+    // Week -4 (gap at week -3): 2026-08-24 to 2026-08-30
+
+    let d0 = calendar.date(byAdding: .day, value: -1, to: refDate)! // 2026-09-22 (current week)
+    let d1 = calendar.date(byAdding: .day, value: -7, to: refDate)! // 2026-09-16 (week -1)
+    let d2 = calendar.date(byAdding: .day, value: -14, to: refDate)! // 2026-09-09 (week -2)
+    let d4 = calendar.date(byAdding: .day, value: -28, to: refDate)! // 2026-08-26 (week -4)
+
+    let activities = [
+        V1ActivityListItem(date: d0),
+        V1ActivityListItem(date: d1),
+        V1ActivityListItem(date: d2),
+        V1ActivityListItem(date: d4)
+    ]
+
+    let streak = ActivityStreakCalculator.consecutiveWeeksWithActivity(
+        activities: activities,
+        calendar: calendar,
+        referenceDate: refDate
+    )
+    // Week 0, Week -1, Week -2 are consecutive = 3 weeks. Week -3 had no activity so week -4 is not counted.
+    #expect(streak == 3)
+}
+
+@Test func activityStreakPreservesStreakWhenCurrentWeekHasNoActivityYet() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.firstWeekday = 2 // Monday
+    calendar.timeZone = TimeZone(identifier: "UTC")!
+
+    // Wednesday, 2026-09-23 (no activity this week yet)
+    var components = DateComponents()
+    components.year = 2026
+    components.month = 9
+    components.day = 23
+    components.hour = 12
+    let refDate = calendar.date(from: components)!
+
+    // Only activities in week -1 (2026-09-16) and week -2 (2026-09-09)
+    let d1 = calendar.date(byAdding: .day, value: -7, to: refDate)!
+    let d2 = calendar.date(byAdding: .day, value: -14, to: refDate)!
+
+    let activities = [
+        V1ActivityListItem(date: d1),
+        V1ActivityListItem(date: d2)
+    ]
+
+    let streak = ActivityStreakCalculator.consecutiveWeeksWithActivity(
+        activities: activities,
+        calendar: calendar,
+        referenceDate: refDate
+    )
+    // 2 consecutive weeks prior to the uncompleted current week
+    #expect(streak == 2)
+}
+
+@Test func activityStreakAcrossYears() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.firstWeekday = 2
+    calendar.timeZone = TimeZone(identifier: "UTC")!
+
+    // Create 52 consecutive weeks of activities going back a full year
+    var components = DateComponents()
+    components.year = 2026
+    components.month = 9
+    components.day = 23
+    components.hour = 12
+    let refDate = calendar.date(from: components)!
+
+    var activities: [V1ActivityListItem] = []
+    for weekOffset in 0..<52 {
+        let date = calendar.date(byAdding: .weekOfYear, value: -weekOffset, to: refDate)!
+        activities.append(V1ActivityListItem(date: date))
+    }
+
+    let streak = ActivityStreakCalculator.consecutiveWeeksWithActivity(
+        activities: activities,
+        calendar: calendar,
+        referenceDate: refDate
+    )
+    #expect(streak == 52)
+}
+

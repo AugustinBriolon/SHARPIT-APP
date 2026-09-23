@@ -135,11 +135,27 @@ final class PlanStore {
     }
 
     func load() async {
-        await load(offset: selectedOffset, force: true)
+        await reload()
+    }
+
+    /// Re-fetches the target date's week and selection forcefully, clearing client caches.
+    func reload(around date: Date? = nil) async {
+        await activityClient.invalidateActivities()
+        let targetOffset = date.map { offset(forWeekContaining: $0) } ?? selectedOffset
+        await load(offset: targetOffset, force: true)
+        if targetOffset != selectedOffset {
+            await load(offset: selectedOffset, force: true)
+        }
+        for neighbour in [targetOffset - 1, targetOffset + 1] where Self.offsets.contains(neighbour) {
+            await load(offset: neighbour, force: true)
+        }
     }
 
     func load(offset: Int, force: Bool = false) async {
         if !force, case .loaded = weeks[offset] { return }
+        if force {
+            await activityClient.invalidateActivities()
+        }
 
         let start = weekStart(forOffset: offset)
         guard let end = calendar.date(byAdding: .day, value: 6, to: start),

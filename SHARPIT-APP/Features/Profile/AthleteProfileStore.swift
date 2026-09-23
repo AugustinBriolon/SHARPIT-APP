@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 
 /// The athlete's profile, loaded once and shared by everything that reads it: Profil,
 /// Seuils & repères, and the reading density every technical surface asks about.
@@ -23,29 +24,61 @@ final class AthleteProfileStore {
     /// Set while a save is in flight, so a form can refuse a second submit.
     private(set) var isSaving = false
     private(set) var saveError: String?
+    /// Set when a refresh over a painted cache failed. The profile stays on screen either
+    /// way — a screen never trades known content for an error banner (`docs/adr/0008`).
+    private(set) var refreshFailure: String?
 
     private let client: any AthleteProfileServing
     private let tokenProvider: () async throws -> String
+    private let modelContext: ModelContext?
 
-    init(client: any AthleteProfileServing, tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any AthleteProfileServing,
+        tokenProvider: @escaping () async throws -> String,
+        modelContext: ModelContext? = nil
+    ) {
         self.client = client
         self.tokenProvider = tokenProvider
+        self.modelContext = modelContext
     }
 
     var isExpertReading: Bool { profile.isExpertReading }
 
     func load() async {
         guard phase != .loading else { return }
-        phase = .loading
+        let hadCache = hydrateFromCache()
+        if !hadCache { phase = .loading }
         do {
             let token = try await tokenProvider()
             profile = try await client.athleteProfile(token: token)
             phase = .loaded
+            refreshFailure = nil
+            persistCache()
         } catch SharpitAPIError.unauthorized {
             phase = .unauthorized
         } catch {
-            phase = .failed("Chargement du profil impossible.")
+            if hadCache {
+                refreshFailure = "Profil non actualisé."
+            } else {
+                phase = .failed("Chargement du profil impossible.")
+            }
         }
+    }
+
+    @discardableResult
+    private func hydrateFromCache() -> Bool {
+        guard let cached = ResponseCache.read(
+            V1AthleteProfile.self,
+            key: ResponseCacheKey.athleteProfile,
+            context: modelContext
+        ) else { return false }
+        profile = cached
+        phase = .loaded
+        return true
+    }
+
+    private func persistCache() {
+        ResponseCache.write(profile, key: ResponseCacheKey.athleteProfile, context: modelContext)
     }
 
     /// The threshold snapshots, loaded on demand: only Seuils reads them.
@@ -71,6 +104,7 @@ final class AthleteProfileStore {
             profile = try await client.patchAthleteProfile(patch, token: token)
             // A saved threshold writes a snapshot server-side; the list held here is stale.
             history = []
+            persistCache()
             return true
         } catch SharpitAPIError.unauthorized {
             saveError = "Session expirée. Reconnecte-toi."

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// The drawer's filter chips, in the web's order.
 nonisolated enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
@@ -25,6 +26,69 @@ nonisolated enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
         case .styleVie: "Style de vie"
         case .comportement: "Comportement"
         case .bienEtre: "Bien-être"
+        }
+    }
+
+    /// Semantic, high-contrast category color code for signals and icons.
+    var color: Color {
+        switch self {
+        case .sante:
+            SharpitColor.dynamic(
+                light: SharpitRGBA(red: 0.88, green: 0.24, blue: 0.36, alpha: 1.0),
+                dark: SharpitRGBA(red: 1.00, green: 0.42, blue: 0.52, alpha: 1.0)
+            )
+        case .nutrition:
+            SharpitColor.dynamic(
+                light: SharpitRGBA(red: 0.94, green: 0.48, blue: 0.12, alpha: 1.0),
+                dark: SharpitRGBA(red: 0.98, green: 0.60, blue: 0.28, alpha: 1.0)
+            )
+        case .complement:
+            SharpitColor.dynamic(
+                light: SharpitRGBA(red: 0.60, green: 0.32, blue: 0.88, alpha: 1.0),
+                dark: SharpitRGBA(red: 0.76, green: 0.52, blue: 0.98, alpha: 1.0)
+            )
+        case .styleVie:
+            SharpitColor.dynamic(
+                light: SharpitRGBA(red: 0.86, green: 0.60, blue: 0.08, alpha: 1.0),
+                dark: SharpitRGBA(red: 1.00, green: 0.78, blue: 0.28, alpha: 1.0)
+            )
+        case .bienEtre:
+            SharpitColor.dynamic(
+                light: SharpitRGBA(red: 0.12, green: 0.65, blue: 0.48, alpha: 1.0),
+                dark: SharpitRGBA(red: 0.32, green: 0.82, blue: 0.65, alpha: 1.0)
+            )
+        case .medicament:
+            SharpitColor.dynamic(
+                light: SharpitRGBA(red: 0.10, green: 0.58, blue: 0.88, alpha: 1.0),
+                dark: SharpitRGBA(red: 0.32, green: 0.74, blue: 1.00, alpha: 1.0)
+            )
+        case .sommeil:
+            SharpitColor.dynamic(
+                light: SharpitRGBA(red: 0.36, green: 0.42, blue: 0.84, alpha: 1.0),
+                dark: SharpitRGBA(red: 0.56, green: 0.64, blue: 1.00, alpha: 1.0)
+            )
+        case .comportement:
+            SharpitColor.dynamic(
+                light: SharpitRGBA(red: 0.25, green: 0.58, blue: 0.65, alpha: 1.0),
+                dark: SharpitRGBA(red: 0.45, green: 0.75, blue: 0.82, alpha: 1.0)
+            )
+        case .automatique:
+            SharpitColor.primary
+        }
+    }
+
+    /// Logical sort order for athlete's daily journal flow.
+    var sortOrder: Int {
+        switch self {
+        case .sante: 0
+        case .nutrition: 1
+        case .complement: 2
+        case .styleVie: 3
+        case .bienEtre: 4
+        case .medicament: 5
+        case .comportement: 6
+        case .sommeil: 7
+        case .automatique: 8
         }
     }
 }

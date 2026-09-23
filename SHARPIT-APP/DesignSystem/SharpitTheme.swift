@@ -47,6 +47,8 @@ enum SharpitSpacing {
     /// Gap between the causal-column sections of a screen.
     static let section: CGFloat = lg
     static let cardPadding: CGFloat = md
+    /// The Human Interface Guidelines' smallest tappable size, in points (`docs/adr/0008`).
+    static let minimumTouchTarget: CGFloat = 44
 
     /// `BRAND.radius` — the web card radius, exported to Swift.
     static let cardRadius: CGFloat = SharpitTokens.radius

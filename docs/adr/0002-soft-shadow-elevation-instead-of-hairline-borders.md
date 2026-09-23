@@ -4,7 +4,7 @@ Date: 2026-09-21
 
 ## Status
 
-Accepted
+Superseded by [ADR-0008](0008-the-human-interface-guidelines-outrank-the-web-design-system.md)
 
 ## Context
 

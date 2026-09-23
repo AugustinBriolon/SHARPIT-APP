@@ -21,6 +21,11 @@ nonisolated enum SharpitElevatedColor {
     /// Sheet background: the canvas on light, the card tone on dark — never black.
     static let sheet = adaptive(light: SharpitColor.background, dark: SharpitColor.card)
 
+    /// Behind an inset-grouped list: one step darker than the cells on light, as iOS's own
+    /// grouped background is, so a white row reads as a row. The page canvas is too close to
+    /// white for that (1.03:1). On dark the order flips — cells lift, the canvas stays deep.
+    static let groupedCanvas = adaptive(light: SharpitColor.muted, dark: SharpitColor.background)
+
     /// A panel inside a sheet.
     static let panelOnSheet = adaptive(
         light: SharpitColor.analysisSurface,

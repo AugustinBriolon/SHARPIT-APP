@@ -5,7 +5,7 @@ import Foundation
 /// The row holds far more than this — Withings Body Scan writes vascular age, pulse wave
 /// velocity, nerve health. The app decodes the composition an athlete reads on a phone and
 /// leaves the clinical annex to the web, which has the room to explain it.
-nonisolated struct V1BodyMeasurement: Decodable, Sendable, Equatable, Identifiable {
+nonisolated struct V1BodyMeasurement: Codable, Sendable, Equatable, Identifiable {
     let id: String
     let measuredAt: Date
     /// `garmin`, `withings`, `renpho`, `manual` — which scale wrote it.
@@ -54,6 +54,20 @@ nonisolated struct V1BodyMeasurement: Decodable, Sendable, Equatable, Identifiab
         self.waterPct = waterPct
         self.boneKg = boneKg
         self.bmi = bmi
+    }
+
+    /// Written only for the app's own cache (`docs/adr/0007`); the server never reads it back.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(measuredAt.toAPI, forKey: .measuredAt)
+        try container.encodeIfPresent(source, forKey: .source)
+        try container.encodeIfPresent(weightKg, forKey: .weightKg)
+        try container.encodeIfPresent(bodyFatPct, forKey: .bodyFatPct)
+        try container.encodeIfPresent(musclePct, forKey: .musclePct)
+        try container.encodeIfPresent(waterPct, forKey: .waterPct)
+        try container.encodeIfPresent(boneKg, forKey: .boneKg)
+        try container.encodeIfPresent(bmi, forKey: .bmi)
     }
 }
 

@@ -7,6 +7,7 @@ struct CoachHistoryView: View {
     let onOpen: (CoachConversationSummary) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
 
     init(
         store: CoachHistoryStore,
@@ -35,6 +36,16 @@ struct CoachHistoryView: View {
         .sharpitSheet()
         .presentationDragIndicator(.visible)
         .task { await store.load() }
+        .onChange(of: store.deletionFailure) { _, failure in
+            if let failure {
+                toastCenter?.show(
+                    failure,
+                    symbol: "exclamationmark.triangle.fill",
+                    tone: .error,
+                    autoDismissAfter: 3.5
+                )
+            }
+        }
     }
 
     @ViewBuilder
@@ -63,13 +74,6 @@ struct CoachHistoryView: View {
 
     private func list(_ conversations: [CoachConversationSummary]) -> some View {
         List {
-            if let failure = store.deletionFailure {
-                Text(failure)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalCaution)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-            }
             ForEach(conversations) { conversation in
                 Button {
                     onOpen(conversation)

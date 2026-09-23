@@ -1,217 +1,156 @@
+import SwiftData
 import SwiftUI
 
-/// The athlete's own space, in the groups the web's Réglages hub uses: the model SHARPIT
-/// holds of them, the account, what they prefer, and where their data comes from.
+/// The athlete's own space: who is signed in, what SHARPIT knows of them, how they read it,
+/// where the data comes from.
 ///
-/// Grouped rather than flat: a list of unrelated panels gives no reason why Corps sits beside
-/// Seuils. A surface the app has not built yet is named as coming, not hidden — the athlete
-/// knows it exists on the web.
+/// Built like the system's Settings: the account first, then short groups of rows that open
+/// something. Surfaces the app has not built yet are named once, in a footer, rather than as
+/// rows — a row that cannot be tapped still looks like it can, and four of them took a third
+/// of the screen for nothing the athlete could do.
 struct MeView<Account: View>: View {
     let appleHealth: AppleHealthSource
     let syncClient: any SyncServing
     let profileClient: any AthleteProfileServing & BodyCompositionServing
     let displayMode: DisplayModeStore
     let tokenProvider: () async throws -> String
+    let modelContext: ModelContext?
+    var goalClient: any GoalServing = GoalClient()
+    var coachMemoryClient: any CoachMemoryServing = CoachMemoryClient()
     @ViewBuilder let account: Account
-
-    @Environment(\.openURL) private var openURL
-    @State private var status: V1SyncStatus?
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    account
-                    modelGroup
-                    accountGroup
-                    preferencesGroup
-                    dataGroup
-                    aboutGroup
-                }
-                .padding(SharpitSpacing.pageInset)
+            List {
+                Section { account }.sharpitListRows()
+                Section(eyebrow: "Modèle") { modelRows }.sharpitListRows()
+                Section(eyebrow: "Entraînement") { trainingRows }.sharpitListRows()
+                Section(
+                    eyebrow: "Préférences",
+                    footer: "À venir : apparence."
+                ) { preferencesRows }
+                .sharpitListRows()
+                Section(eyebrow: "À propos") { aboutRows }.sharpitListRows()
             }
-            .background(SharpitCanvasBackground())
+            .sharpitGroupedList()
             .navigationTitle("Moi")
-            .navigationBarTitleDisplayMode(.inline)
-            .task { await loadStatus() }
-            .refreshable { await loadStatus() }
+            .navigationBarTitleDisplayMode(.large)
         }
     }
 
-    /// What SHARPIT knows about this body and reads its training against.
-    private var modelGroup: some View {
-        SharpitHubGroup("Modèle") {
-            NavigationLink {
-                BodyView(client: profileClient, tokenProvider: tokenProvider)
-            } label: {
-                SharpitHubRow(
-                    symbol: "heart.text.square",
-                    title: "Corps",
-                    detail: "Poids et composition, mesurés par ta balance"
-                )
-            }
-            .buttonStyle(.sharpitPressable)
-            NavigationLink {
-                ThresholdsView(client: profileClient, tokenProvider: tokenProvider)
-            } label: {
-                SharpitHubRow(
-                    symbol: "slider.horizontal.3",
-                    title: "Seuils & repères",
-                    detail: "FTP, allure seuil, FC max"
-                )
-            }
-            .buttonStyle(.sharpitPressable)
-            SharpitHubRow(symbol: "target", title: "Objectifs", comingSoon: true)
-            SharpitHubRow(symbol: "bicycle", title: "Équipement", comingSoon: true)
-            SharpitHubRow(symbol: "brain", title: "Mémoire du coach", comingSoon: true)
+    /// What SHARPIT knows about this athlete and reads their training against.
+    @ViewBuilder
+    private var modelRows: some View {
+        NavigationLink {
+            BodyView(
+                client: profileClient,
+                profileClient: profileClient,
+                tokenProvider: tokenProvider,
+                modelContext: modelContext
+            )
+        } label: {
+            rowLabel("Corps", symbol: "figure.stand", background: MeTone.body)
+        }
+        NavigationLink {
+            ThresholdsView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        } label: {
+            rowLabel("Seuils et repères", symbol: "gauge.with.dots.needle.67percent", background: MeTone.thresholds)
+        }
+        NavigationLink {
+            ProfileView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        } label: {
+            rowLabel("Profil", symbol: "person.text.rectangle", background: MeTone.profile)
         }
     }
 
-    private var accountGroup: some View {
-        SharpitHubGroup("Compte") {
-            NavigationLink {
-                ProfileView(client: profileClient, tokenProvider: tokenProvider)
-            } label: {
-                SharpitHubRow(
-                    symbol: "person.text.rectangle",
-                    title: "Profil",
-                    detail: "Taille, date de naissance, rythme visé"
-                )
-            }
-            .buttonStyle(.sharpitPressable)
+    /// Goals, gear inventory and coach context.
+    @ViewBuilder
+    private var trainingRows: some View {
+        NavigationLink {
+            GoalsView(client: goalClient, tokenProvider: tokenProvider)
+        } label: {
+            rowLabel("Objectifs", symbol: "flag.fill", background: MeTone.goals)
+        }
+        NavigationLink {
+            EquipmentView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        } label: {
+            rowLabel("Sports & équipement", symbol: "figure.run.square.stack", background: MeTone.gear)
+        }
+        NavigationLink {
+            CoachMemoryView(client: coachMemoryClient, tokenProvider: tokenProvider)
+        } label: {
+            rowLabel("Mémoire du coach", symbol: "brain.head.profile", background: MeTone.coach)
         }
     }
 
-    private var preferencesGroup: some View {
-        SharpitHubGroup("Préférences") {
-            NavigationLink {
-                DisplayModeView(
-                    client: profileClient,
-                    displayMode: displayMode,
-                    tokenProvider: tokenProvider
-                )
+    @ViewBuilder
+    private var preferencesRows: some View {
+        NavigationLink {
+            DisplayModeView(
+                client: profileClient,
+                displayMode: displayMode,
+                tokenProvider: tokenProvider,
+                modelContext: modelContext
+            )
+        } label: {
+            LabeledContent {
+                Text(displayMode.isExpert ? "Expert" : "Essentiel")
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.mutedForeground)
             } label: {
-                SharpitHubRow(
-                    symbol: "text.magnifyingglass",
-                    title: "Densité de lecture",
-                    detail: displayMode.isExpert ? "Expert" : "Essentiel"
-                )
+                rowLabel("Densité de lecture", symbol: "eye.fill", background: MeTone.density)
             }
-            .buttonStyle(.sharpitPressable)
-            SharpitHubRow(symbol: "paintbrush", title: "Apparence", comingSoon: true)
+        }
+        NavigationLink {
+            ConnectionsView(appleHealth: appleHealth, syncClient: syncClient, tokenProvider: tokenProvider)
+        } label: {
+            rowLabel("Connexions", symbol: "link", background: MeTone.connections)
         }
     }
 
-    /// Where the numbers come from. Garmin is connected on the web, where its sign-in lives;
-    /// Apple Health is switched on here, because only the phone can read it.
-    private var dataGroup: some View {
-        SharpitHubGroup("Données") {
-            Button {
-                openURL(APIConfiguration.baseURL.appending(path: "/settings/integrations"))
-            } label: {
-                SharpitHubRow(
-                    symbol: "applewatch.radiowaves.left.and.right",
-                    title: "Garmin",
-                    detail: garminDetail,
-                    tone: garmin == nil ? SharpitColor.mutedForeground : SharpitColor.signalRecovery,
-                    accessory: { SharpitHubChevron(leavesApp: true) }
-                )
-            }
-            .buttonStyle(.sharpitPressable)
-            .accessibilityHint("Ouvre les intégrations sur le web")
-            appleHealthRow
-            NavigationLink {
-                HealthCoverageView(reader: HealthKitReader())
-            } label: {
-                SharpitHubRow(
-                    symbol: "stethoscope",
-                    title: "Diagnostic Apple Santé",
-                    detail: "Ce qu'Apple Santé contient, signal par signal"
-                )
-            }
-            .buttonStyle(.sharpitPressable)
-        }
-    }
-
-    private var aboutGroup: some View {
-        SharpitHubGroup("À propos") {
-            Button {
-                openURL(APIConfiguration.baseURL.appending(path: "/privacy"))
-            } label: {
-                SharpitHubRow(
-                    symbol: "hand.raised",
-                    title: "Confidentialité",
-                    tone: SharpitColor.mutedForeground,
-                    accessory: { SharpitHubChevron(leavesApp: true) }
-                )
-            }
-            .buttonStyle(.sharpitPressable)
-            Button {
-                openURL(APIConfiguration.baseURL.appending(path: "/terms"))
-            } label: {
-                SharpitHubRow(
-                    symbol: "doc.text",
-                    title: "Conditions d'utilisation",
-                    tone: SharpitColor.mutedForeground,
-                    accessory: { SharpitHubChevron(leavesApp: true) }
-                )
-            }
-            .buttonStyle(.sharpitPressable)
-        }
-    }
-
-    private var garmin: V1SyncProvider? {
-        status?.providers.first { $0.key == "garmin" }
-    }
-
-    private var garminDetail: String {
-        guard status != nil else { return "Lecture du statut…" }
-        guard let garmin else { return "Non connecté — se connecte sur le web" }
-        guard let last = garmin.lastSyncAt else { return "Connecté" }
-        return "Connecté · synchronisé " + SyncReadout.age(of: last, now: .now)
-    }
-
-    private var appleHealthRow: some View {
-        SharpitHubRow(
-            symbol: "heart.text.square.fill",
-            title: "Apple Santé",
-            detail: appleHealthDetail,
-            tone: appleHealth.isEnabled ? SharpitColor.signalRisk : SharpitColor.mutedForeground,
-            accessory: {
-                Toggle(
-                    "Apple Santé",
-                    isOn: Binding(
-                        get: { appleHealth.isEnabled },
-                        set: { on in
-                            if on {
-                                Task { await appleHealth.enable(token: tokenProvider) }
-                            } else {
-                                appleHealth.disable()
-                            }
-                        }
-                    )
-                )
-                .labelsHidden()
-                .tint(SharpitColor.primary)
-                .disabled(!appleHealth.isAvailable)
-            }
+    @ViewBuilder
+    private var aboutRows: some View {
+        SharpitExternalLinkRow(
+            title: "Confidentialité",
+            symbol: "hand.raised.fill",
+            background: MeTone.privacy,
+            destination: APIConfiguration.baseURL.appending(path: "/privacy")
+        )
+        SharpitExternalLinkRow(
+            title: "Conditions d'utilisation",
+            symbol: "doc.text.fill",
+            background: MeTone.terms,
+            destination: APIConfiguration.baseURL.appending(path: "/terms")
         )
     }
 
-    private var appleHealthDetail: String {
-        if !appleHealth.isAvailable { return "Indisponible sur cet appareil" }
-        switch appleHealth.state {
-        case .sending: return "Envoi de la semaine…"
-        case .failed(let message): return message
-        case .idle:
-            guard appleHealth.isEnabled else { return "Sommeil, FC repos, pas et poids dès que ta montre a synchronisé" }
-            guard let sent = appleHealth.lastSentAt else { return "Activé — complète Garmin en attendant sa synchro" }
-            return "Activé · envoyé " + SyncReadout.age(of: sent, now: .now)
+    private func rowLabel(_ title: String, symbol: String, background: Color) -> some View {
+        Label {
+            Text(title)
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+        } icon: {
+            SharpitRowIcon(symbol: symbol, background: background)
         }
     }
+}
 
-    private func loadStatus() async {
-        guard let token = try? await tokenProvider() else { return }
-        status = try? await syncClient.syncStatus(token: token)
-    }
+private enum MeTone {
+    // MODÈLE
+    static let body = Color(red: 0.94, green: 0.38, blue: 0.42)
+    static let thresholds = Color(red: 0.98, green: 0.52, blue: 0.12)
+    static let profile = Color(red: 0.20, green: 0.50, blue: 0.95)
+
+    // ENTRAÎNEMENT
+    static let goals = Color(red: 0.98, green: 0.70, blue: 0.12)
+    static let gear = SharpitColor.primary
+    static let coach = Color(red: 0.58, green: 0.36, blue: 0.88)
+
+    // PRÉFÉRENCES
+    static let density = Color(red: 0.34, green: 0.44, blue: 0.86)
+    static let connections = Color(red: 0.12, green: 0.68, blue: 0.62)
+
+    // À PROPOS
+    static let privacy = Color(red: 0.44, green: 0.50, blue: 0.58)
+    static let terms = Color(red: 0.52, green: 0.56, blue: 0.62)
 }
