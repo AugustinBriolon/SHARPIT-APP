@@ -26,6 +26,14 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
         .background(SharpitCanvasBackground())
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // Right of the title, in the bar's glass — and only while away from today.
+            if !Calendar.current.isDateInToday(store.selectedDay) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    SharpitTodayButton { Task { await store.select(.now) } }
+                }
+            }
+        }
         .task { await store.load() }
     }
 

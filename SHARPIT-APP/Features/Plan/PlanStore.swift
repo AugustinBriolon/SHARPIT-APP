@@ -151,6 +151,40 @@ final class PlanStore {
         }
     }
 
+    /// Marks for the month view, across every week the pager holds — not only the weeks
+    /// already loaded: a day with an activity is filled, a planned day still ahead is a
+    /// ring, a planned day gone by without one is muted. The same shapes as the strip.
+    func calendarMarks(now: Date = Date()) async -> [Date: SharpitCalendarMark] {
+        guard let token = try? await tokenProvider() else { return [:] }
+        let range = selectableDates
+        async let planned = try? client.plannedSessions(from: range.lowerBound, to: range.upperBound, token: token)
+        async let recorded = try? activityClient.activities(token: token)
+        return Self.calendarMarks(
+            planned: (await planned ?? []).map(\.date),
+            activities: (await recorded ?? []).map(\.date),
+            calendar: calendar,
+            now: now
+        )
+    }
+
+    nonisolated static func calendarMarks(
+        planned: [Date],
+        activities: [Date],
+        calendar: Calendar,
+        now: Date
+    ) -> [Date: SharpitCalendarMark] {
+        let today = calendar.startOfDay(for: now)
+        var marks: [Date: SharpitCalendarMark] = [:]
+        for date in planned {
+            let day = calendar.startOfDay(for: date)
+            marks[day] = day >= today ? .ring : .muted
+        }
+        for date in activities {
+            marks[calendar.startOfDay(for: date)] = .filled
+        }
+        return marks
+    }
+
     func load(offset: Int, force: Bool = false) async {
         if !force, case .loaded = weeks[offset] { return }
         if force {

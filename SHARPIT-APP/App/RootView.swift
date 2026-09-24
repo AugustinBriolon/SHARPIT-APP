@@ -26,6 +26,10 @@ struct RootView: View {
     @State private var toastCenter = SharpitToastCenter()
     /// Push notification manager for Moment 1 (Wake / Morning verdict) APNs registration and routing.
     @State private var pushManager = PushNotificationManager.shared
+    /// Brings in every Garmin activity once — the regular pull only reaches back so far.
+    @State private var historyImport = GarminHistoryImport(client: SharpitClient(), statusClient: SharpitClient())
+    @State private var historyToast: UUID?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -100,6 +104,13 @@ struct RootView: View {
         // Read once for the whole app: every surface that shows a technical figure asks this
         // rather than the profile (ADR 0006).
         .environment(\.displayMode, displayMode)
+        .environment(historyImport)
+        // Once per athlete; a run cut off is picked up again on the next foreground.
+        .task(id: clerk.user?.id) { await runHistoryImport() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await runHistoryImport() } }
+        }
+        .onChange(of: historyImport.state) { _, state in showHistoryToast(for: state) }
         .task {
             async let modeLoad: () = displayMode.load(tokenProvider: liveToken)
             async let pushSetup: () = {
@@ -139,6 +150,41 @@ struct RootView: View {
             throw SharpitAPIError.unauthorized
         }
         return token
+    }
+
+    private func runHistoryImport() async {
+        await historyImport.runIfNeeded(userId: clerk.user?.id, tokenProvider: liveToken)
+    }
+
+    private func showHistoryToast(for state: GarminHistoryImport.State) {
+        if let historyToast { toastCenter.dismiss(historyToast) }
+        historyToast = nil
+        switch state {
+        case .importing:
+            historyToast = toastCenter.show(
+                "Import de tout ton historique Garmin…",
+                symbol: "clock.arrow.circlepath",
+                autoDismissAfter: nil
+            )
+        case .finished(let imported):
+            historyToast = toastCenter.show(
+                imported == 0
+                    ? "Historique Garmin à jour"
+                    : "Historique importé · \(imported) activité\(imported > 1 ? "s" : "")",
+                symbol: "checkmark.circle.fill",
+                tone: .success,
+                autoDismissAfter: 4
+            )
+        case .failed:
+            historyToast = toastCenter.show(
+                "Import de l'historique interrompu — reprise au prochain lancement",
+                symbol: "exclamationmark.triangle",
+                tone: .error,
+                autoDismissAfter: 5
+            )
+        case .idle:
+            break
+        }
     }
 
     private func handleIncomingURL(_ url: URL) {
@@ -181,6 +227,8 @@ struct RootView: View {
                 if let token = try? await liveToken() {
                     _ = try? await sharpitClient.sync(token: token)
                 }
+                // A new connection brings its whole history, not just recent weeks.
+                await runHistoryImport()
             }
         case "already_connected":
             toastCenter.show(

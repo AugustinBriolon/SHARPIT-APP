@@ -665,6 +665,8 @@ private struct JournalDatePicker: View {
                 initial: store.selectedDate,
                 weeks: weeks,
                 range: weeks.selectableDates.lowerBound...Date.now,
+                marks: completedMarks,
+                legend: [(.filled, "Journal rempli")],
                 onPick: pick,
                 onToday: { pick(.now) }
             )
@@ -675,6 +677,20 @@ private struct JournalDatePicker: View {
                 weekOffset = targetOffset
             }
         }
+    }
+
+    /// The days whose journal is filled, as the strip marks them.
+    private var completedMarks: [Date: SharpitCalendarMark] {
+        let calendar = weeks.calendar
+        let today = calendar.startOfDay(for: .now)
+        var marks: [Date: SharpitCalendarMark] = [:]
+        var day = calendar.startOfDay(for: weeks.selectableDates.lowerBound)
+        while day <= today {
+            if store.isDayCompleted(date: day) { marks[day] = .filled }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+        return marks
     }
 
     private func emphasis(for day: Date, isFuture: Bool) -> SharpitStripDay<JournalDayMark>.Emphasis {

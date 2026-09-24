@@ -6,6 +6,8 @@ struct ActivityView: View {
 
     @State private var phase: ActivityPhase = .loading
     @State private var selectedActivity: V1ActivityListItem?
+    /// Its completion brings older activities in, so the list reloads when it lands.
+    @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
 
     var body: some View {
         NavigationStack {
@@ -54,20 +56,24 @@ struct ActivityView: View {
                     tokenProvider: tokenProvider
                 )
             }
+            // A pull asks the server again rather than repeating the client's cached list.
             .refreshable {
-                await load()
+                await load(force: true)
             }
             .task {
                 await load()
+            }
+            .onChange(of: historyImport?.completedAt) { _, _ in
+                Task { await load(force: true) }
             }
         }
     }
 
     @MainActor
-    private func load() async {
+    private func load(force: Bool = false) async {
         do {
             let token = try await tokenProvider()
-            let activities = try await client.activities(token: token)
+            let activities = try await client.activities(forceRefresh: force, token: token)
             phase = activities.isEmpty ? .empty : .loaded(activities)
         } catch is CancellationError {
             return

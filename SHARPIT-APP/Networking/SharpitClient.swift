@@ -21,13 +21,19 @@ nonisolated protocol HealthUploadServing: Sendable {
     func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int
 }
 
+/// Pulls a provider's whole history once — every activity Garmin holds, with no date bound.
+nonisolated protocol GarminHistoryImporting: Sendable {
+    /// Returns how many activities were new to SHARPIT.
+    func importFullGarminHistory(token: String) async throws -> Int
+}
+
 /// Registers or unregisters APNs device tokens for morning verdict push notifications.
 nonisolated protocol PushDeviceTokenServing: Sendable {
     func registerDeviceToken(_ deviceToken: String, debug: Bool, token: String) async throws
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing, PushDeviceTokenServing {
+actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting {
     private let session: URLSession
     private let baseURL: URL
 
@@ -56,6 +62,21 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, H
     /// would give up on a request the server is still honouring.
     func sync(token: String) async throws -> V1SyncStatus {
         try await send(V1SyncStatus.self, path: "/api/v1/sync", method: "POST", token: token, timeout: 240)
+    }
+
+    /// `/api/garmin/sync` with `full: true`: the web's own full-history mode, which walks every
+    /// page Garmin serves instead of starting from the last pull. It has no `/api/v1` twin yet —
+    /// known debt. The server allows it five minutes, so the request waits as long.
+    func importFullGarminHistory(token: String) async throws -> Int {
+        let body = try JSONSerialization.data(withJSONObject: ["full": true])
+        return try await send(
+            GarminFullSyncResult.self,
+            path: "/api/garmin/sync",
+            method: "POST",
+            token: token,
+            timeout: 310,
+            body: body
+        ).activities.imported
     }
 
     func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int {
@@ -170,6 +191,14 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, H
             throw SharpitAPIError.server
         }
     }
+}
+
+private nonisolated struct GarminFullSyncResult: Decodable {
+    nonisolated struct Activities: Decodable {
+        let imported: Int
+    }
+
+    let activities: Activities
 }
 
 private nonisolated struct HealthUpload: Encodable {

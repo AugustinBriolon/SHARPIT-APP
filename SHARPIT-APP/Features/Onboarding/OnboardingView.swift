@@ -67,9 +67,10 @@ struct OnboardingView: View {
                 .transition(.push(from: store.isMovingForward ? .trailing : .leading))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
-
-            OnboardingActionBar(store: store)
+            // The page scrolls under the actions, which float over it in glass.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                OnboardingActionBar(store: store)
+            }
         }
         .sensoryFeedback(.selection, trigger: store.step)
     }
@@ -221,16 +222,24 @@ private struct OnboardingActionBar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            // Over scrolled content, so the line sits on its own glass to stay legible.
             if let error = store.error {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.signalRisk)
                     .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
+                    .padding(.horizontal, SharpitSpacing.sm)
+                    .padding(.vertical, SharpitSpacing.xxs + 2)
+                    .sharpitGlassCapsule()
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
             } else if store.step == .sports, !store.canContinueFromSports {
                 Text("Choisis au moins un sport d'endurance pour continuer.")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
+                    .padding(.horizontal, SharpitSpacing.sm)
+                    .padding(.vertical, SharpitSpacing.xxs + 2)
+                    .sharpitGlassCapsule()
+                    .transition(.opacity)
             }
 
             HStack(spacing: SharpitSpacing.sm) {
@@ -241,7 +250,7 @@ private struct OnboardingActionBar: View {
                         Text("Passer")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .sharpitGlassButton(prominent: false)
                     .tint(SharpitColor.foreground)
                 }
 
@@ -259,7 +268,7 @@ private struct OnboardingActionBar: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .sharpitGlassButton(prominent: true)
                 .tint(SharpitColor.primary)
                 .disabled(!canAdvance)
             }
@@ -271,7 +280,6 @@ private struct OnboardingActionBar: View {
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.sm)
         .padding(.bottom, SharpitSpacing.xs)
-        .background(SharpitCanvasBackground())
     }
 
     private var forwardLabel: String {

@@ -124,9 +124,10 @@ in `V1Today.swift` / `V1Activities.swift` / `V1PlannedSessions.swift` and mirror
 API payloads.
 
 Every client calls the versioned `/api/v1/*` contracts (SHARPIT ADR-040: each one re-exports
-the `/api` handler, same Clerk authz). Three routes have no `/api/v1` twin yet and are called
+the `/api` handler, same Clerk authz). Four routes have no `/api/v1` twin yet and are called
 web-internal: `/api/coach/chat` (deferred on the web), `/api/onboarding/complete`
-(`OnboardingClient`) and `/api/privacy/consent` (`PrivacyConsentClient`). Treat those as known
+(`OnboardingClient`), `/api/privacy/consent` (`PrivacyConsentClient`) and `/api/garmin/sync`
+with `full: true` (`SharpitClient.importFullGarminHistory`). Treat those as known
 debt, not as a pattern to copy — move each one the day the web publishes its `/api/v1` twin.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread
@@ -181,7 +182,12 @@ network.
 **Freshness.** The app starts provider pulls itself (`ProviderSyncStore`, `/api/v1/sync`)
 on launch, foreground and pull-to-refresh, and can send Apple Health day summaries
 (`AppleHealthSource`, `/api/v1/health-samples`) when the athlete switches it on in Moi.
-Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`, SHARPIT
+The regular pull only reaches back to the last one, so `GarminHistoryImport` runs the web's
+full-history Garmin import once per Clerk user, the first time Garmin is seen connected
+(launch, foreground, or the Garmin handoff). It is remembered only once it finished; a run cut
+off by the server's five-minute limit is picked up on the next foreground, and the server skips
+what it already holds. Streams are not in that pass: `/api/v1/sync` backfills them a batch at a
+time. Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`, SHARPIT
 ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`.
 
 **Moi.** A grouped hub of the web's Réglages surfaces (`SharpitHubGroup`): Modèle, Compte,
@@ -214,6 +220,14 @@ The source of truth is the web design system, not this repo:
 Genre is **instrument-editorial**: a precision readout, not a fitness dashboard. That
 implies color reserved for semantic state and no decorative gradients or washes. Apple
 chrome (tab bar, navigation, Liquid Glass) stays system; brand meaning lives in the content.
+
+Liquid Glass is chrome only: the tab and navigation bars, toolbar controls — the day
+screens' `SharpitTodayButton` sits there, left of Plan's title and right of Sommeil's and
+Récupération's — and controls floating over scrolled content (the coach's composer, the
+docked actions of the onboarding and the consent wall; `sharpitGlassControl`,
+`sharpitGlassButton`). Content surfaces never take glass. The month view is `UICalendarView`
+(`SharpitCalendarSheet`) so a day can carry a mark: filled for an activity or data, a ring for
+a session ahead, muted for one missed or a day read empty.
 
 Elevation is where the app departs from the web (`docs/adr/0002`): surfaces have no
 hairline border; on light they lift with a soft neutral shadow (`sharpitShadow`), on dark by

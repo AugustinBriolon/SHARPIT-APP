@@ -63,6 +63,12 @@ struct PlanView: View {
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
             .toolbar {
+                // Opposite the actions menu, so the two glass controls frame the title.
+                if !store.isCurrentWeek {
+                    ToolbarItem(placement: .topBarLeading) {
+                        SharpitTodayButton { store.goToToday() }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     PlanActionsMenu(
                         onOpenMacroPlan: { showingMacroPlan = true },

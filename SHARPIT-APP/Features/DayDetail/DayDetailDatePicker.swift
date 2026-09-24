@@ -24,8 +24,6 @@ struct DayDetailDatePicker: View {
         _weekOffset = State(initialValue: weeks.offset(forWeekContaining: selectedDay))
     }
 
-    private var isToday: Bool { Calendar.current.isDateInToday(selectedDay) }
-
     var body: some View {
         VStack(spacing: SharpitSpacing.xs) {
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
@@ -45,13 +43,8 @@ struct DayDetailDatePicker: View {
                 .buttonStyle(.plain)
                 .accessibilityHint("Ouvre le calendrier")
 
+                // "Aujourd'hui" lives in the navigation bar (`DayDetailScaffold`).
                 Spacer(minLength: 0)
-
-                if !isToday {
-                    Button("Aujourd'hui") { pick(.now) }
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.primary)
-                }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
 
@@ -74,10 +67,39 @@ struct DayDetailDatePicker: View {
                 initial: selectedDay,
                 weeks: weeks,
                 range: weeks.selectableDates.lowerBound...Date.now,
+                marks: calendarMarks,
+                legend: [(.filled, "Données"), (.muted, "Aucune donnée")],
                 onPick: pick,
                 onToday: { pick(.now) }
             )
         }
+        // The day can change from outside — the navigation bar's "Aujourd'hui" — and the
+        // strip follows it to that day's week.
+        .onChange(of: selectedDay) { _, day in
+            let target = weeks.offset(forWeekContaining: day)
+            if weekOffset != target {
+                SharpitMotion.run(SharpitMotion.selection) { weekOffset = target }
+            }
+        }
+    }
+
+    /// The strip's marks, for every day the calendar can show — only days already read say
+    /// anything, as under the strip.
+    private var calendarMarks: [Date: SharpitCalendarMark] {
+        let calendar = weeks.calendar
+        let today = calendar.startOfDay(for: .now)
+        var marks: [Date: SharpitCalendarMark] = [:]
+        var day = calendar.startOfDay(for: weeks.selectableDates.lowerBound)
+        while day <= today {
+            switch hasData(day) {
+            case true?: marks[day] = .filled
+            case false?: marks[day] = .muted
+            case nil: break
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+        return marks
     }
 
     private func accessibilityLabel(for day: Date, isFuture: Bool) -> String {

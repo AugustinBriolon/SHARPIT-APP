@@ -140,6 +140,9 @@ struct PrivacyConsentWallView: View {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.signalRisk)
+                    .padding(.horizontal, SharpitSpacing.sm)
+                    .padding(.vertical, SharpitSpacing.xxs + 2)
+                    .sharpitGlassCapsule()
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             Button {
@@ -155,7 +158,7 @@ struct PrivacyConsentWallView: View {
                 }
                 .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .sharpitGlassButton(prominent: true)
             .tint(SharpitColor.primary)
             .controlSize(.large)
             .disabled(!canSubmit)
@@ -165,7 +168,6 @@ struct PrivacyConsentWallView: View {
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.sm)
         .padding(.bottom, SharpitSpacing.xs)
-        .background(SharpitCanvasBackground())
     }
 
     // MARK: - Copy (the web's `consentWallCopy`)

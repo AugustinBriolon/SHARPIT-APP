@@ -143,57 +143,63 @@ struct CoachView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
-                // The explicit way down, for the athlete who is neither scrolling nor
-                // sending. In the row rather than in a keyboard toolbar, which floated
-                // over the send button. Only while writing — otherwise it is a control
-                // that does nothing.
-                if composerIsFocused {
-                    Button {
-                        composerIsFocused = false
-                    } label: {
-                        Image(systemName: "chevron.down")
+            SharpitGlassGroup {
+                HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
+                    // The explicit way down, for the athlete who is neither scrolling nor
+                    // sending. In the row rather than in a keyboard toolbar, which floated
+                    // over the send button. Only while writing — otherwise it is a control
+                    // that does nothing.
+                    if composerIsFocused {
+                        Button {
+                            composerIsFocused = false
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .font(SharpitTypography.bodyEmphasis)
+                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .frame(width: 40, height: 40)
+                                .sharpitGlassControl(in: Circle(), fallback: SharpitColor.analysisSurfaceAlt)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Masquer le clavier")
+                        .transition(.scale.combined(with: .opacity))
+                    }
+
+                    TextField("Pose ta question", text: $store.draft, axis: .vertical)
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1...5)
+                        .focused($composerIsFocused)
+                        // A vertical-axis field treats Return as a newline, so `onSubmit`
+                        // never fires. Catching the newline is what makes Return behave the
+                        // way the keyboard's own key promises.
+                        .onChange(of: store.draft) { _, new in
+                            guard new.contains("\n") else { return }
+                            store.draft = new.replacingOccurrences(of: "\n", with: "")
+                            submit()
+                        }
+                        .padding(.horizontal, SharpitSpacing.md)
+                        .padding(.vertical, SharpitSpacing.sm)
+                        .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.analysisSurfaceAlt)
+                        .submitLabel(.send)
+
+                    Button(action: submit) {
+                        Image(systemName: store.isReplying ? "stop.fill" : "arrow.up")
                             .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            // Untinted glass is light: the arrow goes muted there, not white.
+                            .foregroundStyle(store.canSend ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
                             .frame(width: 40, height: 40)
-                            .background(SharpitColor.analysisSurfaceAlt, in: Circle())
+                            .contentTransition(.symbolEffect(.replace))
+                            .sharpitGlassControl(
+                                in: Circle(),
+                                tint: store.canSend ? SharpitColor.primary : nil,
+                                fallback: SharpitColor.radialTrack
+                            )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Masquer le clavier")
-                    .transition(.scale.combined(with: .opacity))
+                    .disabled(!store.canSend)
+                    .accessibilityLabel("Envoyer")
+                    .animation(SharpitMotion.selection, value: store.canSend)
                 }
-
-                TextField("Pose ta question", text: $store.draft, axis: .vertical)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(1...5)
-                    .focused($composerIsFocused)
-                    // A vertical-axis field treats Return as a newline, so `onSubmit`
-                    // never fires. Catching the newline is what makes Return behave the
-                    // way the keyboard's own key promises.
-                    .onChange(of: store.draft) { _, new in
-                        guard new.contains("\n") else { return }
-                        store.draft = new.replacingOccurrences(of: "\n", with: "")
-                        submit()
-                    }
-                    .padding(.horizontal, SharpitSpacing.md)
-                    .padding(.vertical, SharpitSpacing.sm)
-                    .background(SharpitColor.analysisSurfaceAlt, in: Capsule())
-                    .submitLabel(.send)
-
-                Button(action: submit) {
-                    Image(systemName: store.isReplying ? "stop.fill" : "arrow.up")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        .frame(width: 40, height: 40)
-                        .background(
-                            store.canSend ? SharpitColor.primary : SharpitColor.radialTrack,
-                            in: Circle()
-                        )
-                }
-                .buttonStyle(.plain)
-                .disabled(!store.canSend)
-                .accessibilityLabel("Envoyer")
             }
         }
         .padding(.horizontal, SharpitSpacing.pageInset)

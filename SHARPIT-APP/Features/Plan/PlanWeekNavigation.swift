@@ -24,15 +24,8 @@ struct PlanWeekHeader: View {
             .accessibilityLabel("Semaine du \(weekRange)")
             .accessibilityHint("Ouvre le calendrier")
 
+            // "Aujourd'hui" lives in the navigation bar now (`SharpitTodayButton`).
             Spacer(minLength: 0)
-
-            // Only when it is a way back. On the current week it would be a button that
-            // does nothing, and the design law asks for silence over decoration.
-            if !store.isCurrentWeek {
-                Button("Aujourd'hui") { store.goToToday() }
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.primary)
-            }
         }
     }
 
@@ -109,17 +102,23 @@ private struct PlanStatusDot: View {
     }
 }
 
-/// A month, to jump to any week the pager holds.
+/// A month, to jump to any week the pager holds. Each day says what it holds — an activity,
+/// a session still to do, one missed — so a busy or an empty week shows before it is opened.
 struct PlanCalendarSheet: View {
     let store: PlanStore
+
+    @State private var marks: [Date: SharpitCalendarMark] = [:]
 
     var body: some View {
         SharpitCalendarSheet(
             title: "Semaine",
             initial: store.weekStart,
             weeks: store.weekCalendar,
+            marks: marks,
+            legend: [(.filled, "Activité"), (.ring, "Prévue"), (.muted, "Manquée")],
             onPick: { store.showWeek(containing: $0) },
             onToday: { store.goToToday() }
         )
+        .task { marks = await store.calendarMarks() }
     }
 }
