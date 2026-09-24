@@ -47,4 +47,8 @@ struct APIConfigurationTests {
         let url = APIConfiguration.resolve(environment: [:], bundleValue: bundleValue)
         #expect(url != nil)
     }
+
+    @Test func clerkPublishableKeyIsProduction() {
+        #expect(ClerkConfiguration.publishableKey.starts(with: "pk_live_"))
+    }
 }
