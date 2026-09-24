@@ -17,6 +17,7 @@ struct MeView<Account: View>: View {
     let modelContext: ModelContext?
     var goalClient: any GoalServing = GoalClient()
     var coachMemoryClient: any CoachMemoryServing = CoachMemoryClient()
+    var privacyClient: any PrivacyConsentServing = PrivacyConsentClient()
     @ViewBuilder let account: Account
 
     var body: some View {
@@ -108,20 +109,14 @@ struct MeView<Account: View>: View {
         }
     }
 
+    /// The documents and every consent, in one screen — the wall's counterpart once past it.
     @ViewBuilder
     private var aboutRows: some View {
-        SharpitExternalLinkRow(
-            title: "Confidentialité",
-            symbol: "hand.raised.fill",
-            background: MeTone.privacy,
-            destination: APIConfiguration.baseURL.appending(path: "/privacy")
-        )
-        SharpitExternalLinkRow(
-            title: "Conditions d'utilisation",
-            symbol: "doc.text.fill",
-            background: MeTone.terms,
-            destination: APIConfiguration.baseURL.appending(path: "/terms")
-        )
+        NavigationLink {
+            PrivacySettingsView(client: privacyClient, tokenProvider: tokenProvider)
+        } label: {
+            rowLabel("Confidentialité & conditions", symbol: "hand.raised.fill", background: MeTone.privacy)
+        }
     }
 
     private func rowLabel(_ title: String, symbol: String, background: Color) -> some View {
@@ -152,5 +147,4 @@ private enum MeTone {
 
     // À PROPOS
     static let privacy = Color(red: 0.44, green: 0.50, blue: 0.58)
-    static let terms = Color(red: 0.52, green: 0.56, blue: 0.62)
 }

@@ -347,40 +347,204 @@ private func makeStore(
 
 // MARK: - Gate
 
+private actor StubConsentClient: PrivacyConsentServing {
+    private var current: V1PrivacyConsents
+    private let fails: Bool
+    private(set) var updates: [PrivacyConsentUpdate] = []
+
+    init(_ consents: V1PrivacyConsents = .accepted, fails: Bool = false) {
+        current = consents
+        self.fails = fails
+    }
+
+    func consents(token _: String) async throws -> V1PrivacyConsents {
+        if fails { throw SharpitAPIError.transport }
+        return current
+    }
+
+    func updateConsents(_ update: PrivacyConsentUpdate, token _: String) async throws -> V1PrivacyConsents {
+        updates.append(update)
+        return current
+    }
+}
+
+extension V1PrivacyConsents {
+    static let accepted = V1PrivacyConsents(
+        termsAcceptedAt: Date(timeIntervalSince1970: 1_800_000_000),
+        privacyAcceptedAt: Date(timeIntervalSince1970: 1_800_000_000),
+        privacyVersion: "v0-2026-09",
+        healthDataConsentAt: Date(timeIntervalSince1970: 1_800_000_000),
+        currentPrivacyVersion: "v0-2026-09"
+    )
+}
+
+private func freshDefaults(_ name: String) throws -> UserDefaults {
+    let defaults = try #require(UserDefaults(suiteName: name))
+    defaults.removePersistentDomain(forName: name)
+    return defaults
+}
+
 @MainActor
 @Test func theGateOpensTheWizardForAnOwedAthlete() async throws {
-    let defaults = try #require(UserDefaults(suiteName: "onboarding-gate-owed"))
-    defaults.removePersistentDomain(forName: "onboarding-gate-owed")
-    let gate = OnboardingGateModel(
-        client: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)),
+    let defaults = try freshDefaults("account-gate-owed")
+    let gate = AccountGateModel(
+        consentClient: StubConsentClient(),
+        profileClient: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)),
         defaults: defaults
     )
 
     await gate.resolve(userId: "user_1") { "t" }
-    #expect(gate.status == .needed)
+    #expect(gate.status == .onboarding)
 
-    gate.finish(userId: "user_1")
+    gate.onboardingFinished()
     #expect(gate.status == .ready)
 
     // Remembered: a later launch goes straight to the tabs, even offline.
-    let relaunch = OnboardingGateModel(client: RecordingProfileClient(failsRead: true), defaults: defaults)
+    let relaunch = AccountGateModel(
+        consentClient: StubConsentClient(fails: true),
+        profileClient: RecordingProfileClient(failsRead: true),
+        defaults: defaults
+    )
     await relaunch.resolve(userId: "user_1") { "t" }
     #expect(relaunch.status == .ready)
 }
 
 @MainActor
 @Test func aFailedReadLetsTheAthleteInWithoutRememberingIt() async throws {
-    let defaults = try #require(UserDefaults(suiteName: "onboarding-gate-offline"))
-    defaults.removePersistentDomain(forName: "onboarding-gate-offline")
-    let offline = OnboardingGateModel(client: RecordingProfileClient(failsRead: true), defaults: defaults)
+    let defaults = try freshDefaults("account-gate-offline")
+    let offline = AccountGateModel(
+        consentClient: StubConsentClient(fails: true),
+        profileClient: RecordingProfileClient(failsRead: true),
+        defaults: defaults
+    )
 
     await offline.resolve(userId: "user_2") { "t" }
     #expect(offline.status == .ready)
 
-    let online = OnboardingGateModel(
-        client: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)),
+    let online = AccountGateModel(
+        consentClient: StubConsentClient(),
+        profileClient: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)),
         defaults: defaults
     )
     await online.resolve(userId: "user_2") { "t" }
-    #expect(online.status == .needed)
+    #expect(online.status == .onboarding)
+}
+
+/// The web's order: the wall comes before the wizard.
+@MainActor
+@Test func theWallStandsBeforeTheWizard() async throws {
+    let gate = AccountGateModel(
+        consentClient: StubConsentClient(V1PrivacyConsents(currentPrivacyVersion: "v0-2026-09")),
+        profileClient: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)),
+        defaults: try freshDefaults("account-gate-wall")
+    )
+
+    await gate.resolve(userId: "user_3") { "t" }
+
+    #expect(gate.status == .consent(.documents))
+}
+
+/// A finished athlete still meets the wall when the documents move to a new version.
+@MainActor
+@Test func aNewDocumentVersionBringsTheWallBack() async throws {
+    let defaults = try freshDefaults("account-gate-version")
+    defaults.set(true, forKey: "sharpit.onboarding.completed.user_4")
+    var outdated = V1PrivacyConsents.accepted
+    outdated.currentPrivacyVersion = "v1-2027-01"
+    let gate = AccountGateModel(
+        consentClient: StubConsentClient(outdated),
+        profileClient: RecordingProfileClient(),
+        defaults: defaults
+    )
+
+    await gate.resolve(userId: "user_4") { "t" }
+
+    #expect(gate.status == .consent(.documents))
+}
+
+@MainActor
+@Test func withdrawingHealthPutsTheWallBack() async throws {
+    let gate = AccountGateModel(
+        consentClient: StubConsentClient(),
+        profileClient: RecordingProfileClient(),
+        defaults: try freshDefaults("account-gate-withdraw")
+    )
+    await gate.resolve(userId: "user_5") { "t" }
+    #expect(gate.status == .ready)
+
+    var withdrawn = V1PrivacyConsents.accepted
+    withdrawn.healthDataConsentAt = nil
+    gate.consentsChanged(withdrawn)
+
+    #expect(gate.status == .consent(.healthWithdrawn))
+}
+
+// MARK: - Consents
+
+@Test func theWallReasonMirrorsTheWeb() {
+    #expect(V1PrivacyConsents.accepted.wallReason == nil)
+    #expect(V1PrivacyConsents(currentPrivacyVersion: "v0-2026-09").wallReason == .documents)
+
+    var noHealth = V1PrivacyConsents.accepted
+    noHealth.healthDataConsentAt = nil
+    #expect(noHealth.wallReason == .healthWithdrawn)
+
+    var onlyTerms = V1PrivacyConsents.accepted
+    onlyTerms.privacyAcceptedAt = nil
+    #expect(onlyTerms.wallReason == .documents)
+}
+
+@Test func theWallSendsHealthWithTheDocumentsAndLeavesUntickedOptionsAbsent() {
+    #expect(PrivacyConsentUpdate.wall(ai: false, unofficialProviders: false).body == [
+        "acceptLegal": true,
+        "healthDataConsent": true,
+    ])
+    #expect(PrivacyConsentUpdate.wall(ai: true, unofficialProviders: true).body == [
+        "acceptLegal": true,
+        "healthDataConsent": true,
+        "aiProcessingConsent": true,
+        "unofficialProvidersAck": true,
+    ])
+}
+
+@Test func aWithdrawalIsAnExplicitFalse() {
+    var update = PrivacyConsentUpdate()
+    update.healthDataConsent = false
+
+    #expect(update.body == ["healthDataConsent": false])
+}
+
+@Test func theConsentEnvelopeDecodes() throws {
+    let json = Data(#"""
+    {
+      "termsAcceptedAt": "2026-09-20T08:12:44.120Z",
+      "privacyAcceptedAt": "2026-09-20T08:12:44.120Z",
+      "privacyVersion": "v0-2026-09",
+      "healthDataConsentAt": null,
+      "aiProcessingConsentAt": "2026-09-20T08:12:44.120Z",
+      "unofficialProvidersAckAt": null,
+      "currentPrivacyVersion": "v0-2026-09"
+    }
+    """#.utf8)
+
+    let consents = try JSONDecoder().decode(V1PrivacyConsents.self, from: json)
+
+    #expect(consents.hasAIConsent)
+    #expect(!consents.hasUnofficialProvidersAck)
+    #expect(consents.wallReason == .healthWithdrawn)
+}
+
+@MainActor
+@Test func aSettingsChangeAdoptsWhatTheServerSaved() async {
+    let client = StubConsentClient()
+    let store = PrivacySettingsStore(client: client, tokenProvider: { "t" })
+    await store.load()
+    #expect(store.phase == .loaded)
+
+    var update = PrivacyConsentUpdate()
+    update.aiProcessingConsent = true
+    let saved = await store.update(update)
+
+    #expect(saved == .accepted)
+    #expect(await client.updates == [update])
 }

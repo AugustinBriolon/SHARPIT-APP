@@ -38,46 +38,37 @@ struct OnboardingView: View {
                     .accessibilityLabel("Chargement de ton profil")
             case .steps:
                 steps
-                    .transition(.opacity)
+                    .transition(.asymmetric(
+                        insertion: .opacity,
+                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                    ))
             case .bootstrap:
                 OnboardingBootstrapView(onDone: onFinished)
-                    .transition(.opacity)
+                    .transition(.opacity.combined(with: .scale(scale: 1.04)))
             }
         }
         .task { await store.load() }
     }
 
+    /// The rail and the actions stay put; only the page between them moves. A step pushes in
+    /// from the side the athlete is heading — trailing forward, leading back — the way a
+    /// navigation stack does, so the wizard reads as one continuous place.
     private var steps: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    Text(store.step.title)
-                        .font(SharpitTypography.pageTitle)
-                        .tracking(SharpitTypography.pageTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .accessibilityAddTraits(.isHeader)
-                    Text(store.step.intro)
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                stepContent
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.top, SharpitSpacing.md)
-            .padding(.bottom, SharpitSpacing.xl)
-        }
-        // A new step opens at its top, not where the previous one was scrolled to.
-        .id(store.step)
-        .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .top, spacing: 0) {
+        VStack(spacing: 0) {
             OnboardingProgressHeader(step: store.step, isBusy: store.isBusy) {
                 store.goBack()
             }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+
+            ZStack {
+                OnboardingStepPage(step: store.step) {
+                    stepContent
+                }
+                .id(store.step)
+                .transition(.push(from: store.isMovingForward ? .trailing : .leading))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+
             OnboardingActionBar(store: store)
         }
         .sensoryFeedback(.selection, trigger: store.step)
@@ -104,6 +95,45 @@ struct OnboardingView: View {
     }
 }
 
+/// One step's page: its title, its intro and its content arriving in that order, each a beat
+/// after the last, so a new step composes itself rather than appearing all at once.
+private struct OnboardingStepPage<Content: View>: View {
+    let step: OnboardingStep
+    @ViewBuilder let content: Content
+
+    @State private var hasAppeared = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    Text(step.title)
+                        .font(SharpitTypography.pageTitle)
+                        .tracking(SharpitTypography.pageTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
+                        .revealed(hasAppeared, index: 1)
+                    Text(step.intro)
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .revealed(hasAppeared, index: 2)
+                }
+
+                content
+                    .revealed(hasAppeared, index: 3)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.top, SharpitSpacing.md)
+            .padding(.bottom, SharpitSpacing.xl)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .scrollIndicators(.hidden)
+        .onAppear { hasAppeared = true }
+    }
+}
+
 // MARK: - Wayfinding
 
 /// One continuous rail that extends as the athlete advances, with ticks so the remaining steps
@@ -127,6 +157,7 @@ private struct OnboardingProgressHeader: View {
                     .disabled(isBusy)
                     .frame(minHeight: SharpitSpacing.minimumTouchTarget)
                     .accessibilityLabel("Revenir à \(previous.label)")
+                    .transition(.opacity.combined(with: .move(edge: .leading)))
                 } else {
                     Text(step.label)
                         .font(SharpitTypography.bodyEmphasis)
@@ -137,6 +168,7 @@ private struct OnboardingProgressHeader: View {
                 Text("\(step.position)/\(OnboardingStep.count)")
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
+                    .contentTransition(.numericText(value: Double(step.position)))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .accessibilityHidden(true)
             }
@@ -169,6 +201,7 @@ private struct OnboardingProgressRail: View {
                         .offset(x: width * CGFloat(tick) / CGFloat(count) - 1)
                 }
             }
+            // A spring rather than a linear fill: the rail settles like a physical slider.
             .animation(SharpitMotion.reveal, value: position)
         }
         .frame(height: 4)
@@ -222,6 +255,7 @@ private struct OnboardingActionBar: View {
                                 .tint(SharpitColor.primaryForeground)
                         }
                         Text(forwardLabel)
+                            .contentTransition(.opacity)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -233,6 +267,7 @@ private struct OnboardingActionBar: View {
             .disabled(store.isBusy)
         }
         .animation(SharpitMotion.fade, value: store.error)
+        .animation(SharpitMotion.selection, value: store.step)
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.sm)
         .padding(.bottom, SharpitSpacing.xs)
@@ -258,7 +293,8 @@ private struct OnboardingActionBar: View {
 // MARK: - Bootstrap
 
 /// A short beat after Finaliser — no real work, just pacing before Résumé, with the web's
-/// lines (`use-bootstrap-line-cycle.ts`).
+/// lines (`use-bootstrap-line-cycle.ts`). A ring closes as the lines advance and settles into
+/// a check, so the wizard ends on something finished rather than on a spinner.
 struct OnboardingBootstrapView: View {
     static let lines = [
         "Onboarding terminé…",
@@ -270,13 +306,29 @@ struct OnboardingBootstrapView: View {
     let onDone: () -> Void
 
     @State private var index = 0
+    @State private var progress: Double = 0
+    @State private var isComplete = false
+    @State private var hasAppeared = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: SharpitSpacing.lg) {
-            ProgressView()
-                .controlSize(.large)
-                .tint(SharpitColor.primary)
+            ZStack {
+                Circle()
+                    .stroke(SharpitColor.analysisGrid, lineWidth: 3)
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(SharpitColor.primary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Image(systemName: "checkmark")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(SharpitColor.primary)
+                    .opacity(isComplete ? 1 : 0)
+                    .scaleEffect(isComplete ? 1 : 0.4)
+                    .symbolEffect(.bounce, value: isComplete)
+            }
+            .frame(width: 56, height: 56)
+            .revealed(hasAppeared, index: 0)
 
             Text(Self.lines[index])
                 .font(SharpitTypography.sectionTitle)
@@ -284,32 +336,48 @@ struct OnboardingBootstrapView: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .multilineTextAlignment(.center)
                 .id(index)
-                .transition(.opacity)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(y: 10)),
+                    removal: .opacity.combined(with: .offset(y: -10))
+                ))
+                .revealed(hasAppeared, index: 1)
 
             Text("Tout est finalisé. SharpIt assemble ta première lecture à partir de ce que tu viens de renseigner.")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 280)
+                .revealed(hasAppeared, index: 2)
         }
         .padding(SharpitSpacing.pageInset)
         .accessibilityElement(children: .combine)
         .task { await cycle() }
     }
 
+    private var step: Double { 1 / Double(Self.lines.count) }
+
     private func cycle() async {
+        hasAppeared = true
         SharpitHaptics.play(.success)
         guard !reduceMotion else {
+            progress = 1
+            isComplete = true
             try? await Task.sleep(for: .milliseconds(400))
             onDone()
             return
         }
+        withAnimation(.easeInOut(duration: 1.2)) { progress = step }
         for next in Self.lines.indices.dropFirst() {
             try? await Task.sleep(for: .milliseconds(1400))
             guard !Task.isCancelled else { return }
-            SharpitMotion.run(SharpitMotion.fade) { index = next }
+            SharpitMotion.run(SharpitMotion.reveal) { index = next }
+            withAnimation(.easeInOut(duration: 1.2)) { progress = step * Double(next + 1) }
         }
-        try? await Task.sleep(for: .milliseconds(1400))
+        try? await Task.sleep(for: .milliseconds(1200))
+        guard !Task.isCancelled else { return }
+        SharpitMotion.run { isComplete = true }
+        SharpitHaptics.play(.soft)
+        try? await Task.sleep(for: .milliseconds(700))
         guard !Task.isCancelled else { return }
         onDone()
     }

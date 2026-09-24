@@ -11,30 +11,42 @@ private let tileColumns = [
 struct OnboardingSportsStep: View {
     let store: OnboardingStore
 
+    @State private var hasAppeared = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             group(
                 title: "Sports d'endurance",
                 caption: "Au moins un — oriente les objectifs et les plans.",
-                items: PracticedSportCatalog.endurance
+                items: PracticedSportCatalog.endurance,
+                firstIndex: 0
             )
             group(
                 title: "Pratiques complémentaires",
                 caption: "Pour le renforcement, la mobilité et la prévention.",
-                items: PracticedSportCatalog.complementary
+                items: PracticedSportCatalog.complementary,
+                firstIndex: PracticedSportCatalog.endurance.count
             )
         }
+        .onAppear { hasAppeared = true }
     }
 
-    private func group(title: String, caption: String, items: [PracticedSportItem]) -> some View {
+    /// Tiles land one after another — the stagger is capped, so the last ones do not wait.
+    private func group(
+        title: String,
+        caption: String,
+        items: [PracticedSportItem],
+        firstIndex: Int
+    ) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             OnboardingSectionHeading(title: title, caption: caption)
             LazyVGrid(columns: tileColumns, spacing: SharpitSpacing.sm) {
-                ForEach(items) { item in
+                ForEach(Array(items.enumerated()), id: \.element.id) { offset, item in
                     PracticedSportTile(item: item, isSelected: store.sports.contains(item.id)) {
                         SharpitHaptics.play(.light)
                         SharpitMotion.run(SharpitMotion.selection) { store.toggleSport(item.id) }
                     }
+                    .revealed(hasAppeared, index: firstIndex + offset + 1)
                 }
             }
         }
@@ -108,6 +120,8 @@ struct OnboardingEquipmentStep: View {
 struct OnboardingAvailabilityStep: View {
     let store: OnboardingStore
 
+    @State private var hasAppeared = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             OnboardingSectionHeading(
@@ -116,16 +130,19 @@ struct OnboardingAvailabilityStep: View {
             )
 
             HStack(spacing: SharpitSpacing.xxs + 2) {
-                ForEach(V1TrainingAvailability.weekdaysMondayFirst, id: \.self) { day in
+                ForEach(Array(V1TrainingAvailability.weekdaysMondayFirst.enumerated()), id: \.element) { offset, day in
                     dayTile(day)
+                        .revealed(hasAppeared, index: offset + 1)
                 }
             }
+            .onAppear { hasAppeared = true }
 
             if let reading = OnboardingWeekday.reading(store.availability) {
                 Text(reading)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                    .contentTransition(.opacity)
+                    .contentTransition(.numericText())
+                    .transition(.opacity.combined(with: .offset(y: 6)))
             }
         }
     }
@@ -149,6 +166,7 @@ struct OnboardingAvailabilityStep: View {
                         .strokeBorder(isOn ? SharpitColor.highlight : SharpitColor.border.opacity(0.6), lineWidth: 1)
                 )
         }
+        .scaleEffect(isOn ? 1 : 0.97)
         .buttonStyle(.sharpitPressable)
         .accessibilityLabel(OnboardingWeekday.label(day))
         .accessibilityAddTraits(isOn ? .isSelected : [])

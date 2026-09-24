@@ -83,6 +83,7 @@ struct PracticedSportTile: View {
                         Image(systemName: item.symbolName)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(isSelected ? color : SharpitColor.mutedForeground)
+                            .symbolEffect(.bounce, value: isSelected)
                     }
 
                     Spacer()
@@ -90,6 +91,7 @@ struct PracticedSportTile: View {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 18, weight: isSelected ? .bold : .regular))
                         .foregroundStyle(isSelected ? color : SharpitColor.mutedForeground.opacity(0.3))
+                        .contentTransition(.symbolEffect(.replace))
                 }
 
                 Spacer(minLength: 8)
@@ -122,7 +124,8 @@ struct PracticedSportTile: View {
                     .strokeBorder(isSelected ? color.opacity(0.8) : SharpitColor.border.opacity(0.5), lineWidth: isSelected ? 1.5 : 1)
             )
         }
-        .buttonStyle(.plain)
+        // Sinks under the finger, like every tile that changes something (`docs/adr/0004`).
+        .buttonStyle(.sharpitPressable)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
@@ -143,6 +146,7 @@ struct EquipmentItemTile: View {
                     Image(systemName: item.symbolName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
+                        .symbolEffect(.bounce, value: isOwned)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -161,6 +165,7 @@ struct EquipmentItemTile: View {
                 Image(systemName: isOwned ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20, weight: isOwned ? .bold : .regular))
                     .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.3))
+                    .contentTransition(.symbolEffect(.replace))
             }
             .padding(SharpitSpacing.cardPadding)
             .sharpitSurface(.panel)
@@ -169,7 +174,7 @@ struct EquipmentItemTile: View {
                     .strokeBorder(isOwned ? SharpitColor.primary.opacity(0.35) : Color.clear, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.sharpitPressable)
         .accessibilityAddTraits(isOwned ? .isSelected : [])
     }
 }

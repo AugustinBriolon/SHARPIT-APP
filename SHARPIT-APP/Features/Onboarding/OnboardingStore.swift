@@ -19,6 +19,8 @@ final class OnboardingStore {
 
     private(set) var phase: Phase = .loading
     private(set) var step: OnboardingStep = .sports
+    /// Which way the last move went, so a step slides in from the side the athlete is heading.
+    private(set) var isMovingForward = true
     /// Set while a write is in flight, so the actions refuse a second tap.
     private(set) var isBusy = false
     private(set) var error: String?
@@ -62,7 +64,7 @@ final class OnboardingStore {
     /// every step writes what it holds, so nothing is lost by starting blank.
     func load() async {
         guard phase == .loading else { return }
-        defer { phase = .steps }
+        defer { SharpitMotion.run { phase = .steps } }
         guard
             let token = try? await tokenProvider(),
             let profile = try? await profileClient.athleteProfile(token: token)
@@ -115,8 +117,7 @@ final class OnboardingStore {
 
     func goBack() {
         guard !isBusy, let previous = step.previous else { return }
-        error = nil
-        step = previous
+        move(to: previous)
     }
 
     /// The step's primary action: saves what it holds, then moves on.
@@ -203,6 +204,7 @@ final class OnboardingStore {
 
     private func move(to target: OnboardingStep) {
         error = nil
+        isMovingForward = target.rawValue > step.rawValue
         SharpitMotion.run { step = target }
     }
 

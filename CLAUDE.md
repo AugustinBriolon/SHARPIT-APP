@@ -87,8 +87,19 @@ wraps `RootView` in `AuthGate`. Every network call takes a Bearer token produced
 `clerk.auth.getToken()`; views receive it as an injected `tokenProvider` closure rather
 than reaching for Clerk themselves.
 
-**Onboarding.** `OnboardingGate` sits between `AuthGate` and `RootView`: a new account answers
-the web's first-login wizard before it sees the tabs — Sports → Équipement → Disponibilités →
+**Consent.** `AccountGate` sits between `AuthGate` and `RootView` and follows the web's
+`(app)/layout.tsx` order: the legal wall, then the onboarding, then the tabs.
+`PrivacyConsentWallView` is the web's `/consent`: CGU, Politique de confidentialité and the
+health consent are required together (the server refuses one without the other), AI processing
+and the unofficial-providers notice are optional. The wall's reason and the version in force
+come from `/api/privacy/consent` (`V1PrivacyConsents.wallReason` mirrors
+`needsLegalConsentFromProfile`), so a new version of the documents brings the wall back without
+an app release. The documents are the web's published `/terms` and `/privacy`, opened in-app
+(`LegalDocumentSheet`) — never a bundled copy. Moi → Confidentialité & conditions changes each
+consent; withdrawing health reports to the gate through the environment and the wall stands again.
+
+**Onboarding.** After the wall, a new account answers the web's first-login wizard before it
+sees the tabs — Sports → Équipement → Disponibilités →
 Intention → Sources, the web's `wizard-steps.ts` order. The server decides who owes it
 (`onboardingCompletedAt` present and `null` on `/api/v1/athlete-profile`, as the web's gate reads
 the row); the phone only remembers a "done" per Clerk user, so a finished athlete never waits on
@@ -216,6 +227,8 @@ the title of what it discusses — never at the bottom of a screen. Session feel
 
 Motion: `SharpitMotion.selection` for controls under the finger, `reveal` for content
 arriving; `staggerDelay(index:)` is capped, so use it instead of hard-coded delays.
+`.revealed(_:index:)` applies that reveal-and-stagger to a view arriving on screen; the
+onboarding pushes each step in from the side the athlete is heading.
 
 Screen structure follows the web causal column: state → evidence → recommendation →
 projection → limit → confidence.
