@@ -1,3 +1,4 @@
+import ClerkKit
 import SwiftUI
 
 /// Paramètres → Sources de données: every source SHARPIT reads from — Garmin and Apple Health.
@@ -15,6 +16,9 @@ struct ConnectionsView: View {
     let tokenProvider: () async throws -> String
 
     @Environment(SharpitToastCenter.self) private var toastCenter
+    @Environment(Clerk.self) private var clerk
+    /// Owned by `RootView`, which shows its progress and result as toasts wherever the athlete is.
+    @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
     @State private var status: V1SyncStatus?
     @State private var appleHealthToastToken: UUID?
 
@@ -25,6 +29,16 @@ struct ConnectionsView: View {
                 appleHealthRow
             }
             .sharpitListRows()
+
+            if isGarminConnected, historyImport != nil {
+                Section(
+                    eyebrow: "Garmin",
+                    footer: "Toutes tes activités Garmin, depuis la première. Celles déjà présentes ne sont pas dupliquées ; l'import peut prendre quelques minutes."
+                ) {
+                    historyRow
+                }
+                .sharpitListRows()
+            }
         }
         .sharpitGroupedList()
         .navigationTitle("Sources de données")
@@ -69,6 +83,36 @@ struct ConnectionsView: View {
         }
         .foregroundStyle(SharpitColor.foreground)
         .accessibilityHint("Connecter Garmin sur le web")
+    }
+
+    private var isGarminConnected: Bool {
+        status?.providers.contains(where: { $0.key == "garmin" }) ?? false
+    }
+
+    private var historyRow: some View {
+        let isImporting = historyImport?.state == .importing
+        return Button {
+            Task { await historyImport?.importAll(userId: clerk.user?.id, tokenProvider: tokenProvider) }
+        } label: {
+            HStack(spacing: SharpitSpacing.sm) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(SharpitColor.primary)
+                    .frame(width: 28)
+                sourceTitle(
+                    "Importer tout l'historique",
+                    status: ConnectionsReadout.garminHistory(historyImport?.state ?? .idle),
+                    tone: historyImport?.state == .failed ? SharpitColor.signalRisk : SharpitColor.mutedForeground
+                )
+                Spacer(minLength: SharpitSpacing.xs)
+                if isImporting {
+                    ProgressView()
+                }
+            }
+            .contentShape(.rect)
+        }
+        .foregroundStyle(SharpitColor.foreground)
+        .disabled(isImporting)
     }
 
     /// No "Activé" beside the switch: the switch already says it. The second line says what

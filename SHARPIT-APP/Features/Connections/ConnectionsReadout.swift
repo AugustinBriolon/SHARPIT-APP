@@ -37,6 +37,19 @@ enum ConnectionsReadout {
         return Badge(text: "Connecté", tone: .positive)
     }
 
+    /// The history import's second line: what the button does, or how the last run went.
+    static func garminHistory(_ state: GarminHistoryImport.State) -> String {
+        switch state {
+        case .idle: "Récupère les activités antérieures"
+        case .importing: "Import en cours…"
+        case .finished(let imported):
+            imported == 0
+                ? "Historique à jour"
+                : "\(imported) activité\(imported > 1 ? "s" : "") importée\(imported > 1 ? "s" : "")"
+        case .failed: "Import interrompu — réessaie"
+        }
+    }
+
     /// A status line and whether it is a problem the switch does not show.
     struct Line: Equatable {
         let text: String

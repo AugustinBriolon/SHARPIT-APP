@@ -167,7 +167,8 @@ private extension Date {
 ///
 /// Endurance and strength arrive as one row shape: the reader wants an ordered list of
 /// what to do, not two vocabularies.
-nonisolated struct V1PlannedSessionBreakdown: Decodable, Sendable, Hashable {
+/// Encodable too: the app keeps the last one read per session (`ActivityDiskCache`).
+nonisolated struct V1PlannedSessionBreakdown: Codable, Sendable, Hashable {
     let steps: [V1PlannedSessionStep]
     /// True when the session carried no structure and this was inferred from duration
     /// and intensity — worth saying, because the athlete did not write it.
@@ -182,7 +183,7 @@ nonisolated struct V1PlannedSessionBreakdown: Decodable, Sendable, Hashable {
     }
 }
 
-nonisolated struct V1PlannedSessionStep: Decodable, Sendable, Hashable, Identifiable {
+nonisolated struct V1PlannedSessionStep: Codable, Sendable, Hashable, Identifiable {
     let key: String
     let label: String
     let detail: String?

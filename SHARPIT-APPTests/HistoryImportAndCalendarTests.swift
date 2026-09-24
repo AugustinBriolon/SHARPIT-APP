@@ -120,3 +120,69 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(importer.state == .idle)
     #expect(await client.runs == 0)
 }
+
+@MainActor
+@Test func theSourcesButtonImportsAgainAfterAFinishedRun() async throws {
+    let defaults = try freshDefaults("history-forced")
+    let client = StubHistoryClient(.success(3))
+    let importer = GarminHistoryImport(
+        client: client,
+        statusClient: StubStatusClient(providers: ["garmin"]),
+        defaults: defaults
+    )
+
+    await importer.runIfNeeded(userId: "u1") { "t" }
+    await importer.runIfNeeded(userId: "u1") { "t" }
+    #expect(await client.runs == 1)
+
+    await importer.importAll(userId: "u1") { "t" }
+    #expect(await client.runs == 2)
+    #expect(importer.state == .finished(imported: 3))
+}
+
+@MainActor
+@Test func theHistoryRowSaysHowTheLastRunWent() {
+    #expect(ConnectionsReadout.garminHistory(.finished(imported: 0)) == "Historique à jour")
+    #expect(ConnectionsReadout.garminHistory(.finished(imported: 1)) == "1 activité importée")
+    #expect(ConnectionsReadout.garminHistory(.finished(imported: 12)) == "12 activités importées")
+}
+
+// MARK: - Activity disk cache
+
+@Test func aStreamStaysFreshAndADetailExpires() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+    #expect(ActivityCachePolicy.isFresh(.stream, savedAt: now.addingTimeInterval(-90 * 86_400), now: now))
+    #expect(ActivityCachePolicy.isFresh(.detail, savedAt: now.addingTimeInterval(-3600), now: now))
+    #expect(!ActivityCachePolicy.isFresh(.detail, savedAt: now.addingTimeInterval(-13 * 3600), now: now))
+}
+
+@Test func theDiskCacheKeepsTheServersBytes() throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appending(path: "activity-cache-\(UUID().uuidString)", directoryHint: .isDirectory)
+    let cache = ActivityDiskCache(directory: directory)
+    defer { cache.removeAll() }
+    let bytes = Data(#"{"id":"a/1"}"#.utf8)
+
+    cache.write(bytes, .stream, id: "a/1")
+
+    #expect(cache.read(.stream, id: "a/1")?.data == bytes)
+    #expect(cache.read(.detail, id: "a/1") == nil)
+    cache.remove(.stream, id: "a/1")
+    #expect(cache.read(.stream, id: "a/1") == nil)
+}
+
+@Test func aPlannedBreakdownSurvivesTheDiskAndIsAlwaysAskedAgain() throws {
+    let breakdown = V1PlannedSessionBreakdown(
+        steps: [
+            V1PlannedSessionStep(key: "warmup", label: "Échauffement", detail: "15 min"),
+            V1PlannedSessionStep(key: "main", label: "4 × 1 km", target: "3:40/km", repeatCount: 4),
+        ],
+        derived: true
+    )
+    let data = try JSONEncoder().encode(breakdown)
+
+    #expect(try JSONDecoder().decode(V1PlannedSessionBreakdown.self, from: data) == breakdown)
+    #expect(String(decoding: data, as: UTF8.self).contains(#""repeat":4"#))
+    #expect(!ActivityCachePolicy.isFresh(.plannedBreakdown, savedAt: Date()))
+}

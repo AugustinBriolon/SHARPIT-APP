@@ -198,7 +198,7 @@ struct RootView: View {
             )
         case .failed:
             historyToast = toastCenter.show(
-                "Import de l'historique interrompu — reprise au prochain lancement",
+                "Import de l'historique Garmin interrompu",
                 symbol: "exclamationmark.triangle",
                 tone: .error,
                 autoDismissAfter: 5

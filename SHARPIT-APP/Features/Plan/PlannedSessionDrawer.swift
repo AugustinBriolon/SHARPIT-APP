@@ -162,6 +162,9 @@ struct PlannedSessionDrawer: View {
     /// Fetches the session's breakdown when the preview arrived without one — Today's
     /// payload carries the line, not the prescription behind it.
     var loadBreakdown: (() async -> V1PlannedSessionBreakdown?)?
+    /// The breakdown read last time this session was opened, shown at once while
+    /// `loadBreakdown` asks again — the loader only spins on a first opening.
+    var storedBreakdown: V1PlannedSessionBreakdown?
     let onDiscussWithCoach: (CoachDiscussContext) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -402,8 +405,12 @@ struct PlannedSessionDrawer: View {
 
     private func fetchBreakdownIfMissing() async {
         guard preview.steps.isEmpty, loadedBreakdown == nil, let loadBreakdown else { return }
-        isLoadingBreakdown = true
-        loadedBreakdown = await loadBreakdown()
+        loadedBreakdown = storedBreakdown
+        isLoadingBreakdown = storedBreakdown == nil
+        // A failed read keeps the stored copy rather than blanking what is on screen.
+        if let fresh = await loadBreakdown(), fresh != loadedBreakdown {
+            withAnimation(SharpitMotion.reveal) { loadedBreakdown = fresh }
+        }
         isLoadingBreakdown = false
     }
 

@@ -200,7 +200,18 @@ full-history Garmin import once per Clerk user, the first time Garmin is seen co
 off by the server's five-minute limit is picked up on the next foreground, and the server skips
 what it already holds. Streams are not in that pass: `/api/v1/sync` backfills them a batch at a
 time. Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`, SHARPIT
-ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`.
+ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`. Paramètres → Sources de données also offers the import on demand
+(`GarminHistoryImport.importAll`), whether or not a run already finished.
+
+**Activity cache.** An activity's detail and streams are kept on disk as the raw JSON the server
+answered (`ActivityDiskCache`, Application Support), because the in-memory cache died with each
+screen's client and the heaviest read in the app reloaded on every open. `ActivityClient` reads
+memory, then disk, then the network: a stream is kept for good once the server said it was
+available (a recorded session's samples do not change), a detail for 12 h
+(`ActivityCachePolicy`) and any age when the network fails. The app's own edits keep it true — a
+generated narrative rewrites the detail, a subjective rating drops it. A planned session's breakdown, which Today's
+payload does not carry, is kept there too: the drawer opens on the last one read and asks the
+plan again behind it, since a plan is edited where a recorded session is not.
 
 **Corps.** The body as a readout (`CorpsView`): weight, then Récupération (HRV with Garmin's
 band, resting HR, VO₂max), Composition (scale metrics, visceral fat, BMR, the scale's body and

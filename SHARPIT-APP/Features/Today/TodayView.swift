@@ -290,7 +290,8 @@ private struct TodayFoldView: View {
                 preview: preview,
                 linking: linkContext,
                 watchPush: watchPushContext,
-                loadBreakdown: breakdownLoader(for: preview)
+                loadBreakdown: breakdownLoader(for: preview),
+                storedBreakdown: storedBreakdown(for: preview)
             ) { context in
                 router.discussWithCoach(about: context)
             }
@@ -405,8 +406,22 @@ private struct TodayFoldView: View {
             guard let token = try? await tokenProvider(),
                   let sessions = try? await PlannedSessionClient().plannedSessions(from: day, to: day, token: token)
             else { return nil }
-            return PlannedSessionPreview.breakdown(of: sessionId, in: sessions)
+            let breakdown = PlannedSessionPreview.breakdown(of: sessionId, in: sessions)
+            if let breakdown, let data = try? JSONEncoder().encode(breakdown) {
+                ActivityDiskCache.shared.write(data, .plannedBreakdown, id: sessionId)
+            } else {
+                ActivityDiskCache.shared.remove(.plannedBreakdown, id: sessionId)
+            }
+            return breakdown
         }
+    }
+
+    /// The breakdown read the last time this session was opened, so the drawer opens on it.
+    private func storedBreakdown(for preview: PlannedSessionPreview) -> V1PlannedSessionBreakdown? {
+        guard let sessionId = preview.sessionId,
+              let stored = ActivityDiskCache.shared.read(.plannedBreakdown, id: sessionId)
+        else { return nil }
+        return try? JSONDecoder().decode(V1PlannedSessionBreakdown.self, from: stored.data)
     }
 
     /// Nil without a token: a fixture-backed Today has nothing to link against.

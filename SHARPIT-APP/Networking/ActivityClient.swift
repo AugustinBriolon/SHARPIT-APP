@@ -40,10 +40,17 @@ actor ActivityClient: ActivityServing {
     private var activitiesCache: [V1ActivityListItem]?
     private var detailCache: [String: V1ActivityDetail] = [:]
     private var streamCache: [String: V1ActivityStreamPayload] = [:]
+    /// Survives the client and the launch: a session opened once opens instantly after.
+    private let disk: ActivityDiskCache?
 
-    init(session: URLSession = .shared, baseURL: URL = APIConfiguration.baseURL) {
+    init(
+        session: URLSession = .shared,
+        baseURL: URL = APIConfiguration.baseURL,
+        disk: ActivityDiskCache? = .shared
+    ) {
         self.session = session
         self.baseURL = baseURL
+        self.disk = disk
     }
 
     func activities(token: String) async throws -> [V1ActivityListItem] {
@@ -63,21 +70,50 @@ actor ActivityClient: ActivityServing {
         return activities
     }
 
+    /// Memory, then disk while the copy is fresh, then the server — and the disk copy of any age
+    /// when the server cannot answer, so a session opens offline.
     func activity(id: String, token: String) async throws -> V1ActivityDetail {
         if let cached = detailCache[id] {
             return cached
         }
-        let detail: V1ActivityDetail = try await request(path: "/api/v1/activities/\(id)", queryItems: [], token: token)
-        detailCache[id] = detail
-        return detail
+        let stored = disk?.read(.detail, id: id)
+        if let stored, ActivityCachePolicy.isFresh(.detail, savedAt: stored.savedAt),
+           let detail = try? JSONDecoder().decode(V1ActivityDetail.self, from: stored.data) {
+            detailCache[id] = detail
+            return detail
+        }
+        do {
+            let data = try await fetch(path: "/api/v1/activities/\(id)", queryItems: [], token: token)
+            let detail: V1ActivityDetail = try decode(data)
+            detailCache[id] = detail
+            disk?.write(data, .detail, id: id)
+            return detail
+        } catch {
+            if let stored, let detail = try? JSONDecoder().decode(V1ActivityDetail.self, from: stored.data) {
+                detailCache[id] = detail
+                return detail
+            }
+            throw error
+        }
     }
 
+    /// A recorded session's samples never change, so an available stream is read once.
     func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload {
         if let cached = streamCache[id] {
             return cached
         }
-        let stream: V1ActivityStreamPayload = try await request(path: "/api/v1/activities/\(id)/streams", queryItems: [], token: token)
+        if let stored = disk?.read(.stream, id: id),
+           let stream = try? JSONDecoder().decode(V1ActivityStreamPayload.self, from: stored.data) {
+            streamCache[id] = stream
+            return stream
+        }
+        let data = try await fetch(path: "/api/v1/activities/\(id)/streams", queryItems: [], token: token)
+        let stream: V1ActivityStreamPayload = try decode(data)
         streamCache[id] = stream
+        // Not yet backfilled: kept out of the disk so the next opening asks again.
+        if stream.available {
+            disk?.write(data, .stream, id: id)
+        }
         return stream
     }
 
@@ -85,14 +121,19 @@ actor ActivityClient: ActivityServing {
         activitiesCache = nil
     }
 
+    /// The analysis rewrites the detail; the new one replaces the stored copy.
     func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail {
-        try await request(
+        let data = try await fetch(
             path: "/api/v1/activities/\(id)/narrative",
             method: "POST",
             body: Data(#"{"wait":true}"#.utf8),
             queryItems: [],
             token: token
         )
+        let detail: V1ActivityDetail = try decode(data)
+        detailCache[id] = detail
+        disk?.write(data, .detail, id: id)
+        return detail
     }
 
     func updateSubjective(id: String, rpe: Double?, feeling: String?, token: String) async throws {
@@ -102,6 +143,7 @@ actor ActivityClient: ActivityServing {
         let body = try JSONSerialization.data(withJSONObject: payload)
         try await requestData(path: "/api/v1/activities/\(id)", body: body, token: token)
         detailCache[id] = nil
+        disk?.remove(.detail, id: id)
         activitiesCache = nil
     }
 
@@ -128,6 +170,25 @@ actor ActivityClient: ActivityServing {
         queryItems: [URLQueryItem],
         token: String
     ) async throws -> T {
+        try decode(try await fetch(path: path, method: method, body: body, queryItems: queryItems, token: token))
+    }
+
+    private func decode<T: Decodable>(_ data: Data) throws -> T {
+        do {
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            throw ActivityClientError.decoding(String(describing: error))
+        }
+    }
+
+    /// The raw answer, so the disk cache stores exactly what the server sent.
+    private func fetch(
+        path: String,
+        method: String = "GET",
+        body: Data? = nil,
+        queryItems: [URLQueryItem],
+        token: String
+    ) async throws -> Data {
         guard var components = URLComponents(
             url: baseURL.appending(path: path),
             resolvingAgainstBaseURL: false
@@ -167,11 +228,6 @@ actor ActivityClient: ActivityServing {
             let body = String(data: data, encoding: .utf8) ?? "Réponse illisible"
             throw ActivityClientError.invalidResponse(status: status, body: String(body.prefix(180)))
         }
-
-        do {
-            return try JSONDecoder().decode(T.self, from: data)
-        } catch {
-            throw ActivityClientError.decoding(String(describing: error))
-        }
+        return data
     }
 }

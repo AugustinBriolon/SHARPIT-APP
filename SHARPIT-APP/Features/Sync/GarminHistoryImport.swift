@@ -55,6 +55,18 @@ final class GarminHistoryImport {
             status.providers.contains(where: { $0.key == "garmin" })
         else { return }
 
+        await perform(userId: userId, tokenProvider: tokenProvider)
+    }
+
+    /// Runs the import now, whether or not one already finished — Paramètres → Sources de
+    /// données, for an athlete who wants to be sure everything came in. The server skips what
+    /// it already holds, so a second run only costs time.
+    func importAll(userId: String?, tokenProvider: () async throws -> String) async {
+        guard let userId, state != .importing else { return }
+        await perform(userId: userId, tokenProvider: tokenProvider)
+    }
+
+    private func perform(userId: String, tokenProvider: () async throws -> String) async {
         state = .importing
         do {
             let imported = try await client.importFullGarminHistory(token: try await tokenProvider())
