@@ -91,6 +91,9 @@ final class CoachStore {
         } catch let error as SharpitAPIError where error == .unauthorized {
             dropEmptyAnswer()
             failure = "Session expirée. Reconnecte-toi."
+        } catch let error as CoachChatError {
+            dropEmptyAnswer()
+            failure = error.errorDescription
         } catch {
             dropEmptyAnswer()
             failure = "La réponse n'a pas abouti. Réessaie."

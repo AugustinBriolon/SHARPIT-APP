@@ -205,3 +205,18 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
     #expect(coach.messages.map(\.role) == [.user])
     #expect(coach.failure != nil)
 }
+
+@Test func anErrorInsideTheStreamIsReadNotSkipped() {
+    #expect(CoachChatClient.event(inEventLine: #"data: {"type":"error","errorText":"Quota dépassé"}"#) == .error("Quota dépassé"))
+    #expect(CoachChatClient.event(inEventLine: #"data: {"type":"error","errorText":"An error occurred."}"#)
+        == .error("Le coach a rencontré une erreur. Réessaie."))
+    #expect(CoachChatClient.event(inEventLine: #"data: {"type":"tool-approval-request","approvalId":"a","toolCallId":"t"}"#) == .approvalRequest)
+    #expect(CoachChatClient.event(inEventLine: #"data: {"type":"reasoning-delta","id":"r","delta":"…"}"#) == .other("reasoning-delta"))
+    #expect(CoachChatClient.event(inEventLine: "data: [DONE]") == nil)
+}
+
+@Test func aRefusalSaysWhy() {
+    let body = Data(#"{"error":"Active le traitement IA dans Confidentialité.","code":"ai_processing_consent_required"}"#.utf8)
+    #expect(CoachChatClient.errorMessage(inBody: body) == "Active le traitement IA dans Confidentialité.")
+    #expect(CoachChatError.refused(status: 429, message: nil).errorDescription == "Trop de messages d'affilée. Réessaie dans un instant.")
+}

@@ -145,7 +145,10 @@ cards.
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON
 (`CoachMessage.stored`) and is sent back as it came, because the web writes parts the app
-does not model — tool calls — and a save from the phone must not strip them.
+does not model — tool calls — and a save from the phone must not strip them. The chat route reports model and gateway failures *inside* a 200
+stream (an `error` event) and may end on a `tool-approval-request` with no text; `CoachChatClient`
+reads both (`CoachChatError`) and logs the event kinds of an empty answer under the `coach`
+category, so a silent answer names its cause.
 
 **Journal.** `JournalView` asks for the day signals the athlete turned on, and
 `JournalPrefsDrawer` chooses them. Preferences are kept as the raw JSON the server sent
