@@ -5,7 +5,7 @@ import Observation
 ///
 /// Each step is saved as the athlete leaves it, as on the web, so quitting half-way keeps what
 /// was already answered and the next launch reopens the wizard pre-filled from the profile.
-/// The wizard is finished only by `/api/onboarding/complete` — never by the app deciding it.
+/// The wizard is finished only by `/api/v1/onboarding/complete` — never by the app deciding it.
 @MainActor
 @Observable
 final class OnboardingStore {
