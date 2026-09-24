@@ -119,10 +119,12 @@ struct RootView: View {
         }
         .onChange(of: historyImport.state) { _, state in showHistoryToast(for: state) }
         .task {
+            // Read here, on the main actor: the `async let` below runs off it.
+            // Only while the athlete has not switched SharpIt's notifications off.
+            let pushEnabled = pushManager.isEnabledByAthlete
             async let modeLoad: () = displayMode.load(tokenProvider: liveToken)
             async let pushSetup: () = {
-                // Only while the athlete has not switched SharpIt's notifications off.
-                guard pushManager.isEnabledByAthlete else { return }
+                guard pushEnabled else { return }
                 _ = await pushManager.requestAuthorization()
                 await pushManager.syncDeviceTokenIfNeeded(tokenProvider: liveToken, client: sharpitClient)
             }()
