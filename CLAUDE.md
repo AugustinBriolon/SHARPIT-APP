@@ -71,11 +71,15 @@ The app target supports `iphoneos` as well as the simulator. The team is not in 
 each machine sets `DEVELOPMENT_TEAM` in the gitignored `Config/Local.xcconfig`, which also
 holds the API origin override.
 
-WeatherKit, HealthKit and CloudKit are all entitled in `SharpIt.entitlements` and all need a
-paid team. Xcode reissues the managed profile when an entitlement is added, so a capability that
+WeatherKit, HealthKit, CloudKit and Push Notifications (`aps-environment`) are all entitled in
+`SharpIt.entitlements` and all need a paid team. `Config/Info-Extra.plist` declares the
+`remote-notification` background mode: CloudKit's sync pushes and the morning-verdict APNs
+push both need it. Automatic signing stamps `aps-environment` as `production` on an archive, so
+the file keeps `development`. WeatherKit also has to be ticked on the App ID in the developer
+portal, under both Capabilities and App Services; until it is, weatherd logs
+`WDSJWTAuthenticatorServiceListener.Errors Code=2` and the chip reads "Météo indisponible". Xcode reissues the managed profile when an entitlement is added, so a capability that
 silently does nothing — the weather chip reading "Météo indisponible" was exactly this — usually
-means the entitlement is missing rather than the code being wrong. Associated Domains is still
-not entitled.
+means the entitlement is missing rather than the code being wrong.
 
 ## Architecture
 
