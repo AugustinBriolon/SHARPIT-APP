@@ -17,14 +17,14 @@ actor CoachMemoryClient: CoachMemoryServing {
     }
 
     func snapshot(token: String) async throws -> CoachMemorySnapshot {
-        let request = makeRequest(path: "/api/coach-memory", method: "GET", token: token)
+        let request = makeRequest(path: "/api/v1/coach-memory", method: "GET", token: token)
         let (data, response) = try await session.data(for: request)
         try validate(response: response)
         return try JSONDecoder().decode(CoachMemorySnapshot.self, from: data)
     }
 
     func saveProfileContext(_ context: String, token: String) async throws {
-        var request = makeRequest(path: "/api/coach/context", method: "PUT", token: token)
+        var request = makeRequest(path: "/api/v1/coach/context", method: "PUT", token: token)
         let body = ["context": context]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (_, response) = try await session.data(for: request)
@@ -32,7 +32,7 @@ actor CoachMemoryClient: CoachMemoryServing {
     }
 
     func createEntry(_ input: CreateCoachMemoryInput, token: String) async throws -> CoachMemoryEntry {
-        var request = makeRequest(path: "/api/coach-memory", method: "POST", token: token)
+        var request = makeRequest(path: "/api/v1/coach-memory", method: "POST", token: token)
         request.httpBody = try JSONEncoder().encode(input)
         let (data, response) = try await session.data(for: request)
         try validate(response: response)
@@ -75,7 +75,7 @@ actor CoachMemoryClient: CoachMemoryServing {
     }
 
     func deleteEntry(id: String, token: String) async throws {
-        let request = makeRequest(path: "/api/coach-memory/\(id)", method: "DELETE", token: token)
+        let request = makeRequest(path: "/api/v1/coach-memory/\(id)", method: "DELETE", token: token)
         let (_, response) = try await session.data(for: request)
         try validate(response: response)
     }

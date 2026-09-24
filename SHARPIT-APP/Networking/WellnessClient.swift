@@ -23,7 +23,7 @@ actor WellnessClient: WellnessServing {
         token: String
     ) async throws -> V1WellnessCheckin {
         guard var components = URLComponents(
-            url: baseURL.appending(path: "/api/wellness-checkin"),
+            url: baseURL.appending(path: "/api/v1/wellness-checkin"),
             resolvingAgainstBaseURL: false
         ) else {
             throw SharpitAPIError.server
@@ -49,7 +49,7 @@ actor WellnessClient: WellnessServing {
         trainingDayId: String,
         token: String
     ) async throws {
-        var request = URLRequest(url: baseURL.appending(path: "/api/wellness-checkin"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/wellness-checkin"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

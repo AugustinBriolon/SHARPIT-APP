@@ -18,7 +18,7 @@ actor ActivityStatusClient: ActivityStatusServing {
     }
 
     func activityStatus(token: String) async throws -> V1ActivityStatusStore {
-        var request = URLRequest(url: baseURL.appending(path: "/api/activity-status"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/activity-status"))
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -29,7 +29,7 @@ actor ActivityStatusClient: ActivityStatusServing {
         _ write: V1ActivityStatusWrite,
         token: String
     ) async throws -> V1ActivityStatusStore {
-        var request = URLRequest(url: baseURL.appending(path: "/api/activity-status"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/activity-status"))
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

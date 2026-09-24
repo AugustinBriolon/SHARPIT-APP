@@ -5,6 +5,7 @@ import SwiftUI
 
 @main
 struct SharpitApp: App {
+    @UIApplicationDelegateAdaptor(SharpitAppDelegate.self) private var appDelegate
     private let modelContainer: ModelContainer
 
     init() {
@@ -25,6 +26,11 @@ struct SharpitApp: App {
             }
             .environment(Clerk.shared)
             .environment(\.clerkTheme, .sharpit)
+            .onOpenURL { url in
+                Task {
+                    try? await Clerk.shared.handle(url)
+                }
+            }
         }
         .modelContainer(modelContainer)
     }

@@ -267,7 +267,7 @@ struct PlannedSessionClientLinkTests {
 
         let request = try #require(StubURLProtocol.lastRequest)
         #expect(request.httpMethod == "POST")
-        #expect(request.url?.absoluteString == "https://sharpit.example/api/planned-sessions/session-1/link")
+        #expect(request.url?.absoluteString == "https://sharpit.example/api/v1/planned-sessions/session-1/link")
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer abc")
         let body = try JSONSerialization.jsonObject(with: try #require(StubURLProtocol.lastBody)) as? [String: Any]
         #expect(body?["activityId"] as? String == "run-1")

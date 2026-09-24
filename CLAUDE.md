@@ -49,8 +49,8 @@ only mechanism. In an xcconfig `//` starts a comment, so write `https:/$()/host`
 
 - **Local full stack** — `docker compose up -d` then `yarn dev` in `../SHARPIT`. Debug
   default (`http://127.0.0.1:3000`).
-- **Deployed instance** — Release points at `https://sharpit.vercel.app`. To run a Debug
-  build against it, put `SHARPIT_API_ORIGIN = https:/$()/sharpit.vercel.app` in
+- **Deployed instance** — Release points at `https://sharpit.app`. To run a Debug
+  build against it, put `SHARPIT_API_ORIGIN = https:/$()/sharpit.app` in
   `Config/Local.xcconfig` (gitignored), or set the variable in the scheme for the
   simulator. Real data, no Docker, no local Next.
 - **No server at all** — `FixtureTodayClient` serves the bundled JSON for pure UI work.

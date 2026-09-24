@@ -55,7 +55,7 @@ actor ActivityClient: ActivityServing {
             return activitiesCache
         }
         let activities: [V1ActivityListItem] = try await request(
-            path: "/api/activities",
+            path: "/api/v1/activities",
             queryItems: [],
             token: token
         )
@@ -67,7 +67,7 @@ actor ActivityClient: ActivityServing {
         if let cached = detailCache[id] {
             return cached
         }
-        let detail: V1ActivityDetail = try await request(path: "/api/activities/\(id)", queryItems: [], token: token)
+        let detail: V1ActivityDetail = try await request(path: "/api/v1/activities/\(id)", queryItems: [], token: token)
         detailCache[id] = detail
         return detail
     }
@@ -76,7 +76,7 @@ actor ActivityClient: ActivityServing {
         if let cached = streamCache[id] {
             return cached
         }
-        let stream: V1ActivityStreamPayload = try await request(path: "/api/activities/\(id)/streams", queryItems: [], token: token)
+        let stream: V1ActivityStreamPayload = try await request(path: "/api/v1/activities/\(id)/streams", queryItems: [], token: token)
         streamCache[id] = stream
         return stream
     }
@@ -87,7 +87,7 @@ actor ActivityClient: ActivityServing {
 
     func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail {
         try await request(
-            path: "/api/activities/\(id)/narrative",
+            path: "/api/v1/activities/\(id)/narrative",
             method: "POST",
             body: Data(#"{"wait":true}"#.utf8),
             queryItems: [],
@@ -100,7 +100,7 @@ actor ActivityClient: ActivityServing {
         payload["rpe"] = rpe ?? NSNull()
         payload["feeling"] = feeling ?? NSNull()
         let body = try JSONSerialization.data(withJSONObject: payload)
-        try await requestData(path: "/api/activities/\(id)", body: body, token: token)
+        try await requestData(path: "/api/v1/activities/\(id)", body: body, token: token)
         detailCache[id] = nil
         activitiesCache = nil
     }

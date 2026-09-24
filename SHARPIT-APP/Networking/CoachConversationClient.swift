@@ -53,12 +53,12 @@ actor CoachConversationClient: CoachConversationServing {
     }
 
     func conversations(token: String) async throws -> [CoachConversationSummary] {
-        let data = try await send("GET", path: "/api/coach/conversations", token: token)
+        let data = try await send("GET", path: "/api/v1/coach/conversations", token: token)
         return try decode([CoachConversationSummary].self, from: data)
     }
 
     func conversation(id: String, token: String) async throws -> CoachConversation {
-        let data = try await send("GET", path: "/api/coach/conversations/\(id)", token: token)
+        let data = try await send("GET", path: "/api/v1/coach/conversations/\(id)", token: token)
         let stored = try decode(StoredConversation.self, from: data)
         return CoachConversation(
             id: stored.id,
@@ -69,7 +69,7 @@ actor CoachConversationClient: CoachConversationServing {
     func create(messages: [CoachMessage], token: String) async throws -> String {
         let data = try await send(
             "POST",
-            path: "/api/coach/conversations",
+            path: "/api/v1/coach/conversations",
             body: Self.body(for: messages),
             token: token
         )
@@ -79,14 +79,14 @@ actor CoachConversationClient: CoachConversationServing {
     func save(id: String, messages: [CoachMessage], token: String) async throws {
         _ = try await send(
             "PUT",
-            path: "/api/coach/conversations/\(id)",
+            path: "/api/v1/coach/conversations/\(id)",
             body: Self.body(for: messages),
             token: token
         )
     }
 
     func delete(id: String, token: String) async throws {
-        _ = try await send("DELETE", path: "/api/coach/conversations/\(id)", token: token)
+        _ = try await send("DELETE", path: "/api/v1/coach/conversations/\(id)", token: token)
     }
 
     /// A turn read from history goes back as it came; one written here goes as the chat

@@ -22,7 +22,7 @@ actor JournalClient: JournalServing {
 
     func dayJournal(trainingDayId: String, token: String) async throws -> V1DayJournalEntry {
         guard var components = URLComponents(
-            url: baseURL.appending(path: "/api/day-journal"),
+            url: baseURL.appending(path: "/api/v1/day-journal"),
             resolvingAgainstBaseURL: false
         ) else {
             throw SharpitAPIError.server
@@ -47,7 +47,7 @@ actor JournalClient: JournalServing {
         _ entry: V1DayJournalEntry,
         token: String
     ) async throws -> V1DayJournalEntry {
-        var request = URLRequest(url: baseURL.appending(path: "/api/day-journal"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/day-journal"))
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -71,7 +71,7 @@ actor JournalClient: JournalServing {
         token: String
     ) async throws -> V1JournalDaySignals {
         guard var components = URLComponents(
-            url: baseURL.appending(path: "/api/journal/day-signals"),
+            url: baseURL.appending(path: "/api/v1/journal/day-signals"),
             resolvingAgainstBaseURL: false
         ) else {
             throw SharpitAPIError.server
@@ -91,7 +91,7 @@ actor JournalClient: JournalServing {
     }
 
     func journalPrefs(token: String) async throws -> (prefs: JournalPrefs, isPro: Bool) {
-        var request = URLRequest(url: baseURL.appending(path: "/api/journal-prefs"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/journal-prefs"))
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -102,7 +102,7 @@ actor JournalClient: JournalServing {
         _ prefs: JournalPrefs,
         token: String
     ) async throws -> (prefs: JournalPrefs, isPro: Bool) {
-        var request = URLRequest(url: baseURL.appending(path: "/api/journal-prefs"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/journal-prefs"))
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

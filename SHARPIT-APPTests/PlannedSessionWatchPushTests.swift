@@ -140,7 +140,7 @@ struct PlannedSessionWatchPushTests {
 
         let request = try #require(WatchPushStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "POST")
-        #expect(request.url?.path == "/api/garmin/workouts/from-planned-session")
+        #expect(request.url?.path == "/api/v1/garmin/workouts/from-planned-session")
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
 
         let body = try JSONSerialization.jsonObject(with: try #require(WatchPushStubURLProtocol.lastBody)) as? [String: Any]
