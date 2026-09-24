@@ -17,14 +17,14 @@ actor GoalClient: GoalServing {
     }
 
     func goals(token: String) async throws -> [V1Goal] {
-        let request = makeRequest(path: "/api/goals", method: "GET", token: token)
+        let request = makeRequest(path: "/api/v1/goals", method: "GET", token: token)
         let (data, response) = try await session.data(for: request)
         try validate(response: response)
         return try JSONDecoder().decode([V1Goal].self, from: data)
     }
 
     func createGoal(_ input: CreateGoalInput, token: String) async throws -> V1Goal {
-        var request = makeRequest(path: "/api/goals", method: "POST", token: token)
+        var request = makeRequest(path: "/api/v1/goals", method: "POST", token: token)
         request.httpBody = try JSONEncoder().encode(input)
         let (data, response) = try await session.data(for: request)
         try validate(response: response)
@@ -32,7 +32,7 @@ actor GoalClient: GoalServing {
     }
 
     func toggleAchieved(id: String, achieved: Bool, token: String) async throws -> V1Goal {
-        var request = makeRequest(path: "/api/goals/\(id)", method: "PATCH", token: token)
+        var request = makeRequest(path: "/api/v1/goals/\(id)", method: "PATCH", token: token)
         let body = ["achieved": achieved]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await session.data(for: request)
@@ -41,7 +41,7 @@ actor GoalClient: GoalServing {
     }
 
     func deleteGoal(id: String, token: String) async throws {
-        let request = makeRequest(path: "/api/goals/\(id)", method: "DELETE", token: token)
+        let request = makeRequest(path: "/api/v1/goals/\(id)", method: "DELETE", token: token)
         let (_, response) = try await session.data(for: request)
         try validate(response: response)
     }

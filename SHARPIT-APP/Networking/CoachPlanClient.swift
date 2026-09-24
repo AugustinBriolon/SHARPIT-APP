@@ -51,7 +51,7 @@ actor CoachPlanClient: CoachPlanServing {
         }
 
         return try await streamCoach(
-            path: "/api/coach/plan",
+            path: "/api/v1/coach/plan",
             payload: payload,
             token: token,
             onReasoning: onReasoning
@@ -72,7 +72,7 @@ actor CoachPlanClient: CoachPlanServing {
         }
 
         return try await streamCoach(
-            path: "/api/coach/adapt",
+            path: "/api/v1/coach/adapt",
             payload: payload,
             token: token,
             onReasoning: onReasoning

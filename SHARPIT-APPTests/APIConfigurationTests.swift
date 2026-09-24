@@ -8,14 +8,14 @@ struct APIConfigurationTests {
     @Test func schemeOverrideWinsOverTheBuildOrigin() {
         let url = APIConfiguration.resolve(
             environment: [scheme: "https://preview.example.app"],
-            bundleValue: "https://sharpit.vercel.app"
+            bundleValue: "https://sharpit.app"
         )
         #expect(url?.absoluteString == "https://preview.example.app")
     }
 
     @Test func buildOriginIsUsedWhenNothingOverridesIt() {
-        let url = APIConfiguration.resolve(environment: [:], bundleValue: "https://sharpit.vercel.app")
-        #expect(url?.absoluteString == "https://sharpit.vercel.app")
+        let url = APIConfiguration.resolve(environment: [:], bundleValue: "https://sharpit.app")
+        #expect(url?.absoluteString == "https://sharpit.app")
     }
 
     @Test func overrideIsTrimmed() {
@@ -30,9 +30,9 @@ struct APIConfigurationTests {
     func unusableOverrideFallsBackToTheBuild(raw: String) {
         let url = APIConfiguration.resolve(
             environment: [scheme: raw],
-            bundleValue: "https://sharpit.vercel.app"
+            bundleValue: "https://sharpit.app"
         )
-        #expect(url?.absoluteString == "https://sharpit.vercel.app")
+        #expect(url?.absoluteString == "https://sharpit.app")
     }
 
     @Test func noOriginAnywhereIsNil() {

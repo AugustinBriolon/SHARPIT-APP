@@ -16,5 +16,10 @@
 	</array>
 	<key>com.apple.developer.weatherkit</key>
 	<true/>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:sharpit.app</string>
+		<string>webcredentials:sharpit.app</string>
+	</array>
 </dict>
 </plist>

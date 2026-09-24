@@ -9,7 +9,7 @@ Native iPhone client for [SHARPIT](https://github.com/AugustinBriolon/SHARPIT) �
 - Clerk Native API enabled; same publishable key as the web app
 - An API origin: Debug builds use the sibling repo SHARPIT running locally
   (`docker compose up -d` then `yarn dev`, serving `http://127.0.0.1:3000`), Release builds
-  use `https://sharpit.vercel.app` — see [Pointing at a server](#pointing-at-a-server)
+  use `https://sharpit.app` — see [Pointing at a server](#pointing-at-a-server)
 
 ## Signing
 
@@ -21,7 +21,7 @@ Development identity of your team. The team is per machine, so it lives in the g
 `Config/Local.xcconfig`, next to the API origin:
 
 ```
-SHARPIT_API_ORIGIN = https:/$()/sharpit.vercel.app
+SHARPIT_API_ORIGIN = https:/$()/sharpit.app
 DEVELOPMENT_TEAM = <your team id>
 ```
 
@@ -61,7 +61,7 @@ variable override it, which only exists when Xcode launches the app.
 | Goal | Setting |
 | --- | --- |
 | Local full stack | Debug default, `http://127.0.0.1:3000` |
-| Production on a phone or TestFlight | Release default, `https://sharpit.vercel.app` |
+| Production on a phone or TestFlight | Release default, `https://sharpit.app` |
 | Debug build against a deployed instance | `SHARPIT_API_ORIGIN = https:/$()/…` in `Config/Local.xcconfig` (gitignored) |
 | Simulator against a preview, no rebuild | `SHARPIT_API_ORIGIN` in the scheme: Run → Arguments → Environment Variables |
 | UI work, no server | use `FixtureTodayClient` |

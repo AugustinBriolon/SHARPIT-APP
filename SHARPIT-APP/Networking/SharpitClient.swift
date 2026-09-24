@@ -21,7 +21,13 @@ nonisolated protocol HealthUploadServing: Sendable {
     func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing {
+/// Registers or unregisters APNs device tokens for morning verdict push notifications.
+nonisolated protocol PushDeviceTokenServing: Sendable {
+    func registerDeviceToken(_ deviceToken: String, debug: Bool, token: String) async throws
+    func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
+}
+
+actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing, PushDeviceTokenServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -61,6 +67,37 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, H
             token: token,
             body: body
         ).updatedDays
+    }
+
+    func registerDeviceToken(_ deviceToken: String, debug: Bool = false, token: String) async throws {
+        let payload: [String: Any] = [
+            "token": deviceToken,
+            "platform": "ios",
+            "bundleId": "app.sharpit.ios",
+            "debug": debug,
+        ]
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        _ = try await send(
+            V1DeviceTokenResponse.self,
+            path: "/api/v1/push/device-token",
+            method: "POST",
+            token: token,
+            body: body
+        )
+    }
+
+    func unregisterDeviceToken(_ deviceToken: String, token: String) async throws {
+        let payload: [String: Any] = [
+            "token": deviceToken,
+        ]
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        _ = try await send(
+            V1DeviceTokenResponse.self,
+            path: "/api/v1/push/device-token",
+            method: "DELETE",
+            token: token,
+            body: body
+        )
     }
 
     /// Every v1 read so far is one training day of one resource.
@@ -142,4 +179,10 @@ private nonisolated struct HealthUpload: Encodable {
 
 private nonisolated struct HealthUploadResult: Decodable {
     let updatedDays: Int
+}
+
+nonisolated struct V1DeviceTokenResponse: Decodable, Sendable {
+    let ok: Bool
+    let id: String?
+    let enabled: Bool?
 }

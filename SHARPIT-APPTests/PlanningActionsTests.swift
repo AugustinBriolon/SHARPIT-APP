@@ -110,7 +110,7 @@ struct PlanningActionsTests {
 
         let request = try #require(PlanningStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "GET")
-        #expect(request.url?.path == "/api/training-plans")
+        #expect(request.url?.path == "/api/v1/training-plans")
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer tok-test")
         #expect(plan?.id == "plan-abc")
     }
@@ -124,7 +124,7 @@ struct PlanningActionsTests {
 
         let request = try #require(PlanningStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "DELETE")
-        #expect(request.url?.path == "/api/training-plans/plan-to-archive")
+        #expect(request.url?.path == "/api/v1/training-plans/plan-to-archive")
     }
 
     // MARK: - Coach Plan Generator Tests
@@ -246,7 +246,7 @@ struct PlanningActionsTests {
 
         let request = try #require(PlanningStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "POST")
-        #expect(request.url?.path == "/api/planned-sessions")
+        #expect(request.url?.path == "/api/v1/planned-sessions")
         #expect(item.id == "new-session-id")
         #expect(item.type == "BIKE")
 
@@ -278,7 +278,7 @@ struct PlanningActionsTests {
 
         let request = try #require(PlanningStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "PATCH")
-        #expect(request.url?.path == "/api/planned-sessions/session-to-update")
+        #expect(request.url?.path == "/api/v1/planned-sessions/session-to-update")
         #expect(updated.title == "Sortie modifiée")
 
         let body = try JSONSerialization.jsonObject(with: try #require(PlanningStubURLProtocol.lastBody)) as? [String: Any]
@@ -295,6 +295,6 @@ struct PlanningActionsTests {
 
         let request = try #require(PlanningStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "DELETE")
-        #expect(request.url?.path == "/api/planned-sessions/session-del-42")
+        #expect(request.url?.path == "/api/v1/planned-sessions/session-del-42")
     }
 }

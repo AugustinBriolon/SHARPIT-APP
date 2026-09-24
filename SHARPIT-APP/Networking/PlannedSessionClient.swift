@@ -122,7 +122,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
 
     func plannedSessions(from: Date, to: Date, token: String) async throws -> [V1PlannedSessionItem] {
         guard var components = URLComponents(
-            url: baseURL.appending(path: "/api/planned-sessions"),
+            url: baseURL.appending(path: "/api/v1/planned-sessions"),
             resolvingAgainstBaseURL: false
         ) else {
             throw SharpitAPIError.server
@@ -160,7 +160,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
     }
 
     func link(sessionId: String, activityId: String?, token: String) async throws {
-        var request = URLRequest(url: baseURL.appending(path: "/api/planned-sessions/\(sessionId)/link"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/planned-sessions/\(sessionId)/link"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -183,7 +183,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
     }
 
     func pushToWatch(sessionId: String, force: Bool, token: String) async throws -> PlannedSessionWatchPushResult {
-        var request = URLRequest(url: baseURL.appending(path: "/api/garmin/workouts/from-planned-session"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/garmin/workouts/from-planned-session"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -267,7 +267,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
     }
 
     func createSession(_ payload: CreatePlannedSessionPayload, token: String) async throws -> V1PlannedSessionItem {
-        var request = URLRequest(url: baseURL.appending(path: "/api/planned-sessions"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/planned-sessions"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -283,7 +283,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
     }
 
     func updateSession(id: String, patch: UpdatePlannedSessionPayload, token: String) async throws -> V1PlannedSessionItem {
-        var request = URLRequest(url: baseURL.appending(path: "/api/planned-sessions/\(id)"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/planned-sessions/\(id)"))
         request.httpMethod = "PATCH"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -299,7 +299,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
     }
 
     func deleteSession(id: String, token: String) async throws {
-        var request = URLRequest(url: baseURL.appending(path: "/api/planned-sessions/\(id)"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/planned-sessions/\(id)"))
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")

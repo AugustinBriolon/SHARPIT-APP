@@ -64,7 +64,7 @@ struct ConnectionsView: View {
 
     private var garminRow: some View {
         let badge = ConnectionsReadout.garmin(status: status)
-        return Link(destination: APIConfiguration.baseURL.appending(path: "/settings/integrations")) {
+        return Link(destination: APIConfiguration.baseURL.appending(path: "/connect/garmin")) {
             HStack(spacing: SharpitSpacing.sm) {
                 ProviderLogo(provider: .garmin)
                 sourceTitle("Garmin", status: badge.text, tone: badge.tone.color)
@@ -77,7 +77,7 @@ struct ConnectionsView: View {
             .contentShape(.rect)
         }
         .foregroundStyle(SharpitColor.foreground)
-        .accessibilityHint("Ouvre les intégrations sur le web")
+        .accessibilityHint("Connecter Garmin sur le web")
     }
 
     /// No "Activé" beside the switch: the switch already says it. The second line says what

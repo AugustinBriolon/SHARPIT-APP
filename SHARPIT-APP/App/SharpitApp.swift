@@ -5,6 +5,7 @@ import SwiftUI
 
 @main
 struct SharpitApp: App {
+    @UIApplicationDelegateAdaptor(SharpitAppDelegate.self) private var appDelegate
     private let modelContainer: ModelContainer
 
     init() {

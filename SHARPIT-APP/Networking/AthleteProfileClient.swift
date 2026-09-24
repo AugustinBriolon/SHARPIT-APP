@@ -27,7 +27,7 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing {
     func athleteProfile(token: String) async throws -> V1AthleteProfile {
         try await decode(
             V1AthleteProfile.self,
-            from: try await send(get("/api/athlete-profile", token: token))
+            from: try await send(get("/api/v1/athlete-profile", token: token))
         )
     }
 
@@ -39,7 +39,7 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing {
         // athlete opened and left as it was.
         guard !patch.isEmpty else { return try await athleteProfile(token: token) }
 
-        var request = URLRequest(url: baseURL.appending(path: "/api/athlete-profile"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/athlete-profile"))
         request.httpMethod = "PATCH"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -55,7 +55,7 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing {
     func thresholdHistory(token: String) async throws -> [V1ThresholdSnapshot] {
         try await decode(
             [V1ThresholdSnapshot].self,
-            from: try await send(get("/api/athlete-profile/threshold-history", token: token))
+            from: try await send(get("/api/v1/athlete-profile/threshold-history", token: token))
         )
     }
 
@@ -63,7 +63,7 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing {
         try await decode(
             [V1BodyMeasurement].self,
             from: try await send(get(
-                "/api/body-composition",
+                "/api/v1/body-composition",
                 query: [URLQueryItem(name: "days", value: String(days))],
                 token: token
             ))
