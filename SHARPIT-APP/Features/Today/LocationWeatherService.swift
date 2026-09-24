@@ -41,10 +41,13 @@ final class LocationWeatherService {
 
     private func refresh(from location: CLLocation) async {
         async let city = reverseGeocode(location)
-        async let weather = WeatherService.shared.weather(for: location)
+        // Only the current conditions: the chip shows nothing else, and the full `weather(for:)`
+        // also asks for the minute forecast, which WeatherKit does not serve in France — it
+        // logged "Missing minute forecast conditions" on every launch.
+        async let weather = WeatherService.shared.weather(for: location, including: .current)
 
         do {
-            let current = try await weather.currentWeather
+            let current = try await weather
             let celsius = current.temperature.converted(to: .celsius).value
             reading = AppleWeatherReading(
                 city: await city ?? "Ici",
