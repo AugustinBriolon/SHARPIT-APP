@@ -106,24 +106,21 @@ struct TodayView: View {
                         ActivityStatusButton(store: activityStatusStore)
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    if let journalClient, let wellnessClient, let tokenProvider {
-                        NavigationLink {
-                            JournalView(
-                                client: journalClient,
-                                wellness: wellnessClient,
-                                tokenProvider: tokenProvider,
-                                modelContext: modelContext
-                            )
-                        } label: {
-                            Label("Journal", systemImage: "book.closed")
-                        }
+            }
+            .modifier(TodayTrailingToolbar(weather: weather) {
+                if let journalClient, let wellnessClient, let tokenProvider {
+                    NavigationLink {
+                        JournalView(
+                            client: journalClient,
+                            wellness: wellnessClient,
+                            tokenProvider: tokenProvider,
+                            modelContext: modelContext
+                        )
+                    } label: {
+                        Label("Journal", systemImage: "book.closed")
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    WeatherToolbarChip(service: weather)
-                }
-            }
+            })
             .refreshable {
                 await store.refresh()
                 weather.start()
