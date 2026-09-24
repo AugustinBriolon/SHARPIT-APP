@@ -246,7 +246,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
 }
 
 private extension String {
-    var nilIfEmpty: String? { isEmpty ? nil : self }
+    nonisolated var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 
 /// A proposal in the thread: a card to validate while it waits, a line once it is settled.
