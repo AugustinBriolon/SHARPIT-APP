@@ -8,6 +8,7 @@ struct TodayView: View {
     @State private var sync: ProviderSyncStore?
     private let appleHealth: AppleHealthSource?
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(ShellRouter.self) private var router
 
     /// Kept so an activity opened from here can load itself. Nil in previews and
     /// fixtures, where a done session has nothing to fetch.
@@ -97,29 +98,19 @@ struct TodayView: View {
             }
             .background(SharpitCanvasBackground())
             .navigationTitle(store.navigationTitle)
-            .navigationBarTitleDisplayMode(.inline)
+            // The date, large, where it always was; it folds into the bar on scroll.
+            .navigationBarTitleDisplayMode(.large)
             .modifier(LiquidNavChrome())
             .sharpitSyncToast(sync)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if let activityStatusStore {
-                        ActivityStatusButton(store: activityStatusStore)
-                    }
+                ToolbarItem(placement: .topBarTrailing) {
+                    AccountAvatarButton { router.openSettings() }
                 }
             }
-            .modifier(TodayTrailingToolbar(weather: weather) {
-                if let journalClient, let wellnessClient, let tokenProvider {
-                    NavigationLink {
-                        JournalView(
-                            client: journalClient,
-                            wellness: wellnessClient,
-                            tokenProvider: tokenProvider,
-                            modelContext: modelContext
-                        )
-                    } label: {
-                        Label("Journal", systemImage: "book.closed")
-                    }
-                }
+            // The day's controls sit under the date rather than in the bar: named, not
+            // squeezed into icons, and pinned while the fold scrolls under them.
+            .modifier(TodayControlsBar {
+                controlsRow
             })
             .refreshable {
                 await store.refresh()
@@ -143,6 +134,39 @@ struct TodayView: View {
 }
 
 extension TodayView {
+    /// Mode, Journal and weather, as one row of glass chips.
+    @ViewBuilder
+    fileprivate var controlsRow: some View {
+        SharpitGlassGroup {
+            HStack(spacing: SharpitSpacing.xs) {
+                if let activityStatusStore {
+                    ActivityStatusButton(store: activityStatusStore, showsLabel: true)
+                }
+                if let journalClient, let wellnessClient, let tokenProvider {
+                    NavigationLink {
+                        JournalView(
+                            client: journalClient,
+                            wellness: wellnessClient,
+                            tokenProvider: tokenProvider,
+                            modelContext: modelContext
+                        )
+                    } label: {
+                        Label("Journal", systemImage: "book.closed")
+                            .labelStyle(.titleAndIcon)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .sharpitGlassChip()
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer(minLength: 0)
+                WeatherChip(service: weather)
+            }
+            .animation(SharpitMotion.reveal, value: weather.reading)
+        }
+        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.bottom, SharpitSpacing.xs)
+    }
+
     /// Pulls the providers — always when asked, otherwise only when the last pull is stale —
     /// and reloads Today when fresh data came in.
     fileprivate func pullProviders(force: Bool) async {
@@ -501,6 +525,20 @@ private struct TodayEmptyView: View {
             if let url = URL(string: empty.webURL) {
                 Link("Continuer sur le web", destination: url)
             }
+        }
+    }
+}
+
+/// Pins Résumé's chip row under the navigation bar. On iOS 26 and later it is a safe-area bar,
+/// so the scroll edge effect runs under it as under the bar itself.
+private struct TodayControlsBar<Bar: View>: ViewModifier {
+    @ViewBuilder let bar: () -> Bar
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.safeAreaBar(edge: .top, spacing: 0) { bar() }
+        } else {
+            content.safeAreaInset(edge: .top, spacing: 0) { bar() }
         }
     }
 }

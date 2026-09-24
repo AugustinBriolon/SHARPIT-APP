@@ -15,8 +15,16 @@ final class ShellRouter {
     /// athlete writes their own question, the coach is told what they were looking at.
     private(set) var pendingCoachContext: CoachDiscussContext?
 
+    /// Paramètres is a sheet over the tabs, opened from the avatar in Résumé and Corps or a
+    /// `/settings` link — not a tab: the athlete tunes it rarely and leaves it at once.
+    var isShowingSettings = false
+
     func select(_ tab: ShellTab) {
         selectedTab = tab
+    }
+
+    func openSettings() {
+        isShowingSettings = true
     }
 
     /// Opens Coach carrying what the athlete was looking at.
@@ -38,5 +46,5 @@ enum ShellTab: Hashable, CaseIterable {
     case plan
     case coach
     case activity
-    case me
+    case body
 }

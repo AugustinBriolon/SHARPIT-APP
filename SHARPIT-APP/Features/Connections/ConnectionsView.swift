@@ -1,12 +1,10 @@
-import CloudKit
 import SwiftUI
 
-/// Réglages → Connexions: every data source SHARPIT reads from, in one place — Garmin, Apple
-/// Health, and the private iCloud store the local cache replicates through.
+/// Paramètres → Sources de données: every source SHARPIT reads from — Garmin and Apple Health.
 ///
 /// Garmin is connected on the web, where its sign-in lives; Apple Health is switched on here,
-/// because only the phone can read it; iCloud is read-only here, because nothing about it is a
-/// setting to change — it either has an account or it doesn't (`docs/adr/0007`).
+/// because only the phone can read it. The iCloud copy of the cache has its own page,
+/// Synchronisation iCloud (`docs/adr/0007`).
 ///
 /// Each source is one two-line row — its own mark, its name, one short status — so the rows
 /// keep the same height whatever the status says. Recency surfaces on the toast shown while a
@@ -18,7 +16,6 @@ struct ConnectionsView: View {
 
     @Environment(SharpitToastCenter.self) private var toastCenter
     @State private var status: V1SyncStatus?
-    @State private var iCloudStatus: CKAccountStatus?
     @State private var appleHealthToastToken: UUID?
 
     var body: some View {
@@ -28,17 +25,11 @@ struct ConnectionsView: View {
                 appleHealthRow
             }
             .sharpitListRows()
-            Section(
-                eyebrow: "Sauvegarde",
-                footer: "Seul ce que l'app a déjà lu est sauvegardé — jamais tes réponses de journal ni tes réglages, qui restent sur le serveur."
-            ) { iCloudRow }
-            .sharpitListRows()
         }
         .sharpitGroupedList()
-        .navigationTitle("Connexions")
+        .navigationTitle("Sources de données")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadStatus() }
-        .task { await loadICloudStatus() }
         .refreshable { await loadStatus() }
         .onChange(of: appleHealth.state) { _, state in
             switch state {
@@ -111,19 +102,6 @@ struct ConnectionsView: View {
         }
     }
 
-    private var iCloudRow: some View {
-        LabeledContent {
-            Text(ConnectionsReadout.iCloud(iCloudStatus))
-                .foregroundStyle(SharpitColor.mutedForeground)
-        } label: {
-            Label {
-                Text("iCloud")
-            } icon: {
-                SharpitRowIcon(symbol: "icloud")
-            }
-        }
-    }
-
     private var appleHealthBinding: Binding<Bool> {
         Binding(
             get: { appleHealth.isEnabled },
@@ -146,9 +124,5 @@ struct ConnectionsView: View {
         defer { toastCenter.dismiss(token) }
         guard let tok = try? await tokenProvider() else { return }
         status = try? await syncClient.syncStatus(token: tok)
-    }
-
-    private func loadICloudStatus() async {
-        iCloudStatus = try? await CKContainer(identifier: SharpitPersistence.cloudKitContainerId).accountStatus()
     }
 }

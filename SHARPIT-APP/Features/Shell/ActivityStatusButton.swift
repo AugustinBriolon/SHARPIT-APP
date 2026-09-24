@@ -16,18 +16,31 @@ extension ActivityStatusId {
 /// The toolbar chip that opens the mode drawer, and the drawer itself.
 struct ActivityStatusButton: View {
     @Bindable var store: ActivityStatusStore
+    /// In Résumé's chip row the mode is named; a toolbar slot is a fixed circle under Liquid
+    /// Glass, which clips a label, so there the symbol and colour travel alone.
+    var showsLabel = false
     @State private var isPresented = false
 
     var body: some View {
         Button {
             isPresented = true
         } label: {
-            // The toolbar slot is a fixed circle under Liquid Glass, which clips a
-            // label: the mode travels as its own symbol and colour instead, and the
-            // drawer names it.
-            Image(systemName: store.store.status.symbolName)
-                .foregroundStyle(store.store.status.tone)
+            if showsLabel {
+                HStack(spacing: SharpitSpacing.xxs + 2) {
+                    Image(systemName: store.store.status.symbolName)
+                        .foregroundStyle(store.store.status.tone)
+                        .contentTransition(.symbolEffect(.replace))
+                    Text(store.store.status.label)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .contentTransition(.opacity)
+                }
+                .sharpitGlassChip()
+            } else {
+                Image(systemName: store.store.status.symbolName)
+                    .foregroundStyle(store.store.status.tone)
+            }
         }
+        .buttonStyle(.plain)
         .accessibilityLabel("Statut d'activité — \(store.store.status.label)")
         .accessibilityHint("Changer ton statut d'activité")
         .sheet(isPresented: $isPresented) {

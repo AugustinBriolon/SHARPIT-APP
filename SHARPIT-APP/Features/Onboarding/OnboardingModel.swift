@@ -39,7 +39,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
         case .sports:
             "SharpIt est pensé pour l'endurance. Dis-nous ce que tu fais vraiment — on adaptera les propositions."
         case .equipment:
-            "Optionnel — précise ce que tu as vraiment pour adapter les séances. Tu pourras modifier ça plus tard dans Moi."
+            "Optionnel — précise ce que tu as vraiment pour adapter les séances. Tu pourras modifier ça plus tard dans Paramètres."
         case .availability:
             "Optionnel. Le coach cale le plan sur ton vrai rythme plutôt que sur une semaine théorique. Modifiable ensuite dans ton profil sur le web."
         case .intention:

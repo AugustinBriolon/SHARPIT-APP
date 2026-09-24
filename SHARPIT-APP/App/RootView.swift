@@ -80,23 +80,30 @@ struct RootView: View {
                 )
             }
             Tab(
-                ShellDestination.me.title,
-                systemImage: ShellDestination.me.systemImage,
-                value: ShellTab.me
+                ShellDestination.body.title,
+                systemImage: ShellDestination.body.systemImage,
+                value: ShellTab.body
             ) {
-                MeView(
-                    appleHealth: appleHealth,
-                    syncClient: sharpitClient,
+                CorpsView(
                     profileClient: profileClient,
-                    displayMode: displayMode,
+                    recoveryClient: sharpitClient,
                     tokenProvider: liveToken,
                     modelContext: modelContext
-                ) {
-                    AccountHeader()
-                }
+                )
             }
         }
         .background(SharpitCanvasBackground())
+        // Paramètres is a sheet over whichever tab is showing, opened from the avatar.
+        .sheet(isPresented: $router.isShowingSettings) {
+            SettingsView(
+                appleHealth: appleHealth,
+                syncClient: sharpitClient,
+                profileClient: profileClient,
+                displayMode: displayMode,
+                tokenProvider: liveToken,
+                modelContext: modelContext
+            )
+        }
         .overlay(alignment: .top) { SharpitToastHost(center: toastCenter) }
         .tint(SharpitColor.primary)
         .environment(router)
@@ -207,8 +214,10 @@ struct RootView: View {
             router.select(.coach)
         case "/activity", "/activities":
             router.select(.activity)
-        case "/me", "/profile", "/settings":
-            router.select(.me)
+        case "/body", "/corps", "/me", "/profile":
+            router.select(.body)
+        case "/settings":
+            router.openSettings()
         default:
             break
         }

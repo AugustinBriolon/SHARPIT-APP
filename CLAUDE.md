@@ -99,7 +99,7 @@ and the unofficial-providers notice are optional. The wall's reason and the vers
 come from `/api/v1/privacy/consent` (`V1PrivacyConsents.wallReason` mirrors
 `needsLegalConsentFromProfile`), so a new version of the documents brings the wall back without
 an app release. The documents are the web's published `/terms` and `/privacy`, opened in-app
-(`LegalDocumentSheet`) — never a bundled copy. Moi → Confidentialité & conditions changes each
+(`LegalDocumentSheet`) — never a bundled copy. Paramètres → Confidentialité & conditions changes each
 consent; withdrawing health reports to the gate through the environment and the wall stands again.
 
 **Onboarding.** After the wall, a new account answers the web's first-login wizard before it
@@ -113,9 +113,12 @@ goal through `/api/v1/goals`), and only `/api/v1/onboarding/complete` finishes t
 mirrors Connexions: Garmin is connected on the web, Apple Health is switched on here — the web's
 per-class source routing is not modelled.
 
-**Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Moi).
-`ShellDestination` describes the tabs that are not built yet and feeds
-`InstrumentShellView` placeholders. Today, Plan and Activité are real screens.
+**Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
+Paramètres is not a tab: it is a sheet (`SettingsView`) opened through `ShellRouter.openSettings()`
+from the avatar (`AccountAvatarButton`, the Clerk photo or the initials) in Résumé's and Corps'
+navigation bars, or a `/settings` link. Résumé's date is the large title; its mode, Journal and
+weather sit under it as a row of glass chips (`sharpitGlassChip`), pinned by a safe-area bar.
+Goals open from Plan's « … » menu, the coach's memory (context, trips) from Coach's toolbar.
 
 **Feature shape.** A feature is a `@Observable` store plus a view that only composes
 design-system components: `TodayStore` owns a `phase` enum (loading / loaded / empty /
@@ -185,7 +188,7 @@ network.
 
 **Freshness.** The app starts provider pulls itself (`ProviderSyncStore`, `/api/v1/sync`)
 on launch, foreground and pull-to-refresh, and can send Apple Health day summaries
-(`AppleHealthSource`, `/api/v1/health-samples`) when the athlete switches it on in Moi.
+(`AppleHealthSource`, `/api/v1/health-samples`) when the athlete switches it on in Paramètres → Sources de données.
 The regular pull only reaches back to the last one, so `GarminHistoryImport` runs the web's
 full-history Garmin import once per Clerk user, the first time Garmin is seen connected
 (launch, foreground, or the Garmin handoff). It is remembered only once it finished; a run cut
@@ -194,13 +197,25 @@ what it already holds. Streams are not in that pass: `/api/v1/sync` backfills th
 time. Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`, SHARPIT
 ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`.
 
-**Moi.** A grouped hub of the web's Réglages surfaces (`SharpitHubGroup`): Modèle, Compte,
-Préférences, Données, À propos. Profil and Seuils & repères edit the profile through
+**Corps.** The body as a readout (`CorpsView`): weight, then Récupération (HRV with Garmin's
+band, resting HR, VO₂max), Composition (scale metrics, lean mass derived as weight × (1 − fat)),
+Seuils (edited in `ThresholdsView` from the section). `CorpsStore` reads the body composition,
+`/api/v1/recovery`, the profile and its threshold history together, each allowed to fail alone,
+and `CorpsReadout` turns them into `CorpsMetric`s — keyed as the web's planned
+`/api/v1/body/overview` will be, so moving onto it changes the source, not the screen. Every
+metric is a tile opening `CorpsMetricDrawer` (Swift Charts, 30 j / 90 j / 1 an / Tout); a metric
+with no data is absent. Biological age is web-owned and not rendered until the web serves it
+(`docs/superpowers/specs/2026-09-24-ios-corps-parametres-pro-design.md`).
+
+**Paramètres.** SharpIt Pro (tier only until StoreKit), then Général — Compte (Clerk identity,
+profile height and birth date, derived age), Apparence (`AppearancePreference`, per iPhone, applied
+at the app root), Notifications, Sources de données (`ConnectionsView`), Synchronisation iCloud
+(`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer` events from launch) — then
+Sports & équipement, Densité de lecture, Confidentialité. Profil and Seuils edit the profile through
 `AthleteProfilePatch`, which carries only the fields the athlete changed — an absent key means
 "leave it" and an explicit `null` means "clear it", a distinction a `Codable` struct of
 optionals cannot express. The web's validator records why: a PATCH that materialised the
-fields it had not been given once wiped an athlete's thresholds on a one-field save. Corps is
-read-only; a weigh-in is written by a scale.
+fields it had not been given once wiped an athlete's thresholds on a one-field save.
 
 **Reading density.** `displayMode` (`essential` / `expert`) is read once into a
 `DisplayModeStore` in the environment; a surface asks `\.isExpertReading` rather than the

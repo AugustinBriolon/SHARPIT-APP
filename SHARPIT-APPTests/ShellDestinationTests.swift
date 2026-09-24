@@ -5,7 +5,7 @@ import Testing
     #expect(ShellDestination.plan.title == "Plan")
     #expect(ShellDestination.coach.title == "Coach")
     #expect(ShellDestination.activity.title == "Activité")
-    #expect(ShellDestination.me.title == "Moi")
+    #expect(ShellDestination.body.title == "Corps")
 }
 
 @Test func planShellIsIconFirst() {
@@ -14,8 +14,8 @@ import Testing
     #expect(ShellDestination.plan.surfaces.allSatisfy { !$0.symbolName.isEmpty })
 }
 
-@Test func meShellListsAthleteSurfaces() {
-    #expect(ShellDestination.me.surfaces.map(\.label) == ["Corps", "Objectifs", "Privé"])
+@Test func bodyShellListsItsSections() {
+    #expect(ShellDestination.body.surfaces.map(\.label) == ["Composition", "Récupération", "Seuils"])
 }
 
 @Test func signalKeysExposeSymbols() {

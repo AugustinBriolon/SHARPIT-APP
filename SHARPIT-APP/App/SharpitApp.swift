@@ -7,10 +7,14 @@ import SwiftUI
 struct SharpitApp: App {
     @UIApplicationDelegateAdaptor(SharpitAppDelegate.self) private var appDelegate
     private let modelContainer: ModelContainer
+    /// Per iPhone, never synced (Paramètres → Apparence).
+    @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .system
 
     init() {
         SharpitFonts.register()
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
+        // Before the container, so its first CloudKit setup event is heard.
+        CloudSyncMonitor.shared.start()
         do {
             modelContainer = try SharpitPersistence.makeContainer()
         } catch {
@@ -29,6 +33,7 @@ struct SharpitApp: App {
             }
             .environment(Clerk.shared)
             .environment(\.clerkTheme, .sharpit)
+            .preferredColorScheme(appearance.colorScheme)
             .onOpenURL { url in
                 Task {
                     try? await Clerk.shared.handle(url)

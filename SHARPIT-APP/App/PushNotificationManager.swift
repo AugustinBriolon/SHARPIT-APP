@@ -89,8 +89,9 @@ final class PushNotificationManager {
                 self.pendingTabSelection = .coach
             case "/activity", "/activities":
                 self.pendingTabSelection = .activity
-            case "/me", "/profile", "/settings":
-                self.pendingTabSelection = .me
+            // Moi became Corps; its old links land there.
+            case "/body", "/corps", "/me", "/profile", "/settings":
+                self.pendingTabSelection = .body
             default:
                 break
             }

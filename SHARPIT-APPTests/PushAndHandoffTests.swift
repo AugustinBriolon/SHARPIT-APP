@@ -113,7 +113,10 @@ struct PushAndHandoffTests {
         #expect(manager.consumePendingNavigation() == .activity)
 
         manager.didReceiveNotificationResponse(userInfo: ["url": "https://sharpit.app/me"])
-        #expect(manager.consumePendingNavigation() == .me)
+        #expect(manager.consumePendingNavigation() == .body)
+
+        manager.didReceiveNotificationResponse(userInfo: ["url": "https://sharpit.app/corps"])
+        #expect(manager.consumePendingNavigation() == .body)
     }
 
     @Test func syncDeviceTokenFlow() async {

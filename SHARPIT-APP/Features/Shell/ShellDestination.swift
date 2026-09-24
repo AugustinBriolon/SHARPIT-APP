@@ -10,14 +10,14 @@ enum ShellDestination: String, CaseIterable, Sendable {
     case plan
     case coach
     case activity
-    case me
+    case body
 
     var title: String {
         switch self {
         case .plan: "Plan"
         case .coach: "Coach"
         case .activity: "Activité"
-        case .me: "Moi"
+        case .body: "Corps"
         }
     }
 
@@ -26,7 +26,7 @@ enum ShellDestination: String, CaseIterable, Sendable {
         case .plan: "calendar"
         case .coach: "bubble.left.and.bubble.right"
         case .activity: "figure.run"
-        case .me: "person.crop.circle"
+        case .body: "figure.stand"
         }
     }
 
@@ -36,7 +36,7 @@ enum ShellDestination: String, CaseIterable, Sendable {
         case .plan: "7–14 j"
         case .coach: "Maintenant"
         case .activity: "Passé"
-        case .me: "Toi"
+        case .body: "Toi"
         }
     }
 
@@ -60,11 +60,11 @@ enum ShellDestination: String, CaseIterable, Sendable {
                 ShellSurfaceMark(symbolName: "map", label: "Séjours"),
                 ShellSurfaceMark(symbolName: "plus.circle", label: "Saisie"),
             ]
-        case .me:
+        case .body:
             [
-                ShellSurfaceMark(symbolName: "figure.strengthtraining.traditional", label: "Corps"),
-                ShellSurfaceMark(symbolName: "flag", label: "Objectifs"),
-                ShellSurfaceMark(symbolName: "hand.raised", label: "Privé"),
+                ShellSurfaceMark(symbolName: "scalemass", label: "Composition"),
+                ShellSurfaceMark(symbolName: "waveform.path.ecg", label: "Récupération"),
+                ShellSurfaceMark(symbolName: "gauge.with.dots.needle.67percent", label: "Seuils"),
             ]
         }
     }

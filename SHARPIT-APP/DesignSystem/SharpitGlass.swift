@@ -61,6 +61,20 @@ extension View {
     }
 }
 
+extension View {
+    /// A labelled control in a row of glass chips — Résumé's mode, Journal and weather under
+    /// the date. Glass because the row floats over the scrolled fold.
+    func sharpitGlassChip() -> some View {
+        self
+            .font(SharpitTypography.meta.weight(.semibold))
+            .padding(.horizontal, SharpitSpacing.sm)
+            .padding(.vertical, SharpitSpacing.xs)
+            .frame(minHeight: 36)
+            .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.chipSurface)
+            .contentShape(Capsule())
+    }
+}
+
 /// Groups glass controls so they share one sampling region and blend as they move —
 /// a button sliding in beside the field melts out of it rather than popping.
 struct SharpitGlassGroup<Content: View>: View {

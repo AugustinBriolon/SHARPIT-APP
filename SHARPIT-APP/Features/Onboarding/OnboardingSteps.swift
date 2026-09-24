@@ -252,7 +252,7 @@ struct OnboardingSourcesStep: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             garminRow
             appleHealthRow
-            Text("Tu pourras tout modifier ensuite dans Moi → Connexions.")
+            Text("Tu pourras tout modifier ensuite dans Paramètres → Sources de données.")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .padding(.top, SharpitSpacing.xxs)

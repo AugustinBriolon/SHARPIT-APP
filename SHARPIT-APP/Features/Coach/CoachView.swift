@@ -10,6 +10,9 @@ struct CoachView: View {
     @Environment(ShellRouter.self) private var router
     @State private var store: CoachStore
     @State private var showingHistory = false
+    /// What the coach keeps about the athlete — free context, trips, constraints — moved here
+    /// from Moi, beside the conversation that reads it.
+    @State private var showingMemory = false
     @FocusState private var composerIsFocused: Bool
 
     private let conversations: any CoachConversationServing
@@ -51,6 +54,15 @@ struct CoachView: View {
                     }
                     .disabled(tokenProvider == nil)
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        composerIsFocused = false
+                        showingMemory = true
+                    } label: {
+                        Label("Mémoire", systemImage: "brain.head.profile")
+                    }
+                    .disabled(tokenProvider == nil)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         store.startNewConversation()
@@ -60,6 +72,21 @@ struct CoachView: View {
                     // Nothing to leave when the thread is empty, and an answer arriving
                     // would land in the conversation the athlete just walked out of.
                     .disabled(store.isEmpty || store.isReplying)
+                }
+            }
+            .sheet(isPresented: $showingMemory) {
+                if let tokenProvider {
+                    NavigationStack {
+                        CoachMemoryView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
+                            .toolbar {
+                                ToolbarItem(placement: .cancellationAction) {
+                                    Button("OK") { showingMemory = false }
+                                }
+                            }
+                    }
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+                    .sharpitSheet()
                 }
             }
             .sheet(isPresented: $showingHistory) {

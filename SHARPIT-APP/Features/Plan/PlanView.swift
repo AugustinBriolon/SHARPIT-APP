@@ -18,6 +18,7 @@ struct PlanView: View {
     @State private var showingMacroPlan = false
     @State private var showingGenerator = false
     @State private var showingAdapter = false
+    @State private var showingGoals = false
 
     init(
         client: any PlannedSessionServing,
@@ -71,6 +72,7 @@ struct PlanView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     PlanActionsMenu(
+                        onOpenGoals: { showingGoals = true },
                         onOpenMacroPlan: { showingMacroPlan = true },
                         onOpenGenerator: { showingGenerator = true },
                         onOpenAdapter: { showingAdapter = true },
@@ -115,6 +117,19 @@ struct PlanView: View {
             .sheet(isPresented: $showingCalendar) {
                 PlanCalendarSheet(store: store)
             }
+            // Goals moved here from Moi: they are what the plan is built toward.
+            .sheet(isPresented: $showingGoals) {
+                NavigationStack {
+                    GoalsView(client: GoalClient(), tokenProvider: tokenProvider)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("OK") { showingGoals = false }
+                            }
+                        }
+                }
+                .presentationDragIndicator(.visible)
+                .sharpitSheet()
+            }
             .sheet(isPresented: $showingMacroPlan) {
                 MacroPlanSheet(tokenProvider: tokenProvider) {
                     Task { await store.loadAroundSelection() }
@@ -145,6 +160,7 @@ struct PlanView: View {
 /// Native sheets for the three key planning operations (macro plan, fill week, adapt plan)
 /// and direct bridge to discussion with the Coach.
 private struct PlanActionsMenu: View {
+    let onOpenGoals: () -> Void
     let onOpenMacroPlan: () -> Void
     let onOpenGenerator: () -> Void
     let onOpenAdapter: () -> Void
@@ -152,6 +168,10 @@ private struct PlanActionsMenu: View {
 
     var body: some View {
         Menu {
+            Button(action: onOpenGoals) {
+                Label("Objectifs", systemImage: "flag.fill")
+            }
+            Divider()
             Button(action: onOpenMacroPlan) {
                 Label("Consulter le plan macro", systemImage: "map")
             }
