@@ -7,7 +7,8 @@ import SwiftUI
 struct AccountAvatarButton: View {
     let action: () -> Void
 
-    @ScaledMetric(relativeTo: .body) private var size: CGFloat
+    // Declared bare and set in `init`: the attribute cannot take `relativeTo:` without a value.
+    @ScaledMetric private var size: CGFloat
 
     init(size: CGFloat = 32, action: @escaping () -> Void) {
         _size = ScaledMetric(wrappedValue: size, relativeTo: .body)
