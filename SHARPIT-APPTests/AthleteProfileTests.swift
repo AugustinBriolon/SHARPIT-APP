@@ -68,6 +68,7 @@ import Testing
         "ftpW", "maxHr", "lthr",
         "runThresholdPaceSecPerKm", "swimCssSecPer100m", "defaultPoolLengthM",
         "equipment", "practicedSports", "trainingAvailability",
+        "sex", "notificationPrefs",
     ])
 }
 

@@ -17,6 +17,10 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
     case waterPct
     case boneKg
     case bmi
+    case visceralFat
+    case bmr
+    case bodyAgeScale
+    case vascularAge
     case ftp
     case maxHr
     case lthr
@@ -29,7 +33,8 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .weight: .hero
         case .hrv, .restingHr, .vo2maxRun, .vo2maxBike: .recovery
-        case .bodyFatPct, .leanMassKg, .musclePct, .waterPct, .boneKg, .bmi: .composition
+        case .bodyFatPct, .leanMassKg, .musclePct, .waterPct, .boneKg, .bmi,
+             .visceralFat, .bmr, .bodyAgeScale, .vascularAge: .composition
         case .ftp, .maxHr, .lthr, .runThresholdPace, .swimCss: .thresholds
         }
     }
@@ -47,6 +52,10 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
         case .waterPct: "Eau corporelle"
         case .boneKg: "Masse osseuse"
         case .bmi: "IMC"
+        case .visceralFat: "Graisse viscérale"
+        case .bmr: "Métabolisme de base"
+        case .bodyAgeScale: "Âge corporel"
+        case .vascularAge: "Âge vasculaire"
         case .ftp: "FTP"
         case .maxHr: "FC max"
         case .lthr: "FC seuil"
@@ -62,7 +71,9 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
         case .restingHr, .maxHr, .lthr: "bpm"
         case .vo2maxRun, .vo2maxBike: "ml/kg/min"
         case .bodyFatPct, .musclePct, .waterPct: "%"
-        case .bmi: nil
+        case .bmi, .visceralFat: nil
+        case .bmr: "kcal"
+        case .bodyAgeScale, .vascularAge: "ans"
         case .ftp: "W"
         case .runThresholdPace: "/km"
         case .swimCss: "/100 m"
@@ -84,7 +95,15 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
         case .bodyFatPct, .musclePct, .waterPct, .boneKg, .bmi:
             "Mesuré par ta balance. Suis la tendance plutôt qu'une pesée isolée."
         case .leanMassKg:
-            "Tout ce qui n'est pas de la graisse : muscles, os, organes et eau. Poids × (1 − masse grasse)."
+            "Tout ce qui n'est pas de la graisse : muscles, os, organes et eau."
+        case .visceralFat:
+            "Indice de la graisse autour des organes, estimé par ta balance."
+        case .bmr:
+            "L'énergie que ton corps dépense au repos sur une journée, estimée par ta balance."
+        case .bodyAgeScale:
+            "L'âge que ta balance associe à ta composition corporelle. Une estimation du fabricant, pas un âge biologique."
+        case .vascularAge:
+            "Estimé par ta balance à partir de la vitesse de l'onde de pouls. Une indication, pas un diagnostic."
         case .ftp, .lthr, .runThresholdPace, .swimCss:
             "Chaque point est une valeur enregistrée — importée de Garmin, estimée ou saisie."
         case .maxHr:
@@ -217,6 +236,83 @@ nonisolated enum CorpsReadout {
         return metrics
     }
 
+    /// The web's overview, as Corps shows it: the value, its reference, and the one reading
+    /// beside it — the band for HRV, the change over the window for the rest.
+    static func metrics(from overview: V1BodyOverview) -> [CorpsMetric] {
+        let byKey = Dictionary(overview.metrics.map { ($0.key, $0) }, uniquingKeysWith: { first, _ in first })
+        return CorpsMetricKey.allCases.compactMap { key in
+            guard let metric = byKey[key] else { return nil }
+            let band = metric.baseline.flatMap { $0.low <= $0.high ? $0.low...$0.high : nil }
+            return CorpsMetric(
+                key: key,
+                value: metric.value,
+                measuredAt: metric.measuredAt,
+                source: sourceLabel(metric.source),
+                series: [],
+                baseline: band,
+                note: note(for: metric, band: band),
+                tone: tone(for: metric, band: band)
+            )
+        }
+    }
+
+    /// The overview's values, each carrying the series the app assembled for the same key, so a
+    /// tile keeps its small trend. A metric only the app knows is dropped: the web decides
+    /// what Corps shows.
+    static func merging(overview: V1BodyOverview, localSeries local: [CorpsMetric]) -> [CorpsMetric] {
+        let seriesByKey = Dictionary(local.map { ($0.key, $0.series) }, uniquingKeysWith: { first, _ in first })
+        return metrics(from: overview).map { metric in
+            CorpsMetric(
+                key: metric.key,
+                value: metric.value,
+                measuredAt: metric.measuredAt,
+                source: metric.source,
+                series: seriesByKey[metric.key] ?? [],
+                baseline: metric.baseline,
+                note: metric.note,
+                tone: metric.tone
+            )
+        }
+    }
+
+    /// A series from the web, oldest first, as points on a time axis.
+    static func points(from series: V1BodySeries) -> [CorpsPoint] {
+        series.points.compactMap { point in
+            TrainingDayId.date(point.date).map { CorpsPoint(date: $0, value: point.value) }
+        }
+    }
+
+    static func sourceLabel(_ source: String) -> String? {
+        switch source.lowercased() {
+        case "withings": "Withings"
+        case "garmin": "Garmin"
+        case "renpho": "Renpho"
+        case "apple_health", "apple-health": "Apple Santé"
+        case "profile", "manual": "Saisi"
+        case "estimated": "Estimé"
+        case "": nil
+        default: source.capitalized
+        }
+    }
+
+    private static func note(for metric: V1BodyMetric, band: ClosedRange<Double>?) -> String? {
+        if metric.key == .hrv, let band {
+            return "plage \(Int(band.lowerBound.rounded()))–\(Int(band.upperBound.rounded()))"
+        }
+        guard let previous = metric.previous, let days = metric.deltaWindowDays else { return nil }
+        let delta = metric.value - previous
+        let noise = metric.key == .weight ? weightNoiseKg : 0.05 * max(abs(previous), 1)
+        if abs(delta) < noise { return "stable sur \(days) j" }
+        let sign = delta > 0 ? "+" : "−"
+        let unit = metric.key.unit.map { " \($0)" } ?? ""
+        return "\(sign)\(format(abs(delta), for: metric.key))\(unit) sur \(days) j"
+    }
+
+    private static func tone(for metric: V1BodyMetric, band: ClosedRange<Double>?) -> CorpsTone {
+        guard metric.key == .hrv, let band else { return .neutral }
+        return metric.value < band.lowerBound ? .belowRange : .inRange
+    }
+
     /// HRV and resting HR from the recovery read: the nights it carries, and today's.
     static func recoveryMetrics(_ recovery: V1RecoveryResponse?) -> [CorpsMetric] {
         guard let recovery else { return [] }
@@ -282,6 +378,8 @@ nonisolated enum CorpsReadout {
         case .runThresholdPace, .swimCss:
             ProfileFieldFormat.pace(value)
         case .hrv, .restingHr, .vo2maxRun, .vo2maxBike, .ftp, .maxHr, .lthr:
+            String(Int(value.rounded()))
+        case .bmr, .bodyAgeScale, .vascularAge, .visceralFat:
             String(Int(value.rounded()))
         case .weight, .leanMassKg, .boneKg, .bodyFatPct, .musclePct, .waterPct, .bmi:
             ProfileFieldFormat.decimal(value)

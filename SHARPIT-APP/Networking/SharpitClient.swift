@@ -64,14 +64,14 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, H
         try await send(V1SyncStatus.self, path: "/api/v1/sync", method: "POST", token: token, timeout: 240)
     }
 
-    /// `/api/garmin/sync` with `full: true`: the web's own full-history mode, which walks every
-    /// page Garmin serves instead of starting from the last pull. It has no `/api/v1` twin yet —
-    /// known debt. The server allows it five minutes, so the request waits as long.
+    /// `/api/v1/garmin/sync` with `full: true`: the web's own full-history mode, which walks every
+    /// page Garmin serves instead of starting from the last pull. The server allows it five
+    /// minutes, so the request waits as long.
     func importFullGarminHistory(token: String) async throws -> Int {
         let body = try JSONSerialization.data(withJSONObject: ["full": true])
         return try await send(
             GarminFullSyncResult.self,
-            path: "/api/garmin/sync",
+            path: "/api/v1/garmin/sync",
             method: "POST",
             token: token,
             timeout: 310,

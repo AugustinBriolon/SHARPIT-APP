@@ -6,8 +6,17 @@ import SwiftUI
 /// last fourteen nights.
 struct SleepView: View {
     @State private var store: DayResourceStore<V1SleepResponse>
+    @State private var showsTargets = false
+    private let tokenProvider: () async throws -> String
+    private let profileClient: any AthleteProfileServing
 
-    init(client: any SleepServing, tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any SleepServing,
+        tokenProvider: @escaping () async throws -> String,
+        profileClient: any AthleteProfileServing = AthleteProfileClient()
+    ) {
+        self.tokenProvider = tokenProvider
+        self.profileClient = profileClient
         _store = State(initialValue: DayResourceStore(
             failureMessage: "Ton sommeil n'a pas pu être chargé.",
             tokenProvider: tokenProvider,
@@ -23,6 +32,19 @@ struct SleepView: View {
             store: store
         ) { sleep in
             SleepSections(sleep: sleep)
+        }
+        // The sleep targets, set where they are read — right of the title, beside « Aujourd'hui ».
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showsTargets = true
+                } label: {
+                    Label("Objectifs de sommeil", systemImage: "target")
+                }
+            }
+        }
+        .sheet(isPresented: $showsTargets, onDismiss: { Task { await store.load() } }) {
+            SleepTargetsSheet(profileClient: profileClient, tokenProvider: tokenProvider)
         }
     }
 }

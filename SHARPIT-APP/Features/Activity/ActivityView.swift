@@ -19,7 +19,9 @@ struct ActivityView: View {
                     ActivityListContent(
                         activities: activities,
                         selectedActivity: $selectedActivity
-                    )
+                    ) {
+                        await load(force: true)
+                    }
                 case .empty:
                     ContentUnavailableView {
                         Label("Pas encore d’activité", systemImage: "figure.run")
@@ -56,10 +58,6 @@ struct ActivityView: View {
                     tokenProvider: tokenProvider
                 )
             }
-            // A pull asks the server again rather than repeating the client's cached list.
-            .refreshable {
-                await load(force: true)
-            }
             .task {
                 await load()
             }
@@ -74,7 +72,12 @@ struct ActivityView: View {
         do {
             let token = try await tokenProvider()
             let activities = try await client.activities(forceRefresh: force, token: token)
-            phase = activities.isEmpty ? .empty : .loaded(activities)
+            // Only a list that changed is swapped in. Replacing an identical list while the
+            // pull-to-refresh gesture was ending left the scroll view stuck pulled down.
+            if case .loaded(let shown) = phase, shown == activities { return }
+            SharpitMotion.run(SharpitMotion.fade) {
+                phase = activities.isEmpty ? .empty : .loaded(activities)
+            }
         } catch is CancellationError {
             return
         } catch let error as SharpitAPIError where error == .unauthorized {
@@ -98,6 +101,9 @@ private enum ActivityPhase {
 private struct ActivityListContent: View {
     let activities: [V1ActivityListItem]
     @Binding var selectedActivity: V1ActivityListItem?
+    /// On the scroll view itself, not on the screen around it: attached higher up, the
+    /// refresh control lost track of the list it belonged to and did not spring back.
+    let onRefresh: () async -> Void
 
     private var groupedActivities: [(String, [V1ActivityListItem])] {
         let groups = Dictionary(grouping: activities) {
@@ -135,6 +141,7 @@ private struct ActivityListContent: View {
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.lg)
         }
+        .refreshable { await onRefresh() }
         .modifier(ScrollUnderGlass())
     }
 }

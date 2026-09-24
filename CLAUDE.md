@@ -115,8 +115,8 @@ per-class source routing is not modelled.
 
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
 Paramètres is not a tab: it is a sheet (`SettingsView`) opened through `ShellRouter.openSettings()`
-from the avatar (`AccountAvatarButton`, the Clerk photo or the initials) in Résumé's and Corps'
-navigation bars, or a `/settings` link. Résumé hides its navigation bar and draws its own header,
+from the avatar (`AccountAvatarButton`, the Clerk photo or the initials) in Résumé's header, or a
+`/settings` link. Résumé hides its navigation bar and draws its own header,
 pinned by a safe-area bar: the date (`SharpitTypography.screenTitle`) on the avatar's line, then
 the mode, Journal and weather as glass chips (`sharpitGlassChip`). Goals open from Plan's « … »
 menu, the coach's memory (context, trips) from Coach's toolbar.
@@ -136,12 +136,11 @@ typography, colors or spacing — that belongs to `DesignSystem/`.
 in `V1Today.swift` / `V1Activities.swift` / `V1PlannedSessions.swift` and mirror the web
 API payloads.
 
-Every client calls the versioned `/api/v1/*` contracts (SHARPIT ADR-040: each one re-exports
-the `/api` handler, same Clerk authz). Two calls stay web-internal: `/api/coach/chat`, on
-purpose — its tools create and delete sessions without asking, so it moves to `/api/v1` with
-Lot B's "approve before applying" cards — and `/api/garmin/sync` with `full: true`
-(`SharpitClient.importFullGarminHistory`), which has no `/api/v1` twin yet. Treat the second as
-known debt, not as a pattern to copy.
+Every client calls the versioned `/api/v1/*` contracts (SHARPIT ADR-040: most re-export the
+`/api` handler, same Clerk authz; `body/*`, `pro` and `billing/apple/*` are native-only
+projections). One call stays web-internal on purpose: `/api/coach/chat` — its tools create and
+delete sessions without asking, so it moves to `/api/v1` with Lot B's "approve before applying"
+cards.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON
@@ -204,27 +203,40 @@ time. Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`,
 ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`.
 
 **Corps.** The body as a readout (`CorpsView`): weight, then Récupération (HRV with Garmin's
-band, resting HR, VO₂max), Composition (scale metrics, lean mass derived as weight × (1 − fat)),
-Seuils (edited in `ThresholdsView` from the section). `CorpsStore` reads the body composition,
-`/api/v1/recovery`, the profile and its threshold history together, each allowed to fail alone,
-and `CorpsReadout` turns them into `CorpsMetric`s — keyed as the web's planned
-`/api/v1/body/overview` will be, so moving onto it changes the source, not the screen. Every
-metric is a tile opening `CorpsMetricDrawer` (Swift Charts, 30 j / 90 j / 1 an / Tout); a metric
-with no data is absent. Biological age is web-owned and not rendered until the web serves it
-(`docs/superpowers/specs/2026-09-24-ios-corps-parametres-pro-design.md`).
+band, resting HR, VO₂max), Composition (scale metrics, visceral fat, BMR, the scale's body and
+vascular ages), Seuils (edited in `ThresholdsView` from the section). `CorpsStore` reads
+`/api/v1/body/overview` (`BodyClient`, the web's `body-v1.ts`) and, alongside, the body
+composition, `/api/v1/recovery`, the profile and its threshold history: those give the tiles their
+small trends and stand in for the overview on a server without it (`CorpsReadout.merging`). Every
+metric is a tile opening `CorpsMetricDrawer`, which reads `/api/v1/body/series` per range
+(30 j / 90 j / 1 an / Tout); a metric with no data is absent. The weight target is set from Corps'
+toolbar (`WeightTargetSheet`) and drawn on the weight's hero and chart; the sleep targets from
+Sommeil's (`SleepTargetsSheet`). Biological age is web-owned (SHARPIT ADR-045) and not rendered
+until the web serves it.
 
-**Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate (tier only until
-StoreKit), then quick settings answered in place with `SharpitSegmentedControl` and a toggle —
-Apparence (`AppearancePreference`, per iPhone, applied to every window's
-`overrideUserInterfaceStyle` so open sheets switch at once), Notifications
+**Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then two settings
+answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's
+`overrideUserInterfaceStyle` so open sheets switch at once) and Notifications
 (`PushNotificationManager.setEnabled`: off unregisters the device server-side, since iOS owns the
-permission), Densité de lecture — then Sources de données, Synchronisation iCloud
-(`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer` events from launch), Sports &
-équipement and Confidentialité, each row saying its state before it is opened. Profil and Seuils edit the profile through
-`AthleteProfilePatch`, which carries only the fields the athlete changed — an absent key means
+permission; `NotificationPrefsView` sets each kind in `notificationPrefs`) — then Sources de
+données, Synchronisation iCloud (`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer`
+events from launch), Sports & équipement, Densité de lecture (its own page: the choice needs its
+explanation) and Confidentialité, each row saying its state before it is opened. Compte edits in
+place: first and last name through Clerk's `user.update`, sex, height and birth date through
+`AthleteProfilePatch`; e-mail, password and photo stay in Clerk's own sheet.
+`AthleteProfilePatch` carries only the fields the athlete changed — an absent key means
 "leave it" and an explicit `null` means "clear it", a distinction a `Codable` struct of
 optionals cannot express. The web's validator records why: a PATCH that materialised the
 fields it had not been given once wiped an athlete's thresholds on a one-field save.
+
+**SharpIt Pro.** StoreKit 2, verified by the web (SHARPIT ADR-044). `ProStore` reads
+`/api/v1/pro` (tier, the web's perks, the subscription), carries the web's `appAccountToken` on
+every purchase, and hands every transaction — a purchase in `ProView`'s `SubscriptionStoreView`,
+`Transaction.unfinished` and `Transaction.updates` from launch, a restore — to
+`/api/v1/billing/apple/verify`, finishing it only once the web has it. The app never decides the
+tier. Products: `app.sharpit.ios.pro.monthly` and `.yearly` (`SharpitProProduct`), mirrored in
+`Config/SharpitPro.storekit` for the simulator (select it in the scheme's Run → Options →
+StoreKit Configuration).
 
 **Reading density.** `displayMode` (`essential` / `expert`) is read once into a
 `DisplayModeStore` in the environment; a surface asks `\.isExpertReading` rather than the

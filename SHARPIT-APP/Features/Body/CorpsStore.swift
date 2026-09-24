@@ -5,8 +5,9 @@ import Observation
 /// history — four reads made together, each allowed to fail on its own.
 ///
 /// A missing scale costs the Composition section, not the screen: only when nothing at all
-/// answers is Corps a failure. Until the web serves `/api/v1/body/overview`, the metrics are
-/// assembled here by `CorpsReadout` from the resources the app already reads.
+/// answers is Corps a failure. The values come from the web's `/api/v1/body/overview`; the
+/// resources the app already reads are fetched alongside for the tiles' small trends, and
+/// stand in for the overview on a server that does not serve it yet.
 @MainActor
 @Observable
 final class CorpsStore {
@@ -24,18 +25,23 @@ final class CorpsStore {
 
     private(set) var phase: Phase = .loading
     private(set) var metrics: [CorpsMetric] = []
+    /// The athlete's weight target, drawn on the weight's hero and chart.
+    private(set) var targetWeightKg: Double?
 
+    private let overviewClient: any BodyServing
     private let profileClient: any AthleteProfileServing
     private let bodyClient: any BodyCompositionServing
     private let recoveryClient: any RecoveryServing
     private let tokenProvider: () async throws -> String
 
     init(
+        overviewClient: any BodyServing = BodyClient(),
         profileClient: any AthleteProfileServing,
         bodyClient: any BodyCompositionServing,
         recoveryClient: any RecoveryServing,
         tokenProvider: @escaping () async throws -> String
     ) {
+        self.overviewClient = overviewClient
         self.profileClient = profileClient
         self.bodyClient = bodyClient
         self.recoveryClient = recoveryClient
@@ -61,6 +67,7 @@ final class CorpsStore {
 
         // Captured before the concurrent reads: the clients are Sendable, the store is not
         // theirs to reach into from another executor.
+        let overviewClient = overviewClient
         let profileClient = profileClient
         let bodyClient = bodyClient
         let recoveryClient = recoveryClient
@@ -75,10 +82,12 @@ final class CorpsStore {
             try await recoveryClient.recovery(trainingDayId: today, token: token)
         }
         async let thresholds = corpsAttempt { try await profileClient.thresholdHistory(token: token) }
+        async let overview = corpsAttempt { try await overviewClient.bodyOverview(token: token) }
 
         let results = await (profile, measurements, recovery, thresholds)
+        let web = await overview
         let outcomes: [CorpsReadOutcome] = [
-            results.0.outcome, results.1.outcome, results.2.outcome, results.3.outcome,
+            results.0.outcome, results.1.outcome, results.2.outcome, results.3.outcome, web.outcome,
         ]
 
         if outcomes.contains(.unauthorized) {
@@ -90,16 +99,30 @@ final class CorpsStore {
             return
         }
 
-        let assembled = CorpsReadout.metrics(
+        let local = CorpsReadout.metrics(
             profile: results.0.value,
             measurements: results.1.value ?? [],
             recovery: results.2.value,
             thresholds: results.3.value ?? []
         )
+        let assembled = web.value.map { CorpsReadout.merging(overview: $0, localSeries: local) } ?? local
+        targetWeightKg = results.0.value?.targetWeightKg
         SharpitMotion.run {
             metrics = assembled
             phase = assembled.isEmpty ? .empty : .loaded
         }
+    }
+
+    /// One metric over a range, from the web; the series already on the tile when the web
+    /// cannot answer, cut to the range.
+    func series(for metric: CorpsMetric, range: CorpsRange) async -> [CorpsPoint] {
+        let overviewClient = overviewClient
+        let key = metric.key
+        if let token = try? await tokenProvider(),
+           let series = try? await overviewClient.bodySeries(metric: key, range: range, token: token) {
+            return CorpsReadout.points(from: series)
+        }
+        return range.filter(metric.series)
     }
 }
 

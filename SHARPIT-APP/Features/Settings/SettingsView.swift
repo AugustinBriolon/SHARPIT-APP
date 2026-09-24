@@ -7,9 +7,9 @@ import UserNotifications
 /// Paramètres, opened as a sheet from the avatar in Résumé and Corps.
 ///
 /// A page of cards rather than a grouped list: who the athlete is and their tier first, then
-/// the settings they change often answered in place — appearance, notifications, reading
-/// density — and only then the pages worth opening, each row saying its state before it is
-/// opened. What used to live in Moi and belongs elsewhere moved: the body to Corps, goals to
+/// the two settings answered in place — appearance and notifications — and only then the pages
+/// worth opening, each row saying its state before it is opened. The reading density is one of
+/// those pages: the choice needs its explanation. What used to live in Moi and belongs elsewhere moved: the body to Corps, goals to
 /// Plan, the coach's memory to Coach.
 struct SettingsView: View {
     let appleHealth: AppleHealthSource
@@ -26,7 +26,7 @@ struct SettingsView: View {
     @State private var profile: AthleteProfileStore
     @State private var push = PushNotificationManager.shared
     @State private var notificationStatus: UNAuthorizationStatus?
-    @State private var hasAppeared = false
+    @Environment(ProStore.self) private var pro: ProStore?
 
     init(
         appleHealth: AppleHealthSource,
@@ -58,25 +58,27 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                     NavigationLink(value: SettingsRoute.account) {
-                        AccountCard(isPro: profile.profile.isPro)
+                        AccountCard(isPro: isPro)
                     }
                     .buttonStyle(.sharpitPressable)
-                    .revealed(hasAppeared, index: 0)
 
                     NavigationLink(value: SettingsRoute.pro) {
-                        ProCard(isPro: profile.profile.isPro)
+                        ProCard(isPro: isPro)
                     }
                     .buttonStyle(.sharpitPressable)
-                    .revealed(hasAppeared, index: 1)
 
                     SettingsGroup(title: "Réglages rapides") {
                         appearanceControl
                         SettingsDivider()
                         notificationsControl
-                        SettingsDivider()
-                        densityControl
+                        if push.isEnabledByAthlete, notificationStatus != .denied {
+                            NavigationLink(value: SettingsRoute.notifications) {
+                                SettingsRow(symbol: "slider.horizontal.3", tint: SettingsTone.notifications, title: "Choisir les notifications", detail: notificationKindsDetail)
+                            }
+                            .buttonStyle(.plain)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                     }
-                    .revealed(hasAppeared, index: 2)
 
                     SettingsGroup(title: "Données") {
                         NavigationLink(value: SettingsRoute.sources) {
@@ -86,13 +88,24 @@ struct SettingsView: View {
                         NavigationLink(value: SettingsRoute.iCloud) {
                             SettingsRow(symbol: "icloud.fill", tint: SettingsTone.iCloud, title: "Synchronisation iCloud", detail: iCloudDetail)
                         }
-                        SettingsDivider()
+                    }
+                    .buttonStyle(.plain)
+
+                    SettingsGroup(title: "Entraînement") {
                         NavigationLink(value: SettingsRoute.equipment) {
                             SettingsRow(symbol: "figure.run.square.stack", tint: SettingsTone.gear, title: "Sports & équipement", detail: sportsDetail)
                         }
+                        SettingsDivider()
+                        NavigationLink(value: SettingsRoute.density) {
+                            SettingsRow(
+                                symbol: "eye.fill",
+                                tint: SettingsTone.density,
+                                title: "Densité de lecture",
+                                detail: displayMode.isExpert ? "Expert" : "Essentiel"
+                            )
+                        }
                     }
                     .buttonStyle(.plain)
-                    .revealed(hasAppeared, index: 3)
 
                     SettingsGroup(title: "Confidentialité") {
                         NavigationLink(value: SettingsRoute.privacy) {
@@ -100,7 +113,6 @@ struct SettingsView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .revealed(hasAppeared, index: 4)
 
                     footer
                 }
@@ -121,9 +133,13 @@ struct SettingsView: View {
             .task { await profile.load() }
             .task { await refreshNotificationStatus() }
             .task { await cloudSync.refreshAccountStatus() }
-            .onAppear { hasAppeared = true }
         }
         .sharpitSheet()
+    }
+
+    /// The web's word on the tier once `/api/v1/pro` answered, else the profile's.
+    private var isPro: Bool {
+        pro?.pro?.isPro ?? profile.profile.isPro
     }
 
     // MARK: - Quick settings
@@ -147,26 +163,6 @@ struct SettingsView: View {
         .tint(SharpitColor.primary)
     }
 
-    private var densityControl: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SettingsRow(
-                symbol: "eye.fill",
-                tint: SettingsTone.density,
-                title: "Densité de lecture",
-                detail: displayMode.isExpert ? "78 TSS · IF 0,82 · TSB −12" : "Charge 78 · ressenti solide",
-                showsChevron: false
-            )
-            SharpitSegmentedControl(
-                selection: densityBinding,
-                options: [
-                    SharpitSegmentedControl<Bool>.Option(value: false, label: "Essentiel"),
-                    SharpitSegmentedControl<Bool>.Option(value: true, label: "Expert"),
-                ],
-                isDisabled: profile.isSaving || profile.phase != .loaded
-            )
-        }
-    }
-
     private var notificationsBinding: Binding<Bool> {
         Binding(
             get: { push.isEnabledByAthlete && notificationStatus != .denied },
@@ -185,18 +181,6 @@ struct SettingsView: View {
         )
     }
 
-    private var densityBinding: Binding<Bool> {
-        Binding(
-            get: { displayMode.isExpert },
-            set: { isExpert in
-                Task {
-                    await profile.setExpertReading(isExpert)
-                    displayMode.adopt(isExpert: profile.isExpertReading)
-                }
-            }
-        )
-    }
-
     private func refreshNotificationStatus() async {
         notificationStatus = await push.authorizationStatus()
     }
@@ -206,6 +190,17 @@ struct SettingsView: View {
     private var notificationsDetail: String {
         if notificationStatus == .denied { return "Refusées dans iOS — touche pour ouvrir les réglages" }
         return push.isEnabledByAthlete ? "Verdict du matin" : "Désactivées"
+    }
+
+    private var notificationKindsDetail: String {
+        guard let prefs = profile.profile.notificationPrefs else { return "Verdict du matin" }
+        let on = [
+            prefs.morningVerdict ? "verdict du matin" : nil,
+            prefs.weeklyReview ? "bilan" : nil,
+            prefs.sessionReminder ? "rappels" : nil,
+            prefs.syncAlerts ? "alertes" : nil,
+        ].compactMap { $0 }
+        return on.isEmpty ? "Aucune" : on.joined(separator: ", ").capitalizedFirstLetter
     }
 
     private var sourcesDetail: String {
@@ -253,7 +248,9 @@ struct SettingsView: View {
         case .account:
             AccountView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
         case .pro:
-            ProView(profileClient: profileClient, tokenProvider: tokenProvider)
+            if let pro {
+                ProView(store: pro)
+            }
         case .sources:
             ConnectionsView(appleHealth: appleHealth, syncClient: syncClient, tokenProvider: tokenProvider)
         case .iCloud:
@@ -262,6 +259,15 @@ struct SettingsView: View {
             EquipmentView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
         case .privacy:
             PrivacySettingsView(client: privacyClient, tokenProvider: tokenProvider)
+        case .notifications:
+            NotificationPrefsView(profileClient: profileClient, tokenProvider: tokenProvider)
+        case .density:
+            DisplayModeView(
+                client: profileClient,
+                displayMode: displayMode,
+                tokenProvider: tokenProvider,
+                modelContext: modelContext
+            )
         }
     }
 }
@@ -273,6 +279,12 @@ enum SettingsRoute: Hashable {
     case iCloud
     case equipment
     case privacy
+    case notifications
+    case density
+}
+
+private extension String {
+    var capitalizedFirstLetter: String { prefix(1).uppercased() + dropFirst() }
 }
 
 // MARK: - Building blocks
@@ -341,7 +353,7 @@ private struct ProCard: View {
                     .font(SharpitTypography.verdict)
                     .tracking(SharpitTypography.verdictTracking)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                Text(isPro ? "Tout SharpIt est ouvert pour toi." : "Coach étendu, analyses de séance, envoi vers la montre.")
+                Text(isPro ? "Tout SharpIt est ouvert pour toi." : "Bilan hebdomadaire, analyse de séance, lecture coach du journal.")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
                     .fixedSize(horizontal: false, vertical: true)

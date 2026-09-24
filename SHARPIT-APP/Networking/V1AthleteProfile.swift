@@ -41,6 +41,50 @@ nonisolated struct V1TrainingAvailability: Codable, Sendable, Equatable {
     }
 }
 
+/// Declared in Paramètres → Compte; biological age and HR norms depend on it.
+nonisolated enum AthleteSex: String, CaseIterable, Identifiable, Sendable {
+    case female
+    case male
+    case other
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .female: "Femme"
+        case .male: "Homme"
+        case .other: "Autre"
+        }
+    }
+}
+
+/// Which pushes the athlete wants, as the web resolves them (`notification-prefs.ts`): the
+/// server always serves a full v1, defaults included. Only the morning verdict drives a push
+/// today; the others are stored for the pushes to come.
+nonisolated struct V1NotificationPrefs: Codable, Sendable, Equatable {
+    var morningVerdict = true
+    /// "HH:mm", athlete-local; nil is the default morning slot.
+    var morningTime: String?
+    var weeklyReview = true
+    var sessionReminder = true
+    var syncAlerts = true
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case morningVerdict, morningTime, weeklyReview, sessionReminder, syncAlerts
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        morningVerdict = (try? container.decodeIfPresent(Bool.self, forKey: .morningVerdict)) ?? true
+        morningTime = try? container.decodeIfPresent(String.self, forKey: .morningTime)
+        weeklyReview = (try? container.decodeIfPresent(Bool.self, forKey: .weeklyReview)) ?? true
+        sessionReminder = (try? container.decodeIfPresent(Bool.self, forKey: .sessionReminder)) ?? true
+        syncAlerts = (try? container.decodeIfPresent(Bool.self, forKey: .syncAlerts)) ?? true
+    }
+}
+
 /// The athlete's stable attributes, as `/api/athlete-profile` returns them.
 ///
 /// Read as a whole, written one field at a time — see `AthleteProfilePatch`. The row holds
@@ -72,6 +116,9 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     var equipment: V1AthleteEquipment?
     var practicedSports: V1AthletePracticedSports?
     var trainingAvailability: V1TrainingAvailability?
+    var sex: AthleteSex?
+    /// Always served resolved by the web; nil only from a server before notification prefs.
+    var notificationPrefs: V1NotificationPrefs?
     var onboardingCompletedAt: Date?
     /// True when the row carries `onboardingCompletedAt: null` — the first-login wizard has
     /// not been finished. Read from the key being present *and* null, as the web's gate does
@@ -102,6 +149,8 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         equipment: V1AthleteEquipment? = nil,
         practicedSports: V1AthletePracticedSports? = nil,
         trainingAvailability: V1TrainingAvailability? = nil,
+        sex: AthleteSex? = nil,
+        notificationPrefs: V1NotificationPrefs? = nil,
         onboardingCompletedAt: Date? = nil,
         needsOnboarding: Bool = false
     ) {
@@ -124,6 +173,8 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         self.equipment = equipment
         self.practicedSports = practicedSports
         self.trainingAvailability = trainingAvailability
+        self.sex = sex
+        self.notificationPrefs = notificationPrefs
         self.onboardingCompletedAt = onboardingCompletedAt
         self.needsOnboarding = needsOnboarding
     }
@@ -134,6 +185,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         case ftpW, maxHr, lthr, runThresholdPaceSecPerKm, swimCssSecPer100m
         case defaultPoolLengthM, vo2maxRunning, vo2maxCycling, thresholdsSyncedAt
         case equipment, practicedSports, trainingAvailability, onboardingCompletedAt
+        case sex, notificationPrefs
     }
 
     init(from decoder: Decoder) throws {
@@ -160,6 +212,8 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
             V1TrainingAvailability.self,
             forKey: .trainingAvailability
         )
+        sex = (try? container.decodeIfPresent(String.self, forKey: .sex)).flatMap(AthleteSex.init(rawValue:))
+        notificationPrefs = try? container.decodeIfPresent(V1NotificationPrefs.self, forKey: .notificationPrefs)
         onboardingCompletedAt = Self.date(in: container, forKey: .onboardingCompletedAt)
         needsOnboarding = container.contains(.onboardingCompletedAt)
             && ((try? container.decodeNil(forKey: .onboardingCompletedAt)) ?? false)
@@ -201,6 +255,8 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         try container.encodeIfPresent(equipment, forKey: .equipment)
         try container.encodeIfPresent(practicedSports, forKey: .practicedSports)
         try container.encodeIfPresent(trainingAvailability, forKey: .trainingAvailability)
+        try container.encodeIfPresent(sex?.rawValue, forKey: .sex)
+        try container.encodeIfPresent(notificationPrefs, forKey: .notificationPrefs)
         // An explicit null keeps "not finished" through the cache, as the server sends it.
         if needsOnboarding {
             try container.encodeNil(forKey: .onboardingCompletedAt)
@@ -232,6 +288,8 @@ nonisolated enum AthleteProfileField: String, CaseIterable, Sendable {
     case equipment
     case practicedSports
     case trainingAvailability
+    case sex
+    case notificationPrefs
 
     static let expertDisplayMode = "expert"
     static let essentialDisplayMode = "essential"
@@ -291,6 +349,19 @@ nonisolated struct AthleteProfilePatch: Equatable, Sendable {
             "availableWeekdays": .array(availability.availableWeekdays.map { JSONValue.number(Double($0)) })
         ]
         fields[AthleteProfileField.trainingAvailability.rawValue] = .object(obj)
+    }
+
+    /// Records the declared sex; nil clears it.
+    mutating func setSex(_ sex: AthleteSex?) {
+        fields[AthleteProfileField.sex.rawValue] = sex.map { .string($0.rawValue) } ?? .null
+    }
+
+    /// Records one or more notification preferences. The server merges them over what it
+    /// stores, so a toggle sends only itself and never resets the others.
+    mutating func setNotificationPrefs(_ changes: [String: JSONValue]) {
+        var obj = changes
+        obj["version"] = .number(1)
+        fields[AthleteProfileField.notificationPrefs.rawValue] = .object(obj)
     }
 
     /// Records a field the athlete changed. `nil` clears it server-side.

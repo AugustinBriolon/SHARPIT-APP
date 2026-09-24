@@ -29,6 +29,9 @@ struct RootView: View {
     /// Brings in every Garmin activity once — the regular pull only reaches back so far.
     @State private var historyImport = GarminHistoryImport(client: SharpitClient(), statusClient: SharpitClient())
     @State private var historyToast: UUID?
+    /// SharpIt Pro: the tier as the web states it, and every App Store transaction handed to
+    /// the web to verify — listened to for as long as the app runs.
+    @State private var pro: ProStore?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -112,6 +115,13 @@ struct RootView: View {
         // rather than the profile (ADR 0006).
         .environment(\.displayMode, displayMode)
         .environment(historyImport)
+        .environment(pro)
+        .task {
+            let store = pro ?? ProStore(tokenProvider: liveToken)
+            pro = store
+            await store.load()
+            await store.listenForTransactions()
+        }
         // Once per athlete; a run cut off is picked up again on the next foreground.
         .task(id: clerk.user?.id) { await runHistoryImport() }
         .onChange(of: scenePhase) { _, phase in

@@ -14,9 +14,9 @@ struct CorpsView: View {
     private let tokenProvider: () async throws -> String
     private let modelContext: ModelContext?
 
-    @Environment(ShellRouter.self) private var router
     @State private var opened: CorpsMetric?
     @State private var isEditingThresholds = false
+    @State private var isEditingWeightTarget = false
     @State private var hasAppeared = false
 
     init(
@@ -60,12 +60,24 @@ struct CorpsView: View {
             .modifier(LiquidNavChrome())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    AccountAvatarButton { router.openSettings() }
+                    Button {
+                        isEditingWeightTarget = true
+                    } label: {
+                        Label("Objectif de poids", systemImage: "target")
+                    }
                 }
+            }
+            .sheet(isPresented: $isEditingWeightTarget, onDismiss: { Task { await store.load() } }) {
+                WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
             }
             .task { await store.load() }
             .sheet(item: $opened) { metric in
-                CorpsMetricDrawer(metric: metric)
+                CorpsMetricDrawer(
+                    metric: metric,
+                    target: metric.key == .weight ? store.targetWeightKg : nil
+                ) { range in
+                    await store.series(for: metric, range: range)
+                }
             }
             .sheet(isPresented: $isEditingThresholds, onDismiss: { Task { await store.load() } }) {
                 NavigationStack {
@@ -86,7 +98,7 @@ struct CorpsView: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 if store.phase == .loaded {
                     if let weight = store.metric(.weight) {
-                        CorpsHeroTile(metric: weight) { opened = weight }
+                        CorpsHeroTile(metric: weight, targetKg: store.targetWeightKg) { opened = weight }
                             .revealed(hasAppeared, index: 0)
                     }
                     section(.recovery, index: 1)
@@ -152,6 +164,7 @@ extension CorpsTone {
 /// The weight, large, with its change and a line of the last weeks.
 private struct CorpsHeroTile: View {
     let metric: CorpsMetric
+    let targetKg: Double?
     let action: () -> Void
 
     var body: some View {
@@ -180,9 +193,22 @@ private struct CorpsHeroTile: View {
                     CorpsSparkline(points: Array(metric.series.suffix(30)), tone: SharpitColor.primary)
                         .frame(width: 110, height: 40)
                 }
-                Text(CorpsFormat.caption(metric))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                HStack(spacing: SharpitSpacing.xs) {
+                    if let note = metric.note {
+                        Text(note)
+                            .font(SharpitTypography.meta.weight(.semibold))
+                            .foregroundStyle(SharpitColor.foreground)
+                    }
+                    Text(CorpsFormat.caption(metric))
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                    Spacer(minLength: 0)
+                    if let targetKg, targetKg > 0 {
+                        Label("cible \(ProfileFieldFormat.decimal(targetKg)) kg", systemImage: "target")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                }
             }
             .padding(SharpitSpacing.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -278,26 +304,37 @@ private struct CorpsSparkline: View {
 /// one, and what the number is.
 struct CorpsMetricDrawer: View {
     let metric: CorpsMetric
+    /// Drawn across the chart — the weight target, when the athlete set one.
+    var target: Double? = nil
+    /// The range's points, from the web's series route.
+    let loadSeries: (CorpsRange) async -> [CorpsPoint]
 
     @Environment(\.dismiss) private var dismiss
     @State private var range: CorpsRange = .ninetyDays
+    @State private var loaded: [CorpsPoint]?
+    @State private var isLoading = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                     header
-                    if metric.series.count > 1 {
-                        Picker("Période", selection: $range) {
-                            ForEach(CorpsRange.allCases) { range in
-                                Text(range.label).tag(range)
-                            }
+                    SharpitSegmentedControl(
+                        selection: $range,
+                        options: CorpsRange.allCases.map {
+                            SharpitSegmentedControl<CorpsRange>.Option(value: $0, label: $0.label)
                         }
-                        .pickerStyle(.segmented)
+                    )
+                    if points.count > 1 {
                         chart
                         stats
+                    } else if isLoading {
+                        RoundedRectangle(cornerRadius: SharpitRadius.panel)
+                            .fill(SharpitColor.mutedForeground.opacity(0.12))
+                            .frame(height: 220)
+                            .redacted(reason: .placeholder)
                     } else {
-                        Text("Pas encore assez de mesures pour tracer une évolution.")
+                        Text("Pas encore assez de mesures sur cette période pour tracer une évolution.")
                             .font(SharpitTypography.body)
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
@@ -319,6 +356,12 @@ struct CorpsMetricDrawer: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
+        .task(id: range) {
+            isLoading = true
+            let fetched = await loadSeries(range)
+            SharpitMotion.run { loaded = fetched }
+            isLoading = false
+        }
     }
 
     private var header: some View {
@@ -345,13 +388,14 @@ struct CorpsMetricDrawer: View {
         }
     }
 
+    /// The web's series once it answered; until then, what the tile already holds.
     private var points: [CorpsPoint] {
-        range.filter(metric.series)
+        loaded ?? range.filter(metric.series)
     }
 
     private var chart: some View {
         let shown = points
-        let values = shown.map(\.value) + [metric.baseline?.lowerBound, metric.baseline?.upperBound].compactMap { $0 }
+        let values = shown.map(\.value) + [metric.baseline?.lowerBound, metric.baseline?.upperBound, target].compactMap { $0 }
         return Chart {
             if let band = metric.baseline, let first = shown.first, let last = shown.last {
                 RectangleMark(
@@ -361,6 +405,16 @@ struct CorpsMetricDrawer: View {
                     yEnd: .value("Haut", band.upperBound)
                 )
                 .foregroundStyle(SharpitColor.signalRecovery.opacity(0.12))
+            }
+            if let target, target > 0 {
+                RuleMark(y: .value("Cible", target))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    .annotation(position: .top, alignment: .trailing) {
+                        Text("cible \(CorpsReadout.format(target, for: metric.key))")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
             }
             ForEach(shown) { point in
                 LineMark(x: .value("Jour", point.date), y: .value(metric.key.label, point.value))

@@ -1,0 +1,82 @@
+{
+  "identifier" : "5A1B7C2D",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "fr_FR",
+    "_storefront" : "FRA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21540001",
+      "localizations" : [
+
+      ],
+      "name" : "SharpIt Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "9.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6740000001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Bilan hebdomadaire, analyse de séance et lecture coach du journal.",
+              "displayName" : "SharpIt Pro — mensuel",
+              "locale" : "fr_FR"
+            }
+          ],
+          "productID" : "app.sharpit.ios.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "SharpIt Pro Monthly",
+          "subscriptionGroupID" : "21540001",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "79.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6740000002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Bilan hebdomadaire, analyse de séance et lecture coach du journal.",
+              "displayName" : "SharpIt Pro — annuel",
+              "locale" : "fr_FR"
+            }
+          ],
+          "productID" : "app.sharpit.ios.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "SharpIt Pro Yearly",
+          "subscriptionGroupID" : "21540001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
