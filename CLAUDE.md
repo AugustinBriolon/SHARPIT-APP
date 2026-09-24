@@ -138,16 +138,28 @@ API payloads.
 
 Every client calls the versioned `/api/v1/*` contracts (SHARPIT ADR-040: most re-export the
 `/api` handler, same Clerk authz; `body/*`, `pro` and `billing/apple/*` are native-only
-projections). One call stays web-internal on purpose: `/api/coach/chat` — its tools create and
-delete sessions without asking, so it moves to `/api/v1` with Lot B's "approve before applying"
-cards.
+projections). One call stays web-internal: `/api/coach/chat`, which has no `/api/v1` twin yet.
+Its tools no longer act without asking — calendar changes wait for the athlete's approval, on
+the web and here — so moving it is a web task, not a design one.
+
+**Coach turns and proposals.** A coach turn is kept as the AI SDK's UI-message parts
+(`CoachMessage.parts`), rebuilt from the route's stream by `CoachUIMessageAssembler` — a port of
+the SDK's `processUIMessageStream` — and sent back whole: on the next question, on an approval,
+and in the saved thread. Nothing in them is trimmed, because the server replays them: provider
+metadata carries the model's thought signatures, and an approval carries the server's
+`signature`. A calendar tool (`CoachUIParts.calendarToolTypes`) that stops at
+`approval-requested` is a `CoachProposalCard` (Valider / Refuser, a second « Confirmer » for a
+deletion); once every proposal of the step has an answer, `CoachStore.respond` sends the turn
+back and the server carries out the approved ones and goes on writing in the same message, as
+`useChat`'s `sendAutomaticallyWhen` does. A new question refuses the proposals left open
+(`dismissingUnresolved`), and an applied change bumps `ShellRouter.calendarRevision` so Plan and
+Résumé reload. The wording follows the web's `coach-tool-approval-helpers.tsx`.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON
-(`CoachMessage.stored`) and is sent back as it came, because the web writes parts the app
-does not model — tool calls — and a save from the phone must not strip them. The chat route reports model and gateway failures *inside* a 200
-stream (an `error` event) and may end on a `tool-approval-request` with no text; `CoachChatClient`
-reads both (`CoachChatError`) and logs the event kinds of an empty answer under the `coach`
+(`CoachMessage.stored`) and goes back as it came, its parts brought up to date. The chat route
+reports model and gateway failures *inside* a 200 stream (an `error` event); `CoachChatClient`
+turns it into `CoachChatError` and logs the chunk kinds of every answer under the `coach`
 category, so a silent answer names its cause.
 
 **Journal.** `JournalView` asks for the day signals the athlete turned on, and

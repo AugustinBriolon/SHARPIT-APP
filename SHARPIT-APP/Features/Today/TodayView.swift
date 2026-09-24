@@ -120,6 +120,9 @@ struct TodayView: View {
                 guard phase == .active else { return }
                 Task { await pullProviders(force: false) }
             }
+            .onChange(of: router.calendarRevision) { _, _ in
+                Task { await store.refresh() }
+            }
             .task {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
                 await store.load(resetToLoading: shouldReset)

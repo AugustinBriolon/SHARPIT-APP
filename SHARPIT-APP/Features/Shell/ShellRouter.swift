@@ -19,6 +19,14 @@ final class ShellRouter {
     /// `/settings` link — not a tab: the athlete tunes it rarely and leaves it at once.
     var isShowingSettings = false
 
+    /// Bumped when the calendar changed elsewhere than on Plan — a coach proposal carried out —
+    /// so Plan and Résumé reload what they show.
+    private(set) var calendarRevision = 0
+
+    func noteCalendarChanged() {
+        calendarRevision += 1
+    }
+
     func select(_ tab: ShellTab) {
         selectedTab = tab
     }

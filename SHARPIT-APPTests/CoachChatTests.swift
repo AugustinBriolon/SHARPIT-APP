@@ -95,18 +95,31 @@ import Testing
 
 struct StubCoachClient: CoachChatServing {
     var deltas: [String] = []
+    /// Raw chunks, sent instead of `deltas` when set.
+    var chunks: [JSONValue]?
     var failure: (any Error)?
 
-    func reply(to messages: [CoachMessage], token: String) -> AsyncThrowingStream<String, Error> {
+    func reply(to messages: [CoachMessage], token: String) -> AsyncThrowingStream<JSONValue, Error> {
         AsyncThrowingStream { continuation in
             if let failure {
                 continuation.finish(throwing: failure)
                 return
             }
-            deltas.forEach { continuation.yield($0) }
+            (chunks ?? Self.textChunks(deltas)).forEach { continuation.yield($0) }
             continuation.finish()
         }
     }
+
+    static func textChunks(_ deltas: [String]) -> [JSONValue] {
+        guard !deltas.isEmpty else { return [] }
+        return [chunk(#"{"type":"start-step"}"#), chunk(#"{"type":"text-start","id":"t"}"#)]
+            + deltas.map { .object(["type": .string("text-delta"), "id": .string("t"), "delta": .string($0)]) }
+            + [chunk(#"{"type":"text-end","id":"t"}"#), chunk(#"{"type":"finish-step"}"#)]
+    }
+}
+
+func chunk(_ json: String) -> JSONValue {
+    (try? JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))) ?? .null
 }
 
 @MainActor

@@ -89,10 +89,10 @@ actor CoachConversationClient: CoachConversationServing {
         _ = try await send("DELETE", path: "/api/v1/coach/conversations/\(id)", token: token)
     }
 
-    /// A turn read from history goes back as it came; one written here goes as the chat
-    /// route reads it.
+    /// A turn read from history goes back as it came, its parts brought up to date; one
+    /// written here goes as the chat route reads it.
     nonisolated static func body(for messages: [CoachMessage]) throws -> Data {
-        let wire: [Any] = messages.map { $0.stored?.foundationObject ?? CoachChatClient.wireMessage($0) }
+        let wire: [Any] = messages.map { CoachChatClient.wireMessage($0) }
         return try JSONSerialization.data(withJSONObject: ["messages": wire])
     }
 

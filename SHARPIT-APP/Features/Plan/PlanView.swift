@@ -151,6 +151,9 @@ struct PlanView: View {
             .onChange(of: store.selectedOffset) { _, _ in
                 Task { await store.loadAroundSelection() }
             }
+            .onChange(of: router.calendarRevision) { _, _ in
+                Task { await store.reload() }
+            }
         }
     }
 }

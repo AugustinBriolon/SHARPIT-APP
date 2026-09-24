@@ -21,6 +21,13 @@ final class CoachStore {
 
     var draft = ""
 
+    /// Called when the server carried out an approved change, so Plan and Résumé reload.
+    var onCalendarChanged: (() -> Void)?
+
+    /// The answers already sent back, so a continuation that fails is not re-sent in a loop
+    /// (the web's `lastStepApprovalResponseFingerprint`).
+    private var sentApprovals: Set<String> = []
+
     private let client: any CoachChatServing
     /// Nil where nothing is kept, in previews: the conversation then lives only on screen.
     private let conversations: (any CoachConversationServing)?
@@ -50,42 +57,88 @@ final class CoachStore {
         pendingContext = nil
     }
 
+    /// Whether a coach proposal is waiting for the athlete's answer.
+    var hasPendingApproval: Bool {
+        messages.last?.parts?.contains { $0["state"]?.string == "approval-requested" } ?? false
+    }
+
     func send() async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isReplying else { return }
 
+        // A proposal left open is refused by the new question, as on the web.
+        for index in messages.indices {
+            if let parts = messages[index].parts {
+                messages[index].parts = CoachUIParts.dismissingUnresolved(parts)
+            }
+        }
         let question = CoachMessage(role: .user, text: text, context: pendingContext)
         messages.append(question)
         draft = ""
         pendingContext = nil
         failure = nil
+
+        // The placeholder is appended before the first chunk so the thread shows the coach has
+        // started, rather than staying still until the first word lands.
+        let answer = CoachMessage(role: .assistant, text: "", parts: [])
+        let history = messages
+        messages.append(answer)
+        await stream(into: answer.id, history: history)
+    }
+
+    /// The athlete's answer to a proposal card. Once every proposal of the step has one, the
+    /// turn goes back to the server, which carries out the approved ones and goes on writing in
+    /// the same message — the web's `addToolApprovalResponse` and `sendAutomaticallyWhen`.
+    func respond(to approvalId: String, approved: Bool) async {
+        guard !isReplying, let index = messages.indices.last,
+              messages[index].role == .assistant, let parts = messages[index].parts
+        else { return }
+
+        let answered = CoachUIParts.responding(parts, approvalId: approvalId, approved: approved)
+        messages[index].parts = answered
+        failure = nil
+
+        guard CoachUIParts.isCompleteWithApprovalResponses(answered),
+              let fingerprint = CoachUIParts.approvalFingerprint(answered),
+              !sentApprovals.contains(fingerprint)
+        else { return }
+        sentApprovals.insert(fingerprint)
+        await stream(into: messages[index].id, history: messages)
+    }
+
+    /// Streams the server's answer into the turn `id`, building its parts chunk by chunk.
+    private func stream(into id: String, history: [CoachMessage]) async {
         isReplying = true
         defer { isReplying = false }
 
         guard let tokenProvider else {
+            dropEmptyAnswer()
             failure = "Connecte-toi pour parler au coach."
             return
         }
 
+        let appliedBefore = messages.first { $0.id == id }?.parts.map(CoachUIParts.appliedChanges) ?? 0
         do {
             let token = try await tokenProvider()
-            // The placeholder is appended before the first delta so the thread shows the
-            // coach has started, rather than staying still until the first word lands.
-            let answer = CoachMessage(role: .assistant, text: "")
-            messages.append(answer)
+            var assembler = CoachUIMessageAssembler(parts: messages.first { $0.id == id }?.parts ?? [])
 
-            for try await delta in client.reply(to: messages.dropLast(), token: token) {
-                guard let index = messages.firstIndex(where: { $0.id == answer.id }) else { break }
-                messages[index].text += delta
+            for try await chunk in client.reply(to: history, token: token) {
+                assembler.apply(chunk)
+                guard let index = messages.firstIndex(where: { $0.id == id }) else { break }
+                messages[index].parts = assembler.parts
+                messages[index].text = assembler.text
             }
 
             // An answer that never arrived is not an answer; leaving the empty bubble would
             // read as the coach having nothing to say.
-            if messages.last?.role == .assistant, messages.last?.text.isEmpty == true {
-                messages.removeLast()
+            if !CoachUIParts.hasContent(assembler.parts) {
+                dropEmptyAnswer()
                 failure = "Le coach n'a pas répondu. Réessaie."
             } else {
                 await persist(token: token)
+            }
+            if CoachUIParts.appliedChanges(assembler.parts) > appliedBefore {
+                onCalendarChanged?()
             }
         } catch is CancellationError {
         } catch let error as SharpitAPIError where error == .unauthorized {
@@ -105,6 +158,7 @@ final class CoachStore {
     func startNewConversation() {
         guard !isReplying else { return }
         messages = []
+        sentApprovals = []
         conversationId = nil
         pendingContext = nil
         draft = ""
@@ -118,6 +172,7 @@ final class CoachStore {
         do {
             let conversation = try await conversations.conversation(id: id, token: try await tokenProvider())
             messages = conversation.messages
+            sentApprovals = []
             conversationId = conversation.id
             pendingContext = nil
             draft = ""
@@ -151,7 +206,8 @@ final class CoachStore {
     }
 
     private func dropEmptyAnswer() {
-        if messages.last?.role == .assistant, messages.last?.text.isEmpty == true {
+        if let last = messages.last, last.role == .assistant, !CoachUIParts.hasContent(last.parts ?? []),
+           last.text.isEmpty {
             messages.removeLast()
         }
     }

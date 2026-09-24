@@ -106,6 +106,11 @@ struct CoachView: View {
         }
         // The subject travels from wherever the athlete pressed "discuter", and is taken
         // once so returning later cannot silently re-attach a stale one.
+        // A change the coach carried out reloads Plan and Résumé, as the web invalidates its
+        // planned-session queries after a coach turn.
+        .onAppear {
+            store.onCalendarChanged = { [router] in router.noteCalendarChanged() }
+        }
         .task(id: router.pendingCoachContext) {
             if let context = router.consumeCoachContext() {
                 store.attach(context)
@@ -121,8 +126,12 @@ struct CoachView: View {
                         CoachEmptyState()
                     }
                     ForEach(store.messages) { message in
-                        CoachMessageRow(message: message, isStreaming: isStreaming(message))
-                            .id(message.id)
+                        CoachMessageRow(
+                            message: message,
+                            isStreaming: isStreaming(message),
+                            onAnswer: answerHandler
+                        )
+                        .id(message.id)
                     }
                     if let failure = store.failure {
                         Text(failure)
@@ -144,6 +153,9 @@ struct CoachView: View {
             .onChange(of: store.messages.last?.text) { _, _ in
                 scrollToLatest(proxy)
             }
+            .onChange(of: store.messages.last?.parts?.count) { _, _ in
+                scrollToLatest(proxy)
+            }
             // The keyboard going down uncovers the thread; the newest turn is what the
             // athlete was writing about, so it is what should be under their eyes.
             .onChange(of: composerIsFocused) { _, focused in
@@ -156,6 +168,15 @@ struct CoachView: View {
     private func scrollToLatest(_ proxy: ScrollViewProxy) {
         guard let last = store.messages.last?.id else { return }
         withAnimation(SharpitMotion.reveal) { proxy.scrollTo(last, anchor: .bottom) }
+    }
+
+    /// Answers a proposal card; nil while a reply streams, so the buttons wait with it.
+    private var answerHandler: ((String, Bool) -> Void)? {
+        guard !store.isReplying else { return nil }
+        let store = store
+        return { approvalId, approved in
+            Task { await store.respond(to: approvalId, approved: approved) }
+        }
     }
 
     /// The last assistant turn, while it is still filling in.
@@ -194,7 +215,11 @@ struct CoachView: View {
                         .transition(.scale.combined(with: .opacity))
                     }
 
-                    TextField("Pose ta question", text: $store.draft, axis: .vertical)
+                    TextField(
+                        store.hasPendingApproval ? "Réponds à la proposition, ou écris pour l'ignorer" : "Pose ta question",
+                        text: $store.draft,
+                        axis: .vertical
+                    )
                         .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(1...5)
@@ -258,6 +283,8 @@ struct CoachView: View {
 private struct CoachMessageRow: View {
     let message: CoachMessage
     let isStreaming: Bool
+    /// Nil while an answer streams: a proposal cannot be answered mid-turn.
+    let onAnswer: ((String, Bool) -> Void)?
 
     var body: some View {
         switch message.role {
@@ -282,16 +309,67 @@ private struct CoachMessageRow: View {
         case .assistant:
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 SharpitEyebrow("Coach")
-                // The coach writes markdown; rendering it as literal asterisks would be
-                // the app failing to read its own answer.
-                SharpitMarkdownText(markdown: message.text)
-                    .textSelection(.enabled)
+                ForEach(CoachSegment.segments(of: message)) { segment in
+                    switch segment {
+                    case .text(_, let text):
+                        // The coach writes markdown; rendering it as literal asterisks would be
+                        // the app failing to read its own answer.
+                        SharpitMarkdownText(markdown: text)
+                            .textSelection(.enabled)
+                    case .proposal(let proposal):
+                        CoachProposalCard(proposal: proposal, onAnswer: answer(for: proposal))
+                    }
+                }
                 if isStreaming {
                     CoachWritingMark()
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+extension CoachMessageRow {
+    private func answer(for proposal: CoachProposal) -> ((Bool) -> Void)? {
+        guard case .awaiting(let approvalId) = proposal.status, let onAnswer else { return nil }
+        return { approved in onAnswer(approvalId, approved) }
+    }
+}
+
+/// A coach turn read in order: its prose, and its proposals where the coach made them.
+/// Consecutive text parts read as one; reasoning, steps and read-only tools are not shown.
+nonisolated enum CoachSegment: Identifiable, Equatable {
+    case text(id: String, String)
+    case proposal(CoachProposal)
+
+    var id: String {
+        switch self {
+        case .text(let id, _): id
+        case .proposal(let proposal): "proposal-\(proposal.id)"
+        }
+    }
+
+    static func segments(of message: CoachMessage) -> [CoachSegment] {
+        guard let parts = message.parts else {
+            return message.text.isEmpty ? [] : [.text(id: "text-0", message.text)]
+        }
+        var segments: [CoachSegment] = []
+        var pending: [String] = []
+        func flush() {
+            guard !pending.isEmpty else { return }
+            segments.append(.text(id: "text-\(segments.count)", pending.joined(separator: "\n\n")))
+            pending = []
+        }
+        for part in parts {
+            if part["type"]?.string == "text", let text = part["text"]?.string, !text.isEmpty {
+                pending.append(text)
+            } else if let proposal = CoachProposal(part: part) {
+                flush()
+                segments.append(.proposal(proposal))
+            }
+        }
+        flush()
+        return segments
     }
 }
 
