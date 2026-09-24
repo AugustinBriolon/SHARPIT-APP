@@ -26,6 +26,11 @@ struct SharpitApp: App {
             }
             .environment(Clerk.shared)
             .environment(\.clerkTheme, .sharpit)
+            .onOpenURL { url in
+                Task {
+                    try? await Clerk.shared.handle(url)
+                }
+            }
         }
         .modelContainer(modelContainer)
     }

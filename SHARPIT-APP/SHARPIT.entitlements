@@ -2,10 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:sharpit.app</string>
+		<string>webcredentials:sharpit.app</string>
+	</array>
 	<key>com.apple.developer.healthkit</key>
 	<true/>
 	<key>com.apple.developer.healthkit.access</key>
-	<array/>
+	<array>
+		<string>health-records</string>
+	</array>
+	<key>com.apple.developer.healthkit.background-delivery</key>
+	<true/>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.app.sharpit.ios</string>
@@ -16,10 +29,5 @@
 	</array>
 	<key>com.apple.developer.weatherkit</key>
 	<true/>
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:sharpit.app</string>
-		<string>webcredentials:sharpit.app</string>
-	</array>
 </dict>
 </plist>
