@@ -74,7 +74,8 @@ struct TodayView: View {
                         signalClient: signalClient,
                         onArrival: { store.handleArrivalWins(fold: fold) },
                         onArrivalCompleted: { store.markArrivalCompleted() },
-                        onSessionLinked: { Task { await store.refresh() } }
+                        onSessionLinked: { Task { await store.refresh() } },
+                        controls: AnyView(controlsRow)
                     )
                 case .empty(let empty):
                     TodayEmptyView(empty: empty)
@@ -97,17 +98,17 @@ struct TodayView: View {
                 }
             }
             .background(SharpitCanvasBackground())
-            // Kept for the back button of what Résumé pushes (Journal, a session), while the
-            // bar itself is hidden: the date and the avatar share one line of the header.
+            // The date as the large title: it folds into the centre of the bar on scroll, as
+            // on Corps. The avatar sits in the bar.
             .navigationTitle(store.navigationTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(LiquidNavChrome())
             .sharpitSyncToast(sync)
-            // The date on the avatar's line and the day's chips under it, pinned while the fold
-            // scrolls under them — the fold starts one bar higher than under a navigation bar.
-            .modifier(TodayControlsBar {
-                header
-            })
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    AccountAvatarButton { router.openSettings() }
+                }
+            }
             .refreshable {
                 await store.refresh()
                 weather.start()
@@ -130,25 +131,6 @@ struct TodayView: View {
 }
 
 extension TodayView {
-    /// The date, large, with the avatar on its line; the chips beneath.
-    fileprivate var header: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-                Text(store.navigationTitle)
-                    .font(SharpitTypography.screenTitle)
-                    .tracking(SharpitTypography.screenTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .contentTransition(.opacity)
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 0)
-                AccountAvatarButton(size: 38) { router.openSettings() }
-            }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            controlsRow
-        }
-        .padding(.top, SharpitSpacing.xs)
-    }
-
     /// Mode, Journal and weather, as one row of glass chips.
     @ViewBuilder
     fileprivate var controlsRow: some View {
@@ -178,8 +160,6 @@ extension TodayView {
             }
             .animation(SharpitMotion.reveal, value: weather.reading)
         }
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.bottom, SharpitSpacing.xs)
     }
 
     /// Pulls the providers — always when asked, otherwise only when the last pull is stale —
@@ -210,6 +190,8 @@ private struct TodayFoldView: View {
     var onArrivalCompleted: () -> Void = {}
     /// Called once a prescription has been linked, so Today reloads and shows it as done.
     var onSessionLinked: () -> Void = {}
+    /// Mode, Journal and weather — the fold's first row, scrolling away with the rest.
+    var controls: AnyView?
 
     @State private var selectedPreview: PlannedSessionPreview?
     @State private var openedSignal: V1TodaySignalKey?
@@ -229,7 +211,8 @@ private struct TodayFoldView: View {
         signalClient: (any SleepServing & RecoveryServing)? = nil,
         onArrival: @escaping () -> Void = {},
         onArrivalCompleted: @escaping () -> Void = {},
-        onSessionLinked: @escaping () -> Void = {}
+        onSessionLinked: @escaping () -> Void = {},
+        controls: AnyView? = nil
     ) {
         self.fold = fold
         self.hasCompletedArrival = hasCompletedArrival
@@ -240,12 +223,16 @@ private struct TodayFoldView: View {
         self.onArrival = onArrival
         self.onArrivalCompleted = onArrivalCompleted
         self.onSessionLinked = onSessionLinked
+        self.controls = controls
         _phase = State(initialValue: hasCompletedArrival ? .idle : .hidden)
     }
 
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                if let controls {
+                    controls
+                }
                 InkVerdictPlate(plate: fold.plate, revealed: phase.showsPlate)
 
                 evidenceSection
@@ -539,22 +526,6 @@ private struct TodayEmptyView: View {
         } actions: {
             if let url = URL(string: empty.webURL) {
                 Link("Continuer sur le web", destination: url)
-            }
-        }
-    }
-}
-
-/// Pins Résumé's chip row under the navigation bar. On iOS 26 and later it is a safe-area bar,
-/// so the scroll edge effect runs under it as under the bar itself.
-private struct TodayControlsBar<Bar: View>: ViewModifier {
-    @ViewBuilder let bar: () -> Bar
-
-    func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.safeAreaBar(edge: .top, spacing: 0) { bar() }
-        } else {
-            content.safeAreaInset(edge: .top, spacing: 0) {
-                bar().background(SharpitCanvasBackground())
             }
         }
     }

@@ -116,9 +116,9 @@ per-class source routing is not modelled.
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
 Paramètres is not a tab: it is a sheet (`SettingsView`) opened through `ShellRouter.openSettings()`
 from the avatar (`AccountAvatarButton`, the Clerk photo or the initials) in Résumé's header, or a
-`/settings` link. Résumé hides its navigation bar and draws its own header,
-pinned by a safe-area bar: the date (`SharpitTypography.screenTitle`) on the avatar's line, then
-the mode, Journal and weather as glass chips (`sharpitGlassChip`). Goals open from Plan's « … »
+`/settings` link. Résumé's date is its large title, folding into the centre of the bar on scroll as Corps' does;
+the mode, Journal and weather are the fold's first row of glass chips (`sharpitGlassChip`) and
+scroll away with it. Goals open from Plan's « … »
 menu, the coach's memory (context, trips) from Coach's toolbar.
 
 **Objectifs.** `GoalsView` leads with the next race on the ink plate (`GoalOrdering.nextRace`: the
