@@ -6,8 +6,7 @@ nonisolated protocol OnboardingServing: Sendable {
     func completeOnboarding(token: String) async throws
 }
 
-/// `/api/onboarding/complete` is web-internal, not `/api/v1`. Known debt, as with
-/// `AthleteProfileClient` and `GoalClient` — not a pattern to copy.
+/// `/api/v1/onboarding/complete` — the native contract for the web's handler (ADR-040).
 actor OnboardingClient: OnboardingServing {
     private let session: URLSession
     private let baseURL: URL
@@ -18,7 +17,7 @@ actor OnboardingClient: OnboardingServing {
     }
 
     func completeOnboarding(token: String) async throws {
-        var request = URLRequest(url: baseURL.appending(path: "/api/onboarding/complete"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/onboarding/complete"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")

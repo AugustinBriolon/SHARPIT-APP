@@ -92,7 +92,7 @@ than reaching for Clerk themselves.
 `PrivacyConsentWallView` is the web's `/consent`: CGU, Politique de confidentialité and the
 health consent are required together (the server refuses one without the other), AI processing
 and the unofficial-providers notice are optional. The wall's reason and the version in force
-come from `/api/privacy/consent` (`V1PrivacyConsents.wallReason` mirrors
+come from `/api/v1/privacy/consent` (`V1PrivacyConsents.wallReason` mirrors
 `needsLegalConsentFromProfile`), so a new version of the documents brings the wall back without
 an app release. The documents are the web's published `/terms` and `/privacy`, opened in-app
 (`LegalDocumentSheet`) — never a bundled copy. Moi → Confidentialité & conditions changes each
@@ -105,7 +105,7 @@ Intention → Sources, the web's `wizard-steps.ts` order. The server decides who
 the row); the phone only remembers a "done" per Clerk user, so a finished athlete never waits on
 a profile read, and a read that fails lets the athlete in without remembering anything. Each step
 is written as the athlete leaves it (practiced sports, equipment, `trainingAvailability`, a first
-goal through `/api/v1/goals`), and only `/api/onboarding/complete` finishes the wizard. Sources
+goal through `/api/v1/goals`), and only `/api/v1/onboarding/complete` finishes the wizard. Sources
 mirrors Connexions: Garmin is connected on the web, Apple Health is switched on here — the web's
 per-class source routing is not modelled.
 
@@ -124,11 +124,11 @@ in `V1Today.swift` / `V1Activities.swift` / `V1PlannedSessions.swift` and mirror
 API payloads.
 
 Every client calls the versioned `/api/v1/*` contracts (SHARPIT ADR-040: each one re-exports
-the `/api` handler, same Clerk authz). Four routes have no `/api/v1` twin yet and are called
-web-internal: `/api/coach/chat` (deferred on the web), `/api/onboarding/complete`
-(`OnboardingClient`), `/api/privacy/consent` (`PrivacyConsentClient`) and `/api/garmin/sync`
-with `full: true` (`SharpitClient.importFullGarminHistory`). Treat those as known
-debt, not as a pattern to copy — move each one the day the web publishes its `/api/v1` twin.
+the `/api` handler, same Clerk authz). Two calls stay web-internal: `/api/coach/chat`, on
+purpose — its tools create and delete sessions without asking, so it moves to `/api/v1` with
+Lot B's "approve before applying" cards — and `/api/garmin/sync` with `full: true`
+(`SharpitClient.importFullGarminHistory`), which has no `/api/v1` twin yet. Treat the second as
+known debt, not as a pattern to copy.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON

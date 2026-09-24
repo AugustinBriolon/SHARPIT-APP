@@ -136,6 +136,9 @@ struct CoachView: View {
         store.isReplying && message.role == .assistant && message.id == store.messages.last?.id
     }
 
+    /// The composer's one height — the smallest tappable size, for the field and both circles.
+    private static let controlHeight = SharpitSpacing.minimumTouchTarget
+
     private var composer: some View {
         VStack(spacing: SharpitSpacing.xs) {
             if let context = store.pendingContext {
@@ -156,7 +159,7 @@ struct CoachView: View {
                             Image(systemName: "chevron.down")
                                 .font(SharpitTypography.bodyEmphasis)
                                 .foregroundStyle(SharpitColor.mutedForeground)
-                                .frame(width: 40, height: 40)
+                                .frame(width: Self.controlHeight, height: Self.controlHeight)
                                 .sharpitGlassControl(in: Circle(), fallback: SharpitColor.analysisSurfaceAlt)
                         }
                         .buttonStyle(.plain)
@@ -178,7 +181,10 @@ struct CoachView: View {
                             submit()
                         }
                         .padding(.horizontal, SharpitSpacing.md)
-                        .padding(.vertical, SharpitSpacing.sm)
+                        .padding(.vertical, SharpitSpacing.xs + 2)
+                        // One line is exactly as tall as the circles beside it, so the three
+                        // controls share a centre; more lines grow upward from that base.
+                        .frame(minHeight: Self.controlHeight)
                         .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.analysisSurfaceAlt)
                         .submitLabel(.send)
 
@@ -187,7 +193,7 @@ struct CoachView: View {
                             .font(SharpitTypography.bodyEmphasis)
                             // Untinted glass is light: the arrow goes muted there, not white.
                             .foregroundStyle(store.canSend ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
-                            .frame(width: 40, height: 40)
+                            .frame(width: Self.controlHeight, height: Self.controlHeight)
                             .contentTransition(.symbolEffect(.replace))
                             .sharpitGlassControl(
                                 in: Circle(),

@@ -1,6 +1,6 @@
 import Foundation
 
-/// The athlete's legal and processing consents, as `/api/privacy/consent` returns them
+/// The athlete's legal and processing consents, as `/api/v1/privacy/consent` returns them
 /// (the web's `serializeConsentRow`).
 ///
 /// `currentPrivacyVersion` comes from the server, so the app never hardcodes which version of
@@ -127,8 +127,7 @@ nonisolated protocol PrivacyConsentServing: Sendable {
     func updateConsents(_ update: PrivacyConsentUpdate, token: String) async throws -> V1PrivacyConsents
 }
 
-/// `/api/privacy/consent` has no `/api/v1` twin yet. Known debt, as with `OnboardingClient` —
-/// move it the day the web publishes one.
+/// `/api/v1/privacy/consent` — the native contract for the web's handler (ADR-040).
 actor PrivacyConsentClient: PrivacyConsentServing {
     private let session: URLSession
     private let baseURL: URL
@@ -150,7 +149,7 @@ actor PrivacyConsentClient: PrivacyConsentServing {
     }
 
     private func makeRequest(method: String, token: String) -> URLRequest {
-        var request = URLRequest(url: baseURL.appending(path: "/api/privacy/consent"))
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/privacy/consent"))
         request.httpMethod = method
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
