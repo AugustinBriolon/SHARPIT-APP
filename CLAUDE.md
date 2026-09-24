@@ -87,6 +87,17 @@ wraps `RootView` in `AuthGate`. Every network call takes a Bearer token produced
 `clerk.auth.getToken()`; views receive it as an injected `tokenProvider` closure rather
 than reaching for Clerk themselves.
 
+**Onboarding.** `OnboardingGate` sits between `AuthGate` and `RootView`: a new account answers
+the web's first-login wizard before it sees the tabs — Sports → Équipement → Disponibilités →
+Intention → Sources, the web's `wizard-steps.ts` order. The server decides who owes it
+(`onboardingCompletedAt` present and `null` on `/api/athlete-profile`, as the web's gate reads
+the row); the phone only remembers a "done" per Clerk user, so a finished athlete never waits on
+a profile read, and a read that fails lets the athlete in without remembering anything. Each step
+is written as the athlete leaves it (practiced sports, equipment, `trainingAvailability`, a first
+goal through `/api/goals`), and only `/api/onboarding/complete` finishes the wizard. Sources
+mirrors Connexions: Garmin is connected on the web, Apple Health is switched on here — the web's
+per-class source routing is not modelled.
+
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Moi).
 `ShellDestination` describes the tabs that are not built yet and feeds
 `InstrumentShellView` placeholders. Today, Plan and Activité are real screens.
@@ -105,11 +116,11 @@ The real versioned contracts are `/api/v1/today`, `/api/v1/sleep`, `/api/v1/reco
 `/api/v1/sync`, `/api/v1/sync-status` and `/api/v1/health-samples`, all served by
 `SharpitClient` behind one protocol per resource. `ActivityClient`,
 `PlannedSessionClient`, `CoachChatClient`, `CoachConversationClient`, `ActivityStatusClient`,
-`JournalClient` and `AthleteProfileClient` call web-internal routes (`/api/activities`,
+`JournalClient`, `AthleteProfileClient`, `GoalClient` and `OnboardingClient` call web-internal routes (`/api/activities`,
 `/api/planned-sessions` including `…/:id/link`, `/api/coach/chat`, `/api/coach/conversations`,
 `/api/activity-status`, `/api/day-journal`, `/api/journal/day-signals`, `/api/journal-prefs`,
 `/api/athlete-profile`
-including `…/threshold-history`, `/api/body-composition`); treat that as known debt, not as a
+including `…/threshold-history`, `/api/body-composition`, `/api/goals`, `/api/onboarding/complete`); treat that as known debt, not as a
 pattern to copy.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread

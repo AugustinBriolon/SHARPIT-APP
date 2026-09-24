@@ -21,7 +21,10 @@ struct SharpitApp: App {
     var body: some Scene {
         WindowGroup {
             AuthGate {
-                RootView()
+                // A new account answers the web's onboarding before it sees the tabs.
+                OnboardingGate {
+                    RootView()
+                }
             }
             .environment(Clerk.shared)
             .environment(\.clerkTheme, .sharpit)

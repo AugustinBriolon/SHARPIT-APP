@@ -6,6 +6,41 @@ nonisolated struct V1AthletePracticedSports: Codable, Sendable, Equatable {
     var sports: [String] = []
 }
 
+/// The days the athlete can train, as stored in AthleteProfile.trainingAvailability.
+///
+/// Mirrors the web's `src/lib/training-availability/types.ts`: weekdays follow `Date#getDay`
+/// (0 = Sunday … 6 = Saturday) and are stored Monday-first, and `targetSessionsPerWeek` is the
+/// number of days picked — N days ⇒ N possible sessions, `nil` when nothing is declared.
+nonisolated struct V1TrainingAvailability: Codable, Sendable, Equatable {
+    var version: Int = 1
+    var targetSessionsPerWeek: Int?
+    var availableWeekdays: [Int] = []
+
+    /// A training week starts on Monday, not Sunday.
+    static let weekdaysMondayFirst = [1, 2, 3, 4, 5, 6, 0]
+
+    init(availableWeekdays: [Int] = []) {
+        let ordered = Self.ordered(availableWeekdays)
+        self.availableWeekdays = ordered
+        targetSessionsPerWeek = ordered.isEmpty ? nil : ordered.count
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = (try? container.decodeIfPresent(Int.self, forKey: .version)) ?? 1
+        targetSessionsPerWeek = try? container.decodeIfPresent(Int.self, forKey: .targetSessionsPerWeek)
+        let days = (try? container.decodeIfPresent([Int].self, forKey: .availableWeekdays)) ?? []
+        availableWeekdays = Self.ordered(days)
+    }
+
+    /// Monday-first and deduplicated — storage order matches reading order, and a value
+    /// outside 0…6 is dropped rather than sent back.
+    static func ordered(_ days: [Int]) -> [Int] {
+        let present = Set(days)
+        return weekdaysMondayFirst.filter { present.contains($0) }
+    }
+}
+
 /// The athlete's stable attributes, as `/api/athlete-profile` returns them.
 ///
 /// Read as a whole, written one field at a time — see `AthleteProfilePatch`. The row holds
@@ -36,6 +71,13 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     var thresholdsSyncedAt: Date?
     var equipment: V1AthleteEquipment?
     var practicedSports: V1AthletePracticedSports?
+    var trainingAvailability: V1TrainingAvailability?
+    var onboardingCompletedAt: Date?
+    /// True when the row carries `onboardingCompletedAt: null` — the first-login wizard has
+    /// not been finished. Read from the key being present *and* null, as the web's gate does
+    /// with the row it loads: a payload without the key (no row yet, an older server) never
+    /// traps the athlete in the wizard.
+    var needsOnboarding: Bool = false
 
     var isExpertReading: Bool { displayMode == AthleteProfileField.expertDisplayMode }
     var isPro: Bool { tier == "PRO" }
@@ -58,7 +100,10 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         vo2maxCycling: Int? = nil,
         thresholdsSyncedAt: Date? = nil,
         equipment: V1AthleteEquipment? = nil,
-        practicedSports: V1AthletePracticedSports? = nil
+        practicedSports: V1AthletePracticedSports? = nil,
+        trainingAvailability: V1TrainingAvailability? = nil,
+        onboardingCompletedAt: Date? = nil,
+        needsOnboarding: Bool = false
     ) {
         self.displayMode = displayMode
         self.tier = tier
@@ -78,6 +123,9 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         self.thresholdsSyncedAt = thresholdsSyncedAt
         self.equipment = equipment
         self.practicedSports = practicedSports
+        self.trainingAvailability = trainingAvailability
+        self.onboardingCompletedAt = onboardingCompletedAt
+        self.needsOnboarding = needsOnboarding
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -85,7 +133,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         case sleepTargetMinutes, sleepBedtimeTargetMin
         case ftpW, maxHr, lthr, runThresholdPaceSecPerKm, swimCssSecPer100m
         case defaultPoolLengthM, vo2maxRunning, vo2maxCycling, thresholdsSyncedAt
-        case equipment, practicedSports
+        case equipment, practicedSports, trainingAvailability, onboardingCompletedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -108,6 +156,13 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         thresholdsSyncedAt = Self.date(in: container, forKey: .thresholdsSyncedAt)
         equipment = try container.decodeIfPresent(V1AthleteEquipment.self, forKey: .equipment)
         practicedSports = try container.decodeIfPresent(V1AthletePracticedSports.self, forKey: .practicedSports)
+        trainingAvailability = try? container.decodeIfPresent(
+            V1TrainingAvailability.self,
+            forKey: .trainingAvailability
+        )
+        onboardingCompletedAt = Self.date(in: container, forKey: .onboardingCompletedAt)
+        needsOnboarding = container.contains(.onboardingCompletedAt)
+            && ((try? container.decodeNil(forKey: .onboardingCompletedAt)) ?? false)
     }
 
     /// `birthDate` is a Prisma `@db.Date` and serialises as `1990-04-12T00:00:00.000Z`,
@@ -145,6 +200,13 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         try container.encodeIfPresent(thresholdsSyncedAt?.toAPI, forKey: .thresholdsSyncedAt)
         try container.encodeIfPresent(equipment, forKey: .equipment)
         try container.encodeIfPresent(practicedSports, forKey: .practicedSports)
+        try container.encodeIfPresent(trainingAvailability, forKey: .trainingAvailability)
+        // An explicit null keeps "not finished" through the cache, as the server sends it.
+        if needsOnboarding {
+            try container.encodeNil(forKey: .onboardingCompletedAt)
+        } else {
+            try container.encodeIfPresent(onboardingCompletedAt?.toAPI, forKey: .onboardingCompletedAt)
+        }
     }
 }
 
@@ -169,6 +231,7 @@ nonisolated enum AthleteProfileField: String, CaseIterable, Sendable {
     case defaultPoolLengthM
     case equipment
     case practicedSports
+    case trainingAvailability
 
     static let expertDisplayMode = "expert"
     static let essentialDisplayMode = "essential"
@@ -217,6 +280,17 @@ nonisolated struct AthleteProfilePatch: Equatable, Sendable {
             "sports": .array(practicedSports.sports.map { .string($0) })
         ]
         fields[AthleteProfileField.practicedSports.rawValue] = .object(obj)
+    }
+
+    /// Records the declared training week. An empty week is sent as declared-empty, not as
+    /// `null`, as the web's onboarding does when the athlete skips the step.
+    mutating func setTrainingAvailability(_ availability: V1TrainingAvailability) {
+        let obj: [String: JSONValue] = [
+            "version": .number(Double(availability.version)),
+            "targetSessionsPerWeek": availability.targetSessionsPerWeek.map { JSONValue.number(Double($0)) } ?? .null,
+            "availableWeekdays": .array(availability.availableWeekdays.map { JSONValue.number(Double($0)) })
+        ]
+        fields[AthleteProfileField.trainingAvailability.rawValue] = .object(obj)
     }
 
     /// Records a field the athlete changed. `nil` clears it server-side.
