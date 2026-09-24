@@ -16,7 +16,47 @@ final class PushNotificationManager {
     /// Queued navigation action when a push notification is opened.
     var pendingTabSelection: ShellTab?
 
-    init() {}
+    /// The athlete's own switch, in Paramètres. iOS owns the permission and the app cannot take
+    /// it back, so « off » means the server forgets this device and SharpIt stops asking — the
+    /// only way to be silent without sending the athlete into iOS Settings.
+    private(set) var isEnabledByAthlete: Bool
+
+    static let enabledKey = "sharpit.notifications.enabled"
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        isEnabledByAthlete = defaults.object(forKey: Self.enabledKey) as? Bool ?? true
+    }
+
+    /// The system permission as it stands now.
+    func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
+    /// Turns SharpIt's notifications on or off for this iPhone. On asks iOS when it has not been
+    /// asked yet and registers the device; off unregisters it server-side. Returns whether the
+    /// notifications are now actually deliverable.
+    @discardableResult
+    func setEnabled(
+        _ enabled: Bool,
+        tokenProvider: () async throws -> String,
+        client: PushDeviceTokenServing = SharpitClient()
+    ) async -> Bool {
+        isEnabledByAthlete = enabled
+        defaults.set(enabled, forKey: Self.enabledKey)
+        if enabled {
+            let granted = await requestAuthorization()
+            if granted { await syncDeviceTokenIfNeeded(tokenProvider: tokenProvider, client: client) }
+            return granted
+        }
+        if let registered = lastRegisteredToken ?? deviceToken,
+           let authToken = try? await tokenProvider() {
+            try? await client.unregisterDeviceToken(registered, token: authToken)
+        }
+        lastRegisteredToken = nil
+        return false
+    }
 
     /// Requests user authorization for alerts, badges, and sounds,
     /// then registers for remote notifications with APNs.
@@ -55,7 +95,7 @@ final class PushNotificationManager {
         tokenProvider: () async throws -> String,
         client: PushDeviceTokenServing = SharpitClient()
     ) async {
-        guard let deviceToken, deviceToken != lastRegisteredToken else { return }
+        guard isEnabledByAthlete, let deviceToken, deviceToken != lastRegisteredToken else { return }
         do {
             let authToken = try await tokenProvider()
             #if DEBUG

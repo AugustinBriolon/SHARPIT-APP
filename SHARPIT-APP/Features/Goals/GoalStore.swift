@@ -39,6 +39,22 @@ final class GoalStore {
         goals.filter(\.achieved)
     }
 
+    /// The race the season is built toward: the nearest upcoming A race, else the nearest
+    /// upcoming race of any priority. Nil when no race lies ahead.
+    var nextRace: V1Goal? {
+        GoalOrdering.nextRace(in: goals)
+    }
+
+    /// Active goals in the order an athlete reads them: dated ones soonest first, then the
+    /// undated, each group by title.
+    var activeGoalsOrdered: [V1Goal] {
+        GoalOrdering.active(activeGoals)
+    }
+
+    func goal(id: String) -> V1Goal? {
+        goals.first { $0.id == id }
+    }
+
     func load() async {
         guard !isLoading else { return }
         isLoading = true
@@ -131,6 +147,31 @@ final class GoalStore {
         } catch {
             goals = backup
             errorMessage = "Suppression impossible"
+        }
+    }
+}
+
+nonisolated enum GoalOrdering {
+    static func nextRace(in goals: [V1Goal], now: Date = Date(), calendar: Calendar = .current) -> V1Goal? {
+        let today = calendar.startOfDay(for: now)
+        let upcoming = goals
+            .filter { !$0.achieved && $0.kind == .race }
+            .compactMap { goal -> (V1Goal, Date)? in
+                guard let date = goal.targetDate, calendar.startOfDay(for: date) >= today else { return nil }
+                return (goal, date)
+            }
+            .sorted { $0.1 < $1.1 }
+        return (upcoming.first { $0.0.priority == .a } ?? upcoming.first)?.0
+    }
+
+    static func active(_ goals: [V1Goal]) -> [V1Goal] {
+        goals.sorted { lhs, rhs in
+            switch (lhs.targetDate, rhs.targetDate) {
+            case let (l?, r?): l < r
+            case (.some, nil): true
+            case (nil, .some): false
+            case (nil, nil): lhs.title.localizedCompare(rhs.title) == .orderedAscending
+            }
         }
     }
 }

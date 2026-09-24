@@ -68,6 +68,12 @@ enum SharpitTypography {
     static var verdict: Font { heading(size: 20, weight: .semibold, relativeTo: .title2) }
     static var verdictTracking: CGFloat { tracking(em: -0.02, size: 20) }
 
+    /// A screen that draws its own header — Résumé's date beside the avatar. Native only: the
+    /// web has no bar-less screen, so it has no equivalent; it sits one step above
+    /// `text-page-title` so the date reads as the screen's title, not a section's.
+    static var screenTitle: Font { heading(size: 30, weight: .semibold, relativeTo: .largeTitle) }
+    static var screenTitleTracking: CGFloat { tracking(em: -0.025, size: 30) }
+
     /// `text-page-title`
     static var pageTitle: Font { heading(size: 24, weight: .semibold, relativeTo: .title) }
     static var pageTitleTracking: CGFloat { tracking(em: -0.02, size: 24) }

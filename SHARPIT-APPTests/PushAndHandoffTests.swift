@@ -140,6 +140,28 @@ struct PushAndHandoffTests {
         #expect(mockService.registeredToken == nil)
     }
 
+    @Test func switchingNotificationsOffForgetsTheDevice() async throws {
+        let defaults = try #require(UserDefaults(suiteName: "push-switch"))
+        defaults.removePersistentDomain(forName: "push-switch")
+        let manager = PushNotificationManager(defaults: defaults)
+        let mockService = MockPushService()
+        manager.deviceToken = "device-xyz"
+        await manager.syncDeviceTokenIfNeeded(tokenProvider: { "auth-tok" }, client: mockService)
+        #expect(manager.lastRegisteredToken == "device-xyz")
+
+        await manager.setEnabled(false, tokenProvider: { "auth-tok" }, client: mockService)
+        #expect(mockService.unregisterCalled)
+        #expect(!manager.isEnabledByAthlete)
+        #expect(manager.lastRegisteredToken == nil)
+
+        // Switched off, a new launch registers nothing.
+        mockService.registeredToken = nil
+        let relaunched = PushNotificationManager(defaults: defaults)
+        relaunched.deviceToken = "device-xyz"
+        await relaunched.syncDeviceTokenIfNeeded(tokenProvider: { "auth-tok" }, client: mockService)
+        #expect(mockService.registeredToken == nil)
+    }
+
     @Test func sharpitClientRegisterDeviceTokenEndpoint() async throws {
         PushStubURLProtocol.status = 200
         PushStubURLProtocol.lastRequest = nil

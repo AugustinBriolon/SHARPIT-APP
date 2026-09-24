@@ -1,12 +1,25 @@
 import SwiftUI
 
-struct GoalDetailDrawer: View {
-    let goal: V1Goal
+/// One goal, as a full page pushed in the Objectifs stack — not a sheet over the Objectifs
+/// sheet, whose stack the athlete could not see.
+///
+/// The hero says where the goal stands — days to the race, or how far the figure has come —
+/// then the evidence: sessions and time put in, the projection when there is one, the
+/// segments, the notes, and the two actions.
+struct GoalDetailView: View {
+    let goalId: String
+    let fallback: V1Goal
     let store: GoalStore
     @Environment(\.dismiss) private var dismiss
 
     @State private var isUpdating = false
     @State private var showsDeleteConfirmation = false
+    @State private var hasAppeared = false
+
+    /// Read from the store, so validating the goal updates this page in place.
+    private var goal: V1Goal {
+        store.goal(id: goalId) ?? fallback
+    }
 
     private var volumeStats: GoalVolumeStats {
         store.volumeStats(for: goal)
@@ -17,10 +30,11 @@ struct GoalDetailDrawer: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: SharpitSpacing.md) {
-                    headerCard
+        ScrollView {
+            VStack(spacing: SharpitSpacing.md) {
+                GoalHero(goal: goal)
+                    .revealed(hasAppeared, index: 0)
+                Group {
                     metricsOverviewGrid
                     if let proj = raceProjection, !proj.segments.isEmpty {
                         segmentsCard(proj.segments)
@@ -31,155 +45,34 @@ struct GoalDetailDrawer: View {
                     if let notes = goal.notes, !notes.trimmingCharacters(in: .whitespaces).isEmpty {
                         notesCard(notes)
                     }
-                    actionButtonsSection
                 }
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.vertical, SharpitSpacing.md)
+                .revealed(hasAppeared, index: 1)
+                actionButtonsSection
+                    .revealed(hasAppeared, index: 2)
             }
-            .background(SharpitCanvasBackground())
-            .navigationTitle("Détails de l'objectif")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { dismiss() }
-                }
-            }
-            .confirmationDialog(
-                "Supprimer cet objectif ?",
-                isPresented: $showsDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Supprimer définitivement", role: .destructive) {
-                    Task {
-                        isUpdating = true
-                        await store.delete(id: goal.id)
-                        dismiss()
-                    }
-                }
-                Button("Annuler", role: .cancel) {}
-            } message: {
-                Text("Cette action supprimera l'objectif de ton plan d'entraînement.")
-            }
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.vertical, SharpitSpacing.md)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .sharpitSheet()
-    }
-
-    // MARK: - Header Card
-
-    private var headerCard: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .top) {
-                leadingBadge
-
-                VStack(alignment: .leading, spacing: 4) {
-                    if goal.priority == .a {
-                        Text("CAP")
-                            .font(SharpitTypography.eyebrow)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-
-                    Text(goal.title)
-                        .font(SharpitTypography.sectionTitle)
-                        .foregroundStyle(SharpitColor.foreground)
-
-                    if let subtitle = goal.performanceAndPhaseSubtitle ?? headerSubtitle {
-                        Text(subtitle)
-                            .font(SharpitTypography.body)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-                }
-
-                Spacer()
-
-                statusPill
-            }
-
-            if let date = goal.targetDate {
-                Divider()
-                    .padding(.vertical, 2)
-
-                HStack(spacing: SharpitSpacing.md) {
-                    Label {
-                        Text(formattedDate(date))
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.foreground)
-                    } icon: {
-                        Image(systemName: "calendar")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-
-                    if let countdown = goal.countdownText {
-                        Label {
-                            Text(countdown)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(
-                                    (goal.daysRemaining ?? 100) <= 7 && (goal.daysRemaining ?? 100) >= 0
-                                        ? SharpitColor.signalCaution
-                                        : SharpitColor.mutedForeground
-                                )
-                                .monospacedDigit()
-                        } icon: {
-                            Image(systemName: "hourglass")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                    }
+        .background(SharpitCanvasBackground())
+        .navigationTitle(goal.kind == .race ? "Course" : "Objectif")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear { hasAppeared = true }
+        .confirmationDialog(
+            "Supprimer cet objectif ?",
+            isPresented: $showsDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Supprimer définitivement", role: .destructive) {
+                Task {
+                    isUpdating = true
+                    await store.delete(id: goal.id)
+                    dismiss()
                 }
             }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Cette action supprimera l'objectif de ton plan d'entraînement.")
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
-    }
-
-    @ViewBuilder
-    private var leadingBadge: some View {
-        if goal.kind == .race, let p = goal.priority {
-            Text(p.rawValue)
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundStyle(p == .a ? SharpitColor.primary : SharpitColor.mutedForeground)
-                .frame(width: 40, height: 40)
-                .background(
-                    (p == .a ? SharpitColor.primary : SharpitColor.mutedForeground).opacity(0.14),
-                    in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                )
-        } else {
-            Image(systemName: goal.kind == .race ? "flag.fill" : "gauge.with.dots.needle.67percent")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(SharpitColor.primary)
-                .frame(width: 40, height: 40)
-                .background(
-                    SharpitColor.primary.opacity(0.14),
-                    in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                )
-        }
-    }
-
-    private var headerSubtitle: String? {
-        if goal.kind == .race {
-            let details = [goal.raceFormat, goal.location].compactMap { $0 }.filter { !$0.isEmpty }
-            return details.isEmpty ? nil : details.joined(separator: " · ")
-        } else {
-            return goal.unit.map { "Unité : \($0)" }
-        }
-    }
-
-    private var statusPill: some View {
-        HStack(spacing: 4) {
-            Image(systemName: goal.achieved ? "checkmark.circle.fill" : "circle.dashed")
-                .font(.system(size: 11, weight: .bold))
-            Text(goal.achieved ? "Atteint" : "En cours")
-                .font(.system(size: 12, weight: .semibold))
-        }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
-        .background(
-            (goal.achieved ? SharpitColor.primary : SharpitColor.mutedForeground).opacity(0.12),
-            in: Capsule()
-        )
-        .foregroundStyle(goal.achieved ? SharpitColor.primary : SharpitColor.mutedForeground)
     }
 
     // MARK: - Metrics Overview Grid
@@ -473,9 +366,9 @@ struct GoalDetailDrawer: View {
             Button {
                 Task {
                     isUpdating = true
+                    SharpitHaptics.play(.success)
                     await store.toggleAchieved(goal)
                     isUpdating = false
-                    dismiss()
                 }
             } label: {
                 HStack(spacing: SharpitSpacing.xs) {
@@ -519,13 +412,6 @@ struct GoalDetailDrawer: View {
     }
 
     // MARK: - Helpers
-
-    private func formattedDate(_ date: Date) -> String {
-        let fmt = DateFormatter()
-        fmt.locale = Locale(identifier: "fr_FR")
-        fmt.dateFormat = "d MMMM yyyy"
-        return fmt.string(from: date)
-    }
 
     private static func formatNumber(_ num: Double) -> String {
         if num.truncatingRemainder(dividingBy: 1) == 0 {

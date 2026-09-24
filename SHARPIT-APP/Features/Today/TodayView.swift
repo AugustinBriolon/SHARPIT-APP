@@ -97,20 +97,16 @@ struct TodayView: View {
                 }
             }
             .background(SharpitCanvasBackground())
+            // Kept for the back button of what Résumé pushes (Journal, a session), while the
+            // bar itself is hidden: the date and the avatar share one line of the header.
             .navigationTitle(store.navigationTitle)
-            // The date, large, where it always was; it folds into the bar on scroll.
-            .navigationBarTitleDisplayMode(.large)
-            .modifier(LiquidNavChrome())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .sharpitSyncToast(sync)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    AccountAvatarButton { router.openSettings() }
-                }
-            }
-            // The day's controls sit under the date rather than in the bar: named, not
-            // squeezed into icons, and pinned while the fold scrolls under them.
+            // The date on the avatar's line and the day's chips under it, pinned while the fold
+            // scrolls under them — the fold starts one bar higher than under a navigation bar.
             .modifier(TodayControlsBar {
-                controlsRow
+                header
             })
             .refreshable {
                 await store.refresh()
@@ -134,6 +130,25 @@ struct TodayView: View {
 }
 
 extension TodayView {
+    /// The date, large, with the avatar on its line; the chips beneath.
+    fileprivate var header: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                Text(store.navigationTitle)
+                    .font(SharpitTypography.screenTitle)
+                    .tracking(SharpitTypography.screenTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .contentTransition(.opacity)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 0)
+                AccountAvatarButton(size: 38) { router.openSettings() }
+            }
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            controlsRow
+        }
+        .padding(.top, SharpitSpacing.xs)
+    }
+
     /// Mode, Journal and weather, as one row of glass chips.
     @ViewBuilder
     fileprivate var controlsRow: some View {
@@ -538,7 +553,9 @@ private struct TodayControlsBar<Bar: View>: ViewModifier {
         if #available(iOS 26.0, *) {
             content.safeAreaBar(edge: .top, spacing: 0) { bar() }
         } else {
-            content.safeAreaInset(edge: .top, spacing: 0) { bar() }
+            content.safeAreaInset(edge: .top, spacing: 0) {
+                bar().background(SharpitCanvasBackground())
+            }
         }
     }
 }

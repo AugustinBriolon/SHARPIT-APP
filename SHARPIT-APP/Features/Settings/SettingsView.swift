@@ -1,12 +1,16 @@
 import ClerkKit
 import SwiftData
 import SwiftUI
+import UIKit
+import UserNotifications
 
 /// Paramètres, opened as a sheet from the avatar in Résumé and Corps.
 ///
-/// Built like the system's Settings: the account first, then short groups — the subscription,
-/// the general settings, training preferences, privacy. What used to live in Moi and belongs
-/// elsewhere moved: the body to the Corps tab, goals to Plan, the coach's memory to Coach.
+/// A page of cards rather than a grouped list: who the athlete is and their tier first, then
+/// the settings they change often answered in place — appearance, notifications, reading
+/// density — and only then the pages worth opening, each row saying its state before it is
+/// opened. What used to live in Moi and belongs elsewhere moved: the body to Corps, goals to
+/// Plan, the coach's memory to Coach.
 struct SettingsView: View {
     let appleHealth: AppleHealthSource
     let syncClient: any SyncServing
@@ -14,45 +18,98 @@ struct SettingsView: View {
     let displayMode: DisplayModeStore
     let tokenProvider: () async throws -> String
     let modelContext: ModelContext?
-    var privacyClient: any PrivacyConsentServing = PrivacyConsentClient()
-    var cloudSync: CloudSyncMonitor = .shared
+    let privacyClient: any PrivacyConsentServing
+    let cloudSync: CloudSyncMonitor
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .system
+    @State private var profile: AthleteProfileStore
+    @State private var push = PushNotificationManager.shared
+    @State private var notificationStatus: UNAuthorizationStatus?
+    @State private var hasAppeared = false
+
+    init(
+        appleHealth: AppleHealthSource,
+        syncClient: any SyncServing,
+        profileClient: any AthleteProfileServing & BodyCompositionServing,
+        displayMode: DisplayModeStore,
+        tokenProvider: @escaping () async throws -> String,
+        modelContext: ModelContext?,
+        privacyClient: any PrivacyConsentServing = PrivacyConsentClient(),
+        cloudSync: CloudSyncMonitor = .shared
+    ) {
+        self.appleHealth = appleHealth
+        self.syncClient = syncClient
+        self.profileClient = profileClient
+        self.displayMode = displayMode
+        self.tokenProvider = tokenProvider
+        self.modelContext = modelContext
+        self.privacyClient = privacyClient
+        self.cloudSync = cloudSync
+        _profile = State(initialValue: AthleteProfileStore(
+            client: profileClient,
+            tokenProvider: tokenProvider,
+            modelContext: modelContext
+        ))
+    }
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    NavigationLink {
-                        AccountView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
-                    } label: {
-                        AccountSummaryRow()
+            ScrollView {
+                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                    NavigationLink(value: SettingsRoute.account) {
+                        AccountCard(isPro: profile.profile.isPro)
                     }
-                }
-                .sharpitListRows()
+                    .buttonStyle(.sharpitPressable)
+                    .revealed(hasAppeared, index: 0)
 
-                Section {
-                    NavigationLink {
-                        ProView(profileClient: profileClient, tokenProvider: tokenProvider)
-                    } label: {
-                        rowLabel("SharpIt Pro", symbol: "sparkle", background: SettingsTone.pro)
+                    NavigationLink(value: SettingsRoute.pro) {
+                        ProCard(isPro: profile.profile.isPro)
                     }
-                }
-                .sharpitListRows()
+                    .buttonStyle(.sharpitPressable)
+                    .revealed(hasAppeared, index: 1)
 
-                Section(eyebrow: "Général") { generalRows }.sharpitListRows()
-                Section(eyebrow: "Entraînement") { trainingRows }.sharpitListRows()
-                Section(eyebrow: "Confidentialité", footer: versionLine) {
-                    NavigationLink {
-                        PrivacySettingsView(client: privacyClient, tokenProvider: tokenProvider)
-                    } label: {
-                        rowLabel("Confidentialité & conditions", symbol: "hand.raised.fill", background: SettingsTone.privacy)
+                    SettingsGroup(title: "Réglages rapides") {
+                        appearanceControl
+                        SettingsDivider()
+                        notificationsControl
+                        SettingsDivider()
+                        densityControl
                     }
+                    .revealed(hasAppeared, index: 2)
+
+                    SettingsGroup(title: "Données") {
+                        NavigationLink(value: SettingsRoute.sources) {
+                            SettingsRow(symbol: "link", tint: SettingsTone.sources, title: "Sources de données", detail: sourcesDetail)
+                        }
+                        SettingsDivider()
+                        NavigationLink(value: SettingsRoute.iCloud) {
+                            SettingsRow(symbol: "icloud.fill", tint: SettingsTone.iCloud, title: "Synchronisation iCloud", detail: iCloudDetail)
+                        }
+                        SettingsDivider()
+                        NavigationLink(value: SettingsRoute.equipment) {
+                            SettingsRow(symbol: "figure.run.square.stack", tint: SettingsTone.gear, title: "Sports & équipement", detail: sportsDetail)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .revealed(hasAppeared, index: 3)
+
+                    SettingsGroup(title: "Confidentialité") {
+                        NavigationLink(value: SettingsRoute.privacy) {
+                            SettingsRow(symbol: "hand.raised.fill", tint: SettingsTone.privacy, title: "Confidentialité & conditions", detail: "Consentements, CGU, politique")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .revealed(hasAppeared, index: 4)
+
+                    footer
                 }
-                .sharpitListRows()
+                .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.top, SharpitSpacing.xs)
+                .padding(.bottom, SharpitSpacing.xl)
             }
-            .sharpitGroupedList()
+            .scrollIndicators(.hidden)
+            .background(SharpitCanvasBackground())
             .navigationTitle("Paramètres")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -60,104 +117,208 @@ struct SettingsView: View {
                     Button("OK") { dismiss() }
                 }
             }
+            .navigationDestination(for: SettingsRoute.self, destination: destination)
+            .task { await profile.load() }
+            .task { await refreshNotificationStatus() }
+            .task { await cloudSync.refreshAccountStatus() }
+            .onAppear { hasAppeared = true }
         }
         .sharpitSheet()
     }
 
-    @ViewBuilder
-    private var generalRows: some View {
-        NavigationLink {
-            AppearanceView()
-        } label: {
-            LabeledContent {
-                Text(appearance.label)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            } label: {
-                rowLabel("Apparence", symbol: "circle.lefthalf.filled", background: SettingsTone.appearance)
-            }
-        }
-        NavigationLink {
-            NotificationsView()
-        } label: {
-            rowLabel("Notifications", symbol: "bell.badge.fill", background: SettingsTone.notifications)
-        }
-        NavigationLink {
-            ConnectionsView(appleHealth: appleHealth, syncClient: syncClient, tokenProvider: tokenProvider)
-        } label: {
-            rowLabel("Sources de données", symbol: "link", background: SettingsTone.sources)
-        }
-        NavigationLink {
-            ICloudSyncView(monitor: cloudSync)
-        } label: {
-            rowLabel("Synchronisation iCloud", symbol: "icloud.fill", background: SettingsTone.iCloud)
-        }
-    }
+    // MARK: - Quick settings
 
-    @ViewBuilder
-    private var trainingRows: some View {
-        NavigationLink {
-            EquipmentView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
-        } label: {
-            rowLabel("Sports & équipement", symbol: "figure.run.square.stack", background: SettingsTone.gear)
-        }
-        NavigationLink {
-            DisplayModeView(
-                client: profileClient,
-                displayMode: displayMode,
-                tokenProvider: tokenProvider,
-                modelContext: modelContext
+    private var appearanceControl: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SettingsRow(symbol: "circle.lefthalf.filled", tint: SettingsTone.appearance, title: "Apparence", detail: "Propre à cet iPhone", showsChevron: false)
+            SharpitSegmentedControl(
+                selection: $appearance,
+                options: AppearancePreference.allCases.map {
+                    SharpitSegmentedControl<AppearancePreference>.Option(value: $0, label: $0.label, symbol: $0.symbol)
+                }
             )
-        } label: {
-            LabeledContent {
-                Text(displayMode.isExpert ? "Expert" : "Essentiel")
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            } label: {
-                rowLabel("Densité de lecture", symbol: "eye.fill", background: SettingsTone.density)
-            }
         }
     }
 
-    private var versionLine: String {
+    private var notificationsControl: some View {
+        Toggle(isOn: notificationsBinding) {
+            SettingsRow(symbol: "bell.badge.fill", tint: SettingsTone.notifications, title: "Notifications", detail: notificationsDetail, showsChevron: false)
+        }
+        .tint(SharpitColor.primary)
+    }
+
+    private var densityControl: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SettingsRow(
+                symbol: "eye.fill",
+                tint: SettingsTone.density,
+                title: "Densité de lecture",
+                detail: displayMode.isExpert ? "78 TSS · IF 0,82 · TSB −12" : "Charge 78 · ressenti solide",
+                showsChevron: false
+            )
+            SharpitSegmentedControl(
+                selection: densityBinding,
+                options: [
+                    SharpitSegmentedControl<Bool>.Option(value: false, label: "Essentiel"),
+                    SharpitSegmentedControl<Bool>.Option(value: true, label: "Expert"),
+                ],
+                isDisabled: profile.isSaving || profile.phase != .loaded
+            )
+        }
+    }
+
+    private var notificationsBinding: Binding<Bool> {
+        Binding(
+            get: { push.isEnabledByAthlete && notificationStatus != .denied },
+            set: { on in
+                Task {
+                    if on, notificationStatus == .denied {
+                        if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                            await UIApplication.shared.open(url)
+                        }
+                        return
+                    }
+                    await push.setEnabled(on, tokenProvider: tokenProvider)
+                    await refreshNotificationStatus()
+                }
+            }
+        )
+    }
+
+    private var densityBinding: Binding<Bool> {
+        Binding(
+            get: { displayMode.isExpert },
+            set: { isExpert in
+                Task {
+                    await profile.setExpertReading(isExpert)
+                    displayMode.adopt(isExpert: profile.isExpertReading)
+                }
+            }
+        )
+    }
+
+    private func refreshNotificationStatus() async {
+        notificationStatus = await push.authorizationStatus()
+    }
+
+    // MARK: - Details
+
+    private var notificationsDetail: String {
+        if notificationStatus == .denied { return "Refusées dans iOS — touche pour ouvrir les réglages" }
+        return push.isEnabledByAthlete ? "Verdict du matin" : "Désactivées"
+    }
+
+    private var sourcesDetail: String {
+        appleHealth.isEnabled ? "Garmin · Apple Santé" : "Garmin"
+    }
+
+    private var iCloudDetail: String {
+        if let error = cloudSync.lastError, !error.isEmpty { return "Erreur de synchronisation" }
+        guard let last = [cloudSync.events[.exporting], cloudSync.events[.importing]]
+            .compactMap({ $0?.endedAt }).max() else {
+            return ConnectionsReadout.iCloud(cloudSync.accountStatus)
+        }
+        let when = Date.RelativeFormatStyle(presentation: .named, locale: SharpitLocale.french).format(last)
+        return "À jour · \(when)"
+    }
+
+    private var sportsDetail: String {
+        let sports = PracticedSportCatalog.ordered(profile.profile.practicedSports?.sports ?? [])
+        let labels = sports.compactMap { id in PracticedSportCatalog.all.first { $0.id == id }?.label }
+        return labels.isEmpty ? "Tes disciplines et ton matériel" : labels.joined(separator: " · ")
+    }
+
+    private var footer: some View {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "—"
         let build = info?["CFBundleVersion"] as? String ?? "—"
-        return "SharpIt \(version) (\(build))"
+        return VStack(spacing: SharpitSpacing.xxs) {
+            Text("SHARPIT")
+                .font(SharpitTypography.eyebrow)
+                .tracking(SharpitTypography.eyebrowTracking * 2)
+                .foregroundStyle(SharpitColor.mutedForeground)
+            Text("Version \(version) (\(build))")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.7))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, SharpitSpacing.sm)
     }
 
-    private func rowLabel(_ title: String, symbol: String, background: Color) -> some View {
-        Label {
-            Text(title)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.foreground)
-        } icon: {
-            SharpitRowIcon(symbol: symbol, background: background)
+    // MARK: - Destinations
+
+    @ViewBuilder
+    private func destination(_ route: SettingsRoute) -> some View {
+        switch route {
+        case .account:
+            AccountView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        case .pro:
+            ProView(profileClient: profileClient, tokenProvider: tokenProvider)
+        case .sources:
+            ConnectionsView(appleHealth: appleHealth, syncClient: syncClient, tokenProvider: tokenProvider)
+        case .iCloud:
+            ICloudSyncView(monitor: cloudSync)
+        case .equipment:
+            EquipmentView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        case .privacy:
+            PrivacySettingsView(client: privacyClient, tokenProvider: tokenProvider)
         }
     }
 }
 
-/// The account row at the top, as Settings opens on the Apple Account: avatar, name, e-mail.
-private struct AccountSummaryRow: View {
+enum SettingsRoute: Hashable {
+    case account
+    case pro
+    case sources
+    case iCloud
+    case equipment
+    case privacy
+}
+
+// MARK: - Building blocks
+
+/// The athlete, as the page opens: face, name, e-mail, tier.
+private struct AccountCard: View {
+    let isPro: Bool
+
     @Environment(Clerk.self) private var clerk
-    @ScaledMetric(relativeTo: .title2) private var avatarSize: CGFloat = 56
+    @ScaledMetric(relativeTo: .title2) private var avatarSize: CGFloat = 60
 
     var body: some View {
         HStack(spacing: SharpitSpacing.md) {
             AccountAvatar(size: avatarSize)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                 Text(name)
                     .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
                 if let email = clerk.user?.primaryEmailAddress?.emailAddress {
                     Text(email)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .lineLimit(1)
                 }
+                Text(isPro ? "PRO" : "GRATUIT")
+                    .font(SharpitTypography.label)
+                    .tracking(SharpitTypography.labelTracking)
+                    .foregroundStyle(isPro ? SharpitColor.highlightForeground : SharpitColor.mutedForeground)
+                    .padding(.horizontal, SharpitSpacing.xs)
+                    .padding(.vertical, 3)
+                    .background(isPro ? SharpitColor.highlight : SharpitColor.analysisGrid.opacity(0.6), in: Capsule())
+                    .padding(.top, 2)
             }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
         }
-        .padding(.vertical, SharpitSpacing.xxs)
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Ouvre ton compte")
     }
 
     private var name: String {
@@ -168,13 +329,111 @@ private struct AccountSummaryRow: View {
     }
 }
 
+/// SharpIt Pro on the ink surface — the one dark plate of the page, as the verdict is on Résumé.
+private struct ProCard: View {
+    let isPro: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.md) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                SharpitEyebrow(isPro ? "Ton abonnement" : "Abonnement", systemImage: "sparkle")
+                Text("SharpIt Pro")
+                    .font(SharpitTypography.verdict)
+                    .tracking(SharpitTypography.verdictTracking)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                Text(isPro ? "Tout SharpIt est ouvert pour toi." : "Coach étendu, analyses de séance, envoi vers la montre.")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Text(isPro ? "Gérer" : "Découvrir")
+                .font(SharpitTypography.meta.weight(.semibold))
+                .foregroundStyle(SharpitColor.highlightForeground)
+                .padding(.horizontal, SharpitSpacing.sm)
+                .padding(.vertical, SharpitSpacing.xs)
+                .background(SharpitColor.highlight, in: Capsule())
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.ink)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A titled card of rows.
+private struct SettingsGroup<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitEyebrow(title)
+                .padding(.leading, SharpitSpacing.xxs)
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                content
+            }
+            .padding(SharpitSpacing.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.panel)
+        }
+    }
+}
+
+private struct SettingsDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(SharpitColor.analysisGrid.opacity(0.7))
+            .frame(height: 1)
+            .padding(.leading, 44)
+    }
+}
+
+/// One row: a tinted symbol in a soft well, its name, and what it holds right now.
+private struct SettingsRow: View {
+    let symbol: String
+    let tint: Color
+    let title: String
+    var detail: String?
+    var showsChevron = true
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 32, height: 32)
+                .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                if let detail {
+                    Text(detail)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                        .contentTransition(.opacity)
+                }
+            }
+            Spacer(minLength: 0)
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+        }
+        .contentShape(.rect)
+    }
+}
+
 private enum SettingsTone {
-    static let pro = SharpitColor.primary
     static let appearance = Color(red: 0.34, green: 0.44, blue: 0.86)
-    static let notifications = Color(red: 0.94, green: 0.38, blue: 0.42)
-    static let sources = Color(red: 0.12, green: 0.68, blue: 0.62)
+    static let notifications = Color(red: 0.90, green: 0.36, blue: 0.40)
+    static let sources = Color(red: 0.12, green: 0.62, blue: 0.56)
     static let iCloud = Color(red: 0.20, green: 0.50, blue: 0.95)
     static let gear = SharpitColor.primary
-    static let density = Color(red: 0.58, green: 0.36, blue: 0.88)
+    static let density = Color(red: 0.55, green: 0.36, blue: 0.86)
     static let privacy = Color(red: 0.44, green: 0.50, blue: 0.58)
 }

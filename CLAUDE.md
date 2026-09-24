@@ -116,9 +116,15 @@ per-class source routing is not modelled.
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
 Paramètres is not a tab: it is a sheet (`SettingsView`) opened through `ShellRouter.openSettings()`
 from the avatar (`AccountAvatarButton`, the Clerk photo or the initials) in Résumé's and Corps'
-navigation bars, or a `/settings` link. Résumé's date is the large title; its mode, Journal and
-weather sit under it as a row of glass chips (`sharpitGlassChip`), pinned by a safe-area bar.
-Goals open from Plan's « … » menu, the coach's memory (context, trips) from Coach's toolbar.
+navigation bars, or a `/settings` link. Résumé hides its navigation bar and draws its own header,
+pinned by a safe-area bar: the date (`SharpitTypography.screenTitle`) on the avatar's line, then
+the mode, Journal and weather as glass chips (`sharpitGlassChip`). Goals open from Plan's « … »
+menu, the coach's memory (context, trips) from Coach's toolbar.
+
+**Objectifs.** `GoalsView` leads with the next race on the ink plate (`GoalOrdering.nextRace`: the
+nearest A race ahead, else the nearest race), then goal cards. A goal (`GoalDetailView`) and a new
+goal (`GoalCreateView`) are pages pushed in the Objectifs stack, never a sheet over the Objectifs
+sheet.
 
 **Feature shape.** A feature is a `@Observable` store plus a view that only composes
 design-system components: `TodayStore` owns a `phase` enum (loading / loaded / empty /
@@ -207,11 +213,14 @@ metric is a tile opening `CorpsMetricDrawer` (Swift Charts, 30 j / 90 j / 1 an /
 with no data is absent. Biological age is web-owned and not rendered until the web serves it
 (`docs/superpowers/specs/2026-09-24-ios-corps-parametres-pro-design.md`).
 
-**Paramètres.** SharpIt Pro (tier only until StoreKit), then Général — Compte (Clerk identity,
-profile height and birth date, derived age), Apparence (`AppearancePreference`, per iPhone, applied
-at the app root), Notifications, Sources de données (`ConnectionsView`), Synchronisation iCloud
-(`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer` events from launch) — then
-Sports & équipement, Densité de lecture, Confidentialité. Profil and Seuils edit the profile through
+**Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate (tier only until
+StoreKit), then quick settings answered in place with `SharpitSegmentedControl` and a toggle —
+Apparence (`AppearancePreference`, per iPhone, applied to every window's
+`overrideUserInterfaceStyle` so open sheets switch at once), Notifications
+(`PushNotificationManager.setEnabled`: off unregisters the device server-side, since iOS owns the
+permission), Densité de lecture — then Sources de données, Synchronisation iCloud
+(`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer` events from launch), Sports &
+équipement and Confidentialité, each row saying its state before it is opened. Profil and Seuils edit the profile through
 `AthleteProfilePatch`, which carries only the fields the athlete changed — an absent key means
 "leave it" and an explicit `null` means "clear it", a distinction a `Codable` struct of
 optionals cannot express. The web's validator records why: a PATCH that materialised the

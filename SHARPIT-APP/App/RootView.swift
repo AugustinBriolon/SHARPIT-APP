@@ -121,6 +121,8 @@ struct RootView: View {
         .task {
             async let modeLoad: () = displayMode.load(tokenProvider: liveToken)
             async let pushSetup: () = {
+                // Only while the athlete has not switched SharpIt's notifications off.
+                guard pushManager.isEnabledByAthlete else { return }
                 _ = await pushManager.requestAuthorization()
                 await pushManager.syncDeviceTokenIfNeeded(tokenProvider: liveToken, client: sharpitClient)
             }()

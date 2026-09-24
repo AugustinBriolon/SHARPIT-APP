@@ -7,8 +7,6 @@ import SwiftUI
 struct SharpitApp: App {
     @UIApplicationDelegateAdaptor(SharpitAppDelegate.self) private var appDelegate
     private let modelContainer: ModelContainer
-    /// Per iPhone, never synced (Paramètres → Apparence).
-    @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .system
 
     init() {
         SharpitFonts.register()
@@ -33,7 +31,8 @@ struct SharpitApp: App {
             }
             .environment(Clerk.shared)
             .environment(\.clerkTheme, .sharpit)
-            .preferredColorScheme(appearance.colorScheme)
+            // Per iPhone, never synced (Paramètres → Apparence).
+            .sharpitAppearance()
             .onOpenURL { url in
                 Task {
                     try? await Clerk.shared.handle(url)

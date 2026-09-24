@@ -80,3 +80,40 @@ private struct StubGoalClient: GoalServing {
     #expect(store.activeGoals.map(\.id) == ["1", "3"])
     #expect(store.completedGoals.map(\.id) == ["2"])
 }
+
+// MARK: - Ordering
+
+private func race(_ title: String, inDays days: Int?, priority: GoalPriority? = nil, achieved: Bool = false) -> V1Goal {
+    V1Goal(
+        id: title,
+        title: title,
+        kind: .race,
+        targetDate: days.map { Calendar.current.date(byAdding: .day, value: $0, to: Date())! },
+        achieved: achieved,
+        priority: priority
+    )
+}
+
+@Test func theNextRaceIsTheNearestARaceAhead() {
+    let goals = [
+        race("B proche", inDays: 10, priority: .b),
+        race("A lointaine", inDays: 90, priority: .a),
+        race("A passée", inDays: -3, priority: .a),
+        race("A atteinte", inDays: 20, priority: .a, achieved: true),
+    ]
+
+    #expect(GoalOrdering.nextRace(in: goals)?.title == "A lointaine")
+}
+
+@Test func withoutAnARaceTheNearestRaceLeads() {
+    let goals = [race("C", inDays: 40, priority: .c), race("B", inDays: 12, priority: .b)]
+
+    #expect(GoalOrdering.nextRace(in: goals)?.title == "B")
+    #expect(GoalOrdering.nextRace(in: [race("Passée", inDays: -1)]) == nil)
+}
+
+@Test func activeGoalsReadSoonestFirstThenUndated() {
+    let goals = [race("Sans date", inDays: nil), race("Loin", inDays: 60), race("Proche", inDays: 5)]
+
+    #expect(GoalOrdering.active(goals).map(\.title) == ["Proche", "Loin", "Sans date"])
+}
