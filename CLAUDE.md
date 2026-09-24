@@ -87,6 +87,17 @@ wraps `RootView` in `AuthGate`. Every network call takes a Bearer token produced
 `clerk.auth.getToken()`; views receive it as an injected `tokenProvider` closure rather
 than reaching for Clerk themselves.
 
+**Onboarding.** `OnboardingGate` sits between `AuthGate` and `RootView`: a new account answers
+the web's first-login wizard before it sees the tabs — Sports → Équipement → Disponibilités →
+Intention → Sources, the web's `wizard-steps.ts` order. The server decides who owes it
+(`onboardingCompletedAt` present and `null` on `/api/v1/athlete-profile`, as the web's gate reads
+the row); the phone only remembers a "done" per Clerk user, so a finished athlete never waits on
+a profile read, and a read that fails lets the athlete in without remembering anything. Each step
+is written as the athlete leaves it (practiced sports, equipment, `trainingAvailability`, a first
+goal through `/api/v1/goals`), and only `/api/onboarding/complete` finishes the wizard. Sources
+mirrors Connexions: Garmin is connected on the web, Apple Health is switched on here — the web's
+per-class source routing is not modelled.
+
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Moi).
 `ShellDestination` describes the tabs that are not built yet and feeds
 `InstrumentShellView` placeholders. Today, Plan and Activité are real screens.
@@ -101,16 +112,11 @@ typography, colors or spacing — that belongs to `DesignSystem/`.
 in `V1Today.swift` / `V1Activities.swift` / `V1PlannedSessions.swift` and mirror the web
 API payloads.
 
-The real versioned contracts are `/api/v1/today`, `/api/v1/sleep`, `/api/v1/recovery`,
-`/api/v1/sync`, `/api/v1/sync-status` and `/api/v1/health-samples`, all served by
-`SharpitClient` behind one protocol per resource. `ActivityClient`,
-`PlannedSessionClient`, `CoachChatClient`, `CoachConversationClient`, `ActivityStatusClient`,
-`JournalClient` and `AthleteProfileClient` call web-internal routes (`/api/activities`,
-`/api/planned-sessions` including `…/:id/link`, `/api/coach/chat`, `/api/coach/conversations`,
-`/api/activity-status`, `/api/day-journal`, `/api/journal/day-signals`, `/api/journal-prefs`,
-`/api/athlete-profile`
-including `…/threshold-history`, `/api/body-composition`); treat that as known debt, not as a
-pattern to copy.
+Every client calls the versioned `/api/v1/*` contracts (SHARPIT ADR-040: each one re-exports
+the `/api` handler, same Clerk authz). Three routes have no `/api/v1` twin yet and are called
+web-internal: `/api/coach/chat` (deferred on the web), `/api/onboarding/complete`
+(`OnboardingClient`) and `/api/privacy/consent` (`PrivacyConsentClient`). Treat those as known
+debt, not as a pattern to copy — move each one the day the web publishes its `/api/v1` twin.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON

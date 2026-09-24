@@ -21,6 +21,157 @@ enum PracticedSportCatalog {
         PracticedSportItem(id: "mobility", label: "Mobilité", subtitle: "Amplitude articulaire", symbolName: "figure.yoga"),
         PracticedSportItem(id: "stretching", label: "Étirements", subtitle: "Souplesse et récupération", symbolName: "figure.cooldown")
     ]
+
+    /// Catalog order — the order the web stores (`uniqueOrdered` in `practiced-sports/catalog.ts`).
+    static let all: [PracticedSportItem] = endurance + complementary
+
+    /// SHARPIT is built for endurance: a selection needs at least one of these.
+    static func hasEnduranceSport(_ sports: some Collection<String>) -> Bool {
+        endurance.contains { sports.contains($0.id) }
+    }
+
+    /// Known ids only, deduplicated, in catalog order.
+    static func ordered(_ sports: some Collection<String>) -> [String] {
+        all.map(\.id).filter { sports.contains($0) }
+    }
+
+    /// The inventory tabs a selection opens — triathlon counts for its three legs, stretching
+    /// shares the mobility kit. Nothing selected shows every tab rather than none.
+    static func equipmentSports(for sports: Set<String>) -> [EquipmentSport] {
+        guard !sports.isEmpty else { return EquipmentSport.allCases }
+        return EquipmentSport.allCases.filter { sport in
+            switch sport {
+            case .run: sports.contains("run") || sports.contains("triathlon")
+            case .bike: sports.contains("bike") || sports.contains("triathlon")
+            case .swim: sports.contains("swim") || sports.contains("triathlon")
+            case .strength: sports.contains("strength")
+            case .mobility: sports.contains("mobility") || sports.contains("stretching")
+            }
+        }
+    }
+
+    static func color(for id: String) -> Color {
+        switch id {
+        case "run": SharpitSportColor.color(SharpitSportColor.run)
+        case "bike": SharpitSportColor.color(SharpitSportColor.bike)
+        case "swim": SharpitSportColor.color(SharpitSportColor.swim)
+        case "triathlon": SharpitSportColor.color(SharpitSportColor.triathlon)
+        case "strength": SharpitSportColor.color(SharpitSportColor.strength)
+        case "mobility": SharpitSportColor.color(SharpitSportColor.other)
+        case "stretching": Color(red: 0.18, green: 0.82, blue: 0.65)
+        default: SharpitColor.primary
+        }
+    }
+}
+
+/// One practiced sport as a toggle tile — shared by Sports & équipement and the onboarding.
+struct PracticedSportTile: View {
+    let item: PracticedSportItem
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        let color = PracticedSportCatalog.color(for: item.id)
+
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
+                            .fill(isSelected ? color.opacity(0.18) : SharpitColor.analysisGrid.opacity(0.35))
+                            .frame(width: 34, height: 34)
+                        Image(systemName: item.symbolName)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(isSelected ? color : SharpitColor.mutedForeground)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 18, weight: isSelected ? .bold : .regular))
+                        .foregroundStyle(isSelected ? color : SharpitColor.mutedForeground.opacity(0.3))
+                }
+
+                Spacer(minLength: 8)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.label)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.9)
+
+                    Text(item.subtitle)
+                        .font(.system(size: 11))
+                        .lineSpacing(1.5)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(height: 30, alignment: .topLeading)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, minHeight: 124, maxHeight: 124, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .fill(isSelected ? color.opacity(0.08) : SharpitColor.card.opacity(0.55))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .strokeBorder(isSelected ? color.opacity(0.8) : SharpitColor.border.opacity(0.5), lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// One piece of equipment as a toggle row — shared by Sports & équipement and the onboarding.
+struct EquipmentItemTile: View {
+    let item: EquipmentCatalogItem
+    let isOwned: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
+                        .fill(isOwned ? SharpitColor.primary.opacity(0.12) : SharpitColor.analysisGrid.opacity(0.4))
+                        .frame(width: 38, height: 38)
+                    Image(systemName: item.symbolName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(item.label)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+
+                    Text(item.impact)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                Image(systemName: isOwned ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 20, weight: isOwned ? .bold : .regular))
+                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.3))
+            }
+            .padding(SharpitSpacing.cardPadding)
+            .sharpitSurface(.panel)
+            .overlay(
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .strokeBorder(isOwned ? SharpitColor.primary.opacity(0.35) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isOwned ? .isSelected : [])
+    }
 }
 
 /// Réglages → Sports & équipement: modern, tactile practiced sports & equipment manager.
@@ -120,10 +271,8 @@ struct EquipmentView: View {
     }
 
     private func sportCard(_ item: PracticedSportItem) -> some View {
-        let isSelected = practicedSports.contains(item.id)
-        let color = sportColor(for: item.id)
-
-        return Button {
+        PracticedSportTile(item: item, isSelected: practicedSports.contains(item.id)) {
+            let isSelected = practicedSports.contains(item.id)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.snappy(duration: 0.2)) {
                 if isSelected {
@@ -134,56 +283,7 @@ struct EquipmentView: View {
                 ensureValidSelectedTab()
             }
             scheduleAutoSave()
-        } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                            .fill(isSelected ? color.opacity(0.18) : SharpitColor.analysisGrid.opacity(0.35))
-                            .frame(width: 34, height: 34)
-                        Image(systemName: item.symbolName)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(isSelected ? color : SharpitColor.mutedForeground)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 18, weight: isSelected ? .bold : .regular))
-                        .foregroundStyle(isSelected ? color : SharpitColor.mutedForeground.opacity(0.3))
-                }
-
-                Spacer(minLength: 8)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.label)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.9)
-
-                    Text(item.subtitle)
-                        .font(.system(size: 11))
-                        .lineSpacing(1.5)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(height: 30, alignment: .topLeading)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, minHeight: 124, maxHeight: 124, alignment: .topLeading)
-            .background(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(isSelected ? color.opacity(0.08) : SharpitColor.card.opacity(0.55))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(isSelected ? color.opacity(0.8) : SharpitColor.border.opacity(0.5), lineWidth: isSelected ? 1.5 : 1)
-            )
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Equipment Inventory Section with Tabs
@@ -375,9 +475,8 @@ struct EquipmentView: View {
     // MARK: - Equipment Item Card
 
     private func equipmentCard(_ item: EquipmentCatalogItem) -> some View {
-        let isOwned = owned.contains(item.id)
-
-        return Button {
+        EquipmentItemTile(item: item, isOwned: owned.contains(item.id)) {
+            let isOwned = owned.contains(item.id)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.snappy(duration: 0.2)) {
                 if isOwned {
@@ -387,82 +486,18 @@ struct EquipmentView: View {
                 }
             }
             scheduleAutoSave()
-        } label: {
-            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                        .fill(isOwned ? SharpitColor.primary.opacity(0.12) : SharpitColor.analysisGrid.opacity(0.4))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: item.symbolName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
-                }
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.label)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-
-                    Text(item.impact)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                }
-
-                Spacer()
-
-                Image(systemName: isOwned ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20, weight: isOwned ? .bold : .regular))
-                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.3))
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .sharpitSurface(.panel)
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(isOwned ? SharpitColor.primary.opacity(0.35) : Color.clear, lineWidth: 1)
-            )
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Helpers & Data Sync
 
     private var visibleEquipmentSports: [EquipmentSport] {
-        if practicedSports.isEmpty {
-            return EquipmentSport.allCases
-        }
-        return EquipmentSport.allCases.filter { sport in
-            switch sport {
-            case .run:
-                return practicedSports.contains("run") || practicedSports.contains("triathlon")
-            case .bike:
-                return practicedSports.contains("bike") || practicedSports.contains("triathlon")
-            case .swim:
-                return practicedSports.contains("swim") || practicedSports.contains("triathlon")
-            case .strength:
-                return practicedSports.contains("strength")
-            case .mobility:
-                return practicedSports.contains("mobility") || practicedSports.contains("stretching")
-            }
-        }
+        PracticedSportCatalog.equipmentSports(for: practicedSports)
     }
 
     private func ensureValidSelectedTab() {
         if !visibleEquipmentSports.contains(selectedSportTab), let first = visibleEquipmentSports.first {
             selectedSportTab = first
-        }
-    }
-
-    private func sportColor(for id: String) -> Color {
-        switch id {
-        case "run": SharpitSportColor.color(SharpitSportColor.run)
-        case "bike": SharpitSportColor.color(SharpitSportColor.bike)
-        case "swim": SharpitSportColor.color(SharpitSportColor.swim)
-        case "triathlon": SharpitSportColor.color(SharpitSportColor.triathlon)
-        case "strength": SharpitSportColor.color(SharpitSportColor.strength)
-        case "mobility": SharpitSportColor.color(SharpitSportColor.other)
-        case "stretching": Color(red: 0.18, green: 0.82, blue: 0.65)
-        default: SharpitColor.primary
         }
     }
 

@@ -67,7 +67,7 @@ import Testing
         "sleepTargetMinutes", "sleepBedtimeTargetMin",
         "ftpW", "maxHr", "lthr",
         "runThresholdPaceSecPerKm", "swimCssSecPer100m", "defaultPoolLengthM",
-        "equipment", "practicedSports",
+        "equipment", "practicedSports", "trainingAvailability",
     ])
 }
 
