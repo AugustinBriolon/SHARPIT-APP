@@ -11,41 +11,17 @@ struct ActivityView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                switch phase {
-                case .loading:
-                    ActivityListLoading()
-                case .loaded(let activities):
-                    ActivityListContent(
-                        activities: activities,
-                        selectedActivity: $selectedActivity
-                    ) {
-                        await load(force: true)
-                    }
-                case .empty:
-                    ContentUnavailableView {
-                        Label("Pas encore d’activité", systemImage: "figure.run")
-                    } description: {
-                        Text("Tes séances synchronisées apparaîtront ici.")
-                    }
-                case .failed(let message):
-                    ContentUnavailableView {
-                        Label("Activité indisponible", systemImage: "wifi.slash")
-                    } description: {
-                        Text(message)
-                    } actions: {
-                        Button("Réessayer") {
-                            Task { await load() }
-                        }
-                    }
-                case .unauthorized:
-                    ContentUnavailableView {
-                        Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
-                    } description: {
-                        Text("Reconnecte-toi pour recharger tes activités.")
-                    }
-                }
+            // One scroll view for every phase, owning the refresh control — as Corps does.
+            // The list used to swap its own ScrollView in and out with the phase, and a refresh
+            // that ended on a new view left the control with no list to spring back into.
+            ScrollView {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, SharpitSpacing.pageInset)
+                    .padding(.bottom, SharpitSpacing.lg)
             }
+            .modifier(ScrollUnderGlass())
+            .refreshable { await load(force: true) }
             .background(SharpitCanvasBackground())
             .navigationTitle("Activité")
             .navigationBarTitleDisplayMode(.large)
@@ -67,6 +43,41 @@ struct ActivityView: View {
         }
     }
 
+    @ViewBuilder
+    private var content: some View {
+        switch phase {
+        case .loading:
+            ActivityListLoading()
+        case .loaded(let activities):
+            ActivityListContent(activities: activities, selectedActivity: $selectedActivity)
+        case .empty:
+            ContentUnavailableView {
+                Label("Pas encore d’activité", systemImage: "figure.run")
+            } description: {
+                Text("Tes séances synchronisées apparaîtront ici.")
+            }
+            .containerRelativeFrame(.vertical)
+        case .failed(let message):
+            ContentUnavailableView {
+                Label("Activité indisponible", systemImage: "wifi.slash")
+            } description: {
+                Text(message)
+            } actions: {
+                Button("Réessayer") {
+                    Task { await load() }
+                }
+            }
+            .containerRelativeFrame(.vertical)
+        case .unauthorized:
+            ContentUnavailableView {
+                Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
+            } description: {
+                Text("Reconnecte-toi pour recharger tes activités.")
+            }
+            .containerRelativeFrame(.vertical)
+        }
+    }
+
     @MainActor
     private func load(force: Bool = false) async {
         do {
@@ -74,11 +85,20 @@ struct ActivityView: View {
             let activities = try await client.activities(forceRefresh: force, token: token)
             // Only a list that changed is swapped in. Replacing an identical list while the
             // pull-to-refresh gesture was ending left the scroll view stuck pulled down.
-            if case .loaded(let shown) = phase, shown == activities { return }
+            if case .loaded(let shown) = phase {
+                if shown == activities { return }
+                // A list replacing a list is not animated: the refresh control is still
+                // settling, and an animated height change under it is what kept it pulled down.
+                phase = activities.isEmpty ? .empty : .loaded(activities)
+                return
+            }
             SharpitMotion.run(SharpitMotion.fade) {
                 phase = activities.isEmpty ? .empty : .loaded(activities)
             }
         } catch is CancellationError {
+            return
+        } catch let error as URLError where error.code == .cancelled {
+            // The refresh task ended before its request: what is on screen stays.
             return
         } catch let error as SharpitAPIError where error == .unauthorized {
             phase = .unauthorized
@@ -101,9 +121,6 @@ private enum ActivityPhase {
 private struct ActivityListContent: View {
     let activities: [V1ActivityListItem]
     @Binding var selectedActivity: V1ActivityListItem?
-    /// On the scroll view itself, not on the screen around it: attached higher up, the
-    /// refresh control lost track of the list it belonged to and did not spring back.
-    let onRefresh: () async -> Void
 
     private var groupedActivities: [(String, [V1ActivityListItem])] {
         let groups = Dictionary(grouping: activities) {
@@ -115,34 +132,28 @@ private struct ActivityListContent: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                ActivityIntro()
+        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            ActivityIntro()
 
-                ForEach(groupedActivities, id: \.0) { group in
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        Text(group.0)
-                            .font(SharpitTypography.eyebrow)
-                            .tracking(SharpitTypography.eyebrowTracking)
-                            .textCase(.uppercase)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+            ForEach(groupedActivities, id: \.0) { group in
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    Text(group.0)
+                        .font(SharpitTypography.eyebrow)
+                        .tracking(SharpitTypography.eyebrowTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SharpitColor.mutedForeground)
 
-                        ForEach(group.1) { activity in
-                            Button {
-                                selectedActivity = activity
-                            } label: {
-                                ActivityRow(activity: activity)
-                            }
-                            .buttonStyle(.sharpitPressable)
+                    ForEach(group.1) { activity in
+                        Button {
+                            selectedActivity = activity
+                        } label: {
+                            ActivityRow(activity: activity)
                         }
+                        .buttonStyle(.sharpitPressable)
                     }
                 }
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.bottom, SharpitSpacing.lg)
         }
-        .refreshable { await onRefresh() }
-        .modifier(ScrollUnderGlass())
     }
 }
 
@@ -227,25 +238,21 @@ private struct ActivityRow: View {
 
 private struct ActivityListLoading: View {
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                RoundedRectangle(cornerRadius: 8)
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(SharpitColor.analysisSurfaceAlt)
+                .frame(width: 210, height: 28)
+            RoundedRectangle(cornerRadius: 8)
+                .fill(SharpitColor.analysisSurfaceAlt)
+                .frame(width: 280, height: 18)
+            ForEach(0..<5, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
                     .fill(SharpitColor.analysisSurfaceAlt)
-                    .frame(width: 210, height: 28)
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(SharpitColor.analysisSurfaceAlt)
-                    .frame(width: 280, height: 18)
-                ForEach(0..<5, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                        .fill(SharpitColor.analysisSurfaceAlt)
-                        .frame(height: 78)
-                }
+                    .frame(height: 78)
             }
-            .redacted(reason: .placeholder)
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.top, SharpitSpacing.md)
         }
-        .modifier(ScrollUnderGlass())
+        .redacted(reason: .placeholder)
+        .padding(.top, SharpitSpacing.md)
         .accessibilityLabel("Chargement de l’historique")
     }
 }

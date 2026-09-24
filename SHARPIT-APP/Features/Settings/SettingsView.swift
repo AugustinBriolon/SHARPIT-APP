@@ -69,16 +69,16 @@ struct SettingsView: View {
 
                     SettingsGroup(title: "Réglages rapides") {
                         appearanceControl
-                        SettingsDivider()
-                        notificationsControl
-                        if push.isEnabledByAthlete, notificationStatus != .denied {
-                            NavigationLink(value: SettingsRoute.notifications) {
-                                SettingsRow(symbol: "slider.horizontal.3", tint: SettingsTone.notifications, title: "Choisir les notifications", detail: notificationKindsDetail)
-                            }
-                            .buttonStyle(.plain)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
+                    // A page, not a quick setting: the switch and the kinds it sends are one
+                    // decision, and iOS may have the last word on it.
+                    SettingsGroup(title: "Notifications") {
+                        NavigationLink(value: SettingsRoute.notifications) {
+                            SettingsRow(symbol: "bell.badge.fill", tint: SettingsTone.notifications, title: "Notifications", detail: notificationsDetail)
                         }
                     }
+                    .buttonStyle(.plain)
 
                     SettingsGroup(title: "Données") {
                         NavigationLink(value: SettingsRoute.sources) {
@@ -156,31 +156,6 @@ struct SettingsView: View {
         }
     }
 
-    private var notificationsControl: some View {
-        Toggle(isOn: notificationsBinding) {
-            SettingsRow(symbol: "bell.badge.fill", tint: SettingsTone.notifications, title: "Notifications", detail: notificationsDetail, showsChevron: false)
-        }
-        .tint(SharpitColor.primary)
-    }
-
-    private var notificationsBinding: Binding<Bool> {
-        Binding(
-            get: { push.isEnabledByAthlete && notificationStatus != .denied },
-            set: { on in
-                Task {
-                    if on, notificationStatus == .denied {
-                        if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
-                            await UIApplication.shared.open(url)
-                        }
-                        return
-                    }
-                    await push.setEnabled(on, tokenProvider: tokenProvider)
-                    await refreshNotificationStatus()
-                }
-            }
-        )
-    }
-
     private func refreshNotificationStatus() async {
         notificationStatus = await push.authorizationStatus()
     }
@@ -188,11 +163,8 @@ struct SettingsView: View {
     // MARK: - Details
 
     private var notificationsDetail: String {
-        if notificationStatus == .denied { return "Refusées dans iOS — touche pour ouvrir les réglages" }
-        return push.isEnabledByAthlete ? "Verdict du matin" : "Désactivées"
-    }
-
-    private var notificationKindsDetail: String {
+        if notificationStatus == .denied { return "Refusées dans iOS" }
+        guard push.isEnabledByAthlete else { return "Désactivées" }
         guard let prefs = profile.profile.notificationPrefs else { return "Verdict du matin" }
         let on = [
             prefs.morningVerdict ? "verdict du matin" : nil,

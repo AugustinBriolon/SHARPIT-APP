@@ -3,6 +3,7 @@ import ClerkKit
 import SwiftData
 import SwiftUI
 import UIKit
+import UserNotifications
 
 // MARK: - Synchronisation iCloud
 
@@ -276,10 +277,17 @@ private extension String {
 /// SharpIt notify at all is the master switch on Paramètres.
 struct NotificationPrefsView: View {
     @State private var store: AthleteProfileStore
+    @State private var push = PushNotificationManager.shared
+    @State private var notificationStatus: UNAuthorizationStatus?
+    @Environment(\.scenePhase) private var scenePhase
+    private let tokenProvider: () async throws -> String
 
     init(profileClient: any AthleteProfileServing, tokenProvider: @escaping () async throws -> String) {
         _store = State(initialValue: AthleteProfileStore(client: profileClient, tokenProvider: tokenProvider))
+        self.tokenProvider = tokenProvider
     }
+
+    private var isOn: Bool { push.isEnabledByAthlete && notificationStatus != .denied }
 
     private var prefs: V1NotificationPrefs {
         store.profile.notificationPrefs ?? V1NotificationPrefs()
@@ -287,16 +295,22 @@ struct NotificationPrefsView: View {
 
     var body: some View {
         List {
-            Section(
-                eyebrow: "Ce que SharpIt t'envoie",
-                footer: "Seul le verdict du matin est envoyé aujourd'hui. Tes autres choix seront respectés dès que ces notifications arriveront."
-            ) {
-                toggle("Verdict du matin", detail: "Ta lecture du jour, une fois ta nuit synchronisée.", symbol: "sun.horizon", key: "morningVerdict", value: prefs.morningVerdict)
-                toggle("Bilan de la semaine", detail: "Le résumé de ta semaine d'entraînement.", symbol: "calendar", key: "weeklyReview", value: prefs.weeklyReview)
-                toggle("Rappel de séance", detail: "Avant une séance prévue.", symbol: "figure.run", key: "sessionReminder", value: prefs.sessionReminder)
-                toggle("Alertes de synchronisation", detail: "Quand une source doit être reconnectée.", symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
+            Section(eyebrow: "Sur cet iPhone", footer: masterFooter) {
+                Toggle(isOn: masterBinding) {
+                    Label {
+                        Text("Autoriser les notifications")
+                            .font(SharpitTypography.bodyEmphasis)
+                    } icon: {
+                        SharpitRowIcon(symbol: "bell.badge")
+                    }
+                }
+                .tint(SharpitColor.primary)
             }
             .sharpitListRows()
+
+            if isOn {
+                kinds
+            }
 
             if let error = store.saveError {
                 Section {
@@ -308,11 +322,64 @@ struct NotificationPrefsView: View {
             }
         }
         .sharpitGroupedList()
-        .disabled(store.phase != .loaded)
-        .redacted(reason: store.phase == .loaded ? [] : .placeholder)
+        .animation(SharpitMotion.reveal, value: isOn)
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
+        .task {
+            await refreshStatus()
+            await store.load()
+        }
+        // Back from iOS's own settings, where a refusal is lifted.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await refreshStatus() } }
+        }
+    }
+
+    private var masterFooter: String {
+        if notificationStatus == .denied {
+            return "Refusées dans les réglages d'iOS : touche l'interrupteur pour les ouvrir."
+        }
+        return isOn
+            ? "Choisis ci-dessous ce que SharpIt envoie sur cet iPhone."
+            : "Cet iPhone ne reçoit plus rien. Tes choix sont gardés pour quand tu les réactives."
+    }
+
+    private var masterBinding: Binding<Bool> {
+        Binding(
+            get: { isOn },
+            set: { on in
+                Task {
+                    if on, notificationStatus == .denied {
+                        if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                            await UIApplication.shared.open(url)
+                        }
+                        return
+                    }
+                    await push.setEnabled(on, tokenProvider: tokenProvider)
+                    await refreshStatus()
+                }
+            }
+        )
+    }
+
+    private func refreshStatus() async {
+        notificationStatus = await push.authorizationStatus()
+    }
+
+    private var kinds: some View {
+        Section(
+            eyebrow: "Ce que SharpIt t'envoie",
+            footer: "Seul le verdict du matin est envoyé aujourd'hui. Tes autres choix seront respectés dès que ces notifications arriveront."
+        ) {
+            toggle("Verdict du matin", detail: "Ta lecture du jour, une fois ta nuit synchronisée.", symbol: "sun.horizon", key: "morningVerdict", value: prefs.morningVerdict)
+            toggle("Bilan de la semaine", detail: "Le résumé de ta semaine d'entraînement.", symbol: "calendar", key: "weeklyReview", value: prefs.weeklyReview)
+            toggle("Rappel de séance", detail: "Avant une séance prévue.", symbol: "figure.run", key: "sessionReminder", value: prefs.sessionReminder)
+            toggle("Alertes de synchronisation", detail: "Quand une source doit être reconnectée.", symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
+        }
+        .sharpitListRows()
+        .disabled(store.phase != .loaded)
+        .redacted(reason: store.phase == .loaded ? [] : .placeholder)
+        .transition(.opacity)
     }
 
     private func toggle(_ title: String, detail: String, symbol: String, key: String, value: Bool) -> some View {

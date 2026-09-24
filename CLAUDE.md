@@ -203,7 +203,8 @@ time. Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`,
 ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
 
-**Activity cache.** An activity's detail and streams are kept on disk as the raw JSON the server
+**Activity cache.** The list (`ActivityView`) is one scroll view for every phase, holding the
+refresh control: swapping the scroll view with the phase left the control stuck pulled down. An activity's detail and streams are kept on disk as the raw JSON the server
 answered (`ActivityDiskCache`, Application Support), because the in-memory cache died with each
 screen's client and the heaviest read in the app reloaded on every open. `ActivityClient` reads
 memory, then disk, then the network: a stream is kept for good once the server said it was
@@ -225,11 +226,11 @@ toolbar (`WeightTargetSheet`) and drawn on the weight's hero and chart; the slee
 Sommeil's (`SleepTargetsSheet`). Biological age is web-owned (SHARPIT ADR-045) and not rendered
 until the web serves it.
 
-**Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then two settings
+**Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then the one setting
 answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's
-`overrideUserInterfaceStyle` so open sheets switch at once) and Notifications
-(`PushNotificationManager.setEnabled`: off unregisters the device server-side, since iOS owns the
-permission; `NotificationPrefsView` sets each kind in `notificationPrefs`) — then Sources de
+`overrideUserInterfaceStyle` so open sheets switch at once) — then Notifications, a page
+(`NotificationPrefsView`: the switch, `PushNotificationManager.setEnabled`, where off unregisters
+the device server-side since iOS owns the permission, then each kind in `notificationPrefs`), Sources de
 données, Synchronisation iCloud (`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer`
 events from launch), Sports & équipement, Densité de lecture (its own page: the choice needs its
 explanation) and Confidentialité, each row saying its state before it is opened. Compte edits in
