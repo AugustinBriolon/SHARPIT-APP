@@ -110,9 +110,10 @@ the row); the phone only remembers a "done" per Clerk user, so a finished athlet
 a profile read, and a read that fails lets the athlete in without remembering anything. Each step
 is written as the athlete leaves it (practiced sports, equipment, `trainingAvailability`, a first
 goal through `/api/v1/goals`), and only `/api/v1/onboarding/complete` finishes the wizard. Sources
-mirrors Connexions: Garmin is connected in-app through `GarminConnectSheet`
-(`POST /api/v1/garmin/connect`, SHARPIT ADR-046), Apple Health is switched on here — the web's
-per-class source routing is not modelled.
+mirrors Connexions: Garmin is connected in-app through `GarminConnect` — an ephemeral
+`WebAuthenticationSession` on the apex, entered through `POST /api/v1/garmin/handoff`'s one-time
+sign-in URL and closed on `/connect/garmin/callback` (SHARPIT ADR-047) — and Apple Health is
+switched on here. The web's per-class source routing is not modelled.
 
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
 Paramètres is not a tab: it is a sheet (`SettingsView`) opened through `ShellRouter.openSettings()`
