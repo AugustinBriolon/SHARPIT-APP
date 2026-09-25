@@ -369,7 +369,7 @@ private actor StubConsentClient: PrivacyConsentServing {
 }
 
 extension V1PrivacyConsents {
-    static let accepted = V1PrivacyConsents(
+    nonisolated static let accepted = V1PrivacyConsents(
         termsAcceptedAt: Date(timeIntervalSince1970: 1_800_000_000),
         privacyAcceptedAt: Date(timeIntervalSince1970: 1_800_000_000),
         privacyVersion: "v0-2026-09",

@@ -1,6 +1,6 @@
 import Foundation
 
-protocol GoalServing: Sendable {
+nonisolated protocol GoalServing: Sendable {
     func goals(token: String) async throws -> [V1Goal]
     func createGoal(_ input: CreateGoalInput, token: String) async throws -> V1Goal
     func toggleAchieved(id: String, achieved: Bool, token: String) async throws -> V1Goal
