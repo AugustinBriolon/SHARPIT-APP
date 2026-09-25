@@ -209,30 +209,14 @@ struct RootView: View {
     }
 
     private func handleIncomingURL(_ url: URL) {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else { return }
-
-        // 1. Garmin handoff callback (ADR-040, Direction A)
-        if components.path == "/connect/garmin/callback" {
-            let status = components.queryItems?.first(where: { $0.name == "garmin" })?.value
+        switch IncomingLink.parse(url) {
+        case .garminCallback(let status):
             handleGarminCallback(status: status)
-            return
-        }
-
-        // 2. Direct tab routing (e.g. /today, /plan, /coach, /activities, /me)
-        switch components.path {
-        case "/today":
-            router.select(.today)
-        case "/plan":
-            router.select(.plan)
-        case "/coach":
-            router.select(.coach)
-        case "/activity", "/activities":
-            router.select(.activity)
-        case "/body", "/corps", "/me", "/profile":
-            router.select(.body)
-        case "/settings":
+        case .tab(let tab):
+            router.select(tab)
+        case .settings:
             router.openSettings()
-        default:
+        case nil:
             break
         }
     }

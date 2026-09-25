@@ -120,20 +120,9 @@ final class PushNotificationManager {
         if category == "MORNING_VERDICT" || threadId == "morning-verdict" {
             self.pendingTabSelection = .today
         } else if let urlString, let url = URL(string: urlString) {
-            switch url.path {
-            case "/today":
-                self.pendingTabSelection = .today
-            case "/plan":
-                self.pendingTabSelection = .plan
-            case "/coach":
-                self.pendingTabSelection = .coach
-            case "/activity", "/activities":
-                self.pendingTabSelection = .activity
-            // Moi became Corps; its old links land there.
-            case "/body", "/corps", "/me", "/profile", "/settings":
-                self.pendingTabSelection = .body
-            default:
-                break
+            // A push's `/settings` predates the Paramètres sheet and still lands on Corps.
+            if let tab = IncomingLink.tab(forPath: url.path) ?? (url.path == "/settings" ? .body : nil) {
+                self.pendingTabSelection = tab
             }
         }
     }
