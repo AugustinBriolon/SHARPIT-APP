@@ -1,6 +1,6 @@
 // `//` starts a comment in an xcconfig, so the slashes of the scheme are split with an
 // empty `$()`.
-SHARPIT_API_ORIGIN = https:/$()/sharpit.app
+SHARPIT_API_ORIGIN = https:/$()/api.sharpit.app
 
 // Where the app opens web pages (terms, privacy): always the apex, whatever the API origin.
 SHARPIT_WEB_ORIGIN = https:/$()/sharpit.app
