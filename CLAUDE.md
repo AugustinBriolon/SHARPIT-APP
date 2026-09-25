@@ -55,9 +55,9 @@ only mechanism. In an xcconfig `//` starts a comment, so write `https:/$()/host`
   simulator. Real data, no Docker, no local Next.
 - **No server at all** — `FixtureTodayClient` serves the bundled JSON for pure UI work.
 
-Clerk is still the development instance (`pk_test_…`), the same one the deployed web app
-uses, so the app's token is accepted there. A production Clerk instance needs a `pk_live_…`
-key and is a separate step.
+Clerk is the production instance (`pk_live_…`, Frontend API `clerk.sharpit.app`,
+`APIConfiguration.publishableKey`), the same one the deployed web app uses, so the app's token
+is accepted there.
 
 ### Signing
 
@@ -110,7 +110,8 @@ the row); the phone only remembers a "done" per Clerk user, so a finished athlet
 a profile read, and a read that fails lets the athlete in without remembering anything. Each step
 is written as the athlete leaves it (practiced sports, equipment, `trainingAvailability`, a first
 goal through `/api/v1/goals`), and only `/api/v1/onboarding/complete` finishes the wizard. Sources
-mirrors Connexions: Garmin is connected on the web, Apple Health is switched on here — the web's
+mirrors Connexions: Garmin is connected in-app through `GarminConnectSheet`
+(`POST /api/v1/garmin/connect`, SHARPIT ADR-046), Apple Health is switched on here — the web's
 per-class source routing is not modelled.
 
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
