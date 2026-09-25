@@ -55,9 +55,12 @@ struct OnboardingView: View {
     /// navigation stack does, so the wizard reads as one continuous place.
     private var steps: some View {
         VStack(spacing: 0) {
-            OnboardingProgressHeader(step: store.step, isBusy: store.isBusy) {
-                store.goBack()
-            }
+            OnboardingProgressHeader(
+                step: store.step,
+                isBusy: store.isBusy,
+                onBack: { store.goBack() },
+                onSkip: store.step.allowsSkip ? { Task { await store.skip() } } : nil
+            )
 
             ZStack {
                 OnboardingStepPage(step: store.step) {
@@ -67,7 +70,7 @@ struct OnboardingView: View {
                 .transition(.push(from: store.isMovingForward ? .trailing : .leading))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // The page scrolls under the actions, which float over it in glass.
+            // The page scrolls under the actions, which float over it with a gradient fade.
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 OnboardingActionBar(store: store)
             }
@@ -106,11 +109,11 @@ private struct OnboardingStepPage<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                     Text(step.title)
-                        .font(SharpitTypography.pageTitle)
-                        .tracking(SharpitTypography.pageTitleTracking)
+                        .font(SharpitTypography.screenTitle)
+                        .tracking(SharpitTypography.screenTitleTracking)
                         .foregroundStyle(SharpitColor.foreground)
                         .accessibilityAddTraits(.isHeader)
                         .revealed(hasAppeared, index: 1)
@@ -120,13 +123,14 @@ private struct OnboardingStepPage<Content: View>: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .revealed(hasAppeared, index: 2)
                 }
+                .padding(.bottom, SharpitSpacing.xs)
 
                 content
                     .revealed(hasAppeared, index: 3)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.top, SharpitSpacing.md)
+            .padding(.top, SharpitSpacing.sm)
             .padding(.bottom, SharpitSpacing.xl)
         }
         .scrollDismissesKeyboard(.interactively)
@@ -137,86 +141,81 @@ private struct OnboardingStepPage<Content: View>: View {
 
 // MARK: - Wayfinding
 
-/// One continuous rail that extends as the athlete advances, with ticks so the remaining steps
-/// stay countable. From step 2 the leading label is a back control naming the *previous* step,
-/// so the athlete always knows where going back lands — as on the web.
+/// Segmented story-style progress header with back button, step title and skip action.
 private struct OnboardingProgressHeader: View {
     let step: OnboardingStep
     let isBusy: Bool
     let onBack: () -> Void
+    var onSkip: (() -> Void)?
 
     var body: some View {
         VStack(spacing: SharpitSpacing.sm) {
+            // Segmented story-style capsules
+            HStack(spacing: 5) {
+                ForEach(0..<OnboardingStep.count, id: \.self) { index in
+                    Capsule()
+                        .fill(index < step.position ? SharpitColor.primary : SharpitColor.border.opacity(0.35))
+                        .frame(height: 3.5)
+                        .animation(SharpitMotion.reveal, value: step.position)
+                }
+            }
+            .accessibilityElement()
+            .accessibilityLabel("Progression")
+            .accessibilityValue("Étape \(step.position) sur \(OnboardingStep.count)")
+
+            // Navigation bar row
             HStack(spacing: SharpitSpacing.sm) {
-                if let previous = step.previous {
+                if step.previous != nil {
                     Button(action: onBack) {
-                        Label(previous.label, systemImage: "chevron.left")
-                            .font(SharpitTypography.bodyEmphasis)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .frame(width: 36, height: 36)
+                            .background(SharpitColor.card.opacity(0.7), in: Circle())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(SharpitColor.foreground)
                     .disabled(isBusy)
-                    .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                    .accessibilityLabel("Revenir à \(previous.label)")
-                    .transition(.opacity.combined(with: .move(edge: .leading)))
+                    .accessibilityLabel("Étape précédente")
+                    .transition(.opacity)
                 } else {
-                    Text(step.label)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                    Color.clear.frame(width: 36, height: 36)
                 }
-                Spacer(minLength: SharpitSpacing.xs)
-                Text("\(step.position)/\(OnboardingStep.count)")
-                    .font(SharpitTypography.meta)
-                    .monospacedDigit()
-                    .contentTransition(.numericText(value: Double(step.position)))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .accessibilityHidden(true)
-            }
 
-            OnboardingProgressRail(position: step.position, count: OnboardingStep.count)
+                Spacer()
+
+                Text(step.label)
+                    .font(SharpitTypography.cardTitle)
+                    .foregroundStyle(SharpitColor.foreground)
+
+                Spacer()
+
+                if let onSkip {
+                    Button(action: onSkip) {
+                        Text("Passer")
+                            .font(SharpitTypography.bodyEmphasis)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .frame(height: 36)
+                            .padding(.horizontal, 4)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isBusy)
+                    .accessibilityLabel("Passer cette étape")
+                    .transition(.opacity)
+                } else {
+                    Color.clear.frame(width: 36, height: 36)
+                }
+            }
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.bottom, SharpitSpacing.sm)
+        .padding(.top, SharpitSpacing.xs)
+        .padding(.bottom, SharpitSpacing.xs)
         .background(SharpitCanvasBackground())
-    }
-}
-
-/// Fills inclusively: reaching a step counts it as attained, so step 2 of 5 sits at 40%.
-private struct OnboardingProgressRail: View {
-    let position: Int
-    let count: Int
-
-    var body: some View {
-        GeometryReader { proxy in
-            let width = proxy.size.width
-            ZStack(alignment: .leading) {
-                Capsule().fill(SharpitColor.border.opacity(0.7))
-                Capsule()
-                    .fill(SharpitColor.primary)
-                    .frame(width: width * CGFloat(position) / CGFloat(max(count, 1)))
-                ForEach(1..<max(count, 1), id: \.self) { tick in
-                    Rectangle()
-                        .fill(SharpitColor.background)
-                        .frame(width: 2)
-                        .offset(x: width * CGFloat(tick) / CGFloat(count) - 1)
-                }
-            }
-            // A spring rather than a linear fill: the rail settles like a physical slider.
-            .animation(SharpitMotion.reveal, value: position)
-        }
-        .frame(height: 4)
-        .clipShape(Capsule())
-        .accessibilityElement()
-        .accessibilityLabel("Progression")
-        .accessibilityValue("Étape \(position) sur \(count)")
     }
 }
 
 // MARK: - Actions
 
-/// The step's actions, docked above the home indicator: Passer when the step is optional, and
-/// the forward action — Finaliser on the last step, which marks the wizard's end.
+/// The step's primary action docked at the bottom with a smooth gradient fade.
 private struct OnboardingActionBar: View {
     let store: OnboardingStore
 
@@ -242,44 +241,43 @@ private struct OnboardingActionBar: View {
                     .transition(.opacity)
             }
 
-            HStack(spacing: SharpitSpacing.sm) {
-                if store.step.allowsSkip {
-                    Button {
-                        Task { await store.skip() }
-                    } label: {
-                        Text("Passer")
-                            .frame(maxWidth: .infinity)
+            Button {
+                SharpitHaptics.play(.light)
+                Task { await store.advance() }
+            } label: {
+                HStack(spacing: SharpitSpacing.xs) {
+                    if store.isBusy {
+                        ProgressView()
+                            .tint(SharpitColor.primaryForeground)
                     }
-                    .sharpitGlassButton(prominent: false)
-                    .tint(SharpitColor.foreground)
+                    Text(forwardLabel)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .contentTransition(.opacity)
                 }
-
-                Button {
-                    SharpitHaptics.play(.light)
-                    Task { await store.advance() }
-                } label: {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        if store.isBusy {
-                            ProgressView()
-                                .tint(SharpitColor.primaryForeground)
-                        }
-                        Text(forwardLabel)
-                            .contentTransition(.opacity)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .sharpitGlassButton(prominent: true)
-                .tint(SharpitColor.primary)
-                .disabled(!canAdvance)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: SharpitSpacing.minimumTouchTarget)
             }
+            .sharpitGlassButton(prominent: true)
+            .tint(SharpitColor.primary)
+            .disabled(!canAdvance || store.isBusy)
             .controlSize(.large)
-            .disabled(store.isBusy)
         }
         .animation(SharpitMotion.fade, value: store.error)
         .animation(SharpitMotion.selection, value: store.step)
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.sm)
-        .padding(.bottom, SharpitSpacing.xs)
+        .padding(.bottom, SharpitSpacing.sm)
+        .background(
+            LinearGradient(
+                colors: [
+                    SharpitColor.background.opacity(0),
+                    SharpitColor.background.opacity(0.85),
+                    SharpitColor.background
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     private var forwardLabel: String {

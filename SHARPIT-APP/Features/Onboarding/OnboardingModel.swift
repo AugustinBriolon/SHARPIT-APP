@@ -26,26 +26,26 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .sports: "Quels sports tu pratiques ?"
+        case .sports: "Tes sports"
         case .equipment: "Ton matériel"
-        case .availability: "Ta semaine type"
-        case .intention: "Pourquoi SharpIt ?"
-        case .sources: "Connecte tes sources"
+        case .availability: "Tes disponibilités"
+        case .intention: "Ton objectif"
+        case .sources: "Tes données"
         }
     }
 
     var intro: String {
         switch self {
         case .sports:
-            "SharpIt est pensé pour l'endurance. Dis-nous ce que tu fais vraiment — on adaptera les propositions."
+            "Sélectionne tes disciplines d'endurance et pratiques complémentaires."
         case .equipment:
-            "Optionnel — précise ce que tu as vraiment pour adapter les séances. Tu pourras modifier ça plus tard dans Paramètres."
+            "Optionnel — adapte les séances au matériel dont tu disposes."
         case .availability:
-            "Optionnel. Le coach cale le plan sur ton vrai rythme plutôt que sur une semaine théorique. Modifiable ensuite dans ton profil sur le web."
+            "Optionnel — cale tes séances sur ton rythme hebdomadaire réel."
         case .intention:
-            "Pose un premier objectif en quelques champs. Tu pourras le compléter (lieu, notes…) plus tard."
+            "Optionnel — pose une course ou un palier cible pour guider ta préparation."
         case .sources:
-            "SharpIt lit tes séances, ton sommeil et ta récupération là où ils sont déjà. Garmin reste la référence ; Apple Santé comble les trous."
+            "Connecte Garmin ou active Apple Santé pour alimenter ton suivi athlète."
         }
     }
 
