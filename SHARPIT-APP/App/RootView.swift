@@ -222,63 +222,20 @@ struct RootView: View {
     }
 
     private func handleGarminCallback(status: String?) {
-        switch status {
-        case "connected":
-            toastCenter.show(
-                "Garmin connecté — synchronisation en cours…",
-                symbol: "checkmark.circle.fill",
-                tone: .success,
-                autoDismissAfter: 4
-            )
-            Task {
-                if let token = try? await liveToken() {
-                    _ = try? await sharpitClient.sync(token: token)
-                }
-                // A new connection brings its whole history, not just recent weeks.
-                await runHistoryImport()
+        let outcome = GarminConnectOutcome(status: status)
+        toastCenter.show(
+            outcome.message,
+            symbol: outcome.symbol,
+            tone: outcome.tone,
+            autoDismissAfter: outcome.toastDuration
+        )
+        guard outcome == .connected else { return }
+        Task {
+            if let token = try? await liveToken() {
+                _ = try? await sharpitClient.sync(token: token)
             }
-        case "already_connected":
-            toastCenter.show(
-                "Garmin est déjà connecté",
-                symbol: "checkmark.circle.fill",
-                tone: .success,
-                autoDismissAfter: 3
-            )
-        case "cancelled":
-            toastCenter.show(
-                "Connexion Garmin annulée",
-                symbol: "xmark.circle",
-                tone: .syncing,
-                autoDismissAfter: 3
-            )
-        case "consent_required":
-            toastCenter.show(
-                "Autorisation requise pour Garmin",
-                symbol: "exclamationmark.triangle",
-                tone: .error,
-                autoDismissAfter: 4
-            )
-        case "invalid_state":
-            toastCenter.show(
-                "Session Garmin expirée",
-                symbol: "exclamationmark.triangle",
-                tone: .error,
-                autoDismissAfter: 4
-            )
-        case "denied":
-            toastCenter.show(
-                "Connexion Garmin refusée",
-                symbol: "exclamationmark.triangle",
-                tone: .error,
-                autoDismissAfter: 4
-            )
-        default:
-            toastCenter.show(
-                "Connexion Garmin impossible",
-                symbol: "exclamationmark.triangle",
-                tone: .error,
-                autoDismissAfter: 4
-            )
+            // A new connection brings its whole history, not just recent weeks.
+            await runHistoryImport()
         }
     }
 }

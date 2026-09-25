@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import UIKit
 
@@ -366,14 +367,24 @@ struct OnboardingSourcesStep: View {
     let appleHealth: AppleHealthSource
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
-    var garminClient: any GarminConnecting = SharpitClient()
+    var garminClient: any GarminHandoffServing = SharpitClient()
 
     @State private var status: V1SyncStatus?
-    @State private var showingGarminSheet = false
+    @State private var isConnectingGarmin = false
+    /// The last connection's outcome when it did not link Garmin, said under the card: the
+    /// onboarding sits before the shell and its toasts.
+    @State private var garminFailure: GarminConnectOutcome?
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             garminCard
+            if let garminFailure {
+                Text(garminFailure.message)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(garminFailure.tone == .error ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                    .padding(.horizontal, 4)
+            }
             appleHealthCard
 
             Text("Optionnel • Ces connexions peuvent être activées ou modifiées à tout moment dans Paramètres → Sources.")
@@ -383,14 +394,6 @@ struct OnboardingSourcesStep: View {
                 .padding(.top, SharpitSpacing.xxs)
         }
         .task { await loadStatus() }
-        .sheet(isPresented: $showingGarminSheet) {
-            GarminConnectSheet(
-                garminClient: garminClient,
-                tokenProvider: tokenProvider
-            ) {
-                Task { await loadStatus() }
-            }
-        }
     }
 
     private var isGarminConnected: Bool {
@@ -400,7 +403,7 @@ struct OnboardingSourcesStep: View {
     private var garminCard: some View {
         Button {
             SharpitHaptics.play(.light)
-            showingGarminSheet = true
+            Task { await connectGarmin() }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
                 ProviderLogo(provider: .garmin)
@@ -494,6 +497,24 @@ struct OnboardingSourcesStep: View {
                 }
             }
         )
+    }
+
+    /// Garmin opens in an in-app sheet (SHARPIT ADR-047). The history import starts once the
+    /// shell sees Garmin connected, so the step only reads the sources again.
+    private func connectGarmin() async {
+        guard !isConnectingGarmin else { return }
+        isConnectingGarmin = true
+        defer { isConnectingGarmin = false }
+        let outcome = await GarminConnect.run(
+            client: garminClient,
+            tokenProvider: tokenProvider,
+            authenticate: webAuthenticationSession.garminConnect
+        )
+        garminFailure = outcome.isLinked ? nil : outcome
+        if outcome.isLinked {
+            SharpitHaptics.play(.success)
+            await loadStatus()
+        }
     }
 
     private func loadStatus() async {

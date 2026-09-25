@@ -1,3 +1,4 @@
+import AuthenticationServices
 import CloudKit
 import Foundation
 import Testing
@@ -88,39 +89,70 @@ struct GarminConnectClientTests {
         configuration.protocolClasses = [GarminStubURLProtocol.self]
         return SharpitClient(
             session: URLSession(configuration: configuration),
-            baseURL: URL(string: "https://sharpit.app")!
+            baseURL: URL(string: "https://api.sharpit.app")!
         )
     }
 
-    @Test func postsTheCredentialsToTheV1ContractWithTheBearer() async throws {
-        let client = makeClient(status: 200, response: #"{"success":true,"displayName":"Athlete Garmin"}"#)
+    @Test func asksTheV1ContractForTheHandoffWithTheBearer() async throws {
+        let entry = "https://sharpit.app/sign-in?__clerk_ticket=t&redirect_url=x"
+        let client = makeClient(status: 200, response: #"{"apiVersion":1,"url":"\#(entry)"}"#)
 
-        let response = try await client.connectGarmin(username: "athlete@example.com", password: "pw", token: "jwt")
+        let url = try await client.garminHandoffURL(token: "jwt")
 
         let request = try #require(GarminStubURLProtocol.lastRequest)
-        #expect(request.url?.absoluteString == "https://sharpit.app/api/v1/garmin/connect")
+        #expect(request.url?.absoluteString == "https://api.sharpit.app/api/v1/garmin/handoff")
         #expect(request.httpMethod == "POST")
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer jwt")
-        let body = try JSONSerialization.jsonObject(with: try #require(GarminStubURLProtocol.lastBody)) as? [String: String]
-        #expect(body == ["username": "athlete@example.com", "password": "pw"])
-        #expect(response.success)
-        #expect(response.displayName == "Athlete Garmin")
+        #expect(url.absoluteString == entry)
     }
+}
 
-    @Test func surfacesTheServersWrongCredentialsMessage() async throws {
-        let message = "Identifiants Garmin incorrects. Vérifie ton e-mail et ton mot de passe."
-        let client = makeClient(status: 401, response: #"{"error":"\#(message)"}"#)
+// MARK: - Garmin in-app session
 
-        await #expect(throws: SharpitAPIError.message(message)) {
-            _ = try await client.connectGarmin(username: "athlete@example.com", password: "wrong", token: "jwt")
-        }
+private struct StubHandoff: GarminHandoffServing {
+    var result: Result<URL, Error> = .success(URL(string: "https://sharpit.app/sign-in?__clerk_ticket=t")!)
+
+    func garminHandoffURL(token _: String) async throws -> URL {
+        try result.get()
     }
+}
 
-    @Test func keepsRateLimitingDistinctWhenTheBodyCarriesNoMessage() async throws {
-        let client = makeClient(status: 429, response: "")
+private func connect(
+    handoff: StubHandoff = StubHandoff(),
+    closingOn result: Result<URL, Error>
+) async -> GarminConnectOutcome {
+    await GarminConnect.run(client: handoff, tokenProvider: { "jwt" }) { _ in try result.get() }
+}
 
-        await #expect(throws: SharpitAPIError.rateLimited) {
-            _ = try await client.connectGarmin(username: "athlete@example.com", password: "pw", token: "jwt")
-        }
-    }
+@Test func theSessionClosingOnTheCallbackSaysHowItEnded() async {
+    let connected = await connect(closingOn: .success(URL(string: "https://sharpit.app/connect/garmin/callback?garmin=connected")!))
+    let consent = await connect(closingOn: .success(URL(string: "https://sharpit.app/connect/garmin/callback?garmin=consent_required")!))
+    #expect(connected == .connected)
+    #expect(connected.isLinked)
+    #expect(consent == .consentRequired)
+    #expect(!consent.isLinked)
+}
+
+@Test func closingTheSheetIsACancellationNotAFailure() async {
+    let outcome = await connect(closingOn: .failure(ASWebAuthenticationSessionError(.canceledLogin)))
+    #expect(outcome == .cancelled)
+}
+
+@Test func aCallbackOffTheApexOrNoHandoffIsAFailure() async {
+    let offApex = await connect(closingOn: .success(URL(string: "https://api.sharpit.app/connect/garmin/callback?garmin=connected")!))
+    let noHandoff = await connect(
+        handoff: StubHandoff(result: .failure(SharpitAPIError.server)),
+        closingOn: .success(URL(string: "https://sharpit.app/connect/garmin/callback?garmin=connected")!)
+    )
+    #expect(offApex == .failed)
+    #expect(noHandoff == .failed)
+}
+
+@Test func outcomesReadTheWebsStatusesAndSayThemInFrench() {
+    #expect(GarminConnectOutcome(status: "already_connected") == .alreadyConnected)
+    #expect(GarminConnectOutcome(status: "unknown") == .failed)
+    #expect(GarminConnectOutcome(status: nil) == .failed)
+    #expect(GarminConnectOutcome.connected.tone == .success)
+    #expect(GarminConnectOutcome.denied.tone == .error)
+    #expect(GarminConnectOutcome.cancelled.message == "Connexion Garmin annulée")
 }

@@ -1,3 +1,4 @@
+import AuthenticationServices
 import ClerkKit
 import SwiftUI
 
@@ -14,7 +15,7 @@ struct ConnectionsView: View {
     let appleHealth: AppleHealthSource
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
-    var garminClient: any GarminConnecting = SharpitClient()
+    var garminClient: any GarminHandoffServing = SharpitClient()
 
     @Environment(SharpitToastCenter.self) private var toastCenter
     @Environment(Clerk.self) private var clerk
@@ -22,7 +23,8 @@ struct ConnectionsView: View {
     @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
     @State private var status: V1SyncStatus?
     @State private var appleHealthToastToken: UUID?
-    @State private var showingGarminSheet = false
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
+    @State private var isConnectingGarmin = false
 
     var body: some View {
         List {
@@ -67,21 +69,13 @@ struct ConnectionsView: View {
                 appleHealthToastToken = nil
             }
         }
-        .sheet(isPresented: $showingGarminSheet) {
-            GarminConnectSheet(
-                garminClient: garminClient,
-                tokenProvider: tokenProvider
-            ) {
-                Task { await loadStatus() }
-            }
-        }
     }
 
     private var garminRow: some View {
         let badge = ConnectionsReadout.garmin(status: status)
         return Button {
             SharpitHaptics.play(.light)
-            showingGarminSheet = true
+            Task { await connectGarmin() }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
                 ProviderLogo(provider: .garmin)
@@ -176,6 +170,31 @@ struct ConnectionsView: View {
                 }
             }
         )
+    }
+
+    /// Garmin opens in an in-app sheet (SHARPIT ADR-047); a new link is synced and its whole
+    /// history imported, as the universal-link return does.
+    private func connectGarmin() async {
+        guard !isConnectingGarmin else { return }
+        isConnectingGarmin = true
+        defer { isConnectingGarmin = false }
+        let outcome = await GarminConnect.run(
+            client: garminClient,
+            tokenProvider: tokenProvider,
+            authenticate: webAuthenticationSession.garminConnect
+        )
+        if outcome.isLinked {
+            await loadStatus()
+        }
+        toastCenter.show(
+            outcome.message,
+            symbol: outcome.symbol,
+            tone: outcome.tone,
+            autoDismissAfter: outcome.toastDuration
+        )
+        guard outcome == .connected, let token = try? await tokenProvider() else { return }
+        status = try? await syncClient.sync(token: token)
+        await historyImport?.runIfNeeded(userId: clerk.user?.id, tokenProvider: tokenProvider)
     }
 
     private func loadStatus() async {

@@ -27,14 +27,14 @@ nonisolated protocol GarminHistoryImporting: Sendable {
     func importFullGarminHistory(token: String) async throws -> Int
 }
 
-/// Connects a Garmin account directly via native in-app credentials.
-nonisolated protocol GarminConnecting: Sendable {
-    func connectGarmin(username: String, password: String, token: String) async throws -> V1GarminConnectResponse
+/// The page the app opens in an in-app authentication session to connect Garmin (SHARPIT
+/// ADR-047). It carries a one-time sign-in ticket, so it is a credential: never log it.
+nonisolated protocol GarminHandoffServing: Sendable {
+    func garminHandoffURL(token: String) async throws -> URL
 }
 
-nonisolated struct V1GarminConnectResponse: Decodable, Sendable {
-    let success: Bool
-    let displayName: String?
+nonisolated struct V1GarminHandoff: Decodable, Sendable {
+    let url: URL
 }
 
 /// Registers or unregisters APNs device tokens for morning verdict push notifications.
@@ -43,7 +43,7 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminConnecting {
+actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -89,19 +89,8 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, H
         ).activities.imported
     }
 
-    func connectGarmin(username: String, password: String, token: String) async throws -> V1GarminConnectResponse {
-        let body = try JSONSerialization.data(withJSONObject: [
-            "username": username,
-            "password": password,
-        ])
-        return try await send(
-            V1GarminConnectResponse.self,
-            path: "/api/v1/garmin/connect",
-            method: "POST",
-            token: token,
-            timeout: 120,
-            body: body
-        )
+    func garminHandoffURL(token: String) async throws -> URL {
+        try await send(V1GarminHandoff.self, path: "/api/v1/garmin/handoff", method: "POST", token: token).url
     }
 
     func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int {
