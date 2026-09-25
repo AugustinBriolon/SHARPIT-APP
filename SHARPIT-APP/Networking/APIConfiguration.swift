@@ -30,6 +30,24 @@ enum APIConfiguration {
         return url
     }
 
+    /// Where the app opens web pages (the published terms and privacy policy): the apex, not
+    /// the API origin. Once the API moves to `api.sharpit.app`, that host serves JSON only and
+    /// answers every page with a 404, so pages must never be built from `baseURL`.
+    nonisolated static var webOrigin: URL {
+        let bundleValue = Bundle.main.object(forInfoDictionaryKey: webBundleKey) as? String
+        guard let url = webOrigin(bundleValue: bundleValue) else {
+            preconditionFailure("\(webBundleKey) is missing or invalid in Info.plist — check Config/*.xcconfig")
+        }
+        return url
+    }
+
+    /// `SHARPIT_WEB_ORIGIN` from `Config/*.xcconfig`, copied into the Info.plist.
+    private nonisolated static let webBundleKey = "SharpitWebOrigin"
+
+    nonisolated static func webOrigin(bundleValue: String?) -> URL? {
+        bundleValue.flatMap(origin(from:))
+    }
+
     /// The scheme override wins, then the build's own origin. A value that is not a usable
     /// origin is skipped rather than trusted, so a typo in the scheme falls back to the
     /// build instead of aiming every request at nothing.

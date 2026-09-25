@@ -26,5 +26,7 @@
 	</array>
 	<key>SharpitAPIOrigin</key>
 	<string>$(SHARPIT_API_ORIGIN)</string>
+	<key>SharpitWebOrigin</key>
+	<string>$(SHARPIT_WEB_ORIGIN)</string>
 </dict>
 </plist>

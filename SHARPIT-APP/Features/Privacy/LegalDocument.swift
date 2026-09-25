@@ -25,7 +25,7 @@ enum LegalDocument: String, CaseIterable, Identifiable, Sendable {
     }
 
     var url: URL {
-        APIConfiguration.baseURL.appending(path: "/\(rawValue)")
+        APIConfiguration.webOrigin.appending(path: "/\(rawValue)")
     }
 }
 

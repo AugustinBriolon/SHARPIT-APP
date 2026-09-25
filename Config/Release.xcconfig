@@ -2,5 +2,8 @@
 // empty `$()`.
 SHARPIT_API_ORIGIN = https:/$()/sharpit.app
 
+// Where the app opens web pages (terms, privacy): always the apex, whatever the API origin.
+SHARPIT_WEB_ORIGIN = https:/$()/sharpit.app
+
 // Liquid Glass app icon, authored as `SHARPIT-APP/SharpIt.icon` (Icon Composer document).
 ASSETCATALOG_COMPILER_APPICON_NAME = SharpIt

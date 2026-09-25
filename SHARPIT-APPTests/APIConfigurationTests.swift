@@ -51,4 +51,16 @@ struct APIConfigurationTests {
     @Test func clerkPublishableKeyIsProduction() {
         #expect(ClerkConfiguration.publishableKey.starts(with: "pk_live_"))
     }
+
+    @Test func webOriginIsTheBuildsOwnValue() {
+        #expect(APIConfiguration.webOrigin(bundleValue: "https://sharpit.app")?.absoluteString == "https://sharpit.app")
+        #expect(APIConfiguration.webOrigin(bundleValue: "$(SHARPIT_WEB_ORIGIN)") == nil)
+        #expect(APIConfiguration.webOrigin(bundleValue: nil) == nil)
+    }
+
+    @Test func legalDocumentsOpenOnTheWebOriginNeverTheAPI() {
+        for document in LegalDocument.allCases {
+            #expect(document.url == APIConfiguration.webOrigin.appending(path: "/\(document.rawValue)"))
+        }
+    }
 }
