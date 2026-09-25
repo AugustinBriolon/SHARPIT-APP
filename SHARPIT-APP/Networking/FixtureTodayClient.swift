@@ -4,13 +4,31 @@ protocol TodayServing: Sendable {
     func today(trainingDayId: String, token: String) async throws -> V1TodayResponse
 }
 
-enum SharpitAPIError: Error, Equatable {
+enum SharpitAPIError: Error, Equatable, LocalizedError {
     case unauthorized
     case badRequest
     case server
     case transport
     /// The server refused because the same request ran moments ago.
     case rateLimited
+    case message(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .message(let text):
+            return text
+        case .unauthorized:
+            return "Session expirée ou non autorisée"
+        case .badRequest:
+            return "Requête invalide"
+        case .rateLimited:
+            return "Trop de requêtes, réessaie plus tard"
+        case .server:
+            return "Erreur serveur"
+        case .transport:
+            return "Problème de connexion réseau"
+        }
+    }
 }
 
 struct FixtureTodayClient: TodayServing {

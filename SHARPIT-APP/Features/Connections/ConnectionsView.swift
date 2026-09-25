@@ -14,6 +14,7 @@ struct ConnectionsView: View {
     let appleHealth: AppleHealthSource
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
+    var garminClient: any GarminConnecting = SharpitClient()
 
     @Environment(SharpitToastCenter.self) private var toastCenter
     @Environment(Clerk.self) private var clerk
@@ -21,6 +22,7 @@ struct ConnectionsView: View {
     @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
     @State private var status: V1SyncStatus?
     @State private var appleHealthToastToken: UUID?
+    @State private var showingGarminSheet = false
 
     var body: some View {
         List {
@@ -65,24 +67,41 @@ struct ConnectionsView: View {
                 appleHealthToastToken = nil
             }
         }
+        .sheet(isPresented: $showingGarminSheet) {
+            GarminConnectSheet(
+                garminClient: garminClient,
+                tokenProvider: tokenProvider
+            ) {
+                Task { await loadStatus() }
+            }
+        }
     }
 
     private var garminRow: some View {
         let badge = ConnectionsReadout.garmin(status: status)
-        return Link(destination: APIConfiguration.baseURL.appending(path: "/connect/garmin")) {
+        return Button {
+            SharpitHaptics.play(.light)
+            showingGarminSheet = true
+        } label: {
             HStack(spacing: SharpitSpacing.sm) {
                 ProviderLogo(provider: .garmin)
                 sourceTitle("Garmin", status: badge.text, tone: badge.tone.color)
                 Spacer(minLength: SharpitSpacing.xs)
-                Image(systemName: "arrow.up.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                    .accessibilityHidden(true)
+                if isGarminConnected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(SharpitColor.primary)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
             }
             .contentShape(.rect)
         }
         .foregroundStyle(SharpitColor.foreground)
-        .accessibilityHint("Connecter Garmin sur le web")
+        .accessibilityHint("Connecter Garmin directement dans l'application")
     }
 
     private var isGarminConnected: Bool {

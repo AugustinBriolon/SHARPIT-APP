@@ -192,6 +192,8 @@ final class TodayStore {
             return "Session expirée"
         case .rateLimited:
             return "Trop de requêtes — réessaie dans un instant"
+        case .message(let text):
+            return text
         }
     }
 }

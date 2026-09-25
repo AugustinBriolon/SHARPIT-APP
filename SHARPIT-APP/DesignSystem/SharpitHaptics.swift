@@ -8,6 +8,7 @@ enum SharpitHaptics {
         case soft
         case light
         case success
+        case error
     }
 
     private static let softImpact = UIImpactFeedbackGenerator(style: .soft)
@@ -24,6 +25,9 @@ enum SharpitHaptics {
             lightImpact.prepare()
         case .success:
             notification.notificationOccurred(.success)
+            notification.prepare()
+        case .error:
+            notification.notificationOccurred(.error)
             notification.prepare()
         }
     }

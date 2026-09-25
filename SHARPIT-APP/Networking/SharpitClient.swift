@@ -27,13 +27,23 @@ nonisolated protocol GarminHistoryImporting: Sendable {
     func importFullGarminHistory(token: String) async throws -> Int
 }
 
+/// Connects a Garmin account directly via native in-app credentials.
+nonisolated protocol GarminConnecting: Sendable {
+    func connectGarmin(username: String, password: String, token: String) async throws -> V1GarminConnectResponse
+}
+
+nonisolated struct V1GarminConnectResponse: Decodable, Sendable {
+    let success: Bool
+    let displayName: String?
+}
+
 /// Registers or unregisters APNs device tokens for morning verdict push notifications.
 nonisolated protocol PushDeviceTokenServing: Sendable {
     func registerDeviceToken(_ deviceToken: String, debug: Bool, token: String) async throws
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting {
+actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminConnecting {
     private let session: URLSession
     private let baseURL: URL
 
@@ -77,6 +87,21 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, H
             timeout: 310,
             body: body
         ).activities.imported
+    }
+
+    func connectGarmin(username: String, password: String, token: String) async throws -> V1GarminConnectResponse {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "username": username,
+            "password": password,
+        ])
+        return try await send(
+            V1GarminConnectResponse.self,
+            path: "/api/v1/garmin/connect",
+            method: "POST",
+            token: token,
+            timeout: 120,
+            body: body
+        )
     }
 
     func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int {
@@ -172,17 +197,43 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, SyncServing, H
             throw SharpitAPIError.transport
         }
 
-        switch (response as? HTTPURLResponse)?.statusCode ?? 0 {
-        case 200:
-            break
-        case 400:
-            throw SharpitAPIError.badRequest
-        case 401, 403:
-            throw SharpitAPIError.unauthorized
-        case 429:
-            throw SharpitAPIError.rateLimited
-        default:
-            throw SharpitAPIError.server
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if !(200...299).contains(statusCode) {
+            let bodyString = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            #if DEBUG
+            print("[SharpitClient] \(method) \(url) -> HTTP \(statusCode): \(bodyString.prefix(300))")
+            #endif
+
+            if let errorObj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                if let errorMessage = errorObj["error"] as? String {
+                    throw SharpitAPIError.message(errorMessage)
+                }
+                if let message = errorObj["message"] as? String {
+                    throw SharpitAPIError.message(message)
+                }
+                if let errors = errorObj["errors"] as? [[String: Any]],
+                   let firstMsg = errors.first?["message"] as? String {
+                    throw SharpitAPIError.message(firstMsg)
+                }
+            }
+
+            switch statusCode {
+            case 400:
+                throw SharpitAPIError.badRequest
+            case 401, 403:
+                throw SharpitAPIError.unauthorized
+            case 404:
+                throw SharpitAPIError.message("Route introuvable sur le serveur (404)")
+            case 429:
+                throw SharpitAPIError.rateLimited
+            case 504:
+                throw SharpitAPIError.message("Délai d'attente dépassé (504)")
+            default:
+                if !bodyString.isEmpty && !bodyString.hasPrefix("<") && bodyString.count < 150 {
+                    throw SharpitAPIError.message(bodyString)
+                }
+                throw SharpitAPIError.message("Erreur serveur (\(statusCode))")
+            }
         }
 
         do {
