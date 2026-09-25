@@ -352,15 +352,32 @@ struct SharpitAuthDrawer: View {
             .buttonStyle(.sharpitPressable)
             .disabled(verificationCode.isEmpty || isLoading)
 
-            Button {
-                step = .identifier
-                verificationCode = ""
-                errorMessage = nil
-            } label: {
-                Text("Modifier l'adresse e-mail")
-                    .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 14))
+            VStack(spacing: 14) {
+                Button {
+                    SharpitHaptics.play(.light)
+                    Task { await handleSwitchToEmailCode(email: email) }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "envelope.badge")
+                            .font(.system(size: 13))
+                        Text("M'envoyer un code par e-mail à la place")
+                            .font(.custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 14))
+                    }
                     .foregroundStyle(SharpitColor.primary)
+                }
+                .disabled(isLoading)
+
+                Button {
+                    step = .identifier
+                    verificationCode = ""
+                    errorMessage = nil
+                } label: {
+                    Text("Modifier l'adresse e-mail")
+                        .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 14))
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
             }
+            .padding(.top, 4)
         }
     }
 
@@ -438,16 +455,15 @@ struct SharpitAuthDrawer: View {
                 }
                 dismiss()
             case .needsFirstFactor:
-                if let factor = signIn.supportedFirstFactors?.first {
-                    switch factor.strategy {
-                    case .password:
-                        self.activeSignIn = signIn
-                        step = .password(email: cleanEmail)
-                    default:
-                        let preparedSignIn = try await signIn.sendEmailCode()
-                        self.activeSignIn = preparedSignIn
-                        step = .codeVerification(email: cleanEmail)
-                    }
+                // Prioritize passwordless email OTP if available
+                let hasEmailFactor = signIn.supportedFirstFactors?.contains(where: { $0.strategy != .password }) ?? false
+                if hasEmailFactor {
+                    let preparedSignIn = try await signIn.sendEmailCode()
+                    self.activeSignIn = preparedSignIn
+                    step = .codeVerification(email: cleanEmail)
+                } else if let factor = signIn.supportedFirstFactors?.first, factor.strategy == .password {
+                    self.activeSignIn = signIn
+                    step = .password(email: cleanEmail)
                 } else {
                     let preparedSignIn = try await signIn.sendEmailCode()
                     self.activeSignIn = preparedSignIn
@@ -472,6 +488,28 @@ struct SharpitAuthDrawer: View {
         isLoading = false
     }
 
+    private func handleSwitchToEmailCode(email: String) async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            if let activeSignIn {
+                let prepared = try await activeSignIn.sendEmailCode()
+                self.activeSignIn = prepared
+                verificationCode = ""
+                step = .codeVerification(email: email)
+            } else {
+                let signIn = try await clerk.auth.signIn(email)
+                let prepared = try await signIn.sendEmailCode()
+                self.activeSignIn = prepared
+                verificationCode = ""
+                step = .codeVerification(email: email)
+            }
+        } catch {
+            errorMessage = "Impossible d'envoyer le code : \(error.localizedDescription)"
+        }
+        isLoading = false
+    }
+
     private func handleVerifyCode() async {
         let cleanCode = verificationCode.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanCode.isEmpty else { return }
@@ -488,6 +526,8 @@ struct SharpitAuthDrawer: View {
                         try await clerk.auth.setActive(sessionId: sessionId)
                     }
                     dismiss()
+                } else if result.status.rawValue == "missing_requirements" {
+                    errorMessage = "Inscription incomplète : des informations complémentaires sont requises."
                 } else {
                     errorMessage = "Vérification incomplète : \(result.status.rawValue)"
                 }
@@ -499,12 +539,19 @@ struct SharpitAuthDrawer: View {
                         try await clerk.auth.setActive(sessionId: sessionId)
                     }
                     dismiss()
+                } else if result.status.rawValue == "missing_requirements" {
+                    errorMessage = "Inscription incomplète : des informations complémentaires sont requises."
                 } else {
                     errorMessage = "Vérification incomplète : \(result.status.rawValue)"
                 }
             }
         } catch let err {
-            errorMessage = err.localizedDescription
+            let desc = err.localizedDescription
+            if desc.lowercased().contains("already been verified") {
+                errorMessage = "Ce code a déjà été validé. Demande un nouveau code pour continuer."
+            } else {
+                errorMessage = desc
+            }
         }
         isLoading = false
     }
