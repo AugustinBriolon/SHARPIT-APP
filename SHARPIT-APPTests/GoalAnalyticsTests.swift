@@ -129,9 +129,10 @@ import Testing
     #expect(proj != nil)
 
     guard let p = proj else { return }
-    // 5:14:02 corresponds to 18842 seconds
-    #expect(p.projectedSeconds >= 18800 && p.projectedSeconds <= 18900)
-    #expect(p.projectedLabel.starts(with: "5:14:"))
+    // 35:04 swim + 2:06 T1 + 2:48:21 bike + 1:19 T2 + 1:56:12 run (threshold × 1.08 brick
+    // slowdown) = 5:23:02, i.e. 19382 seconds
+    #expect(p.projectedSeconds == 19382)
+    #expect(p.projectedLabel.starts(with: "5:23:"))
     #expect(p.targetLabel == "Sub 6h")
     #expect(p.isAhead)
     #expect(p.gapLabel.contains("sous la cible"))
