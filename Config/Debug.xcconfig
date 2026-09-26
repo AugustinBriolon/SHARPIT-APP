@@ -1,10 +1,10 @@
-// Where the app reaches the web app. `//` starts a comment in an xcconfig, so the
+// Where the app reaches the API. `//` starts a comment in an xcconfig, so the
 // slashes of the scheme are split with an empty `$()`.
-SHARPIT_API_ORIGIN = http:/$()/127.0.0.1:3000
+SHARPIT_API_ORIGIN = http:/$()/127.0.0.1:3001
 
-// Web pages follow the API origin locally. When Local.xcconfig aims the API at
-// `api.sharpit.app`, set `SHARPIT_WEB_ORIGIN = https:/$()/sharpit.app` there too: `api.` serves no page.
-SHARPIT_WEB_ORIGIN = $(SHARPIT_API_ORIGIN)
+// Locally the API is `apps/api` (port 3001) and the web pages are `apps/web` (port 3000), both
+// started by `yarn dev` in SHARPIT-WEBAPP. Local.xcconfig can aim both at deployed hosts instead.
+SHARPIT_WEB_ORIGIN = http:/$()/127.0.0.1:3000
 
 // Per-machine override, gitignored. Put `SHARPIT_API_ORIGIN = https:/$()/…` there to run
 // a Debug build on a phone against a deployed instance.

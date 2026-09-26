@@ -47,8 +47,9 @@ the Info.plist as `SharpitAPIOrigin`, and `APIConfiguration.baseURL` reads it. A
 the app — a home-screen or TestFlight launch never sees it, which is why it cannot be the
 only mechanism. In an xcconfig `//` starts a comment, so write `https:/$()/host`.
 
-- **Local full stack** — `docker compose up -d` then `yarn dev` in `../SHARPIT`. Debug
-  default (`http://127.0.0.1:3000`).
+- **Local full stack** — `docker compose up -d` then `yarn dev` in `../SHARPIT-WEBAPP`: the API
+  (`apps/api`, `http://127.0.0.1:3001`, Debug's `SHARPIT_API_ORIGIN`) and the web pages (`apps/web`,
+  `http://127.0.0.1:3000`, Debug's `SHARPIT_WEB_ORIGIN`).
 - **Deployed instance** — Release points at `https://api.sharpit.app` (JSON + Bearer only)
   and opens web pages on `https://sharpit.app` (`SHARPIT_WEB_ORIGIN`). To run a Debug build
   against it, put `SHARPIT_API_ORIGIN = https:/$()/api.sharpit.app` and
