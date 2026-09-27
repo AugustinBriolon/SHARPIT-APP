@@ -229,3 +229,24 @@ private actor CountingNutrition {
     #expect(nutrition.empty == nil)
     #expect(nutrition.emptyState?.title == "Aucune donnée ce jour-là")
 }
+
+@Test func theRegularityDecodesEachDaysAdherence() throws {
+    let json = """
+    { "apiVersion": 1, "trainingDayId": "2026-09-27", "connected": true, "empty": null, "day": null,
+      "coachReading": null, "diet": ["Végétarien"],
+      "history": [
+        { "date": "2026-09-26", "calories": 3100, "goalCalories": 2400, "adherence": "over" },
+        { "date": "2026-09-27", "calories": null, "goalCalories": null, "adherence": "none" }
+      ],
+      "regularity": { "days": 14, "logged": 9, "onTarget": 6 } }
+    """
+    let nutrition = try JSONDecoder().decode(V1NutritionResponse.self, from: Data(json.utf8))
+    #expect(nutrition.history.map(\.adherence) == [.over, .none])
+    #expect(nutrition.regularity == V1NutritionRegularity(days: 14, logged: 9, onTarget: 6))
+    #expect(nutrition.diet == ["Végétarien"])
+}
+
+@Test func weightTargetsReadTheFrenchWay() {
+    #expect(NutritionReadout.kilograms(72.5) == "72,5 kg")
+    #expect(NutritionReadout.kilograms(70) == "70 kg")
+}

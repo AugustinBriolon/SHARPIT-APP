@@ -233,6 +233,9 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, NutritionServi
             print("[SharpitClient] \(method) \(url) -> HTTP \(statusCode): \(bodyString.prefix(300))")
             #endif
 
+            // The server says why in French, but a caller needs to know it was only too soon.
+            if statusCode == 429 { throw SharpitAPIError.rateLimited }
+
             if let errorObj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 if let errorMessage = errorObj["error"] as? String {
                     throw SharpitAPIError.message(errorMessage)

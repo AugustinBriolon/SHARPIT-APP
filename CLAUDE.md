@@ -205,8 +205,10 @@ answer to the card's states (disconnected, empty, loaded, failed — a failed re
 the day, which can retry). `NutritionView` is native, not the web's page: the energy on the app's
 tick dial (`SharpitTickGauge`) with goal, exercise and remaining under it, the coach's reading on
 the ink plate, the three macros as tiles and the energy split by macro, the meals as a list whose
-rows push `NutritionMealView` (entries heaviest first, with the coach's flags), and the week, where
-tapping a bar opens that day. The Résumé card follows the gauge cells: tinted badge, energy against
+rows push `NutritionMealView` (entries heaviest first, with the coach's flags), and 14 days of regularity against the calorie goal
+(each day's adherence is the server's; the strip reads, it does not navigate). A header carries the
+diet in force (from the journal) and the coach pill; the « … » menu syncs MFP, opens the weight
+target (`WeightTargetSheet`) or creates one, and opens the coach. The Résumé card follows the gauge cells: tinted badge, energy against
 the goal, the macros as columns, a context capsule. Goals, percentages and the reading are the
 web's; `NutritionReadout` formats them and derives only the energy split (Atwater). The food log is
 MyFitnessPal. It links in the app (`MyFitnessPalConnectSheet`): the athlete signs in on MFP's own

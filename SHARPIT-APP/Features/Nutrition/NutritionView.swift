@@ -9,8 +9,12 @@ struct NutritionView: View {
     @State private var store: DayResourceStore<V1NutritionResponse>
     @State private var isSyncing = false
     @State private var isConnecting = false
+    @State private var isEditingWeightTarget = false
+    @State private var targetWeightKg: Double?
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
+    @Environment(ShellRouter.self) private var router
     private let mfp: any MyFitnessPalServing
+    private let profileClient: any AthleteProfileServing
     private let tokenProvider: () async throws -> String
 
     init(
@@ -18,9 +22,11 @@ struct NutritionView: View {
         tokenProvider: @escaping () async throws -> String,
         mfp: any MyFitnessPalServing = SharpitClient(),
         dataDaysClient: any DataDaysServing = SharpitClient(),
+        profileClient: any AthleteProfileServing = AthleteProfileClient(),
         day: Date = .now
     ) {
         self.mfp = mfp
+        self.profileClient = profileClient
         self.tokenProvider = tokenProvider
         _store = State(initialValue: DayResourceStore(
             failureMessage: "Ton journal alimentaire n'a pas pu être chargé.",
@@ -47,7 +53,6 @@ struct NutritionView: View {
                     nutrition: nutrition,
                     selectedDayId: TrainingDayId.today(now: store.selectedDay),
                     isSyncing: isSyncing,
-                    onSelectDay: { day in Task { await store.select(day) } },
                     onSync: { Task { await sync() } },
                     onConnect: { isConnecting = true }
                 )
@@ -55,18 +60,43 @@ struct NutritionView: View {
             refresh: { await sync() }
         )
         .toolbar {
-            if isConnected {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Task { await sync() }
-                    } label: {
-                        Label("Synchroniser MyFitnessPal", systemImage: "arrow.triangle.2.circlepath")
-                            .symbolEffect(.rotate, isActive: isSyncing)
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    if isConnected {
+                        Button {
+                            Task { await sync() }
+                        } label: {
+                            Label(isSyncing ? "Synchronisation…" : "Synchroniser MyFitnessPal", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                        .disabled(isSyncing)
+                    } else {
+                        Button { isConnecting = true } label: {
+                            Label("Connecter MyFitnessPal", systemImage: "link")
+                        }
                     }
-                    .disabled(isSyncing)
+                    Button { isEditingWeightTarget = true } label: {
+                        if let targetWeightKg {
+                            Label("Objectif de poids · \(NutritionReadout.kilograms(targetWeightKg))", systemImage: "target")
+                        } else {
+                            Label("Créer un objectif de poids", systemImage: "plus.circle")
+                        }
+                    }
+                    Divider()
+                    Button {
+                        router.discussWithCoach(about: CoachDiscuss.describe(.today))
+                    } label: {
+                        Label("Discuter avec le coach", systemImage: "bubble.left.and.text.bubble.right")
+                    }
+                } label: {
+                    Label("Actions", systemImage: isSyncing ? "arrow.triangle.2.circlepath" : "ellipsis")
+                        .symbolEffect(.rotate, isActive: isSyncing)
                 }
             }
         }
+        .sheet(isPresented: $isEditingWeightTarget, onDismiss: { Task { await loadWeightTarget() } }) {
+            WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
+        }
+        .task { await loadWeightTarget() }
         .sheet(isPresented: $isConnecting) {
             MyFitnessPalConnectSheet(client: mfp, tokenProvider: tokenProvider) {
                 toastCenter?.show("MyFitnessPal connecté", symbol: "checkmark.circle.fill", tone: .success)
@@ -74,6 +104,13 @@ struct NutritionView: View {
             }
             .sharpitSheet()
         }
+    }
+
+    private func loadWeightTarget() async {
+        guard let token = try? await tokenProvider(),
+              let profile = try? await profileClient.athleteProfile(token: token)
+        else { return }
+        targetWeightKg = profile.targetWeightKg
     }
 
     /// Pulls the food log from MyFitnessPal, then reads every day again.
@@ -88,6 +125,9 @@ struct NutritionView: View {
             let token = try await tokenProvider()
             try await mfp.syncMyFitnessPal(token: token)
             SharpitHaptics.play(.success)
+        } catch SharpitAPIError.rateLimited {
+            // Synced moments ago (the server allows one MFP pull every two minutes): what it
+            // brought is already there, so the page simply reads again.
         } catch {
             toastCenter?.show(
                 (error as? LocalizedError)?.errorDescription ?? "Synchronisation MyFitnessPal impossible.",
@@ -104,7 +144,6 @@ struct NutritionSections: View {
     let nutrition: V1NutritionResponse
     var selectedDayId: String?
     var isSyncing = false
-    var onSelectDay: (Date) -> Void = { _ in }
     var onSync: () -> Void = {}
     var onConnect: () -> Void = {}
 
@@ -113,24 +152,26 @@ struct NutritionSections: View {
             if !nutrition.connected {
                 NutritionConnectPlate(onConnect: onConnect)
             } else if let day = nutrition.day {
-                NutritionEnergyPlate(day: day, diet: nutrition.diet)
+                NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete)
+                NutritionEnergyPlate(day: day)
                 coachReading
                 NutritionMacrosSection(day: day)
                 if !day.meals.isEmpty {
                     NutritionMealsSection(meals: day.meals, flags: flags)
                 }
             } else {
+                NutritionDayHeader(diet: nutrition.diet, isComplete: false)
                 NutritionEmptyDayPlate(
                     isToday: nutrition.trainingDayId == TrainingDayId.today(now: .now),
                     isSyncing: isSyncing,
                     onSync: onSync
                 )
             }
-            if nutrition.connected {
-                NutritionWeekSection(
+            if nutrition.connected, !nutrition.history.isEmpty {
+                NutritionRegularitySection(
                     history: nutrition.history,
-                    selectedDayId: selectedDayId ?? nutrition.trainingDayId,
-                    onSelectDay: onSelectDay
+                    regularity: nutrition.regularity,
+                    selectedDayId: selectedDayId ?? nutrition.trainingDayId
                 )
             }
         }
@@ -297,7 +338,6 @@ struct NutritionEntryFlag: Hashable {
 /// The day's energy on the app's own dial, and the three numbers behind it.
 private struct NutritionEnergyPlate: View {
     let day: V1NutritionDay
-    let diet: [String]
 
     private var calories: V1NutritionMacro? { day.goals?.calories }
 
@@ -317,9 +357,6 @@ private struct NutritionEnergyPlate: View {
                     )
                 }
             }
-            Text(([day.complete ? "Journée close" : "Journée en cours"] + diet).joined(separator: " · "))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
         }
         .padding(SharpitSpacing.md)
         .frame(maxWidth: .infinity)
@@ -670,107 +707,163 @@ private struct MealRow: View {
     }
 }
 
-// MARK: - The week
+// MARK: - Header
 
-private struct NutritionWeekSection: View {
-    let history: [V1NutritionHistoryDay]
-    let selectedDayId: String
-    let onSelectDay: (Date) -> Void
+/// What frames the day before any figure: the diet in force, whether the day is still open, and
+/// the coach one tap away — a pill placed with what it discusses, never at the bottom.
+private struct NutritionDayHeader: View {
+    @Environment(ShellRouter.self) private var router
+    let diet: [String]
+    let isComplete: Bool
 
-    private var days: [(date: Date, id: String, calories: Double, goal: Double?)] {
-        history.compactMap { day in
-            guard let calories = day.calories, let date = TrainingDayId.date(day.date) else { return nil }
-            return (date, day.date, calories, day.goalCalories)
+    var body: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.xs) {
+            if diet.isEmpty {
+                chip(isComplete ? "Journée close" : "Journée en cours", symbol: isComplete ? "checkmark.circle" : "clock", tone: SharpitColor.mutedForeground)
+            } else {
+                chip(diet.joined(separator: " · "), symbol: "leaf.fill", tone: SharpitColor.primary)
+                    .accessibilityLabel("Régime en cours : \(diet.joined(separator: ", "))")
+            }
+            Spacer(minLength: 0)
+            CoachDiscussButton(title: "Coach") {
+                router.discussWithCoach(about: CoachDiscuss.describe(.today))
+            }
         }
     }
 
-    /// The whole week on the axis, so one logged day stays one day wide.
-    private var weekDomain: ClosedRange<Date> {
-        let dates = history.compactMap { TrainingDayId.date($0.date) }
-        guard let first = dates.first, let last = dates.last,
-              let end = Calendar.current.date(byAdding: .day, value: 1, to: last)
-        else { return Date.now...Date.now }
-        return first...end
+    private func chip(_ text: String, symbol: String, tone: Color) -> some View {
+        Label(text, systemImage: symbol)
+            .font(SharpitTypography.bodyEmphasis)
+            .foregroundStyle(tone)
+            .lineLimit(1)
+            .padding(.horizontal, SharpitSpacing.sm)
+            .padding(.vertical, SharpitSpacing.xs)
+            .background(tone.opacity(0.10), in: Capsule())
     }
+}
 
-    private var referenceGoal: Double? {
-        history.compactMap(\.goalCalories).last
-    }
+// MARK: - Regularity
+
+/// Fourteen days against the calorie goal: each day a column reaching its share of the budget,
+/// the target band drawn across, the count of days kept on top. It reads — it does not navigate.
+private struct NutritionRegularitySection: View {
+    let history: [V1NutritionHistoryDay]
+    let regularity: V1NutritionRegularity?
+    let selectedDayId: String
+
+    /// Share of the budget a column may show; past it the column is simply full.
+    private let ceiling = 1.4
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .firstTextBaseline) {
-                SharpitEyebrow("Semaine")
-                Spacer(minLength: 0)
-                Text("Touche un jour pour l'ouvrir")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            Chart {
-                ForEach(days, id: \.date) { day in
-                    BarMark(
-                        x: .value("Jour", day.date, unit: .day),
-                        y: .value("kcal", day.calories)
-                    )
-                    .foregroundStyle(tone(for: day))
-                    .opacity(day.id == selectedDayId ? 1 : 0.45)
-                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                }
-                // The day on screen, marked even when nothing was logged on it.
-                if let selected = TrainingDayId.date(selectedDayId) {
-                    PointMark(
-                        x: .value("Jour", selected, unit: .day),
-                        y: .value("kcal", 0)
-                    )
-                    .symbolSize(40)
-                    .foregroundStyle(SharpitColor.foreground)
-                }
-                if let referenceGoal {
-                    RuleMark(y: .value("Objectif", referenceGoal))
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                }
-            }
-            .chartXScale(domain: weekDomain)
-            // A tap opens its day at once; the drag-to-select gesture of Charts waits too long.
-            .chartOverlay { proxy in
-                GeometryReader { geo in
-                    Rectangle()
-                        .fill(.clear)
-                        .contentShape(Rectangle())
-                        .onTapGesture { location in
-                            guard let frame = proxy.plotFrame else { return }
-                            let x = location.x - geo[frame].origin.x
-                            guard let date: Date = proxy.value(atX: x) else { return }
-                            SharpitHaptics.play(.light)
-                            onSelectDay(Calendar.current.startOfDay(for: date))
-                        }
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .day)) { _ in
-                    AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true)
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
-                    AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
-                    AxisValueLabel {
-                        if let kcal = value.as(Double.self) { Text(NutritionReadout.kcal(kcal)) }
+            SharpitEyebrow("Régularité · \(history.count) jours")
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                if let regularity {
+                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                        Text("\(regularity.onTarget)")
+                            .font(SharpitTypography.gaugeScore)
+                            .tracking(SharpitTypography.gaugeScoreTracking)
+                            .foregroundStyle(SharpitColor.foreground)
+                        Text("jours dans l'objectif")
+                            .font(SharpitTypography.bodyEmphasis)
+                            .foregroundStyle(SharpitColor.foreground)
+                        Spacer(minLength: 0)
+                        Text("\(regularity.logged) notés sur \(regularity.days)")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
                     }
                 }
+                columns
+                legend
             }
-            .frame(height: 170)
             .padding(SharpitSpacing.md)
             .sharpitSurface(.panel)
+            .sharpitCardSpecularBorder()
         }
     }
 
-    private func tone(for day: (date: Date, id: String, calories: Double, goal: Double?)) -> Color {
-        guard let goal = day.goal, goal > 0 else { return SharpitColor.signalBase }
-        return NutritionReadout.isOnGoal(pct: day.calories / goal * 100)
-            ? SharpitColor.signalBase
-            : SharpitColor.signalCaution
+    private var columns: some View {
+        GeometryReader { geo in
+            let height = geo.size.height - 18
+            let bandLow = height * (0.9 / ceiling)
+            let bandHigh = height * (1.1 / ceiling)
+            ZStack(alignment: .bottomLeading) {
+                // The target band: within ±10 % of the goal.
+                Rectangle()
+                    .fill(SharpitColor.primary.opacity(0.08))
+                    .frame(height: bandHigh - bandLow)
+                    .offset(y: -(bandLow + 18))
+                HStack(alignment: .bottom, spacing: 4) {
+                    ForEach(history, id: \.date) { day in
+                        column(day, height: height)
+                    }
+                }
+            }
+        }
+        .frame(height: 120)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilitySummary)
+    }
+
+    private func column(_ day: V1NutritionHistoryDay, height: CGFloat) -> some View {
+        let isSelected = day.date == selectedDayId
+        let share = day.calories.flatMap { calories in day.goalCalories.map { calories / max($0, 1) } } ?? 0
+        return VStack(spacing: 4) {
+            ZStack(alignment: .bottom) {
+                Color.clear.frame(height: height)
+                if day.adherence == .none {
+                    Circle()
+                        .strokeBorder(SharpitColor.mutedForeground.opacity(0.5), lineWidth: 1.25)
+                        .frame(width: 8, height: 8)
+                } else {
+                    Capsule()
+                        .fill(tone(day.adherence))
+                        .frame(height: max(height * min(share, ceiling) / ceiling, 6))
+                }
+            }
+            Text(weekday(day.date))
+                .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .frame(height: 14)
+        }
+        .frame(maxWidth: .infinity)
+        .opacity(isSelected || day.adherence == .none ? 1 : 0.85)
+    }
+
+    private var legend: some View {
+        HStack(spacing: SharpitSpacing.md) {
+            legendItem("Dans l'objectif", tone(.onTarget))
+            legendItem("En dessous", tone(.under))
+            legendItem("Au-dessus", tone(.over))
+        }
+    }
+
+    private func legendItem(_ text: String, _ color: Color) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(text)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+        }
+    }
+
+    private func tone(_ adherence: V1CalorieAdherence) -> Color {
+        switch adherence {
+        case .onTarget: SharpitColor.primary
+        case .under: SharpitColor.signalTempo
+        case .over: SharpitColor.signalCaution
+        case .none: SharpitColor.analysisGrid
+        }
+    }
+
+    private func weekday(_ dayId: String) -> String {
+        guard let date = TrainingDayId.date(dayId) else { return "" }
+        return date.sharpitFormatted(.dateTime.weekday(.narrow)).uppercased()
+    }
+
+    private var accessibilitySummary: String {
+        guard let regularity else { return "Régularité sur 14 jours" }
+        return "\(regularity.onTarget) jours dans l'objectif, \(regularity.logged) jours notés sur \(regularity.days)"
     }
 }
 

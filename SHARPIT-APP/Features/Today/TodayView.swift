@@ -186,7 +186,11 @@ extension TodayView {
         }
         guard let sync else { return }
         let pulled = force ? await sync.syncNow() : await sync.syncIfStale()
-        if pulled { await store.refresh() }
+        if pulled {
+            await store.refresh()
+            // The food log came in with the pull: the nutrition card reads it only now.
+            await nutrition?.load(trainingDayId: TrainingDayId.today(now: .now))
+        }
     }
 }
 

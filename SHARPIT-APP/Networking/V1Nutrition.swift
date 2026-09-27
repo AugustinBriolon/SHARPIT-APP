@@ -18,11 +18,13 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
     let coachReading: V1NutritionCoachReading?
     /// The diet declared in the journal, as labels.
     let diet: [String]
-    /// Oldest first, one entry per day of the week ending on `trainingDayId`.
+    /// Oldest first, one entry per day of the 14 ending on `trainingDayId`.
     let history: [V1NutritionHistoryDay]
+    /// How many of those days were logged, and how many kept the calorie goal.
+    let regularity: V1NutritionRegularity?
 
     enum CodingKeys: String, CodingKey {
-        case apiVersion, trainingDayId, connected, empty, day, coachReading, diet, history
+        case apiVersion, trainingDayId, connected, empty, day, coachReading, diet, history, regularity
     }
 
     init(
@@ -33,7 +35,8 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
         day: V1NutritionDay?,
         coachReading: V1NutritionCoachReading? = nil,
         diet: [String] = [],
-        history: [V1NutritionHistoryDay] = []
+        history: [V1NutritionHistoryDay] = [],
+        regularity: V1NutritionRegularity? = nil
     ) {
         self.apiVersion = apiVersion
         self.trainingDayId = trainingDayId
@@ -43,6 +46,7 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
         self.coachReading = coachReading
         self.diet = diet
         self.history = history
+        self.regularity = regularity
     }
 
     init(from decoder: Decoder) throws {
@@ -56,6 +60,7 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
         coachReading = (try? container.decodeIfPresent(V1NutritionCoachReading.self, forKey: .coachReading)) ?? nil
         diet = try container.decodeIfPresent([String].self, forKey: .diet) ?? []
         history = try container.decodeIfPresent([V1NutritionHistoryDay].self, forKey: .history) ?? []
+        regularity = try? container.decodeIfPresent(V1NutritionRegularity.self, forKey: .regularity)
     }
 }
 
@@ -118,6 +123,39 @@ nonisolated struct V1NutritionHistoryDay: Decodable, Sendable, Equatable {
     let date: String
     let calories: Double?
     let goalCalories: Double?
+    /// How the day kept its calorie goal, as the server reads it.
+    var adherence: V1CalorieAdherence = .none
+
+    enum CodingKeys: String, CodingKey { case date, calories, goalCalories, adherence }
+
+    init(date: String, calories: Double?, goalCalories: Double?, adherence: V1CalorieAdherence = .none) {
+        self.date = date
+        self.calories = calories
+        self.goalCalories = goalCalories
+        self.adherence = adherence
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        date = try container.decode(String.self, forKey: .date)
+        calories = try container.decodeIfPresent(Double.self, forKey: .calories)
+        goalCalories = try container.decodeIfPresent(Double.self, forKey: .goalCalories)
+        adherence = (try? container.decodeIfPresent(V1CalorieAdherence.self, forKey: .adherence))
+            ?? (calories == nil ? .none : .onTarget)
+    }
+}
+
+nonisolated enum V1CalorieAdherence: String, Decodable, Sendable {
+    case onTarget = "on_target"
+    case under
+    case over
+    case none
+}
+
+nonisolated struct V1NutritionRegularity: Decodable, Sendable, Equatable {
+    let days: Int
+    let logged: Int
+    let onTarget: Int
 }
 
 /// The coach's reading of the day (the web's `NutritionCoachReadingView`).

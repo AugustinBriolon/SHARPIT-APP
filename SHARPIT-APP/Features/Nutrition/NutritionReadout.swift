@@ -127,6 +127,11 @@ enum NutritionReadout {
         return kcal.map { (macro: $0.0, share: $0.1 / total) }
     }
 
+    /// `72,5 kg`.
+    static func kilograms(_ value: Double) -> String {
+        "\(value.formatted(.number.precision(.fractionLength(0...1)).locale(Locale(identifier: "fr_FR")))) kg"
+    }
+
     /// `3 repas`, `1 repas`, `Aucun repas`.
     static func mealsCount(_ count: Int) -> String {
         count == 0 ? "Aucun repas" : "\(count) repas"
