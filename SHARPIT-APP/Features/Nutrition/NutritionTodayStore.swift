@@ -1,22 +1,20 @@
 import Foundation
 import Observation
 
-/// Today's food log for the Résumé card. The server decides who may read it (SharpIt Pro)
-/// and whether a log is connected; the card only reflects the answer.
+/// Today's food log for the Résumé card. The log is the athlete's own data, open to all; the
+/// server says whether one is connected and the card reflects the answer.
 @MainActor
 @Observable
 final class NutritionTodayStore {
     enum Phase: Equatable {
         case loading
-        /// Below SharpIt Pro: the card offers Pro instead.
-        case locked
         /// No food log connected.
         case disconnected
         /// Connected, nothing logged yet today.
         case empty
         case loaded(V1NutritionDay)
-        /// A failed read: a Résumé card stays out of the way rather than showing an error.
-        case hidden
+        /// The read failed: the card says so quietly and opens the day, which can retry.
+        case failed
     }
 
     private(set) var phase: Phase = .loading
@@ -35,12 +33,10 @@ final class NutritionTodayStore {
             let nutrition = try await client.nutrition(trainingDayId: trainingDayId, token: token)
             phase = Self.phase(for: nutrition)
         } catch is CancellationError {
-        } catch let error as SharpitAPIError where error == .proRequired {
-            phase = .locked
         } catch {
-            // Keep a day already on screen; only a first read that fails hides the card.
+            // Keep a day already on screen; only a first read that fails says so.
             if case .loaded = phase { return }
-            phase = .hidden
+            phase = .failed
         }
     }
 

@@ -151,3 +151,14 @@ private let overviewJSON = """
     #expect(BiologicalAgeReadout.comparison(one) == "Âge civil 36 ans · 1 an de plus")
     #expect(BiologicalAgeReadout.comparison(same) == "Âge civil 36 ans")
 }
+
+@Test func belowProTheOverviewSaysTheBiologicalAgeIsPro() throws {
+    let json = overviewJSON.replacingOccurrences(
+        of: "\"biologicalAge\": null",
+        with: "\"biologicalAge\": null, \"biologicalAgeAccess\": \"pro_required\""
+    )
+    let overview = try JSONDecoder().decode(V1BodyOverview.self, from: Data(json.utf8))
+    #expect(overview.biologicalAge == nil)
+    #expect(overview.biologicalAgeRequiresPro)
+    #expect(!(try JSONDecoder().decode(V1BodyOverview.self, from: Data(overviewJSON.utf8))).biologicalAgeRequiresPro)
+}

@@ -65,6 +65,18 @@ private let nutritionJSON = """
     #expect(nutrition.coachReading == nil)
 }
 
+@Test func belowProTheReadingIsAnnouncedNotSent() throws {
+    let json = """
+    { "apiVersion": 1, "trainingDayId": "2026-09-27", "connected": true, "empty": null,
+      "day": { "calories": 1200, "protein": 60, "carbohydrates": 150, "fat": 40, "fiber": null, "sugar": null,
+               "complete": false, "goals": null, "fuelDensity": null, "meals": [] },
+      "coachReading": { "state": "pro_required" }, "diet": [], "history": [] }
+    """
+    let nutrition = try JSONDecoder().decode(V1NutritionResponse.self, from: Data(json.utf8))
+    #expect(nutrition.coachReading == V1NutritionCoachReading.proRequired)
+    #expect(nutrition.day?.calories == 1200)
+}
+
 @Test func aPendingReadingDecodesByItsState() throws {
     let json = """
     { "apiVersion": 1, "trainingDayId": "2026-09-27", "connected": true, "empty": null, "day": null,
@@ -119,13 +131,6 @@ private struct StubNutrition: NutritionServing {
 }
 
 @MainActor
-@Test func theCardOffersProBelowPro() async {
-    let store = NutritionTodayStore(client: StubNutrition(result: .failure(.proRequired)), tokenProvider: { "t" })
-    await store.load(trainingDayId: "2026-09-27")
-    #expect(store.phase == .locked)
-}
-
-@MainActor
 @Test func theCardReflectsTheLogState() async throws {
     let decoded = try JSONDecoder().decode(V1NutritionResponse.self, from: Data(nutritionJSON.utf8))
     let loaded = NutritionTodayStore(client: StubNutrition(result: .success(decoded)), tokenProvider: { "t" })
@@ -137,8 +142,8 @@ private struct StubNutrition: NutritionServing {
 }
 
 @MainActor
-@Test func aFailedFirstReadHidesTheCard() async {
+@Test func aFailedFirstReadSaysSo() async {
     let store = NutritionTodayStore(client: StubNutrition(result: .failure(.transport)), tokenProvider: { "t" })
     await store.load(trainingDayId: "2026-09-27")
-    #expect(store.phase == .hidden)
+    #expect(store.phase == .failed)
 }

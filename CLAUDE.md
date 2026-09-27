@@ -195,15 +195,19 @@ nutrition card (`NutritionTodayCard`, below the gauges). All three are a
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
 day's drill-down is a v1 resource plus a sections view, not a new store.
 
-**Nutrition.** SharpIt Pro only, decided by the server: `/api/v1/nutrition` answers 403
-`pro_required` below Pro (`SharpitAPIError.proRequired`), and the Résumé card then offers Pro
-(`ProView`) instead of the day. `NutritionTodayStore` maps the answer to the card's states
-(locked, disconnected, empty, loaded; a failed first read hides the card), and the card reloads
-when `ProStore.isPro` changes, so a purchase opens it at once. `NutritionView` is the day in the
-drill-down scaffold: intake against the goal, the coach's reading (tones from the web's
-`nutrition-reading-display.ts`: off track is orange, never red), macros, meals with their entries
-and the coach's flags, then the week. Goals, percentages and the reading are the web's;
-`NutritionReadout` only formats them. The food log is MyFitnessPal, connected on the web.
+**Nutrition.** The food log is the athlete's own data and open to everyone; only the coach's
+reading is SharpIt Pro (the server sends `{ state: 'pro_required' }` below it and never generates
+it), and `NutritionView` shows a `SharpitProTeaser` in its place. `NutritionTodayStore` maps the
+answer to the card's states (disconnected, empty, loaded, failed — a failed read says so and opens
+the day, which can retry). `NutritionView` is the day in the drill-down scaffold: intake against
+the goal, the coach's reading (tones from the web's `nutrition-reading-display.ts`: off track is
+orange, never red), macros, meals with their entries and the coach's flags, then the week. Goals,
+percentages and the reading are the web's; `NutritionReadout` only formats them. The food log is
+MyFitnessPal, connected on the web.
+
+**Pro gating.** Pro gates what SHARPIT adds — analyses, computed metrics, pushes to the watch —
+never the athlete's own data. `SharpitProTeaser` stands where such a feature would sit below Pro
+and opens `ProView`; the server decides, the app only reflects `pro_required`.
 
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation
 layer is web-only; the app maps domain payloads itself.
@@ -255,7 +259,8 @@ metric is a tile opening `CorpsMetricDrawer`, which reads `/api/v1/body/series` 
 toolbar (`WeightTargetSheet`) and drawn on the weight's hero and chart; the sleep targets from
 Sommeil's (`SleepTargetsSheet`). Biological age is web-owned (SHARPIT ADR-045): `/api/v1/body/overview` serves it since
 2026-09-27 and Corps shows it under the weight (`BiologicalAgeCard`), with the civil age beside it and
-the ADR's wording: a training estimate, not a diagnosis. Absent when the web serves null.
+the ADR's wording: a training estimate, not a diagnosis. SHARPIT computes it, so it is Pro: below Pro
+the overview says `biologicalAgeAccess: pro_required` and Corps shows a `SharpitProTeaser` instead.
 
 **Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then the one setting
 answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's

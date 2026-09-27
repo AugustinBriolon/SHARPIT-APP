@@ -1,7 +1,7 @@
 import Charts
 import SwiftUI
 
-/// The day's food log (SharpIt Pro): what was eaten against the day's goals, the coach's
+/// The day's food log, open to every athlete: what was eaten against the day's goals, the coach's
 /// reading of it, the macros, every meal and its entries, then the week. The day picker is
 /// the drill-downs' own, so any past day opens the same way as Sommeil's.
 struct NutritionView: View {
@@ -40,7 +40,12 @@ struct NutritionSections: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             if let day = nutrition.day {
                 NutritionHero(day: day, diet: nutrition.diet)
-                if let reading = nutrition.coachReading {
+                if nutrition.coachReading == .proRequired {
+                    SharpitProTeaser(
+                        title: "Lecture du coach",
+                        message: "Le coach lit ce que tu as mangé face à ton entraînement, et te donne une action concrète."
+                    )
+                } else if let reading = nutrition.coachReading {
                     NutritionCoachCard(reading: reading)
                 }
                 NutritionMacrosSection(day: day)
@@ -203,7 +208,7 @@ private struct NutritionCoachCard: View {
             statusLine("Le coach lit ta journée…", symbol: "ellipsis")
         case .awaitingDayEnd:
             statusLine("La lecture arrive une fois la journée avancée.", symbol: "clock")
-        case .unavailable:
+        case .unavailable, .proRequired:
             statusLine("Lecture du coach indisponible pour ce jour.", symbol: "minus.circle")
         }
     }

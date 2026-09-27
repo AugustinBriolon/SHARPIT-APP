@@ -9,6 +9,7 @@ import SwiftUI
 /// no data is absent, never an empty tile. Thresholds are edited from their section, which
 /// replaces Moi → Seuils & repères.
 struct CorpsView: View {
+    @Environment(ProStore.self) private var pro: ProStore?
     @State private var store: CorpsStore
     private let profileClient: any AthleteProfileServing
     private let tokenProvider: () async throws -> String
@@ -71,6 +72,8 @@ struct CorpsView: View {
                 WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
             }
             .task { await store.load() }
+            // Buying Pro brings the biological age in without waiting for the next visit.
+            .onChange(of: pro?.isPro) { _, _ in Task { await store.load() } }
             .sheet(item: $opened) { metric in
                 CorpsMetricDrawer(
                     metric: metric,
@@ -104,6 +107,12 @@ struct CorpsView: View {
                     if let age = store.biologicalAge {
                         BiologicalAgeCard(age: age)
                             .revealed(hasAppeared, index: 1)
+                    } else if store.biologicalAgeRequiresPro {
+                        SharpitProTeaser(
+                            title: "Âge biologique",
+                            message: "Ton âge forme, calculé par SHARPIT à partir de ta VO₂max."
+                        )
+                        .revealed(hasAppeared, index: 1)
                     }
                     section(.recovery, index: 1)
                     section(.composition, index: 2)

@@ -212,7 +212,6 @@ private struct TodayFoldView: View {
     @State private var selectedPreview: PlannedSessionPreview?
     @State private var openedSignal: V1TodaySignalKey?
     @State private var openedNutrition: NutritionDestination?
-    @Environment(ProStore.self) private var pro: ProStore?
     @State private var consecutiveWeeks: Int? = nil
     @State private var sleepOverrideCaption: String? = nil
 
@@ -323,10 +322,7 @@ private struct TodayFoldView: View {
         .task(id: fold.trainingDayId) {
             await nutrition?.load(trainingDayId: fold.trainingDayId)
         }
-        // Buying Pro opens the card without waiting for the next visit.
-        .onChange(of: pro?.isPro) { _, _ in
-            Task { await nutrition?.load(trainingDayId: fold.trainingDayId) }
-        }
+
         .sheet(item: $selectedPreview) { preview in
             PlannedSessionDrawer(
                 preview: preview,
@@ -427,10 +423,9 @@ private struct TodayFoldView: View {
 
     private func openNutrition(_ phase: NutritionTodayStore.Phase) {
         switch phase {
-        case .loaded, .empty: openedNutrition = .day
-        case .locked: openedNutrition = .pro
+        case .loaded, .empty, .failed: openedNutrition = .day
         case .disconnected: router.openSettings()
-        case .loading, .hidden: break
+        case .loading: break
         }
     }
 
@@ -440,10 +435,6 @@ private struct TodayFoldView: View {
         case .day:
             if let nutritionClient, let tokenProvider {
                 NutritionView(client: nutritionClient, tokenProvider: tokenProvider)
-            }
-        case .pro:
-            if let pro {
-                ProView(store: pro)
             }
         }
     }
@@ -611,10 +602,9 @@ private struct TodayEmptyView: View {
     }
 }
 
-/// Where Résumé's nutrition card leads: the day's food log, or SharpIt Pro below it.
+/// Where Résumé's nutrition card leads.
 private enum NutritionDestination: Hashable, Identifiable {
     case day
-    case pro
 
     var id: Self { self }
 }

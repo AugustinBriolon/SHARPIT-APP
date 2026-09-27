@@ -1,24 +1,22 @@
 import SwiftUI
 
 /// Résumé's nutrition card: today's calories against the goal and the three macros, opening
-/// the day's food log. Below SharpIt Pro it offers Pro; without a food log, the sources.
+/// the day's food log, for every athlete. Without a food log it opens the sources.
 struct NutritionTodayCard: View {
     let phase: NutritionTodayStore.Phase
     let onOpen: () -> Void
 
     var body: some View {
-        if phase != .hidden {
-            Button(action: onOpen) {
-                content
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(SharpitSpacing.cardPadding)
-                    .sharpitSurface(.panel)
-                    .sharpitCardSpecularBorder()
-            }
-            .buttonStyle(.sharpitPressable)
-            .disabled(phase == .loading)
-            .accessibilityHint(hint)
+        Button(action: onOpen) {
+            content
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(SharpitSpacing.cardPadding)
+                .sharpitSurface(.panel)
+                .sharpitCardSpecularBorder()
         }
+        .buttonStyle(.sharpitPressable)
+        .disabled(phase == .loading)
+        .accessibilityHint(hint)
     }
 
     private var content: some View {
@@ -34,10 +32,8 @@ struct NutritionTodayCard: View {
                 note("Rien de noté aujourd'hui pour l'instant.")
             case .disconnected:
                 note("Connecte MyFitnessPal pour suivre tes apports.")
-            case .locked:
-                note("Calories, macros et repas du jour, lus par le coach.")
-            case .hidden:
-                EmptyView()
+            case .failed:
+                note("Journal alimentaire indisponible pour l'instant.")
             }
         }
     }
@@ -46,16 +42,6 @@ struct NutritionTodayCard: View {
         HStack(spacing: SharpitSpacing.xs) {
             SharpitEyebrow("Nutrition", systemImage: "fork.knife")
             Spacer(minLength: 0)
-            if phase == .locked {
-                Text("Pro")
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.highlightForeground)
-                    .padding(.horizontal, SharpitSpacing.xs)
-                    .padding(.vertical, 2)
-                    .background(SharpitColor.highlight, in: Capsule())
-            }
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.label)
                 .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
@@ -120,7 +106,6 @@ struct NutritionTodayCard: View {
 
     private var hint: String {
         switch phase {
-        case .locked: "Ouvre SharpIt Pro"
         case .disconnected: "Ouvre les paramètres"
         default: "Ouvre le journal alimentaire du jour"
         }

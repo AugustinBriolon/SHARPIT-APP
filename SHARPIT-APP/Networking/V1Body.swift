@@ -5,17 +5,25 @@ import Foundation
 nonisolated struct V1BodyOverview: Decodable, Sendable, Equatable {
     let apiVersion: Int
     let metrics: [V1BodyMetric]
-    /// Web-owned (ADR-045); null until the method ships.
+    /// Web-owned (ADR-045): null without the data it needs, or below SharpIt Pro.
     let biologicalAge: V1BiologicalAge?
+    /// True below SharpIt Pro: SHARPIT computes the biological age, so it is Pro.
+    let biologicalAgeRequiresPro: Bool
 
     private enum CodingKeys: String, CodingKey {
-        case apiVersion, metrics, biologicalAge
+        case apiVersion, metrics, biologicalAge, biologicalAgeAccess
     }
 
-    init(apiVersion: Int = 1, metrics: [V1BodyMetric], biologicalAge: V1BiologicalAge? = nil) {
+    init(
+        apiVersion: Int = 1,
+        metrics: [V1BodyMetric],
+        biologicalAge: V1BiologicalAge? = nil,
+        biologicalAgeRequiresPro: Bool = false
+    ) {
         self.apiVersion = apiVersion
         self.metrics = metrics
         self.biologicalAge = biologicalAge
+        self.biologicalAgeRequiresPro = biologicalAgeRequiresPro
     }
 
     init(from decoder: Decoder) throws {
@@ -24,6 +32,8 @@ nonisolated struct V1BodyOverview: Decodable, Sendable, Equatable {
         // A key this build does not know (the web added a metric) is skipped, not fatal.
         metrics = try container.decode([Lossy<V1BodyMetric>].self, forKey: .metrics).compactMap(\.value)
         biologicalAge = try? container.decodeIfPresent(V1BiologicalAge.self, forKey: .biologicalAge)
+        let access = try? container.decodeIfPresent(String.self, forKey: .biologicalAgeAccess)
+        biologicalAgeRequiresPro = access == "pro_required"
     }
 }
 

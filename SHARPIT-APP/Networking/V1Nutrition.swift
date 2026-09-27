@@ -1,7 +1,7 @@
 import Foundation
 
-/// `GET /api/v1/nutrition` — mirrors `projectV1Nutrition` in the web repository. SharpIt Pro
-/// only: below Pro the route answers 403 `pro_required`.
+/// `GET /api/v1/nutrition` — mirrors `projectV1Nutrition` in the web repository. The food log
+/// is the athlete's own data and open to all; only the coach's reading is SharpIt Pro.
 ///
 /// Every measure decodes as `Double`: the food log sums servings and nothing guarantees
 /// whole numbers.
@@ -122,6 +122,8 @@ nonisolated enum V1NutritionCoachReading: Decodable, Sendable, Equatable {
     case pending
     case awaitingDayEnd
     case unavailable
+    /// Below SharpIt Pro: the reading is what SHARPIT adds, so it is neither generated nor sent.
+    case proRequired
     case ready(Ready)
 
     nonisolated struct Ready: Decodable, Sendable, Equatable {
@@ -169,6 +171,7 @@ nonisolated enum V1NutritionCoachReading: Decodable, Sendable, Equatable {
         switch state {
         case "pending": self = .pending
         case "awaiting_day_end": self = .awaitingDayEnd
+        case "pro_required": self = .proRequired
         case "ready": self = .ready(try Ready(from: decoder))
         default: self = .unavailable
         }
@@ -181,12 +184,7 @@ nonisolated extension V1NutritionResponse: V1DayResource {
     }
 }
 
-/// The day's food log. Throws `SharpitAPIError.message("pro_required")` below SharpIt Pro.
+/// The day's food log.
 nonisolated protocol NutritionServing: Sendable {
     func nutrition(trainingDayId: String, token: String) async throws -> V1NutritionResponse
-}
-
-extension SharpitAPIError {
-    /// What the nutrition route answers below SharpIt Pro.
-    nonisolated static let proRequired = SharpitAPIError.message("pro_required")
 }
