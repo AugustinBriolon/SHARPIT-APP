@@ -108,7 +108,9 @@ private actor UploadRecorder: HealthUploadServing {
 @MainActor
 private func source(_ reader: StubReader, _ recorder: UploadRecorder) -> AppleHealthSource {
     let defaults = UserDefaults(suiteName: "HealthTests-\(UUID().uuidString)")!
-    return AppleHealthSource(reader: reader, client: recorder, defaults: defaults)
+    let apple = AppleHealthSource(reader: reader, client: recorder, defaults: defaults)
+    apple.bind(userId: "user_1")
+    return apple
 }
 
 @MainActor
@@ -131,6 +133,24 @@ private func source(_ reader: StubReader, _ recorder: UploadRecorder) -> AppleHe
     #expect(apple.isEnabled)
     #expect(await recorder.uploads == 1)
     #expect(apple.lastSentAt != nil)
+}
+
+/// The switch belongs to an account: a new account on the same iPhone starts with it off, and
+/// the iPhone-wide value of earlier versions goes to the first account read.
+@MainActor
+@Test func eachAccountHasItsOwnAppleHealthSwitch() async throws {
+    let defaults = try #require(UserDefaults(suiteName: "HealthTests-\(UUID().uuidString)"))
+    defaults.set(true, forKey: AppleHealthSource.legacyEnabledKey)
+    let apple = AppleHealthSource(reader: StubReader(), client: UploadRecorder(), defaults: defaults)
+
+    apple.bind(userId: "user_main")
+    #expect(apple.isEnabled)
+
+    apple.bind(userId: "user_test")
+    #expect(!apple.isEnabled)
+
+    apple.bind(userId: "user_main")
+    #expect(apple.isEnabled)
 }
 
 @MainActor

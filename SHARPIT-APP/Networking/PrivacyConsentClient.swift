@@ -127,8 +127,13 @@ nonisolated protocol PrivacyConsentServing: Sendable {
     func updateConsents(_ update: PrivacyConsentUpdate, token: String) async throws -> V1PrivacyConsents
 }
 
+/// Deletes the account now — data and Clerk identity (`/api/v1/privacy/delete`).
+nonisolated protocol AccountDeletionServing: Sendable {
+    func deleteAccount(token: String) async throws
+}
+
 /// `/api/v1/privacy/consent` — the native contract for the web's handler (ADR-040).
-actor PrivacyConsentClient: PrivacyConsentServing {
+actor PrivacyConsentClient: PrivacyConsentServing, AccountDeletionServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -146,6 +151,21 @@ actor PrivacyConsentClient: PrivacyConsentServing {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: update.body)
         return try await send(request)
+    }
+
+    func deleteAccount(token: String) async throws {
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/privacy/delete"))
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let response: URLResponse
+        do {
+            (_, response) = try await session.data(for: request)
+        } catch {
+            throw SharpitAPIError.transport
+        }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 401 { throw SharpitAPIError.unauthorized }
+        guard (200..<300).contains(status) else { throw SharpitAPIError.server }
     }
 
     private func makeRequest(method: String, token: String) -> URLRequest {

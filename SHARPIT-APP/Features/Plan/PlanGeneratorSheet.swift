@@ -23,7 +23,6 @@ struct PlanGeneratorSheet: View {
 
     private let coachPlanClient = CoachPlanClient()
     private let goalClient = GoalClient()
-    private let plannedSessionClient = PlannedSessionClient()
 
     var body: some View {
         NavigationStack {
@@ -370,23 +369,12 @@ struct PlanGeneratorSheet: View {
         phase = .inserting
         do {
             let token = try await tokenProvider()
-            for index in selected.sorted() {
-                guard index < plan.sessions.count else { continue }
-                let s = plan.sessions[index]
-                let payload = CreatePlannedSessionPayload(
-                    type: s.type.rawValue,
-                    date: "\(s.date)T12:00:00Z",
-                    startTime: s.startTime,
-                    title: s.title,
-                    description: s.description,
-                    durationMin: s.durationMin,
-                    load: s.load,
-                    intensity: s.intensity,
-                    goalId: selectedGoalId == "none" ? nil : selectedGoalId,
-                    decisionId: s.decisionId
-                )
-                _ = try await plannedSessionClient.createSession(payload, token: token)
-            }
+            let sessions = selected.sorted().filter { $0 < plan.sessions.count }.map { plan.sessions[$0] }
+            try await coachPlanClient.insertWeek(
+                sessions,
+                goalId: selectedGoalId == "none" ? nil : selectedGoalId,
+                token: token
+            )
             toastCenter?.show(
                 "\(selected.count) séance\(selected.count > 1 ? "s" : "") ajoutée\(selected.count > 1 ? "s" : "")",
                 symbol: "calendar.badge.plus",

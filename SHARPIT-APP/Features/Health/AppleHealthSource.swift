@@ -16,7 +16,8 @@ final class AppleHealthSource {
         case failed(String)
     }
 
-    static let enabledKey = "appleHealthEnabled"
+    /// Before the switch was kept per account: one value for the whole iPhone.
+    static let legacyEnabledKey = "appleHealthEnabled"
     /// A week: long enough to catch a night Garmin missed, short enough to send in one go.
     static let lookbackDays = 7
 
@@ -28,6 +29,9 @@ final class AppleHealthSource {
     private let client: any HealthUploadServing
     private let defaults: UserDefaults
     private let now: () -> Date
+    /// The account the switch belongs to: a new account on this iPhone starts with it off, so
+    /// no Health data reaches an account that never asked for it.
+    private var userId: String?
 
     init(
         reader: any HealthReading,
@@ -39,7 +43,25 @@ final class AppleHealthSource {
         self.client = client
         self.defaults = defaults
         self.now = now
-        isEnabled = defaults.bool(forKey: Self.enabledKey)
+        isEnabled = false
+    }
+
+    static func enabledKey(userId: String) -> String { "appleHealthEnabled.\(userId)" }
+
+    /// Reads the switch of the signed-in account. The iPhone-wide value of earlier versions goes
+    /// to the first account read, and is then forgotten.
+    func bind(userId: String?) {
+        self.userId = userId
+        guard let userId else {
+            isEnabled = false
+            return
+        }
+        let key = Self.enabledKey(userId: userId)
+        if defaults.object(forKey: key) == nil, defaults.object(forKey: Self.legacyEnabledKey) != nil {
+            defaults.set(defaults.bool(forKey: Self.legacyEnabledKey), forKey: key)
+            defaults.removeObject(forKey: Self.legacyEnabledKey)
+        }
+        isEnabled = defaults.bool(forKey: key)
     }
 
     var isAvailable: Bool { reader.isAvailable }
@@ -92,6 +114,7 @@ final class AppleHealthSource {
 
     private func setEnabled(_ value: Bool) {
         isEnabled = value
-        defaults.set(value, forKey: Self.enabledKey)
+        guard let userId else { return }
+        defaults.set(value, forKey: Self.enabledKey(userId: userId))
     }
 }

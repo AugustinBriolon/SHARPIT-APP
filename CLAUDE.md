@@ -104,29 +104,38 @@ mirrors `needsLegalConsentFromProfile`), so a new version of the documents bring
 without an app release. The documents are the web's published `/terms` and `/privacy`, opened
 in-app (`LegalDocumentSheet`) — never a bundled copy. Paramètres → Confidentialité & conditions
 changes each consent; withdrawing health reports to the gate through the environment and the wall
-stands again.
+stands again. It also deletes the account (`/api/v1/privacy/delete`: data, provider access and
+the Clerk identity, then a local sign-out); Compte ends with an immediate sign-out.
 
-**Onboarding.** A new account answers the first-login wizard before it sees the tabs: Bienvenue →
-Sports → Matériel → Ta semaine → Objectif → Confidentialité (only when owed) → Sources → Première
-semaine (`OnboardingStep`). The server decides who owes it (`onboardingCompletedAt` present and
-`null` on `/api/v1/athlete-profile`); the phone only remembers a "done" per Clerk user, so a
-finished athlete never waits on a profile read, and a read that fails lets the athlete in without
-remembering anything. `AccountGateModel` owns the `OnboardingStore`, so a session refresh that
-resolves the gate again never rebuilds the wizard, and `OnboardingStepMemory` reopens the step
-reached after a quit. Each step is written as the athlete leaves it (practiced sports, equipment,
-`trainingAvailability`, a first goal through `/api/v1/goals`, the consents); a tap carries the step
-it was made on, so one delivered again after the page moved is dropped instead of skipping a step.
-Once the consents allow AI, the store asks `/api/v1/coach/plan` for the next seven days — towards the
-goal just created — while the athlete links their sources; the last step shows the week and « Ajouter
-à mon plan » writes each session through the planned-sessions API once, then
-`/api/v1/onboarding/complete` finishes the wizard. Without AI consent the step says so and finishes
-without a week. Sources links Garmin in-app through `GarminConnect` (SHARPIT ADR-047), switches Apple
-Health on and links MyFitnessPal (`MyFitnessPalConnectSheet`). Debug builds open the wizard on
-in-memory services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`).
+**Onboarding.** A new account answers the first-login wizard before it sees the tabs: Toi (first
+name, sex, height, birth date) → Sports → Matériel → Ta semaine → Objectif → Blessures →
+Confidentialité (only when owed) → Sources → Première semaine (`OnboardingStep`). The server
+decides who owes it (`onboardingCompletedAt` present and `null` on `/api/v1/athlete-profile`); the
+phone only remembers a "done" per Clerk user, so a finished athlete never waits on a profile read,
+and a read that fails lets the athlete in without remembering anything. `AccountGateModel` owns the
+`OnboardingStore`, so a session refresh that resolves the gate again never rebuilds the wizard, and
+`OnboardingStepMemory` reopens the step reached after a quit. Each step is written as the athlete
+leaves it: the first name on the Clerk user, the body, practiced sports, equipment,
+`trainingAvailability`, a first goal through `/api/v1/goals` (its place picked from MapKit
+suggestions, `OnboardingPlaceField`), the injuries as physical notes (`/api/v1/physical-notes`, which
+the coach reads as sensitive zones) and the consents. Injuries are health data: while the consents
+are owed they wait on the phone and are written with the privacy step, before the week is planned.
+A tap carries the step it was made on, so one delivered again after the page moved is dropped
+instead of skipping a step. Once the consents allow AI, the store asks `/api/v1/coach/plan` for the
+next seven days — towards the goal just created — while the athlete links their sources; « Ajouter
+à mon plan » sends the week back whole to `/api/v1/coach/plan/insert`, which stores it through the
+web generator's own mapping (the coach's strength and endurance prescriptions included) or refuses
+it before writing anything; Plan's generator uses the same route. Then `/api/v1/onboarding/complete`
+finishes the wizard. Without AI consent the step says so and finishes without a week. Sources links
+Garmin in-app through `GarminConnect` (SHARPIT ADR-047), switches Apple Health on — a switch per
+Clerk account (`AppleHealthSource.bind(userId:)`), so a new account on the same iPhone starts off
+— and links MyFitnessPal (`MyFitnessPalConnectSheet`). Debug builds open the wizard on in-memory
+services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`).
 
 The page is one page: the header's tick dial (`SharpitTickGauge`, animatable, so it sweeps from step
 to step) and the step's title stay put, and only the content under them slides in from the side the
-athlete is heading. Sport tiles animate their SF Symbol (bounce, fill), never a scale; triathlon is
+athlete is heading. Sport tiles and choice chips (`OnboardingChoiceChip`) bounce their SF Symbol
+on the tap itself, so the choice left behind never animates, and never scale; triathlon is
 the app's own symbol (`triathlon.circles` in the asset catalog), SF Symbols drawing none.
 
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).

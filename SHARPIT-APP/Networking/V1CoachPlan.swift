@@ -15,6 +15,9 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
     let load: Double
     let rationale: String?
     let decisionId: String?
+    /// The session as the server sent it, prescriptions included: sent back whole to be added
+    /// to the plan, so nothing the app does not model is lost on the way.
+    let raw: JSONValue?
 
     enum CodingKeys: String, CodingKey {
         case dayOffset, date, startTime, type, intensity, title, description
@@ -35,6 +38,7 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         load = try container.decodeIfPresent(Double.self, forKey: .load) ?? 0
         rationale = try container.decodeIfPresent(String.self, forKey: .rationale)
         decisionId = try container.decodeIfPresent(String.self, forKey: .decisionId)
+        raw = try? JSONValue(from: decoder)
     }
 
     init(
@@ -61,6 +65,24 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         self.load = load
         self.rationale = rationale
         self.decisionId = decisionId
+        raw = nil
+    }
+
+    /// What `/api/v1/coach/plan/insert` receives for this session.
+    var insertBody: JSONValue {
+        if let raw { return raw }
+        let optional = { (value: String?) in value.map(JSONValue.string) ?? .null }
+        return .object([
+            "date": .string(date),
+            "startTime": optional(startTime),
+            "type": .string(type.rawValue),
+            "intensity": .string(intensity),
+            "title": .string(title),
+            "description": .string(description),
+            "durationMin": .number(durationMin),
+            "load": .number(load),
+            "decisionId": optional(decisionId),
+        ])
     }
 }
 

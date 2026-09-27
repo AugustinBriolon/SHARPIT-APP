@@ -62,6 +62,7 @@ private actor RecordingOnboardingClient: OnboardingServing {
 @MainActor
 private final class RecordingPlanClient: CoachPlanServing {
     private(set) var requestedGoalIds: [String?] = []
+    private(set) var inserted: [(sessions: [V1GeneratedSession], goalId: String?)] = []
     private let fails: Bool
 
     init(fails: Bool = false) { self.fails = fails }
@@ -86,12 +87,22 @@ private final class RecordingPlanClient: CoachPlanServing {
     func adaptPlan(days _: Int, focus _: String?, token _: String, onReasoning _: @escaping @Sendable (String) -> Void) async throws -> V1AdaptPlanResult {
         V1AdaptPlanResult(summary: "", changes: [])
     }
+
+    func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token _: String) async throws {
+        inserted.append((sessions, goalId))
+    }
 }
 
-private actor SessionRecorder {
-    private(set) var payloads: [CreatePlannedSessionPayload] = []
+private actor NoteRecorder: PhysicalNoteCreating {
+    private(set) var notes: [CreatePhysicalNoteInput] = []
 
-    func add(_ payload: CreatePlannedSessionPayload) { payloads.append(payload) }
+    func createNote(_ input: CreatePhysicalNoteInput, token _: String) async throws { notes.append(input) }
+}
+
+private actor NameRecorder {
+    private(set) var names: [String] = []
+
+    func save(_ name: String) { names.append(name) }
 }
 
 /// Fails its first `failures` completions, then succeeds.
@@ -117,7 +128,8 @@ private func makeStore(
     onboarding: any OnboardingServing = RecordingOnboardingClient(),
     consents: StubConsentClient = StubConsentClient(),
     plan: RecordingPlanClient = RecordingPlanClient(),
-    sessions: SessionRecorder = SessionRecorder(),
+    notes: NoteRecorder = NoteRecorder(),
+    names: NameRecorder = NameRecorder(),
     consentsOwed: Bool = false,
     currentConsents: V1PrivacyConsents? = nil,
     stepMemory: OnboardingStepMemory? = nil
@@ -129,7 +141,8 @@ private func makeStore(
             onboarding: onboarding,
             consents: consents,
             plan: plan,
-            addSession: { payload, _ in await sessions.add(payload) }
+            physicalNotes: notes,
+            saveFirstName: { await names.save($0) }
         ),
         consentsOwed: consentsOwed,
         currentConsents: currentConsents,
@@ -138,10 +151,11 @@ private func makeStore(
     )
 }
 
-/// Loads the wizard and leaves the welcome with an endurance sport saved.
+/// Loads the wizard and walks past the identity and an endurance sport, both saved.
 @MainActor
 private func storeOnEquipment(_ store: OnboardingStore) async {
     await store.load()
+    store.identity.firstName = "Zoé"
     await store.advance()
     store.toggleSport("run")
     await store.advance()
@@ -269,11 +283,13 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 // MARK: - Steps
 
 @Test func theWizardBuildsTheCoachThenPlansItsWeek() {
-    #expect(OnboardingStep.allCases == [.welcome, .sports, .equipment, .week, .goal, .privacy, .sources, .firstWeek])
+    #expect(OnboardingStep.allCases == [
+        .identity, .sports, .equipment, .week, .goal, .injuries, .privacy, .sources, .firstWeek,
+    ])
 }
 
 @Test func onlyTheKitTheWeekAndTheGoalCanBeSkipped() {
-    #expect(OnboardingStep.allCases.filter(\.allowsSkip) == [.equipment, .week, .goal])
+    #expect(OnboardingStep.allCases.filter(\.allowsSkip) == [.equipment, .week, .goal, .injuries])
 }
 
 @MainActor
@@ -331,6 +347,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     let profile = RecordingProfileClient()
     let store = makeStore(profile: profile)
     await store.load()
+    store.identity.firstName = "Zoé"
     await store.advance()
 
     store.toggleSport("strength")
@@ -346,6 +363,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     let profile = RecordingProfileClient()
     let store = makeStore(profile: profile)
     await store.load()
+    store.identity.firstName = "Zoé"
     await store.advance()
 
     store.toggleSport("strength")
@@ -364,6 +382,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 @Test func aFailedSaveKeepsTheAthleteOnTheStep() async {
     let store = makeStore(profile: RecordingProfileClient(failsPatch: true))
     await store.load()
+    store.identity.firstName = "Zoé"
     await store.advance()
 
     store.toggleSport("bike")
@@ -434,17 +453,22 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     let goals = RecordingGoalClient()
     let consents = StubConsentClient()
     let plan = RecordingPlanClient()
-    let sessions = SessionRecorder()
+    let notes = NoteRecorder()
     let onboarding = RecordingOnboardingClient()
-    let store = makeStore(goals: goals, onboarding: onboarding, consents: consents, plan: plan, sessions: sessions, consentsOwed: true)
+    let store = makeStore(goals: goals, onboarding: onboarding, consents: consents, plan: plan, notes: notes, consentsOwed: true)
     await storeOnEquipment(store)
     await store.skip()
     await store.skip()
 
     store.intention.raceTitle = "Triathlon de Nice"
     await store.advance()
-    #expect(store.step == .privacy)
+    #expect(store.step == .injuries)
     #expect(await goals.created.map(\.title) == ["Triathlon de Nice"])
+
+    store.toggleInjury("Genou")
+    await store.advance()
+    #expect(store.step == .privacy)
+    #expect(await notes.notes.isEmpty)
 
     await store.advance()
     #expect(store.step == .privacy)
@@ -453,6 +477,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.advance()
     #expect(store.step == .sources)
     #expect(await consents.updates == [.wall(ai: true, unofficialProviders: true)])
+    #expect(await notes.notes.map(\.title) == ["Douleur genou droit"])
 
     guard case .ready(_, let week) = await settledFirstWeek(store) else {
         Issue.record("The first week was not generated")
@@ -466,10 +491,9 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(store.step == .firstWeek)
     await store.advance()
 
-    let added = await sessions.payloads
-    #expect(added.map(\.title) == ["Footing", "Seuil"])
-    #expect(added.first?.date == "2026-09-28T12:00:00Z")
-    #expect(added.allSatisfy { $0.goalId != nil })
+    #expect(plan.inserted.count == 1)
+    #expect(plan.inserted.first?.sessions.map(\.title) == ["Footing", "Seuil"])
+    #expect(plan.inserted.first?.goalId != nil)
     #expect(await onboarding.completions == 1)
     #expect(store.phase == .bootstrap)
 }
@@ -480,6 +504,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     let onboarding = RecordingOnboardingClient()
     let store = makeStore(onboarding: onboarding, plan: plan, consentsOwed: true)
     await storeOnEquipment(store)
+    await store.skip()
     await store.skip()
     await store.skip()
     await store.skip()
@@ -506,6 +531,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     consented.aiProcessingConsentAt = Date(timeIntervalSince1970: 1_800_000_000)
     let store = makeStore(currentConsents: consented)
     await storeOnEquipment(store)
+    await store.skip()
     await store.skip()
     await store.skip()
     await store.skip()
@@ -542,10 +568,11 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 @Test func aRetriedFinishNeverAddsTheWeekTwice() async {
     var consented = V1PrivacyConsents.accepted
     consented.aiProcessingConsentAt = Date(timeIntervalSince1970: 1_800_000_000)
-    let sessions = SessionRecorder()
+    let plan = RecordingPlanClient()
     let onboarding = FlakyOnboardingClient(failures: 1)
-    let store = makeStore(onboarding: onboarding, sessions: sessions, currentConsents: consented)
+    let store = makeStore(onboarding: onboarding, plan: plan, currentConsents: consented)
     await storeOnEquipment(store)
+    await store.skip()
     await store.skip()
     await store.skip()
     await store.skip()
@@ -557,9 +584,59 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(store.phase == .steps)
 
     await store.advance()
-    #expect(await sessions.payloads.count == 2)
+    #expect(plan.inserted.count == 1)
     #expect(await onboarding.completions == 1)
     #expect(store.phase == .bootstrap)
+}
+
+@MainActor
+@Test func theIdentityNeedsAFirstNameThenSavesItAndTheBody() async {
+    let profile = RecordingProfileClient()
+    let names = NameRecorder()
+    let store = makeStore(profile: profile, names: names)
+    await store.load()
+    #expect(!store.canAdvance)
+
+    store.identity.firstName = "  Zoé "
+    store.identity.sex = .female
+    store.identity.heightCm = 168
+    await store.advance()
+
+    #expect(store.step == .sports)
+    #expect(await names.names == ["Zoé"])
+    let patch = await profile.patches.first
+    #expect(patch?.fields["sex"] == .string("female"))
+    #expect(patch?.fields["heightCm"] == .number(168))
+    #expect(patch?.fields.keys.contains("birthDate") == false)
+}
+
+/// Consents already given: the injuries are written as the step is left.
+@MainActor
+@Test func injuriesAreWrittenAtOnceWhenNoConsentIsOwed() async {
+    let notes = NoteRecorder()
+    let store = makeStore(notes: notes)
+    await storeOnEquipment(store)
+    await store.skip()
+    await store.skip()
+    await store.skip()
+
+    store.toggleInjury("Dos")
+    store.toggleInjury("Cheville")
+    store.toggleInjury("Dos")
+    if var ankle = store.injuries.first {
+        ankle.kind = .injury
+        ankle.side = .left
+        ankle.severity = 7
+        store.updateInjury(ankle)
+    }
+    await store.advance()
+
+    #expect(store.step == .sources)
+    let written = await notes.notes
+    #expect(written.map(\.title) == ["Blessure cheville gauche"])
+    #expect(written.first?.category == "INJURY")
+    #expect(written.first?.side == "LEFT")
+    #expect(written.first?.severity == 7)
 }
 
 @MainActor
@@ -603,7 +680,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.load()
 
     #expect(store.phase == .steps)
-    #expect(store.step == .welcome)
+    #expect(store.step == .identity)
     #expect(store.sports.isEmpty)
 }
 

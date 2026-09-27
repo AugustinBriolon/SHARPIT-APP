@@ -178,6 +178,7 @@ struct AccountGate<Content: View>: View {
         }
         // Keyed by the athlete, so signing out and in as someone else asks again.
         .task(id: clerk.user?.id) {
+            appleHealth.bind(userId: clerk.user?.id)
             await model.resolve(userId: clerk.user?.id, tokenProvider: liveToken)
         }
         // Moi → Confidentialité reports a withdrawn health consent through this.
@@ -189,7 +190,6 @@ struct AccountGate<Content: View>: View {
     /// gate's own does.
     @MainActor
     static func liveOnboardingStore(consentsOwed: Bool, consents: V1PrivacyConsents?, userId: String) -> OnboardingStore {
-        let sessions = PlannedSessionClient()
         return OnboardingStore(
             services: OnboardingServices(
                 profile: AthleteProfileClient(),
@@ -197,11 +197,16 @@ struct AccountGate<Content: View>: View {
                 onboarding: OnboardingClient(),
                 consents: PrivacyConsentClient(),
                 plan: CoachPlanClient(),
-                addSession: { payload, token in _ = try await sessions.createSession(payload, token: token) }
+                physicalNotes: PhysicalNoteClient(),
+                saveFirstName: { firstName in
+                    guard let user = await Clerk.shared.user, user.firstName != firstName else { return }
+                    _ = try await user.update(.init(firstName: firstName))
+                }
             ),
             consentsOwed: consentsOwed,
             currentConsents: consents,
             stepMemory: OnboardingStepMemory(userId: userId),
+            firstName: Clerk.shared.user?.firstName,
             tokenProvider: {
                 guard let token = try await Clerk.shared.auth.getToken() else { throw SharpitAPIError.unauthorized }
                 return token

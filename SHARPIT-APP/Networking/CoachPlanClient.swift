@@ -16,6 +16,11 @@ protocol CoachPlanServing: Sendable {
         token: String,
         onReasoning: @escaping @Sendable (String) -> Void
     ) async throws -> V1AdaptPlanResult
+
+    /// Puts generated sessions in the plan through the web generator's own mapping
+    /// (`/api/v1/coach/plan/insert`): the coach's prescriptions travel as the coach wrote them.
+    /// All or nothing — a refused week leaves the plan untouched.
+    func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token: String) async throws
 }
 
 actor CoachPlanClient: CoachPlanServing {
@@ -56,6 +61,24 @@ actor CoachPlanClient: CoachPlanServing {
             token: token,
             onReasoning: onReasoning
         )
+    }
+
+    func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token: String) async throws {
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/coach/plan/insert"))
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        let goal: JSONValue = goalId.map(JSONValue.string) ?? .null
+        request.httpBody = try JSONEncoder().encode(JSONValue.object([
+            "goalId": goal,
+            "sessions": .array(sessions.map(\.insertBody)),
+        ]))
+
+        let (_, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 401 { throw SharpitAPIError.unauthorized }
+        guard (200...299).contains(status) else { throw SharpitAPIError.server }
     }
 
     func adaptPlan(

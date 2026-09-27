@@ -161,6 +161,15 @@ struct AccountView: View {
                 LabeledContent("Âge", value: AccountAge.years(birthDate: form.birthDate).map { "\($0) ans" } ?? "—")
             }
             .sharpitListRows()
+
+            Section {
+                Button(role: .destructive) {
+                    Task { try? await clerk.auth.signOut() }
+                } label: {
+                    Text("Se déconnecter").frame(maxWidth: .infinity)
+                }
+            }
+            .sharpitListRows()
         }
         .sharpitGroupedList()
         .disabled(!hasLoaded)

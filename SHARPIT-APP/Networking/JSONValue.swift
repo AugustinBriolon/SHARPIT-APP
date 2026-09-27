@@ -5,7 +5,7 @@ import Foundation
 /// A coach conversation is written by the web with parts the app does not model — tool calls,
 /// citations — and saving it back from the phone must not strip them. Decoding into this and
 /// sending it again keeps what the app cannot read intact.
-nonisolated enum JSONValue: Codable, Equatable, Sendable {
+nonisolated enum JSONValue: Codable, Hashable, Sendable {
     case null
     case bool(Bool)
     case number(Double)

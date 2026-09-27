@@ -2,49 +2,169 @@ import AuthenticationServices
 import SwiftUI
 import UIKit
 
-// MARK: - Welcome
+// MARK: - Identity
 
-/// What the next minutes build, in three lines — each a real step, none a promise.
-struct OnboardingWelcomeStep: View {
-    @State private var shown = 0
+/// Who the athlete is: the first name the app greets them by, then the body the coach sizes
+/// loads against. Only the first name is required.
+struct OnboardingIdentityStep: View {
+    @Binding var draft: OnboardingIdentityDraft
 
-    private let lines: [(symbol: String, title: String, detail: String)] = [
-        ("figure.run", "Tes sports et ta semaine", "Ce que tu pratiques, avec quoi, et quand."),
-        ("flag.checkered", "Ton objectif", "Une course ou un palier vers lequel tout se construit."),
-        ("calendar.badge.plus", "Ta première semaine", "Des séances placées sur tes jours, prêtes dans ton plan."),
-    ]
+    private static let heights = Array(120...220)
+    private static let birthDates: ClosedRange<Date> = {
+        let calendar = Calendar.current
+        let earliest = calendar.date(byAdding: .year, value: -100, to: .now) ?? .distantPast
+        let latest = calendar.date(byAdding: .year, value: -12, to: .now) ?? .now
+        return earliest...latest
+    }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                HStack(alignment: .top, spacing: SharpitSpacing.md) {
-                    ZStack {
-                        Circle().fill(SharpitColor.primary.opacity(0.12)).frame(width: 40, height: 40)
-                        Image(systemName: line.symbol)
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(SharpitColor.primary)
-                            .symbolEffect(.bounce.up, value: shown > index)
-                    }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(line.title)
-                            .font(SharpitTypography.cardTitle)
-                            .tracking(SharpitTypography.cardTitleTracking)
-                            .foregroundStyle(SharpitColor.foreground)
-                        Text(line.detail)
-                            .font(SharpitTypography.body)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .fixedSize(horizontal: false, vertical: true)
+            OnboardingField("Prénom", placeholder: "Ton prénom", text: $draft.firstName)
+                .textContentType(.givenName)
+
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                OnboardingFieldLabel("Sexe")
+                HStack(spacing: SharpitSpacing.xs) {
+                    ForEach(AthleteSex.allCases) { sex in
+                        OnboardingChoiceChip(title: sex.label, isSelected: draft.sex == sex) {
+                            SharpitMotion.run(SharpitMotion.selection) { draft.sex = sex }
+                        }
                     }
                 }
-                .opacity(shown > index ? 1 : 0.25)
             }
-        }
-        .task {
-            for index in lines.indices {
-                try? await Task.sleep(for: .milliseconds(SharpitMotion.reduceMotion ? 0 : 280))
-                SharpitMotion.run(SharpitMotion.reveal) { shown = index + 1 }
+
+            VStack(spacing: SharpitSpacing.sm) {
+                HStack {
+                    Text("Taille")
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Spacer()
+                    Picker("Taille", selection: heightBinding) {
+                        Text("—").tag(Int?.none)
+                        ForEach(Self.heights, id: \.self) { height in
+                            Text("\(height) cm").tag(Int?.some(height))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(SharpitColor.foreground)
+                }
+                Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                DatePicker(
+                    "Date de naissance",
+                    selection: birthDateBinding,
+                    in: Self.birthDates,
+                    displayedComponents: .date
+                )
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+                .tint(SharpitColor.primary)
             }
+            .padding(SharpitSpacing.cardPadding)
+            .sharpitSurface(.panel)
         }
+    }
+
+    private var heightBinding: Binding<Int?> {
+        Binding(get: { draft.heightCm }, set: { draft.heightCm = $0 })
+    }
+
+    /// A date is always shown; picking one is what records it.
+    private var birthDateBinding: Binding<Date> {
+        Binding(
+            get: { draft.birthDate ?? Calendar.current.date(byAdding: .year, value: -30, to: .now) ?? .now },
+            set: { draft.birthDate = $0 }
+        )
+    }
+}
+
+// MARK: - Shared controls
+
+/// The small uppercase label above a field or a row of choices.
+struct OnboardingFieldLabel: View {
+    let title: String
+
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title)
+            .font(SharpitTypography.label)
+            .tracking(SharpitTypography.labelTracking)
+            .textCase(.uppercase)
+            .foregroundStyle(SharpitColor.mutedForeground)
+    }
+}
+
+/// A labelled text field on a panel.
+struct OnboardingField: View {
+    let title: String
+    let placeholder: String
+    @Binding var text: String
+    var keyboard: UIKeyboardType = .default
+
+    init(_ title: String, placeholder: String, text: Binding<String>, keyboard: UIKeyboardType = .default) {
+        self.title = title
+        self.placeholder = placeholder
+        _text = text
+        self.keyboard = keyboard
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            OnboardingFieldLabel(title)
+            TextField(placeholder, text: $text)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .keyboardType(keyboard)
+                .submitLabel(.done)
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+    }
+}
+
+/// One choice of a few, its symbol (if any) filling and bouncing when it is picked — the bounce
+/// is played by the tap, so the choice left behind never animates.
+struct OnboardingChoiceChip: View {
+    let title: String
+    var symbol: String?
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    @State private var taps = 0
+
+    var body: some View {
+        Button {
+            SharpitHaptics.play(.light)
+            taps += 1
+            onSelect()
+        } label: {
+            HStack(spacing: SharpitSpacing.xs) {
+                if let symbol {
+                    Image(systemName: symbol)
+                        .symbolVariant(isSelected ? .fill : .none)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
+                        .symbolEffect(.bounce.up.byLayer, value: taps)
+                        .frame(width: 22)
+                }
+                Text(title)
+                    .font(SharpitTypography.meta.weight(.semibold))
+                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                if symbol != nil { Spacer(minLength: 0) }
+            }
+            .padding(.horizontal, SharpitSpacing.sm)
+            .frame(maxWidth: .infinity, minHeight: SharpitSpacing.minimumTouchTarget)
+            .background(
+                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
+                    .fill(isSelected ? SharpitColor.primary.opacity(0.22) : SharpitColor.analysisSurfaceAlt)
+            )
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
 
@@ -98,7 +218,6 @@ struct OnboardingSportTile: View {
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 30, weight: .medium))
                         .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                        .contentTransition(.symbolEffect(.replace.downUp.byLayer))
                         .symbolEffect(.bounce.up.byLayer, value: taps)
                         .frame(height: 36, alignment: .leading)
                     Spacer(minLength: 0)
@@ -182,7 +301,7 @@ struct OnboardingEquipmentStep: View {
                 spacing: SharpitSpacing.xs
             ) {
                 ForEach(V1AthleteEquipment.StrengthVenue.allCases) { venue in
-                    OnboardingVenueChip(venue: venue, isSelected: store.strengthVenue == venue) {
+                    OnboardingChoiceChip(title: venue.title, symbol: venue.symbolName, isSelected: store.strengthVenue == venue) {
                         SharpitMotion.run(SharpitMotion.selection) { store.setStrengthVenue(venue) }
                     }
                 }
@@ -192,45 +311,6 @@ struct OnboardingEquipmentStep: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .contentTransition(.opacity)
         }
-    }
-}
-
-/// Where strength happens: one choice of four, its symbol filling and bouncing when picked.
-private struct OnboardingVenueChip: View {
-    let venue: V1AthleteEquipment.StrengthVenue
-    let isSelected: Bool
-    let onSelect: () -> Void
-
-    var body: some View {
-        Button {
-            SharpitHaptics.play(.light)
-            onSelect()
-        } label: {
-            HStack(spacing: SharpitSpacing.xs) {
-                Image(systemName: venue.symbolName)
-                    .symbolVariant(isSelected ? .fill : .none)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                    .contentTransition(.symbolEffect(.replace))
-                    .symbolEffect(.bounce.up.byLayer, value: isSelected)
-                    .frame(width: 22)
-                Text(venue.title)
-                    .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, SharpitSpacing.sm)
-            .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-            .background(
-                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                    .fill(isSelected ? SharpitColor.primary.opacity(0.10) : SharpitColor.analysisSurfaceAlt)
-            )
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
 
@@ -380,6 +460,7 @@ struct OnboardingWeekStep: View {
 /// what the plan has to work with.
 struct OnboardingGoalStep: View {
     @Binding var draft: OnboardingIntentionDraft
+    @State private var kindTaps: [OnboardingIntentionKind: Int] = [:]
 
     private var weeksLeft: Int {
         max(Calendar.current.dateComponents([.weekOfYear], from: .now, to: draft.raceDate).weekOfYear ?? 0, 0)
@@ -394,7 +475,7 @@ struct OnboardingGoalStep: View {
 
             switch draft.kind {
             case .race:
-                field("Nom de l'épreuve", placeholder: "Marathon de Paris, 70.3 Nice…", text: $draft.raceTitle)
+                OnboardingField("Nom de l'épreuve", placeholder: "Marathon de Paris, 70.3 Nice…", text: $draft.raceTitle)
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                     DatePicker("Date", selection: $draft.raceDate, in: Date()..., displayedComponents: .date)
                         .font(SharpitTypography.bodyEmphasis)
@@ -414,12 +495,12 @@ struct OnboardingGoalStep: View {
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
-                field("Lieu (optionnel)", placeholder: "Paris, Nice…", text: $draft.raceLocation)
+                OnboardingPlaceField(title: "Lieu (optionnel)", text: $draft.raceLocation)
             case .metric:
-                field("Ce que tu veux atteindre", placeholder: "FTP, VMA, allure 10 km…", text: $draft.metricTitle)
+                OnboardingField("Ce que tu veux atteindre", placeholder: "FTP, VMA, allure 10 km…", text: $draft.metricTitle)
                 HStack(spacing: SharpitSpacing.sm) {
-                    field("Valeur", placeholder: "280", text: $draft.metricTargetText, keyboard: .decimalPad)
-                    field("Unité", placeholder: "W, km/h…", text: $draft.metricUnit)
+                    OnboardingField("Valeur", placeholder: "280", text: $draft.metricTargetText, keyboard: .decimalPad)
+                    OnboardingField("Unité", placeholder: "W, km/h…", text: $draft.metricUnit)
                 }
             }
         }
@@ -430,13 +511,14 @@ struct OnboardingGoalStep: View {
         let isSelected = draft.kind == kind
         return Button {
             SharpitHaptics.play(.light)
+            if !isSelected { kindTaps[kind, default: 0] += 1 }
             SharpitMotion.run(SharpitMotion.selection) { draft.kind = kind }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: symbol)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                    .symbolEffect(.bounce, value: isSelected)
+                    .symbolEffect(.bounce, value: kindTaps[kind, default: 0])
                 Text(title)
                     .font(SharpitTypography.cardTitle)
                     .foregroundStyle(SharpitColor.foreground)
@@ -452,28 +534,103 @@ struct OnboardingGoalStep: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
+}
 
-    private func field(
-        _ title: String,
-        placeholder: String,
-        text: Binding<String>,
-        keyboard: UIKeyboardType = .default
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
+// MARK: - Injuries
+
+/// What hurts now: a zone, then for each one what it is, which side and how much. The coach
+/// reads them as sensitive zones and plans around them.
+struct OnboardingInjuriesStep: View {
+    let store: OnboardingStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3),
+                spacing: SharpitSpacing.xs
+            ) {
+                ForEach(OnboardingInjuryDraft.bodyParts, id: \.self) { part in
+                    OnboardingChoiceChip(
+                        title: part,
+                        isSelected: store.injuries.contains { $0.bodyPart == part }
+                    ) {
+                        SharpitMotion.run(SharpitMotion.selection) { store.toggleInjury(part) }
+                    }
+                }
+            }
+
+            ForEach(store.injuries) { injury in
+                OnboardingInjuryCard(injury: injury) { store.updateInjury($0) }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            Text(store.injuries.isEmpty
+                ? "Rien en cours ? Passe cette étape."
+                : "Tu pourras suivre leur évolution depuis Corps.")
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
-            TextField(placeholder, text: text)
-                .font(SharpitTypography.body)
+        }
+        .animation(SharpitMotion.selection, value: store.injuries.map(\.bodyPart))
+    }
+}
+
+private struct OnboardingInjuryCard: View {
+    let injury: OnboardingInjuryDraft
+    let onChange: (OnboardingInjuryDraft) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            Text(injury.bodyPart)
+                .font(SharpitTypography.cardTitle)
+                .tracking(SharpitTypography.cardTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
-                .keyboardType(keyboard)
-                .submitLabel(.done)
+
+            HStack(spacing: SharpitSpacing.xs) {
+                ForEach(OnboardingInjuryDraft.Kind.allCases) { kind in
+                    OnboardingChoiceChip(title: kind.label, isSelected: injury.kind == kind) {
+                        edit { $0.kind = kind }
+                    }
+                }
+            }
+
+            if injury.asksForSide {
+                HStack(spacing: SharpitSpacing.xs) {
+                    ForEach([OnboardingInjuryDraft.Side.left, .right, .both]) { side in
+                        OnboardingChoiceChip(title: side.label, isSelected: injury.side == side) {
+                            edit { $0.side = side }
+                        }
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                HStack(alignment: .firstTextBaseline) {
+                    OnboardingFieldLabel("Gêne")
+                    Spacer()
+                    Text("\(injury.severity)/10")
+                        .font(SharpitTypography.bodyEmphasis.monospacedDigit())
+                        .foregroundStyle(SharpitColor.foreground)
+                        .contentTransition(.numericText(value: Double(injury.severity)))
+                }
+                Slider(
+                    value: Binding(
+                        get: { Double(injury.severity) },
+                        set: { value in edit { $0.severity = Int(value.rounded()) } }
+                    ),
+                    in: 1...10,
+                    step: 1
+                )
+                .tint(SharpitColor.primary)
+            }
         }
         .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
+    }
+
+    private func edit(_ change: (inout OnboardingInjuryDraft) -> Void) {
+        var next = injury
+        change(&next)
+        onChange(next)
     }
 }
 
@@ -693,8 +850,7 @@ struct OnboardingSourcesStep: View {
             OnboardingSourceCard(
                 provider: .garmin,
                 title: "Garmin Connect",
-                detail: "Activités GPS, fréquence cardiaque, sommeil et charge.",
-                isConnected: isConnected("garmin")
+                detail: "Activités GPS, fréquence cardiaque, sommeil et charge."
             ) {
                 connectButton(isConnected: isConnected("garmin"), isBusy: isConnectingGarmin) {
                     Task { await connectGarmin() }
@@ -709,8 +865,7 @@ struct OnboardingSourcesStep: View {
             OnboardingSourceCard(
                 provider: .appleHealth,
                 title: "Apple Santé",
-                detail: appleHealthDetail,
-                isConnected: appleHealth.isEnabled
+                detail: appleHealthDetail
             ) {
                 Toggle("Apple Santé", isOn: appleHealthBinding)
                     .labelsHidden()
@@ -720,8 +875,7 @@ struct OnboardingSourcesStep: View {
             OnboardingSourceCard(
                 provider: .myFitnessPal,
                 title: "MyFitnessPal",
-                detail: "Ton journal alimentaire, pour que le coach voie ce que tu manges.",
-                isConnected: isConnected("myfitnesspal")
+                detail: "Ton journal alimentaire, pour que le coach voie ce que tu manges."
             ) {
                 connectButton(isConnected: isConnected("myfitnesspal"), isBusy: false) {
                     isConnectingMfp = true
@@ -769,7 +923,9 @@ struct OnboardingSourcesStep: View {
                 if isBusy {
                     ProgressView().tint(SharpitColor.primaryForeground)
                 } else {
-                    Text("Connecter").font(SharpitTypography.meta.weight(.semibold))
+                    Text("Connecter")
+                        .font(SharpitTypography.meta.weight(.semibold))
+                        .foregroundStyle(SharpitColor.primaryForeground)
                 }
             }
             .sharpitGlassButton(prominent: true)
@@ -816,13 +972,12 @@ struct OnboardingSourcesStep: View {
     }
 }
 
-/// One source in the sources step: its logo, what it brings, and its control. Connected, the
-/// logo takes the brand tint's wash so the linked ones read at a glance.
+/// One source in the sources step: its logo, what it brings, and its control — the control
+/// says whether it is linked, on a plain surface so a switch stays legible in both themes.
 private struct OnboardingSourceCard<Control: View>: View {
     let provider: ProviderLogo.Provider
     let title: String
     let detail: String
-    let isConnected: Bool
     @ViewBuilder let control: Control
 
     var body: some View {
@@ -842,11 +997,7 @@ private struct OnboardingSourceCard<Control: View>: View {
             control
         }
         .padding(SharpitSpacing.cardPadding)
-        .background(
-            RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                .fill(isConnected ? SharpitColor.primary.opacity(0.08) : SharpitColor.analysisSurface)
-        )
-        .animation(SharpitMotion.selection, value: isConnected)
+        .sharpitSurface(.panel)
         .accessibilityElement(children: .contain)
     }
 }

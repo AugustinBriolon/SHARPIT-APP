@@ -51,9 +51,20 @@ struct AccountAvatar: View {
     private var initialsDisc: some View {
         ZStack {
             Circle().fill(SharpitColor.primary.opacity(0.14))
-            Text(AccountInitials.from(first: clerk.user?.firstName, last: clerk.user?.lastName))
-                .font(.system(size: size * 0.4, weight: .semibold, design: .rounded))
-                .foregroundStyle(SharpitColor.primary)
+            Group {
+                if let initials = AccountInitials.from(
+                    first: clerk.user?.firstName,
+                    last: clerk.user?.lastName,
+                    email: clerk.user?.primaryEmailAddress?.emailAddress
+                ) {
+                    Text(initials)
+                        .font(.system(size: size * 0.4, weight: .semibold, design: .rounded))
+                } else {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: size * 0.42, weight: .semibold))
+                }
+            }
+            .foregroundStyle(SharpitColor.primary)
         }
     }
 
@@ -66,11 +77,13 @@ struct AccountAvatar: View {
 }
 
 nonisolated enum AccountInitials {
-    /// « Augustin Briolon » → « AB »; one name → its first letter; nothing → « ? ».
-    static func from(first: String?, last: String?) -> String {
+    /// « Augustin Briolon » → « AB »; one name → its first letter; no name → the e-mail's first
+    /// letter; nothing at all → nil, and the disc shows a person instead of a question mark.
+    static func from(first: String?, last: String?, email: String? = nil) -> String? {
         let letters = [first, last]
             .compactMap { $0?.trimmingCharacters(in: .whitespaces).first }
             .map { String($0).uppercased() }
-        return letters.isEmpty ? "?" : letters.joined()
+        if !letters.isEmpty { return letters.joined() }
+        return email?.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() }
     }
 }

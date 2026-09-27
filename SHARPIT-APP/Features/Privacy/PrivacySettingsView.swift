@@ -1,3 +1,4 @@
+import ClerkKit
 import Observation
 import SwiftUI
 
@@ -66,11 +67,23 @@ final class PrivacySettingsStore {
 struct PrivacySettingsView: View {
     @State private var store: PrivacySettingsStore
     @Environment(AccountGateModel.self) private var gate: AccountGateModel?
+    @Environment(Clerk.self) private var clerk
     @State private var openDocument: LegalDocument?
     @State private var confirmsHealthWithdraw = false
+    @State private var confirmsDeletion = false
+    @State private var isDeleting = false
+    @State private var deletionError: String?
+    private let accountDeletion: any AccountDeletionServing
+    private let tokenProvider: () async throws -> String
 
-    init(client: any PrivacyConsentServing, tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any PrivacyConsentServing,
+        accountDeletion: any AccountDeletionServing = PrivacyConsentClient(),
+        tokenProvider: @escaping () async throws -> String
+    ) {
         _store = State(initialValue: PrivacySettingsStore(client: client, tokenProvider: tokenProvider))
+        self.accountDeletion = accountDeletion
+        self.tokenProvider = tokenProvider
     }
 
     var body: some View {
@@ -106,6 +119,54 @@ struct PrivacySettingsView: View {
         } message: {
             Text("Résumé et les traitements physiologiques seront bloqués immédiatement. Tu pourras réactiver le consentement sur l'écran dédié.")
         }
+        .confirmationDialog(
+            "Supprimer ton compte ?",
+            isPresented: $confirmsDeletion,
+            titleVisibility: .visible
+        ) {
+            Button("Supprimer définitivement", role: .destructive) { Task { await deleteAccount() } }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Garmin, Strava et autres sont révoquées. C'est irréversible.")
+        }
+    }
+
+    /// Deletes server-side — data and sign-in identity — then signs out on this iPhone.
+    private func deleteAccount() async {
+        isDeleting = true
+        deletionError = nil
+        defer { isDeleting = false }
+        do {
+            try await accountDeletion.deleteAccount(token: try await tokenProvider())
+            SharpitHaptics.play(.success)
+            try? await clerk.auth.signOut()
+        } catch {
+            deletionError = SharpitErrorGuidance.message(for: error, subject: "La suppression du compte")
+        }
+    }
+
+    private var deletionSection: some View {
+        Section(
+            eyebrow: "Compte",
+            footer: "Efface ton compte et toutes tes données, tout de suite. Pour les garder, exporte-les d'abord depuis le web."
+        ) {
+            Button(role: .destructive) {
+                confirmsDeletion = true
+            } label: {
+                HStack {
+                    Text("Supprimer mon compte")
+                    Spacer()
+                    if isDeleting { ProgressView().controlSize(.small) }
+                }
+            }
+            .disabled(isDeleting)
+            if let deletionError {
+                Label(deletionError, systemImage: "exclamationmark.triangle")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.signalRisk)
+            }
+        }
+        .sharpitListRows()
     }
 
     private var list: some View {
@@ -169,6 +230,8 @@ struct PrivacySettingsView: View {
                 }
             }
             .sharpitListRows()
+
+            deletionSection
 
             if let saveError = store.saveError {
                 Section {

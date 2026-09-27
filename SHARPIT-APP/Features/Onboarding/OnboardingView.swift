@@ -80,11 +80,12 @@ struct OnboardingView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch store.step {
-        case .welcome: OnboardingWelcomeStep()
+        case .identity: OnboardingIdentityStep(draft: $store.identity)
         case .sports: OnboardingSportsStep(store: store)
         case .equipment: OnboardingEquipmentStep(store: store)
         case .week: OnboardingWeekStep(store: store)
         case .goal: OnboardingGoalStep(draft: $store.intention)
+        case .injuries: OnboardingInjuriesStep(store: store)
         case .privacy: OnboardingPrivacyStep(consents: $store.consents)
         case .sources:
             OnboardingSourcesStep(
@@ -232,6 +233,7 @@ private struct OnboardingActionBar: View {
                     }
                     Text(primaryLabel)
                         .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.primaryForeground)
                         .contentTransition(.opacity)
                 }
                 .frame(maxWidth: .infinity)
@@ -280,7 +282,8 @@ private struct OnboardingActionBar: View {
 
     private var primaryLabel: String {
         switch store.step {
-        case .welcome: "Commencer"
+        case .identity: store.isBusy ? "Enregistrement…" : "Commencer"
+        case .injuries where store.injuries.isEmpty: "Aucune blessure"
         case .privacy: "Accepter et continuer"
         case .firstWeek:
             switch store.firstWeek {

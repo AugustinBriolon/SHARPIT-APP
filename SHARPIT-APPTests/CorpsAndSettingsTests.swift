@@ -86,7 +86,8 @@ private func weighIn(_ daysAgo: Double, weight: Double?, fat: Double? = nil, sou
 @Test func initialsComeFromTheNames() {
     #expect(AccountInitials.from(first: "Augustin", last: "Briolon") == "AB")
     #expect(AccountInitials.from(first: " gus", last: nil) == "G")
-    #expect(AccountInitials.from(first: nil, last: "  ") == "?")
+    #expect(AccountInitials.from(first: nil, last: "  ", email: "zoe@sharpit.app") == "Z")
+    #expect(AccountInitials.from(first: nil, last: "  ") == nil)
 }
 
 @Test func ageIsWholeYears() {

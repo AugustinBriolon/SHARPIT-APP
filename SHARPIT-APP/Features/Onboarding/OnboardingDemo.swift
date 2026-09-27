@@ -30,9 +30,11 @@ struct OnboardingDemoHost: View {
                         onboarding: DemoOnboardingClient(),
                         consents: DemoConsentClient(),
                         plan: DemoPlanClient(),
-                        addSession: { _, _ in await demoLatency() }
+                        physicalNotes: DemoPhysicalNoteClient(),
+                        saveFirstName: { _ in await demoLatency() }
                     ),
                     consentsOwed: true,
+                    firstName: "Zoé",
                     tokenProvider: { "demo" }
                 ),
                 appleHealth: AppleHealthSource(reader: HealthKitReader(), client: SharpitClient()),
@@ -122,6 +124,14 @@ private struct DemoPlanClient: CoachPlanServing {
     func adaptPlan(days: Int, focus: String?, token: String, onReasoning: @escaping @Sendable (String) -> Void) async throws -> V1AdaptPlanResult {
         V1AdaptPlanResult(summary: "", changes: [])
     }
+
+    func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token: String) async throws {
+        await demoLatency()
+    }
+}
+
+private struct DemoPhysicalNoteClient: PhysicalNoteCreating {
+    func createNote(_ input: CreatePhysicalNoteInput, token: String) async throws {}
 }
 
 private struct DemoSyncClient: SyncServing {

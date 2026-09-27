@@ -32,7 +32,7 @@ final class OnboardingStore {
     }
 
     private(set) var phase: Phase = .loading
-    private(set) var step: OnboardingStep = .welcome
+    private(set) var step: OnboardingStep = .identity
     /// Which way the last move went, so a step slides in from the side the athlete is heading.
     private(set) var isMovingForward = true
     /// Set while a write is in flight, so the actions refuse a second tap.
@@ -42,6 +42,7 @@ final class OnboardingStore {
     /// How far the coach has got, 0…1, from the reasoning it streams — never a fake timer.
     private(set) var firstWeekProgress: Double = 0
 
+    var identity = OnboardingIdentityDraft()
     /// Catalog order, as the web stores it.
     var sports: [String] = []
     var ownedEquipment: Set<String> = []
@@ -49,6 +50,8 @@ final class OnboardingStore {
     var availability = V1TrainingAvailability()
     var intention = OnboardingIntentionDraft()
     var consents = OnboardingConsents()
+    /// One per zone, in the order the athlete touched them.
+    private(set) var injuries: [OnboardingInjuryDraft] = []
 
     /// The steps this athlete walks: the privacy one only when the consents are owed.
     let path: [OnboardingStep]
@@ -60,6 +63,9 @@ final class OnboardingStore {
     private var addedFirstWeek = false
     private var hasAIConsent: Bool
     private var generation: Task<Void, Never>?
+    /// Injuries are health data: with the consents still owed they wait on the phone and are
+    /// written once the privacy step is accepted, before the first week is planned.
+    private var injuriesAwaitingConsent: [OnboardingInjuryDraft] = []
 
     private let services: OnboardingServices
     private let tokenProvider: () async throws -> String
@@ -70,6 +76,7 @@ final class OnboardingStore {
         consentsOwed: Bool = false,
         currentConsents: V1PrivacyConsents? = nil,
         stepMemory: OnboardingStepMemory? = nil,
+        firstName: String? = nil,
         tokenProvider: @escaping () async throws -> String
     ) {
         self.services = services
@@ -79,6 +86,7 @@ final class OnboardingStore {
         hasAIConsent = currentConsents?.hasAIConsent ?? false
         consents.ai = currentConsents?.hasAIConsent ?? false
         consents.unofficialProviders = currentConsents?.hasUnofficialProvidersAck ?? false
+        identity.firstName = firstName ?? ""
     }
 
     var canContinueFromSports: Bool { PracticedSportCatalog.hasEnduranceSport(sports) }
@@ -99,11 +107,12 @@ final class OnboardingStore {
     /// Whether the step's primary action can run now.
     var canAdvance: Bool {
         switch step {
+        case .identity: identity.isValid
         case .sports: canContinueFromSports
         case .goal: intention.isValid
         case .privacy: consents.requiredAccepted
         case .firstWeek: firstWeek != .generating
-        case .welcome, .equipment, .week, .sources: true
+        case .equipment, .week, .injuries, .sources: true
         }
     }
 
@@ -135,6 +144,9 @@ final class OnboardingStore {
     }
 
     private func adopt(_ profile: V1AthleteProfile) {
+        identity.sex = profile.sex
+        identity.heightCm = profile.heightCm
+        identity.birthDate = profile.birthDate
         if let practiced = profile.practicedSports?.sports {
             sports = PracticedSportCatalog.ordered(practiced)
         }
@@ -156,6 +168,20 @@ final class OnboardingStore {
         if next.contains(id) { next.remove(id) } else { next.insert(id) }
         sports = PracticedSportCatalog.ordered(next)
         if canContinueFromSports, error != nil { error = nil }
+    }
+
+    /// Adds the zone, or takes it away when it is already declared.
+    func toggleInjury(_ bodyPart: String) {
+        if let index = injuries.firstIndex(where: { $0.bodyPart == bodyPart }) {
+            injuries.remove(at: index)
+        } else {
+            injuries.append(OnboardingInjuryDraft(bodyPart: bodyPart))
+        }
+    }
+
+    func updateInjury(_ injury: OnboardingInjuryDraft) {
+        guard let index = injuries.firstIndex(where: { $0.id == injury.id }) else { return }
+        injuries[index] = injury
     }
 
     func toggleEquipment(_ id: String) {
@@ -194,11 +220,12 @@ final class OnboardingStore {
     func advance(from origin: OnboardingStep? = nil) async {
         guard !isBusy, canAdvance, origin == nil || origin == step else { return }
         switch step {
-        case .welcome: moveNext()
+        case .identity: await leaveIdentity()
         case .sports: await leaveSports()
         case .equipment: await leaveEquipment()
         case .week: await leaveWeek()
         case .goal: await submitGoal()
+        case .injuries: await leaveInjuries()
         case .privacy: await leavePrivacy()
         case .sources: leaveSources()
         case .firstWeek: await addFirstWeekAndFinish()
@@ -213,6 +240,9 @@ final class OnboardingStore {
         case .equipment: await leaveEquipment()
         case .week: await leaveWeek()
         case .goal: moveNext()
+        case .injuries:
+            injuries = []
+            await leaveInjuries()
         default: break
         }
     }
@@ -227,6 +257,19 @@ final class OnboardingStore {
     private func moveNext() {
         guard let next else { return }
         move(to: next)
+    }
+
+    private func leaveIdentity() async {
+        let draft = identity
+        await perform(failure: "Impossible d'enregistrer ton profil. Réessaie.") { token in
+            try await self.services.saveFirstName(draft.trimmedFirstName)
+            let patch = draft.profilePatch
+            if !patch.fields.isEmpty {
+                _ = try await self.services.profile.patchAthleteProfile(patch, token: token)
+            }
+        } onSuccess: {
+            self.moveNext()
+        }
     }
 
     private func leaveSports() async {
@@ -271,13 +314,36 @@ final class OnboardingStore {
         }
     }
 
+    private func leaveInjuries() async {
+        guard !path.contains(.privacy) else {
+            injuriesAwaitingConsent = injuries
+            moveNext()
+            return
+        }
+        let declared = injuries
+        await perform(failure: "Impossible d'enregistrer tes blessures. Réessaie.") { token in
+            try await self.write(declared, token: token)
+        } onSuccess: {
+            self.moveNext()
+        }
+    }
+
+    private func write(_ declared: [OnboardingInjuryDraft], token: String) async throws {
+        for injury in declared {
+            try await services.physicalNotes.createNote(injury.note, token: token)
+        }
+    }
+
     private func leavePrivacy() async {
+        let waiting = injuriesAwaitingConsent
         await perform(failure: "Enregistrement impossible. Réessaie.") { token in
             _ = try await self.services.consents.updateConsents(
                 .wall(ai: self.consents.ai, unofficialProviders: self.consents.unofficialProviders),
                 token: token
             )
+            try await self.write(waiting, token: token)
         } onSuccess: {
+            self.injuriesAwaitingConsent = []
             self.hasAIConsent = self.consents.ai
             // Generated while the athlete links their sources, so it is waiting at the end.
             self.startFirstWeek()
@@ -347,30 +413,13 @@ final class OnboardingStore {
         let goalId = createdGoalId
         var added = false
         await perform(failure: "Impossible d'ajouter ta semaine au plan. Réessaie.") { token in
-            for session in sessions {
-                try await self.services.addSession(OnboardingStore.payload(for: session, goalId: goalId), token)
-            }
+            try await self.services.plan.insertWeek(sessions, goalId: goalId, token: token)
         } onSuccess: {
             added = true
         }
         guard added else { return }
         addedFirstWeek = true
         await finish()
-    }
-
-    static func payload(for session: V1GeneratedSession, goalId: String?) -> CreatePlannedSessionPayload {
-        CreatePlannedSessionPayload(
-            type: session.type.rawValue,
-            date: "\(session.date)T12:00:00Z",
-            startTime: session.startTime,
-            title: session.title,
-            description: session.description,
-            durationMin: session.durationMin,
-            load: session.load,
-            intensity: session.intensity,
-            goalId: goalId,
-            decisionId: session.decisionId
-        )
     }
 
     private func finish() async {
@@ -431,7 +480,9 @@ struct OnboardingServices {
     let onboarding: any OnboardingServing
     let consents: any PrivacyConsentServing
     let plan: any CoachPlanServing
-    let addSession: @Sendable (CreatePlannedSessionPayload, String) async throws -> Void
+    let physicalNotes: any PhysicalNoteCreating
+    /// The first name lives on the Clerk account, not the profile.
+    let saveFirstName: @Sendable (String) async throws -> Void
 }
 
 /// The consents the privacy step asks for: the two documents and health, required together

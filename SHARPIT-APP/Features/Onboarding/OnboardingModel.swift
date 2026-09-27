@@ -2,15 +2,17 @@ import Foundation
 
 /// The first-login wizard's steps, in the order the athlete meets them.
 ///
-/// The coach is built up: who they are (sports, kit, week, goal), then the consents the data
-/// needs — just before the sources that bring the data in — then the first week it plans. The
-/// privacy step is in the path only when the consents are owed (`OnboardingStore.path`).
+/// The coach is built up: who they are (name, body, sports, kit, week, goal, injuries), then the
+/// consents the data needs — just before the sources that bring the data in — then the first week
+/// it plans. The privacy step is in the path only when the consents are owed
+/// (`OnboardingStore.path`).
 nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
-    case welcome
+    case identity
     case sports
     case equipment
     case week
     case goal
+    case injuries
     case privacy
     case sources
     case firstWeek
@@ -20,11 +22,12 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     /// Bare names — the header owns the counting.
     var label: String {
         switch self {
-        case .welcome: "Bienvenue"
+        case .identity: "Toi"
         case .sports: "Sports"
         case .equipment: "Matériel"
         case .week: "Ta semaine"
         case .goal: "Objectif"
+        case .injuries: "Blessures"
         case .privacy: "Confidentialité"
         case .sources: "Sources"
         case .firstWeek: "Première semaine"
@@ -33,11 +36,12 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .welcome: "Construisons ton coach"
+        case .identity: "Construisons ton coach"
         case .sports: "Tes sports"
         case .equipment: "Ton matériel"
         case .week: "Ta semaine type"
         case .goal: "Ton objectif"
+        case .injuries: "Tes blessures"
         case .privacy: "Tes données, tes règles"
         case .sources: "Branche tes appareils"
         case .firstWeek: "Ta première semaine"
@@ -46,8 +50,8 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
 
     var intro: String {
         switch self {
-        case .welcome:
-            "Quelques questions, et SHARPIT te prépare un coach qui te connaît, avec tes premières séances."
+        case .identity:
+            "Quelques repères sur toi : le coach règle charges, allures et récupération à partir d'eux."
         case .sports:
             "Touche tes disciplines. Au moins un sport d'endurance."
         case .equipment:
@@ -56,21 +60,128 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
             "Glisse le doigt sur les jours où tu peux t'entraîner."
         case .goal:
             "Une course ou un palier : tout le plan se construit vers lui."
+        case .injuries:
+            "Une douleur ou une blessure en cours ? Le coach adapte tes séances pour la ménager."
         case .privacy:
             "Avant de brancher tes appareils, choisis ce que SHARPIT peut faire de tes données."
         case .sources:
-            "Ta montre et ton téléphone nourrissent ton coach. Tu pourras en ajouter plus tard."
+            "Ta montre, ton téléphone et ton journal alimentaire nourrissent ton coach. Tu pourras en ajouter plus tard."
         case .firstWeek:
             "Le coach place tes premières séances sur tes jours."
         }
     }
 
-    /// The optional steps: an athlete may not know their kit, their week or their goal yet.
+    /// The optional steps: an athlete may not know their kit, their week or their goal yet, and
+    /// may have nothing to declare.
     var allowsSkip: Bool {
         switch self {
-        case .equipment, .week, .goal: true
-        case .welcome, .sports, .privacy, .sources, .firstWeek: false
+        case .equipment, .week, .goal, .injuries: true
+        case .identity, .sports, .privacy, .sources, .firstWeek: false
         }
+    }
+}
+
+/// Who the athlete is, for the identity step: the first name goes to their Clerk account, the
+/// rest to the profile.
+nonisolated struct OnboardingIdentityDraft: Equatable, Sendable {
+    var firstName = ""
+    var sex: AthleteSex?
+    var heightCm: Int?
+    var birthDate: Date?
+
+    var trimmedFirstName: String { firstName.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var isValid: Bool { !trimmedFirstName.isEmpty }
+
+    /// The profile fields this step holds — only those answered, so nothing saved is cleared.
+    /// The first name is Clerk's.
+    var profilePatch: AthleteProfilePatch {
+        var patch = AthleteProfilePatch()
+        if let sex { patch.setSex(sex) }
+        if let heightCm { patch.set(.heightCm, int: heightCm) }
+        if let birthDate { patch.set(.birthDate, string: ProfileFieldFormat.isoDay(birthDate)) }
+        return patch
+    }
+}
+
+/// A pain or an injury declared in the onboarding: a zone of the body, a side, how much it
+/// hurts. Kept on the phone until the health consent is given, then written as a physical note.
+nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
+    enum Kind: String, CaseIterable, Identifiable, Sendable {
+        case pain = "PAIN"
+        case injury = "INJURY"
+
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .pain: "Douleur"
+            case .injury: "Blessure"
+            }
+        }
+    }
+
+    enum Side: String, CaseIterable, Identifiable, Sendable {
+        case left = "LEFT"
+        case right = "RIGHT"
+        case both = "BILATERAL"
+        case none = "NA"
+
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .left: "Gauche"
+            case .right: "Droite"
+            case .both: "Les deux"
+            case .none: "—"
+            }
+        }
+    }
+
+    /// The web's `COMMON_BODY_PARTS`, so a note written here reads the same on the web.
+    static let bodyParts = [
+        "Genou", "Cheville", "Pied", "Mollet", "Cuisse", "Ischio", "Hanche",
+        "Bassin", "Dos", "Lombaires", "Épaule", "Cou", "Tendon d'Achille",
+    ]
+
+    /// Zones that come in pairs, and so ask for a side.
+    static let pairedParts: Set<String> = [
+        "Genou", "Cheville", "Pied", "Mollet", "Cuisse", "Ischio", "Hanche", "Épaule", "Tendon d'Achille",
+    ]
+
+    var id: String { bodyPart }
+    let bodyPart: String
+    var kind: Kind = .pain
+    var side: Side
+    /// 0…10, as the web records severity.
+    var severity = 4
+
+    init(bodyPart: String) {
+        self.bodyPart = bodyPart
+        side = Self.pairedParts.contains(bodyPart) ? .right : .none
+    }
+
+    var asksForSide: Bool { Self.pairedParts.contains(bodyPart) }
+
+    /// « Douleur genou droit » — the note's title, as an athlete would write it.
+    var title: String {
+        var words = [kind.label, bodyPart.lowercased()]
+        switch side {
+        case .left: words.append("gauche")
+        case .right: words.append("droit")
+        case .both: words.append("des deux côtés")
+        case .none: break
+        }
+        return words.joined(separator: " ")
+    }
+
+    var note: CreatePhysicalNoteInput {
+        CreatePhysicalNoteInput(
+            category: kind.rawValue,
+            title: title,
+            bodyPart: bodyPart,
+            side: side.rawValue,
+            severity: severity,
+            affectsTraining: true
+        )
     }
 }
 

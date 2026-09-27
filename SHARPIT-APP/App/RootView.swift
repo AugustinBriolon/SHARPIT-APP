@@ -124,7 +124,10 @@ struct RootView: View {
             await store.listenForTransactions()
         }
         // Once per athlete; a run cut off is picked up again on the next foreground.
-        .task(id: clerk.user?.id) { await runHistoryImport() }
+        .task(id: clerk.user?.id) {
+            appleHealth.bind(userId: clerk.user?.id)
+            await runHistoryImport()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await runHistoryImport() } }
         }
