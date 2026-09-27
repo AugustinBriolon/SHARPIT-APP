@@ -23,22 +23,35 @@ struct SharpitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AuthGate {
-                // The legal wall, then the web's onboarding, before a new account sees the tabs.
-                AccountGate {
-                    RootView()
-                }
+            #if DEBUG
+            if OnboardingDemo.isRequested {
+                OnboardingDemoHost()
+                    .sharpitAppearance()
+            } else {
+                app
             }
-            .environment(Clerk.shared)
-            .environment(\.clerkTheme, .sharpit)
-            // Per iPhone, never synced (Paramètres → Apparence).
-            .sharpitAppearance()
-            .onOpenURL { url in
-                Task {
-                    try? await Clerk.shared.handle(url)
-                }
-            }
+            #else
+            app
+            #endif
         }
         .modelContainer(modelContainer)
+    }
+
+    private var app: some View {
+        AuthGate {
+            // The legal wall, then the web's onboarding, before a new account sees the tabs.
+            AccountGate {
+                RootView()
+            }
+        }
+        .environment(Clerk.shared)
+        .environment(\.clerkTheme, .sharpit)
+        // Per iPhone, never synced (Paramètres → Apparence).
+        .sharpitAppearance()
+        .onOpenURL { url in
+            Task {
+                try? await Clerk.shared.handle(url)
+            }
+        }
     }
 }

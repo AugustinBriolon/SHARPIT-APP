@@ -58,9 +58,17 @@ enum SharpitTickGaugeGeometry {
 /// A thick stroked arc was the wrong instrument — it reads heavy at card width and left
 /// no room around the number whatever the spacing. Ticks are 1.6 units wide against a
 /// 78-unit radius, which is what makes the web version look like a readout.
-struct SharpitTickGauge: View {
+///
+/// Animatable: a change of score inside an animation sweeps the ticks one by one rather than
+/// redrawing the dial at its new value.
+struct SharpitTickGauge: View, Animatable {
     /// 0…100, or nil for an unread dial.
-    let score: CGFloat?
+    var score: CGFloat?
+
+    var animatableData: CGFloat {
+        get { score ?? 0 }
+        set { if score != nil { score = newValue } }
+    }
 
     var body: some View {
         Canvas { context, size in

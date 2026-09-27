@@ -2,9 +2,10 @@ import SwiftUI
 
 /// The first-login wizard, shown full screen after sign-up and before the tabs.
 ///
-/// The web's `/onboarding` rendered natively: the same five steps and the same writes. The
-/// progress rail and the back control stay pinned above the step, the step's actions stay
-/// docked below it, and only the step itself scrolls.
+/// The header's dial fills as the coach is built, the actions stay docked below, and only the
+/// step between them moves: it slides in from the side the athlete is heading. The move is
+/// driven by the step's value (`.animation(_:value:)`), not by an animation block opened in
+/// async code, so the page on screen is always the store's step.
 struct OnboardingView: View {
     @State private var store: OnboardingStore
     let appleHealth: AppleHealthSource
@@ -32,45 +33,35 @@ struct OnboardingView: View {
             SharpitCanvasBackground()
             switch store.phase {
             case .loading:
-                ProgressView()
-                    .controlSize(.large)
-                    .tint(SharpitColor.primary)
-                    .accessibilityLabel("Chargement de ton profil")
+                SharpitLaunchMark()
             case .steps:
                 steps
-                    .transition(.asymmetric(
-                        insertion: .opacity,
-                        removal: .opacity.combined(with: .scale(scale: 0.98))
-                    ))
+                    .transition(.opacity)
             case .bootstrap:
                 OnboardingBootstrapView(onDone: onFinished)
                     .transition(.opacity.combined(with: .scale(scale: 1.04)))
             }
         }
+        .animation(SharpitMotion.reveal, value: store.phase)
         .task { await store.load() }
     }
 
-    /// The rail and the actions stay put; only the page between them moves. A step pushes in
-    /// from the side the athlete is heading — trailing forward, leading back — the way a
-    /// navigation stack does, so the wizard reads as one continuous place.
+    /// One page: the header, its dial and the step's title stay put — the dial sweeps on to
+    /// the new step and the title cross-fades — and only what is under them slides.
     private var steps: some View {
         VStack(spacing: 0) {
-            OnboardingProgressHeader(
-                step: store.step,
-                isBusy: store.isBusy,
-                onBack: { store.goBack() },
-                onSkip: store.step.allowsSkip ? { Task { await store.skip() } } : nil
-            )
+            OnboardingHeader(store: store)
+            OnboardingTitle(step: store.step)
+                .animation(SharpitMotion.fade, value: store.step)
 
             ZStack {
-                OnboardingStepPage(step: store.step) {
-                    stepContent
-                }
-                .id(store.step)
-                .transition(.push(from: store.isMovingForward ? .trailing : .leading))
+                OnboardingPage { stepContent }
+                    .id(store.step)
+                    .transition(pageTransition)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // The page scrolls under the actions, which float over it with a gradient fade.
+            .clipped()
+            .animation(SharpitMotion.reveal, value: store.step)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 OnboardingActionBar(store: store)
             }
@@ -78,150 +69,139 @@ struct OnboardingView: View {
         .sensoryFeedback(.selection, trigger: store.step)
     }
 
+    private var pageTransition: AnyTransition {
+        let forward = store.isMovingForward
+        return .asymmetric(
+            insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
+            removal: .move(edge: forward ? .leading : .trailing).combined(with: .opacity)
+        )
+    }
+
     @ViewBuilder
     private var stepContent: some View {
         switch store.step {
-        case .sports:
-            OnboardingSportsStep(store: store)
-        case .equipment:
-            OnboardingEquipmentStep(store: store)
-        case .availability:
-            OnboardingAvailabilityStep(store: store)
-        case .intention:
-            OnboardingIntentionStep(draft: $store.intention)
+        case .welcome: OnboardingWelcomeStep()
+        case .sports: OnboardingSportsStep(store: store)
+        case .equipment: OnboardingEquipmentStep(store: store)
+        case .week: OnboardingWeekStep(store: store)
+        case .goal: OnboardingGoalStep(draft: $store.intention)
+        case .privacy: OnboardingPrivacyStep(consents: $store.consents)
         case .sources:
             OnboardingSourcesStep(
                 appleHealth: appleHealth,
                 syncClient: syncClient,
                 tokenProvider: tokenProvider
             )
+        case .firstWeek: OnboardingFirstWeekStep(store: store)
         }
     }
 }
 
-/// One step's page: its title, its intro and its content arriving in that order, each a beat
-/// after the last, so a new step composes itself rather than appearing all at once.
-private struct OnboardingStepPage<Content: View>: View {
+/// The step's title and intro, under the dial. They swap in place: the step changes, not the
+/// page.
+private struct OnboardingTitle: View {
     let step: OnboardingStep
-    @ViewBuilder let content: Content
 
-    @State private var hasAppeared = false
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                Text(step.title)
+                    .font(SharpitTypography.screenTitle)
+                    .tracking(SharpitTypography.screenTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
+                Text(step.intro)
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .id(step)
+            .transition(.opacity)
+        }
+        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.top, SharpitSpacing.sm)
+        .padding(.bottom, SharpitSpacing.md)
+    }
+}
+
+/// What the step asks, scrolling between the title and the docked actions.
+private struct OnboardingPage<Content: View>: View {
+    @ViewBuilder let content: Content
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                    Text(step.title)
-                        .font(SharpitTypography.screenTitle)
-                        .tracking(SharpitTypography.screenTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .accessibilityAddTraits(.isHeader)
-                        .revealed(hasAppeared, index: 1)
-                    Text(step.intro)
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .revealed(hasAppeared, index: 2)
-                }
-                .padding(.bottom, SharpitSpacing.xs)
-
-                content
-                    .revealed(hasAppeared, index: 3)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.top, SharpitSpacing.sm)
-            .padding(.bottom, SharpitSpacing.xl)
+            content
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.bottom, SharpitSpacing.xl)
         }
         .scrollDismissesKeyboard(.interactively)
         .scrollIndicators(.hidden)
-        .onAppear { hasAppeared = true }
     }
 }
 
-// MARK: - Wayfinding
+// MARK: - Header
 
-/// Segmented story-style progress header with back button, step title and skip action.
-private struct OnboardingProgressHeader: View {
-    let step: OnboardingStep
-    let isBusy: Bool
-    let onBack: () -> Void
-    var onSkip: (() -> Void)?
+/// Back, the dial that fills as the coach is built, and Passer where a step can be skipped.
+private struct OnboardingHeader: View {
+    let store: OnboardingStore
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.sm) {
-            // Segmented story-style capsules
-            HStack(spacing: 5) {
-                ForEach(0..<OnboardingStep.count, id: \.self) { index in
-                    Capsule()
-                        .fill(index < step.position ? SharpitColor.primary : SharpitColor.border.opacity(0.35))
-                        .frame(height: 3.5)
-                        .animation(SharpitMotion.reveal, value: step.position)
-                }
-            }
-            .accessibilityElement()
-            .accessibilityLabel("Progression")
-            .accessibilityValue("Étape \(step.position) sur \(OnboardingStep.count)")
-
-            // Navigation bar row
-            HStack(spacing: SharpitSpacing.sm) {
-                if step.previous != nil {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(SharpitColor.foreground)
-                            .frame(width: 36, height: 36)
-                            .background(SharpitColor.card.opacity(0.7), in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isBusy)
-                    .accessibilityLabel("Étape précédente")
-                    .transition(.opacity)
-                } else {
-                    Color.clear.frame(width: 36, height: 36)
-                }
-
-                Spacer()
-
-                Text(step.label)
-                    .font(SharpitTypography.cardTitle)
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            Button(action: store.goBack) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(SharpitColor.foreground)
-
-                Spacer()
-
-                if let onSkip {
-                    Button(action: onSkip) {
-                        Text("Passer")
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .frame(height: 36)
-                            .padding(.horizontal, 4)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isBusy)
-                    .accessibilityLabel("Passer cette étape")
-                    .transition(.opacity)
-                } else {
-                    Color.clear.frame(width: 36, height: 36)
-                }
+                    .frame(width: 40, height: 40)
+                    .sharpitGlassControl(in: Circle(), fallback: SharpitColor.analysisSurfaceAlt)
             }
+            .buttonStyle(.plain)
+            .opacity(store.canGoBack ? 1 : 0)
+            .disabled(!store.canGoBack || store.isBusy)
+            .accessibilityLabel("Étape précédente")
+
+            Spacer(minLength: 0)
+
+            VStack(spacing: 2) {
+                SharpitTickGauge(score: CGFloat(store.progress * 100))
+                    .frame(width: 88, height: 88 / SharpitTickGaugeGeometry.aspectRatio)
+                    .animation(SharpitMotion.gaugeFill, value: store.progress)
+                Text(store.step.label)
+                    .font(SharpitTypography.label)
+                    .tracking(SharpitTypography.labelTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .contentTransition(.opacity)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Étape \(store.position) sur \(store.path.count), \(store.step.label)")
+
+            Spacer(minLength: 0)
+
+            Button("Passer") { [step = store.step] in Task { await store.skip(from: step) } }
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .frame(width: 64, height: 40)
+                .opacity(store.step.allowsSkip ? 1 : 0)
+                .disabled(!store.step.allowsSkip || store.isBusy)
+                .accessibilityLabel("Passer cette étape")
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.xs)
-        .padding(.bottom, SharpitSpacing.xs)
-        .background(SharpitCanvasBackground())
+        .padding(.bottom, SharpitSpacing.xxs)
+        .animation(SharpitMotion.selection, value: store.step)
     }
 }
 
 // MARK: - Actions
 
-/// The step's primary action docked at the bottom with a smooth gradient fade.
+/// The step's primary action, docked over a fade, with the reason it is held when it is.
 private struct OnboardingActionBar: View {
     let store: OnboardingStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            // Over scrolled content, so the line sits on its own glass to stay legible.
             if let error = store.error {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .font(SharpitTypography.meta)
@@ -231,8 +211,8 @@ private struct OnboardingActionBar: View {
                     .padding(.vertical, SharpitSpacing.xxs + 2)
                     .sharpitGlassCapsule()
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
-            } else if store.step == .sports, !store.canContinueFromSports {
-                Text("Choisis au moins un sport d'endurance pour continuer.")
+            } else if let hint {
+                Text(hint)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .padding(.horizontal, SharpitSpacing.sm)
@@ -241,26 +221,32 @@ private struct OnboardingActionBar: View {
                     .transition(.opacity)
             }
 
-            Button {
+            Button { [step = store.step] in
                 SharpitHaptics.play(.light)
-                Task { await store.advance() }
+                Task { await store.advance(from: step) }
             } label: {
                 HStack(spacing: SharpitSpacing.xs) {
-                    if store.isBusy {
+                    if store.isBusy || store.firstWeek == .generating && store.step == .firstWeek {
                         ProgressView()
                             .tint(SharpitColor.primaryForeground)
                     }
-                    Text(forwardLabel)
+                    Text(primaryLabel)
                         .font(SharpitTypography.bodyEmphasis)
                         .contentTransition(.opacity)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: SharpitSpacing.minimumTouchTarget)
             }
             .sharpitGlassButton(prominent: true)
             .tint(SharpitColor.primary)
-            .disabled(!canAdvance || store.isBusy)
-            .controlSize(.large)
+            .disabled(!store.canAdvance || store.isBusy)
+
+            if showsFinishWithout {
+                Button("Terminer sans ces séances") { Task { await store.finishWithoutFirstWeek() } }
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .frame(maxWidth: .infinity)
+                    .disabled(store.isBusy)
+            }
         }
         .animation(SharpitMotion.fade, value: store.error)
         .animation(SharpitMotion.selection, value: store.step)
@@ -269,29 +255,40 @@ private struct OnboardingActionBar: View {
         .padding(.bottom, SharpitSpacing.sm)
         .background(
             LinearGradient(
-                colors: [
-                    SharpitColor.background.opacity(0),
-                    SharpitColor.background.opacity(0.85),
-                    SharpitColor.background
-                ],
+                colors: [SharpitColor.background.opacity(0), SharpitColor.background.opacity(0.85), SharpitColor.background],
                 startPoint: .top,
                 endPoint: .bottom
             )
         )
     }
 
-    private var forwardLabel: String {
-        if store.step == .sources {
-            return store.isBusy ? "Finalisation…" : "Finaliser"
+    private var hint: String? {
+        switch store.step {
+        case .sports where !store.canContinueFromSports: "Choisis au moins un sport d'endurance."
+        case .privacy where !store.consents.requiredAccepted: "Les deux documents et les données de santé sont nécessaires."
+        default: nil
         }
-        return "Continuer"
     }
 
-    private var canAdvance: Bool {
+    private var showsFinishWithout: Bool {
+        guard store.step == .firstWeek else { return false }
+        switch store.firstWeek {
+        case .ready, .generating, .failed: return true
+        default: return false
+        }
+    }
+
+    private var primaryLabel: String {
         switch store.step {
-        case .sports: store.canContinueFromSports
-        case .intention: store.intention.isValid
-        case .equipment, .availability, .sources: true
+        case .welcome: "Commencer"
+        case .privacy: "Accepter et continuer"
+        case .firstWeek:
+            switch store.firstWeek {
+            case .generating: "Le coach prépare ta semaine…"
+            case .ready: store.isBusy ? "Ajout au plan…" : "Ajouter à mon plan"
+            default: "Terminer"
+            }
+        default: store.isBusy ? "Enregistrement…" : "Continuer"
         }
     }
 }

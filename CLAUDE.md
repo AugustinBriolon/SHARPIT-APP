@@ -93,29 +93,41 @@ wraps `RootView` in `AuthGate`. Every network call takes a Bearer token produced
 `clerk.auth.getToken()`; views receive it as an injected `tokenProvider` closure rather
 than reaching for Clerk themselves.
 
-**Consent.** `AccountGate` sits between `AuthGate` and `RootView` and follows the web's
-`(app)/layout.tsx` order: the legal wall, then the onboarding, then the tabs.
-`PrivacyConsentWallView` is the web's `/consent`: CGU, Politique de confidentialité and the
-health consent are required together (the server refuses one without the other), AI processing
-and the unofficial-providers notice are optional. The wall's reason and the version in force
-come from `/api/v1/privacy/consent` (`V1PrivacyConsents.wallReason` mirrors
-`needsLegalConsentFromProfile`), so a new version of the documents brings the wall back without
-an app release. The documents are the web's published `/terms` and `/privacy`, opened in-app
-(`LegalDocumentSheet`) — never a bundled copy. Paramètres → Confidentialité & conditions changes each
-consent; withdrawing health reports to the gate through the environment and the wall stands again.
+**Consent.** `AccountGate` sits between `AuthGate` and `RootView`. A new account meets the
+consents inside the onboarding, as its step just before Sources; the legal wall
+(`PrivacyConsentWallView`, the web's `/consent`) stands only in front of an athlete already
+onboarded. CGU, Politique de confidentialité and the health consent are required together (the
+server refuses one without the other), AI processing and the unofficial-providers notice are
+optional; the wizard's « Tout accepter » ticks all five, since the first week needs AI. The wall's
+reason and the version in force come from `/api/v1/privacy/consent` (`V1PrivacyConsents.wallReason`
+mirrors `needsLegalConsentFromProfile`), so a new version of the documents brings the wall back
+without an app release. The documents are the web's published `/terms` and `/privacy`, opened
+in-app (`LegalDocumentSheet`) — never a bundled copy. Paramètres → Confidentialité & conditions
+changes each consent; withdrawing health reports to the gate through the environment and the wall
+stands again.
 
-**Onboarding.** After the wall, a new account answers the web's first-login wizard before it
-sees the tabs — Sports → Équipement → Disponibilités →
-Intention → Sources, the web's `wizard-steps.ts` order. The server decides who owes it
-(`onboardingCompletedAt` present and `null` on `/api/v1/athlete-profile`, as the web's gate reads
-the row); the phone only remembers a "done" per Clerk user, so a finished athlete never waits on
-a profile read, and a read that fails lets the athlete in without remembering anything. Each step
-is written as the athlete leaves it (practiced sports, equipment, `trainingAvailability`, a first
-goal through `/api/v1/goals`), and only `/api/v1/onboarding/complete` finishes the wizard. Sources
-mirrors Connexions: Garmin is connected in-app through `GarminConnect` — an ephemeral
-`WebAuthenticationSession` on the apex, entered through `POST /api/v1/garmin/handoff`'s one-time
-sign-in URL and closed on `/connect/garmin/callback` (SHARPIT ADR-047) — and Apple Health is
-switched on here. The web's per-class source routing is not modelled.
+**Onboarding.** A new account answers the first-login wizard before it sees the tabs: Bienvenue →
+Sports → Matériel → Ta semaine → Objectif → Confidentialité (only when owed) → Sources → Première
+semaine (`OnboardingStep`). The server decides who owes it (`onboardingCompletedAt` present and
+`null` on `/api/v1/athlete-profile`); the phone only remembers a "done" per Clerk user, so a
+finished athlete never waits on a profile read, and a read that fails lets the athlete in without
+remembering anything. `AccountGateModel` owns the `OnboardingStore`, so a session refresh that
+resolves the gate again never rebuilds the wizard, and `OnboardingStepMemory` reopens the step
+reached after a quit. Each step is written as the athlete leaves it (practiced sports, equipment,
+`trainingAvailability`, a first goal through `/api/v1/goals`, the consents); a tap carries the step
+it was made on, so one delivered again after the page moved is dropped instead of skipping a step.
+Once the consents allow AI, the store asks `/api/v1/coach/plan` for the next seven days — towards the
+goal just created — while the athlete links their sources; the last step shows the week and « Ajouter
+à mon plan » writes each session through the planned-sessions API once, then
+`/api/v1/onboarding/complete` finishes the wizard. Without AI consent the step says so and finishes
+without a week. Sources links Garmin in-app through `GarminConnect` (SHARPIT ADR-047), switches Apple
+Health on and links MyFitnessPal (`MyFitnessPalConnectSheet`). Debug builds open the wizard on
+in-memory services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`).
+
+The page is one page: the header's tick dial (`SharpitTickGauge`, animatable, so it sweeps from step
+to step) and the step's title stay put, and only the content under them slides in from the side the
+athlete is heading. Sport tiles animate their SF Symbol (bounce, fill), never a scale; triathlon is
+the app's own symbol (`triathlon.circles` in the asset catalog), SF Symbols drawing none.
 
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
 Paramètres is not a tab: it is a sheet (`SettingsView`) opened through `ShellRouter.openSettings()`
@@ -344,8 +356,12 @@ the title of what it discusses — never at the bottom of a screen. Session feel
 
 Motion: `SharpitMotion.selection` for controls under the finger, `reveal` for content
 arriving; `staggerDelay(index:)` is capped, so use it instead of hard-coded delays.
-`.revealed(_:index:)` applies that reveal-and-stagger to a view arriving on screen; the
-onboarding pushes each step in from the side the athlete is heading.
+`.revealed(_:index:)` applies that reveal-and-stagger to a view arriving on screen.
+`SharpitTickGauge` is animatable: a score changed inside an animation sweeps the ticks.
+
+The brand mark is the app icon's (`SharpIt.icon`: six dots on a hexagon, `circle.hexagonpath.fill`
+in `SharpitColor.brandMarkGradient`); `SharpitLaunchMark` shows it while a screen cannot be drawn
+yet. The web's favicons and PWA icons carry the same mark.
 
 What makes a surface feel finished, applied everywhere new work lands:
 

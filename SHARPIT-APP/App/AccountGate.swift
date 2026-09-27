@@ -3,8 +3,13 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// What stands between sign-in and the tabs, in the web's order (`(app)/layout.tsx`): the
-/// legal wall first, then the first-login wizard, then the app.
+/// What stands between sign-in and the tabs: the first-login wizard for a new account — its
+/// consents are a step of it, just before the sources — or the legal wall alone for an athlete
+/// already onboarded whose consents are owed again (a new document version, health withdrawn).
+///
+/// The wizard's store is owned here, so a re-render or a second resolve never rebuilds it and
+/// never sends the athlete back to the first step; once the wizard is open, resolving leaves it
+/// alone until it finishes.
 ///
 /// The server decides both. The phone only remembers that the wizard is done, per Clerk user,
 /// so a finished athlete sees Résumé at once while the consents are re-read behind it — a new
@@ -24,6 +29,9 @@ final class AccountGateModel {
     private(set) var status: Status = .checking
     /// The last consents read — the wall pre-fills the optional ones from it.
     private(set) var consents: V1PrivacyConsents?
+    /// The open wizard, kept across renders and resolves.
+    private(set) var onboardingStore: OnboardingStore?
+    private let makeOnboardingStore: @MainActor (_ consentsOwed: Bool, _ consents: V1PrivacyConsents?, _ userId: String) -> OnboardingStore
 
     private let consentClient: any PrivacyConsentServing
     private let profileClient: any AthleteProfileServing
@@ -33,11 +41,13 @@ final class AccountGateModel {
     init(
         consentClient: any PrivacyConsentServing,
         profileClient: any AthleteProfileServing,
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        makeOnboardingStore: @escaping @MainActor (_ consentsOwed: Bool, _ consents: V1PrivacyConsents?, _ userId: String) -> OnboardingStore
     ) {
         self.consentClient = consentClient
         self.profileClient = profileClient
         self.defaults = defaults
+        self.makeOnboardingStore = makeOnboardingStore
     }
 
     func resolve(userId: String?, tokenProvider: () async throws -> String) async {
@@ -46,30 +56,30 @@ final class AccountGateModel {
             status = .ready
             return
         }
+        // The wizard is open: nothing here may rebuild it or pull the athlete out of it.
+        guard status != .onboarding else { return }
         let onboarded = isRemembered(userId)
         // A finished athlete is painted straight away; the check below can still send them
-        // to the wall.
-        if onboarded { status = .ready } else if status != .ready { status = .checking }
+        // to the wall. Never back to `checking` from a screen already shown.
+        if onboarded { status = .ready }
 
         do {
             let token = try await tokenProvider()
-            let consents = try await consentClient.consents(token: token)
+            async let consentsRead = consentClient.consents(token: token)
+            async let profileRead: V1AthleteProfile? = onboarded ? nil : profileClient.athleteProfile(token: token)
+            let consents = try await consentsRead
             self.consents = consents
+            if !onboarded, let profile = try await profileRead, profile.needsOnboarding {
+                onboardingStore = makeOnboardingStore(consents.wallReason != nil, consents, userId)
+                move(to: .onboarding)
+                return
+            }
             if let reason = consents.wallReason {
                 move(to: .consent(reason))
                 return
             }
-            guard !onboarded else {
-                move(to: .ready)
-                return
-            }
-            let profile = try await profileClient.athleteProfile(token: token)
-            if profile.needsOnboarding {
-                move(to: .onboarding)
-            } else {
-                remember(userId)
-                move(to: .ready)
-            }
+            if !onboarded { remember(userId) }
+            move(to: .ready)
         } catch {
             move(to: .ready)
         }
@@ -92,11 +102,15 @@ final class AccountGateModel {
     /// The wizard closed server-side: remembered here so it never reopens on this phone.
     func onboardingFinished() {
         if let userId { remember(userId) }
+        onboardingStore = nil
         move(to: .ready)
     }
 
     private func move(to target: Status) {
         guard status != target else { return }
+        #if DEBUG
+        print("[gate] \(status) → \(target)")
+        #endif
         SharpitMotion.run { status = target }
     }
 
@@ -116,7 +130,8 @@ struct AccountGate<Content: View>: View {
     @Environment(Clerk.self) private var clerk
     @State private var model = AccountGateModel(
         consentClient: PrivacyConsentClient(),
-        profileClient: AthleteProfileClient()
+        profileClient: AthleteProfileClient(),
+        makeOnboardingStore: AccountGate.liveOnboardingStore
     )
     /// Held here rather than built in `body`, so the Sources step keeps observing one source.
     /// Its switch is stored in UserDefaults, so the tabs' own instance reads what was chosen.
@@ -127,9 +142,11 @@ struct AccountGate<Content: View>: View {
         ZStack {
             switch model.status {
             case .checking:
+                // A neutral mark, never a screen's skeleton: where the athlete lands is not
+                // known yet.
                 ZStack {
                     SharpitCanvasBackground()
-                    SharpitLoadingInstrument()
+                    SharpitLaunchMark()
                 }
                 .transition(.opacity)
             case .consent(let reason):
@@ -143,23 +160,17 @@ struct AccountGate<Content: View>: View {
                 }
                 .transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .scale(scale: 1.02))))
             case .onboarding:
-                OnboardingView(
-                    store: OnboardingStore(
-                        profileClient: AthleteProfileClient(),
-                        goalClient: GoalClient(),
-                        onboardingClient: OnboardingClient(),
+                if let store = model.onboardingStore {
+                    OnboardingView(
+                        store: store,
+                        appleHealth: appleHealth,
+                        syncClient: SharpitClient(),
                         tokenProvider: liveToken
-                    ),
-                    appleHealth: appleHealth,
-                    syncClient: SharpitClient(),
-                    tokenProvider: liveToken
-                ) {
-                    model.onboardingFinished()
+                    ) {
+                        model.onboardingFinished()
+                    }
+                    .transition(.opacity)
                 }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .offset(y: 24)),
-                    removal: .opacity.combined(with: .scale(scale: 1.02))
-                ))
             case .ready:
                 content()
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
@@ -172,6 +183,30 @@ struct AccountGate<Content: View>: View {
         // Moi → Confidentialité reports a withdrawn health consent through this.
         .environment(model)
         .environment(\.locale, Locale(identifier: "fr_FR"))
+    }
+
+    /// The wizard on the live services. Its token comes from Clerk's shared instance, as the
+    /// gate's own does.
+    @MainActor
+    static func liveOnboardingStore(consentsOwed: Bool, consents: V1PrivacyConsents?, userId: String) -> OnboardingStore {
+        let sessions = PlannedSessionClient()
+        return OnboardingStore(
+            services: OnboardingServices(
+                profile: AthleteProfileClient(),
+                goals: GoalClient(),
+                onboarding: OnboardingClient(),
+                consents: PrivacyConsentClient(),
+                plan: CoachPlanClient(),
+                addSession: { payload, token in _ = try await sessions.createSession(payload, token: token) }
+            ),
+            consentsOwed: consentsOwed,
+            currentConsents: consents,
+            stepMemory: OnboardingStepMemory(userId: userId),
+            tokenProvider: {
+                guard let token = try await Clerk.shared.auth.getToken() else { throw SharpitAPIError.unauthorized }
+                return token
+            }
+        )
     }
 
     @MainActor

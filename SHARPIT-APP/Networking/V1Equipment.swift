@@ -24,6 +24,15 @@ nonisolated struct V1AthleteEquipment: Codable, Sendable, Equatable {
             }
         }
 
+        var symbolName: String {
+            switch self {
+            case .gym: "dumbbell"
+            case .home: "house"
+            case .both: "arrow.triangle.2.circlepath"
+            case .bodyweight: "figure.cross.training"
+            }
+        }
+
         var description: String {
             switch self {
             case .gym: "Inscription en salle — machines, racks et câbles."

@@ -52,10 +52,8 @@ struct SharpitAuthDrawer: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .padding(8)
-                            .background(Circle().fill(SharpitColor.card))
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(SharpitColor.foreground)
                     }
                     .accessibilityLabel("Fermer")
                 }

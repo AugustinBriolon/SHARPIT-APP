@@ -219,7 +219,7 @@ enum PrivacyCopy {
 
 /// A checkbox row: the whole row toggles, and a document it names opens with « Lire » without
 /// ticking anything.
-private struct ConsentCheckRow<Content: View>: View {
+struct ConsentCheckRow<Content: View>: View {
     @Binding var isOn: Bool
     var document: LegalDocument?
     var onRead: (() -> Void)?

@@ -1,69 +1,77 @@
 import Foundation
 
-/// The first-login wizard's steps, in the web's order (`src/lib/onboarding/wizard/wizard-steps.ts`).
+/// The first-login wizard's steps, in the order the athlete meets them.
 ///
-/// Sports → Équipement → Disponibilités → Intention → Sources. Equipment and availability sit
-/// together: both describe the constraints a plan has to respect, before the goal it serves.
+/// The coach is built up: who they are (sports, kit, week, goal), then the consents the data
+/// needs — just before the sources that bring the data in — then the first week it plans. The
+/// privacy step is in the path only when the consents are owed (`OnboardingStore.path`).
 nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
+    case welcome
     case sports
     case equipment
-    case availability
-    case intention
+    case week
+    case goal
+    case privacy
     case sources
+    case firstWeek
 
     var id: Int { rawValue }
 
-    /// Bare names — the progress rail owns the numbering.
+    /// Bare names — the header owns the counting.
     var label: String {
         switch self {
+        case .welcome: "Bienvenue"
         case .sports: "Sports"
-        case .equipment: "Équipement"
-        case .availability: "Disponibilités"
-        case .intention: "Intention"
+        case .equipment: "Matériel"
+        case .week: "Ta semaine"
+        case .goal: "Objectif"
+        case .privacy: "Confidentialité"
         case .sources: "Sources"
+        case .firstWeek: "Première semaine"
         }
     }
 
     var title: String {
         switch self {
+        case .welcome: "Construisons ton coach"
         case .sports: "Tes sports"
         case .equipment: "Ton matériel"
-        case .availability: "Tes disponibilités"
-        case .intention: "Ton objectif"
-        case .sources: "Tes données"
+        case .week: "Ta semaine type"
+        case .goal: "Ton objectif"
+        case .privacy: "Tes données, tes règles"
+        case .sources: "Branche tes appareils"
+        case .firstWeek: "Ta première semaine"
         }
     }
 
     var intro: String {
         switch self {
+        case .welcome:
+            "Quelques questions, et SHARPIT te prépare un coach qui te connaît, avec tes premières séances."
         case .sports:
-            "Sélectionne tes disciplines d'endurance et pratiques complémentaires."
+            "Touche tes disciplines. Au moins un sport d'endurance."
         case .equipment:
-            "Optionnel — adapte les séances au matériel dont tu disposes."
-        case .availability:
-            "Optionnel — cale tes séances sur ton rythme hebdomadaire réel."
-        case .intention:
-            "Optionnel — pose une course ou un palier cible pour guider ta préparation."
+            "Seulement ce qui sert à tes sports, pour des séances que tu peux vraiment faire."
+        case .week:
+            "Glisse le doigt sur les jours où tu peux t'entraîner."
+        case .goal:
+            "Une course ou un palier : tout le plan se construit vers lui."
+        case .privacy:
+            "Avant de brancher tes appareils, choisis ce que SHARPIT peut faire de tes données."
         case .sources:
-            "Connecte Garmin ou active Apple Santé pour alimenter ton suivi athlète."
+            "Ta montre et ton téléphone nourrissent ton coach. Tu pourras en ajouter plus tard."
+        case .firstWeek:
+            "Le coach place tes premières séances sur tes jours."
         }
     }
 
-    /// Everything but Sports can be skipped: an athlete may not know their week or their goal yet.
+    /// The optional steps: an athlete may not know their kit, their week or their goal yet.
     var allowsSkip: Bool {
         switch self {
-        case .sports, .sources: false
-        case .equipment, .availability, .intention: true
+        case .equipment, .week, .goal: true
+        case .welcome, .sports, .privacy, .sources, .firstWeek: false
         }
     }
-
-    /// 1-based, for « 2/5 ».
-    var position: Int { rawValue + 1 }
-
-    static var count: Int { allCases.count }
-
-    var next: OnboardingStep? { OnboardingStep(rawValue: rawValue + 1) }
-    var previous: OnboardingStep? { OnboardingStep(rawValue: rawValue - 1) }
 }
 
 /// What the intention step records — the web's `OnboardingIntentionKind` minus `later`,
