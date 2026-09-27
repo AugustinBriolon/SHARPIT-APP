@@ -27,6 +27,8 @@ final class CorpsStore {
     private(set) var metrics: [CorpsMetric] = []
     /// The athlete's weight target, drawn on the weight's hero and chart.
     private(set) var targetWeightKg: Double?
+    /// The web's training estimate from VO₂max (SHARPIT ADR-045); nil without the data it needs.
+    private(set) var biologicalAge: V1BiologicalAge?
 
     private let overviewClient: any BodyServing
     private let profileClient: any AthleteProfileServing
@@ -107,6 +109,7 @@ final class CorpsStore {
         )
         let assembled = web.value.map { CorpsReadout.merging(overview: $0, localSeries: local) } ?? local
         targetWeightKg = results.0.value?.targetWeightKg
+        if let web = web.value { biologicalAge = web.biologicalAge }
         SharpitMotion.run {
             metrics = assembled
             phase = assembled.isEmpty ? .empty : .loaded

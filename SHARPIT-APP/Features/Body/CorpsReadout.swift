@@ -404,3 +404,31 @@ nonisolated enum CorpsReadout {
         return points.map(\.value).reduce(0, +) / Double(points.count)
     }
 }
+
+/// The biological age as Corps words it (SHARPIT ADR-045). Never framed as a medical age.
+enum BiologicalAgeReadout {
+    static let disclaimer = "Estimation d'entraînement à partir de ta VO₂max, pas un diagnostic."
+
+    static func years(_ value: Double) -> String {
+        "\(Int(value.rounded()))"
+    }
+
+    /// `36 ans · 3 ans de moins`, or just the civil age when the two match.
+    static func comparison(_ age: V1BiologicalAge) -> String? {
+        guard let civil = age.chronologicalYears else { return nil }
+        let base = "Âge civil \(Int(civil.rounded())) ans"
+        let gap = Int(civil.rounded()) - Int(age.years.rounded())
+        switch gap {
+        case 0: return base
+        case 1: return "\(base) · 1 an de moins"
+        case -1: return "\(base) · 1 an de plus"
+        case let years where years > 0: return "\(base) · \(years) ans de moins"
+        default: return "\(base) · \(-gap) ans de plus"
+        }
+    }
+
+    /// Younger than the civil age reads as recovery green; older is a caution, never a risk red.
+    static func isYounger(_ age: V1BiologicalAge) -> Bool? {
+        age.chronologicalYears.map { age.years < $0 }
+    }
+}

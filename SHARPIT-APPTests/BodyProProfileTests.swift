@@ -126,3 +126,28 @@ private let overviewJSON = """
     #expect(SleepTargetFormat.duration(480) == "8 h")
     #expect(SleepTargetFormat.short(510) == "8h30")
 }
+
+// MARK: - Biological age (SHARPIT ADR-045)
+
+@Test func theBiologicalAgeDecodesAndReadsBesideTheCivilAge() throws {
+    let json = overviewJSON.replacingOccurrences(
+        of: "\"biologicalAge\": null",
+        with: """
+        "biologicalAge": { "years": 33, "chronologicalYears": 36, "method": "fitness-age-hunt3-loe-2013-v1",
+          "confidence": 0.9, "inputs": ["vo2maxRun", "sex", "birthDate"], "computedAt": "2026-09-27T08:00:00.000Z" }
+        """
+    )
+    let overview = try JSONDecoder().decode(V1BodyOverview.self, from: Data(json.utf8))
+    let age = try #require(overview.biologicalAge)
+
+    #expect(BiologicalAgeReadout.years(age.years) == "33")
+    #expect(BiologicalAgeReadout.comparison(age) == "Âge civil 36 ans · 3 ans de moins")
+    #expect(BiologicalAgeReadout.isYounger(age) == true)
+}
+
+@Test func anOlderBiologicalAgeSaysSoPlainly() {
+    let one = V1BiologicalAge(years: 37, chronologicalYears: 36, method: nil, confidence: nil, computedAt: nil)
+    let same = V1BiologicalAge(years: 36, chronologicalYears: 36, method: nil, confidence: nil, computedAt: nil)
+    #expect(BiologicalAgeReadout.comparison(one) == "Âge civil 36 ans · 1 an de plus")
+    #expect(BiologicalAgeReadout.comparison(same) == "Âge civil 36 ans")
+}

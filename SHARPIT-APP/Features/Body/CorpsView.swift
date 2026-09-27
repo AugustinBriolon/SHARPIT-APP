@@ -101,6 +101,10 @@ struct CorpsView: View {
                         CorpsHeroTile(metric: weight, targetKg: store.targetWeightKg) { opened = weight }
                             .revealed(hasAppeared, index: 0)
                     }
+                    if let age = store.biologicalAge {
+                        BiologicalAgeCard(age: age)
+                            .revealed(hasAppeared, index: 1)
+                    }
                     section(.recovery, index: 1)
                     section(.composition, index: 2)
                     section(.thresholds, index: 3) { isEditingThresholds = true }
@@ -150,6 +154,52 @@ struct CorpsView: View {
 }
 
 // MARK: - Tiles
+
+/// The biological age: the estimate, the civil age beside it, and what it is not.
+private struct BiologicalAgeCard: View {
+    let age: V1BiologicalAge
+
+    private var tone: Color {
+        switch BiologicalAgeReadout.isYounger(age) {
+        case true?: SharpitColor.signalRecovery
+        case false?: SharpitColor.signalCaution
+        case nil: SharpitColor.foreground
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("Âge biologique")
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                    Text(BiologicalAgeReadout.years(age.years))
+                        .font(SharpitTypography.gaugeScore)
+                        .tracking(SharpitTypography.gaugeScoreTracking)
+                        .foregroundStyle(tone)
+                    Text("ans")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                    Spacer(minLength: 0)
+                    if let comparison = BiologicalAgeReadout.comparison(age) {
+                        Text(comparison)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+                Text(BiologicalAgeReadout.disclaimer)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+                SharpitConfidenceLine(pct: age.confidence.map { $0 * 100 })
+            }
+            .padding(SharpitSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.panel)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
 
 extension CorpsTone {
     var color: Color {

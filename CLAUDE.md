@@ -254,7 +254,8 @@ metric is a tile opening `CorpsMetricDrawer`, which reads `/api/v1/body/series` 
 (30 j / 90 j / 1 an / Tout); a metric with no data is absent. The weight target is set from Corps'
 toolbar (`WeightTargetSheet`) and drawn on the weight's hero and chart; the sleep targets from
 Sommeil's (`SleepTargetsSheet`). Biological age is web-owned (SHARPIT ADR-045): `/api/v1/body/overview` serves it since
-2026-09-27; Corps does not render it yet.
+2026-09-27 and Corps shows it under the weight (`BiologicalAgeCard`), with the civil age beside it and
+the ADR's wording: a training estimate, not a diagnosis. Absent when the web serves null.
 
 **Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then the one setting
 answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's
