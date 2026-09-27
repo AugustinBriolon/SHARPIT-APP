@@ -193,7 +193,10 @@ the app carries `travelId` back unchanged rather than inventing one.
 nutrition card (`NutritionTodayCard`, below Régularité). All three are a
 `DayResourceStore` inside `DayDetailScaffold`, which pins the day picker
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
-day's drill-down is a v1 resource plus a sections view, not a new store.
+day's drill-down is a v1 resource plus a sections view, not a new store. The store keeps every day it
+read for the life of the screen (a day seen again appears at once and refreshes behind), marks the
+picker's 26 weeks on first load from `/api/v1/data-days` (so a logged day is marked before it is
+opened), and reads the six most recent days with data ahead of the athlete.
 
 **Nutrition.** The food log is the athlete's own data and open to everyone; only the coach's
 reading is SharpIt Pro (the server sends `{ state: 'pro_required' }` below it and never generates
@@ -206,7 +209,12 @@ rows push `NutritionMealView` (entries heaviest first, with the coach's flags), 
 tapping a bar opens that day. The Résumé card follows the gauge cells: tinted badge, energy against
 the goal, the macros as columns, a context capsule. Goals, percentages and the reading are the
 web's; `NutritionReadout` formats them and derives only the energy split (Atwater). The food log is
-MyFitnessPal, connected on the web.
+MyFitnessPal. It links in the app (`MyFitnessPalConnectSheet`): the athlete signs in on MFP's own
+site in a private web view, the app reads the session cookie next-auth sets (whole or chunked) and
+posts it to `/api/v1/myfitnesspal/connect` — the web asks for the same cookie copied by hand.
+Nutrition syncs MFP alone (`/api/v1/myfitnesspal/sync`, toolbar or pull) and forgets every day read;
+Sources de données links, syncs and unlinks it too. A day without a log draws its own empty plate
+(never the scaffold's generic empty screen), and a missing log shows the link plate.
 
 **Pro gating.** Pro gates what SHARPIT adds — analyses, computed metrics, pushes to the watch —
 never the athlete's own data. `SharpitProTeaser` stands where such a feature would sit below Pro

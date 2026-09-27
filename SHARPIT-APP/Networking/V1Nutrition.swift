@@ -10,7 +10,10 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
     let trainingDayId: String
     /// A food log is connected (MyFitnessPal today).
     let connected: Bool
-    let empty: V1DayEmpty?
+    /// The server's words for a day without a log. The page draws its own empty day, with the
+    /// week and the way to sync, so the drill-down's generic empty screen is never used.
+    let emptyState: V1DayEmpty?
+    var empty: V1DayEmpty? { nil }
     let day: V1NutritionDay?
     let coachReading: V1NutritionCoachReading?
     /// The diet declared in the journal, as labels.
@@ -35,7 +38,7 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
         self.apiVersion = apiVersion
         self.trainingDayId = trainingDayId
         self.connected = connected
-        self.empty = empty
+        self.emptyState = empty
         self.day = day
         self.coachReading = coachReading
         self.diet = diet
@@ -47,7 +50,7 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
         apiVersion = try container.decode(Int.self, forKey: .apiVersion)
         trainingDayId = try container.decode(String.self, forKey: .trainingDayId)
         connected = try container.decode(Bool.self, forKey: .connected)
-        empty = try container.decodeIfPresent(V1DayEmpty.self, forKey: .empty)
+        emptyState = try container.decodeIfPresent(V1DayEmpty.self, forKey: .empty)
         day = try container.decodeIfPresent(V1NutritionDay.self, forKey: .day)
         // The reading is an extra: a shape the app does not know yet must not cost the day.
         coachReading = (try? container.decodeIfPresent(V1NutritionCoachReading.self, forKey: .coachReading)) ?? nil
@@ -187,4 +190,29 @@ nonisolated extension V1NutritionResponse: V1DayResource {
 /// The day's food log.
 nonisolated protocol NutritionServing: Sendable {
     func nutrition(trainingDayId: String, token: String) async throws -> V1NutritionResponse
+}
+
+/// `GET /api/v1/data-days` — which days of a range carry data for a drill-down, so the day
+/// picker marks them before any of them is opened. At most 92 days per request.
+nonisolated enum V1DataDaysDomain: String, Sendable {
+    case sleep, recovery, nutrition
+}
+
+nonisolated struct V1DataDays: Decodable, Sendable {
+    let days: [String]
+}
+
+nonisolated protocol DataDaysServing: Sendable {
+    func dataDays(domain: V1DataDaysDomain, from: String, to: String, token: String) async throws -> [String]
+}
+
+nonisolated struct V1MyFitnessPalConnect: Decodable, Sendable {
+    let displayName: String?
+}
+
+/// Links, syncs and unlinks MyFitnessPal, the food log behind Nutrition.
+nonisolated protocol MyFitnessPalServing: Sendable {
+    func connectMyFitnessPal(sessionToken: String, token: String) async throws
+    func syncMyFitnessPal(token: String) async throws
+    func disconnectMyFitnessPal(token: String) async throws
 }

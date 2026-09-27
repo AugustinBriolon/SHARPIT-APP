@@ -3,21 +3,37 @@ import SwiftUI
 
 /// The day's food log, open to every athlete. Read top to bottom like the other day screens:
 /// the energy dial, the coach's reading on the ink plate, the macros and where the energy came
-/// from, the meals — each opening its own page — and the week, where a bar opens its day.
+/// from, the meals — each opening its own page — and the week, where a bar opens its day. The
+/// food log syncs from here (toolbar or pull), and links from here when it is not connected.
 struct NutritionView: View {
     @State private var store: DayResourceStore<V1NutritionResponse>
+    @State private var isSyncing = false
+    @State private var isConnecting = false
+    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
+    private let mfp: any MyFitnessPalServing
+    private let tokenProvider: () async throws -> String
 
     init(
         client: any NutritionServing,
         tokenProvider: @escaping () async throws -> String,
+        mfp: any MyFitnessPalServing = SharpitClient(),
+        dataDaysClient: any DataDaysServing = SharpitClient(),
         day: Date = .now
     ) {
+        self.mfp = mfp
+        self.tokenProvider = tokenProvider
         _store = State(initialValue: DayResourceStore(
             failureMessage: "Ton journal alimentaire n'a pas pu être chargé.",
             tokenProvider: tokenProvider,
             day: day,
+            dataDays: { try await dataDaysClient.dataDays(domain: .nutrition, from: $0, to: $1, token: $2) },
             fetch: { try await client.nutrition(trainingDayId: $0, token: $1) }
         ))
+    }
+
+    private var isConnected: Bool {
+        if case .loaded(let nutrition) = store.phase { return nutrition.connected }
+        return false
     }
 
     var body: some View {
@@ -25,34 +41,95 @@ struct NutritionView: View {
             title: "Nutrition",
             emptySymbol: "fork.knife",
             unavailableTitle: "Nutrition indisponible",
-            store: store
-        ) { nutrition in
-            NutritionSections(nutrition: nutrition) { day in
-                Task { await store.select(day) }
+            store: store,
+            content: { nutrition in
+                NutritionSections(
+                    nutrition: nutrition,
+                    selectedDayId: TrainingDayId.today(now: store.selectedDay),
+                    isSyncing: isSyncing,
+                    onSelectDay: { day in Task { await store.select(day) } },
+                    onSync: { Task { await sync() } },
+                    onConnect: { isConnecting = true }
+                )
+            },
+            refresh: { await sync() }
+        )
+        .toolbar {
+            if isConnected {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        Task { await sync() }
+                    } label: {
+                        Label("Synchroniser MyFitnessPal", systemImage: "arrow.triangle.2.circlepath")
+                            .symbolEffect(.rotate, isActive: isSyncing)
+                    }
+                    .disabled(isSyncing)
+                }
             }
         }
+        .sheet(isPresented: $isConnecting) {
+            MyFitnessPalConnectSheet(client: mfp, tokenProvider: tokenProvider) {
+                toastCenter?.show("MyFitnessPal connecté", symbol: "checkmark.circle.fill", tone: .success)
+                Task { await store.reloadAll() }
+            }
+            .sharpitSheet()
+        }
+    }
+
+    /// Pulls the food log from MyFitnessPal, then reads every day again.
+    private func sync() async {
+        guard isConnected, !isSyncing else {
+            await store.load()
+            return
+        }
+        isSyncing = true
+        defer { isSyncing = false }
+        do {
+            let token = try await tokenProvider()
+            try await mfp.syncMyFitnessPal(token: token)
+            SharpitHaptics.play(.success)
+        } catch {
+            toastCenter?.show(
+                (error as? LocalizedError)?.errorDescription ?? "Synchronisation MyFitnessPal impossible.",
+                symbol: "exclamationmark.triangle",
+                tone: .error
+            )
+        }
+        await store.reloadAll()
     }
 }
 
 /// The column itself, apart from its scroll view so it can be rendered on its own.
 struct NutritionSections: View {
     let nutrition: V1NutritionResponse
+    var selectedDayId: String?
+    var isSyncing = false
     var onSelectDay: (Date) -> Void = { _ in }
+    var onSync: () -> Void = {}
+    var onConnect: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            if let day = nutrition.day {
+            if !nutrition.connected {
+                NutritionConnectPlate(onConnect: onConnect)
+            } else if let day = nutrition.day {
                 NutritionEnergyPlate(day: day, diet: nutrition.diet)
                 coachReading
                 NutritionMacrosSection(day: day)
                 if !day.meals.isEmpty {
                     NutritionMealsSection(meals: day.meals, flags: flags)
                 }
+            } else {
+                NutritionEmptyDayPlate(
+                    isToday: nutrition.trainingDayId == TrainingDayId.today(now: .now),
+                    isSyncing: isSyncing,
+                    onSync: onSync
+                )
             }
-            if nutrition.history.contains(where: { $0.calories != nil }) {
+            if nutrition.connected {
                 NutritionWeekSection(
                     history: nutrition.history,
-                    selectedDayId: nutrition.trainingDayId,
+                    selectedDayId: selectedDayId ?? nutrition.trainingDayId,
                     onSelectDay: onSelectDay
                 )
             }
@@ -81,6 +158,126 @@ struct NutritionSections: View {
         guard case .ready(let ready) = nutrition.coachReading else { return [] }
         return ready.flaggedEntries.map {
             NutritionEntryFlag(meal: $0.meal, entry: $0.entry, label: NutritionReadout.flagLabel($0.reason))
+        }
+    }
+}
+
+// MARK: - Empty and unlinked days
+
+/// A day with nothing logged: the empty dial, what to do next, and the sync one tap away.
+private struct NutritionEmptyDayPlate: View {
+    let isToday: Bool
+    let isSyncing: Bool
+    let onSync: () -> Void
+
+    var body: some View {
+        VStack(spacing: SharpitSpacing.md) {
+            ZStack(alignment: .top) {
+                SharpitTickGauge(score: nil)
+                GeometryReader { geo in
+                    VStack(spacing: 4) {
+                        Image(systemName: "fork.knife")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                        Text("0 kcal")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                    .frame(width: geo.size.width)
+                    .position(x: geo.size.width / 2, y: geo.size.height * SharpitTickGaugeGeometry.readoutTopFraction + 22)
+                }
+            }
+            .frame(width: 200, height: 200 / SharpitTickGaugeGeometry.aspectRatio)
+            .accessibilityHidden(true)
+
+            VStack(spacing: SharpitSpacing.xxs) {
+                Text(isToday ? "Rien de noté pour l'instant" : "Rien de noté ce jour-là")
+                    .font(SharpitTypography.cardTitle)
+                    .tracking(SharpitTypography.cardTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                Text(isToday
+                     ? "Note tes repas dans MyFitnessPal : ils arrivent ici avec leurs calories, macros et la lecture du coach."
+                     : "Si tu as noté des repas ce jour-là, une synchronisation les ramène.")
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Button(action: onSync) {
+                HStack(spacing: SharpitSpacing.xs) {
+                    if isSyncing {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                    }
+                    Text(isSyncing ? "Synchronisation…" : "Synchroniser MyFitnessPal")
+                }
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.primary)
+                .padding(.horizontal, SharpitSpacing.md)
+                .padding(.vertical, SharpitSpacing.sm)
+                .background(SharpitColor.primary.opacity(0.10), in: Capsule())
+            }
+            .buttonStyle(.sharpitPressable)
+            .disabled(isSyncing)
+        }
+        .padding(SharpitSpacing.lg)
+        .frame(maxWidth: .infinity)
+        .sharpitSurface(.panel)
+        .sharpitCardSpecularBorder()
+    }
+}
+
+/// No food log yet: what linking brings, and the in-app sign-in.
+private struct NutritionConnectPlate: View {
+    let onConnect: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            ZStack {
+                Circle().fill(SharpitColor.primary.opacity(0.12)).frame(width: 52, height: 52)
+                Image(systemName: "fork.knife")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(SharpitColor.primary)
+            }
+            Text("Relie ton journal alimentaire")
+                .font(SharpitTypography.verdict)
+                .tracking(SharpitTypography.verdictTracking)
+                .foregroundStyle(SharpitColor.foreground)
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                benefit("flame", "Tes calories face à ton objectif, chaque jour")
+                benefit("chart.bar", "Protéines, glucides et lipides, repas par repas")
+                benefit("sparkles.rectangle.stack", "La lecture du coach face à ton entraînement")
+            }
+            Button(action: onConnect) {
+                Text("Connecter MyFitnessPal")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.background)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, SharpitSpacing.sm + 2)
+                    .background(SharpitColor.foreground, in: Capsule())
+            }
+            .buttonStyle(.sharpitPressable)
+            Text("Tu te connectes sur le site de MyFitnessPal, dans l'app. SHARPIT ne voit pas ton mot de passe.")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+        }
+        .padding(SharpitSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .sharpitCardSpecularBorder()
+    }
+
+    private func benefit(_ symbol: String, _ text: String) -> some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(SharpitColor.primary)
+                .frame(width: 22)
+            Text(text)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
         }
     }
 }
@@ -480,8 +677,6 @@ private struct NutritionWeekSection: View {
     let selectedDayId: String
     let onSelectDay: (Date) -> Void
 
-    @State private var picked: Date?
-
     private var days: [(date: Date, id: String, calories: Double, goal: Double?)] {
         history.compactMap { day in
             guard let calories = day.calories, let date = TrainingDayId.date(day.date) else { return nil }
@@ -518,8 +713,17 @@ private struct NutritionWeekSection: View {
                         y: .value("kcal", day.calories)
                     )
                     .foregroundStyle(tone(for: day))
-                    .opacity(day.id == selectedDayId ? 1 : 0.55)
+                    .opacity(day.id == selectedDayId ? 1 : 0.45)
                     .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                }
+                // The day on screen, marked even when nothing was logged on it.
+                if let selected = TrainingDayId.date(selectedDayId) {
+                    PointMark(
+                        x: .value("Jour", selected, unit: .day),
+                        y: .value("kcal", 0)
+                    )
+                    .symbolSize(40)
+                    .foregroundStyle(SharpitColor.foreground)
                 }
                 if let referenceGoal {
                     RuleMark(y: .value("Objectif", referenceGoal))
@@ -528,7 +732,21 @@ private struct NutritionWeekSection: View {
                 }
             }
             .chartXScale(domain: weekDomain)
-            .chartXSelection(value: $picked)
+            // A tap opens its day at once; the drag-to-select gesture of Charts waits too long.
+            .chartOverlay { proxy in
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                        .onTapGesture { location in
+                            guard let frame = proxy.plotFrame else { return }
+                            let x = location.x - geo[frame].origin.x
+                            guard let date: Date = proxy.value(atX: x) else { return }
+                            SharpitHaptics.play(.light)
+                            onSelectDay(Calendar.current.startOfDay(for: date))
+                        }
+                }
+            }
             .chartXAxis {
                 AxisMarks(values: .stride(by: .day)) { _ in
                     AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true)
@@ -545,10 +763,6 @@ private struct NutritionWeekSection: View {
             .frame(height: 170)
             .padding(SharpitSpacing.md)
             .sharpitSurface(.panel)
-            .onChange(of: picked) { _, date in
-                guard let date else { return }
-                onSelectDay(date)
-            }
         }
     }
 

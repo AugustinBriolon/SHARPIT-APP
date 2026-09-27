@@ -10,11 +10,13 @@ struct ProviderLogo: View {
     enum Provider {
         case garmin
         case appleHealth
+        case myFitnessPal
 
         var assetName: String {
             switch self {
             case .garmin: "Provider/Garmin"
             case .appleHealth: "Provider/AppleHealth"
+            case .myFitnessPal: "Provider/MyFitnessPal"
             }
         }
 
@@ -22,6 +24,7 @@ struct ProviderLogo: View {
             switch self {
             case .garmin: "applewatch.side.right"
             case .appleHealth: "heart.fill"
+            case .myFitnessPal: "fork.knife"
             }
         }
     }

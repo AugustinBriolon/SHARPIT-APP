@@ -147,3 +147,85 @@ private struct StubNutrition: NutritionServing {
     await store.load(trainingDayId: "2026-09-27")
     #expect(store.phase == .failed)
 }
+
+// MARK: - MyFitnessPal sign-in
+
+@Test func theSessionCookieIsReadWholeOrFromItsChunks() {
+    #expect(MyFitnessPalSession.sessionToken(from: [(name: "other", value: "x")]) == nil)
+    #expect(MyFitnessPalSession.sessionToken(from: [
+        (name: "__Secure-next-auth.session-token", value: "whole"),
+    ]) == "whole")
+    #expect(MyFitnessPalSession.sessionToken(from: [
+        (name: "__Secure-next-auth.session-token.1", value: "B"),
+        (name: "__Secure-next-auth.session-token.0", value: "A"),
+    ]) == "AB")
+    // Half a token is worse than none.
+    #expect(MyFitnessPalSession.sessionToken(from: [
+        (name: "__Secure-next-auth.session-token.1", value: "B"),
+    ]) == nil)
+}
+
+// MARK: - Day store
+
+private actor CountingNutrition {
+    private(set) var reads: [String] = []
+    func read(_ dayId: String) -> V1NutritionResponse {
+        reads.append(dayId)
+        return V1NutritionResponse(
+            trainingDayId: dayId,
+            day: nil,
+            history: [V1NutritionHistoryDay(date: dayId, calories: 1500, goalCalories: nil)]
+        )
+    }
+}
+
+@MainActor
+@Test func thePickerKnowsEveryLoggedDayOnFirstLoad() async {
+    let today = TrainingDayId.today(now: .now)
+    let lastWeek = TrainingDayId.today(now: Calendar.current.date(byAdding: .day, value: -8, to: .now)!)
+    let counter = CountingNutrition()
+    let store = DayResourceStore<V1NutritionResponse>(
+        failureMessage: "failed",
+        tokenProvider: { "t" },
+        dataDays: { _, _, _ in [lastWeek] },
+        fetch: { dayId, _ in await counter.read(dayId) }
+    )
+    await store.load()
+
+    #expect(store.hasData(on: Calendar.current.date(byAdding: .day, value: -8, to: .now)!) == true)
+    #expect(store.hasData(on: Calendar.current.date(byAdding: .day, value: -3, to: .now)!) == false)
+    // What the day's own payload says wins over the range read.
+    #expect(store.dataByDay[today] == true)
+}
+
+@MainActor
+@Test func aDayAlreadyReadAppearsAtOnce() async throws {
+    let counter = CountingNutrition()
+    let store = DayResourceStore<V1NutritionResponse>(
+        failureMessage: "failed",
+        tokenProvider: { "t" },
+        fetch: { dayId, _ in await counter.read(dayId) }
+    )
+    await store.load()
+    let yesterday = try #require(Calendar.current.date(byAdding: .day, value: -1, to: .now))
+    await store.select(yesterday)
+    await store.select(.now)
+
+    guard case .loaded(let shown) = store.phase else {
+        Issue.record("expected today on screen")
+        return
+    }
+    #expect(shown.trainingDayId == TrainingDayId.today(now: .now))
+}
+
+@Test func aConnectedDayWithoutALogStillLoadsItsPage() {
+    let nutrition = V1NutritionResponse(
+        trainingDayId: "2026-09-27",
+        empty: V1DayEmpty(title: "Aucune donnée ce jour-là", message: nil),
+        day: nil
+    )
+    // The page draws its own empty day with the week and the sync; the scaffold's generic
+    // empty screen is never used for nutrition.
+    #expect(nutrition.empty == nil)
+    #expect(nutrition.emptyState?.title == "Aucune donnée ce jour-là")
+}

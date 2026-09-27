@@ -9,6 +9,8 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     let unavailableTitle: String
     let store: DayResourceStore<Payload>
     @ViewBuilder let content: (Payload) -> Content
+    /// What pull-to-refresh does; by default it reads the day again.
+    var refresh: (() async -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,6 +24,8 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .opacity(store.isSwitchingDay ? 0.45 : 1)
                 .animation(SharpitMotion.fade, value: store.isSwitchingDay)
+                // A new day's figures move to their values rather than jumping.
+                .animation(SharpitMotion.reveal, value: store.phase)
         }
         .background(SharpitCanvasBackground())
         .navigationTitle(title)
@@ -51,7 +55,9 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                     .padding(.top, SharpitSpacing.md)
             }
             .modifier(ScrollUnderGlass())
-            .refreshable { await store.load() }
+            .refreshable {
+                if let refresh { await refresh() } else { await store.load() }
+            }
         case .empty(let empty):
             ContentUnavailableView(
                 empty.title,

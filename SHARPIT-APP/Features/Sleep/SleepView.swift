@@ -13,6 +13,7 @@ struct SleepView: View {
     init(
         client: any SleepServing,
         tokenProvider: @escaping () async throws -> String,
+        dataDaysClient: any DataDaysServing = SharpitClient(),
         profileClient: any AthleteProfileServing = AthleteProfileClient()
     ) {
         self.tokenProvider = tokenProvider
@@ -20,6 +21,7 @@ struct SleepView: View {
         _store = State(initialValue: DayResourceStore(
             failureMessage: "Ton sommeil n'a pas pu être chargé.",
             tokenProvider: tokenProvider,
+            dataDays: { try await dataDaysClient.dataDays(domain: .sleep, from: $0, to: $1, token: $2) },
             fetch: { try await client.sleep(trainingDayId: $0, token: $1) }
         ))
     }

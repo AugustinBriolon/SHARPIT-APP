@@ -423,8 +423,7 @@ private struct TodayFoldView: View {
 
     private func openNutrition(_ phase: NutritionTodayStore.Phase) {
         switch phase {
-        case .loaded, .empty, .failed: openedNutrition = .day
-        case .disconnected: router.openSettings()
+        case .loaded, .empty, .failed, .disconnected: openedNutrition = .day
         case .loading: break
         }
     }

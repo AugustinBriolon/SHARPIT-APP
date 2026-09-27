@@ -240,6 +240,9 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
         case 401:
             throw SharpitAPIError.unauthorized
 
+        case 403:
+            throw PlannedSessionWatchPushError.proRequired
+
         case 409:
             let decoded = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             let message = decoded?["error"] as? String ?? "Cette séance est déjà sur la montre Garmin."
@@ -325,9 +328,12 @@ nonisolated enum PlannedSessionWatchPushError: Error, LocalizedError, Equatable 
     case notConnected(String)
     case unsupported(String)
     case failed(String)
+    /// Below SharpIt Pro: sending to the watch is what SHARPIT adds.
+    case proRequired
 
     var errorDescription: String? {
         switch self {
+        case .proRequired: "L'envoi vers la montre est réservé à SharpIt Pro."
         case .alreadyPushed(let message, _): message
         case .notConnected(let message): message
         case .unsupported(let message): message

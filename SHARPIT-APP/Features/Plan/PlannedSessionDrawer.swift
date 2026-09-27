@@ -172,6 +172,8 @@ struct PlannedSessionDrawer: View {
     @State private var showingLinkPicker = false
     @State private var showingReplaceConfirmation = false
     @State private var isPushingToWatch = false
+    @State private var showingPro = false
+    @Environment(ProStore.self) private var pro: ProStore?
     @State private var localWatchPush: PlannedSessionWatchPushResult?
     @State private var loadedBreakdown: V1PlannedSessionBreakdown?
     @State private var isLoadingBreakdown = false
@@ -275,6 +277,12 @@ struct PlannedSessionDrawer: View {
         .presentationDetents([.medium, .large])
         .sharpitSheet()
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showingPro) {
+            if let pro {
+                NavigationStack { ProView(store: pro) }
+                    .sharpitSheet()
+            }
+        }
         .sheet(isPresented: $showingLinkPicker) {
             if let sessionId = preview.sessionId, let linking {
                 SessionLinkPicker(sessionId: sessionId, context: linking) {
@@ -357,13 +365,24 @@ struct PlannedSessionDrawer: View {
             DrawerActionRow(
                 symbolName: "applewatch.side.right",
                 title: isPushingToWatch ? "Envoi vers la montre…" : "Envoyer à la montre",
-                subtitle: isPushingToWatch ? "Transfert vers Garmin Connect en cours" : "Programme la séance dans Garmin Connect"
+                subtitle: watchPushSubtitle
             ) {
                 guard !isPushingToWatch else { return }
+                // The server decides; below Pro the athlete is shown Pro instead of a failure.
+                if let pro, pro.phase == .loaded, !pro.isPro {
+                    showingPro = true
+                    return
+                }
                 Task { await handleWatchPush(force: false, context: context) }
             }
             .disabled(isPushingToWatch)
         }
+    }
+
+    private var watchPushSubtitle: String {
+        if isPushingToWatch { return "Transfert vers Garmin Connect en cours" }
+        if let pro, pro.phase == .loaded, !pro.isPro { return "Réservé à SharpIt Pro" }
+        return "Programme la séance dans Garmin Connect"
     }
 
     private func handleWatchPush(force: Bool, context: SessionWatchPushContext) async {
@@ -388,6 +407,8 @@ struct PlannedSessionDrawer: View {
             case .notConnected(let message):
                 SharpitHaptics.play(.soft)
                 toastCenter?.show(message, symbol: "exclamationmark.triangle", tone: .error)
+            case .proRequired:
+                showingPro = true
             case .unsupported(let message), .failed(let message):
                 SharpitHaptics.play(.soft)
                 toastCenter?.show(message, symbol: "exclamationmark.triangle", tone: .error)

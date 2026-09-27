@@ -43,7 +43,7 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, NutritionServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing {
+actor SharpitClient: TodayServing, SleepServing, RecoveryServing, NutritionServing, DataDaysServing, MyFitnessPalServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -66,6 +66,42 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, NutritionServi
 
     func nutrition(trainingDayId: String, token: String) async throws -> V1NutritionResponse {
         try await day(V1NutritionResponse.self, path: "/api/v1/nutrition", trainingDayId: trainingDayId, token: token)
+    }
+
+    func dataDays(domain: V1DataDaysDomain, from: String, to: String, token: String) async throws -> [String] {
+        try await send(
+            V1DataDays.self,
+            path: "/api/v1/data-days",
+            method: "GET",
+            query: [
+                URLQueryItem(name: "domain", value: domain.rawValue),
+                URLQueryItem(name: "from", value: from),
+                URLQueryItem(name: "to", value: to),
+            ],
+            token: token
+        ).days
+    }
+
+    /// Links the food log with the session cookie the athlete's own MFP sign-in produced. The
+    /// server validates it, stores it encrypted and syncs at once, so the wait can be long.
+    func connectMyFitnessPal(sessionToken: String, token: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: ["sessionToken": sessionToken])
+        _ = try await send(
+            V1MyFitnessPalConnect.self,
+            path: "/api/v1/myfitnesspal/connect",
+            method: "POST",
+            token: token,
+            timeout: 120,
+            body: body
+        )
+    }
+
+    func syncMyFitnessPal(token: String) async throws {
+        _ = try await send(JSONValue.self, path: "/api/v1/myfitnesspal/sync", method: "POST", token: token, timeout: 120)
+    }
+
+    func disconnectMyFitnessPal(token: String) async throws {
+        _ = try await send(JSONValue.self, path: "/api/v1/myfitnesspal/disconnect", method: "POST", token: token)
     }
 
     func syncStatus(token: String) async throws -> V1SyncStatus {
