@@ -113,6 +113,9 @@ struct CorpsView: View {
                             message: "Ton âge forme, calculé par SHARPIT à partir de ta VO₂max."
                         )
                         .revealed(hasAppeared, index: 1)
+                    } else if store.hasOverview {
+                        BiologicalAgePendingCard()
+                            .revealed(hasAppeared, index: 1)
                     }
                     section(.recovery, index: 1)
                     section(.composition, index: 2)
@@ -163,6 +166,23 @@ struct CorpsView: View {
 }
 
 // MARK: - Tiles
+
+/// Pro, but the web could not estimate it: what the estimate needs, so the athlete can fill it in.
+private struct BiologicalAgePendingCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("Âge biologique")
+            Text(BiologicalAgeReadout.requirements)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(SharpitSpacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .sharpitSurface(.panel)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
 
 /// The biological age: the estimate, the civil age beside it, and what it is not.
 private struct BiologicalAgeCard: View {

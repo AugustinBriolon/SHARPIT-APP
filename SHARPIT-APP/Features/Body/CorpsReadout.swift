@@ -408,6 +408,8 @@ nonisolated enum CorpsReadout {
 /// The biological age as Corps words it (SHARPIT ADR-045). Never framed as a medical age.
 enum BiologicalAgeReadout {
     static let disclaimer = "Estimation d'entraînement à partir de ta VO₂max, pas un diagnostic."
+    /// What the estimate needs (SHARPIT ADR-045), said when one is missing.
+    static let requirements = "Il faut une VO₂max de moins de 90 jours (course ou vélo), ta date de naissance et ton sexe, renseignés dans Paramètres › Compte."
 
     static func years(_ value: Double) -> String {
         "\(Int(value.rounded()))"

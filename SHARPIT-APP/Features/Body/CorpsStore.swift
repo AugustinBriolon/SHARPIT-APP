@@ -31,6 +31,8 @@ final class CorpsStore {
     private(set) var biologicalAge: V1BiologicalAge?
     /// True below SharpIt Pro: Corps then offers Pro where the biological age would be.
     private(set) var biologicalAgeRequiresPro = false
+    /// The web's overview answered: only then does an absent biological age mean missing data.
+    private(set) var hasOverview = false
 
     private let overviewClient: any BodyServing
     private let profileClient: any AthleteProfileServing
@@ -114,6 +116,7 @@ final class CorpsStore {
         if let web = web.value {
             biologicalAge = web.biologicalAge
             biologicalAgeRequiresPro = web.biologicalAgeRequiresPro
+            hasOverview = true
         }
         SharpitMotion.run {
             metrics = assembled
