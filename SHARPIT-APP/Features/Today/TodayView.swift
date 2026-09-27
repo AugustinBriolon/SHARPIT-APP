@@ -281,16 +281,6 @@ private struct TodayFoldView: View {
                         value: phase.showsGauges
                     )
                 }
-                if let nutrition {
-                    NutritionTodayCard(phase: nutrition.phase) { openNutrition(nutrition.phase) }
-                        .opacity(phase.showsGauges ? 1 : 0)
-                        .offset(y: phase.showsGauges ? 0 : 18)
-                        .animation(
-                            reduceMotion ? .easeOut(duration: 0.01)
-                                : .spring(response: 0.40, dampingFraction: 0.80).delay(0.11),
-                            value: phase.showsGauges
-                        )
-                }
                 if let consistency = fold.consistency, !consistency.days.isEmpty {
                     ConsistencyStrip(
                         consistency: consistency,
@@ -305,6 +295,16 @@ private struct TodayFoldView: View {
                             : .spring(response: 0.40, dampingFraction: 0.80).delay(0.14),
                         value: phase.showsGauges
                     )
+                }
+                if let nutrition {
+                    NutritionTodayCard(phase: nutrition.phase) { openNutrition(nutrition.phase) }
+                        .opacity(phase.showsGauges ? 1 : 0)
+                        .offset(y: phase.showsGauges ? 0 : 18)
+                        .animation(
+                            reduceMotion ? .easeOut(duration: 0.01)
+                                : .spring(response: 0.40, dampingFraction: 0.80).delay(0.18),
+                            value: phase.showsGauges
+                        )
                 }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)

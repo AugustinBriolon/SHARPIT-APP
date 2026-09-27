@@ -409,7 +409,7 @@ nonisolated enum CorpsReadout {
 enum BiologicalAgeReadout {
     static let disclaimer = "Estimation d'entraînement à partir de ta VO₂max, pas un diagnostic."
     /// What the estimate needs (SHARPIT ADR-045), said when one is missing.
-    static let requirements = "Il faut une VO₂max de moins de 90 jours (course ou vélo), ta date de naissance et ton sexe, renseignés dans Paramètres › Compte."
+    static let requirements = "Pour le calculer, il faut ta date de naissance, ton sexe et une VO₂max de moins de 90 jours (course ou vélo, lue sur ta montre)."
 
     static func years(_ value: Double) -> String {
         "\(Int(value.rounded()))"

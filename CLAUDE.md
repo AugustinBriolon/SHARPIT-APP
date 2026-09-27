@@ -190,7 +190,7 @@ pick — no explicit save, as on the web. A deadline that has passed is resolved
 the app carries `travelId` back unchanged rather than inventing one.
 
 **Day drill-downs.** Sleep and Recovery open from the Today gauges, Nutrition from Résumé's
-nutrition card (`NutritionTodayCard`, below the gauges). All three are a
+nutrition card (`NutritionTodayCard`, below Régularité). All three are a
 `DayResourceStore` inside `DayDetailScaffold`, which pins the day picker
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
 day's drill-down is a v1 resource plus a sections view, not a new store.
@@ -199,10 +199,13 @@ day's drill-down is a v1 resource plus a sections view, not a new store.
 reading is SharpIt Pro (the server sends `{ state: 'pro_required' }` below it and never generates
 it), and `NutritionView` shows a `SharpitProTeaser` in its place. `NutritionTodayStore` maps the
 answer to the card's states (disconnected, empty, loaded, failed — a failed read says so and opens
-the day, which can retry). `NutritionView` is the day in the drill-down scaffold: intake against
-the goal, the coach's reading (tones from the web's `nutrition-reading-display.ts`: off track is
-orange, never red), macros, meals with their entries and the coach's flags, then the week. Goals,
-percentages and the reading are the web's; `NutritionReadout` only formats them. The food log is
+the day, which can retry). `NutritionView` is native, not the web's page: the energy on the app's
+tick dial (`SharpitTickGauge`) with goal, exercise and remaining under it, the coach's reading on
+the ink plate, the three macros as tiles and the energy split by macro, the meals as a list whose
+rows push `NutritionMealView` (entries heaviest first, with the coach's flags), and the week, where
+tapping a bar opens that day. The Résumé card follows the gauge cells: tinted badge, energy against
+the goal, the macros as columns, a context capsule. Goals, percentages and the reading are the
+web's; `NutritionReadout` formats them and derives only the energy split (Atwater). The food log is
 MyFitnessPal, connected on the web.
 
 **Pro gating.** Pro gates what SHARPIT adds — analyses, computed metrics, pushes to the watch —
@@ -258,9 +261,11 @@ metric is a tile opening `CorpsMetricDrawer`, which reads `/api/v1/body/series` 
 (30 j / 90 j / 1 an / Tout); a metric with no data is absent. The weight target is set from Corps'
 toolbar (`WeightTargetSheet`) and drawn on the weight's hero and chart; the sleep targets from
 Sommeil's (`SleepTargetsSheet`). Biological age is web-owned (SHARPIT ADR-045): `/api/v1/body/overview` serves it since
-2026-09-27 and Corps shows it under the weight (`BiologicalAgeCard`), with the civil age beside it and
+2026-09-27 and Corps leads with it, above the weight (`BiologicalAgeCard`), with the civil age beside it and
 the ADR's wording: a training estimate, not a diagnosis. SHARPIT computes it, so it is Pro: below Pro
-the overview says `biologicalAgeAccess: pro_required` and Corps shows a `SharpitProTeaser` instead.
+the overview says `biologicalAgeAccess: pro_required` and Corps shows a `SharpitProTeaser` instead;
+when Pro but data is missing, `BiologicalAgePendingCard` says what the estimate needs and pushes
+`AccountView` in Corps' own stack.
 
 **Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then the one setting
 answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's

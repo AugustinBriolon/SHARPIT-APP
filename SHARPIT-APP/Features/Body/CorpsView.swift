@@ -100,21 +100,27 @@ struct CorpsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 if store.phase == .loaded {
-                    if let weight = store.metric(.weight) {
-                        CorpsHeroTile(metric: weight, targetKg: store.targetWeightKg) { opened = weight }
-                            .revealed(hasAppeared, index: 0)
-                    }
+                    // The headline of this page: the biological age, before any single measure.
                     if let age = store.biologicalAge {
                         BiologicalAgeCard(age: age)
-                            .revealed(hasAppeared, index: 1)
+                            .revealed(hasAppeared, index: 0)
                     } else if store.biologicalAgeRequiresPro {
                         SharpitProTeaser(
                             title: "Âge biologique",
                             message: "Ton âge forme, calculé par SHARPIT à partir de ta VO₂max."
                         )
-                        .revealed(hasAppeared, index: 1)
+                        .revealed(hasAppeared, index: 0)
                     } else if store.hasOverview {
-                        BiologicalAgePendingCard()
+                        NavigationLink {
+                            AccountView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+                        } label: {
+                            BiologicalAgePendingCard()
+                        }
+                        .buttonStyle(.sharpitPressable)
+                        .revealed(hasAppeared, index: 0)
+                    }
+                    if let weight = store.metric(.weight) {
+                        CorpsHeroTile(metric: weight, targetKg: store.targetWeightKg) { opened = weight }
                             .revealed(hasAppeared, index: 1)
                     }
                     section(.recovery, index: 1)
@@ -167,24 +173,50 @@ struct CorpsView: View {
 
 // MARK: - Tiles
 
-/// Pro, but the web could not estimate it: what the estimate needs, so the athlete can fill it in.
+/// Pro, but the web could not estimate it: what the estimate needs, opening Compte to fill it in.
 private struct BiologicalAgePendingCard: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Âge biologique")
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle().fill(SharpitColor.primary.opacity(0.12)).frame(width: 22, height: 22)
+                    Image(systemName: "hourglass")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(SharpitColor.primary)
+                }
+                Text("Âge biologique")
+                    .font(SharpitTypography.label)
+                    .tracking(SharpitTypography.labelTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(SharpitColor.foreground.opacity(0.85))
+                Spacer(minLength: 0)
+            }
+            Text("—")
+                .font(SharpitTypography.heroScore)
+                .tracking(SharpitTypography.heroScoreTracking)
+                .foregroundStyle(SharpitColor.mutedForeground)
             Text(BiologicalAgeReadout.requirements)
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.mutedForeground)
+                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(SharpitSpacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .sharpitSurface(.panel)
+            HStack(spacing: SharpitSpacing.xs) {
+                Text("Compléter mon profil")
+                Image(systemName: "chevron.right").imageScale(.small)
+            }
+            .font(SharpitTypography.bodyEmphasis)
+            .foregroundStyle(SharpitColor.primary)
         }
+        .padding(SharpitSpacing.md + 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .sharpitCardSpecularBorder()
         .accessibilityElement(children: .combine)
+        .accessibilityHint("Ouvre ton compte")
     }
 }
 
-/// The biological age: the estimate, the civil age beside it, and what it is not.
+/// The page's headline: the biological age, large, the civil age beside it, and what it is not.
 private struct BiologicalAgeCard: View {
     let age: V1BiologicalAge
 
@@ -197,35 +229,47 @@ private struct BiologicalAgeCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Âge biologique")
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                    Text(BiologicalAgeReadout.years(age.years))
-                        .font(SharpitTypography.gaugeScore)
-                        .tracking(SharpitTypography.gaugeScoreTracking)
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle().fill(tone.opacity(0.14)).frame(width: 22, height: 22)
+                    Image(systemName: "hourglass")
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(tone)
-                    Text("ans")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                    Spacer(minLength: 0)
-                    if let comparison = BiologicalAgeReadout.comparison(age) {
-                        Text(comparison)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .multilineTextAlignment(.trailing)
-                    }
                 }
-                Text(BiologicalAgeReadout.disclaimer)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-                SharpitConfidenceLine(pct: age.confidence.map { $0 * 100 })
+                Text("Âge biologique")
+                    .font(SharpitTypography.label)
+                    .tracking(SharpitTypography.labelTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(SharpitColor.foreground.opacity(0.85))
+                Spacer(minLength: 0)
             }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Text(BiologicalAgeReadout.years(age.years))
+                    .font(SharpitTypography.heroScore)
+                    .tracking(SharpitTypography.heroScoreTracking)
+                    .foregroundStyle(tone)
+                    .contentTransition(.numericText())
+                Text("ans")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                Spacer(minLength: 0)
+            }
+            if let comparison = BiologicalAgeReadout.comparison(age) {
+                Text(comparison)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+            }
+            Text(BiologicalAgeReadout.disclaimer)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+            SharpitConfidenceLine(pct: age.confidence.map { $0 * 100 })
         }
+        .padding(SharpitSpacing.md + 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .sharpitCardSpecularBorder()
         .accessibilityElement(children: .combine)
     }
 }

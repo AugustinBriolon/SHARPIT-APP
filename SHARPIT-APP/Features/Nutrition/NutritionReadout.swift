@@ -30,6 +30,20 @@ enum NutritionReadout {
             }
         }
 
+        /// One hue per macro, from the signal family, so the columns and the split read together.
+        var tone: Color {
+            switch self {
+            case .protein: SharpitColor.signalRecovery
+            case .carbohydrates: SharpitColor.signalBase
+            case .fat: SharpitColor.signalTempo
+            }
+        }
+
+        /// Kilocalories per gram (Atwater).
+        var kcalPerGram: Double {
+            self == .fat ? 9 : 4
+        }
+
         func consumed(in day: V1NutritionDay) -> Double {
             switch self {
             case .protein: day.protein
@@ -104,4 +118,34 @@ enum NutritionReadout {
     static func flagLabel(_ reason: String) -> String {
         reason == "diet_conflict" ? "Hors régime" : "Ultra-transformé"
     }
+
+    /// Where the day's energy came from, by share of the macros' kilocalories. Empty without any.
+    static func energySplit(_ day: V1NutritionDay) -> [(macro: Macro, share: Double)] {
+        let kcal = Macro.allCases.map { ($0, $0.consumed(in: day) * $0.kcalPerGram) }
+        let total = kcal.reduce(0) { $0 + $1.1 }
+        guard total > 0 else { return [] }
+        return kcal.map { (macro: $0.0, share: $0.1 / total) }
+    }
+
+    /// `3 repas`, `1 repas`, `Aucun repas`.
+    static func mealsCount(_ count: Int) -> String {
+        count == 0 ? "Aucun repas" : "\(count) repas"
+    }
+
+    /// The SF Symbol for a meal, by the food log's meal key.
+    static func mealSymbol(_ name: String) -> String {
+        switch name.lowercased() {
+        case "breakfast": "sunrise"
+        case "lunch": "sun.max"
+        case "dinner": "moon.stars"
+        case "snacks", "snack": "leaf"
+        default: "fork.knife"
+        }
+    }
+
+    /// The loaded card's shape while the day loads.
+    static let placeholderDay = V1NutritionDay(
+        calories: 1_850, protein: 110, carbohydrates: 220, fat: 60, fiber: nil, sugar: nil,
+        complete: false, goals: nil, fuelDensity: nil, meals: []
+    )
 }
