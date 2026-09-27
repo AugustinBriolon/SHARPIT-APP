@@ -45,6 +45,7 @@ struct RootView: View {
                     journalClient: journalClient,
                     wellnessClient: wellnessClient,
                     signalClient: sharpitClient,
+                    nutritionClient: sharpitClient,
                     syncClient: sharpitClient,
                     appleHealth: appleHealth
                 )

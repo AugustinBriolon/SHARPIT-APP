@@ -189,10 +189,21 @@ pick — no explicit save, as on the web. A deadline that has passed is resolved
 `active` server-side on read, so the app never expires one itself. Trips are not modelled:
 the app carries `travelId` back unchanged rather than inventing one.
 
-**Day drill-downs.** Sleep and Recovery open from the Today gauges. Both are a
+**Day drill-downs.** Sleep and Recovery open from the Today gauges, Nutrition from Résumé's
+nutrition card (`NutritionTodayCard`, below the gauges). All three are a
 `DayResourceStore` inside `DayDetailScaffold`, which pins the day picker
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
 day's drill-down is a v1 resource plus a sections view, not a new store.
+
+**Nutrition.** SharpIt Pro only, decided by the server: `/api/v1/nutrition` answers 403
+`pro_required` below Pro (`SharpitAPIError.proRequired`), and the Résumé card then offers Pro
+(`ProView`) instead of the day. `NutritionTodayStore` maps the answer to the card's states
+(locked, disconnected, empty, loaded; a failed first read hides the card), and the card reloads
+when `ProStore.isPro` changes, so a purchase opens it at once. `NutritionView` is the day in the
+drill-down scaffold: intake against the goal, the coach's reading (tones from the web's
+`nutrition-reading-display.ts`: off track is orange, never red), macros, meals with their entries
+and the coach's flags, then the week. Goals, percentages and the reading are the web's;
+`NutritionReadout` only formats them. The food log is MyFitnessPal, connected on the web.
 
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation
 layer is web-only; the app maps domain payloads itself.
@@ -242,8 +253,8 @@ small trends and stand in for the overview on a server without it (`CorpsReadout
 metric is a tile opening `CorpsMetricDrawer`, which reads `/api/v1/body/series` per range
 (30 j / 90 j / 1 an / Tout); a metric with no data is absent. The weight target is set from Corps'
 toolbar (`WeightTargetSheet`) and drawn on the weight's hero and chart; the sleep targets from
-Sommeil's (`SleepTargetsSheet`). Biological age is web-owned (SHARPIT ADR-045) and not rendered
-until the web serves it.
+Sommeil's (`SleepTargetsSheet`). Biological age is web-owned (SHARPIT ADR-045): `/api/v1/body/overview` serves it since
+2026-09-27; Corps does not render it yet.
 
 **Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then the one setting
 answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's

@@ -20,6 +20,9 @@ struct TodayView: View {
     private let journalClient: (any JournalServing)?
     private let wellnessClient: (any WellnessServing)?
     private let signalClient: (any SleepServing & RecoveryServing)?
+    private let nutritionClient: (any NutritionServing)?
+    /// Today's food log for the nutrition card. Nil without a token or a client.
+    @State private var nutrition: NutritionTodayStore?
     /// Held as well as handed to the store, because the journal opened from here caches its
     /// own day and needs the same context.
     private let modelContext: ModelContext?
@@ -32,6 +35,7 @@ struct TodayView: View {
         journalClient: (any JournalServing)? = nil,
         wellnessClient: (any WellnessServing)? = nil,
         signalClient: (any SleepServing & RecoveryServing)? = nil,
+        nutritionClient: (any NutritionServing)? = nil,
         syncClient: (any SyncServing)? = nil,
         appleHealth: AppleHealthSource? = nil
     ) {
@@ -41,6 +45,10 @@ struct TodayView: View {
             tokenProvider.map { ProviderSyncStore(client: client, tokenProvider: $0) }
         })
         self.signalClient = tokenProvider == nil ? nil : signalClient
+        self.nutritionClient = tokenProvider == nil ? nil : nutritionClient
+        _nutrition = State(initialValue: nutritionClient.flatMap { client in
+            tokenProvider.map { NutritionTodayStore(client: client, tokenProvider: $0) }
+        })
         self.tokenProvider = tokenProvider
         self.journalClient = tokenProvider == nil ? nil : journalClient
         self.wellnessClient = tokenProvider == nil ? nil : wellnessClient
@@ -72,6 +80,8 @@ struct TodayView: View {
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
                         tokenProvider: tokenProvider,
                         signalClient: signalClient,
+                        nutrition: nutrition,
+                        nutritionClient: nutritionClient,
                         onArrival: { store.handleArrivalWins(fold: fold) },
                         onArrivalCompleted: { store.markArrivalCompleted() },
                         onSessionLinked: { Task { await store.refresh() } },
@@ -111,6 +121,7 @@ struct TodayView: View {
             }
             .refreshable {
                 await store.refresh()
+                await nutrition?.load(trainingDayId: TrainingDayId.today(now: .now))
                 weather.start()
                 // The pull can take a minute; the gesture ends on what the server has now,
                 // and the screen reloads once the providers have answered.
@@ -189,6 +200,8 @@ private struct TodayFoldView: View {
     var sessionDoneCelebrations: Set<String> = []
     var tokenProvider: (() async throws -> String)?
     var signalClient: (any SleepServing & RecoveryServing)?
+    var nutrition: NutritionTodayStore?
+    var nutritionClient: (any NutritionServing)?
     var onArrival: () -> Void = {}
     var onArrivalCompleted: () -> Void = {}
     /// Called once a prescription has been linked, so Today reloads and shows it as done.
@@ -198,6 +211,8 @@ private struct TodayFoldView: View {
 
     @State private var selectedPreview: PlannedSessionPreview?
     @State private var openedSignal: V1TodaySignalKey?
+    @State private var openedNutrition: NutritionDestination?
+    @Environment(ProStore.self) private var pro: ProStore?
     @State private var consecutiveWeeks: Int? = nil
     @State private var sleepOverrideCaption: String? = nil
 
@@ -212,6 +227,8 @@ private struct TodayFoldView: View {
         sessionDoneCelebrations: Set<String> = [],
         tokenProvider: (() async throws -> String)? = nil,
         signalClient: (any SleepServing & RecoveryServing)? = nil,
+        nutrition: NutritionTodayStore? = nil,
+        nutritionClient: (any NutritionServing)? = nil,
         onArrival: @escaping () -> Void = {},
         onArrivalCompleted: @escaping () -> Void = {},
         onSessionLinked: @escaping () -> Void = {},
@@ -223,6 +240,8 @@ private struct TodayFoldView: View {
         self.sessionDoneCelebrations = sessionDoneCelebrations
         self.tokenProvider = tokenProvider
         self.signalClient = signalClient
+        self.nutrition = nutrition
+        self.nutritionClient = nutritionClient
         self.onArrival = onArrival
         self.onArrivalCompleted = onArrivalCompleted
         self.onSessionLinked = onSessionLinked
@@ -263,6 +282,16 @@ private struct TodayFoldView: View {
                         value: phase.showsGauges
                     )
                 }
+                if let nutrition {
+                    NutritionTodayCard(phase: nutrition.phase) { openNutrition(nutrition.phase) }
+                        .opacity(phase.showsGauges ? 1 : 0)
+                        .offset(y: phase.showsGauges ? 0 : 18)
+                        .animation(
+                            reduceMotion ? .easeOut(duration: 0.01)
+                                : .spring(response: 0.40, dampingFraction: 0.80).delay(0.11),
+                            value: phase.showsGauges
+                        )
+                }
                 if let consistency = fold.consistency, !consistency.days.isEmpty {
                     ConsistencyStrip(
                         consistency: consistency,
@@ -287,6 +316,16 @@ private struct TodayFoldView: View {
         .modifier(ScrollUnderGlass())
         .navigationDestination(item: $openedSignal) { key in
             signalDetail(for: key)
+        }
+        .navigationDestination(item: $openedNutrition) { destination in
+            nutritionDetail(for: destination)
+        }
+        .task(id: fold.trainingDayId) {
+            await nutrition?.load(trainingDayId: fold.trainingDayId)
+        }
+        // Buying Pro opens the card without waiting for the next visit.
+        .onChange(of: pro?.isPro) { _, _ in
+            Task { await nutrition?.load(trainingDayId: fold.trainingDayId) }
         }
         .sheet(item: $selectedPreview) { preview in
             PlannedSessionDrawer(
@@ -385,6 +424,29 @@ private struct TodayFoldView: View {
         return foundAny ? totalMinutes : nil
     }
 
+
+    private func openNutrition(_ phase: NutritionTodayStore.Phase) {
+        switch phase {
+        case .loaded, .empty: openedNutrition = .day
+        case .locked: openedNutrition = .pro
+        case .disconnected: router.openSettings()
+        case .loading, .hidden: break
+        }
+    }
+
+    @ViewBuilder
+    private func nutritionDetail(for destination: NutritionDestination) -> some View {
+        switch destination {
+        case .day:
+            if let nutritionClient, let tokenProvider {
+                NutritionView(client: nutritionClient, tokenProvider: tokenProvider)
+            }
+        case .pro:
+            if let pro {
+                ProView(store: pro)
+            }
+        }
+    }
 
     @ViewBuilder
     private func signalDetail(for key: V1TodaySignalKey) -> some View {
@@ -547,4 +609,12 @@ private struct TodayEmptyView: View {
             }
         }
     }
+}
+
+/// Where Résumé's nutrition card leads: the day's food log, or SharpIt Pro below it.
+private enum NutritionDestination: Hashable, Identifiable {
+    case day
+    case pro
+
+    var id: Self { self }
 }
