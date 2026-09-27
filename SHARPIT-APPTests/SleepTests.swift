@@ -174,7 +174,7 @@ private actor DayRecorder {
     await store.load()
     await store.select(try #require(TrainingDayId.date("2026-09-18")))
 
-    #expect(store.phase == .failed("failed"))
+    #expect(store.phase == .failed("failed Réessaie dans un instant."))
 }
 
 /// The picker marks each day from the histories already loaded, without another request.

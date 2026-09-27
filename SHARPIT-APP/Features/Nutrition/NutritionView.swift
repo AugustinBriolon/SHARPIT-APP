@@ -11,11 +11,16 @@ struct NutritionView: View {
     @State private var isConnecting = false
     @State private var isEditingWeightTarget = false
     @State private var targetWeightKg: Double?
+    @State private var isFoodLogExpired = false
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @Environment(ShellRouter.self) private var router
     private let mfp: any MyFitnessPalServing
     private let profileClient: any AthleteProfileServing
+    private let syncStatusClient: any SyncServing
     private let tokenProvider: () async throws -> String
+
+    /// Past this, opening the page pulls MyFitnessPal without being asked.
+    static var staleAfter: TimeInterval { 15 * 60 }
 
     init(
         client: any NutritionServing,
@@ -23,10 +28,12 @@ struct NutritionView: View {
         mfp: any MyFitnessPalServing = SharpitClient(),
         dataDaysClient: any DataDaysServing = SharpitClient(),
         profileClient: any AthleteProfileServing = AthleteProfileClient(),
+        syncStatusClient: any SyncServing = SharpitClient(),
         day: Date = .now
     ) {
         self.mfp = mfp
         self.profileClient = profileClient
+        self.syncStatusClient = syncStatusClient
         self.tokenProvider = tokenProvider
         _store = State(initialValue: DayResourceStore(
             failureMessage: "Ton journal alimentaire n'a pas pu être chargé.",
@@ -97,6 +104,13 @@ struct NutritionView: View {
             WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
         }
         .task { await loadWeightTarget() }
+        .task { await syncIfStale() }
+        .alert("Session MyFitnessPal expirée", isPresented: $isFoodLogExpired) {
+            Button("Reconnecter") { isConnecting = true }
+            Button("Plus tard", role: .cancel) {}
+        } message: {
+            Text("MyFitnessPal demande de te reconnecter. Ton journal reprendra où il s'était arrêté.")
+        }
         .sheet(isPresented: $isConnecting) {
             MyFitnessPalConnectSheet(client: mfp, tokenProvider: tokenProvider) {
                 toastCenter?.show("MyFitnessPal connecté", symbol: "checkmark.circle.fill", tone: .success)
@@ -113,29 +127,63 @@ struct NutritionView: View {
         targetWeightKg = profile.targetWeightKg
     }
 
-    /// Pulls the food log from MyFitnessPal, then reads every day again.
-    private func sync() async {
+    /// Anticipates the pull: the food log is fetched on opening when the last sync is old, so the
+    /// athlete never has to think of it. Quiet — only news is announced.
+    private func syncIfStale() async {
+        guard let token = try? await tokenProvider(),
+              let status = try? await syncStatusClient.syncStatus(token: token),
+              let foodLog = status.providers.first(where: { $0.key == "myfitnesspal" })
+        else { return }
+        let age = foodLog.lastSyncAt.map { Date.now.timeIntervalSince($0) } ?? .infinity
+        guard age > Self.staleAfter else { return }
+        await sync(announcesNothingNew: false)
+    }
+
+    /// Pulls the food log from MyFitnessPal, then reads every day again, and says what came in.
+    private func sync(announcesNothingNew: Bool = true) async {
         guard isConnected, !isSyncing else {
             await store.load()
             return
         }
         isSyncing = true
         defer { isSyncing = false }
+        let before = entryCount
         do {
             let token = try await tokenProvider()
             try await mfp.syncMyFitnessPal(token: token)
-            SharpitHaptics.play(.success)
         } catch SharpitAPIError.rateLimited {
             // Synced moments ago (the server allows one MFP pull every two minutes): what it
             // brought is already there, so the page simply reads again.
+        } catch where SharpitErrorGuidance.isExpiredFoodLogSession(error) {
+            isFoodLogExpired = true
         } catch {
             toastCenter?.show(
-                (error as? LocalizedError)?.errorDescription ?? "Synchronisation MyFitnessPal impossible.",
+                SharpitErrorGuidance.message(for: error, subject: "Ton journal alimentaire"),
                 symbol: "exclamationmark.triangle",
                 tone: .error
             )
         }
         await store.reloadAll()
+        announce(added: entryCount - before, announcesNothingNew: announcesNothingNew)
+    }
+
+    /// Foods logged on the day on screen.
+    private var entryCount: Int {
+        guard case .loaded(let nutrition) = store.phase else { return 0 }
+        return nutrition.day?.meals.reduce(0) { $0 + $1.entries.count } ?? 0
+    }
+
+    private func announce(added: Int, announcesNothingNew: Bool) {
+        if added > 0 {
+            SharpitHaptics.play(.success)
+            toastCenter?.show(
+                added == 1 ? "1 aliment ajouté" : "\(added) aliments ajoutés",
+                symbol: "fork.knife",
+                tone: .success
+            )
+        } else if announcesNothingNew {
+            toastCenter?.show("Ton journal est à jour", symbol: "checkmark.circle", tone: .success)
+        }
     }
 }
 
@@ -152,15 +200,15 @@ struct NutritionSections: View {
             if !nutrition.connected {
                 NutritionConnectPlate(onConnect: onConnect)
             } else if let day = nutrition.day {
-                NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete)
-                NutritionEnergyPlate(day: day)
+                NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete, isSyncing: isSyncing)
+                NutritionEnergyPlate(day: day, dayId: nutrition.trainingDayId, keptGoal: keptGoal(day))
                 coachReading
                 NutritionMacrosSection(day: day)
                 if !day.meals.isEmpty {
                     NutritionMealsSection(meals: day.meals, flags: flags)
                 }
             } else {
-                NutritionDayHeader(diet: nutrition.diet, isComplete: false)
+                NutritionDayHeader(diet: nutrition.diet, isComplete: false, isSyncing: isSyncing)
                 NutritionEmptyDayPlate(
                     isToday: nutrition.trainingDayId == TrainingDayId.today(now: .now),
                     isSyncing: isSyncing,
@@ -177,6 +225,13 @@ struct NutritionSections: View {
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.bottom, SharpitSpacing.xl)
+    }
+
+    /// A day kept on target and done with — a past day, or today once closed — earns its seal.
+    private func keptGoal(_ day: V1NutritionDay) -> Bool {
+        let isToday = nutrition.trainingDayId == TrainingDayId.today(now: .now)
+        guard day.complete || !isToday else { return false }
+        return nutrition.history.first(where: { $0.date == nutrition.trainingDayId })?.adherence == .onTarget
     }
 
     @ViewBuilder
@@ -338,6 +393,8 @@ struct NutritionEntryFlag: Hashable {
 /// The day's energy on the app's own dial, and the three numbers behind it.
 private struct NutritionEnergyPlate: View {
     let day: V1NutritionDay
+    let dayId: String
+    var keptGoal = false
 
     private var calories: V1NutritionMacro? { day.goals?.calories }
 
@@ -360,6 +417,12 @@ private struct NutritionEnergyPlate: View {
         }
         .padding(SharpitSpacing.md)
         .frame(maxWidth: .infinity)
+        .overlay(alignment: .topTrailing) {
+            if keptGoal {
+                NutritionGoalSeal(dayId: dayId)
+                    .padding(SharpitSpacing.sm)
+            }
+        }
         .sharpitSurface(.panel)
         .sharpitCardSpecularBorder()
     }
@@ -406,6 +469,33 @@ private struct NutritionEnergyPlate: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A day kept on target, sealed. Found by opening a good day, never announced; the first time
+/// a day's seal is seen it arrives with a light haptic, then it simply stays.
+private struct NutritionGoalSeal: View {
+    let dayId: String
+    @State private var shown = false
+
+    var body: some View {
+        Label("Objectif tenu", systemImage: "checkmark.seal.fill")
+            .font(SharpitTypography.label)
+            .tracking(SharpitTypography.labelTracking)
+            .textCase(.uppercase)
+            .foregroundStyle(SharpitColor.primary)
+            .padding(.horizontal, SharpitSpacing.xs)
+            .padding(.vertical, 4)
+            .background(SharpitColor.primary.opacity(0.10), in: Capsule())
+            .scaleEffect(shown ? 1 : 0.85)
+            .opacity(shown ? 1 : 0)
+            .onAppear {
+                SharpitMotion.run(SharpitMotion.reveal) { shown = true }
+                let key = "nutrition.goalSeal.\(dayId)"
+                guard !UserDefaults.standard.bool(forKey: key) else { return }
+                UserDefaults.standard.set(true, forKey: key)
+                SharpitHaptics.play(.success)
+            }
     }
 }
 
@@ -715,14 +805,22 @@ private struct NutritionDayHeader: View {
     @Environment(ShellRouter.self) private var router
     let diet: [String]
     let isComplete: Bool
+    var isSyncing = false
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.xs) {
             if diet.isEmpty {
                 chip(isComplete ? "Journée close" : "Journée en cours", symbol: isComplete ? "checkmark.circle" : "clock", tone: SharpitColor.mutedForeground)
             } else {
-                chip(diet.joined(separator: " · "), symbol: "leaf.fill", tone: SharpitColor.primary)
+                chip(diet.joined(separator: " · "), symbol: "leaf", tone: SharpitColor.primary)
                     .accessibilityLabel("Régime en cours : \(diet.joined(separator: ", "))")
+            }
+            // The pull runs behind the page: said quietly, never blocking what is shown.
+            if isSyncing {
+                ProgressView()
+                    .controlSize(.mini)
+                    .accessibilityLabel("Mise à jour du journal")
+                    .transition(.opacity)
             }
             Spacer(minLength: 0)
             CoachDiscussButton(title: "Coach") {
@@ -756,7 +854,7 @@ private struct NutritionRegularitySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Régularité · \(history.count) jours")
+            SharpitEyebrow("Régularité · \(history.count) \(history.count == 1 ? "jour" : "jours")")
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if let regularity {
                     HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
@@ -818,6 +916,7 @@ private struct NutritionRegularitySection: View {
                 } else {
                     Capsule()
                         .fill(tone(day.adherence))
+                        .frame(maxWidth: 14)
                         .frame(height: max(height * min(share, ceiling) / ceiling, 6))
                 }
             }

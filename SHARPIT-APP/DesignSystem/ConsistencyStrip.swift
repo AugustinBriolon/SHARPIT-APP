@@ -46,31 +46,7 @@ struct ConsistencyStrip: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(SharpitColor.primary.opacity(0.12))
-                    .frame(width: 22, height: 22)
-                Image(systemName: "calendar")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primary)
-            }
-
-            Text("RÉGULARITÉ")
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.foreground.opacity(0.85))
-
-            Spacer(minLength: 0)
-
-            if onOpenPlan != nil {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
-                    .accessibilityHidden(true)
-            }
-        }
+        SharpitCardHeader(title: "Régularité", symbol: "calendar", showsChevron: onOpenPlan != nil)
     }
 
     private var footSummary: some View {

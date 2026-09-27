@@ -9,13 +9,16 @@ struct SleepView: View {
     @State private var showsTargets = false
     private let tokenProvider: () async throws -> String
     private let profileClient: any AthleteProfileServing
+    private let syncClient: any SyncServing
 
     init(
         client: any SleepServing,
         tokenProvider: @escaping () async throws -> String,
         dataDaysClient: any DataDaysServing = SharpitClient(),
+        syncClient: any SyncServing = SharpitClient(),
         profileClient: any AthleteProfileServing = AthleteProfileClient()
     ) {
+        self.syncClient = syncClient
         self.tokenProvider = tokenProvider
         self.profileClient = profileClient
         _store = State(initialValue: DayResourceStore(
@@ -26,15 +29,23 @@ struct SleepView: View {
         ))
     }
 
+    /// Pulls the providers — the night may simply not have arrived yet — then reads every day again.
+    private func syncAndReload() async {
+        if let token = try? await tokenProvider() {
+            _ = try? await syncClient.sync(token: token)
+        }
+        await store.reloadAll()
+    }
+
     var body: some View {
         DayDetailScaffold(
             title: "Sommeil",
             emptySymbol: "moon.zzz",
             unavailableTitle: "Sommeil indisponible",
-            store: store
-        ) { sleep in
-            SleepSections(sleep: sleep)
-        }
+            store: store,
+            content: { sleep in SleepSections(sleep: sleep) },
+            emptyAction: (title: "Synchroniser maintenant", run: syncAndReload)
+        )
         // The sleep targets, set where they are read — right of the title, beside « Aujourd'hui ».
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

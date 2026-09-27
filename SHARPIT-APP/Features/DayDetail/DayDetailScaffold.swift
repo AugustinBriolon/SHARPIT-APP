@@ -11,6 +11,8 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     @ViewBuilder let content: (Payload) -> Content
     /// What pull-to-refresh does; by default it reads the day again.
     var refresh: (() async -> Void)?
+    /// A way out of an empty day — never a dead end.
+    var emptyAction: (title: String, run: () async -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -59,11 +61,18 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                 if let refresh { await refresh() } else { await store.load() }
             }
         case .empty(let empty):
-            ContentUnavailableView(
-                empty.title,
-                systemImage: emptySymbol,
-                description: empty.message.map(Text.init)
-            )
+            ContentUnavailableView {
+                Label(empty.title, systemImage: emptySymbol)
+            } description: {
+                if let message = empty.message { Text(message) }
+            } actions: {
+                if let emptyAction {
+                    Button(emptyAction.title) { Task { await emptyAction.run() } }
+                        .buttonStyle(.borderedProminent)
+                        .tint(SharpitColor.primary)
+                }
+                Button("Voir un autre jour") { Task { await store.select(Calendar.current.date(byAdding: .day, value: -1, to: store.selectedDay) ?? .now) } }
+            }
         case .failed(let message):
             ContentUnavailableView {
                 Label(unavailableTitle, systemImage: "wifi.slash")
@@ -73,7 +82,11 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                 Button("Réessayer") { Task { await store.load() } }
             }
         case .unauthorized:
-            ContentUnavailableView("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
+            ContentUnavailableView {
+                Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
+            } description: {
+                Text("Reconnecte-toi depuis Paramètres › Compte, puis reviens ici.")
+            }
         }
     }
 }

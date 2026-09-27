@@ -177,20 +177,7 @@ struct CorpsView: View {
 private struct BiologicalAgePendingCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            HStack(spacing: 8) {
-                ZStack {
-                    Circle().fill(SharpitColor.primary.opacity(0.12)).frame(width: 22, height: 22)
-                    Image(systemName: "hourglass")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(SharpitColor.primary)
-                }
-                Text("Âge biologique")
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.foreground.opacity(0.85))
-                Spacer(minLength: 0)
-            }
+            SharpitCardHeader(title: "Âge biologique", symbol: "hourglass")
             Text("—")
                 .font(SharpitTypography.heroScore)
                 .tracking(SharpitTypography.heroScoreTracking)
@@ -230,20 +217,7 @@ private struct BiologicalAgeCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            HStack(spacing: 8) {
-                ZStack {
-                    Circle().fill(tone.opacity(0.14)).frame(width: 22, height: 22)
-                    Image(systemName: "hourglass")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(tone)
-                }
-                Text("Âge biologique")
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.foreground.opacity(0.85))
-                Spacer(minLength: 0)
-            }
+            SharpitCardHeader(title: "Âge biologique", symbol: "hourglass", tint: tone, showsChevron: false)
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                 Text(BiologicalAgeReadout.years(age.years))
                     .font(SharpitTypography.heroScore)

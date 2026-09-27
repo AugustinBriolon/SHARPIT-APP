@@ -347,6 +347,23 @@ arriving; `staggerDelay(index:)` is capped, so use it instead of hard-coded dela
 `.revealed(_:index:)` applies that reveal-and-stagger to a view arriving on screen; the
 onboarding pushes each step in from the side the athlete is heading.
 
+What makes a surface feel finished, applied everywhere new work lands:
+
+- **One component per recurring shape.** Every readout card uses `SharpitCardHeader` (badge,
+  label, chevron) and `SharpitTelemetryCapsule` (the foot line); never a local copy that drifts a
+  point. Symbols are stroked in content; filled only for a status mark (a check, a seal).
+- **Anticipate.** A screen fetches what is stale before being asked (Nutrition pulls MFP on opening
+  past 15 minutes) and says it quietly (a spinner beside the header), never with a blocking state.
+- **Announce news, not work.** After a sync, say what came in (« 3 aliments ajoutés »); say « à jour »
+  only when the athlete asked.
+- **Reward, don't nag.** A kept day earns its seal (`NutritionGoalSeal`), found by opening it, with
+  one haptic the first time. No streak counters.
+- **No dead ends.** An empty day offers the next step (sync, another day, link a source); a
+  failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server) — an
+  expired MFP session asks to reconnect.
+- **Animate meaning only.** Figures move between days and a seal arrives once; nothing animates on
+  input or on every refresh, and `SharpitMotion` honours Reduce Motion.
+
 Screen structure follows the web causal column: state → evidence → recommendation →
 projection → limit → confidence.
 

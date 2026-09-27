@@ -5,12 +5,17 @@ import SwiftUI
 /// what the body says this morning, how it has moved, why, how sure we are.
 struct RecoveryView: View {
     @State private var store: DayResourceStore<V1RecoveryResponse>
+    private let tokenProvider: () async throws -> String
+    private let syncClient: any SyncServing
 
     init(
         client: any RecoveryServing,
         tokenProvider: @escaping () async throws -> String,
-        dataDaysClient: any DataDaysServing = SharpitClient()
+        dataDaysClient: any DataDaysServing = SharpitClient(),
+        syncClient: any SyncServing = SharpitClient()
     ) {
+        self.tokenProvider = tokenProvider
+        self.syncClient = syncClient
         _store = State(initialValue: DayResourceStore(
             failureMessage: "Ta récupération n'a pas pu être chargée.",
             tokenProvider: tokenProvider,
@@ -19,15 +24,23 @@ struct RecoveryView: View {
         ))
     }
 
+    /// Pulls the providers — the night may simply not have arrived yet — then reads every day again.
+    private func syncAndReload() async {
+        if let token = try? await tokenProvider() {
+            _ = try? await syncClient.sync(token: token)
+        }
+        await store.reloadAll()
+    }
+
     var body: some View {
         DayDetailScaffold(
             title: "Récupération",
             emptySymbol: "heart.text.square",
             unavailableTitle: "Récupération indisponible",
-            store: store
-        ) { recovery in
-            RecoverySections(recovery: recovery)
-        }
+            store: store,
+            content: { recovery in RecoverySections(recovery: recovery) },
+            emptyAction: (title: "Synchroniser maintenant", run: syncAndReload)
+        )
     }
 }
 

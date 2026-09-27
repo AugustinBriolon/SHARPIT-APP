@@ -109,34 +109,7 @@ private struct OvernightGaugeCell: View {
     }
 
     private var header: some View {
-        HStack(spacing: 6) {
-            ZStack {
-                Circle()
-                    .fill(tintColor.opacity(0.12))
-                    .frame(width: 22, height: 22)
-                Image(systemName: gauge.key.instrumentSymbol)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(tintColor)
-            }
-
-            Text(title)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.foreground.opacity(0.85))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-
-            Spacer(minLength: 2)
-
-            if opensDetail {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
-                    .accessibilityHidden(true)
-            }
-        }
-        .frame(maxWidth: .infinity)
+        SharpitCardHeader(title: title, symbol: gauge.key.instrumentSymbol, tint: tintColor, showsChevron: opensDetail)
     }
 
     private var tintColor: Color {
@@ -188,48 +161,19 @@ private struct OvernightGaugeCell: View {
     private var footCaption: some View {
         Group {
             if let caption = displayCaption, !caption.isEmpty {
-                HStack(spacing: 3) {
-                    if let bulletRange = caption.range(of: "·") {
-                        let prefix = String(caption[..<bulletRange.lowerBound]).trimmingCharacters(in: .whitespaces)
-                        let suffix = String(caption[bulletRange.upperBound...]).trimmingCharacters(in: .whitespaces)
-
-                        Text(prefix)
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .lineLimit(1)
-
-                        Text("·")
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
-
-                        Text(suffix)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(SharpitColor.foreground)
-                            .lineLimit(1)
-                    } else {
-                        Text(caption)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .lineLimit(1)
-                    }
+                if let bullet = caption.range(of: "·") {
+                    SharpitTelemetryCapsule(
+                        lead: String(caption[..<bullet.lowerBound]).trimmingCharacters(in: .whitespaces),
+                        value: String(caption[bullet.upperBound...]).trimmingCharacters(in: .whitespaces)
+                    )
+                } else {
+                    SharpitTelemetryCapsule(lead: caption)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .frame(maxWidth: .infinity)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(SharpitColor.secondary.opacity(0.55))
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .strokeBorder(SharpitColor.border.opacity(0.06), lineWidth: 0.5)
-                        )
-                )
             } else {
                 Color.clear
                     .frame(height: 24)
             }
         }
-        .frame(height: 24)
     }
 
     private var scoreDisplay: String {

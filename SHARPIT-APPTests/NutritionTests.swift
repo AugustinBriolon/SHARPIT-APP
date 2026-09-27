@@ -250,3 +250,21 @@ private actor CountingNutrition {
     #expect(NutritionReadout.kilograms(72.5) == "72,5 kg")
     #expect(NutritionReadout.kilograms(70) == "70 kg")
 }
+
+// MARK: - Guidance
+
+@Test func aFailureSaysWhatToDo() {
+    #expect(SharpitErrorGuidance.message(for: SharpitAPIError.transport, subject: "Ton sommeil")
+        == "Pas de connexion internet. Vérifie ton réseau, puis réessaie.")
+    #expect(SharpitErrorGuidance.message(for: SharpitAPIError.server, subject: "Ton sommeil")
+        .hasPrefix("Ton sommeil n'a pas pu être chargé."))
+    #expect(DayResourceStore<V1NutritionResponse>.failure(SharpitAPIError.server, fallback: "Ton journal n'a pas pu être chargé.")
+        == "Ton journal n'a pas pu être chargé. Réessaie dans un instant.")
+}
+
+@Test func anExpiredFoodLogSessionIsRecognised() {
+    #expect(SharpitErrorGuidance.isExpiredFoodLogSession(
+        SharpitAPIError.message("Session MyFitnessPal expirée. Reconnecte-toi avec un nouveau cookie de session.")
+    ))
+    #expect(!SharpitErrorGuidance.isExpiredFoodLogSession(SharpitAPIError.transport))
+}

@@ -112,6 +112,14 @@ final class DayResourceStore<Payload: V1DayResource> {
         await load(keepingDayOnFailure: false)
     }
 
+    /// The cause and what to do for a network or session failure; the screen's own words otherwise.
+    static func failure(_ error: Error, fallback: String) -> String {
+        switch error as? SharpitAPIError {
+        case .transport?, .rateLimited?: SharpitErrorGuidance.message(for: error, subject: "")
+        default: "\(fallback) Réessaie dans un instant."
+        }
+    }
+
     private func show(_ payload: Payload) {
         phase = payload.empty.map(Phase.empty) ?? .loaded(payload)
     }
@@ -132,7 +140,7 @@ final class DayResourceStore<Payload: V1DayResource> {
         } catch {
             guard requestedDay == trainingDayId else { return }
             if keepingDayOnFailure, case .loaded = phase { return }
-            phase = .failed(failureMessage)
+            phase = .failed(Self.failure(error, fallback: failureMessage))
         }
     }
 

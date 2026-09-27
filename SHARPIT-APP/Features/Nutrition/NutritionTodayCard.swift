@@ -26,26 +26,7 @@ struct NutritionTodayCard: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(SharpitColor.primary.opacity(0.12))
-                    .frame(width: 22, height: 22)
-                Image(systemName: "fork.knife")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primary)
-            }
-            Text("Nutrition")
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.foreground.opacity(0.85))
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
-                .accessibilityHidden(true)
-        }
+        SharpitCardHeader(title: "Nutrition", symbol: "fork.knife")
     }
 
     @ViewBuilder
@@ -124,28 +105,9 @@ private struct NutritionDayGlance: View {
     }
 
     private var footCapsule: some View {
-        HStack(spacing: 4) {
-            Text(NutritionReadout.mealsCount(day.meals.count))
-                .font(.system(size: 11, weight: .regular))
-                .foregroundStyle(SharpitColor.mutedForeground)
-            Text("·")
-                .font(.system(size: 11, weight: .regular))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
-            Text(NutritionReadout.remainingLabel(calories?.remaining) ?? (day.complete ? "Journée close" : "Journée en cours"))
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(SharpitColor.foreground)
-        }
-        .lineLimit(1)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity)
-        .background(
-            Capsule(style: .continuous)
-                .fill(SharpitColor.secondary.opacity(0.55))
-                .overlay(
-                    Capsule(style: .continuous)
-                        .strokeBorder(SharpitColor.border.opacity(0.06), lineWidth: 0.5)
-                )
+        SharpitTelemetryCapsule(
+            lead: NutritionReadout.mealsCount(day.meals.count),
+            value: NutritionReadout.remainingLabel(calories?.remaining) ?? (day.complete ? "Journée close" : "Journée en cours")
         )
     }
 }
