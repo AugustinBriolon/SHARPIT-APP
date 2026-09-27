@@ -14,8 +14,10 @@ struct SharpitMarkdownText: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            ForEach(blocks) { block in
+            ForEach(Array(blocks.enumerated()), id: \.offset) { index, block in
                 view(for: block)
+                    // A heading opens a new part of the answer: it takes air above, not below.
+                    .padding(.top, index > 0 && block.isHeading ? SharpitSpacing.xs : 0)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -38,14 +40,19 @@ struct SharpitMarkdownText: View {
             Text(SharpitMarkdown.inline(text))
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.foreground)
+                .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
 
         case .bulleted(let items):
             list(items) { _ in
-                Text("•")
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.primary)
+                Circle()
+                    .fill(SharpitColor.primary)
+                    .frame(width: 5, height: 5)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] + 4 }
             }
+
+        case .table(let header, let rows):
+            SharpitMarkdownTable(header: header, rows: rows)
 
         case .numbered(let items):
             list(items) { index in
@@ -98,6 +105,7 @@ struct SharpitMarkdownText: View {
                     Text(SharpitMarkdown.inline(item))
                         .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.foreground)
+                        .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -118,6 +126,63 @@ struct SharpitMarkdownText: View {
         case 2: SharpitTypography.cardTitleTracking
         default: 0
         }
+    }
+}
+
+private extension SharpitMarkdownBlock {
+    var isHeading: Bool {
+        if case .heading = self { return true }
+        return false
+    }
+}
+
+/// A coach's table on a panel: the header as labels, one row per line, the first column read as
+/// the row's name. Wider than the screen, it scrolls sideways rather than squeezing its figures.
+private struct SharpitMarkdownTable: View {
+    let header: [String]
+    let rows: [[String]]
+
+    private var columns: Int { max(header.count, rows.map(\.count).max() ?? 0) }
+
+    var body: some View {
+        // Laid flat when it fits; scrolls sideways only when it does not.
+        ViewThatFits(in: .horizontal) {
+            grid
+            ScrollView(.horizontal, showsIndicators: false) { grid }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+    }
+
+    private var grid: some View {
+            Grid(alignment: .leading, horizontalSpacing: SharpitSpacing.md, verticalSpacing: SharpitSpacing.xs) {
+                GridRow {
+                    ForEach(0..<columns, id: \.self) { column in
+                        Text(cell(header, column))
+                            .font(SharpitTypography.label)
+                            .tracking(SharpitTypography.labelTracking)
+                            .textCase(.uppercase)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                }
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                    Divider().overlay(SharpitColor.analysisGrid).gridCellUnsizedAxes(.horizontal)
+                    GridRow {
+                        ForEach(0..<columns, id: \.self) { column in
+                            Text(SharpitMarkdown.inline(cell(row, column)))
+                                .font(column == 0 ? SharpitTypography.bodyEmphasis : SharpitTypography.body)
+                                .monospacedDigit()
+                                .foregroundStyle(SharpitColor.foreground)
+                                .fixedSize()
+                        }
+                    }
+                }
+            }
+            .padding(SharpitSpacing.md)
+    }
+
+    private func cell(_ row: [String], _ column: Int) -> String {
+        column < row.count ? row[column] : ""
     }
 }
 

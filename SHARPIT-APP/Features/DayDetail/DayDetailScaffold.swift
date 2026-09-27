@@ -13,6 +13,9 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     var refresh: (() async -> Void)?
     /// A way out of an empty day — never a dead end.
     var emptyAction: (title: String, run: () async -> Void)?
+    /// A stand-in payload drawn redacted while the day loads, so a screen opens in its own
+    /// shape; without one, the shared causal-column skeleton.
+    var loadingPlaceholder: Payload?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,8 +51,16 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
         switch store.phase {
         case .loading:
             ScrollView {
-                DayDetailSkeleton()
-                    .padding(.top, SharpitSpacing.md)
+                if let loadingPlaceholder {
+                    content(loadingPlaceholder)
+                        .padding(.top, SharpitSpacing.md)
+                        .redacted(reason: .placeholder)
+                        .allowsHitTesting(false)
+                        .accessibilityLabel("Chargement")
+                } else {
+                    DayDetailSkeleton()
+                        .padding(.top, SharpitSpacing.md)
+                }
             }
         case .loaded(let payload):
             ScrollView {

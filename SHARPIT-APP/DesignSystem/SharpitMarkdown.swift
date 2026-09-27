@@ -18,6 +18,8 @@ nonisolated enum SharpitMarkdownBlock: Equatable, Identifiable, Sendable {
     case numbered([String])
     case quote(String)
     case code(String)
+    /// A pipe table: its header cells, then each row's cells.
+    case table(header: [String], rows: [[String]])
     case rule
 
     var id: String {
@@ -28,6 +30,7 @@ nonisolated enum SharpitMarkdownBlock: Equatable, Identifiable, Sendable {
         case .numbered(let items): "ol-\(items.joined(separator: "|"))"
         case .quote(let text): "q-\(text)"
         case .code(let text): "code-\(text)"
+        case .table(let header, let rows): "table-\(header.joined(separator: "|"))-\(rows.count)"
         case .rule: "rule"
         }
     }
@@ -43,6 +46,7 @@ nonisolated enum SharpitMarkdown {
         var numbers: [String] = []
         var code: [String] = []
         var inCode = false
+        var tableLines: [String] = []
 
         func flushParagraph() {
             guard !paragraph.isEmpty else { return }
@@ -59,9 +63,23 @@ nonisolated enum SharpitMarkdown {
                 numbers = []
             }
         }
+        func flushTable() {
+            guard !tableLines.isEmpty else { return }
+            let rows = tableLines
+                .filter { !isTableSeparator($0) }
+                .map(tableCells)
+            if let header = rows.first, rows.count > 1 {
+                blocks.append(.table(header: header, rows: Array(rows.dropFirst())))
+            } else {
+                // One line of pipes is not a table: keep it as the athlete would read it.
+                blocks.append(.paragraph(tableLines.joined(separator: " ")))
+            }
+            tableLines = []
+        }
         func flushAll() {
             flushParagraph()
             flushLists()
+            flushTable()
         }
 
         for rawLine in markdown.components(separatedBy: .newlines) {
@@ -81,6 +99,14 @@ nonisolated enum SharpitMarkdown {
                 code.append(rawLine)
                 continue
             }
+
+            if line.hasPrefix("|") {
+                flushParagraph()
+                flushLists()
+                tableLines.append(line)
+                continue
+            }
+            flushTable()
 
             if line.isEmpty {
                 flushAll()
@@ -123,6 +149,19 @@ nonisolated enum SharpitMarkdown {
         }
         flushAll()
         return blocks
+    }
+
+    /// `|---|:--:|` — the line under a table's header.
+    private static func isTableSeparator(_ line: String) -> Bool {
+        let stripped = line.replacingOccurrences(of: " ", with: "")
+        return !stripped.isEmpty && stripped.allSatisfy { "|-:".contains($0) } && stripped.contains("-")
+    }
+
+    private static func tableCells(_ line: String) -> [String] {
+        var trimmed = line.trimmingCharacters(in: .whitespaces)
+        if trimmed.hasPrefix("|") { trimmed.removeFirst() }
+        if trimmed.hasSuffix("|") { trimmed.removeLast() }
+        return trimmed.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
     private static func isRule(_ line: String) -> Bool {

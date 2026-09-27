@@ -48,7 +48,15 @@ struct GoalsView: View {
                 )
                 .revealed(hasAppeared, index: 1)
 
-                if displayed.isEmpty && !store.isLoading {
+                if displayed.isEmpty && store.isLoading {
+                    // The cards' own shape while the goals load, never a blank page.
+                    LazyVStack(spacing: SharpitSpacing.sm) {
+                        ForEach(V1Goal.placeholders) { GoalCard(goal: $0) }
+                    }
+                    .redacted(reason: .placeholder)
+                    .allowsHitTesting(false)
+                    .accessibilityLabel("Chargement des objectifs")
+                } else if displayed.isEmpty {
                     emptyState
                         .revealed(hasAppeared, index: 2)
                 } else {
@@ -434,4 +442,11 @@ enum GoalFormat {
             ? String(Int(value))
             : String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
     }
+}
+
+private extension V1Goal {
+    static let placeholders: [V1Goal] = [
+        V1Goal(id: "skeleton-0", title: "Semi-marathon de printemps", kind: .race, targetDate: .now.addingTimeInterval(60 * 86_400)),
+        V1Goal(id: "skeleton-1", title: "Poids de forme", kind: .metric, currentValue: 72, targetValue: 70, unit: "kg"),
+    ]
 }

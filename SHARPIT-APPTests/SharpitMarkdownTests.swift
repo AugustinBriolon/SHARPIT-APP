@@ -141,3 +141,25 @@ import Testing
 @Test func leadingWhitespaceInsideALineSurvives() {
     #expect(String(SharpitMarkdown.inline("  décalé").characters) == "  décalé")
 }
+
+@Test func aPipeTableBecomesATable() {
+    let blocks = SharpitMarkdown.blocks(from: """
+    Tes allures :
+
+    | Séance | Allure |
+    |---|:--:|
+    | Seuil | 4:05/km |
+    | Endurance | 5:10/km |
+
+    Garde-les.
+    """)
+    #expect(blocks == [
+        .paragraph("Tes allures :"),
+        .table(header: ["Séance", "Allure"], rows: [["Seuil", "4:05/km"], ["Endurance", "5:10/km"]]),
+        .paragraph("Garde-les."),
+    ])
+}
+
+@Test func aLoneLineOfPipesStaysProse() {
+    #expect(SharpitMarkdown.blocks(from: "| pas un tableau |") == [.paragraph("| pas un tableau |")])
+}

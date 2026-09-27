@@ -94,7 +94,11 @@ struct CoachMemoryView: View {
             eyebrow: "Déplacements & contraintes",
             footer: "Périodes temporaires avec impact direct sur les séances planifiées."
         ) {
-            if store.entries.isEmpty && !store.isLoading {
+            if store.entries.isEmpty && store.isLoading {
+                entryRow(CoachMemoryEntry(type: .travel, label: "Déplacement professionnel", startDate: .now, endDate: .now.addingTimeInterval(3 * 86_400)))
+                    .redacted(reason: .placeholder)
+                    .accessibilityLabel("Chargement")
+            } else if store.entries.isEmpty {
                 Text("Aucun déplacement ou contrainte planifié.")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)

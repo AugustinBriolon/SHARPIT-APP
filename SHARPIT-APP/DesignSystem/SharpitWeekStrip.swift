@@ -290,19 +290,23 @@ private struct SharpitCalendarView: UIViewRepresentable {
             self.parent = parent
         }
 
+        /// A bold stroke, so the ring holds up at the decoration's small size.
+        private static let ring = UIImage(
+            systemName: "circle",
+            withConfiguration: UIImage.SymbolConfiguration(weight: .heavy)
+        )
+
         func calendarView(_: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {
             guard let date = parent.calendar.date(from: dateComponents) else { return nil }
             switch parent.marks[parent.calendar.startOfDay(for: date)] {
             case .filled:
                 return .default(color: UIColor(SharpitColor.primary), size: .small)
             case .ring:
-                return .image(
-                    UIImage(systemName: "circle"),
-                    color: UIColor(SharpitColor.primary),
-                    size: .small
-                )
+                return .image(Self.ring, color: UIColor(SharpitColor.primary), size: .small)
             case .muted:
-                return .default(color: UIColor(SharpitColor.mutedForeground), size: .small)
+                // Shape as well as colour, as on the strip: a hollow ring reads as "nothing" next
+                // to a filled dot even at a glance, where two dots only differ by their grey.
+                return .image(Self.ring, color: UIColor(SharpitColor.mutedForeground), size: .small)
             case nil:
                 return nil
             }

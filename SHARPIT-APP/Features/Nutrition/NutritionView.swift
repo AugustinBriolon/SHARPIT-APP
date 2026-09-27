@@ -64,7 +64,8 @@ struct NutritionView: View {
                     onConnect: { isConnecting = true }
                 )
             },
-            refresh: { await sync() }
+            refresh: { await sync() },
+            loadingPlaceholder: NutritionReadout.placeholderResponse
         )
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

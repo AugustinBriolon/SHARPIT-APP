@@ -68,7 +68,11 @@ struct SessionLinkPicker: View {
     private var content: some View {
         switch store.phase {
         case .loading:
-            SharpitLoadingInstrument()
+            // The candidates' own rows, redacted: the picker opens in the shape it will take.
+            rows(SessionLinkCandidate.placeholders)
+                .redacted(reason: .placeholder)
+                .allowsHitTesting(false)
+                .accessibilityLabel("Chargement des séances réalisées")
         case .failed(let message) where store.candidates.isEmpty:
             ContentUnavailableView {
                 Label("Chargement impossible", systemImage: "wifi.slash")
@@ -85,6 +89,19 @@ struct SessionLinkPicker: View {
             )
         case .ready, .linking, .failed:
             list
+        }
+    }
+
+    private func rows(_ candidates: [SessionLinkCandidate]) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                SharpitEyebrow("Choisis la séance qui l'a réalisée")
+                ForEach(candidates) { candidate in
+                    SessionLinkCandidateRow(candidate: candidate)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(SharpitSpacing.pageInset)
         }
     }
 
@@ -143,5 +160,18 @@ private struct SessionLinkCandidateRow: View {
         .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+private extension SessionLinkCandidate {
+    static let placeholders: [SessionLinkCandidate] = (0..<3).map { index in
+        SessionLinkCandidate(
+            id: "skeleton-\(index)",
+            title: "Sortie longue endurance",
+            sport: "RUN",
+            symbolName: "figure.run",
+            dayLabel: "Même jour",
+            durationLabel: "1 h 05"
+        )
     }
 }

@@ -52,7 +52,11 @@ struct CoachHistoryView: View {
     private var content: some View {
         switch store.phase {
         case .loading:
-            SharpitLoadingInstrument()
+            // The list's own rows, redacted: the history opens in the shape it will take.
+            list(CoachConversationSummary.placeholders)
+                .redacted(reason: .placeholder)
+                .allowsHitTesting(false)
+                .accessibilityLabel("Chargement de l'historique")
         case .failed(let message):
             ContentUnavailableView {
                 Label("Historique indisponible", systemImage: "wifi.slash")
@@ -136,5 +140,15 @@ private struct CoachHistoryRow: View {
         .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+private extension CoachConversationSummary {
+    static let placeholders: [CoachConversationSummary] = (0..<6).map { index in
+        CoachConversationSummary(
+            id: "skeleton-\(index)",
+            title: "Conversation avec le coach sur la semaine",
+            updatedAt: Date(timeIntervalSinceNow: -Double(index) * 86_400)
+        )
     }
 }

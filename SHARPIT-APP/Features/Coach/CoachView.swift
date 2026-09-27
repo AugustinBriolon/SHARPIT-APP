@@ -222,7 +222,8 @@ struct CoachView: View {
                     )
                         .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1...5)
+                        // Grows with the text up to six lines, then scrolls inside itself.
+                        .lineLimit(1...6)
                         .focused($composerIsFocused)
                         // A vertical-axis field treats Return as a newline, so `onSubmit`
                         // never fires. Catching the newline is what makes Return behave the
@@ -237,7 +238,13 @@ struct CoachView: View {
                         // One line is exactly as tall as the circles beside it, so the three
                         // controls share a centre; more lines grow upward from that base.
                         .frame(minHeight: Self.controlHeight)
-                        .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.analysisSurfaceAlt)
+                        // A fixed corner, not a capsule: on one line it reads as a capsule, and
+                        // as it grows it becomes a rounded field whose corners never eat the text.
+                        .sharpitGlassControl(
+                            in: RoundedRectangle(cornerRadius: Self.controlHeight / 2, style: .continuous),
+                            fallback: SharpitColor.analysisSurfaceAlt
+                        )
+                        .animation(SharpitMotion.selection, value: store.draft.count / 40)
                         .submitLabel(.send)
 
                     Button(action: submit) {
