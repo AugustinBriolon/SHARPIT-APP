@@ -27,6 +27,8 @@ struct SettingsView: View {
     @State private var push = PushNotificationManager.shared
     @State private var notificationStatus: UNAuthorizationStatus?
     @Environment(ProStore.self) private var pro: ProStore?
+    /// The pages open, the first one given when a notification opens Paramètres on it.
+    @State private var path: [SettingsRoute]
 
     init(
         appleHealth: AppleHealthSource,
@@ -36,8 +38,10 @@ struct SettingsView: View {
         tokenProvider: @escaping () async throws -> String,
         modelContext: ModelContext?,
         privacyClient: any PrivacyConsentServing = PrivacyConsentClient(),
-        cloudSync: CloudSyncMonitor = .shared
+        cloudSync: CloudSyncMonitor = .shared,
+        openingOn route: SettingsRoute? = nil
     ) {
+        _path = State(initialValue: route.map { [$0] } ?? [])
         self.appleHealth = appleHealth
         self.syncClient = syncClient
         self.profileClient = profileClient
@@ -54,7 +58,7 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                     NavigationLink(value: SettingsRoute.account) {

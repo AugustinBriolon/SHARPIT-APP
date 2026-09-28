@@ -79,44 +79,47 @@ struct PushAndHandoffTests {
     @Test func morningVerdictPushNotificationRoutingByCategory() {
         let manager = PushNotificationManager()
         manager.didReceiveNotificationResponse(userInfo: ["category": "MORNING_VERDICT"])
-        #expect(manager.pendingTabSelection == .today)
-        #expect(manager.consumePendingNavigation() == .today)
-        #expect(manager.pendingTabSelection == nil)
+        #expect(manager.pendingDestination == .tab(.today))
+        #expect(manager.consumePendingDestination() == .tab(.today))
+        #expect(manager.pendingDestination == nil)
     }
 
     @Test func morningVerdictPushNotificationRoutingByApsCategory() {
-        let manager = PushNotificationManager()
-        manager.didReceiveNotificationResponse(userInfo: [
-            "aps": ["category": "MORNING_VERDICT"]
-        ])
-        #expect(manager.consumePendingNavigation() == .today)
+        #expect(PushNotificationManager.destination(for: ["aps": ["category": "MORNING_VERDICT"]]) == .tab(.today))
     }
 
     @Test func morningVerdictPushNotificationRoutingByThreadId() {
-        let manager = PushNotificationManager()
-        manager.didReceiveNotificationResponse(userInfo: [
-            "aps": ["thread-id": "morning-verdict"]
-        ])
-        #expect(manager.consumePendingNavigation() == .today)
+        #expect(PushNotificationManager.destination(for: ["aps": ["thread-id": "morning-verdict"]]) == .tab(.today))
+    }
+
+    /// Every push the server sends, and the session reminder, lands where it speaks of.
+    @Test func eachNotificationOpensWhatItSpeaksOf() {
+        #expect(PushNotificationManager.destination(for: ["url": "/plan/generator"]) == .planGenerator)
+        #expect(PushNotificationManager.destination(for: ["url": "/plan/review"]) == .weeklyReview)
+        #expect(PushNotificationManager.destination(for: ["url": "/settings/sources"]) == .settings(.sources))
+        #expect(PushNotificationManager.destination(for: ["url": "/settings"]) == .settings(nil))
+        #expect(PushNotificationManager.destination(for: ["url": "/plan"]) == .tab(.plan))
+        #expect(PushNotificationManager.destination(for: ["url": "https://sharpit.app/today"]) == .tab(.today))
+        #expect(PushNotificationManager.destination(for: [:]) == nil)
     }
 
     @Test func pushNotificationRoutingByUrl() {
         let manager = PushNotificationManager()
 
         manager.didReceiveNotificationResponse(userInfo: ["url": "https://sharpit.app/plan"])
-        #expect(manager.consumePendingNavigation() == .plan)
+        #expect(manager.consumePendingDestination() == .tab(.plan))
 
         manager.didReceiveNotificationResponse(userInfo: ["url": "https://sharpit.app/coach"])
-        #expect(manager.consumePendingNavigation() == .coach)
+        #expect(manager.consumePendingDestination() == .tab(.coach))
 
         manager.didReceiveNotificationResponse(userInfo: ["url": "https://sharpit.app/activity"])
-        #expect(manager.consumePendingNavigation() == .activity)
+        #expect(manager.consumePendingDestination() == .tab(.activity))
 
         manager.didReceiveNotificationResponse(userInfo: ["url": "https://sharpit.app/me"])
-        #expect(manager.consumePendingNavigation() == .body)
+        #expect(manager.consumePendingDestination() == .tab(.body))
 
         manager.didReceiveNotificationResponse(userInfo: ["url": "https://sharpit.app/corps"])
-        #expect(manager.consumePendingNavigation() == .body)
+        #expect(manager.consumePendingDestination() == .tab(.body))
     }
 
     @Test func syncDeviceTokenFlow() async {

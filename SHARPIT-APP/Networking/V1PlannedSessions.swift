@@ -3,6 +3,8 @@ import Foundation
 nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifiable {
     let id: String
     let date: Date
+    /// "HH:mm", athlete-local, when the session has a time — the coach places it in a free slot.
+    let startTime: String?
     let title: String?
     let type: String?
     let durationMin: Int?
@@ -23,7 +25,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     let garminWorkoutPushedAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, date, title, type, durationMin, intensity, load, notes, breakdown
+        case id, date, startTime, title, type, durationMin, intensity, load, notes, breakdown
         case goalId, completed, activityId, activity
         case garminWorkoutId, garminWorkoutScheduledDate, garminWorkoutPushedAt
     }
@@ -31,6 +33,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     init(
         id: String,
         date: Date,
+        startTime: String? = nil,
         title: String? = nil,
         type: String? = nil,
         durationMin: Int? = nil,
@@ -48,6 +51,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     ) {
         self.id = id
         self.date = date
+        self.startTime = startTime
         self.title = title
         self.type = type
         self.durationMin = durationMin
@@ -68,6 +72,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         date = try Date.fromPlannedAPI(container.decode(String.self, forKey: .date))
+        startTime = try? container.decodeIfPresent(String.self, forKey: .startTime)
         title = try container.decodeIfPresent(String.self, forKey: .title)
         type = try container.decodeIfPresent(String.self, forKey: .type)
         durationMin = try container.decodeIfPresent(Int.self, forKey: .durationMin)
@@ -105,6 +110,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         V1PlannedSessionItem(
             id: id,
             date: date,
+            startTime: startTime,
             title: title,
             type: type,
             durationMin: durationMin,

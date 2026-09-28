@@ -341,7 +341,11 @@ when Pro but data is missing, `BiologicalAgePendingCard` says what the estimate 
 answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's
 `overrideUserInterfaceStyle` so open sheets switch at once) — then Notifications, a page
 (`NotificationPrefsView`: the switch, `PushNotificationManager.setEnabled`, where off unregisters
-the device server-side since iOS owns the permission, then each kind in `notificationPrefs`), Sources de
+the device server-side since iOS owns the permission, then each kind in `notificationPrefs`; session reminders are local — `SessionReminderScheduler`
+reschedules them from the plan on launch, on each return, on `calendarRevision` and on the switch,
+an hour before a session's `startTime` or at 7:30 that day, by `SessionReminderPlanner`'s rules; every
+tapped notification goes through `PushNotificationManager.destination(for:)` to
+`ShellRouter.open(_:)` — `/plan/generator`, `/plan/review`, `/settings/sources`, a tab), Sources de
 données, Synchronisation iCloud (`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer`
 events from launch), Sports & équipement, Densité de lecture (its own page: the choice needs its
 explanation) and Confidentialité, each row saying its state before it is opened. Compte edits in

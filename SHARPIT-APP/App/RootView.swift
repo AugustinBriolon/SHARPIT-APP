@@ -105,7 +105,8 @@ struct RootView: View {
                 profileClient: profileClient,
                 displayMode: displayMode,
                 tokenProvider: liveToken,
-                modelContext: modelContext
+                modelContext: modelContext,
+                openingOn: router.settingsRoute
             )
         }
         .overlay(alignment: .top) { SharpitToastHost(center: toastCenter) }
@@ -129,7 +130,9 @@ struct RootView: View {
             await runHistoryImport()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await runHistoryImport() } }
+            guard phase == .active else { return }
+            Task { await runHistoryImport() }
+            Task { await refreshSessionReminders() }
         }
         .onChange(of: historyImport.state) { _, state in showHistoryToast(for: state) }
         .task {
@@ -144,11 +147,11 @@ struct RootView: View {
             }()
             _ = await (modeLoad, pushSetup)
 
-            if let tab = pushManager.consumePendingNavigation() {
-                router.select(tab)
-                if pushManager.consumePlanGeneratorRequest() { router.isShowingPlanGenerator = true }
-            }
+            if let destination = pushManager.consumePendingDestination() { router.open(destination) }
+            await refreshSessionReminders()
         }
+        // The plan changed elsewhere (a coach proposal carried out): the reminders follow it.
+        .onChange(of: router.calendarRevision) { _, _ in Task { await refreshSessionReminders() } }
         .onChange(of: pushManager.deviceToken) { _, newToken in
             if newToken != nil {
                 Task {
@@ -156,11 +159,8 @@ struct RootView: View {
                 }
             }
         }
-        .onChange(of: pushManager.pendingTabSelection) { _, newTab in
-            if let tab = pushManager.consumePendingNavigation() {
-                router.select(tab)
-                if pushManager.consumePlanGeneratorRequest() { router.isShowingPlanGenerator = true }
-            }
+        .onChange(of: pushManager.pendingDestination) { _, _ in
+            if let destination = pushManager.consumePendingDestination() { router.open(destination) }
         }
         .onOpenURL { url in
             handleIncomingURL(url)
@@ -177,6 +177,17 @@ struct RootView: View {
             throw SharpitAPIError.unauthorized
         }
         return token
+    }
+
+    /// Session reminders are local: rescheduled from the plan on launch, on each return and
+    /// whenever the plan changes, so a session moved or done never rings.
+    private func refreshSessionReminders() async {
+        await SessionReminderScheduler.shared.refresh(
+            isEnabledOnPhone: pushManager.isEnabledByAthlete,
+            profiles: profileClient,
+            plan: plannedSessionClient,
+            tokenProvider: liveToken
+        )
     }
 
     private func runHistoryImport() async {

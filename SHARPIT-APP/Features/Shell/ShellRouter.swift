@@ -18,9 +18,14 @@ final class ShellRouter {
     /// Paramètres is a sheet over the tabs, opened from the avatar in Résumé and Corps or a
     /// `/settings` link — not a tab: the athlete tunes it rarely and leaves it at once.
     var isShowingSettings = false
+    /// The page Paramètres opens on — a notification about a source opens Sources de données.
+    private(set) var settingsRoute: SettingsRoute?
 
     /// Plan's « Remplir ma semaine » sheet — here so a notification can open it.
     var isShowingPlanGenerator = false
+
+    /// Plan's « Bilan de la semaine » sheet — here so « Ton bilan est prêt » can open it.
+    var isShowingWeeklyReview = false
 
     /// Bumped when the calendar changed elsewhere than on Plan — a coach proposal carried out —
     /// so Plan and Résumé reload what they show.
@@ -34,8 +39,25 @@ final class ShellRouter {
         selectedTab = tab
     }
 
-    func openSettings() {
+    func openSettings(on route: SettingsRoute? = nil) {
+        settingsRoute = route
         isShowingSettings = true
+    }
+
+    /// Opens what a notification points at.
+    func open(_ destination: NotificationDestination) {
+        switch destination {
+        case .tab(let tab):
+            select(tab)
+        case .planGenerator:
+            select(.plan)
+            isShowingPlanGenerator = true
+        case .weeklyReview:
+            select(.plan)
+            isShowingWeeklyReview = true
+        case .settings(let route):
+            openSettings(on: route)
+        }
     }
 
     /// Opens Coach carrying what the athlete was looking at.
@@ -50,6 +72,14 @@ final class ShellRouter {
         defer { pendingCoachContext = nil }
         return pendingCoachContext
     }
+}
+
+/// Where a tapped notification leads.
+enum NotificationDestination: Equatable {
+    case tab(ShellTab)
+    case planGenerator
+    case weeklyReview
+    case settings(SettingsRoute?)
 }
 
 enum ShellTab: Hashable, CaseIterable {

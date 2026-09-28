@@ -23,7 +23,6 @@ struct PlanView: View {
     /// Plan's, not the sheet's: closing it mid-analysis keeps the proposal coming.
     @State private var adjustment: PlanAdjustmentStore
     @State private var showingGoals = false
-    @State private var showingWeeklyReview = false
     /// Plan's, not the sheet's: reopening Objectifs shows the goals at once.
     @State private var goals: GoalStore
 
@@ -85,7 +84,7 @@ struct PlanView: View {
                         onOpenGoals: { showingGoals = true },
                         onOpenMacroPlan: { showingMacroPlan = true },
                         onOpenGenerator: { router.isShowingPlanGenerator = true },
-                        onOpenWeeklyReview: { showingWeeklyReview = true },
+                        onOpenWeeklyReview: { router.isShowingWeeklyReview = true },
                         onOpenAdapter: { showingAdapter = true },
                         onDiscussWithCoach: {
                             router.discussWithCoach(
@@ -148,15 +147,16 @@ struct PlanView: View {
             }
             .sheet(isPresented: Bindable(router).isShowingPlanGenerator) {
                 PlanGeneratorSheet(store: generation) {
-                    Task { await store.loadAroundSelection() }
+                    // Plan reloads on the revision, and Résumé and the session reminders follow.
+                    router.noteCalendarChanged()
                 }
             }
-            .sheet(isPresented: $showingWeeklyReview) {
+            .sheet(isPresented: Bindable(router).isShowingWeeklyReview) {
                 NavigationStack {
                     WeeklyReviewView(store: WeeklyReviewStore(tokenProvider: tokenProvider))
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
-                                Button("Fermer") { showingWeeklyReview = false }
+                                Button("Fermer") { router.isShowingWeeklyReview = false }
                             }
                         }
                 }
@@ -164,7 +164,8 @@ struct PlanView: View {
             }
             .sheet(isPresented: $showingAdapter) {
                 PlanAdapterSheet(store: adjustment) {
-                    Task { await store.loadAroundSelection() }
+                    // Plan reloads on the revision, and Résumé and the session reminders follow.
+                    router.noteCalendarChanged()
                 }
             }
             .task { await store.loadAroundSelection() }

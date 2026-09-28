@@ -13,12 +13,8 @@ final class PushNotificationManager {
     var isAuthorized: Bool = false
     private(set) var lastRegisteredToken: String?
 
-    /// Queued navigation action when a push notification is opened.
-    var pendingTabSelection: ShellTab?
-    /// The server's « Ta semaine est prête » points here: Plan, with its generator open.
-    static let planGeneratorPath = "/plan/generator"
-    /// Set by a tap on « Ta semaine est prête »: Plan opens with its generator.
-    private(set) var pendingOpensPlanGenerator = false
+    /// Where the last tapped notification leads, until the shell opens it.
+    var pendingDestination: NotificationDestination?
 
     /// The athlete's own switch, in Paramètres. iOS owns the permission and the app cannot take
     /// it back, so « off » means the server forgets this device and SharpIt stops asking — the
@@ -114,36 +110,38 @@ final class PushNotificationManager {
         }
     }
 
-    /// Handles a notification response (e.g. tap on morning verdict notification).
+    /// Handles a tapped notification: remembers where it leads.
     func didReceiveNotificationResponse(userInfo: [AnyHashable: Any]) {
-        let category = userInfo["category"] as? String
-            ?? (userInfo["aps"] as? [String: Any])?["category"] as? String
-        let threadId = (userInfo["aps"] as? [String: Any])?["thread-id"] as? String
-        let urlString = userInfo["url"] as? String
+        pendingDestination = Self.destination(for: userInfo)
+    }
 
-        if category == "MORNING_VERDICT" || threadId == "morning-verdict" {
-            self.pendingTabSelection = .today
-        } else if urlString == Self.planGeneratorPath {
-            pendingOpensPlanGenerator = true
-            self.pendingTabSelection = .plan
-        } else if let urlString, let url = URL(string: urlString) {
-            // A push's `/settings` predates the Paramètres sheet and still lands on Corps.
-            if let tab = IncomingLink.tab(forPath: url.path) ?? (url.path == "/settings" ? .body : nil) {
-                self.pendingTabSelection = tab
-            }
+    /// Consumes where the last tapped notification leads, if anywhere.
+    func consumePendingDestination() -> NotificationDestination? {
+        defer { pendingDestination = nil }
+        return pendingDestination
+    }
+
+    /// The server's paths, and the session reminder's, to where the app opens.
+    nonisolated static let planGeneratorPath = "/plan/generator"
+    nonisolated static let weeklyReviewPath = "/plan/review"
+    nonisolated static let sourcesPath = "/settings/sources"
+
+    /// Where a notification leads: by its category for the morning verdict, by its `url`
+    /// otherwise. Pure, so every push the server sends is routed in a test.
+    nonisolated static func destination(for userInfo: [AnyHashable: Any]) -> NotificationDestination? {
+        let aps = userInfo["aps"] as? [String: Any]
+        let category = userInfo["category"] as? String ?? aps?["category"] as? String
+        if category == "MORNING_VERDICT" || aps?["thread-id"] as? String == "morning-verdict" {
+            return .tab(.today)
         }
-    }
-
-    /// Whether Plan's generator should open, once — consumed with the tab.
-    func consumePlanGeneratorRequest() -> Bool {
-        defer { pendingOpensPlanGenerator = false }
-        return pendingOpensPlanGenerator
-    }
-
-    /// Consumes the pending navigation action if any.
-    func consumePendingNavigation() -> ShellTab? {
-        let tab = pendingTabSelection
-        pendingTabSelection = nil
-        return tab
+        guard let urlString = userInfo["url"] as? String, let url = URL(string: urlString) else { return nil }
+        switch url.path {
+        case planGeneratorPath: return .planGenerator
+        case weeklyReviewPath: return .weeklyReview
+        case sourcesPath: return .settings(.sources)
+        // A push's `/settings` predates the Paramètres sheet.
+        case "/settings": return .settings(nil)
+        default: return IncomingLink.tab(forPath: url.path).map(NotificationDestination.tab)
+        }
     }
 }

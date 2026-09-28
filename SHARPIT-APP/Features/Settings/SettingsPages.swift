@@ -290,10 +290,12 @@ struct NotificationPrefsView: View {
     @State private var notificationStatus: UNAuthorizationStatus?
     @Environment(\.scenePhase) private var scenePhase
     private let tokenProvider: () async throws -> String
+    private let profileClient: any AthleteProfileServing
 
     init(profileClient: any AthleteProfileServing, tokenProvider: @escaping () async throws -> String) {
         _store = State(initialValue: AthleteProfileStore(client: profileClient, tokenProvider: tokenProvider))
         self.tokenProvider = tokenProvider
+        self.profileClient = profileClient
     }
 
     private var isOn: Bool { push.isEnabledByAthlete && notificationStatus != .denied }
@@ -366,6 +368,7 @@ struct NotificationPrefsView: View {
                     }
                     await push.setEnabled(on, tokenProvider: tokenProvider)
                     await refreshStatus()
+                    await refreshSessionReminders()
                 }
             }
         )
@@ -375,14 +378,24 @@ struct NotificationPrefsView: View {
         notificationStatus = await push.authorizationStatus()
     }
 
+    /// Session reminders are scheduled on the phone: a switch changed here applies at once.
+    private func refreshSessionReminders() async {
+        await SessionReminderScheduler.shared.refresh(
+            isEnabledOnPhone: isOn,
+            profiles: profileClient,
+            plan: PlannedSessionClient(),
+            tokenProvider: tokenProvider
+        )
+    }
+
     private var kinds: some View {
         Section(
             eyebrow: "Ce que SharpIt t'envoie",
-            footer: "Seul le verdict du matin est envoyé aujourd'hui. Tes autres choix seront respectés dès que ces notifications arriveront."
+            footer: "Les rappels de séance partent de cet iPhone, depuis ton plan : une heure avant, ou à 7 h 30 le jour même si la séance n'a pas d'heure."
         ) {
             toggle("Verdict du matin", detail: "Ta lecture du jour, une fois ta nuit synchronisée.", symbol: "sun.horizon", key: "morningVerdict", value: prefs.morningVerdict)
             toggle("Bilan de la semaine", detail: "Le résumé de ta semaine d'entraînement.", symbol: "calendar", key: "weeklyReview", value: prefs.weeklyReview)
-            toggle("Rappel de séance", detail: "Avant une séance prévue.", symbol: "figure.run", key: "sessionReminder", value: prefs.sessionReminder)
+            toggle("Rappel de séance", detail: "Une heure avant une séance prévue.", symbol: "figure.run", key: "sessionReminder", value: prefs.sessionReminder)
             toggle("Alertes de synchronisation", detail: "Quand une source doit être reconnectée.", symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
         }
         .sharpitListRows()
@@ -397,7 +410,10 @@ struct NotificationPrefsView: View {
             set: { on in
                 var patch = AthleteProfilePatch()
                 patch.setNotificationPrefs([key: .bool(on)])
-                Task { await store.save(patch) }
+                Task {
+                    await store.save(patch)
+                    if key == "sessionReminder" { await refreshSessionReminders() }
+                }
             }
         )) {
             Label {
