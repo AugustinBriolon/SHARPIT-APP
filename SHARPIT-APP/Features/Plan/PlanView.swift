@@ -170,6 +170,12 @@ struct PlanView: View {
             }
             .task { await store.loadAroundSelection() }
             .task { await generation.resume() }
+            // A session to do, tapped in a widget: today's week, its drawer open.
+            .onChange(of: router.pendingPlannedSessionId, initial: true) { _, id in
+                guard let id else { return }
+                router.pendingPlannedSessionId = nil
+                Task { await openPlannedSession(id: id) }
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { Task { await generation.resume() } }
             }
@@ -186,6 +192,21 @@ struct PlanView: View {
                 Task { await store.reload() }
             }
         }
+    }
+}
+
+extension PlanView {
+    /// Shows today's week and opens the session's drawer once the week is read.
+    fileprivate func openPlannedSession(id: String) async {
+        store.goToToday()
+        await store.loadAroundSelection()
+        guard case .loaded(let entries) = store.phase(forOffset: store.selectedOffset) else { return }
+        selectedSession = entries.lazy.compactMap { entry -> V1PlannedSessionItem? in
+            switch entry {
+            case .planned(let session), .missed(let session): session.id == id ? session : nil
+            case .executed: nil
+            }
+        }.first
     }
 }
 

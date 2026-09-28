@@ -41,6 +41,9 @@ extension WidgetSnapshot {
         trainingDayId: dayId(.now),
         writtenAt: .now,
         verdict: Verdict(status: "Feu vert", headline: "Séance clé possible", action: "Tiens le seuil, pas plus.", posture: .push),
-        sessions: [Session(id: "preview", isDone: false, title: "Seuil 3 × 8 min", sport: .run, figures: ["55 min", "62 charge"])]
+        sessions: [
+            Session(id: "a1", isDone: true, title: "Renfo gainage", sport: .strength, figures: [Figure(value: "30", unit: "min")]),
+            Session(id: "p1", isDone: false, title: "Seuil 3 × 8 min", sport: .run, plannedSessionId: "p1", figures: [Figure(value: "55", unit: "min"), Figure(value: "62", unit: "charge")]),
+        ]
     )
 }

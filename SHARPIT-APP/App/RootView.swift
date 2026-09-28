@@ -233,6 +233,10 @@ struct RootView: View {
             router.select(tab)
         case .settings:
             router.openSettings()
+        case .activity(let id):
+            router.openActivity(id: id)
+        case .plannedSession(let id):
+            router.openPlannedSession(id: id)
         case nil:
             break
         }

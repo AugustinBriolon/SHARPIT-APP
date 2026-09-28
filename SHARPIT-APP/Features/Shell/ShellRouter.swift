@@ -27,6 +27,21 @@ final class ShellRouter {
     /// Plan's « Bilan de la semaine » sheet — here so « Ton bilan est prêt » can open it.
     var isShowingWeeklyReview = false
 
+    /// An activity to open in Activité, once — a done session tapped in a widget.
+    var pendingActivityId: String?
+    /// A planned session to open in Plan's drawer, once — a session to do tapped in a widget.
+    var pendingPlannedSessionId: String?
+
+    func openActivity(id: String) {
+        pendingActivityId = id
+        selectedTab = .activity
+    }
+
+    func openPlannedSession(id: String) {
+        pendingPlannedSessionId = id
+        selectedTab = .plan
+    }
+
     /// Bumped when the calendar changed elsewhere than on Plan — a coach proposal carried out —
     /// so Plan and Résumé reload what they show.
     private(set) var calendarRevision = 0

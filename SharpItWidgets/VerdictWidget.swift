@@ -1,13 +1,14 @@
 import SwiftUI
 import WidgetKit
 
-/// « Verdict du jour »: how hard today can go, and why — what SharpIt reads that no watch app does.
+/// « Verdict du jour »: how hard today can go, and why — what SharpIt reads that no watch app
+/// does. The canvas carries the posture's tone in its corner; a tap opens Résumé.
 struct VerdictWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Verdict", provider: SnapshotProvider()) { entry in
             VerdictView(entry: entry)
-                .containerBackground(SharpitColor.card, for: .widget)
-                .widgetURL(WidgetLink.today)
+                .containerBackground(for: .widget) { WidgetCanvas(stateTone: entry.today?.verdict?.posture.tone) }
+                .widgetURL(WidgetSnapshot.link("/today"))
         }
         .configurationDisplayName("Verdict du jour")
         .description("Ce que ta forme permet aujourd'hui.")
@@ -19,49 +20,59 @@ struct VerdictView: View {
     let entry: SnapshotEntry
     @Environment(\.widgetFamily) private var family
 
-    private var verdict: WidgetSnapshot.Verdict? { entry.today?.verdict }
+    fileprivate var verdict: WidgetSnapshot.Verdict? { entry.today?.verdict }
 
     var body: some View {
         switch family {
         case .accessoryCircular: circular
         case .accessoryInline: inline
         case .accessoryRectangular: rectangular
-        default: small
+        default: VerdictSmall(verdict: verdict)
         }
     }
+}
 
-    @ViewBuilder
-    private var small: some View {
+/// The small « Verdict du jour ».
+struct VerdictSmall: View {
+    let verdict: WidgetSnapshot.Verdict?
+
+    var body: some View {
         if let verdict {
-            VStack(alignment: .leading, spacing: 6) {
-                Image(systemName: verdict.posture.symbolName)
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(verdict.posture.tone)
-                Text(verdict.status)
-                    .font(.caption.weight(.bold))
-                    .textCase(.uppercase)
-                    .foregroundStyle(verdict.posture.tone)
-                Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    WidgetEyebrow(text: "Verdict")
+                    Spacer()
+                    Image(systemName: verdict.posture.symbolName)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(verdict.posture.tone)
+                        .widgetAccentable()
+                }
+                Spacer(minLength: 6)
+                WidgetEyebrow(text: verdict.status, tint: verdict.posture.tone)
                 Text(verdict.headline)
-                    .font(.headline)
+                    .font(SharpitTypography.verdict)
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(3)
-                    .minimumScaleFactor(0.85)
+                    .minimumScaleFactor(0.75)
+                    .padding(.top, 2)
+                if let action = verdict.action {
+                    Text(action)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(2)
+                        .padding(.top, 6)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Verdict du jour")
-                    .font(.caption2.weight(.semibold))
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                OpenTheAppHint(text: "Ouvre SharpIt une fois ta nuit synchronisée.")
-            }
+            WidgetAwaitingDay(eyebrow: "Verdict du jour")
         }
     }
+}
 
+extension VerdictView {
     @ViewBuilder
-    private var rectangular: some View {
+    fileprivate var rectangular: some View {
         if let verdict {
             VStack(alignment: .leading, spacing: 1) {
                 Label(verdict.status, systemImage: verdict.posture.symbolName)
@@ -75,7 +86,7 @@ struct VerdictView: View {
         }
     }
 
-    private var circular: some View {
+    fileprivate var circular: some View {
         ZStack {
             AccessoryWidgetBackground()
             Image(systemName: verdict?.posture.symbolName ?? "questionmark.circle")
@@ -85,7 +96,7 @@ struct VerdictView: View {
     }
 
     @ViewBuilder
-    private var inline: some View {
+    fileprivate var inline: some View {
         if let verdict {
             Label(verdict.status, systemImage: verdict.posture.symbolName)
         } else {

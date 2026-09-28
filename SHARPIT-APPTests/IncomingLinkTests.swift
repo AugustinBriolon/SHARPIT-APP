@@ -23,6 +23,21 @@ struct IncomingLinkTests {
         #expect(link(raw) == nil)
     }
 
+    /// A widget's session opens itself: the activity once done, its prescription before.
+    @Test func aSessionLinkOpensTheSessionItself() {
+        #expect(link("https://sharpit.app/activity/act_42") == .activity(id: "act_42"))
+        #expect(link("https://sharpit.app/plan/session/ps_7") == .plannedSession(id: "ps_7"))
+        #expect(link("https://sharpit.app/activity/") == .tab(.activity) || link("https://sharpit.app/activity/") == nil)
+        #expect(link("https://sharpit.app/plan/session/a/b") != .plannedSession(id: "a/b"))
+    }
+
+    @Test func aDoneSessionInTheWidgetLinksToItsActivity() {
+        let done = WidgetSnapshot.Session(id: "act_42", isDone: true, title: "Seuil", sport: .run, figures: [])
+        let planned = WidgetSnapshot.Session(id: "line", isDone: false, title: "Seuil", sport: .run, plannedSessionId: "ps_7", figures: [])
+        #expect(link(done.link.absoluteString) == .activity(id: "act_42"))
+        #expect(link(planned.link.absoluteString) == .plannedSession(id: "ps_7"))
+    }
+
     @Test func webPathsOpenTheirTab() {
         #expect(link("https://sharpit.app/today") == .tab(.today))
         #expect(link("https://sharpit.app/activities") == .tab(.activity))

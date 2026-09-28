@@ -9,6 +9,10 @@ enum IncomingLink: Equatable {
     case garminCallback(status: String?)
     case tab(ShellTab)
     case settings
+    /// A recorded activity — a done session tapped in a widget.
+    case activity(id: String)
+    /// A planned session, opened in Plan's drawer — a session to do tapped in a widget.
+    case plannedSession(id: String)
 
     nonisolated static let trustedHost = "sharpit.app"
 
@@ -25,7 +29,20 @@ enum IncomingLink: Equatable {
         if components.path == "/settings" {
             return .settings
         }
+        if let id = identifier(in: components.path, after: "/activity/") {
+            return .activity(id: id)
+        }
+        if let id = identifier(in: components.path, after: "/plan/session/") {
+            return .plannedSession(id: id)
+        }
         return tab(forPath: components.path).map(IncomingLink.tab)
+    }
+
+    /// The id a path ends with after `prefix`, when there is exactly one.
+    nonisolated private static func identifier(in path: String, after prefix: String) -> String? {
+        guard path.hasPrefix(prefix) else { return nil }
+        let id = String(path.dropFirst(prefix.count))
+        return id.isEmpty || id.contains("/") ? nil : id
     }
 
     /// The tab a web path stands for — shared with the push payloads' `url`.

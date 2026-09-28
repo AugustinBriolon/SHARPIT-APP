@@ -47,7 +47,7 @@ private func card(_ id: String, _ kind: V1TodaySessionKind, sport: String = "Cou
     #expect(snapshot.verdict?.posture == .push)
     #expect(snapshot.sessions.map(\.isDone) == [true, false])
     #expect(snapshot.sessions.first?.sport == .bike)
-    #expect(snapshot.sessions.first?.figures == ["55 min", "62"])
+    #expect(snapshot.sessions.first?.figures == [.init(value: "55", unit: "min"), .init(value: "62", unit: "charge")])
     // The session still to do comes first; once all are done, the last one.
     #expect(snapshot.leadSession?.id == "b")
 }

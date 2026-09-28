@@ -21,12 +21,32 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     }
 
     nonisolated struct Session: Codable, Equatable, Sendable, Identifiable {
+        /// The activity's id once done, else the line's.
         var id: String
         var isDone: Bool
         var title: String
         var sport: V1ActivityType
-        /// « 55 min », « 62 charge »… as Résumé shows them, first ones first.
-        var figures: [String]
+        /// The prescription behind a planned line, when it can be opened on its own.
+        var plannedSessionId: String?
+        /// As Résumé shows them, first ones first.
+        var figures: [Figure]
+
+        /// Where a tap on the session lands: the activity once done, its prescription before.
+        var link: URL {
+            if isDone { return WidgetSnapshot.link("/activity/\(id)") }
+            return WidgetSnapshot.link(plannedSessionId.map { "/plan/session/\($0)" } ?? "/plan")
+        }
+    }
+
+    /// A number and its unit, set apart so the number can take the instrument face.
+    nonisolated struct Figure: Codable, Equatable, Sendable {
+        var value: String
+        var unit: String
+    }
+
+    /// The app's links are `https://sharpit.app` paths, as for any link it opens.
+    static func link(_ path: String) -> URL {
+        URL(string: "https://sharpit.app\(path)")!
     }
 
     /// The session to put forward: the first one still to do, else the last one done.

@@ -21,7 +21,8 @@ extension WidgetSnapshot {
                     isDone: card.kind == .done,
                     title: card.title,
                     sport: V1ActivityType(sportLabel: card.sport ?? ""),
-                    figures: card.metrics.prefix(2).map { $0.unit.isEmpty ? $0.value : "\($0.value) \($0.unit)" }
+                    plannedSessionId: card.plannedSessionId,
+                    figures: card.metrics.prefix(2).map { Figure(value: $0.value, unit: $0.unit.isEmpty ? $0.label.lowercased() : $0.unit) }
                 )
             }
         )

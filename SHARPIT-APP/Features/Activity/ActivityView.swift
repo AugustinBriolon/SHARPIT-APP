@@ -6,6 +6,9 @@ struct ActivityView: View {
 
     @State private var phase: ActivityPhase = .loading
     @State private var selectedActivity: V1ActivityListItem?
+    /// An activity opened from outside the list — a widget — by its id alone.
+    @State private var openedActivityId: String?
+    @Environment(ShellRouter.self) private var router: ShellRouter?
     /// Its completion brings older activities in, so the list reloads when it lands.
     @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
 
@@ -34,8 +37,17 @@ struct ActivityView: View {
                     tokenProvider: tokenProvider
                 )
             }
+            .navigationDestination(item: $openedActivityId) { id in
+                ActivityDetailView(activity: id, client: client, tokenProvider: tokenProvider)
+            }
             .task {
                 await load()
+            }
+            .onChange(of: router?.pendingActivityId, initial: true) { _, id in
+                guard let id else { return }
+                router?.pendingActivityId = nil
+                selectedActivity = nil
+                openedActivityId = id
             }
             .onChange(of: historyImport?.completedAt) { _, _ in
                 Task { await load(force: true) }

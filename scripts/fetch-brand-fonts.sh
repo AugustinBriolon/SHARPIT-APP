@@ -10,11 +10,11 @@
 # single PostScript name, and `SharpitTypography` asks for `Syne-SemiBold` by name.
 #
 # Run this once, then commit the files. `SharpitFonts.register()` picks up anything in
-# `SHARPIT-APP/Resources/Fonts` at launch — no Info.plist or project changes needed.
+# `SharpItShared/Fonts` at launch — no Info.plist or project changes needed.
 
 set -euo pipefail
 
-DESTINATION="$(cd "$(dirname "$0")/.." && pwd)/SHARPIT-APP/Resources/Fonts"
+DESTINATION="$(cd "$(dirname "$0")/.." && pwd)/SharpItShared/Fonts"
 
 # An old User-Agent makes Google Fonts serve static TTF rather than woff2.
 LEGACY_USER_AGENT="Mozilla/4.0"

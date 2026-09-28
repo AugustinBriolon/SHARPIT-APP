@@ -44,7 +44,7 @@ identity. They are not committed yet:
 ./scripts/fetch-brand-fonts.sh
 ```
 
-The files land in `SHARPIT-APP/Resources/Fonts` and `SharpitFonts.register()` picks up
+The files land in `SharpItShared/Fonts` and `SharpitFonts.register()` picks up
 whatever is in the bundle at launch — no Info.plist or project change needed. Until then
 `SharpitTypography` falls back to the system face: the layout is right, the identity is not.
 
