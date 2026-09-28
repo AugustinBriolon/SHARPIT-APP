@@ -27,9 +27,6 @@ private final class StreamingPlanClient: CoachPlanServing, PlanJobServing {
         return V1GeneratedPlan(summary: "Semaine", sessions: Self.week, gate: gate)
     }
 
-    func adaptPlan(days _: Int, focus _: String?, token _: String, onReasoning _: @escaping @Sendable (String) -> Void) async throws -> V1AdaptPlanResult {
-        V1AdaptPlanResult(summary: "", changes: [])
-    }
 
     private(set) var started = 0
     var latest: V1PlanJob?

@@ -63,13 +63,7 @@ struct GeneratingWeekView: View {
     /// Under the stage line, e.g. that the sheet can close.
     var note: String?
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Which line of the reading stage is shown; it moves on while nothing is written yet.
-    @State private var readingStep = 0
-
     /// What the coach goes through before the first session, in the order it reads it.
-    /// Short enough for one line on the narrowest iPhone: a line that wrapped moved everything
-    /// under it each time it changed.
     static let readingSteps = [
         "Analyse de ton profil",
         "Lecture de ta charge",
@@ -79,67 +73,26 @@ struct GeneratingWeekView: View {
         "Choix des séances clés",
     ]
 
-    private var stage: (title: String, detail: String) {
-        if drafts.isEmpty {
-            return (Self.readingSteps[readingStep], "Le coach part de tes données, pas d'un modèle type.")
-        }
-        let count = drafts.count
-        return ("Rédaction des séances", "\(count) séance\(count > 1 ? "s" : "") écrite\(count > 1 ? "s" : ""), la suite arrive.")
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                ProgressView()
-                    .controlSize(.regular)
-                    .padding(.top, 2)
-                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                    Text(stage.title)
-                        .font(SharpitTypography.sectionTitle)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .id(stage.title)
-                        .transition(reduceMotion ? .opacity : .push(from: .bottom).combined(with: .opacity))
-                    Text(stage.detail)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .contentTransition(.numericText())
-                    if let note {
-                        Text(note)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-                }
-            }
-            .accessibilityElement(children: .combine)
-            .animation(SharpitMotion.fade, value: drafts.count)
-            .animation(SharpitMotion.reveal, value: stage.title)
-            .clipped()
+            CoachWorkingHeader(
+                readingSteps: Self.readingSteps,
+                readingDetail: "Le coach part de tes données, pas d'un modèle type.",
+                writingTitle: drafts.isEmpty ? nil : "Rédaction des séances",
+                writingDetail: drafts.isEmpty
+                    ? nil
+                    : "\(drafts.count) séance\(drafts.count > 1 ? "s" : "") écrite\(drafts.count > 1 ? "s" : ""), la suite arrive.",
+                note: note
+            )
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 GeneratedWeekView(sessions: drafts, isWriting: true)
                 ForEach(0..<(drafts.isEmpty ? 3 : 1), id: \.self) { index in
                     GeneratedSessionRow(session: .placeholder)
                         .redacted(reason: .placeholder)
-                        .phaseAnimator(reduceMotion ? [1.0] : [1.0, 0.45]) { row, opacity in
-                            row.opacity(opacity)
-                        } animation: { _ in
-                            .easeInOut(duration: 0.9).delay(Double(index) * 0.15)
-                        }
-                        .accessibilityHidden(true)
+                        .sharpitPlaceholderPulse(index: index)
                 }
             }
-        }
-        .task(id: drafts.isEmpty) { await advanceReadingSteps() }
-    }
-
-    /// Moves through the reading lines until the first session arrives, stopping on the last.
-    private func advanceReadingSteps() async {
-        while drafts.isEmpty, readingStep < Self.readingSteps.count - 1 {
-            try? await Task.sleep(for: .seconds(3))
-            guard !Task.isCancelled, drafts.isEmpty else { return }
-            readingStep += 1
         }
     }
 }
@@ -205,12 +158,7 @@ struct GeneratedSessionRow: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            ZStack {
-                Circle().fill(SharpitSportTone.label(for: session.type).opacity(0.14)).frame(width: 38, height: 38)
-                Image(systemName: session.type.symbolName)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(SharpitSportTone.label(for: session.type))
-            }
+            SharpitSportBadge(type: session.type)
             VStack(alignment: .leading, spacing: 2) {
                 Text(day)
                     .font(SharpitTypography.label)
@@ -235,17 +183,7 @@ struct GeneratedSessionRow: View {
                     .foregroundStyle(SharpitColor.foreground)
             }
             if let isSelected {
-                Button(action: onToggle) {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.4))
-                        .contentTransition(.symbolEffect(.replace))
-                        .frame(width: 44, height: 44)
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .padding(.vertical, -SharpitSpacing.sm)
-                .accessibilityLabel(isSelected ? "Retirer de la semaine" : "Garder dans la semaine")
+                SharpitKeepToggle(isSelected: isSelected, action: onToggle)
             }
         }
         .padding(SharpitSpacing.sm + 2)

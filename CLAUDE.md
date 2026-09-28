@@ -164,6 +164,12 @@ the sheet vanishing. It shares `PlannedSessionSummary` with `PlannedSessionDrawe
 `PlannedSessionPreview(generated:)`: the steps (`breakdown`, resolved server-side like a planned
 session's) and the coach's one-line rationale — no prose instruction, the coach writes none.
 The row opens the session; its check is a button of its own.
+« Ajuster le planning » (`PlanAdapterSheet`, its `PlanAdjustmentStore` owned by `PlanView`) is laid
+out as the generator — `CoachWorkingHeader`, `SharpitActionDock`, `SharpitPrimaryButton`, rows with
+`SharpitSportBadge` and `SharpitKeepToggle` — and never shows the model's reasoning. The server
+takes out the changes its Gate rejects; the ones kept go back whole (`V1AdaptChange.applyBody`) to
+`/api/v1/coach/adapt/apply`, which stores them through the web adapter's own mapping, the coach's
+steps included.
 « Bilan de la semaine » (Plan's « … ») is SharpIt Pro: `WeeklyReviewView` reads the latest review
 from `/api/v1/coach/weekly-review`, writes the current week's on demand, and shows a
 `SharpitProTeaser` on the server's 403. It is laid out like Health's summary: « Faits marquants »

@@ -125,20 +125,19 @@ struct PlanGeneratorSheet: View {
         }
     }
 
-    @ViewBuilder
     private var actions: some View {
-        VStack(spacing: SharpitSpacing.xs) {
+        SharpitActionDock {
             switch store.phase {
             case .idle, .failed:
-                primary(title: "Générer", busy: false) { store.start() }
+                SharpitPrimaryButton(title: "Générer") { store.start() }
             case .generating:
                 // Nothing to do but wait or close — « Fermer » is in the bar.
                 EmptyView()
             case .ready(_, let selected), .inserting(_, let selected):
                 let busy = if case .inserting = store.phase { true } else { false }
-                primary(
+                SharpitPrimaryButton(
                     title: busy ? "Ajout au plan…" : "Ajouter \(selected.count) séance\(selected.count > 1 ? "s" : "")",
-                    busy: busy
+                    isBusy: busy
                 ) {
                     Task { await insert() }
                 }
@@ -149,31 +148,6 @@ struct PlanGeneratorSheet: View {
                     .disabled(busy)
             }
         }
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.vertical, SharpitSpacing.sm)
-        // The list scrolls under the actions: a fade keeps « Recommencer » readable over it.
-        .background(
-            LinearGradient(
-                colors: [SharpitColor.background.opacity(0), SharpitColor.background.opacity(0.9), SharpitColor.background],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea(edges: .bottom)
-        )
-    }
-
-    private func primary(title: String, busy: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: SharpitSpacing.xs) {
-                if busy { ProgressView().tint(SharpitColor.primaryForeground) }
-                Text(title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.primaryForeground)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .sharpitGlassButton(prominent: true)
-        .tint(SharpitColor.primary)
     }
 
     private func insert() async {

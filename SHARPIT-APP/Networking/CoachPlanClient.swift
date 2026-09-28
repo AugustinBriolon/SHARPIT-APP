@@ -13,6 +13,16 @@ protocol CoachPlanServing: Sendable {
         onDraft: @escaping @Sendable ([V1GeneratedSession]) -> Void
     ) async throws -> V1GeneratedPlan
 
+
+    /// Puts generated sessions in the plan through the web generator's own mapping
+    /// (`/api/v1/coach/plan/insert`): the coach's prescriptions travel as the coach wrote them.
+    /// All or nothing — a refused week leaves the plan untouched.
+    func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token: String) async throws
+}
+
+/// « Ajuster le planning »: the coach reads what was done and proposes changes to the sessions
+/// ahead; the ones kept are applied through the web adapter's own mapping.
+protocol PlanAdjustmentServing: Sendable {
     func adaptPlan(
         days: Int,
         focus: String?,
@@ -20,10 +30,8 @@ protocol CoachPlanServing: Sendable {
         onReasoning: @escaping @Sendable (String) -> Void
     ) async throws -> V1AdaptPlanResult
 
-    /// Puts generated sessions in the plan through the web generator's own mapping
-    /// (`/api/v1/coach/plan/insert`): the coach's prescriptions travel as the coach wrote them.
-    /// All or nothing — a refused week leaves the plan untouched.
-    func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token: String) async throws
+    /// All the changes checked before the first is written (`/api/v1/coach/adapt/apply`).
+    func applyAdjustments(_ changes: [V1AdaptChange], token: String) async throws
 }
 
 /// A week generated on the server in the background (`/api/v1/coach/plan/jobs`): the drafts
@@ -65,7 +73,7 @@ nonisolated protocol PlanJobServing: Sendable {
     func latestPlanJob(token: String) async throws -> V1PlanJob?
 }
 
-actor CoachPlanClient: CoachPlanServing, PlanJobServing {
+actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -177,6 +185,23 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing {
         if status == 401 { throw SharpitAPIError.unauthorized }
         if status == 422 {
             throw CoachPlanError.custom("Une séance a été écartée par le contrôle de sécurité. Décoche-la puis réessaie.")
+        }
+        guard (200...299).contains(status) else { throw SharpitAPIError.server }
+    }
+
+    func applyAdjustments(_ changes: [V1AdaptChange], token: String) async throws {
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/coach/adapt/apply"))
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = try JSONEncoder().encode(JSONValue.object(["changes": .array(changes.map(\.applyBody))]))
+
+        let (_, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 401 { throw SharpitAPIError.unauthorized }
+        if status == 409 {
+            throw CoachPlanError.custom("Une séance à ajuster a changé entre-temps. Relance l'ajustement.")
         }
         guard (200...299).contains(status) else { throw SharpitAPIError.server }
     }

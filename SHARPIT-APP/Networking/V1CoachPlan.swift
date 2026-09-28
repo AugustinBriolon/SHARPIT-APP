@@ -183,10 +183,33 @@ nonisolated struct V1AdaptChange: Identifiable, Codable, Sendable, Hashable {
     let load: Double?
     let reason: String
     let decisionId: String?
+    /// The change as the server sent it, prescriptions included: sent back whole to be applied
+    /// (`/api/v1/coach/adapt/apply`), so the coach's steps are not lost on the way.
+    let raw: JSONValue?
 
     enum CodingKeys: String, CodingKey {
         case action, sessionId, date, type, intensity, title, description
         case durationMin, load, reason, decisionId
+    }
+
+    /// What `/api/v1/coach/adapt/apply` receives for this change.
+    var applyBody: JSONValue {
+        if let raw { return raw }
+        let optional = { (value: String?) in value.map(JSONValue.string) ?? .null }
+        let number = { (value: Double?) in value.map(JSONValue.number) ?? .null }
+        return .object([
+            "action": .string(action.rawValue),
+            "sessionId": optional(sessionId),
+            "date": optional(date),
+            "type": optional(type?.rawValue),
+            "intensity": optional(intensity),
+            "title": optional(title),
+            "description": optional(description),
+            "durationMin": number(durationMin),
+            "load": number(load),
+            "reason": .string(reason),
+            "decisionId": optional(decisionId),
+        ])
     }
 
     init(from decoder: Decoder) throws {
@@ -206,6 +229,7 @@ nonisolated struct V1AdaptChange: Identifiable, Codable, Sendable, Hashable {
         load = try container.decodeIfPresent(Double.self, forKey: .load)
         reason = try container.decodeIfPresent(String.self, forKey: .reason) ?? ""
         decisionId = try container.decodeIfPresent(String.self, forKey: .decisionId)
+        raw = try? JSONValue(from: decoder)
     }
 
     init(
@@ -232,10 +256,11 @@ nonisolated struct V1AdaptChange: Identifiable, Codable, Sendable, Hashable {
         self.load = load
         self.reason = reason
         self.decisionId = decisionId
+        raw = nil
     }
 }
 
-nonisolated struct V1AdaptPlanResult: Codable, Sendable {
+nonisolated struct V1AdaptPlanResult: Codable, Sendable, Hashable {
     let summary: String
     let changes: [V1AdaptChange]
 }

@@ -133,9 +133,6 @@ private struct DemoPlanClient: CoachPlanServing {
         return V1GeneratedPlan(summary: "Une semaine d'installation : du volume facile, une séance de qualité.", sessions: sessions)
     }
 
-    func adaptPlan(days: Int, focus: String?, token: String, onReasoning: @escaping @Sendable (String) -> Void) async throws -> V1AdaptPlanResult {
-        V1AdaptPlanResult(summary: "", changes: [])
-    }
 
     func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token: String) async throws {
         await demoLatency()

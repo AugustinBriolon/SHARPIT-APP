@@ -20,6 +20,8 @@ struct PlanView: View {
     /// Owned here, not by the sheet: closing it mid-generation keeps the week coming.
     @State private var generation: PlanGenerationStore
     @State private var showingAdapter = false
+    /// Plan's, not the sheet's: closing it mid-analysis keeps the proposal coming.
+    @State private var adjustment: PlanAdjustmentStore
     @State private var showingGoals = false
     @State private var showingWeeklyReview = false
     /// Plan's, not the sheet's: reopening Objectifs shows the goals at once.
@@ -38,6 +40,7 @@ struct PlanView: View {
         self.activityClient = activityClient
         self.tokenProvider = tokenProvider
         _generation = State(initialValue: PlanGenerationStore(tokenProvider: tokenProvider))
+        _adjustment = State(initialValue: PlanAdjustmentStore(tokenProvider: tokenProvider))
         _goals = State(initialValue: GoalStore(client: GoalClient(), tokenProvider: tokenProvider))
         _store = State(
             initialValue: PlanStore(
@@ -160,7 +163,7 @@ struct PlanView: View {
                 .sharpitSheet()
             }
             .sheet(isPresented: $showingAdapter) {
-                PlanAdapterSheet(tokenProvider: tokenProvider) {
+                PlanAdapterSheet(store: adjustment) {
                     Task { await store.loadAroundSelection() }
                 }
             }

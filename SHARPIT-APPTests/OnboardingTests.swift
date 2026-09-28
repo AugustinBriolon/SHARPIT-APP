@@ -84,9 +84,6 @@ private final class RecordingPlanClient: CoachPlanServing {
         ])
     }
 
-    func adaptPlan(days _: Int, focus _: String?, token _: String, onReasoning _: @escaping @Sendable (String) -> Void) async throws -> V1AdaptPlanResult {
-        V1AdaptPlanResult(summary: "", changes: [])
-    }
 
     func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token _: String) async throws {
         inserted.append((sessions, goalId))
