@@ -52,6 +52,15 @@ final class ProStore {
     /// Whether the subscription is managed through the App Store (and so from this iPhone).
     var isAppleSubscription: Bool { pro?.subscription?.source == "apple" }
 
+    /// A subscription that will bill again: deleting the account does not stop an App Store
+    /// subscription, only the athlete can.
+    var hasRenewingSubscription: Bool { Self.renews(pro?.subscription) }
+
+    static func renews(_ subscription: V1ProSubscription?) -> Bool {
+        guard let subscription, subscription.willRenew else { return false }
+        return ["active", "grace_period", "billing_retry"].contains(subscription.status)
+    }
+
     func load() async {
         do {
             let token = try await tokenProvider()

@@ -1,6 +1,7 @@
 import ClerkKit
 import Observation
 import SwiftData
+import StoreKit
 import SwiftUI
 
 /// The athlete's consents, read and changed one at a time — the web's privacy settings panel.
@@ -73,6 +74,8 @@ struct PrivacySettingsView: View {
     @State private var openDocument: LegalDocument?
     @State private var confirmsHealthWithdraw = false
     @State private var confirmsDeletion = false
+    @State private var managesSubscriptions = false
+    @Environment(ProStore.self) private var pro: ProStore?
     @State private var isDeleting = false
     @State private var deletionError: String?
     private let accountDeletion: any AccountDeletionServing
@@ -126,11 +129,23 @@ struct PrivacySettingsView: View {
             isPresented: $confirmsDeletion,
             titleVisibility: .visible
         ) {
+            if renewsSubscription {
+                Button("Gérer mon abonnement d'abord") { managesSubscriptions = true }
+            }
             Button("Supprimer définitivement", role: .destructive) { Task { await deleteAccount() } }
             Button("Annuler", role: .cancel) {}
         } message: {
-            Text("Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Garmin, Strava et autres sont révoquées. C'est irréversible.")
+            Text(deletionMessage)
         }
+        .manageSubscriptionsSheet(isPresented: $managesSubscriptions)
+    }
+
+    private var renewsSubscription: Bool { pro?.hasRenewingSubscription ?? false }
+
+    private var deletionMessage: String {
+        let erased = "Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Garmin, Strava et autres sont révoquées. C'est irréversible."
+        guard renewsSubscription else { return erased }
+        return erased + "\n\nTon abonnement SharpIt Pro continue de se renouveler : supprimer ton compte ne l'arrête pas. Annule-le d'abord pour ne plus être facturé."
     }
 
     /// Deletes server-side — data and sign-in identity — then signs out on this iPhone.

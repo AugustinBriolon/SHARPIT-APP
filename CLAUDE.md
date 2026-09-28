@@ -105,7 +105,9 @@ without an app release. The documents are the web's published `/terms` and `/pri
 in-app (`LegalDocumentSheet`) — never a bundled copy. Paramètres → Confidentialité & conditions
 changes each consent; withdrawing health reports to the gate through the environment and the wall
 stands again. It also deletes the account (`/api/v1/privacy/delete`: data, provider access and
-the Clerk identity, then a local sign-out); Compte ends with an immediate sign-out.
+the Clerk identity, then a local sign-out; the server e-mails a confirmation). A subscription that
+still renews is named in the confirmation, with the App Store's subscription sheet one tap away:
+deleting an account cannot cancel it; Compte ends with an immediate sign-out.
 
 **Onboarding.** A new account answers the first-login wizard before it sees the tabs: Toi (first
 name, sex, height, birth date) → Sports → Matériel → Ta semaine → Objectif → Blessures →
@@ -145,6 +147,15 @@ from the avatar (`AccountAvatarButton`, the Clerk photo or the initials) in Rés
 the mode, Journal and weather are the fold's first row of glass chips (`sharpitGlassChip`) and
 scroll away with it. Goals open from Plan's « … »
 menu, the coach's memory (context, trips) from Coach's toolbar.
+
+**Plan generation and weekly review.** « Remplir ma semaine » runs in `PlanGenerationStore`,
+owned by `PlanView`, so closing the sheet mid-generation loses nothing and a toast says when the
+week is ready. The week appears session by session from the server's `partial` events
+(`GeneratedWeekView`, shared with the onboarding's first week); the model's reasoning is hidden
+server-side, so drafts are the only progress there is. « Ajouter » sends the kept sessions to
+`/api/v1/coach/plan/insert`. « Bilan de la semaine » (Plan's « … ») is SharpIt Pro:
+`WeeklyReviewView` reads the latest review from `/api/v1/coach/weekly-review`, writes the current
+week's on demand, and shows a `SharpitProTeaser` on the server's 403.
 
 **Objectifs.** `GoalsView` leads with the next race on the ink plate (`GoalOrdering.nextRace`: the
 nearest A race ahead, else the nearest race), then goal cards. A goal (`GoalDetailView`) and a new

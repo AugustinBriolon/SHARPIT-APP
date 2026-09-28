@@ -21,6 +21,7 @@ struct PlanView: View {
     @State private var generation: PlanGenerationStore
     @State private var showingAdapter = false
     @State private var showingGoals = false
+    @State private var showingWeeklyReview = false
 
     init(
         client: any PlannedSessionServing,
@@ -78,6 +79,7 @@ struct PlanView: View {
                         onOpenGoals: { showingGoals = true },
                         onOpenMacroPlan: { showingMacroPlan = true },
                         onOpenGenerator: { showingGenerator = true },
+                        onOpenWeeklyReview: { showingWeeklyReview = true },
                         onOpenAdapter: { showingAdapter = true },
                         onDiscussWithCoach: {
                             router.discussWithCoach(
@@ -143,6 +145,17 @@ struct PlanView: View {
                     Task { await store.loadAroundSelection() }
                 }
             }
+            .sheet(isPresented: $showingWeeklyReview) {
+                NavigationStack {
+                    WeeklyReviewView(store: WeeklyReviewStore(tokenProvider: tokenProvider))
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Fermer") { showingWeeklyReview = false }
+                            }
+                        }
+                }
+                .sharpitSheet()
+            }
             .sheet(isPresented: $showingAdapter) {
                 PlanAdapterSheet(tokenProvider: tokenProvider) {
                     Task { await store.loadAroundSelection() }
@@ -173,6 +186,7 @@ private struct PlanActionsMenu: View {
     let onOpenGoals: () -> Void
     let onOpenMacroPlan: () -> Void
     let onOpenGenerator: () -> Void
+    let onOpenWeeklyReview: () -> Void
     let onOpenAdapter: () -> Void
     let onDiscussWithCoach: () -> Void
 
@@ -190,6 +204,9 @@ private struct PlanActionsMenu: View {
             }
             Button(action: onOpenAdapter) {
                 Label("Ajuster le planning", systemImage: "slider.horizontal.3")
+            }
+            Button(action: onOpenWeeklyReview) {
+                Label("Bilan de la semaine", systemImage: "doc.text.magnifyingglass")
             }
             Divider()
             Button(action: onDiscussWithCoach) {
