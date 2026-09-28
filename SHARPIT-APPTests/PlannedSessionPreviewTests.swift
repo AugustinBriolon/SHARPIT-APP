@@ -129,3 +129,85 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
     #expect(PlannedSessionPreview.breakdown(of: "a", in: sessions) == nil)
     #expect(PlannedSessionPreview.breakdown(of: "missing", in: sessions) == nil)
 }
+
+// MARK: - Repeated sets
+
+@Test func aBlockAndItsRecoveryRepeatAsOneSet() {
+    let sets = PlannedStepSet.sets(from: [
+        V1PlannedSessionStep(key: "0-0", label: "Échauffement", group: "0"),
+        V1PlannedSessionStep(key: "1-0", label: "Bloc", group: "1", repeatCount: 5),
+        V1PlannedSessionStep(key: "1-1", label: "Récup", group: "1", repeatCount: 5),
+        V1PlannedSessionStep(key: "2-0", label: "Retour au calme", group: "2"),
+    ])
+
+    #expect(sets.map(\.repeatCount) == [1, 5, 1])
+    #expect(sets[1].steps.map(\.label) == ["Bloc", "Récup"])
+}
+
+@Test func aBreakdownReadBeforeGroupsKeepsItsRepeatedBlockTogether() {
+    // No `group` on the wire: the block half of the key still pairs a repeated block.
+    let sets = PlannedStepSet.sets(from: [
+        V1PlannedSessionStep(key: "0-0", label: "Échauffement"),
+        V1PlannedSessionStep(key: "1-0", label: "Bloc", repeatCount: 4),
+        V1PlannedSessionStep(key: "1-1", label: "Récup", repeatCount: 4),
+    ])
+
+    #expect(sets.count == 2)
+    #expect(sets[1].steps.count == 2)
+}
+
+@Test func strengthSetsWithoutGroupsStayApart() {
+    let sets = PlannedStepSet.sets(from: [
+        V1PlannedSessionStep(key: "strength-0", label: "Squat", detail: "4 × 8"),
+        V1PlannedSessionStep(key: "strength-1", label: "Fentes", detail: "3 × 10"),
+    ])
+
+    #expect(sets.count == 2)
+}
+
+@Test func aGroupSentByTheServerIsDecoded() throws {
+    let json = #"{ "key": "1-0", "label": "Bloc", "group": "1", "repeat": 5 }"#
+    let step = try JSONDecoder().decode(V1PlannedSessionStep.self, from: Data(json.utf8))
+
+    #expect(step.group == "1")
+    #expect(step.repeatCount == 5)
+}
+
+// MARK: - Bricks
+
+@Test func aTodayBrickLineOpensAsItsLegsAndReadsThemFromThePlan() {
+    let card = SessionCardModel(
+        id: "brick-group", kind: .planned, title: "Brick · Vélo → Course", subtitle: nil, metrics: [],
+        sport: "Triathlon", priority: true, plannedSessionId: "bike",
+        brickLegs: [
+            V1TodayBrickLeg(id: "bike", type: "BIKE", title: "Vélo", durationMin: 60),
+            V1TodayBrickLeg(id: "run", type: "RUN", title: "Course", durationMin: 20),
+        ]
+    )
+    let brick = PlannedBrickPreview(card: card, date: nil)
+
+    #expect(brick?.chain == "Vélo → Course")
+    #expect(brick?.totalDurationMin == 80)
+
+    let step = V1PlannedSessionStep(key: "0-0", label: "Bloc")
+    let plan = [
+        V1PlannedSessionItem(id: "run", date: .now, title: "Course", type: "RUN", durationMin: 20,
+                             breakdown: V1PlannedSessionBreakdown(steps: [step])),
+        V1PlannedSessionItem(id: "bike", date: .now, title: "Vélo", type: "BIKE", durationMin: 60,
+                             breakdown: V1PlannedSessionBreakdown(steps: [step])),
+    ]
+    let refreshed = brick?.refreshed(from: plan)
+    #expect(refreshed?.legs.map(\.sessionId) == ["bike", "run"])
+    #expect(refreshed?.legs.allSatisfy { !$0.steps.isEmpty } == true)
+    // A leg gone from the plan: the drawer keeps what it had rather than half a brick.
+    #expect(brick?.refreshed(from: [plan[0]]) == nil)
+}
+
+@Test func aPlainTodayLineIsNoBrick() {
+    let card = SessionCardModel(
+        id: "s1", kind: .planned, title: "Seuil", subtitle: nil, metrics: [], sport: "Course",
+        priority: true, plannedSessionId: "s1"
+    )
+
+    #expect(PlannedBrickPreview(card: card, date: nil) == nil)
+}

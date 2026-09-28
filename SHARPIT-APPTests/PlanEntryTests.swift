@@ -186,3 +186,65 @@ private func entries(
     #expect(executed.plannedTitle == "Sortie longue")
 }
 
+
+// MARK: - Bricks
+
+private func leg(_ id: String, on date: Date, brick: String, order: Int, type: String, minutes: Int) -> V1PlannedSessionItem {
+    V1PlannedSessionItem(id: id, date: date, title: id, type: type, durationMin: minutes, brickGroupId: brick, brickOrder: order)
+}
+
+@Test func aBricksLegsAreOneEntryInTheirOrder() {
+    let result = entries(
+        planned: [
+            leg("run", on: tomorrow, brick: "b1", order: 1, type: "RUN", minutes: 20),
+            planned("solo", on: tomorrow),
+            leg("bike", on: tomorrow, brick: "b1", order: 0, type: "BIKE", minutes: 60),
+        ],
+        activities: []
+    )
+
+    #expect(result.count == 2)
+    guard let brick = result.lazy.compactMap({ entry -> PlanBrick? in
+        if case .brick(let brick) = entry { brick } else { nil }
+    }).first else {
+        Issue.record("expected a brick entry")
+        return
+    }
+    #expect(brick.legs.map(\.id) == ["bike", "run"])
+    #expect(brick.chain == "Vélo → Course")
+    #expect(brick.totalDurationMin == 80)
+    #expect(!brick.isMissed)
+}
+
+@Test func aBrickWithOneLegLeftIsAPlainSession() {
+    // The bike leg was done: the run left is one session, as the web demotes it.
+    let bike = V1PlannedSessionItem(
+        id: "bike", date: yesterday, title: "bike", type: "BIKE", completed: true, activityId: "a1",
+        brickGroupId: "b1", brickOrder: 0
+    )
+    let result = entries(
+        planned: [bike, leg("run", on: yesterday, brick: "b1", order: 1, type: "RUN", minutes: 20)],
+        activities: [activity("a1", on: yesterday, plannedId: "bike")]
+    )
+
+    #expect(result.count == 2)
+    #expect(result.contains { if case .missed(let session) = $0 { session.id == "run" } else { false } })
+}
+
+@Test func aBrickWhoseDayPassedReadsAsMissed() {
+    let result = entries(
+        planned: [
+            leg("bike", on: yesterday, brick: "b1", order: 0, type: "BIKE", minutes: 60),
+            leg("run", on: yesterday, brick: "b1", order: 1, type: "RUN", minutes: 20),
+        ],
+        activities: []
+    )
+
+    #expect(PlanDayStatus.status(of: result) == .missed)
+    guard case .brick(let brick) = result.first else {
+        Issue.record("expected a brick entry")
+        return
+    }
+    #expect(brick.isMissed)
+    #expect(result.first?.selection == .brick(brick))
+}

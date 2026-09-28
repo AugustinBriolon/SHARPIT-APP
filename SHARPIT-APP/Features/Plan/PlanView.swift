@@ -14,7 +14,7 @@ struct PlanView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var store: PlanStore
-    @State private var selectedSession: V1PlannedSessionItem?
+    @State private var selection: PlanSelection?
     @State private var showingCalendar = false
     @State private var showingMacroPlan = false
     /// Owned here, not by the sheet: closing it mid-generation keeps the week coming.
@@ -65,7 +65,7 @@ struct PlanView: View {
                     store: store,
                     activityClient: activityClient,
                     tokenProvider: tokenProvider,
-                    onSelect: { selectedSession = $0 }
+                    onSelect: { selection = $0 }
                 )
             }
             .background(SharpitCanvasBackground())
@@ -94,34 +94,24 @@ struct PlanView: View {
                     )
                 }
             }
-            .sheet(item: $selectedSession) { session in
-                PlannedSessionDrawer(
-                    preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
-                    linking: SessionLinkContext(
-                        referenceDate: session.date,
-                        activities: activityClient,
-                        linker: linker,
-                        tokenProvider: tokenProvider,
-                        onLinked: {
-                            selectedSession = nil
-                            toastCenter?.show(
-                                "Séance liée avec succès",
-                                symbol: "link",
-                                tone: .success,
-                                autoDismissAfter: 3.0
-                            )
-                            Task { await store.reload(around: session.date) }
-                        }
-                    ),
-                    watchPush: SessionWatchPushContext(
-                        pusher: watchPusher,
-                        tokenProvider: tokenProvider,
-                        onPushed: { _ in
-                            Task { await store.reload(around: session.date) }
-                        }
-                    )
-                ) { context in
-                    router.discussWithCoach(about: context)
+            .sheet(item: $selection) { selected in
+                switch selected {
+                case .session(let session):
+                    PlannedSessionDrawer(
+                        preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
+                        linking: linkContext(on: session.date),
+                        watchPush: watchPushContext(on: session.date)
+                    ) { context in
+                        router.discussWithCoach(about: context)
+                    }
+                case .brick(let brick):
+                    BrickSessionDrawer(
+                        brick: PlannedBrickPreview(brick: brick, isExpertReading: isExpertReading),
+                        linking: linkContext(on: brick.date),
+                        watchPush: watchPushContext(on: brick.date)
+                    ) { context in
+                        router.discussWithCoach(about: context)
+                    }
                 }
             }
             .sheet(isPresented: $showingCalendar) {
@@ -201,12 +191,43 @@ extension PlanView {
         store.goToToday()
         await store.loadAroundSelection()
         guard case .loaded(let entries) = store.phase(forOffset: store.selectedOffset) else { return }
-        selectedSession = entries.lazy.compactMap { entry -> V1PlannedSessionItem? in
+        // A brick's leg opens the brick: the leg alone is not what the athlete does.
+        selection = entries.lazy.compactMap { entry -> PlanSelection? in
             switch entry {
-            case .planned(let session), .missed(let session): session.id == id ? session : nil
+            case .planned(let session), .missed(let session): session.id == id ? .session(session) : nil
+            case .brick(let brick): brick.contains(sessionId: id) ? .brick(brick) : nil
             case .executed: nil
             }
         }.first
+    }
+
+    fileprivate func linkContext(on date: Date) -> SessionLinkContext {
+        SessionLinkContext(
+            referenceDate: date,
+            activities: activityClient,
+            linker: linker,
+            tokenProvider: tokenProvider,
+            onLinked: {
+                selection = nil
+                toastCenter?.show(
+                    "Séance liée avec succès",
+                    symbol: "link",
+                    tone: .success,
+                    autoDismissAfter: 3.0
+                )
+                Task { await store.reload(around: date) }
+            }
+        )
+    }
+
+    fileprivate func watchPushContext(on date: Date) -> SessionWatchPushContext {
+        SessionWatchPushContext(
+            pusher: watchPusher,
+            tokenProvider: tokenProvider,
+            onPushed: { _ in
+                Task { await store.reload(around: date) }
+            }
+        )
     }
 }
 
@@ -262,7 +283,7 @@ private struct PlanWeekPager: View {
     let store: PlanStore
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
-    let onSelect: (V1PlannedSessionItem) -> Void
+    let onSelect: (PlanSelection) -> Void
 
     @State private var position: Int?
 
@@ -307,7 +328,7 @@ private struct PlanWeekPage: View {
     let offset: Int
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
-    let onSelect: (V1PlannedSessionItem) -> Void
+    let onSelect: (PlanSelection) -> Void
 
     var body: some View {
         switch store.phase(forOffset: offset) {
@@ -346,17 +367,17 @@ private struct PlanWeekContent: View {
     let entries: [PlanEntry]
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
-    let onSelect: (V1PlannedSessionItem) -> Void
+    let onSelect: (PlanSelection) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    if let focusSession = store.focusSession(from: entries) {
-                        Button { onSelect(focusSession) } label: {
+                    if let focus = store.focusSession(from: entries) {
+                        Button { onSelect(focus) } label: {
                             PlanFocusSession(
-                                session: focusSession,
-                                isToday: Calendar.current.isDateInToday(focusSession.date)
+                                focus: focus,
+                                isToday: Calendar.current.isDateInToday(focus.date)
                             )
                         }
                         .buttonStyle(.sharpitPressable)
@@ -392,8 +413,43 @@ private struct PlanWeekContent: View {
 }
 
 private struct PlanFocusSession: View {
-    let session: V1PlannedSessionItem
+    let focus: PlanSelection
     let isToday: Bool
+
+    private var title: String {
+        switch focus {
+        case .session(let session): session.title ?? session.displayType
+        case .brick(let brick): brick.chain
+        }
+    }
+
+    private var sport: String {
+        switch focus {
+        case .session(let session): session.displayType
+        case .brick: "Brick"
+        }
+    }
+
+    private var durationMin: Int? {
+        switch focus {
+        case .session(let session): session.durationMin
+        case .brick(let brick): brick.totalDurationMin
+        }
+    }
+
+    private var symbolNames: [String] {
+        switch focus {
+        case .session(let session): [session.symbolName]
+        case .brick(let brick): brick.legs.map(\.symbolName)
+        }
+    }
+
+    private var isOnWatch: Bool {
+        switch focus {
+        case .session(let session): session.garminWorkoutId != nil
+        case .brick(let brick): brick.isOnWatch
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -404,24 +460,22 @@ private struct PlanFocusSession: View {
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
                 Spacer()
-                if session.garminWorkoutId != nil {
+                if isOnWatch {
                     Image(systemName: "applewatch.side.right")
                         .font(SharpitTypography.label)
                         .foregroundStyle(SharpitColor.primary)
                         .accessibilityLabel("Sur la montre Garmin")
                 }
-                Image(systemName: session.symbolName)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(SharpitColor.primary)
+                PlanSportChain(symbolNames: symbolNames, font: .title3.weight(.semibold))
             }
-            Text(session.title ?? session.displayType)
+            Text(title)
                 .font(SharpitTypography.sectionTitle)
                 .tracking(SharpitTypography.sectionTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(2)
             HStack(spacing: SharpitSpacing.md) {
-                PlanFocusMetric(label: "Sport", value: session.displayType)
-                if let duration = session.durationMin {
+                PlanFocusMetric(label: "Sport", value: sport)
+                if let duration = durationMin {
                     PlanFocusMetric(label: "Durée", value: "\(duration) min")
                 }
             }
@@ -433,6 +487,28 @@ private struct PlanFocusSession: View {
             in: RoundedRectangle(cornerRadius: SharpitRadius.panelLarge, style: .continuous)
         )
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A session's glyph, or a brick's glyphs joined by arrows: the chain is the brick's mark.
+private struct PlanSportChain: View {
+    let symbolNames: [String]
+    let font: Font
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(Array(symbolNames.enumerated()), id: \.offset) { index, symbol in
+                if index > 0 {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+                Image(systemName: symbol)
+                    .font(font)
+                    .foregroundStyle(SharpitColor.primary)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 
@@ -459,7 +535,7 @@ private struct PlanDayRow: View {
     let entries: [PlanEntry]
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
-    let onSelect: (V1PlannedSessionItem) -> Void
+    let onSelect: (PlanSelection) -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
@@ -517,7 +593,7 @@ private struct PlanEntryRow: View {
     let entry: PlanEntry
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
-    let onSelect: (V1PlannedSessionItem) -> Void
+    let onSelect: (PlanSelection) -> Void
 
     var body: some View {
         switch entry {
@@ -534,13 +610,18 @@ private struct PlanEntryRow: View {
             }
             .buttonStyle(.sharpitPressable)
         case .planned(let session):
-            Button { onSelect(session) } label: {
+            Button { onSelect(.session(session)) } label: {
                 PlanSessionCard(session: session, state: .planned)
             }
             .buttonStyle(.sharpitPressable)
         case .missed(let session):
-            Button { onSelect(session) } label: {
+            Button { onSelect(.session(session)) } label: {
                 PlanSessionCard(session: session, state: .missed)
+            }
+            .buttonStyle(.sharpitPressable)
+        case .brick(let brick):
+            Button { onSelect(.brick(brick)) } label: {
+                PlanBrickCard(brick: brick)
             }
             .buttonStyle(.sharpitPressable)
         }
@@ -680,6 +761,66 @@ private struct PlanSessionCard: View {
         .padding(.vertical, SharpitSpacing.xxs)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// A brick in the day's list: one card for the chain, as it is one session to do — the
+/// legs named in order, their total under them.
+private struct PlanBrickCard: View {
+    let brick: PlanBrick
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            VStack(spacing: 2) {
+                ForEach(Array(brick.legs.enumerated()), id: \.offset) { index, leg in
+                    if index > 0 {
+                        Rectangle()
+                            .fill(brick.isMissed ? SharpitColor.mutedForeground.opacity(0.4) : SharpitColor.primary.opacity(0.5))
+                            .frame(width: 1.5, height: 6)
+                    }
+                    Image(systemName: leg.symbolName)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(brick.isMissed ? SharpitColor.mutedForeground : SharpitColor.primary)
+                }
+            }
+            .frame(width: 28)
+            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                Text(brick.chain)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(brick.isMissed ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                    .lineLimit(2)
+                HStack(spacing: SharpitSpacing.xs) {
+                    Text("Brick")
+                        .font(SharpitTypography.label)
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SharpitColor.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(SharpitColor.primary.opacity(0.12), in: Capsule())
+                    Text(brick.legs.map { leg in leg.durationMin.map { "\($0)" } ?? "–" }.joined(separator: " + ") + " min")
+                    if brick.isMissed { Text("Non réalisé") }
+                }
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+            }
+            Spacer(minLength: 0)
+            if brick.isOnWatch {
+                Image(systemName: "applewatch.side.right")
+                    .font(SharpitTypography.label)
+                    .foregroundStyle(SharpitColor.primary)
+                    .accessibilityLabel("Sur la montre Garmin")
+            }
+            Image(systemName: "chevron.right")
+                .font(SharpitTypography.label)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, SharpitSpacing.xxs)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Brick, \(brick.chain)" + (brick.totalDurationMin.map { ", \($0) minutes" } ?? ""))
         .accessibilityAddTraits(.isButton)
     }
 }

@@ -5,7 +5,7 @@ import SwiftUI
 /// Plan holds a `V1PlannedSessionItem`; Today holds a `SessionCardModel` projected for
 /// display. Both open the same drawer, so both map into this rather than the drawer
 /// growing a second initialiser — or, worse, Today growing a second drawer.
-struct PlannedSessionPreview: Identifiable, Equatable {
+struct PlannedSessionPreview: Identifiable, Hashable {
     /// Addresses the prescription itself. Absent when the surface only knows a display
     /// line (a brick's group, say), which is why the coach button is conditional.
     let sessionId: String?
@@ -14,6 +14,8 @@ struct PlannedSessionPreview: Identifiable, Equatable {
     let symbolName: String
     let date: Date?
     let metrics: [PlannedSessionMetric]
+    /// The prescribed length, kept as a number beside its metric: a brick adds its legs up.
+    let durationMin: Int?
     let notes: String?
     /// Why the coach proposes it — only a proposal carries one.
     let rationale: String?
@@ -35,6 +37,7 @@ struct PlannedSessionPreview: Identifiable, Equatable {
         symbolName: String,
         date: Date?,
         metrics: [PlannedSessionMetric],
+        durationMin: Int? = nil,
         notes: String?,
         rationale: String? = nil,
         steps: [V1PlannedSessionStep],
@@ -49,6 +52,7 @@ struct PlannedSessionPreview: Identifiable, Equatable {
         self.symbolName = symbolName
         self.date = date
         self.metrics = metrics
+        self.durationMin = durationMin
         self.notes = notes
         self.rationale = rationale
         self.steps = steps
@@ -76,7 +80,7 @@ struct SessionWatchPushContext: Sendable {
     }
 }
 
-struct PlannedSessionMetric: Equatable {
+struct PlannedSessionMetric: Hashable {
     let label: String
     let value: String
 }
@@ -108,6 +112,7 @@ extension PlannedSessionPreview {
             symbolName: session.symbolName,
             date: session.date,
             metrics: metrics,
+            durationMin: session.durationMin,
             notes: session.notes,
             steps: session.breakdown?.steps ?? [],
             stepsAreDerived: session.breakdown?.derived ?? false,
@@ -201,6 +206,9 @@ struct PlannedSessionDrawer: View {
     /// The breakdown read last time this session was opened, shown at once while
     /// `loadBreakdown` asks again — the loader only spins on a first opening.
     var storedBreakdown: V1PlannedSessionBreakdown?
+    /// Pushed inside another sheet's stack — a brick's leg — rather than presented: no
+    /// stack, detents or close button of its own.
+    var isEmbedded = false
     let onDiscussWithCoach: (CoachDiscussContext) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -239,60 +247,68 @@ struct PlannedSessionDrawer: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    PlannedSessionSummary(
-                        preview: preview,
-                        steps: steps,
-                        stepsAreDerived: stepsAreDerived,
-                        isLoadingBreakdown: isLoadingBreakdown
-                    ) {
-                        // Without an id the coach cannot be told *which* session, and a tag
-                        // naming the wrong one is worse than no tag.
-                        if let sessionId = preview.sessionId {
-                            CoachDiscussButton(title: "Discuter de cette séance") {
-                                onDiscussWithCoach(
-                                    CoachDiscuss.describe(
-                                        .plannedSession(sessionId: sessionId),
-                                        name: preview.title
-                                    )
-                                )
-                                dismiss()
-                            }
+        if isEmbedded {
+            page
+        } else {
+            NavigationStack {
+                page
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Fermer") { dismiss() }
                         }
                     }
-                    // Same reason as the coach button: linking needs to know *which* session.
-                    if preview.sessionId != nil, linking != nil {
-                        DrawerActionRow(
-                            symbolName: "link",
-                            title: "Lier à une séance réalisée",
-                            subtitle: "Si elle n'a pas été rapprochée toute seule"
-                        ) {
-                            showingLinkPicker = true
-                        }
-                    }
-                    if preview.sessionId != nil, let watchPush {
-                        watchActionSection(context: watchPush)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SharpitSpacing.pageInset)
             }
-            .background(SharpitCanvasBackground())
-            .animation(SharpitMotion.reveal, value: steps.count)
-            .task { await fetchBreakdownIfMissing() }
-            .navigationTitle("Séance prévue")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fermer") { dismiss() }
-                }
-            }
+            .presentationDetents([.medium, .large])
+            .sharpitSheet()
+            .presentationDragIndicator(.visible)
         }
-        .presentationDetents([.medium, .large])
-        .sharpitSheet()
-        .presentationDragIndicator(.visible)
+    }
+
+    private var page: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+                PlannedSessionSummary(
+                    preview: preview,
+                    steps: steps,
+                    stepsAreDerived: stepsAreDerived,
+                    isLoadingBreakdown: isLoadingBreakdown
+                ) {
+                    // Without an id the coach cannot be told *which* session, and a tag
+                    // naming the wrong one is worse than no tag.
+                    if let sessionId = preview.sessionId {
+                        CoachDiscussButton(title: "Discuter de cette séance") {
+                            onDiscussWithCoach(
+                                CoachDiscuss.describe(
+                                    .plannedSession(sessionId: sessionId),
+                                    name: preview.title
+                                )
+                            )
+                            dismiss()
+                        }
+                    }
+                }
+                // Same reason as the coach button: linking needs to know *which* session.
+                if preview.sessionId != nil, linking != nil {
+                    DrawerActionRow(
+                        symbolName: "link",
+                        title: "Lier à une séance réalisée",
+                        subtitle: "Si elle n'a pas été rapprochée toute seule"
+                    ) {
+                        showingLinkPicker = true
+                    }
+                }
+                if preview.sessionId != nil, let watchPush {
+                    watchActionSection(context: watchPush)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(SharpitSpacing.pageInset)
+        }
+        .background(SharpitCanvasBackground())
+        .animation(SharpitMotion.reveal, value: steps.count)
+        .task { await fetchBreakdownIfMissing() }
+        .navigationTitle(isEmbedded ? preview.sport : "Séance prévue")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingPro) {
             if let pro {
                 NavigationStack { ProView(store: pro) }

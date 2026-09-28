@@ -170,6 +170,11 @@ the sheet vanishing. It shares `PlannedSessionSummary` with `PlannedSessionDrawe
 `PlannedSessionPreview(generated:)`: the steps (`breakdown`, resolved server-side like a planned
 session's) and the coach's one-line rationale — no prose instruction, the coach writes none.
 The row opens the session; its check is a button of its own.
+A brick (legs sharing `brickGroupId`) is one entry in Plan (`PlanEntry.brick`, `PlanBrickCard`) and one
+line in Résumé (`brickLegs`), and opens `BrickSessionDrawer`: the chain, the legs with their steps and the
+transition between them; a leg pushes the single session's drawer (`isEmbedded`) for the watch and linking.
+One leg left is a plain session, as the web demotes it. A breakdown's repeated steps are gathered by their
+server `group` (`PlannedStepSet`) under one « N fois » well — the block and its recovery, N times.
 « Ajuster le planning » (`PlanAdapterSheet`, its `PlanAdjustmentStore` owned by `PlanView`) is laid
 out as the generator — `CoachWorkingHeader`, `SharpitActionDock`, `SharpitPrimaryButton`, rows with
 `SharpitSportBadge` and `SharpitKeepToggle` — and never shows the model's reasoning. The server

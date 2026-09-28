@@ -10,16 +10,21 @@ import Foundation
 /// - `executed` — an activity, whether or not it came from the plan
 /// - `planned` — a prescription still ahead
 /// - `missed` — a prescription whose day has passed with nothing recorded against it
+///
+/// A brick — legs chained without a break — is one prescription, so it is one entry: listed
+/// leg by leg it read as two sessions to do apart, which is exactly what a brick is not.
 enum PlanEntry: Identifiable, Hashable {
     case executed(PlanExecutedEntry)
     case planned(V1PlannedSessionItem)
     case missed(V1PlannedSessionItem)
+    case brick(PlanBrick)
 
     var id: String {
         switch self {
         case .executed(let entry): "executed-\(entry.activity.id)"
         case .planned(let session): "planned-\(session.id)"
         case .missed(let session): "missed-\(session.id)"
+        case .brick(let brick): "brick-\(brick.id)"
         }
     }
 
@@ -27,6 +32,65 @@ enum PlanEntry: Identifiable, Hashable {
         switch self {
         case .executed(let entry): entry.activity.date
         case .planned(let session), .missed(let session): session.date
+        case .brick(let brick): brick.date
+        }
+    }
+
+    /// What tapping the entry opens, when it is a prescription.
+    var selection: PlanSelection? {
+        switch self {
+        case .executed: nil
+        case .planned(let session), .missed(let session): .session(session)
+        case .brick(let brick): .brick(brick)
+        }
+    }
+}
+
+/// A brick: legs chained without a break, read and opened as one session.
+struct PlanBrick: Hashable, Identifiable {
+    /// The legs' shared `brickGroupId`.
+    let id: String
+    /// In the order they are done; two at least — one leg left is a plain session.
+    let legs: [V1PlannedSessionItem]
+    /// Its day passed with nothing recorded against it.
+    let isMissed: Bool
+
+    var date: Date { legs[0].date }
+
+    /// « Vélo → Course »: the chain is what the brick trains.
+    var chain: String { legs.map(\.displayType).joined(separator: " → ") }
+
+    var totalDurationMin: Int? {
+        let durations = legs.compactMap(\.durationMin)
+        return durations.isEmpty ? nil : durations.reduce(0, +)
+    }
+
+    var totalLoad: Double? {
+        let loads = legs.compactMap(\.load).filter { $0 > 0 }
+        return loads.isEmpty ? nil : loads.reduce(0, +)
+    }
+
+    var isOnWatch: Bool { legs.contains { $0.garminWorkoutId != nil } }
+
+    func contains(sessionId: String) -> Bool { legs.contains { $0.id == sessionId } }
+}
+
+/// A prescription opened from Plan: one session, or a brick as a whole.
+enum PlanSelection: Identifiable, Hashable {
+    case session(V1PlannedSessionItem)
+    case brick(PlanBrick)
+
+    var id: String {
+        switch self {
+        case .session(let session): "session-\(session.id)"
+        case .brick(let brick): "brick-\(brick.id)"
+        }
+    }
+
+    var date: Date {
+        switch self {
+        case .session(let session): session.date
+        case .brick(let brick): brick.date
         }
     }
 }
@@ -74,15 +138,30 @@ enum PlanEntryBuilder {
             )
         }
 
-        let remaining = planned
-            .filter { !absorbed.contains($0.id) }
-            .map { session in
-                calendar.startOfDay(for: session.date) < startOfToday
-                    ? PlanEntry.missed(session)
-                    : PlanEntry.planned(session)
-            }
+        let remaining = prescriptions(
+            planned.filter { !absorbed.contains($0.id) },
+            isPast: { calendar.startOfDay(for: $0) < startOfToday }
+        )
 
         return (executed + remaining).sorted { $0.date < $1.date }
+    }
+
+    /// The sessions still owed, a brick's legs gathered into one entry. A brick with one leg
+    /// left — the other done or deleted — is a plain session, as the web demotes it.
+    private static func prescriptions(
+        _ sessions: [V1PlannedSessionItem],
+        isPast: (Date) -> Bool
+    ) -> [PlanEntry] {
+        let legsByBrick = Dictionary(grouping: sessions.filter { $0.brickGroupId != nil }) { $0.brickGroupId! }
+        var gathered = Set<String>()
+        return sessions.compactMap { session in
+            if let brickId = session.brickGroupId, let legs = legsByBrick[brickId], legs.count > 1 {
+                guard gathered.insert(brickId).inserted else { return nil }
+                let ordered = legs.sorted { ($0.brickOrder ?? 0) < ($1.brickOrder ?? 0) }
+                return .brick(PlanBrick(id: brickId, legs: ordered, isMissed: isPast(ordered[0].date)))
+            }
+            return isPast(session.date) ? .missed(session) : .planned(session)
+        }
     }
 }
 
@@ -101,10 +180,22 @@ enum PlanDayStatus: Equatable, Sendable {
         if entries.contains(where: { if case .executed = $0 { true } else { false } }) {
             return .executed
         }
-        if entries.contains(where: { if case .planned = $0 { true } else { false } }) {
+        if entries.contains(where: {
+            switch $0 {
+            case .planned: true
+            case .brick(let brick): !brick.isMissed
+            default: false
+            }
+        }) {
             return .planned
         }
-        if entries.contains(where: { if case .missed = $0 { true } else { false } }) {
+        if entries.contains(where: {
+            switch $0 {
+            case .missed: true
+            case .brick(let brick): brick.isMissed
+            default: false
+            }
+        }) {
             return .missed
         }
         return nil

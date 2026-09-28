@@ -214,6 +214,7 @@ private struct TodayFoldView: View {
     var controls: AnyView?
 
     @State private var selectedPreview: PlannedSessionPreview?
+    @State private var selectedBrick: PlannedBrickPreview?
     @State private var openedSignal: V1TodaySignalKey?
     @State private var openedNutrition: NutritionDestination?
     @State private var consecutiveWeeks: Int? = nil
@@ -334,6 +335,16 @@ private struct TodayFoldView: View {
                 watchPush: watchPushContext,
                 loadBreakdown: breakdownLoader(for: preview),
                 storedBreakdown: storedBreakdown(for: preview)
+            ) { context in
+                router.discussWithCoach(about: context)
+            }
+        }
+        .sheet(item: $selectedBrick) { brick in
+            BrickSessionDrawer(
+                brick: brick,
+                linking: linkContext,
+                watchPush: watchPushContext,
+                loadLegs: brickLoader(for: brick)
             ) { context in
                 router.discussWithCoach(about: context)
             }
@@ -476,6 +487,18 @@ private struct TodayFoldView: View {
     }
 
     /// The breakdown read the last time this session was opened, so the drawer opens on it.
+    /// Today's line names the legs; their steps are in the plan.
+    private func brickLoader(for brick: PlannedBrickPreview) -> (() async -> PlannedBrickPreview?)? {
+        guard let tokenProvider else { return nil }
+        let day = TrainingDayId.date(fold.trainingDayId) ?? .now
+        return {
+            guard let token = try? await tokenProvider(),
+                  let sessions = try? await PlannedSessionClient().plannedSessions(from: day, to: day, token: token)
+            else { return nil }
+            return brick.refreshed(from: sessions)
+        }
+    }
+
     private func storedBreakdown(for preview: PlannedSessionPreview) -> V1PlannedSessionBreakdown? {
         guard let sessionId = preview.sessionId,
               let stored = ActivityDiskCache.shared.read(.plannedBreakdown, id: sessionId)
@@ -527,7 +550,8 @@ private struct TodayFoldView: View {
                         ),
                         celebrateDone: sessionDoneCelebrations.contains(session.id),
                         tokenProvider: tokenProvider,
-                        onOpenPreview: { selectedPreview = $0 }
+                        onOpenPreview: { selectedPreview = $0 },
+                        onOpenBrick: { selectedBrick = $0 }
                     )
                 }
             }
@@ -547,6 +571,7 @@ private struct TodaySessionLink: View {
     let celebrateDone: Bool
     let tokenProvider: (() async throws -> String)?
     let onOpenPreview: (PlannedSessionPreview) -> Void
+    let onOpenBrick: (PlannedBrickPreview) -> Void
 
     private var plate: some View {
         SessionPlate(
@@ -578,7 +603,12 @@ private struct TodaySessionLink: View {
             }
         case .planned:
             Button {
-                onOpenPreview(PlannedSessionPreview(card: session))
+                // A brick opens as the chain it is, not as its first leg.
+                if let brick = PlannedBrickPreview(card: session, date: nil) {
+                    onOpenBrick(brick)
+                } else {
+                    onOpenPreview(PlannedSessionPreview(card: session))
+                }
             } label: {
                 plate
             }

@@ -83,6 +83,16 @@ nonisolated struct V1TodaySession: Codable, Sendable, Equatable, Identifiable {
     /// The prescription this line stands for. Distinct from `id`: a brick line is
     /// identified by its group, so only this addresses the session itself.
     var plannedSessionId: String? = nil
+    /// Set on a brick line: its legs in order, so the chain opens as one session.
+    var brickLegs: [V1TodayBrickLeg]? = nil
+}
+
+/// One leg of a brick line.
+nonisolated struct V1TodayBrickLeg: Codable, Sendable, Equatable, Identifiable {
+    var id: String
+    var type: String
+    var title: String
+    var durationMin: Int?
 }
 
 nonisolated enum V1TodaySessionKind: String, Codable, Sendable {

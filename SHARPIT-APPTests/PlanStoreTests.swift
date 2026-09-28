@@ -72,8 +72,8 @@ private func store(
     )
 
     #expect(planStore.focusSession(from: [past], now: now) == nil)
-    #expect(planStore.focusSession(from: [past, upcoming], now: now)?.id == "next")
-    #expect(planStore.focusSession(from: [upcoming, todaySession], now: now)?.id == "today")
+    #expect(planStore.focusSession(from: [past, upcoming], now: now)?.id == "session-next")
+    #expect(planStore.focusSession(from: [upcoming, todaySession], now: now)?.id == "session-today")
 }
 
 // MARK: - Paging

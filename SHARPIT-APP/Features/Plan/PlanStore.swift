@@ -106,12 +106,15 @@ final class PlanStore {
 
     /// Next actionable session in the visible week: today or later, and still to be done.
     /// Never highlights the past, and never a session already absorbed by an activity.
-    func focusSession(from entries: [PlanEntry], now: Date = Date()) -> V1PlannedSessionItem? {
+    func focusSession(from entries: [PlanEntry], now: Date = Date()) -> PlanSelection? {
         let startOfToday = calendar.startOfDay(for: now)
         return entries
-            .compactMap { entry -> V1PlannedSessionItem? in
-                guard case .planned(let session) = entry else { return nil }
-                return session
+            .compactMap { entry -> PlanSelection? in
+                switch entry {
+                case .planned(let session): .session(session)
+                case .brick(let brick) where !brick.isMissed: .brick(brick)
+                default: nil
+                }
             }
             .filter { $0.date >= startOfToday }
             .sorted { lhs, rhs in

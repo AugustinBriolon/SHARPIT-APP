@@ -23,10 +23,14 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     let garminWorkoutId: String?
     let garminWorkoutScheduledDate: String?
     let garminWorkoutPushedAt: Date?
+    /// Shared by the legs of one brick — a multisport chain done without a break.
+    let brickGroupId: String?
+    /// The leg's place in its brick, 0 first.
+    let brickOrder: Int?
 
     enum CodingKeys: String, CodingKey {
         case id, date, startTime, title, type, durationMin, intensity, load, notes, breakdown
-        case goalId, completed, activityId, activity
+        case goalId, completed, activityId, activity, brickGroupId, brickOrder
         case garminWorkoutId, garminWorkoutScheduledDate, garminWorkoutPushedAt
     }
 
@@ -47,7 +51,9 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         breakdown: V1PlannedSessionBreakdown? = nil,
         garminWorkoutId: String? = nil,
         garminWorkoutScheduledDate: String? = nil,
-        garminWorkoutPushedAt: Date? = nil
+        garminWorkoutPushedAt: Date? = nil,
+        brickGroupId: String? = nil,
+        brickOrder: Int? = nil
     ) {
         self.id = id
         self.date = date
@@ -66,6 +72,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         self.garminWorkoutId = garminWorkoutId
         self.garminWorkoutScheduledDate = garminWorkoutScheduledDate
         self.garminWorkoutPushedAt = garminWorkoutPushedAt
+        self.brickGroupId = brickGroupId
+        self.brickOrder = brickOrder
     }
 
     init(from decoder: Decoder) throws {
@@ -100,6 +108,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         } else {
             garminWorkoutPushedAt = nil
         }
+        brickGroupId = try container.decodeIfPresent(String.self, forKey: .brickGroupId)
+        brickOrder = try container.decodeIfPresent(Int.self, forKey: .brickOrder)
     }
 
     func withGarminPush(
@@ -124,7 +134,9 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
             breakdown: breakdown,
             garminWorkoutId: workoutId ?? garminWorkoutId,
             garminWorkoutScheduledDate: scheduledDate ?? garminWorkoutScheduledDate,
-            garminWorkoutPushedAt: pushedAt ?? garminWorkoutPushedAt
+            garminWorkoutPushedAt: pushedAt ?? garminWorkoutPushedAt,
+            brickGroupId: brickGroupId,
+            brickOrder: brickOrder
         )
     }
 
@@ -194,6 +206,9 @@ nonisolated struct V1PlannedSessionStep: Codable, Sendable, Hashable, Identifiab
     let label: String
     let detail: String?
     let target: String?
+    /// Steps sharing a group are done together, `repeatCount` times. Absent on payloads
+    /// written before the field existed.
+    let group: String?
     /// Repetitions of the group this step belongs to. 1 for a plain step.
     /// Named around Swift's `repeat` keyword; the wire key stays `repeat`.
     let repeatCount: Int
@@ -202,7 +217,7 @@ nonisolated struct V1PlannedSessionStep: Codable, Sendable, Hashable, Identifiab
     var id: String { key }
 
     enum CodingKeys: String, CodingKey {
-        case key, label, detail, target, notes
+        case key, label, detail, target, group, notes
         case repeatCount = "repeat"
     }
 
@@ -211,6 +226,7 @@ nonisolated struct V1PlannedSessionStep: Codable, Sendable, Hashable, Identifiab
         label: String,
         detail: String? = nil,
         target: String? = nil,
+        group: String? = nil,
         repeatCount: Int = 1,
         notes: String? = nil
     ) {
@@ -218,6 +234,7 @@ nonisolated struct V1PlannedSessionStep: Codable, Sendable, Hashable, Identifiab
         self.label = label
         self.detail = detail
         self.target = target
+        self.group = group
         self.repeatCount = repeatCount
         self.notes = notes
     }
@@ -228,8 +245,42 @@ nonisolated struct V1PlannedSessionStep: Codable, Sendable, Hashable, Identifiab
         label = try container.decode(String.self, forKey: .label)
         detail = try container.decodeIfPresent(String.self, forKey: .detail)
         target = try container.decodeIfPresent(String.self, forKey: .target)
+        group = try container.decodeIfPresent(String.self, forKey: .group)
         repeatCount = try container.decodeIfPresent(Int.self, forKey: .repeatCount) ?? 1
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
+    }
+}
+
+/// Steps done together, `repeatCount` times. A plain step is a set of one, done once.
+///
+/// Listed flat, a 5 × (bloc + récup) reads as five blocks then five recoveries; gathered, it
+/// reads as the block and its recovery, five times — which is what the athlete does.
+nonisolated struct PlannedStepSet: Hashable, Identifiable, Sendable {
+    let id: String
+    let repeatCount: Int
+    let steps: [V1PlannedSessionStep]
+
+    var isRepeated: Bool { repeatCount > 1 }
+
+    static func sets(from steps: [V1PlannedSessionStep]) -> [PlannedStepSet] {
+        var sets: [PlannedStepSet] = []
+        for step in steps {
+            let group = groupKey(of: step)
+            if let last = sets.last, last.id == group {
+                sets[sets.count - 1] = PlannedStepSet(id: group, repeatCount: last.repeatCount, steps: last.steps + [step])
+            } else {
+                sets.append(PlannedStepSet(id: group, repeatCount: step.repeatCount, steps: [step]))
+            }
+        }
+        return sets
+    }
+
+    /// The server's group, else — on a breakdown read before it sent one — the block half of
+    /// an endurance key (`block-step`), for a repeated step only: a plain step stands alone.
+    private static func groupKey(of step: V1PlannedSessionStep) -> String {
+        if let group = step.group { return group }
+        guard step.repeatCount > 1, let block = step.key.split(separator: "-").first else { return step.key }
+        return "legacy-\(block)"
     }
 }
 
