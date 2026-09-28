@@ -26,7 +26,46 @@ protocol CoachPlanServing: Sendable {
     func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token: String) async throws
 }
 
-actor CoachPlanClient: CoachPlanServing {
+/// A week generated on the server in the background (`/api/v1/coach/plan/jobs`): the drafts
+/// while the coach writes, then the week — or why it failed.
+nonisolated struct V1PlanJob: Decodable, Sendable {
+    let id: String
+    /// `running`, `ready` or `failed`.
+    let status: String
+    var drafts: [V1GeneratedSession] = []
+    var plan: V1GeneratedPlan?
+    var error: String?
+
+    enum CodingKeys: String, CodingKey { case id, status, drafts, plan, error }
+
+    init(id: String, status: String, drafts: [V1GeneratedSession] = [], plan: V1GeneratedPlan? = nil, error: String? = nil) {
+        self.id = id
+        self.status = status
+        self.drafts = drafts
+        self.plan = plan
+        self.error = error
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        status = try container.decode(String.self, forKey: .status)
+        drafts = ((try? container.decode([V1GeneratedSession].self, forKey: .drafts)) ?? []).filter(\.isDrafted)
+        plan = try? container.decodeIfPresent(V1GeneratedPlan.self, forKey: .plan)
+        error = try? container.decodeIfPresent(String.self, forKey: .error)
+    }
+}
+
+/// Plan's generator: the week runs on the server, so leaving the app loses nothing and a push
+/// says when it is ready.
+nonisolated protocol PlanJobServing: Sendable {
+    func startWeekJob(days: Int, goalId: String?, focus: String?, startDate: Date?, token: String) async throws -> V1PlanJob
+    func planJob(id: String, token: String) async throws -> V1PlanJob?
+    /// The latest generation, to pick up after the app was closed.
+    func latestPlanJob(token: String) async throws -> V1PlanJob?
+}
+
+actor CoachPlanClient: CoachPlanServing, PlanJobServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -68,6 +107,57 @@ actor CoachPlanClient: CoachPlanServing {
                 onDraft(draft.sessions.filter(\.isDrafted))
             }
         )
+    }
+
+    private nonisolated struct JobEnvelope: Decodable { let job: V1PlanJob? }
+
+    func startWeekJob(days: Int, goalId: String?, focus: String?, startDate: Date?, token: String) async throws -> V1PlanJob {
+        var payload: [String: Any] = ["days": days]
+        if let goalId, !goalId.isEmpty { payload["goalId"] = goalId }
+        if let focus, !focus.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            payload["focus"] = focus.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if let startDate { payload["startDate"] = TrainingDayId.today(now: startDate) }
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/coach/plan/jobs"))
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        guard let job = try await sendJob(request) else { throw SharpitAPIError.server }
+        return job
+    }
+
+    func planJob(id: String, token: String) async throws -> V1PlanJob? {
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/coach/plan/jobs/\(id)"))
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return try await sendJob(request)
+    }
+
+    func latestPlanJob(token: String) async throws -> V1PlanJob? {
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/coach/plan/jobs"))
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return try await sendJob(request)
+    }
+
+    private func sendJob(_ request: URLRequest) async throws -> V1PlanJob? {
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw SharpitAPIError.transport
+        }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        switch status {
+        case 200..<300: return try JSONDecoder().decode(JobEnvelope.self, from: data).job
+        case 401: throw SharpitAPIError.unauthorized
+        case 404: return nil
+        case 402: throw CoachPlanError.custom("Tu as atteint ton quota de coach pour le moment. Réessaie plus tard, ou passe à SharpIt Pro.")
+        case 429: throw SharpitAPIError.rateLimited
+        default:
+            let message = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
+            throw message.map(CoachPlanError.custom) ?? SharpitAPIError.server
+        }
     }
 
     func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token: String) async throws {

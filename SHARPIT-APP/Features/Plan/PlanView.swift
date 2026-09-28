@@ -11,6 +11,7 @@ struct PlanView: View {
     @Environment(ShellRouter.self) private var router
     @Environment(\.isExpertReading) private var isExpertReading
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var store: PlanStore
     @State private var selectedSession: V1PlannedSessionItem?
@@ -164,6 +165,10 @@ struct PlanView: View {
                 }
             }
             .task { await store.loadAroundSelection() }
+            .task { await generation.resume() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await generation.resume() } }
+            }
             .onChange(of: generation.isReady) { _, ready in
                 guard ready, !router.isShowingPlanGenerator else { return }
                 toastCenter?.show("Ta semaine est prête", symbol: "calendar.badge.checkmark", tone: .success, autoDismissAfter: 4.0)

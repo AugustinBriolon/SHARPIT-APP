@@ -3,7 +3,7 @@ import Testing
 @testable import Sharpit
 
 @MainActor
-private final class StreamingPlanClient: CoachPlanServing {
+private final class StreamingPlanClient: CoachPlanServing, PlanJobServing {
     private(set) var inserted: [(sessions: [V1GeneratedSession], goalId: String?)] = []
     var fails = false
     var insertFails = false
@@ -31,6 +31,25 @@ private final class StreamingPlanClient: CoachPlanServing {
         V1AdaptPlanResult(summary: "", changes: [])
     }
 
+    private(set) var started = 0
+    var latest: V1PlanJob?
+
+    nonisolated func startWeekJob(days _: Int, goalId _: String?, focus _: String?, startDate _: Date?, token _: String) async throws -> V1PlanJob {
+        await MainActor.run { started += 1 }
+        return V1PlanJob(id: "job-\(await MainActor.run { started })", status: "running")
+    }
+
+    nonisolated func planJob(id: String, token _: String) async throws -> V1PlanJob? {
+        await MainActor.run {
+            if fails { return V1PlanJob(id: id, status: "failed", error: "Le coach a renvoyé une proposition incomplète.") }
+            return V1PlanJob(id: id, status: "ready", plan: V1GeneratedPlan(summary: "Semaine", sessions: Self.week, gate: gate))
+        }
+    }
+
+    nonisolated func latestPlanJob(token _: String) async throws -> V1PlanJob? {
+        await MainActor.run { latest }
+    }
+
     func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token _: String) async throws {
         if insertFails { throw SharpitAPIError.server }
         inserted.append((sessions, goalId))
@@ -44,6 +63,10 @@ private struct NoGoals: GoalServing {
     func deleteGoal(id _: String, token _: String) async throws {}
 }
 
+private func freshDefaults() -> UserDefaults {
+    UserDefaults(suiteName: "PlanGeneration-\(UUID().uuidString)")!
+}
+
 @MainActor
 private func settled(_ store: PlanGenerationStore) async {
     for _ in 0..<500 where store.isGenerating {
@@ -54,7 +77,7 @@ private func settled(_ store: PlanGenerationStore) async {
 @MainActor
 @Test func aGeneratedWeekComesBackReadyWithEverySessionKept() async {
     let client = StreamingPlanClient()
-    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), tokenProvider: { "t" })
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: freshDefaults(), pollInterval: .milliseconds(1), tokenProvider: { "t" })
 
     store.start()
     #expect(store.isGenerating)
@@ -71,7 +94,7 @@ private func settled(_ store: PlanGenerationStore) async {
 @MainActor
 @Test func onlyTheKeptSessionsAreAddedToThePlan() async {
     let client = StreamingPlanClient()
-    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), tokenProvider: { "t" })
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: freshDefaults(), pollInterval: .milliseconds(1), tokenProvider: { "t" })
     store.goalId = "goal-1"
     store.start()
     await settled(store)
@@ -89,7 +112,7 @@ private func settled(_ store: PlanGenerationStore) async {
 @Test func aFailedInsertKeepsTheWeekOnScreen() async {
     let client = StreamingPlanClient()
     client.insertFails = true
-    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), tokenProvider: { "t" })
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: freshDefaults(), pollInterval: .milliseconds(1), tokenProvider: { "t" })
     store.start()
     await settled(store)
 
@@ -102,7 +125,7 @@ private func settled(_ store: PlanGenerationStore) async {
 @Test func aFailedGenerationSaysWhyAndCanStartAgain() async {
     let client = StreamingPlanClient()
     client.fails = true
-    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), tokenProvider: { "t" })
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: freshDefaults(), pollInterval: .milliseconds(1), tokenProvider: { "t" })
     store.start()
     await settled(store)
 
@@ -125,7 +148,7 @@ private func settled(_ store: PlanGenerationStore) async {
         V1GateVerdict(status: "ACCEPTED"),
         V1GateVerdict(status: "REJECTED", findings: [.init(severity: "REJECTED", rationale: "Zone sensible : genou.")]),
     ])
-    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), tokenProvider: { "t" })
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: freshDefaults(), pollInterval: .milliseconds(1), tokenProvider: { "t" })
     store.start()
     await settled(store)
 
@@ -152,4 +175,21 @@ private func settled(_ store: PlanGenerationStore) async {
 
     #expect(plan.gate?.sessions.first?.status == "WARNING")
     #expect(plan.gate?.sessions.first?.reason == "Charge élevée.")
+}
+
+/// A week finished while the app was closed is shown on the return, once.
+@MainActor
+@Test func aWeekFinishedWhileAwayIsPickedUpOnce() async {
+    let client = StreamingPlanClient()
+    client.latest = V1PlanJob(id: "job-away", status: "ready", plan: V1GeneratedPlan(summary: "S", sessions: StreamingPlanClient.week))
+    let defaults = freshDefaults()
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: defaults, pollInterval: .milliseconds(1), tokenProvider: { "t" })
+
+    await store.resume()
+    #expect(store.isReady)
+
+    _ = await store.insert()
+    let again = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: defaults, pollInterval: .milliseconds(1), tokenProvider: { "t" })
+    await again.resume()
+    #expect(!again.isReady)
 }

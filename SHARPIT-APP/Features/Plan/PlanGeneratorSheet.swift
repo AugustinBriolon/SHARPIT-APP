@@ -68,6 +68,10 @@ struct PlanGeneratorSheet: View {
         }
     }
 
+    private var selectedGoalTitle: String {
+        store.goals.first { $0.id == store.goalId }?.title ?? "Forme générale"
+    }
+
     private func request(error: String?) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -81,19 +85,31 @@ struct PlanGeneratorSheet: View {
             }
 
             if !store.goals.isEmpty {
-                HStack {
+                HStack(spacing: SharpitSpacing.sm) {
                     Text("Objectif")
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.foreground)
-                    Spacer()
-                    Picker("Objectif", selection: $store.goalId) {
-                        Text("Forme générale").tag(String?.none)
-                        ForEach(store.goals) { goal in
-                            Text(goal.title).tag(String?.some(goal.id))
+                        .layoutPriority(1)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    Menu {
+                        Picker("Objectif", selection: $store.goalId) {
+                            Text("Forme générale").tag(String?.none)
+                            ForEach(store.goals) { goal in
+                                Text(goal.title).tag(String?.some(goal.id))
+                            }
                         }
+                    } label: {
+                        // One line whatever the goal's name: a long title is cut, never wrapped.
+                        HStack(spacing: 4) {
+                            Text(selectedGoalTitle)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.mutedForeground)
                     }
-                    .pickerStyle(.menu)
-                    .tint(SharpitColor.foreground)
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)

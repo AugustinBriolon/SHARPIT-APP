@@ -148,20 +148,21 @@ the mode, Journal and weather are the fold's first row of glass chips (`sharpitG
 scroll away with it. Goals open from Plan's « … »
 menu, the coach's memory (context, trips) from Coach's toolbar.
 
-**Plan generation and weekly review.** « Remplir ma semaine » runs in `PlanGenerationStore`,
-owned by `PlanView`, so closing the sheet mid-generation loses nothing and a toast says when the
-week is ready. The week appears session by session from the server's `partial` events
-(`GeneratedWeekView`, shared with the onboarding's first week); the model's reasoning is hidden
-server-side, so drafts are the only progress there is. « Ajouter » sends the kept sessions to
-`/api/v1/coach/plan/insert`. « Bilan de la semaine » (Plan's « … ») is SharpIt Pro:
-`WeeklyReviewView` reads the latest review from `/api/v1/coach/weekly-review`, writes the current
-week's on demand, and shows a `SharpitProTeaser` on the server's 403. It is read at a glance:
-coloured figures, load and sleep by day (Swift Charts), time by sport, then « Ce qui a bien marché »
-(green) and « À surveiller » (amber) split from the markdown's fixed headings
-(`WeeklyReviewSections`), the full text folded at the end. Sessions the server's Gate rejected are
-shown with the reason and never kept: storing one is refused with a 422. A finished generation
-posts a local notification when the app is not in front (`LocalNotifications`); its tap opens
-Plan's generator (`ShellRouter.isShowingPlanGenerator`).
+**Plan generation and weekly review.** « Remplir ma semaine » is generated on the server in the
+background (`/api/v1/coach/plan/jobs`, `PlanJobServing`): the app starts the job, follows its
+drafts while in front, and picks it back up on its return (`PlanGenerationStore.resume`); the
+server pushes « Ta semaine est prête » (`/plan/generator`, which opens Plan's generator through
+`ShellRouter.isShowingPlanGenerator`), app open or not. The store is owned by `PlanView`. The
+sessions appear one by one (`GeneratedWeekView`, shared with the onboarding's first week, which
+still streams `/api/v1/coach/plan`). The server's Gate takes out what it rejects before the week
+is shown, so « Ajouter » (`/api/v1/coach/plan/insert`) is never refused for safety.
+« Bilan de la semaine » (Plan's « … ») is SharpIt Pro: `WeeklyReviewView` reads the latest review
+from `/api/v1/coach/weekly-review`, writes the current week's on demand, and shows a
+`SharpitProTeaser` on the server's 403. It is laid out like Health's summary: « Faits marquants »
+(what went well, what to watch — split from the markdown's fixed headings by
+`WeeklyReviewSections`), the week's figures as metric cards with quiet day bars and the average
+dashed, next week, and the full text on its own page. `-SharpitWeeklyReviewDemo` shows it on a
+fixed week in Debug builds.
 
 **Objectifs.** `GoalsView` is one list, no tabs: the next race on the ink plate
 (`GoalOrdering.nextRace`: the nearest A race ahead, else the nearest race), the goals in progress,

@@ -27,6 +27,9 @@ struct SharpitApp: App {
             if OnboardingDemo.isRequested {
                 OnboardingDemoHost()
                     .sharpitAppearance()
+            } else if WeeklyReviewDemo.isRequested {
+                WeeklyReviewDemoHost()
+                    .sharpitAppearance()
             } else {
                 app
             }

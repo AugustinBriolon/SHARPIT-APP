@@ -1,17 +1,17 @@
 import Foundation
 import Observation
-import UIKit
 
 /// Plan's « Remplir ma semaine »: the request, the week the coach writes, the sessions kept.
 ///
-/// Owned by Plan, not by its sheet, so closing the sheet mid-generation loses nothing: the
-/// generation runs on, and reopening the sheet shows it where it is — still writing, or ready.
+/// The week is generated on the server in the background (`PlanJobServing`): the app starts it,
+/// follows it while in front, and picks it back up on its return — the server pushes « Ta
+/// semaine est prête » when it is done, app open or not. Owned by Plan, not by its sheet.
 @MainActor
 @Observable
 final class PlanGenerationStore {
     enum Phase {
         case idle
-        /// Streaming: the sessions written so far.
+        /// Generating: the sessions written so far.
         case generating(drafts: [V1GeneratedSession])
         case ready(plan: V1GeneratedPlan, selected: Set<Int>)
         case inserting(plan: V1GeneratedPlan, selected: Set<Int>)
@@ -28,17 +28,29 @@ final class PlanGenerationStore {
     private(set) var goals: [V1Goal] = []
 
     private let plan: any CoachPlanServing
+    private let jobs: any PlanJobServing
     private let goalClient: any GoalServing
     private let tokenProvider: () async throws -> String
-    private var generation: Task<Void, Never>?
+    private let defaults: UserDefaults
+    private let pollInterval: Duration
+    private var jobId: String?
+    private var polling: Task<Void, Never>?
+
+    /// The last generation added or dismissed, so a relaunch does not offer it again.
+    static let handledJobKey = "sharpit.planGeneration.handledJob"
 
     init(
-        plan: any CoachPlanServing = CoachPlanClient(),
+        plan: any CoachPlanServing & PlanJobServing = CoachPlanClient(),
         goalClient: any GoalServing = GoalClient(),
+        defaults: UserDefaults = .standard,
+        pollInterval: Duration = .milliseconds(1500),
         tokenProvider: @escaping () async throws -> String
     ) {
         self.plan = plan
+        jobs = plan
         self.goalClient = goalClient
+        self.defaults = defaults
+        self.pollInterval = pollInterval
         self.tokenProvider = tokenProvider
     }
 
@@ -61,49 +73,77 @@ final class PlanGenerationStore {
     }
 
     func start() {
-        generation?.cancel()
+        polling?.cancel()
         phase = .generating(drafts: [])
+        insertError = nil
         let request = (days: days, goalId: goalId, focus: focus)
-        // Leaving the app should not cut the week off: ask iOS for the time to finish it.
-        let background = UIApplication.shared.beginBackgroundTask(withName: "plan-generation")
-        generation = Task { [weak self] in
-            defer { UIApplication.shared.endBackgroundTask(background) }
+        polling = Task { [weak self] in
             guard let self else { return }
             do {
-                let token = try await self.tokenProvider()
-                let week = try await self.plan.generateWeek(
+                let job = try await self.jobs.startWeekJob(
                     days: request.days,
                     goalId: request.goalId,
                     focus: request.focus,
                     startDate: .now,
-                    token: token
-                ) { [weak self] drafts in
-                    Task { @MainActor in self?.showDrafts(drafts) }
-                }
-                guard !Task.isCancelled else { return }
-                self.phase = week.sessions.isEmpty
-                    ? .failed("Le coach n'a proposé aucune séance. Précise ta demande et réessaie.")
-                    : .ready(plan: week, selected: week.insertableIndices)
-                SharpitHaptics.play(week.sessions.isEmpty ? .soft : .success)
-                if !week.sessions.isEmpty {
-                    await LocalNotifications.notifyIfAway(
-                        title: "Ta semaine est prête",
-                        body: "\(week.sessions.count) séances proposées par le coach, à valider avant de les ajouter.",
-                        path: LocalNotifications.planGeneratorPath
-                    )
-                }
+                    token: try await self.tokenProvider()
+                )
+                self.jobId = job.id
+                await self.follow(job.id)
             } catch is CancellationError {
             } catch {
-                self.phase = .failed((error as? CoachPlanError)?.errorDescription
-                    ?? SharpitErrorGuidance.message(for: error, subject: "La génération"))
+                self.phase = .failed(Self.message(for: error, subject: "La génération"))
             }
         }
     }
 
-    /// A draft never replaces a finished week, and only ever grows what is shown.
-    private func showDrafts(_ drafts: [V1GeneratedSession]) {
-        guard case .generating = phase else { return }
-        phase = .generating(drafts: drafts)
+    /// Picks the generation back up when Plan shows or the app returns: follows one still
+    /// running, and shows one finished while the athlete was away.
+    func resume() async {
+        if case .generating = phase, let jobId {
+            guard polling == nil else { return }
+            polling = Task { [weak self] in await self?.follow(jobId) }
+            return
+        }
+        guard case .idle = phase,
+              let token = try? await tokenProvider(),
+              let job = try? await jobs.latestPlanJob(token: token),
+              job.id != defaults.string(forKey: Self.handledJobKey)
+        else { return }
+        jobId = job.id
+        apply(job)
+        if job.status == "running", polling == nil {
+            polling = Task { [weak self] in await self?.follow(job.id) }
+        }
+    }
+
+    /// Reads the job until it is no longer running — while the app is in front.
+    private func follow(_ id: String) async {
+        defer { polling = nil }
+        while !Task.isCancelled {
+            guard let token = try? await tokenProvider() else { return }
+            if let job = try? await jobs.planJob(id: id, token: token) {
+                apply(job)
+                if job.status != "running" { return }
+            }
+            try? await Task.sleep(for: pollInterval)
+        }
+    }
+
+    private func apply(_ job: V1PlanJob) {
+        switch job.status {
+        case "ready":
+            guard let week = job.plan, !week.sessions.isEmpty else {
+                phase = .failed("Le coach n'a proposé aucune séance. Précise ta demande et réessaie.")
+                return
+            }
+            if !isReady { SharpitHaptics.play(.success) }
+            if case .ready = phase { return }
+            phase = .ready(plan: week, selected: week.insertableIndices)
+        case "failed":
+            phase = .failed(job.error ?? "La génération a échoué. Réessaie dans un instant.")
+        default:
+            phase = .generating(drafts: job.drafts)
+        }
     }
 
     func toggle(_ index: Int) {
@@ -112,9 +152,11 @@ final class PlanGenerationStore {
         phase = .ready(plan: plan, selected: selected)
     }
 
-    /// Back to the request, keeping it filled in.
+    /// Back to the request, keeping it filled in; the week shown is not offered again.
     func reset() {
-        generation?.cancel()
+        polling?.cancel()
+        polling = nil
+        markHandled()
         phase = .idle
     }
 
@@ -126,13 +168,23 @@ final class PlanGenerationStore {
         let sessions = selected.sorted().filter { $0 < week.sessions.count }.map { week.sessions[$0] }
         do {
             try await plan.insertWeek(sessions, goalId: goalId, token: try await tokenProvider())
+            markHandled()
             phase = .idle
             return sessions.count
         } catch {
-            insertError = (error as? CoachPlanError)?.errorDescription
-                ?? SharpitErrorGuidance.message(for: error, subject: "L'ajout au plan")
+            insertError = Self.message(for: error, subject: "L'ajout au plan")
             phase = .ready(plan: week, selected: selected)
             return nil
         }
+    }
+
+    private func markHandled() {
+        guard let jobId else { return }
+        defaults.set(jobId, forKey: Self.handledJobKey)
+        self.jobId = nil
+    }
+
+    private static func message(for error: Error, subject: String) -> String {
+        (error as? CoachPlanError)?.errorDescription ?? SharpitErrorGuidance.message(for: error, subject: subject)
     }
 }

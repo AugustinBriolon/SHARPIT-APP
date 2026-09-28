@@ -15,6 +15,8 @@ final class PushNotificationManager {
 
     /// Queued navigation action when a push notification is opened.
     var pendingTabSelection: ShellTab?
+    /// The server's « Ta semaine est prête » points here: Plan, with its generator open.
+    static let planGeneratorPath = "/plan/generator"
     /// Set by a tap on « Ta semaine est prête »: Plan opens with its generator.
     private(set) var pendingOpensPlanGenerator = false
 
@@ -121,7 +123,7 @@ final class PushNotificationManager {
 
         if category == "MORNING_VERDICT" || threadId == "morning-verdict" {
             self.pendingTabSelection = .today
-        } else if urlString == LocalNotifications.planGeneratorPath {
+        } else if urlString == Self.planGeneratorPath {
             pendingOpensPlanGenerator = true
             self.pendingTabSelection = .plan
         } else if let urlString, let url = URL(string: urlString) {
