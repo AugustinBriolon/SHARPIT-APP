@@ -1,19 +1,20 @@
 import SwiftUI
 
-/// A week the coach is writing or has written, shared by Plan's generator and the onboarding's
-/// first week: the sessions appear one by one as the server streams them, with one line saying
-/// where the coach is — never its raw reasoning.
+/// A week the coach has written, or the part of it written so far — shared by Plan's generator
+/// and the onboarding's first week.
 struct GeneratedWeekView: View {
     let sessions: [V1GeneratedSession]
-    /// Still streaming: a line under the sessions says the coach is writing the next one.
+    /// Still streaming: the sessions are shown but not opened, they are being written.
     var isWriting = false
     /// Indices kept for the plan; nil shows the sessions without a choice.
     var selection: Set<Int>?
     /// The server's safety verdict per index, when it has one.
     var verdicts: [Int: V1GateVerdict] = [:]
     var onToggle: (Int) -> Void = { _ in }
+    /// Inside a sheet the session is pushed, never a second sheet on top (HIG: one sheet at a
+    /// time); the onboarding, which is not a sheet, presents it as one.
+    var opening: ProposedSessionOpening = .sheet
 
-    @Environment(\.isExpertReading) private var isExpertReading
     @Namespace private var zoom
     /// The session read in full. A draft is not opened: it is still being written.
     @State private var opened: V1GeneratedSession?
@@ -31,29 +32,9 @@ struct GeneratedWeekView: View {
                     .accessibilityAddTraits(isWriting ? [] : .isButton)
                     .accessibilityHint(isWriting ? "" : "Ouvre le détail de la séance")
             }
-            if isWriting {
-                HStack(spacing: SharpitSpacing.xs) {
-                    ProgressView().controlSize(.small)
-                    Text(sessions.isEmpty ? "Le coach lit ta semaine…" : "Le coach écrit la séance suivante…")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-                .padding(.horizontal, SharpitSpacing.xxs)
-                .padding(.top, SharpitSpacing.xxs)
-                .transition(.opacity)
-            }
         }
         .animation(SharpitMotion.fade, value: sessions.count)
-        .animation(SharpitMotion.fade, value: isWriting)
-        .sheet(item: $opened) { session in
-            PlannedSessionDrawer(
-                preview: PlannedSessionPreview(generated: session, isExpertReading: isExpertReading),
-                detents: [.large],
-                title: "Séance proposée",
-                onDiscussWithCoach: { _ in }
-            )
-            .navigationTransition(.zoom(sourceID: session.id, in: zoom))
-        }
+        .modifier(ProposedSessionPresenter(opened: $opened, opening: opening, zoom: zoom))
     }
 
     @ViewBuilder
@@ -72,6 +53,109 @@ struct GeneratedWeekView: View {
             )
         } else {
             GeneratedSessionRow(session: session)
+        }
+    }
+}
+
+/// The wait while the coach writes a week: where it is, the sessions as they arrive, and the
+/// rows still to come as placeholders — the shape of the result before the result. Never the
+/// model's raw reasoning.
+struct GeneratingWeekView: View {
+    let drafts: [V1GeneratedSession]
+    /// Under the stage line, e.g. that the sheet can close.
+    var note: String?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var stage: (title: String, detail: String) {
+        if drafts.isEmpty {
+            return ("Le coach lit ta semaine", "Forme, charge, agenda et blessures : il part de tes données.")
+        }
+        let count = drafts.count
+        return ("Le coach écrit tes séances", "\(count) séance\(count > 1 ? "s" : "") écrite\(count > 1 ? "s" : ""), la suite arrive.")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+                ProgressView()
+                    .controlSize(.regular)
+                    .padding(.top, 2)
+                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                    Text(stage.title)
+                        .font(SharpitTypography.sectionTitle)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .contentTransition(.opacity)
+                    Text(stage.detail)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .contentTransition(.numericText())
+                    if let note {
+                        Text(note)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .animation(SharpitMotion.fade, value: drafts.count)
+
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                GeneratedWeekView(sessions: drafts, isWriting: true)
+                ForEach(0..<(drafts.isEmpty ? 3 : 1), id: \.self) { index in
+                    GeneratedSessionRow(session: .placeholder)
+                        .redacted(reason: .placeholder)
+                        .phaseAnimator(reduceMotion ? [1.0] : [1.0, 0.45]) { row, opacity in
+                            row.opacity(opacity)
+                        } animation: { _ in
+                            .easeInOut(duration: 0.9).delay(Double(index) * 0.15)
+                        }
+                        .accessibilityHidden(true)
+                }
+            }
+        }
+    }
+}
+
+private extension V1GeneratedSession {
+    static let placeholder = V1GeneratedSession(
+        date: "2026-01-05", type: .run, intensity: "ENDURANCE", title: "Séance en cours d'écriture",
+        description: "", durationMin: 45, load: 0
+    )
+}
+
+enum ProposedSessionOpening {
+    /// Pushed on the enclosing `NavigationStack`.
+    case push
+    /// In a sheet of its own.
+    case sheet
+}
+
+/// Opens the session read in full, zooming from its row either way.
+private struct ProposedSessionPresenter: ViewModifier {
+    @Binding var opened: V1GeneratedSession?
+    let opening: ProposedSessionOpening
+    let zoom: Namespace.ID
+
+    func body(content: Content) -> some View {
+        switch opening {
+        case .push:
+            content.navigationDestination(item: $opened) { session in
+                ProposedSessionPage(session: session)
+                    .navigationTransition(.zoom(sourceID: session.id, in: zoom))
+            }
+        case .sheet:
+            content.sheet(item: $opened) { session in
+                NavigationStack {
+                    ProposedSessionPage(session: session)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Fermer") { opened = nil }
+                            }
+                        }
+                }
+                .navigationTransition(.zoom(sourceID: session.id, in: zoom))
+            }
         }
     }
 }

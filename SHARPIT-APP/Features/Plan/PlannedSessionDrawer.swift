@@ -200,9 +200,6 @@ struct PlannedSessionDrawer: View {
     /// The breakdown read last time this session was opened, shown at once while
     /// `loadBreakdown` asks again — the loader only spins on a first opening.
     var storedBreakdown: V1PlannedSessionBreakdown?
-    /// A proposal opened from its row zooms to full height; a planned session opens at half.
-    var detents: Set<PresentationDetent> = [.medium, .large]
-    var title = "Séance prévue"
     let onDiscussWithCoach: (CoachDiscussContext) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -244,39 +241,25 @@ struct PlannedSessionDrawer: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    header
-                    // Without an id the coach cannot be told *which* session, and a tag
-                    // naming the wrong one is worse than no tag.
-                    if let sessionId = preview.sessionId {
-                        CoachDiscussButton(title: "Discuter de cette séance") {
-                            onDiscussWithCoach(
-                                CoachDiscuss.describe(
-                                    .plannedSession(sessionId: sessionId),
-                                    name: preview.title
+                    PlannedSessionSummary(
+                        preview: preview,
+                        steps: steps,
+                        stepsAreDerived: stepsAreDerived,
+                        isLoadingBreakdown: isLoadingBreakdown
+                    ) {
+                        // Without an id the coach cannot be told *which* session, and a tag
+                        // naming the wrong one is worse than no tag.
+                        if let sessionId = preview.sessionId {
+                            CoachDiscussButton(title: "Discuter de cette séance") {
+                                onDiscussWithCoach(
+                                    CoachDiscuss.describe(
+                                        .plannedSession(sessionId: sessionId),
+                                        name: preview.title
+                                    )
                                 )
-                            )
-                            dismiss()
+                                dismiss()
+                            }
                         }
-                    }
-                    if !preview.metrics.isEmpty {
-                        metricsRow
-                    }
-                    if !steps.isEmpty {
-                        PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                    } else if isLoadingBreakdown {
-                        HStack(spacing: SharpitSpacing.xs) {
-                            ProgressView()
-                            Text("Chargement du déroulé…")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                    }
-                    if let notes = preview.notes, !notes.isEmpty {
-                        textPanel("Consigne", notes)
-                    }
-                    if let rationale = preview.rationale, !rationale.isEmpty {
-                        textPanel("Pourquoi cette séance", rationale)
                     }
                     // Same reason as the coach button: linking needs to know *which* session.
                     if preview.sessionId != nil, linking != nil {
@@ -298,7 +281,7 @@ struct PlannedSessionDrawer: View {
             .background(SharpitCanvasBackground())
             .animation(SharpitMotion.reveal, value: steps.count)
             .task { await fetchBreakdownIfMissing() }
-            .navigationTitle(title)
+            .navigationTitle("Séance prévue")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -306,7 +289,7 @@ struct PlannedSessionDrawer: View {
                 }
             }
         }
-        .presentationDetents(detents)
+        .presentationDetents([.medium, .large])
         .sharpitSheet()
         .presentationDragIndicator(.visible)
         .sheet(isPresented: $showingPro) {
@@ -465,65 +448,6 @@ struct PlannedSessionDrawer: View {
             withAnimation(SharpitMotion.reveal) { loadedBreakdown = fresh }
         }
         isLoadingBreakdown = false
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(spacing: SharpitSpacing.xs) {
-                Image(systemName: preview.symbolName)
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitSportTone.label(for: preview.sport))
-                Text(preview.sport)
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                Spacer(minLength: 0)
-                if let date = preview.date {
-                    Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-            }
-            Text(preview.title)
-                .font(SharpitTypography.pageTitle)
-                .tracking(SharpitTypography.pageTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
-        }
-    }
-
-    private func textPanel(_ eyebrow: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(eyebrow)
-            Text(text)
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
-    }
-
-    private var metricsRow: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.md) {
-            ForEach(preview.metrics, id: \.label) { metric in
-                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                    Text(metric.label)
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                    Text(metric.value)
-                        .font(SharpitTypography.data)
-                        .tracking(SharpitTypography.dataTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 }
 

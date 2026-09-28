@@ -38,12 +38,10 @@ struct PlanGeneratorSheet: View {
         case .failed(let message):
             request(error: message)
         case .generating(let drafts):
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                GeneratedWeekView(sessions: drafts, isWriting: true)
-                Text("Tu peux fermer : la génération continue.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
+            GeneratingWeekView(
+                drafts: drafts,
+                note: "Environ une minute. Tu peux fermer : une notification te dira quand c'est prêt."
+            )
         case .ready(let plan, let selected), .inserting(let plan, let selected):
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 if !plan.summary.isEmpty {
@@ -57,8 +55,10 @@ struct PlanGeneratorSheet: View {
                     selection: selected,
                     verdicts: Dictionary(uniqueKeysWithValues: plan.sessions.indices.compactMap { index in
                         plan.verdict(at: index).map { (index, $0) }
-                    })
-                ) { store.toggle($0) }
+                    }),
+                    onToggle: { store.toggle($0) },
+                    opening: .push
+                )
                 if let insertError = store.insertError {
                     Label(insertError, systemImage: "exclamationmark.triangle")
                         .font(SharpitTypography.meta)
@@ -132,8 +132,8 @@ struct PlanGeneratorSheet: View {
             case .idle, .failed:
                 primary(title: "Générer", busy: false) { store.start() }
             case .generating:
-                primary(title: "Le coach écrit ta semaine…", busy: true) {}
-                    .disabled(true)
+                // Nothing to do but wait or close — « Fermer » is in the bar.
+                EmptyView()
             case .ready(_, let selected), .inserting(_, let selected):
                 let busy = if case .inserting = store.phase { true } else { false }
                 primary(

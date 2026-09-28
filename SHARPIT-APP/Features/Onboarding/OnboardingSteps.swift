@@ -772,7 +772,7 @@ struct OnboardingFirstWeekStep: View {
     }
 
     private var generating: some View {
-        GeneratedWeekView(sessions: store.firstWeekDrafts, isWriting: true)
+        GeneratingWeekView(drafts: store.firstWeekDrafts)
     }
 
     private func ready(summary: String, sessions: [V1GeneratedSession]) -> some View {
