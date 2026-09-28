@@ -210,6 +210,8 @@ private func settled(_ store: PlanGenerationStore) async {
     #expect(preview.sessionId == nil)
     #expect(preview.steps.count == 1)
     #expect(preview.rationale == "Progression vers le M.")
+    // The steps are the instruction: no prose « Consigne » beside them.
+    #expect(preview.notes == nil)
     #expect(preview.metrics.map(\.value) == ["55 min", "Seuil", "62"])
 }
 
@@ -218,4 +220,10 @@ private func settled(_ store: PlanGenerationStore) async {
     let session = try JSONDecoder().decode(V1GeneratedSession.self, from: json)
     #expect(session.breakdown == nil)
     #expect(PlannedSessionPreview(generated: session).steps.isEmpty)
+}
+
+/// The wait names what the coach reads, one line after another, before any session is written.
+@Test func theWaitNamesWhatTheCoachReads() {
+    #expect(GeneratingWeekView.readingSteps.first == "Analyse de ton profil")
+    #expect(GeneratingWeekView.readingSteps.count >= 3)
 }

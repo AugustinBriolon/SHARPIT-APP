@@ -104,7 +104,7 @@ extension PlannedSessionSummary where Actions == EmptyView {
 }
 
 /// A session the coach proposes, read in full. Pushed inside the generator — one sheet at a
-/// time, as the HIG asks — and zoomed from its row.
+/// time, as the HIG asks.
 struct ProposedSessionPage: View {
     let session: V1GeneratedSession
     @Environment(\.isExpertReading) private var isExpertReading

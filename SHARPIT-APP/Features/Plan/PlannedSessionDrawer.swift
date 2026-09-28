@@ -154,7 +154,8 @@ extension PlannedSessionPreview {
             symbolName: session.type.symbolName,
             date: TrainingDayId.date(session.date),
             metrics: metrics,
-            notes: session.description,
+            // The steps are the instruction: the coach writes no prose beside them any more.
+            notes: nil,
             rationale: session.rationale,
             steps: session.breakdown?.steps ?? [],
             stepsAreDerived: session.breakdown?.derived ?? false

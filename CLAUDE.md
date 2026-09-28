@@ -156,12 +156,13 @@ server pushes « Ta semaine est prête » (`/plan/generator`, which opens Plan's
 sessions appear one by one (`GeneratedWeekView`, shared with the onboarding's first week, which
 still streams `/api/v1/coach/plan`). The server's Gate takes out what it rejects before the week
 is shown, so « Ajouter » (`/api/v1/coach/plan/insert`) is never refused for safety.
-While the coach writes, `GeneratingWeekView` shows where it is, the sessions so far and
-redacted rows still to come. A proposed session opens in full with the system zoom
-(`matchedTransitionSource` → `navigationTransition(.zoom)`) on `ProposedSessionPage` — pushed
-inside the generator's sheet (HIG: one sheet at a time), a sheet only in the onboarding. It
-shares `PlannedSessionSummary` with `PlannedSessionDrawer`, fed by `PlannedSessionPreview(generated:)`:
-the server sends each proposal's `breakdown`, resolved like a planned session's, and its rationale.
+While the coach writes, `GeneratingWeekView` names what it reads, one line after another
+(`readingSteps`), then the sessions so far, with redacted rows still to come. A proposed session
+opens on `ProposedSessionPage`, pushed inside the generator's sheet (HIG: one sheet at a time) and
+a sheet only in the onboarding — the system's own transitions: a zoom from the row, tried, read as
+the sheet vanishing. It shares `PlannedSessionSummary` with `PlannedSessionDrawer`, fed by
+`PlannedSessionPreview(generated:)`: the steps (`breakdown`, resolved server-side like a planned
+session's) and the coach's one-line rationale — no prose instruction, the coach writes none.
 The row opens the session; its check is a button of its own.
 « Bilan de la semaine » (Plan's « … ») is SharpIt Pro: `WeeklyReviewView` reads the latest review
 from `/api/v1/coach/weekly-review`, writes the current week's on demand, and shows a

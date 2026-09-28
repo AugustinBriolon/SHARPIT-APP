@@ -15,7 +15,6 @@ struct GeneratedWeekView: View {
     /// time); the onboarding, which is not a sheet, presents it as one.
     var opening: ProposedSessionOpening = .sheet
 
-    @Namespace private var zoom
     /// The session read in full. A draft is not opened: it is still being written.
     @State private var opened: V1GeneratedSession?
 
@@ -23,7 +22,6 @@ struct GeneratedWeekView: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             ForEach(Array(sessions.enumerated()), id: \.offset) { index, session in
                 row(index: index, session: session)
-                    .matchedTransitionSource(id: session.id, in: zoom)
                     .onTapGesture {
                         guard !isWriting else { return }
                         SharpitHaptics.play(.light)
@@ -34,7 +32,7 @@ struct GeneratedWeekView: View {
             }
         }
         .animation(SharpitMotion.fade, value: sessions.count)
-        .modifier(ProposedSessionPresenter(opened: $opened, opening: opening, zoom: zoom))
+        .modifier(ProposedSessionPresenter(opened: $opened, opening: opening))
     }
 
     @ViewBuilder
@@ -66,13 +64,24 @@ struct GeneratingWeekView: View {
     var note: String?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Which line of the reading stage is shown; it moves on while nothing is written yet.
+    @State private var readingStep = 0
+
+    /// What the coach goes through before the first session, in the order it reads it.
+    static let readingSteps = [
+        "Analyse de ton profil",
+        "Lecture de ta charge et de ta récupération",
+        "Prise en compte de tes blessures",
+        "Lecture de ton agenda",
+        "Choix des séances clés",
+    ]
 
     private var stage: (title: String, detail: String) {
         if drafts.isEmpty {
-            return ("Le coach lit ta semaine", "Forme, charge, agenda et blessures : il part de tes données.")
+            return (Self.readingSteps[readingStep], "Le coach part de tes données, pas d'un modèle type.")
         }
         let count = drafts.count
-        return ("Le coach écrit tes séances", "\(count) séance\(count > 1 ? "s" : "") écrite\(count > 1 ? "s" : ""), la suite arrive.")
+        return ("Rédaction des séances", "\(count) séance\(count > 1 ? "s" : "") écrite\(count > 1 ? "s" : ""), la suite arrive.")
     }
 
     var body: some View {
@@ -85,7 +94,8 @@ struct GeneratingWeekView: View {
                     Text(stage.title)
                         .font(SharpitTypography.sectionTitle)
                         .foregroundStyle(SharpitColor.foreground)
-                        .contentTransition(.opacity)
+                        .id(stage.title)
+                        .transition(reduceMotion ? .opacity : .push(from: .bottom).combined(with: .opacity))
                     Text(stage.detail)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
@@ -99,6 +109,8 @@ struct GeneratingWeekView: View {
             }
             .accessibilityElement(children: .combine)
             .animation(SharpitMotion.fade, value: drafts.count)
+            .animation(SharpitMotion.reveal, value: stage.title)
+            .clipped()
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 GeneratedWeekView(sessions: drafts, isWriting: true)
@@ -113,6 +125,16 @@ struct GeneratingWeekView: View {
                         .accessibilityHidden(true)
                 }
             }
+        }
+        .task(id: drafts.isEmpty) { await advanceReadingSteps() }
+    }
+
+    /// Moves through the reading lines until the first session arrives, stopping on the last.
+    private func advanceReadingSteps() async {
+        while drafts.isEmpty, readingStep < Self.readingSteps.count - 1 {
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled, drafts.isEmpty else { return }
+            readingStep += 1
         }
     }
 }
@@ -131,18 +153,18 @@ enum ProposedSessionOpening {
     case sheet
 }
 
-/// Opens the session read in full, zooming from its row either way.
+/// Opens the session read in full with the system's own transitions: a push slides in from the
+/// side inside a sheet, a sheet rises from the bottom. A zoom from the row was tried and read as
+/// the whole sheet vanishing and another appearing — inside a sheet it has no card to grow from.
 private struct ProposedSessionPresenter: ViewModifier {
     @Binding var opened: V1GeneratedSession?
     let opening: ProposedSessionOpening
-    let zoom: Namespace.ID
 
     func body(content: Content) -> some View {
         switch opening {
         case .push:
             content.navigationDestination(item: $opened) { session in
                 ProposedSessionPage(session: session)
-                    .navigationTransition(.zoom(sourceID: session.id, in: zoom))
             }
         case .sheet:
             content.sheet(item: $opened) { session in
@@ -154,7 +176,7 @@ private struct ProposedSessionPresenter: ViewModifier {
                             }
                         }
                 }
-                .navigationTransition(.zoom(sourceID: session.id, in: zoom))
+                .sharpitSheet()
             }
         }
     }
