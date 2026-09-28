@@ -172,7 +172,7 @@ struct SharpitCalendarSheet: View {
                         selected: initial,
                         marks: marks
                     ) { day in
-                        SharpitHaptics.play(.light)
+                        SharpitHaptics.play(.soft)
                         onPick(day)
                         dismiss()
                     }
@@ -333,7 +333,7 @@ struct SharpitTodayButton: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(.light)
+            SharpitHaptics.play(.soft)
             SharpitMotion.run(SharpitMotion.selection, action)
         } label: {
             Text("Aujourd'hui")

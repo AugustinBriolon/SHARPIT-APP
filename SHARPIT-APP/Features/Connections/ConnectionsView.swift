@@ -80,7 +80,6 @@ struct ConnectionsView: View {
     private var garminRow: some View {
         let badge = ConnectionsReadout.garmin(status: status)
         return Button {
-            SharpitHaptics.play(.light)
             Task { await connectGarmin() }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
@@ -110,7 +109,6 @@ struct ConnectionsView: View {
 
     private var mfpRow: some View {
         Button {
-            SharpitHaptics.play(.light)
             if isMfpConnected { isManagingMfp = true } else { isConnectingMfp = true }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {

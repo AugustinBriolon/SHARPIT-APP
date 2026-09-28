@@ -62,7 +62,7 @@ final class MorningWellnessStore {
 
     func pick(_ score: WellnessScore, for dimension: WellnessDimension) {
         picks[dimension] = score
-        SharpitHaptics.play(.light)
+        SharpitHaptics.play(.soft)
     }
 
     func load() async {

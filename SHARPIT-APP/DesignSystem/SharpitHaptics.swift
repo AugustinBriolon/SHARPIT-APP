@@ -9,8 +9,8 @@ import Foundation
 /// One engine, started on demand and restarted when the system stops or resets it.
 enum SharpitHaptics {
     enum Kind {
+        /// A choice picked — the one tap a selection earns.
         case soft
-        case light
         case success
         /// A notch passed under the finger on a ruler; `major` on the tens.
         case notch(major: Bool)
@@ -19,7 +19,6 @@ enum SharpitHaptics {
     static func play(_ kind: Kind) {
         switch kind {
         case .soft: HapticEngine.shared.transient(intensity: 0.45, sharpness: 0.2)
-        case .light: HapticEngine.shared.transient(intensity: 0.6, sharpness: 0.5)
         case .notch(let major): HapticEngine.shared.transient(intensity: major ? 1 : 0.7, sharpness: major ? 0.8 : 0.6)
         case .success:
             HapticEngine.shared.transient(intensity: 0.7, sharpness: 0.5)

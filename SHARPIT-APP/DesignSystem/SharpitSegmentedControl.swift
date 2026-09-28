@@ -27,7 +27,7 @@ struct SharpitSegmentedControl<Value: Hashable>: View {
                 let isSelected = option.value == selection
                 Button {
                     guard !isSelected else { return }
-                    SharpitHaptics.play(.light)
+                    SharpitHaptics.play(.soft)
                     SharpitMotion.run(SharpitMotion.selection) { selection = option.value }
                 } label: {
                     HStack(spacing: SharpitSpacing.xxs + 2) {

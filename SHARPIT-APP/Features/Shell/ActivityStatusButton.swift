@@ -147,7 +147,7 @@ private struct ActivityStatusDrawer: View {
 
     private func pick(_ status: ActivityStatusId) async {
         guard status != store.store.status else { return }
-        SharpitHaptics.play(.light)
+        SharpitHaptics.play(.soft)
         await store.apply(status: status, retention: retention(usesDeadline: usesDeadline))
         syncFromStore()
     }

@@ -350,7 +350,6 @@ private struct SignInAwardWinning: View {
     private var ctaDeck: some View {
         VStack(spacing: 14) {
             Button {
-                SharpitHaptics.play(.light)
                 onSignIn()
             } label: {
                 HStack(spacing: 10) {

@@ -284,7 +284,7 @@ struct EquipmentView: View {
     private func sportCard(_ item: PracticedSportItem) -> some View {
         PracticedSportTile(item: item, isSelected: practicedSports.contains(item.id)) {
             let isSelected = practicedSports.contains(item.id)
-            SharpitHaptics.play(.light)
+            SharpitHaptics.play(.soft)
             withAnimation(.snappy(duration: 0.2)) {
                 if isSelected {
                     practicedSports.remove(item.id)
@@ -369,7 +369,7 @@ struct EquipmentView: View {
                     let ownedCount = items.filter { owned.contains($0.id) }.count
 
                     Button {
-                        SharpitHaptics.play(.light)
+                        SharpitHaptics.play(.soft)
                         withAnimation(.snappy(duration: 0.2)) {
                             selectedSportTab = sport
                         }
@@ -439,7 +439,7 @@ struct EquipmentView: View {
         let icon = venue.symbolName
 
         return Button {
-            SharpitHaptics.play(.light)
+            SharpitHaptics.play(.soft)
             withAnimation(.snappy(duration: 0.2)) {
                 strengthVenue = venue
             }
@@ -481,7 +481,7 @@ struct EquipmentView: View {
     private func equipmentCard(_ item: EquipmentCatalogItem) -> some View {
         EquipmentItemTile(item: item, isOwned: owned.contains(item.id)) {
             let isOwned = owned.contains(item.id)
-            SharpitHaptics.play(.light)
+            SharpitHaptics.play(.soft)
             withAnimation(.snappy(duration: 0.2)) {
                 if isOwned {
                     owned.remove(item.id)

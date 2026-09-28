@@ -513,7 +513,6 @@ struct CoachDiscussButton: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(.soft)
             action()
         } label: {
             HStack(spacing: SharpitSpacing.xs) {

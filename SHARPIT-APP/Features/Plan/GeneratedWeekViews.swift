@@ -24,7 +24,6 @@ struct GeneratedWeekView: View {
                 row(index: index, session: session)
                     .onTapGesture {
                         guard !isWriting else { return }
-                        SharpitHaptics.play(.light)
                         opened = session
                     }
                     .accessibilityAddTraits(isWriting ? [] : .isButton)
@@ -45,7 +44,7 @@ struct GeneratedWeekView: View {
                 isSelected: selection.contains(index),
                 warning: verdicts[index]?.reason,
                 onToggle: {
-                    SharpitHaptics.play(.light)
+                    SharpitHaptics.play(.soft)
                     onToggle(index)
                 }
             )

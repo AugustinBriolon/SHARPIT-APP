@@ -87,7 +87,6 @@ final class TodayStore {
     func refresh() async {
         await load(resetToLoading: false)
         if case .loaded(let fold) = phase {
-            SharpitHaptics.play(.light)
             flashScores()
             markNewSessionDones(in: fold)
         }

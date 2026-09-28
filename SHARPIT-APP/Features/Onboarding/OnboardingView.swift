@@ -66,7 +66,6 @@ struct OnboardingView: View {
                 OnboardingActionBar(store: store)
             }
         }
-        .onChange(of: store.step) { _, _ in SharpitHaptics.play(.light) }
     }
 
     private var pageTransition: AnyTransition {
@@ -229,7 +228,6 @@ private struct OnboardingActionBar: View {
                 title: primaryLabel,
                 isBusy: store.isBusy || store.firstWeek == .generating && store.step == .firstWeek
             ) { [step = store.step] in
-                SharpitHaptics.play(.light)
                 Task { await store.advance(from: step) }
             }
             .disabled(!store.canAdvance || store.isBusy)
@@ -345,7 +343,6 @@ struct OnboardingBootstrapView: View {
 
     private func cycle() async {
         hasAppeared = true
-        SharpitHaptics.play(.success)
         guard !reduceMotion else {
             progress = 1
             isComplete = true
@@ -363,7 +360,8 @@ struct OnboardingBootstrapView: View {
         try? await Task.sleep(for: .milliseconds(1200))
         guard !Task.isCancelled else { return }
         SharpitMotion.run { isComplete = true }
-        SharpitHaptics.play(.soft)
+        // The one success of the wizard: felt when the week is set, not when the screen appears.
+        SharpitHaptics.play(.success)
         try? await Task.sleep(for: .milliseconds(700))
         guard !Task.isCancelled else { return }
         onDone()

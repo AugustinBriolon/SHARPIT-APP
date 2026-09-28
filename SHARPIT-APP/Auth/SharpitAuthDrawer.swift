@@ -100,7 +100,6 @@ struct SharpitAuthDrawer: View {
 
             // 2. Primary Action Button
             Button {
-                SharpitHaptics.play(.light)
                 Task { await handleEmailSubmit() }
             } label: {
                 HStack(spacing: 8) {
@@ -144,7 +143,6 @@ struct SharpitAuthDrawer: View {
             VStack(spacing: 12) {
                 // Google Sign In
                 Button {
-                    SharpitHaptics.play(.light)
                     Task { await handleGoogleSignIn() }
                 } label: {
                     HStack(spacing: 12) {
@@ -170,7 +168,6 @@ struct SharpitAuthDrawer: View {
 
                 // Apple Sign In
                 Button {
-                    SharpitHaptics.play(.light)
                     Task { await handleAppleSignIn() }
                 } label: {
                     HStack(spacing: 10) {
@@ -250,7 +247,6 @@ struct SharpitAuthDrawer: View {
             }
 
             Button {
-                SharpitHaptics.play(.light)
                 Task { await handleVerifyCode() }
             } label: {
                 HStack {
@@ -272,7 +268,6 @@ struct SharpitAuthDrawer: View {
 
             HStack(spacing: 16) {
                 Button {
-                    SharpitHaptics.play(.light)
                     Task { await handleResendCode() }
                 } label: {
                     Text("Renvoyer le code")
@@ -330,7 +325,6 @@ struct SharpitAuthDrawer: View {
                 }
 
             Button {
-                SharpitHaptics.play(.light)
                 Task { await handleVerifyPassword() }
             } label: {
                 HStack {
@@ -352,7 +346,6 @@ struct SharpitAuthDrawer: View {
 
             VStack(spacing: 14) {
                 Button {
-                    SharpitHaptics.play(.light)
                     Task { await handleSwitchToEmailCode(email: email) }
                 } label: {
                     HStack(spacing: 6) {

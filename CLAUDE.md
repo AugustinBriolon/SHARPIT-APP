@@ -451,6 +451,10 @@ What makes a surface feel finished, applied everywhere new work lands:
 - **No dead ends.** An empty day offers the next step (sync, another day, link a source); a
   failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server) — an
   expired MFP session asks to reconnect.
+- **Haptics confirm what the finger does, nothing else.** A notch dialled (a ruler, painted days),
+  a choice picked (one `.soft`), a real success once (a source linked, the wizard's week set).
+  Never navigation: continuing, a step changing, a field or a sheet opening. Everywhere at once
+  read as noise.
 - **Haptics through `SharpitHaptics` only** — Core Haptics. On the athlete's iPhone neither
   `UIFeedbackGenerator` nor SwiftUI's `sensoryFeedback` played anything in the app, while a Core
   Haptics transient did; never reach for either.

@@ -102,7 +102,7 @@ struct PlanAdapterSheet: View {
                 VStack(spacing: SharpitSpacing.xs) {
                     ForEach(Array(result.changes.enumerated()), id: \.offset) { index, change in
                         AdjustmentRow(change: change, isSelected: selected.contains(index)) {
-                            SharpitHaptics.play(.light)
+                            SharpitHaptics.play(.soft)
                             store.toggle(index)
                         }
                     }

@@ -87,7 +87,7 @@ struct SharpitSegmentedChoice<Option: Hashable>: View {
             ForEach(options, id: \.self) { option in
                 let isSelected = selection == option
                 Button {
-                    SharpitHaptics.play(.light)
+                    SharpitHaptics.play(.soft)
                     SharpitMotion.run(SharpitMotion.selection) { selection = option }
                 } label: {
                     Text(label(option))
@@ -257,7 +257,6 @@ struct SharpitDateField: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             SharpitFieldLabel(title)
             Button {
-                SharpitHaptics.play(.light)
                 isOpen = true
             } label: {
                 HStack {

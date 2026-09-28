@@ -62,7 +62,6 @@ struct PrivacyConsentWallView: View {
         .sheet(item: $openDocument) { document in
             LegalDocumentSheet(document: document)
         }
-        .onChange(of: canSubmit) { _, ready in if ready { SharpitHaptics.play(.success) } }
         .onAppear { SharpitMotion.run { hasAppeared = true } }
     }
 
@@ -146,7 +145,6 @@ struct PrivacyConsentWallView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             Button {
-                SharpitHaptics.play(.light)
                 Task { await submit() }
             } label: {
                 HStack(spacing: SharpitSpacing.xs) {

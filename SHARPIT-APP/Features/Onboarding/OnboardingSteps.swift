@@ -58,7 +58,7 @@ struct OnboardingChoiceChip: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(.light)
+            SharpitHaptics.play(.soft)
             onSelect()
         } label: {
             HStack(spacing: SharpitSpacing.xs) {
@@ -126,7 +126,7 @@ struct OnboardingSportTile: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(isSelected ? .soft : .light)
+            SharpitHaptics.play(.soft)
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -241,7 +241,7 @@ private struct OnboardingEquipmentRow: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(.light)
+            SharpitHaptics.play(.soft)
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
@@ -367,7 +367,7 @@ struct OnboardingWeekStep: View {
         paintValue = value
         lastPainted = index
         if store.availability.availableWeekdays.contains(day) != value {
-            SharpitHaptics.play(.light)
+            SharpitHaptics.play(.soft)
             store.setWeekday(day, available: value)
         }
     }
@@ -428,7 +428,7 @@ struct OnboardingGoalStep: View {
     private func kindCard(_ kind: OnboardingIntentionKind, title: String, symbol: String) -> some View {
         let isSelected = draft.kind == kind
         return Button {
-            SharpitHaptics.play(.light)
+            SharpitHaptics.play(.soft)
             SharpitMotion.run(SharpitMotion.selection) { draft.kind = kind }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
@@ -585,7 +585,7 @@ private struct OnboardingInjurySheet: View {
                 }
                 Spacer(minLength: 0)
                 Button {
-                    SharpitHaptics.play(.success)
+                    SharpitHaptics.play(.soft)
                     onSave(draft)
                     dismiss()
                 } label: {
@@ -638,7 +638,7 @@ struct OnboardingPrivacyStep: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             if !consents.requiredAccepted {
                 Button {
-                    SharpitHaptics.play(.light)
+                    SharpitHaptics.play(.soft)
                     SharpitMotion.run(SharpitMotion.selection) { consents.acceptAll() }
                 } label: {
                     Label("Tout accepter", systemImage: "checkmark.circle")
@@ -859,7 +859,6 @@ struct OnboardingSourcesStep: View {
                 .accessibilityLabel("Connecté")
         } else {
             Button {
-                SharpitHaptics.play(.light)
                 action()
             } label: {
                 if isBusy {

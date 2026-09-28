@@ -119,7 +119,7 @@ struct DayDetailDatePicker: View {
     }
 
     private func pick(_ day: Date) {
-        SharpitHaptics.play(.light)
+        SharpitHaptics.play(.soft)
         weekOffset = weeks.offset(forWeekContaining: day)
         onSelect(day)
     }

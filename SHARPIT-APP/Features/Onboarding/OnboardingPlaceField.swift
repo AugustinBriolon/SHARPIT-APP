@@ -78,7 +78,7 @@ struct OnboardingPlaceField: View {
                 VStack(spacing: 0) {
                     ForEach(suggestions.results, id: \.self) { place in
                         Button {
-                            SharpitHaptics.play(.light)
+                            SharpitHaptics.play(.soft)
                             let label = place.label
                             pickedText = label
                             text = label

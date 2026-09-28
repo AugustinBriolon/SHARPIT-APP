@@ -55,14 +55,14 @@ final class ActivitySubjectiveStore: Identifiable {
     func setRPE(_ value: Int) {
         guard rpe != value || hasFailed else { return }
         rpe = value
-        SharpitHaptics.play(.light)
+        SharpitHaptics.play(.soft)
         scheduleSave()
     }
 
     func setFeeling(_ value: SessionFeeling) {
         guard feeling != value || hasFailed else { return }
         feeling = value
-        SharpitHaptics.play(.light)
+        SharpitHaptics.play(.soft)
         scheduleSave()
     }
 
