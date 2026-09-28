@@ -1,16 +1,39 @@
 import Foundation
+import SwiftUI
 
-/// What the widgets show, written by the app into the App Group each time it reads the day.
+/// What the widgets show, written by the app into the App Group.
 ///
 /// A widget never calls the API: it holds no Clerk session, and its refresh budget is a few
-/// dozen reloads a day. The app writes this after every read of Résumé — on opening, on each
-/// return, and when a silent push after a server sync wakes it — then asks WidgetKit to redraw.
+/// dozen reloads a day. The app writes each section as it reads it — the day from Résumé, the
+/// food log from its card, the weight from Corps — and all of them when a silent push after a
+/// server sync wakes it, then asks WidgetKit to redraw. Sections are merged, never replaced
+/// whole: reading the food log does not erase the day.
 nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
-    /// `yyyy-MM-dd`: a snapshot of another day is shown as stale, never as today.
-    var trainingDayId: String
-    var writtenAt: Date
-    var verdict: Verdict?
-    var sessions: [Session]
+    var day: Day?
+    var nutrition: Nutrition?
+    var weight: Weight?
+
+    init(day: Day? = nil, nutrition: Nutrition? = nil, weight: Weight? = nil) {
+        self.day = day
+        self.nutrition = nutrition
+        self.weight = weight
+    }
+
+    // MARK: Day
+
+    /// Résumé's day: the verdict, the sessions, last night's sleep.
+    nonisolated struct Day: Codable, Equatable, Sendable {
+        /// `yyyy-MM-dd`: a day other than today is shown as stale, never as today.
+        var trainingDayId: String
+        var verdict: Verdict?
+        var sessions: [Session]
+        var sleep: Sleep?
+
+        /// The session to put forward: the first one still to do, else the last one done.
+        var leadSession: Session? {
+            sessions.first { !$0.isDone } ?? sessions.last
+        }
+    }
 
     nonisolated struct Verdict: Codable, Equatable, Sendable {
         /// « Feu vert », « Récupère »…
@@ -44,23 +67,69 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         var unit: String
     }
 
-    /// The app's links are `https://sharpit.app` paths, as for any link it opens.
-    static func link(_ path: String) -> URL {
-        URL(string: "https://sharpit.app\(path)")!
+    /// Last night, as Résumé's gauge reads it.
+    nonisolated struct Sleep: Codable, Equatable, Sendable {
+        /// 0…100, the dial's value; nil when the gauge shows no number.
+        var score: Int?
+        /// What the gauge shows under the dial — « 7 h 12 », a cause…
+        var caption: String?
     }
 
-    /// The session to put forward: the first one still to do, else the last one done.
-    var leadSession: Session? {
-        sessions.first { !$0.isDone } ?? sessions.last
+    // MARK: Nutrition
+
+    /// Today's food log, as its Résumé card reads it.
+    nonisolated struct Nutrition: Codable, Equatable, Sendable {
+        var trainingDayId: String
+        /// No food log linked: the widget offers to link one.
+        var isConnected: Bool
+        var calories: Double?
+        /// The day's budget, exercise included, as the server computes it.
+        var calorieGoal: Double?
+        var remaining: Double?
+        var macros: [Macro]
     }
 
-    func isFor(day: Date, calendar: Calendar = .current) -> Bool {
-        trainingDayId == Self.dayId(day, calendar: calendar)
+    nonisolated struct Macro: Codable, Equatable, Sendable, Identifiable {
+        nonisolated enum Kind: String, Codable, Sendable { case protein, carbohydrates, fat }
+        var kind: Kind
+        var grams: Double
+        var goalGrams: Double?
+
+        var id: Kind { kind }
+    }
+
+    // MARK: Weight
+
+    /// The latest weigh-in and where it stands against the athlete's target.
+    nonisolated struct Weight: Codable, Equatable, Sendable {
+        var kilograms: Double
+        var measuredAt: Date
+        /// The value `changeWindowDays` earlier, when the server has one.
+        var previousKilograms: Double?
+        var changeWindowDays: Int?
+        var targetKilograms: Double?
+    }
+
+    // MARK: Freshness
+
+    func day(on date: Date, calendar: Calendar = .current) -> Day? {
+        guard let day, day.trainingDayId == Self.dayId(date, calendar: calendar) else { return nil }
+        return day
+    }
+
+    func nutrition(on date: Date, calendar: Calendar = .current) -> Nutrition? {
+        guard let nutrition, nutrition.trainingDayId == Self.dayId(date, calendar: calendar) else { return nil }
+        return nutrition
     }
 
     static func dayId(_ date: Date, calendar: Calendar = .current) -> String {
         let parts = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 1970, parts.month ?? 1, parts.day ?? 1)
+    }
+
+    /// The app's links are `https://sharpit.app` paths, as for any link it opens.
+    static func link(_ path: String) -> URL {
+        URL(string: "https://sharpit.app\(path)")!
     }
 }
 
@@ -79,6 +148,17 @@ nonisolated enum WidgetSnapshotStore {
     static func write(_ snapshot: WidgetSnapshot, to directory: URL? = containerURL) throws {
         guard let url = directory?.appending(path: fileName) else { return }
         try encoder.encode(snapshot).write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+
+    /// Changes one section and keeps the others. Returns whether anything changed.
+    @discardableResult
+    static func update(in directory: URL? = containerURL, _ change: (inout WidgetSnapshot) -> Void) -> Bool {
+        let current = read(from: directory) ?? WidgetSnapshot()
+        var next = current
+        change(&next)
+        guard next != current else { return false }
+        try? write(next, to: directory)
+        return true
     }
 
     /// Signing out or deleting the account leaves nothing of the athlete on the home screen.
@@ -101,5 +181,24 @@ nonisolated enum WidgetSnapshotStore {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
+    }
+}
+
+extension WidgetSnapshot.Macro.Kind {
+    var label: String {
+        switch self {
+        case .protein: "Protéines"
+        case .carbohydrates: "Glucides"
+        case .fat: "Lipides"
+        }
+    }
+
+    /// One hue per macro, from the signal family — the app's nutrition columns and the widgets'.
+    var tone: Color {
+        switch self {
+        case .protein: SharpitColor.signalRecovery
+        case .carbohydrates: SharpitColor.signalBase
+        case .fat: SharpitColor.signalTempo
+        }
     }
 }

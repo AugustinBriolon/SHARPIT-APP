@@ -6,13 +6,16 @@ enum NutritionReadout {
     enum Macro: CaseIterable, Hashable {
         case protein, carbohydrates, fat
 
-        var label: String {
+        /// The shared name and hue, so the app and its widgets read a macro alike.
+        var kind: WidgetSnapshot.Macro.Kind {
             switch self {
-            case .protein: "Protéines"
-            case .carbohydrates: "Glucides"
-            case .fat: "Lipides"
+            case .protein: .protein
+            case .carbohydrates: .carbohydrates
+            case .fat: .fat
             }
         }
+
+        var label: String { kind.label }
 
         var short: String {
             switch self {
@@ -31,13 +34,7 @@ enum NutritionReadout {
         }
 
         /// One hue per macro, from the signal family, so the columns and the split read together.
-        var tone: Color {
-            switch self {
-            case .protein: SharpitColor.signalRecovery
-            case .carbohydrates: SharpitColor.signalBase
-            case .fat: SharpitColor.signalTempo
-            }
-        }
+        var tone: Color { kind.tone }
 
         /// Kilocalories per gram (Atwater).
         var kcalPerGram: Double {
@@ -55,8 +52,7 @@ enum NutritionReadout {
 
     /// `2 140` — whole kilocalories, grouped the French way.
     static func kcal(_ value: Double?) -> String {
-        guard let value else { return "—" }
-        return Int(value.rounded()).formatted(.number.locale(Locale(identifier: "fr_FR")))
+        SharpitFigureFormat.kcal(value)
     }
 
     /// `128 g` — grams, whole.
@@ -78,10 +74,7 @@ enum NutritionReadout {
 
     /// What the remaining calories say: left to eat, or past the goal.
     static func remainingLabel(_ remaining: Double?) -> String? {
-        guard let remaining else { return nil }
-        let rounded = Int(remaining.rounded())
-        if rounded >= 0 { return "Reste \(kcal(Double(rounded))) kcal" }
-        return "\(kcal(Double(-rounded))) kcal au-delà"
+        SharpitFigureFormat.remainingKcal(remaining)
     }
 
     /// Within 10 % of the goal reads as on track; further either way asks for attention.

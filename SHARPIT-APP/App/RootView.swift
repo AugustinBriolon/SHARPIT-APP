@@ -231,8 +231,8 @@ struct RootView: View {
             handleGarminCallback(status: status)
         case .tab(let tab):
             router.select(tab)
-        case .settings:
-            router.openSettings()
+        case .settings(let route):
+            router.openSettings(on: route)
         case .activity(let id):
             router.openActivity(id: id)
         case .plannedSession(let id):

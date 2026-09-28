@@ -42,7 +42,8 @@ struct IncomingLinkTests {
         #expect(link("https://sharpit.app/today") == .tab(.today))
         #expect(link("https://sharpit.app/activities") == .tab(.activity))
         #expect(link("https://sharpit.app/me") == .tab(.body))
-        #expect(link("https://sharpit.app/settings") == .settings)
+        #expect(link("https://sharpit.app/settings") == .settings(nil))
+        #expect(link("https://sharpit.app/settings/sources") == .settings(.sources))
         #expect(link("https://sharpit.app/unknown") == nil)
     }
 }

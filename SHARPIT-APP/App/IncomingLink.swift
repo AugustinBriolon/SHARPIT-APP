@@ -8,7 +8,8 @@ import Foundation
 enum IncomingLink: Equatable {
     case garminCallback(status: String?)
     case tab(ShellTab)
-    case settings
+    /// Paramètres, on one of its pages when the path names it.
+    case settings(SettingsRoute?)
     /// A recorded activity — a done session tapped in a widget.
     case activity(id: String)
     /// A planned session, opened in Plan's drawer — a session to do tapped in a widget.
@@ -27,7 +28,10 @@ enum IncomingLink: Equatable {
             return .garminCallback(status: status)
         }
         if components.path == "/settings" {
-            return .settings
+            return .settings(nil)
+        }
+        if components.path == "/settings/sources" {
+            return .settings(.sources)
         }
         if let id = identifier(in: components.path, after: "/activity/") {
             return .activity(id: id)

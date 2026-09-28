@@ -28,7 +28,7 @@ struct TodaySessionView: View {
         }
     }
 
-    private var day: WidgetSnapshot? { entry.today }
+    private var day: WidgetSnapshot.Day? { entry.day }
 
     // MARK: Lock screen
 
@@ -70,7 +70,7 @@ struct TodaySessionView: View {
 struct TodaySessionSmall: View {
     let entry: SnapshotEntry
 
-    private var day: WidgetSnapshot? { entry.today }
+    private var day: WidgetSnapshot.Day? { entry.day }
     private var eyebrow: String { day.map { WidgetDay.label($0.trainingDayId) } ?? "Aujourd'hui" }
 
     var body: some View {
@@ -92,7 +92,7 @@ struct TodaySessionSmall: View {
 struct TodaySessionMedium: View {
     let entry: SnapshotEntry
 
-    private var day: WidgetSnapshot? { entry.today }
+    private var day: WidgetSnapshot.Day? { entry.day }
     private var eyebrow: String { day.map { WidgetDay.label($0.trainingDayId) } ?? "Aujourd'hui" }
 
     var body: some View {

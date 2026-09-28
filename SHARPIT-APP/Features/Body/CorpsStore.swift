@@ -114,6 +114,7 @@ final class CorpsStore {
         let assembled = web.value.map { CorpsReadout.merging(overview: $0, localSeries: local) } ?? local
         targetWeightKg = results.0.value?.targetWeightKg
         if let web = web.value {
+            WidgetSnapshotPublisher.publish(web, targetKilograms: targetWeightKg)
             biologicalAge = web.biologicalAge
             biologicalAgeRequiresPro = web.biologicalAgeRequiresPro
             hasOverview = true

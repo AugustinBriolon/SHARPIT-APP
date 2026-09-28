@@ -11,5 +11,8 @@ struct SharpItWidgetsBundle: WidgetBundle {
     var body: some Widget {
         TodaySessionWidget()
         VerdictWidget()
+        NutritionWidget()
+        SleepWidget()
+        WeightWidget()
     }
 }

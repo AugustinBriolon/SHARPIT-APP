@@ -32,6 +32,7 @@ final class NutritionTodayStore {
             let token = try await tokenProvider()
             let nutrition = try await client.nutrition(trainingDayId: trainingDayId, token: token)
             phase = Self.phase(for: nutrition)
+            WidgetSnapshotPublisher.publish(nutrition)
         } catch is CancellationError {
         } catch {
             // Keep a day already on screen; only a first read that fails says so.

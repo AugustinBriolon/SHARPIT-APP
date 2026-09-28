@@ -7,7 +7,7 @@ struct VerdictWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Verdict", provider: SnapshotProvider()) { entry in
             VerdictView(entry: entry)
-                .containerBackground(for: .widget) { WidgetCanvas(stateTone: entry.today?.verdict?.posture.tone) }
+                .containerBackground(for: .widget) { WidgetCanvas(stateTone: entry.day?.verdict?.posture.tone) }
                 .widgetURL(WidgetSnapshot.link("/today"))
         }
         .configurationDisplayName("Verdict du jour")
@@ -20,7 +20,7 @@ struct VerdictView: View {
     let entry: SnapshotEntry
     @Environment(\.widgetFamily) private var family
 
-    fileprivate var verdict: WidgetSnapshot.Verdict? { entry.today?.verdict }
+    fileprivate var verdict: WidgetSnapshot.Verdict? { entry.day?.verdict }
 
     var body: some View {
         switch family {
