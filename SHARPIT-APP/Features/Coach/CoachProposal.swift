@@ -75,7 +75,8 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         "TRIATHLON": "Triathlon", "HIKE": "Randonnée", "OTHER": "Autre",
     ]
 
-    private static let intensityLabels = [
+    /// The French name of a session intensity, as the coach and the generator both show it.
+    static let intensityLabels = [
         "RECOVERY": "Récupération", "ENDURANCE": "Endurance", "TEMPO": "Tempo",
         "THRESHOLD": "Seuil", "VO2MAX": "VO2max", "RACE": "Compétition",
     ]

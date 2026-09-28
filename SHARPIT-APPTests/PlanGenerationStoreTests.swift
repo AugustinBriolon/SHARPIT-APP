@@ -193,3 +193,29 @@ private func settled(_ store: PlanGenerationStore) async {
     await again.resume()
     #expect(!again.isReady)
 }
+
+/// A proposal opens on the steps the server resolved, and says why the coach wrote it.
+@Test func aProposedSessionOpensOnItsBreakdownAndItsReason() throws {
+    let json = Data(#"""
+    { "dayOffset": 1, "date": "2026-09-29", "type": "RUN", "intensity": "THRESHOLD", "title": "Seuil",
+      "description": "3 × 8 min au seuil", "durationMin": 55, "load": 62, "rationale": "Progression vers le M.",
+      "breakdown": { "steps": [ { "key": "0-0", "label": "Échauffement", "detail": "15 min", "target": null, "repeat": 1, "notes": null } ],
+                     "derived": false, "warnings": [] } }
+    """#.utf8)
+
+    let session = try JSONDecoder().decode(V1GeneratedSession.self, from: json)
+    let preview = PlannedSessionPreview(generated: session)
+
+    #expect(session.breakdown?.steps.map(\.label) == ["Échauffement"])
+    #expect(preview.sessionId == nil)
+    #expect(preview.steps.count == 1)
+    #expect(preview.rationale == "Progression vers le M.")
+    #expect(preview.metrics.map(\.value) == ["55 min", "Seuil", "62"])
+}
+
+@Test func aProposalWithoutBreakdownStillDecodes() throws {
+    let json = Data(#"{ "date": "2026-09-29", "type": "SWIM", "title": "Nage facile", "breakdown": "oops" }"#.utf8)
+    let session = try JSONDecoder().decode(V1GeneratedSession.self, from: json)
+    #expect(session.breakdown == nil)
+    #expect(PlannedSessionPreview(generated: session).steps.isEmpty)
+}

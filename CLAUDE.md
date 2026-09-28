@@ -156,6 +156,10 @@ server pushes « Ta semaine est prête » (`/plan/generator`, which opens Plan's
 sessions appear one by one (`GeneratedWeekView`, shared with the onboarding's first week, which
 still streams `/api/v1/coach/plan`). The server's Gate takes out what it rejects before the week
 is shown, so « Ajouter » (`/api/v1/coach/plan/insert`) is never refused for safety.
+A proposed session opens in full with the system zoom (`matchedTransitionSource` →
+`navigationTransition(.zoom)`) on `PlannedSessionDrawer`, fed by `PlannedSessionPreview(generated:)`:
+the server sends each proposal's `breakdown`, resolved like a planned session's, and its rationale.
+The row opens the session; its check is a button of its own.
 « Bilan de la semaine » (Plan's « … ») is SharpIt Pro: `WeeklyReviewView` reads the latest review
 from `/api/v1/coach/weekly-review`, writes the current week's on demand, and shows a
 `SharpitProTeaser` on the server's 403. It is laid out like Health's summary: « Faits marquants »

@@ -13,22 +13,23 @@ struct GeneratedWeekView: View {
     var verdicts: [Int: V1GateVerdict] = [:]
     var onToggle: (Int) -> Void = { _ in }
 
+    @Environment(\.isExpertReading) private var isExpertReading
+    @Namespace private var zoom
+    /// The session read in full. A draft is not opened: it is still being written.
+    @State private var opened: V1GeneratedSession?
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             ForEach(Array(sessions.enumerated()), id: \.offset) { index, session in
-                if let verdict = verdicts[index], verdict.isRejected {
-                    GeneratedSessionRow(session: session, rejection: verdict.reason ?? "Écartée par le contrôle de sécurité.")
-                } else if let selection {
-                    Button {
+                row(index: index, session: session)
+                    .matchedTransitionSource(id: session.id, in: zoom)
+                    .onTapGesture {
+                        guard !isWriting else { return }
                         SharpitHaptics.play(.light)
-                        onToggle(index)
-                    } label: {
-                        GeneratedSessionRow(session: session, isSelected: selection.contains(index), warning: verdicts[index]?.reason)
+                        opened = session
                     }
-                    .buttonStyle(.plain)
-                } else {
-                    GeneratedSessionRow(session: session)
-                }
+                    .accessibilityAddTraits(isWriting ? [] : .isButton)
+                    .accessibilityHint(isWriting ? "" : "Ouvre le détail de la séance")
             }
             if isWriting {
                 HStack(spacing: SharpitSpacing.xs) {
@@ -44,11 +45,39 @@ struct GeneratedWeekView: View {
         }
         .animation(SharpitMotion.fade, value: sessions.count)
         .animation(SharpitMotion.fade, value: isWriting)
+        .sheet(item: $opened) { session in
+            PlannedSessionDrawer(
+                preview: PlannedSessionPreview(generated: session, isExpertReading: isExpertReading),
+                detents: [.large],
+                title: "Séance proposée",
+                onDiscussWithCoach: { _ in }
+            )
+            .navigationTransition(.zoom(sourceID: session.id, in: zoom))
+        }
+    }
+
+    @ViewBuilder
+    private func row(index: Int, session: V1GeneratedSession) -> some View {
+        if let verdict = verdicts[index], verdict.isRejected {
+            GeneratedSessionRow(session: session, rejection: verdict.reason ?? "Écartée par le contrôle de sécurité.")
+        } else if let selection {
+            GeneratedSessionRow(
+                session: session,
+                isSelected: selection.contains(index),
+                warning: verdicts[index]?.reason,
+                onToggle: {
+                    SharpitHaptics.play(.light)
+                    onToggle(index)
+                }
+            )
+        } else {
+            GeneratedSessionRow(session: session)
+        }
     }
 }
 
 /// One generated session: its day, sport, title and duration. With `isSelected`, a check says
-/// whether it goes into the plan.
+/// whether it goes into the plan — a button of its own, since the row itself opens the session.
 struct GeneratedSessionRow: View {
     let session: V1GeneratedSession
     var isSelected: Bool?
@@ -56,6 +85,7 @@ struct GeneratedSessionRow: View {
     var warning: String?
     /// Why the safety check set the session aside: shown instead of a choice, the row dimmed.
     var rejection: String?
+    var onToggle: () -> Void = {}
 
     private var day: String {
         guard let date = TrainingDayId.date(session.date) else { return session.date }
@@ -94,17 +124,23 @@ struct GeneratedSessionRow: View {
                     .foregroundStyle(SharpitColor.foreground)
             }
             if let isSelected {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.4))
-                    .contentTransition(.symbolEffect(.replace))
+                Button(action: onToggle) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.4))
+                        .contentTransition(.symbolEffect(.replace))
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .padding(.vertical, -SharpitSpacing.sm)
+                .accessibilityLabel(isSelected ? "Retirer de la semaine" : "Garder dans la semaine")
             }
         }
         .padding(SharpitSpacing.sm + 2)
         .sharpitSurface(.panel)
         .opacity(isSelected == false || rejection != nil ? 0.55 : 1)
         .contentShape(.rect)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(isSelected == true ? .isSelected : [])
+        .accessibilityElement(children: .contain)
     }
 }

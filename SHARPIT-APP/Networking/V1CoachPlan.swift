@@ -15,13 +15,15 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
     let load: Double
     let rationale: String?
     let decisionId: String?
+    /// What to do, in order — resolved server-side like a planned session's.
+    let breakdown: V1PlannedSessionBreakdown?
     /// The session as the server sent it, prescriptions included: sent back whole to be added
     /// to the plan, so nothing the app does not model is lost on the way.
     let raw: JSONValue?
 
     enum CodingKeys: String, CodingKey {
         case dayOffset, date, startTime, type, intensity, title, description
-        case durationMin, load, rationale, decisionId
+        case durationMin, load, rationale, decisionId, breakdown
     }
 
     init(from decoder: Decoder) throws {
@@ -38,6 +40,7 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         load = try container.decodeIfPresent(Double.self, forKey: .load) ?? 0
         rationale = try container.decodeIfPresent(String.self, forKey: .rationale)
         decisionId = try container.decodeIfPresent(String.self, forKey: .decisionId)
+        breakdown = try? container.decodeIfPresent(V1PlannedSessionBreakdown.self, forKey: .breakdown)
         raw = try? JSONValue(from: decoder)
     }
 
@@ -52,7 +55,8 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         durationMin: Double,
         load: Double,
         rationale: String? = nil,
-        decisionId: String? = nil
+        decisionId: String? = nil,
+        breakdown: V1PlannedSessionBreakdown? = nil
     ) {
         self.dayOffset = dayOffset
         self.date = date
@@ -65,6 +69,7 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         self.load = load
         self.rationale = rationale
         self.decisionId = decisionId
+        self.breakdown = breakdown
         raw = nil
     }
 

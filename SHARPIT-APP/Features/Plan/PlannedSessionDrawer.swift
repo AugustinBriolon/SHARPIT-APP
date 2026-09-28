@@ -15,6 +15,8 @@ struct PlannedSessionPreview: Identifiable, Equatable {
     let date: Date?
     let metrics: [PlannedSessionMetric]
     let notes: String?
+    /// Why the coach proposes it — only a proposal carries one.
+    let rationale: String?
     /// What to actually do. Empty when the surface has no structure to show.
     let steps: [V1PlannedSessionStep]
     /// True when the breakdown was inferred from duration and intensity rather than
@@ -34,6 +36,7 @@ struct PlannedSessionPreview: Identifiable, Equatable {
         date: Date?,
         metrics: [PlannedSessionMetric],
         notes: String?,
+        rationale: String? = nil,
         steps: [V1PlannedSessionStep],
         stepsAreDerived: Bool,
         garminWorkoutId: String? = nil,
@@ -47,6 +50,7 @@ struct PlannedSessionPreview: Identifiable, Equatable {
         self.date = date
         self.metrics = metrics
         self.notes = notes
+        self.rationale = rationale
         self.steps = steps
         self.stepsAreDerived = stepsAreDerived
         self.garminWorkoutId = garminWorkoutId
@@ -126,6 +130,37 @@ extension PlannedSessionPreview {
         return breakdown
     }
 
+    /// A session the coach proposes and the athlete has not added yet: no id, so nothing to
+    /// discuss, link or push — only what it holds and why.
+    init(generated session: V1GeneratedSession, isExpertReading: Bool = false) {
+        var metrics: [PlannedSessionMetric] = []
+        if session.durationMin > 0 {
+            metrics.append(PlannedSessionMetric(label: "Durée", value: "\(Int(session.durationMin)) min"))
+        }
+        metrics.append(PlannedSessionMetric(
+            label: "Intensité",
+            value: CoachProposal.intensityLabels[session.intensity] ?? session.intensity.capitalized
+        ))
+        if session.load > 0 {
+            metrics.append(PlannedSessionMetric(
+                label: isExpertReading ? "TSS" : "Charge",
+                value: "\(Int(session.load.rounded()))"
+            ))
+        }
+        self.init(
+            sessionId: nil,
+            title: session.title,
+            sport: session.type.label,
+            symbolName: session.type.symbolName,
+            date: TrainingDayId.date(session.date),
+            metrics: metrics,
+            notes: session.description,
+            rationale: session.rationale,
+            steps: session.breakdown?.steps ?? [],
+            stepsAreDerived: session.breakdown?.derived ?? false
+        )
+    }
+
     init(card: SessionCardModel) {
         self.init(
             sessionId: card.plannedSessionId,
@@ -165,6 +200,9 @@ struct PlannedSessionDrawer: View {
     /// The breakdown read last time this session was opened, shown at once while
     /// `loadBreakdown` asks again — the loader only spins on a first opening.
     var storedBreakdown: V1PlannedSessionBreakdown?
+    /// A proposal opened from its row zooms to full height; a planned session opens at half.
+    var detents: Set<PresentationDetent> = [.medium, .large]
+    var title = "Séance prévue"
     let onDiscussWithCoach: (CoachDiscussContext) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -235,16 +273,10 @@ struct PlannedSessionDrawer: View {
                         }
                     }
                     if let notes = preview.notes, !notes.isEmpty {
-                        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                            SharpitEyebrow("Consigne")
-                            Text(notes)
-                                .font(SharpitTypography.body)
-                                .foregroundStyle(SharpitColor.foreground)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(SharpitSpacing.cardPadding)
-                        .sharpitSurface(.panel)
+                        textPanel("Consigne", notes)
+                    }
+                    if let rationale = preview.rationale, !rationale.isEmpty {
+                        textPanel("Pourquoi cette séance", rationale)
                     }
                     // Same reason as the coach button: linking needs to know *which* session.
                     if preview.sessionId != nil, linking != nil {
@@ -266,7 +298,7 @@ struct PlannedSessionDrawer: View {
             .background(SharpitCanvasBackground())
             .animation(SharpitMotion.reveal, value: steps.count)
             .task { await fetchBreakdownIfMissing() }
-            .navigationTitle("Séance prévue")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -274,7 +306,7 @@ struct PlannedSessionDrawer: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(detents)
         .sharpitSheet()
         .presentationDragIndicator(.visible)
         .sheet(isPresented: $showingPro) {
@@ -458,6 +490,19 @@ struct PlannedSessionDrawer: View {
                 .tracking(SharpitTypography.pageTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
         }
+    }
+
+    private func textPanel(_ eyebrow: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitEyebrow(eyebrow)
+            Text(text)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(SharpitSpacing.cardPadding)
+        .sharpitSurface(.panel)
     }
 
     private var metricsRow: some View {

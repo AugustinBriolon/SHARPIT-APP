@@ -111,7 +111,17 @@ private struct DemoPlanClient: CoachPlanServing {
         let day = { (offset: Int) in TrainingDayId.today(now: Calendar.current.date(byAdding: .day, value: offset, to: .now)!) }
         let sessions = [
             V1GeneratedSession(date: day(1), type: .run, intensity: "ENDURANCE", title: "Footing en endurance", description: "", durationMin: 45, load: 40),
-            V1GeneratedSession(date: day(3), type: .run, intensity: "THRESHOLD", title: "Seuil 3 × 8 min", description: "", durationMin: 55, load: 62),
+            V1GeneratedSession(
+                date: day(3), type: .run, intensity: "THRESHOLD", title: "Seuil 3 × 8 min",
+                description: "3 × 8 min au seuil, 2 min de trot entre les blocs.", durationMin: 55, load: 62,
+                rationale: "Ta forme le permet : une séance clé cette semaine, sur terrain plat pour ménager le genou.",
+                breakdown: V1PlannedSessionBreakdown(steps: [
+                    V1PlannedSessionStep(key: "0-0", label: "Échauffement", detail: "15 min", target: "5:20–5:50 /km"),
+                    V1PlannedSessionStep(key: "1-0", label: "Bloc", detail: "8 min", target: "4:02–4:10 /km", repeatCount: 3),
+                    V1PlannedSessionStep(key: "1-1", label: "Récup", detail: "2 min", target: nil, repeatCount: 3),
+                    V1PlannedSessionStep(key: "2-0", label: "Retour au calme", detail: "10 min", target: "5:30–6:00 /km"),
+                ])
+            ),
             V1GeneratedSession(date: day(4), type: .strength, intensity: "MODERATE", title: "Renforcement tronc et hanches", description: "", durationMin: 30, load: 20),
             V1GeneratedSession(date: day(6), type: .run, intensity: "ENDURANCE", title: "Sortie longue", description: "", durationMin: 80, load: 70),
         ]
