@@ -606,7 +606,7 @@ private struct ActivityDetailContent: View {
                 Text(narrative.narrative).font(.body).lineSpacing(4)
             } else {
                 Label("Ton retour est prêt à être généré", systemImage: "sparkles").font(.headline)
-                Text("SHARPIT peut croiser ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")
+                Text("SharpIt peut croiser ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")
                     .font(.body).foregroundStyle(SharpitColor.mutedForeground)
                 Button(action: onGenerateNarrative) {
                     HStack {

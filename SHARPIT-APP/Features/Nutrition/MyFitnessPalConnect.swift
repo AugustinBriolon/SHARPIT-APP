@@ -50,7 +50,7 @@ struct MyFitnessPalConnectSheet: View {
                         Text("Connexion de ton journal alimentaire…")
                             .font(SharpitTypography.bodyEmphasis)
                             .foregroundStyle(SharpitColor.foreground)
-                        Text("SHARPIT importe tes derniers jours, ça peut prendre une minute.")
+                        Text("SharpIt importe tes derniers jours, ça peut prendre une minute.")
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
                             .multilineTextAlignment(.center)
@@ -83,7 +83,7 @@ struct MyFitnessPalConnectSheet: View {
                 }
                 .font(SharpitTypography.bodyEmphasis)
             } else {
-                Label("Connecte-toi sur le site de MyFitnessPal. SHARPIT ne voit pas ton mot de passe.", systemImage: "lock.fill")
+                Label("Connecte-toi sur le site de MyFitnessPal. SharpIt ne voit pas ton mot de passe.", systemImage: "lock.fill")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .multilineTextAlignment(.center)

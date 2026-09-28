@@ -144,13 +144,13 @@ struct OnboardingChoiceChip: View {
                     Image(systemName: symbol)
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
+                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
                         .symbolEffect(.bounce.up.byLayer, value: taps)
                         .frame(width: 22)
                 }
                 Text(title)
                     .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                    .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
                 if symbol != nil { Spacer(minLength: 0) }
@@ -159,7 +159,7 @@ struct OnboardingChoiceChip: View {
             .frame(maxWidth: .infinity, minHeight: SharpitSpacing.minimumTouchTarget)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                    .fill(isSelected ? SharpitColor.primary.opacity(0.22) : SharpitColor.analysisSurfaceAlt)
+                    .fill(isSelected ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt)
             )
             .contentShape(.rect)
         }
@@ -244,7 +244,11 @@ struct OnboardingSportTile: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(isSelected ? SharpitColor.primary.opacity(0.10) : SharpitColor.analysisSurface)
+                    .fill(isSelected ? SharpitColor.primary.opacity(0.18) : SharpitColor.analysisSurface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .strokeBorder(SharpitColor.primary, lineWidth: isSelected ? 2 : 0)
             )
             .contentShape(.rect)
         }
@@ -527,7 +531,11 @@ struct OnboardingGoalStep: View {
             .padding(SharpitSpacing.md)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(isSelected ? SharpitColor.primary.opacity(0.10) : SharpitColor.analysisSurface)
+                    .fill(isSelected ? SharpitColor.primary.opacity(0.18) : SharpitColor.analysisSurface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .strokeBorder(SharpitColor.primary, lineWidth: isSelected ? 2 : 0)
             )
             .contentShape(.rect)
         }
@@ -538,30 +546,45 @@ struct OnboardingGoalStep: View {
 
 // MARK: - Injuries
 
-/// What hurts now: a zone, then for each one what it is, which side and how much. The coach
-/// reads them as sensitive zones and plans around them.
+/// What hurts now: the declared ones first, then the zones — touching one opens its questions in
+/// a sheet, where nothing is chosen in advance. The coach reads them as sensitive zones.
 struct OnboardingInjuriesStep: View {
     let store: OnboardingStore
+    @State private var editing: OnboardingInjuryDraft?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3),
-                spacing: SharpitSpacing.xs
-            ) {
-                ForEach(OnboardingInjuryDraft.bodyParts, id: \.self) { part in
-                    OnboardingChoiceChip(
-                        title: part,
-                        isSelected: store.injuries.contains { $0.bodyPart == part }
-                    ) {
-                        SharpitMotion.run(SharpitMotion.selection) { store.toggleInjury(part) }
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            if !store.injuries.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(store.injuries.enumerated()), id: \.element.id) { index, injury in
+                        OnboardingInjuryRow(injury: injury) {
+                            editing = injury
+                        } onRemove: {
+                            SharpitHaptics.play(.soft)
+                            store.removeInjury(injury.bodyPart)
+                        }
+                        if index < store.injuries.count - 1 {
+                            Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                        }
                     }
                 }
+                .padding(.horizontal, SharpitSpacing.cardPadding)
+                .sharpitSurface(.panel)
             }
 
-            ForEach(store.injuries) { injury in
-                OnboardingInjuryCard(injury: injury) { store.updateInjury($0) }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                OnboardingFieldLabel(store.injuries.isEmpty ? "Où as-tu mal ?" : "Une autre zone ?")
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3),
+                    spacing: SharpitSpacing.xs
+                ) {
+                    ForEach(OnboardingInjuryDraft.bodyParts, id: \.self) { part in
+                        let declared = store.injuries.first { $0.bodyPart == part }
+                        OnboardingChoiceChip(title: part, isSelected: declared != nil) {
+                            editing = declared ?? OnboardingInjuryDraft(bodyPart: part)
+                        }
+                    }
+                }
             }
 
             Text(store.injuries.isEmpty
@@ -570,67 +593,123 @@ struct OnboardingInjuriesStep: View {
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
         }
-        .animation(SharpitMotion.selection, value: store.injuries.map(\.bodyPart))
+        .sheet(item: $editing) { draft in
+            OnboardingInjurySheet(
+                draft: draft,
+                isDeclared: store.injuries.contains { $0.id == draft.id }
+            ) { saved in
+                store.saveInjury(saved)
+            } onRemove: {
+                store.removeInjury(draft.bodyPart)
+            }
+            .sharpitSheet()
+            .presentationDetents([.medium, .large])
+        }
     }
 }
 
-private struct OnboardingInjuryCard: View {
+private struct OnboardingInjuryRow: View {
     let injury: OnboardingInjuryDraft
-    let onChange: (OnboardingInjuryDraft) -> Void
+    let onEdit: () -> Void
+    let onRemove: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            Text(injury.bodyPart)
-                .font(SharpitTypography.cardTitle)
-                .tracking(SharpitTypography.cardTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
+        HStack(spacing: SharpitSpacing.sm) {
+            Button(action: onEdit) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(injury.title.prefix(1).uppercased() + injury.title.dropFirst())
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("Gêne \((injury.level ?? .moderate).label.lowercased())")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .frame(width: 32, height: 32)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Retirer \(injury.bodyPart)")
+        }
+        .padding(.vertical, SharpitSpacing.sm)
+    }
+}
 
-            HStack(spacing: SharpitSpacing.xs) {
-                ForEach(OnboardingInjuryDraft.Kind.allCases) { kind in
-                    OnboardingChoiceChip(title: kind.label, isSelected: injury.kind == kind) {
-                        edit { $0.kind = kind }
+/// The questions for one zone. Nothing is picked in advance; « Ajouter » waits for every answer
+/// that applies.
+private struct OnboardingInjurySheet: View {
+    @State var draft: OnboardingInjuryDraft
+    let isDeclared: Bool
+    let onSave: (OnboardingInjuryDraft) -> Void
+    let onRemove: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                question("Qu'est-ce que c'est ?") {
+                    ForEach(OnboardingInjuryDraft.Kind.allCases) { kind in
+                        OnboardingChoiceChip(title: kind.label, isSelected: draft.kind == kind) { draft.kind = kind }
                     }
                 }
+                if draft.asksForSide {
+                    question("Quel côté ?") {
+                        ForEach(OnboardingInjuryDraft.Side.allCases) { side in
+                            OnboardingChoiceChip(title: side.label, isSelected: draft.side == side) { draft.side = side }
+                        }
+                    }
+                }
+                question("Quelle gêne ?") {
+                    ForEach(OnboardingInjuryDraft.Level.allCases) { level in
+                        OnboardingChoiceChip(title: level.label, isSelected: draft.level == level) { draft.level = level }
+                    }
+                }
+                Spacer(minLength: 0)
+                Button {
+                    SharpitHaptics.play(.success)
+                    onSave(draft)
+                    dismiss()
+                } label: {
+                    Text(isDeclared ? "Enregistrer" : "Ajouter")
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.primaryForeground)
+                        .frame(maxWidth: .infinity)
+                }
+                .sharpitGlassButton(prominent: true)
+                .tint(SharpitColor.primary)
+                .disabled(!draft.isComplete)
             }
-
-            if injury.asksForSide {
-                HStack(spacing: SharpitSpacing.xs) {
-                    ForEach([OnboardingInjuryDraft.Side.left, .right, .both]) { side in
-                        OnboardingChoiceChip(title: side.label, isSelected: injury.side == side) {
-                            edit { $0.side = side }
+            .padding(SharpitSpacing.pageInset)
+            .navigationTitle(draft.bodyPart)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Annuler") { dismiss() }
+                }
+                if isDeclared {
+                    ToolbarItem(placement: .destructiveAction) {
+                        Button("Retirer", role: .destructive) {
+                            onRemove()
+                            dismiss()
                         }
                     }
                 }
             }
-
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                HStack(alignment: .firstTextBaseline) {
-                    OnboardingFieldLabel("Gêne")
-                    Spacer()
-                    Text("\(injury.severity)/10")
-                        .font(SharpitTypography.bodyEmphasis.monospacedDigit())
-                        .foregroundStyle(SharpitColor.foreground)
-                        .contentTransition(.numericText(value: Double(injury.severity)))
-                }
-                Slider(
-                    value: Binding(
-                        get: { Double(injury.severity) },
-                        set: { value in edit { $0.severity = Int(value.rounded()) } }
-                    ),
-                    in: 1...10,
-                    step: 1
-                )
-                .tint(SharpitColor.primary)
-            }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
-    private func edit(_ change: (inout OnboardingInjuryDraft) -> Void) {
-        var next = injury
-        change(&next)
-        onChange(next)
+    private func question(_ title: String, @ViewBuilder choices: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            OnboardingFieldLabel(title)
+            HStack(spacing: SharpitSpacing.xs) { choices() }
+        }
     }
 }
 

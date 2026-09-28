@@ -1,5 +1,6 @@
 import ClerkKit
 import ClerkKitUI
+import SwiftData
 import SwiftUI
 
 /// The app's authentication gate.
@@ -8,6 +9,7 @@ import SwiftUI
 /// animated chronograph gauge, live floating HUD cards, and fluid motion choreography.
 struct AuthGate<SignedIn: View>: View {
     @Environment(Clerk.self) private var clerk
+    @Environment(\.modelContext) private var modelContext
     @State private var authIsPresented = false
     var signedIn: () -> SignedIn
 
@@ -21,6 +23,9 @@ struct AuthGate<SignedIn: View>: View {
         }
         .sheet(isPresented: $authIsPresented) {
             SharpitAuthDrawer()
+        }
+        .task(id: clerk.user?.id) {
+            LocalAccountData.claim(userId: clerk.user?.id, context: modelContext)
         }
     }
 }
@@ -167,11 +172,11 @@ private struct SignInAwardWinning: View {
 
     private var telemetryHero: some View {
         ZStack {
-            // 1. Radar wave expanding outwards from center
+            // 1. Radar wave: born on the runner badge's ring (86) and fading out as it reaches
+            // the dial (250). The diameter animates, not a scale, so the stroke stays fine.
             Circle()
                 .stroke(SharpitColor.highlight.opacity(radarPulse ? 0.0 : 0.45), lineWidth: 1.5)
-                .frame(width: 180, height: 180)
-                .scaleEffect(radarPulse ? 1.55 : 0.9)
+                .frame(width: radarPulse ? 250 : 86, height: radarPulse ? 250 : 86)
 
             // 2. Precision 64-tick chronograph scale with live kinetic ripple
             ChronographDial(progress: dialProgress, isLive: dialIsLive)
@@ -454,7 +459,7 @@ private struct SignInAwardWinning: View {
         guard !reduceMotion else { return }
 
         // Radar heartbeat pulse
-        withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: false)) {
+        withAnimation(.easeOut(duration: 2.4).repeatForever(autoreverses: false)) {
             radarPulse = true
         }
 

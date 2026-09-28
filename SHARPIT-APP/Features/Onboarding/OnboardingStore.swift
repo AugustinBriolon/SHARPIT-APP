@@ -170,18 +170,18 @@ final class OnboardingStore {
         if canContinueFromSports, error != nil { error = nil }
     }
 
-    /// Adds the zone, or takes it away when it is already declared.
-    func toggleInjury(_ bodyPart: String) {
-        if let index = injuries.firstIndex(where: { $0.bodyPart == bodyPart }) {
-            injuries.remove(at: index)
+    /// Adds a complete declaration, or replaces the one for the same zone.
+    func saveInjury(_ injury: OnboardingInjuryDraft) {
+        guard injury.isComplete else { return }
+        if let index = injuries.firstIndex(where: { $0.id == injury.id }) {
+            injuries[index] = injury
         } else {
-            injuries.append(OnboardingInjuryDraft(bodyPart: bodyPart))
+            injuries.append(injury)
         }
     }
 
-    func updateInjury(_ injury: OnboardingInjuryDraft) {
-        guard let index = injuries.firstIndex(where: { $0.id == injury.id }) else { return }
-        injuries[index] = injury
+    func removeInjury(_ bodyPart: String) {
+        injuries.removeAll { $0.bodyPart == bodyPart }
     }
 
     func toggleEquipment(_ id: String) {

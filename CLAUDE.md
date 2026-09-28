@@ -259,6 +259,11 @@ keeping the newest and deleting the rest. Every attribute has a default and ever
 optional for the same reason. An in-memory container skips CloudKit, so a test never reaches the
 network.
 
+**Local data belongs to an account.** Nothing cached on the iPhone is keyed by account, so
+`LocalAccountData` records the Clerk user it was written for (`AuthGate` claims it on each
+sign-in): another account wipes the SwiftData snapshots, the cached answers and the activity files
+first, and deleting the account wipes them at once.
+
 **Freshness.** The app starts provider pulls itself (`ProviderSyncStore`, `/api/v1/sync`)
 on launch, foreground and pull-to-refresh, and can send Apple Health day summaries
 (`AppleHealthSource`, `/api/v1/health-samples`) when the athlete switches it on in Paramètres → Sources de données.

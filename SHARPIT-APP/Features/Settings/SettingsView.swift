@@ -200,7 +200,7 @@ struct SettingsView: View {
         let version = info?["CFBundleShortVersionString"] as? String ?? "—"
         let build = info?["CFBundleVersion"] as? String ?? "—"
         return VStack(spacing: SharpitSpacing.xxs) {
-            Text("SHARPIT")
+            Text("SharpIt")
                 .font(SharpitTypography.eyebrow)
                 .tracking(SharpitTypography.eyebrowTracking * 2)
                 .foregroundStyle(SharpitColor.mutedForeground)

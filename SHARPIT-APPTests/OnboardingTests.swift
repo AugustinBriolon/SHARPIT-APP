@@ -465,7 +465,11 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(store.step == .injuries)
     #expect(await goals.created.map(\.title) == ["Triathlon de Nice"])
 
-    store.toggleInjury("Genou")
+    var knee = OnboardingInjuryDraft(bodyPart: "Genou")
+    knee.kind = .pain
+    knee.side = .right
+    knee.level = .moderate
+    store.saveInjury(knee)
     await store.advance()
     #expect(store.step == .privacy)
     #expect(await notes.notes.isEmpty)
@@ -611,6 +615,23 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 }
 
 /// Consents already given: the injuries are written as the step is left.
+@Test func anInjuryIsCompleteOnlyOnceEachQuestionIsAnswered() {
+    var knee = OnboardingInjuryDraft(bodyPart: "Genou")
+    #expect(!knee.isComplete)
+    knee.kind = .pain
+    knee.level = .light
+    #expect(!knee.isComplete)
+    knee.side = .both
+    #expect(knee.isComplete)
+    #expect(knee.title == "Douleur genou des deux côtés")
+
+    var back = OnboardingInjuryDraft(bodyPart: "Dos")
+    back.kind = .injury
+    back.level = .moderate
+    #expect(back.isComplete)
+    #expect(back.note.side == "NA")
+}
+
 @MainActor
 @Test func injuriesAreWrittenAtOnceWhenNoConsentIsOwed() async {
     let notes = NoteRecorder()
@@ -620,15 +641,18 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.skip()
     await store.skip()
 
-    store.toggleInjury("Dos")
-    store.toggleInjury("Cheville")
-    store.toggleInjury("Dos")
-    if var ankle = store.injuries.first {
-        ankle.kind = .injury
-        ankle.side = .left
-        ankle.severity = 7
-        store.updateInjury(ankle)
-    }
+    var back = OnboardingInjuryDraft(bodyPart: "Dos")
+    back.kind = .pain
+    back.level = .light
+    store.saveInjury(back)
+    var ankle = OnboardingInjuryDraft(bodyPart: "Cheville")
+    ankle.kind = .injury
+    ankle.level = .strong
+    store.saveInjury(ankle)
+    #expect(store.injuries.count == 1)
+    ankle.side = .left
+    store.saveInjury(ankle)
+    store.removeInjury("Dos")
     await store.advance()
 
     #expect(store.step == .sources)
@@ -636,7 +660,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(written.map(\.title) == ["Blessure cheville gauche"])
     #expect(written.first?.category == "INJURY")
     #expect(written.first?.side == "LEFT")
-    #expect(written.first?.severity == 7)
+    #expect(written.first?.severity == 8)
 }
 
 @MainActor

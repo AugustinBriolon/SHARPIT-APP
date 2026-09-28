@@ -107,7 +107,7 @@ struct CorpsView: View {
                     } else if store.biologicalAgeRequiresPro {
                         SharpitProTeaser(
                             title: "Âge biologique",
-                            message: "Ton âge forme, calculé par SHARPIT à partir de ta VO₂max."
+                            message: "Ton âge forme, calculé par SharpIt à partir de ta VO₂max."
                         )
                         .revealed(hasAppeared, index: 0)
                     } else if store.hasOverview {

@@ -63,7 +63,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
         case .injuries:
             "Une douleur ou une blessure en cours ? Le coach adapte tes séances pour la ménager."
         case .privacy:
-            "Avant de brancher tes appareils, choisis ce que SHARPIT peut faire de tes données."
+            "Avant de brancher tes appareils, choisis ce que SharpIt peut faire de tes données."
         case .sources:
             "Ta montre, ton téléphone et ton journal alimentaire nourrissent ton coach. Tu pourras en ajouter plus tard."
         case .firstWeek:
@@ -103,8 +103,10 @@ nonisolated struct OnboardingIdentityDraft: Equatable, Sendable {
     }
 }
 
-/// A pain or an injury declared in the onboarding: a zone of the body, a side, how much it
-/// hurts. Kept on the phone until the health consent is given, then written as a physical note.
+/// A pain or an injury declared in the onboarding: a zone of the body, what it is, the side and
+/// how much it bothers. Nothing is chosen for the athlete; it is complete once each question
+/// that applies is answered. Kept on the phone until the health consent is given, then written
+/// as a physical note.
 nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
     enum Kind: String, CaseIterable, Identifiable, Sendable {
         case pain = "PAIN"
@@ -123,7 +125,6 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
         case left = "LEFT"
         case right = "RIGHT"
         case both = "BILATERAL"
-        case none = "NA"
 
         var id: String { rawValue }
         var label: String {
@@ -131,7 +132,22 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
             case .left: "Gauche"
             case .right: "Droite"
             case .both: "Les deux"
-            case .none: "—"
+            }
+        }
+    }
+
+    /// How much it bothers, in words — stored on the web's 0…10 severity.
+    enum Level: Int, CaseIterable, Identifiable, Sendable {
+        case light = 2
+        case moderate = 5
+        case strong = 8
+
+        var id: Int { rawValue }
+        var label: String {
+            switch self {
+            case .light: "Légère"
+            case .moderate: "Modérée"
+            case .strong: "Forte"
             }
         }
     }
@@ -149,37 +165,37 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
 
     var id: String { bodyPart }
     let bodyPart: String
-    var kind: Kind = .pain
-    var side: Side
-    /// 0…10, as the web records severity.
-    var severity = 4
+    var kind: Kind?
+    var side: Side?
+    var level: Level?
 
     init(bodyPart: String) {
         self.bodyPart = bodyPart
-        side = Self.pairedParts.contains(bodyPart) ? .right : .none
     }
 
     var asksForSide: Bool { Self.pairedParts.contains(bodyPart) }
 
+    var isComplete: Bool { kind != nil && level != nil && (!asksForSide || side != nil) }
+
     /// « Douleur genou droit » — the note's title, as an athlete would write it.
     var title: String {
-        var words = [kind.label, bodyPart.lowercased()]
+        var words = [(kind ?? .pain).label, bodyPart.lowercased()]
         switch side {
         case .left: words.append("gauche")
         case .right: words.append("droit")
         case .both: words.append("des deux côtés")
-        case .none: break
+        case nil: break
         }
         return words.joined(separator: " ")
     }
 
     var note: CreatePhysicalNoteInput {
         CreatePhysicalNoteInput(
-            category: kind.rawValue,
+            category: (kind ?? .pain).rawValue,
             title: title,
             bodyPart: bodyPart,
-            side: side.rawValue,
-            severity: severity,
+            side: side?.rawValue ?? "NA",
+            severity: (level ?? .moderate).rawValue,
             affectsTraining: true
         )
     }

@@ -356,7 +356,7 @@ private struct NutritionConnectPlate: View {
                     .background(SharpitColor.foreground, in: Capsule())
             }
             .buttonStyle(.sharpitPressable)
-            Text("Tu te connectes sur le site de MyFitnessPal, dans l'app. SHARPIT ne voit pas ton mot de passe.")
+            Text("Tu te connectes sur le site de MyFitnessPal, dans l'app. SharpIt ne voit pas ton mot de passe.")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
         }

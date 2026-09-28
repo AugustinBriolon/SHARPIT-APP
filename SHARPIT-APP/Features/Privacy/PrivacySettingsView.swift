@@ -1,5 +1,6 @@
 import ClerkKit
 import Observation
+import SwiftData
 import SwiftUI
 
 /// The athlete's consents, read and changed one at a time — the web's privacy settings panel.
@@ -68,6 +69,7 @@ struct PrivacySettingsView: View {
     @State private var store: PrivacySettingsStore
     @Environment(AccountGateModel.self) private var gate: AccountGateModel?
     @Environment(Clerk.self) private var clerk
+    @Environment(\.modelContext) private var modelContext
     @State private var openDocument: LegalDocument?
     @State private var confirmsHealthWithdraw = false
     @State private var confirmsDeletion = false
@@ -138,6 +140,7 @@ struct PrivacySettingsView: View {
         defer { isDeleting = false }
         do {
             try await accountDeletion.deleteAccount(token: try await tokenProvider())
+            LocalAccountData.erase(context: modelContext)
             SharpitHaptics.play(.success)
             try? await clerk.auth.signOut()
         } catch {
