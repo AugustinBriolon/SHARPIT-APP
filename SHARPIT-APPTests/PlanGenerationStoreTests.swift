@@ -226,4 +226,6 @@ private func settled(_ store: PlanGenerationStore) async {
 @Test func theWaitNamesWhatTheCoachReads() {
     #expect(GeneratingWeekView.readingSteps.first == "Analyse de ton profil")
     #expect(GeneratingWeekView.readingSteps.count >= 3)
+    // One line on the narrowest iPhone, so the page never jumps when the line changes.
+    #expect(GeneratingWeekView.readingSteps.allSatisfy { $0.count <= 30 })
 }

@@ -68,10 +68,13 @@ struct GeneratingWeekView: View {
     @State private var readingStep = 0
 
     /// What the coach goes through before the first session, in the order it reads it.
+    /// Short enough for one line on the narrowest iPhone: a line that wrapped moved everything
+    /// under it each time it changed.
     static let readingSteps = [
         "Analyse de ton profil",
-        "Lecture de ta charge et de ta récupération",
-        "Prise en compte de tes blessures",
+        "Lecture de ta charge",
+        "Lecture de ta récupération",
+        "Prise en compte des blessures",
         "Lecture de ton agenda",
         "Choix des séances clés",
     ]
@@ -94,6 +97,8 @@ struct GeneratingWeekView: View {
                     Text(stage.title)
                         .font(SharpitTypography.sectionTitle)
                         .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .id(stage.title)
                         .transition(reduceMotion ? .opacity : .push(from: .bottom).combined(with: .opacity))
                     Text(stage.detail)
