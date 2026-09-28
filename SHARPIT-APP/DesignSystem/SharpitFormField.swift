@@ -172,7 +172,10 @@ struct SharpitRulerPicker: View {
                 .scrollTargetBehavior(.viewAligned)
                 .scrollPosition(id: $position, anchor: .center)
                 .onScrollPhaseChange { _, phase in
-                    if phase == .interacting { isTouched = true }
+                    if phase == .interacting {
+                        isTouched = true
+                        SharpitHaptics.prepareTick()
+                    }
                 }
                 .onScrollGeometryChange(for: Int.self) { geometry in
                     let offset = geometry.contentOffset.x + geometry.contentInsets.leading
@@ -202,8 +205,8 @@ struct SharpitRulerPicker: View {
         .onChange(of: centred) { _, mark in
             guard isTouched, let mark, mark != value else { return }
             value = mark
+            SharpitHaptics.play(.tick)
         }
-        .sensoryFeedback(.selection, trigger: centred) { _, _ in isTouched }
         .accessibilityElement(children: .ignore)
         .accessibilityValue(value.map { "\($0) \(unit)" } ?? "Non renseigné")
         .accessibilityAdjustableAction { direction in
@@ -236,8 +239,8 @@ struct SharpitRulerPicker: View {
     }
 }
 
-/// A date in a field well, with what it means beside it (an age); a tap opens the wheel under
-/// it, in place — no sheet over the page.
+/// A date in a field well, with what it means beside it (an age). A tap opens the wheel in a
+/// short sheet: in place it grew the page into a scroll, and the app's tint coloured its band.
 struct SharpitDateField: View {
     let title: String
     @Binding var date: Date?
@@ -252,40 +255,54 @@ struct SharpitDateField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             SharpitFieldLabel(title)
-            VStack(spacing: 0) {
-                Button {
-                    SharpitHaptics.play(.light)
-                    SharpitMotion.run(SharpitMotion.reveal) { isOpen.toggle() }
-                } label: {
-                    HStack {
-                        Text(date.map { $0.sharpitFormatted(.dateTime.day().month(.wide).year()) } ?? "Choisir")
-                            .font(SharpitTypography.body)
-                            .foregroundStyle(date == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
-                        Spacer()
-                        if let date, let caption = caption(date) {
-                            Text(caption)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                        Image(systemName: "chevron.down")
-                            .font(SharpitTypography.label)
+            Button {
+                SharpitHaptics.play(.light)
+                isOpen = true
+            } label: {
+                HStack {
+                    Text(date.map { $0.sharpitFormatted(.dateTime.day().month(.wide).year()) } ?? "Choisir")
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(date == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                    Spacer()
+                    if let date, let caption = caption(date) {
+                        Text(caption)
+                            .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
-                            .rotationEffect(.degrees(isOpen ? 180 : 0))
                     }
-                    .frame(minHeight: 50)
-                    .contentShape(.rect)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(SharpitTypography.label)
+                        .foregroundStyle(SharpitColor.mutedForeground)
                 }
-                .buttonStyle(.plain)
-                if isOpen {
-                    DatePicker(title, selection: dateBinding, in: range, displayedComponents: .date)
-                        .datePickerStyle(.wheel)
-                        .labelsHidden()
-                        .frame(maxWidth: .infinity)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+                .contentShape(.rect)
+                .sharpitFieldWell(isActive: isOpen)
             }
-            .sharpitFieldWell(isActive: isOpen)
-            .clipped()
+            .buttonStyle(.plain)
+        }
+        .sheet(isPresented: $isOpen) {
+            VStack(spacing: SharpitSpacing.sm) {
+                HStack {
+                    Text(title)
+                        .font(SharpitTypography.sectionTitle)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Spacer()
+                    Button("OK") {
+                        if date == nil { date = resting }
+                        isOpen = false
+                    }
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                }
+                DatePicker(title, selection: dateBinding, in: range, displayedComponents: .date)
+                    .datePickerStyle(.wheel)
+                    .labelsHidden()
+                    // Neutral: the band is the system's, not the brand's green.
+                    .tint(SharpitColor.foreground)
+                    .environment(\.locale, Locale(identifier: "fr_FR"))
+            }
+            .padding(SharpitSpacing.pageInset)
+            .presentationDetents([.height(320)])
+            .presentationDragIndicator(.visible)
+            .sharpitSheet()
         }
     }
 
