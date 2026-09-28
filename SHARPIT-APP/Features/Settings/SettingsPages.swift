@@ -164,6 +164,8 @@ struct AccountView: View {
 
             Section {
                 Button(role: .destructive) {
+                    // Signed out, the home screen shows no one's day.
+                    WidgetSnapshotPublisher.erase()
                     Task { try? await clerk.auth.signOut() }
                 } label: {
                     Text("Se déconnecter").frame(maxWidth: .infinity)

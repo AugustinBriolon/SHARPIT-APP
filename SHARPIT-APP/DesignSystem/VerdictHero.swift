@@ -10,7 +10,7 @@ struct VerdictHero: View {
             HStack(alignment: .firstTextBaseline) {
                 SharpitEyebrow(verdict.eyebrow)
                 Spacer(minLength: 0)
-                Image(systemName: verdict.posture.instrumentSymbol)
+                Image(systemName: verdict.posture.symbolName)
                     .font(.title3.weight(.semibold))
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(SharpitPostureStyle.color(for: verdict.posture))
@@ -102,13 +102,3 @@ struct ConfidenceRing: View {
     }
 }
 
-private extension V1TodayPosture {
-    var instrumentSymbol: String {
-        switch self {
-        case .protect: "shield.lefthalf.filled"
-        case .steady: "equal.circle"
-        case .push: "arrow.up.circle"
-        case .uncertain: "questionmark.circle"
-        }
-    }
-}

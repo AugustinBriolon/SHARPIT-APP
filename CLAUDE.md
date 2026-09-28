@@ -178,6 +178,17 @@ from `/api/v1/coach/weekly-review`, writes the current week's on demand, and sho
 dashed, next week, and the full text on its own page. `-SharpitWeeklyReviewDemo` shows it on a
 fixed week in Debug builds.
 
+**Widgets.** `SharpItWidgets` is a WidgetKit extension (« Séance du jour », « Verdict du jour »;
+home screen and lock screen). A widget never calls the API — no Clerk session, a small reload
+budget: the app writes a `WidgetSnapshot` into the App Group `group.app.sharpit.ios`
+(`WidgetSnapshotStore`) from Résumé's fold each time it reads today, and on a silent push the
+server sends after each scheduled sync (`refresh: today`), then reloads the timelines. A snapshot
+of another day shows as stale, never as today; signing out or a new account erases it.
+`SharpItShared/` is compiled into both targets: the generated tokens (`yarn tokens:ios` writes
+there), `V1ActivityType` with its identity color, `V1TodayPosture` with its tone, and the snapshot.
+The target was added by hand to `project.pbxproj` (IDs `…05…`); its Info.plist and entitlements are
+in `Config/`.
+
 **Objectifs.** `GoalsView` is one list, no tabs: the next race on the ink plate
 (`GoalOrdering.nextRace`: the nearest A race ahead, else the nearest race), the goals in progress,
 then — further down, only when there are any — the goals reached. Its `GoalStore` is owned by

@@ -36,5 +36,7 @@ enum LocalAccountData {
         try? context.save()
         disk.removeAll()
         defaults.removeObject(forKey: ownerKey)
+        // The home screen too: another athlete's day never shows on it.
+        WidgetSnapshotPublisher.erase()
     }
 }

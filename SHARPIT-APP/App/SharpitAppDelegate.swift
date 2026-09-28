@@ -20,6 +20,16 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         }
     }
 
+    /// A silent push after the server synced the athlete's sources: today is read again so the
+    /// widgets show what just came in, app open or not.
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any]
+    ) async -> UIBackgroundFetchResult {
+        guard userInfo["refresh"] as? String == "today" else { return .noData }
+        return await WidgetSnapshotPublisher.refreshInBackground() ? .newData : .failed
+    }
+
     func application(
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error

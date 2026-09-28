@@ -60,30 +60,10 @@ enum SharpitSportTone {
     // MARK: - Mapping
 
     private static func token(for type: V1ActivityType) -> SharpitRGBA {
-        switch type {
-        case .run: SharpitSportColor.run
-        case .bike: SharpitSportColor.bike
-        case .swim: SharpitSportColor.swim
-        case .strength: SharpitSportColor.strength
-        case .hike: SharpitSportColor.hike
-        case .triathlon: SharpitSportColor.triathlon
-        case .other: SharpitSportColor.other
-        }
+        type.identity
     }
 
     private static func type(forLabel sport: String) -> V1ActivityType {
-        let name = sport
-            .folding(options: .diacriticInsensitive, locale: .current)
-            .lowercased()
-
-        return switch name {
-        case let value where value.contains("course") || value.contains("run"): .run
-        case let value where value.contains("velo") || value.contains("cycl") || value.contains("bike"): .bike
-        case let value where value.contains("natation") || value.contains("swim"): .swim
-        case let value where value.contains("force") || value.contains("muscu") || value.contains("gym"): .strength
-        case let value where value.contains("triathlon"): .triathlon
-        case let value where value.contains("rando") || value.contains("hike") || value.contains("marche"): .hike
-        default: .other
-        }
+        V1ActivityType(sportLabel: sport)
     }
 }

@@ -129,7 +129,9 @@ final class TodayStore {
         case .loading:
             phase = .loading
         case .loaded(let response):
-            phase = .loaded(TodayFoldMapper.map(response))
+            let fold = TodayFoldMapper.map(response)
+            phase = .loaded(fold)
+            WidgetSnapshotPublisher.publish(fold)
         case .empty(let empty):
             phase = .empty(empty)
         case .failed(let message):

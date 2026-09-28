@@ -61,17 +61,9 @@ enum SharpitStroke {
     static let hairline: CGFloat = 1
 }
 
-/// Posture colors, mapped onto the web's semantic signal tokens.
-///
-/// `design.md`: colour is emotional state, and `RECOVER` uses protective sage — never
-/// punitive red. So `protect` takes caution amber, not `signalRisk`.
+/// Posture colors — `V1TodayPosture.tone`, shared with the widgets.
 enum SharpitPostureStyle {
     static func color(for posture: V1TodayPosture) -> Color {
-        switch posture {
-        case .protect: SharpitColor.signalCaution
-        case .steady: SharpitColor.primary
-        case .push: SharpitColor.signalRecovery
-        case .uncertain: SharpitColor.signalNeutral
-        }
+        posture.tone
     }
 }

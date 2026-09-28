@@ -65,12 +65,6 @@ nonisolated enum V1TodayPackTier: String, Codable, Sendable {
     case insufficient = "INSUFFICIENT"
 }
 
-nonisolated enum V1TodayPosture: String, Codable, Sendable {
-    case protect
-    case steady
-    case push
-    case uncertain
-}
 
 nonisolated struct V1TodayWeather: Codable, Sendable, Equatable {
     var city: String

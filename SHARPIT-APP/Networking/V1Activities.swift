@@ -1,40 +1,5 @@
 import Foundation
 
-nonisolated enum V1ActivityType: String, Codable, Sendable {
-    case run = "RUN"
-    case bike = "BIKE"
-    case swim = "SWIM"
-    case strength = "STRENGTH"
-    case hike = "HIKE"
-    case triathlon = "TRIATHLON"
-    case other = "OTHER"
-
-    var label: String {
-        switch self {
-        case .run: "Course"
-        case .bike: "Vélo"
-        case .swim: "Natation"
-        case .strength: "Force"
-        case .hike: "Randonnée"
-        case .triathlon: "Triathlon"
-        case .other: "Activité"
-        }
-    }
-
-    var symbolName: String {
-        switch self {
-        case .run: "figure.run"
-        case .bike: "bicycle"
-        case .swim: "figure.pool.swim"
-        case .strength: "figure.strengthtraining.traditional"
-        case .hike: "figure.hiking"
-        case .triathlon: "figure.mixed.cardio"
-        case .other: "figure.mind.and.body"
-        }
-    }
-
-}
-
 nonisolated struct V1ActivityListItem: Decodable, Sendable, Hashable, Identifiable {
     let id: String
     let type: V1ActivityType
