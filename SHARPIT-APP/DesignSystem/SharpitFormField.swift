@@ -172,10 +172,7 @@ struct SharpitRulerPicker: View {
                 .scrollTargetBehavior(.viewAligned)
                 .scrollPosition(id: $position, anchor: .center)
                 .onScrollPhaseChange { _, phase in
-                    if phase == .interacting {
-                        isTouched = true
-                        SharpitHaptics.prepareTick()
-                    }
+                    if phase == .interacting { isTouched = true }
                 }
                 .onScrollGeometryChange(for: Int.self) { geometry in
                     let offset = geometry.contentOffset.x + geometry.contentInsets.leading
@@ -205,8 +202,10 @@ struct SharpitRulerPicker: View {
         .onChange(of: centred) { _, mark in
             guard isTouched, let mark, mark != value else { return }
             value = mark
-            SharpitHaptics.play(.tick)
         }
+        // SwiftUI's own feedback, bound to the view: a bare UIKit generator (no view) can stay
+        // silent on recent iOS. `value` only changes under the finger, so each notch ticks.
+        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.7), trigger: value)
         .accessibilityElement(children: .ignore)
         .accessibilityValue(value.map { "\($0) \(unit)" } ?? "Non renseigné")
         .accessibilityAdjustableAction { direction in

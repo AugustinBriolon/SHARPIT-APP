@@ -142,8 +142,8 @@ animates (a wiggle on every tile read as unfinished); triathlon is the app's own
 (`triathlon.circles` in the asset catalog), SF Symbols drawing none. Toi uses the design system's
 inputs: `SharpitFormField` (the label above a soft well, a ring while focused — no card),
 `SharpitSegmentedChoice` for the sex, `SharpitRulerPicker` for the height (a tape measure settling
-on each centimetre with a rigid tick — `SharpitHaptics.tick`, the selection generator being too faint
-under a sliding finger — nil until moved) and `SharpitDateField` (the age beside it, the wheel in a
+on each centimetre with a rigid tick — SwiftUI's `sensoryFeedback` bound to the value, a bare UIKit
+generator with no view staying silent on recent iOS — nil until moved) and `SharpitDateField` (the age beside it, the wheel in a
 short sheet: opened in place it grew the page into a scroll).
 
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
