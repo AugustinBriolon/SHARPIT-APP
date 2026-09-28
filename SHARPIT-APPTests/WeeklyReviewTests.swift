@@ -89,3 +89,42 @@ private extension StubReviewClient {
     #expect(!ProStore.renews(V1ProSubscription(status: "expired", source: "apple", willRenew: true)))
     #expect(!ProStore.renews(nil))
 }
+
+@Test func theReviewSplitsIntoWhatWentWellWhatToWatchAndNextWeek() {
+    let sections = WeeklyReviewSections(markdown: """
+    ## Bilan d'entraînement
+    Tu as fait **4 séances** sur 5.
+
+    ## Ce qui a bien marché
+    - Seuil de jeudi tenu à **4:05/km**
+    - Régularité : 4 séances
+
+    ## À surveiller
+    - Sommeil court mercredi
+
+    ## Plan pour la semaine prochaine
+    - Une sortie longue de 1 h 30
+    """)
+
+    #expect(sections.wins == ["Seuil de jeudi tenu à 4:05/km", "Régularité : 4 séances"])
+    #expect(sections.watch == ["Sommeil court mercredi"])
+    #expect(sections.nextWeek == ["Une sortie longue de 1 h 30"])
+    #expect(sections.narrative.first?.title == "Bilan d'entraînement")
+}
+
+@Test func anOlderReviewKeepsItsCombinedList() {
+    let sections = WeeklyReviewSections(markdown: """
+    ## Points forts & points d'attention
+    - Bonne régularité
+    - Fatigue en fin de semaine
+    """)
+
+    #expect(sections.mixed.count == 2)
+    #expect(sections.wins.isEmpty)
+}
+
+@Test func weeklyFiguresReadAsColours() {
+    #expect(WeeklyReviewTone.ratio(0.8) == SharpitColor.signalRecovery)
+    #expect(WeeklyReviewTone.ratio(0.4) == SharpitColor.signalRisk)
+    #expect(WeeklyReviewTone.sleep(minutes: 380) == SharpitColor.signalCaution)
+}

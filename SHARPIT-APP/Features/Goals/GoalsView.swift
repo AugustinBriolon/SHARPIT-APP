@@ -2,36 +2,26 @@ import SwiftUI
 
 /// Plan → Objectifs: the races and figures the season is built toward.
 ///
-/// The next race leads, on the ink plate, with the days left; then every goal as a card that
-/// says where it stands before it is opened. A goal and a new goal open as pages in this
-/// stack — Objectifs is already a sheet, and a sheet over a sheet hides where the athlete is.
+/// One list, no tabs: the next race leads on the ink plate, then the goals in progress, then —
+/// further down, only when there are any — the ones reached. A goal and a new goal open as pages
+/// in this stack. The store is Plan's, so reopening shows the goals at once and refreshes them
+/// quietly.
 struct GoalsView: View {
     @State private var store: GoalStore
-    @State private var segment: GoalSegment = .active
     @State private var hasAppeared = false
 
-    enum GoalSegment: Hashable {
-        case active
-        case completed
+    init(store: GoalStore) {
+        _store = State(initialValue: store)
     }
 
-    init(client: any GoalServing, tokenProvider: @escaping () async throws -> String) {
-        _store = State(initialValue: GoalStore(client: client, tokenProvider: tokenProvider))
-    }
-
-    private var displayed: [V1Goal] {
-        switch segment {
-        case .active:
-            store.activeGoalsOrdered.filter { $0.id != store.nextRace?.id }
-        case .completed:
-            store.completedGoals
-        }
+    private var inProgress: [V1Goal] {
+        store.activeGoalsOrdered.filter { $0.id != store.nextRace?.id }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                if segment == .active, let next = store.nextRace {
+                if let next = store.nextRace {
                     NavigationLink(value: GoalRoute.detail(next)) {
                         NextRaceCard(goal: next)
                     }
@@ -39,16 +29,7 @@ struct GoalsView: View {
                     .revealed(hasAppeared, index: 0)
                 }
 
-                SharpitSegmentedControl(
-                    selection: $segment,
-                    options: [
-                        SharpitSegmentedControl<GoalSegment>.Option(value: .active, label: "En cours · \(store.activeGoals.count)"),
-                        SharpitSegmentedControl<GoalSegment>.Option(value: .completed, label: "Atteints · \(store.completedGoals.count)"),
-                    ]
-                )
-                .revealed(hasAppeared, index: 1)
-
-                if displayed.isEmpty && store.isLoading {
+                if store.goals.isEmpty && store.isLoading {
                     // The cards' own shape while the goals load, never a blank page.
                     LazyVStack(spacing: SharpitSpacing.sm) {
                         ForEach(V1Goal.placeholders) { GoalCard(goal: $0) }
@@ -56,38 +37,21 @@ struct GoalsView: View {
                     .redacted(reason: .placeholder)
                     .allowsHitTesting(false)
                     .accessibilityLabel("Chargement des objectifs")
-                } else if displayed.isEmpty {
+                } else if store.activeGoals.isEmpty {
                     emptyState
-                        .revealed(hasAppeared, index: 2)
-                } else {
-                    LazyVStack(spacing: SharpitSpacing.sm) {
-                        ForEach(Array(displayed.enumerated()), id: \.element.id) { index, goal in
-                            NavigationLink(value: GoalRoute.detail(goal)) {
-                                GoalCard(goal: goal)
-                            }
-                            .buttonStyle(.sharpitPressable)
-                            .contextMenu {
-                                Button {
-                                    Task { await store.toggleAchieved(goal) }
-                                } label: {
-                                    Label(goal.achieved ? "Remettre en cours" : "Marquer comme atteint",
-                                          systemImage: goal.achieved ? "arrow.uturn.backward" : "checkmark.circle")
-                                }
-                                Button(role: .destructive) {
-                                    Task { await store.delete(id: goal.id) }
-                                } label: {
-                                    Label("Supprimer", systemImage: "trash")
-                                }
-                            }
-                            .revealed(hasAppeared, index: index + 2)
-                        }
-                    }
+                        .revealed(hasAppeared, index: 1)
+                } else if !inProgress.isEmpty {
+                    goalList(title: "En cours", goals: inProgress, startIndex: 1)
+                }
+
+                if !store.completedGoals.isEmpty {
+                    goalList(title: "Atteints", goals: store.completedGoals, startIndex: inProgress.count + 2)
+                        .opacity(0.8)
                 }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.top, SharpitSpacing.xs)
             .padding(.bottom, SharpitSpacing.xl)
-            .animation(SharpitMotion.reveal, value: segment)
             .animation(SharpitMotion.reveal, value: store.goals)
         }
         .scrollIndicators(.hidden)
@@ -115,34 +79,58 @@ struct GoalsView: View {
         .onAppear { hasAppeared = true }
     }
 
+    private func goalList(title: String, goals: [V1Goal], startIndex: Int) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("\(title) · \(goals.count)")
+            LazyVStack(spacing: SharpitSpacing.sm) {
+                ForEach(Array(goals.enumerated()), id: \.element.id) { index, goal in
+                    NavigationLink(value: GoalRoute.detail(goal)) {
+                        GoalCard(goal: goal)
+                    }
+                    .buttonStyle(.sharpitPressable)
+                    .contextMenu {
+                        Button {
+                            Task { await store.toggleAchieved(goal) }
+                        } label: {
+                            Label(goal.achieved ? "Remettre en cours" : "Marquer comme atteint",
+                                  systemImage: goal.achieved ? "arrow.uturn.backward" : "checkmark.circle")
+                        }
+                        Button(role: .destructive) {
+                            Task { await store.delete(id: goal.id) }
+                        } label: {
+                            Label("Supprimer", systemImage: "trash")
+                        }
+                    }
+                    .revealed(hasAppeared, index: startIndex + index)
+                }
+            }
+        }
+    }
+
     private var emptyState: some View {
         VStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: segment == .active ? "flag.checkered" : "checkmark.seal")
+            Image(systemName: "flag.checkered")
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundStyle(SharpitColor.primary)
                 .frame(width: 64, height: 64)
                 .background(SharpitColor.primary.opacity(0.12), in: Circle())
-            Text(segment == .active ? "Aucun objectif en cours" : "Aucun objectif atteint")
+            Text("Aucun objectif en cours")
                 .font(SharpitTypography.sectionTitle)
                 .foregroundStyle(SharpitColor.foreground)
-            Text(segment == .active
-                 ? "Ajoute une course ou une cible chiffrée : le plan s'organise autour."
-                 : "Tes objectifs atteints apparaîtront ici.")
+            Text("Ajoute une course ou une cible chiffrée : le plan s'organise autour.")
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .multilineTextAlignment(.center)
-            if segment == .active {
-                NavigationLink(value: GoalRoute.create) {
-                    Label("Ajouter un objectif", systemImage: "plus")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .padding(.horizontal, SharpitSpacing.md)
-                        .padding(.vertical, SharpitSpacing.sm)
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        .background(SharpitColor.primary, in: Capsule())
-                }
-                .buttonStyle(.sharpitPressable)
-                .padding(.top, SharpitSpacing.xs)
+            NavigationLink(value: GoalRoute.create) {
+                Label("Ajouter un objectif", systemImage: "plus")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .padding(.horizontal, SharpitSpacing.md)
+                    .padding(.vertical, SharpitSpacing.sm)
+                    .foregroundStyle(SharpitColor.primaryForeground)
+                    .background(SharpitColor.primary, in: Capsule())
             }
+            .buttonStyle(.sharpitPressable)
+            .padding(.top, SharpitSpacing.xs)
         }
         .frame(maxWidth: .infinity)
         .padding(SharpitSpacing.xl)

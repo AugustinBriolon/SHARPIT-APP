@@ -41,6 +41,8 @@ final class OnboardingStore {
     private(set) var firstWeek: FirstWeek = .idle
     /// The sessions the coach has written so far, shown as they arrive.
     private(set) var firstWeekDrafts: [V1GeneratedSession] = []
+    /// Sessions the server's safety check rejected: never offered, only counted and explained.
+    private(set) var firstWeekSetAside: [(session: V1GeneratedSession, reason: String?)] = []
 
     var identity = OnboardingIdentityDraft()
     /// Catalog order, as the web stores it.
@@ -429,12 +431,17 @@ final class OnboardingStore {
                     Task { @MainActor in self?.noteDrafts(drafts) }
                 }
                 guard !Task.isCancelled else { return }
-                self.firstWeek = plan.sessions.isEmpty
-                    ? .failed("Le coach n'a proposé aucune séance. Tu pourras lui demander ta semaine depuis le Plan.")
-                    : .ready(summary: plan.summary, sessions: plan.sessions)
+                let kept = plan.sessions.indices.filter { plan.insertableIndices.contains($0) }
+                self.firstWeekSetAside = plan.sessions.indices
+                    .filter { !plan.insertableIndices.contains($0) }
+                    .map { (plan.sessions[$0], plan.verdict(at: $0)?.reason) }
+                self.firstWeek = kept.isEmpty
+                    ? .failed("Le coach n'a proposé aucune séance que tu puisses faire en sécurité. Tu pourras lui demander ta semaine depuis le Plan.")
+                    : .ready(summary: plan.summary, sessions: kept.map { plan.sessions[$0] })
             } catch is CancellationError {
             } catch {
-                self.firstWeek = .failed(SharpitErrorGuidance.message(for: error, subject: "Ta première semaine"))
+                self.firstWeek = .failed((error as? CoachPlanError)?.errorDescription
+                    ?? SharpitErrorGuidance.message(for: error, subject: "Ta première semaine"))
             }
         }
     }

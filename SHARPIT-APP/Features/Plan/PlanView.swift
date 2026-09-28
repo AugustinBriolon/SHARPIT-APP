@@ -16,12 +16,13 @@ struct PlanView: View {
     @State private var selectedSession: V1PlannedSessionItem?
     @State private var showingCalendar = false
     @State private var showingMacroPlan = false
-    @State private var showingGenerator = false
     /// Owned here, not by the sheet: closing it mid-generation keeps the week coming.
     @State private var generation: PlanGenerationStore
     @State private var showingAdapter = false
     @State private var showingGoals = false
     @State private var showingWeeklyReview = false
+    /// Plan's, not the sheet's: reopening Objectifs shows the goals at once.
+    @State private var goals: GoalStore
 
     init(
         client: any PlannedSessionServing,
@@ -36,6 +37,7 @@ struct PlanView: View {
         self.activityClient = activityClient
         self.tokenProvider = tokenProvider
         _generation = State(initialValue: PlanGenerationStore(tokenProvider: tokenProvider))
+        _goals = State(initialValue: GoalStore(client: GoalClient(), tokenProvider: tokenProvider))
         _store = State(
             initialValue: PlanStore(
                 client: client,
@@ -78,7 +80,7 @@ struct PlanView: View {
                     PlanActionsMenu(
                         onOpenGoals: { showingGoals = true },
                         onOpenMacroPlan: { showingMacroPlan = true },
-                        onOpenGenerator: { showingGenerator = true },
+                        onOpenGenerator: { router.isShowingPlanGenerator = true },
                         onOpenWeeklyReview: { showingWeeklyReview = true },
                         onOpenAdapter: { showingAdapter = true },
                         onDiscussWithCoach: {
@@ -125,7 +127,7 @@ struct PlanView: View {
             // Goals moved here from Moi: they are what the plan is built toward.
             .sheet(isPresented: $showingGoals) {
                 NavigationStack {
-                    GoalsView(client: GoalClient(), tokenProvider: tokenProvider)
+                    GoalsView(store: goals)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("OK") { showingGoals = false }
@@ -140,7 +142,7 @@ struct PlanView: View {
                     Task { await store.loadAroundSelection() }
                 }
             }
-            .sheet(isPresented: $showingGenerator) {
+            .sheet(isPresented: Bindable(router).isShowingPlanGenerator) {
                 PlanGeneratorSheet(store: generation) {
                     Task { await store.loadAroundSelection() }
                 }
@@ -163,7 +165,7 @@ struct PlanView: View {
             }
             .task { await store.loadAroundSelection() }
             .onChange(of: generation.isReady) { _, ready in
-                guard ready, !showingGenerator else { return }
+                guard ready, !router.isShowingPlanGenerator else { return }
                 toastCenter?.show("Ta semaine est prête", symbol: "calendar.badge.checkmark", tone: .success, autoDismissAfter: 4.0)
             }
             // Every way of changing week — swipe, the strip's "Aujourd'hui", the calendar —

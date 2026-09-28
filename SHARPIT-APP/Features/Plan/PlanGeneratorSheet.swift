@@ -52,7 +52,13 @@ struct PlanGeneratorSheet: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(3)
                 }
-                GeneratedWeekView(sessions: plan.sessions, selection: selected) { store.toggle($0) }
+                GeneratedWeekView(
+                    sessions: plan.sessions,
+                    selection: selected,
+                    verdicts: Dictionary(uniqueKeysWithValues: plan.sessions.indices.compactMap { index in
+                        plan.verdict(at: index).map { (index, $0) }
+                    })
+                ) { store.toggle($0) }
                 if let insertError = store.insertError {
                     Label(insertError, systemImage: "exclamationmark.triangle")
                         .font(SharpitTypography.meta)
@@ -129,6 +135,15 @@ struct PlanGeneratorSheet: View {
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.vertical, SharpitSpacing.sm)
+        // The list scrolls under the actions: a fade keeps « Recommencer » readable over it.
+        .background(
+            LinearGradient(
+                colors: [SharpitColor.background.opacity(0), SharpitColor.background.opacity(0.9), SharpitColor.background],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(edges: .bottom)
+        )
     }
 
     private func primary(title: String, busy: Bool, action: @escaping () -> Void) -> some View {

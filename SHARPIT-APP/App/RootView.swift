@@ -146,6 +146,7 @@ struct RootView: View {
 
             if let tab = pushManager.consumePendingNavigation() {
                 router.select(tab)
+                if pushManager.consumePlanGeneratorRequest() { router.isShowingPlanGenerator = true }
             }
         }
         .onChange(of: pushManager.deviceToken) { _, newToken in
@@ -158,6 +159,7 @@ struct RootView: View {
         .onChange(of: pushManager.pendingTabSelection) { _, newTab in
             if let tab = pushManager.consumePendingNavigation() {
                 router.select(tab)
+                if pushManager.consumePlanGeneratorRequest() { router.isShowingPlanGenerator = true }
             }
         }
         .onOpenURL { url in

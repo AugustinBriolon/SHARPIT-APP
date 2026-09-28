@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UIKit
 
 /// Plan's « Remplir ma semaine »: the request, the week the coach writes, the sessions kept.
 ///
@@ -63,7 +64,10 @@ final class PlanGenerationStore {
         generation?.cancel()
         phase = .generating(drafts: [])
         let request = (days: days, goalId: goalId, focus: focus)
+        // Leaving the app should not cut the week off: ask iOS for the time to finish it.
+        let background = UIApplication.shared.beginBackgroundTask(withName: "plan-generation")
         generation = Task { [weak self] in
+            defer { UIApplication.shared.endBackgroundTask(background) }
             guard let self else { return }
             do {
                 let token = try await self.tokenProvider()
@@ -79,11 +83,19 @@ final class PlanGenerationStore {
                 guard !Task.isCancelled else { return }
                 self.phase = week.sessions.isEmpty
                     ? .failed("Le coach n'a proposé aucune séance. Précise ta demande et réessaie.")
-                    : .ready(plan: week, selected: Set(week.sessions.indices))
+                    : .ready(plan: week, selected: week.insertableIndices)
                 SharpitHaptics.play(week.sessions.isEmpty ? .soft : .success)
+                if !week.sessions.isEmpty {
+                    await LocalNotifications.notifyIfAway(
+                        title: "Ta semaine est prête",
+                        body: "\(week.sessions.count) séances proposées par le coach, à valider avant de les ajouter.",
+                        path: LocalNotifications.planGeneratorPath
+                    )
+                }
             } catch is CancellationError {
             } catch {
-                self.phase = .failed(SharpitErrorGuidance.message(for: error, subject: "La génération"))
+                self.phase = .failed((error as? CoachPlanError)?.errorDescription
+                    ?? SharpitErrorGuidance.message(for: error, subject: "La génération"))
             }
         }
     }
@@ -95,7 +107,7 @@ final class PlanGenerationStore {
     }
 
     func toggle(_ index: Int) {
-        guard case .ready(let plan, var selected) = phase else { return }
+        guard case .ready(let plan, var selected) = phase, plan.insertableIndices.contains(index) else { return }
         if selected.contains(index) { selected.remove(index) } else { selected.insert(index) }
         phase = .ready(plan: plan, selected: selected)
     }
@@ -117,7 +129,8 @@ final class PlanGenerationStore {
             phase = .idle
             return sessions.count
         } catch {
-            insertError = SharpitErrorGuidance.message(for: error, subject: "L'ajout au plan")
+            insertError = (error as? CoachPlanError)?.errorDescription
+                ?? SharpitErrorGuidance.message(for: error, subject: "L'ajout au plan")
             phase = .ready(plan: week, selected: selected)
             return nil
         }

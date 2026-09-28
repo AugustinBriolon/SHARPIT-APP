@@ -85,6 +85,9 @@ actor CoachPlanClient: CoachPlanServing {
         let (_, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
+        if status == 422 {
+            throw CoachPlanError.custom("Une séance a été écartée par le contrôle de sécurité. Décoche-la puis réessaie.")
+        }
         guard (200...299).contains(status) else { throw SharpitAPIError.server }
     }
 

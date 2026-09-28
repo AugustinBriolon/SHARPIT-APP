@@ -784,6 +784,9 @@ struct OnboardingFirstWeekStep: View {
                     .lineLimit(3)
             }
             GeneratedWeekView(sessions: sessions)
+            ForEach(Array(store.firstWeekSetAside.enumerated()), id: \.offset) { _, entry in
+                GeneratedSessionRow(session: entry.session, rejection: entry.reason ?? "Écartée par le contrôle de sécurité.")
+            }
         }
     }
 

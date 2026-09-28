@@ -15,6 +15,8 @@ final class PushNotificationManager {
 
     /// Queued navigation action when a push notification is opened.
     var pendingTabSelection: ShellTab?
+    /// Set by a tap on « Ta semaine est prête »: Plan opens with its generator.
+    private(set) var pendingOpensPlanGenerator = false
 
     /// The athlete's own switch, in Paramètres. iOS owns the permission and the app cannot take
     /// it back, so « off » means the server forgets this device and SharpIt stops asking — the
@@ -119,12 +121,21 @@ final class PushNotificationManager {
 
         if category == "MORNING_VERDICT" || threadId == "morning-verdict" {
             self.pendingTabSelection = .today
+        } else if urlString == LocalNotifications.planGeneratorPath {
+            pendingOpensPlanGenerator = true
+            self.pendingTabSelection = .plan
         } else if let urlString, let url = URL(string: urlString) {
             // A push's `/settings` predates the Paramètres sheet and still lands on Corps.
             if let tab = IncomingLink.tab(forPath: url.path) ?? (url.path == "/settings" ? .body : nil) {
                 self.pendingTabSelection = tab
             }
         }
+    }
+
+    /// Whether Plan's generator should open, once — consumed with the tab.
+    func consumePlanGeneratorRequest() -> Bool {
+        defer { pendingOpensPlanGenerator = false }
+        return pendingOpensPlanGenerator
     }
 
     /// Consumes the pending navigation action if any.

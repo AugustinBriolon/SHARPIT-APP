@@ -12,8 +12,18 @@ nonisolated struct V1WeeklyStats: Codable, Equatable, Sendable {
         var avgHrv: Double?
     }
 
+    struct SportShare: Codable, Equatable, Sendable {
+        let type: String
+        let count: Int
+        let durationMin: Double
+    }
+
     var weekStart: String?
     var weekEnd: String?
+    /// Monday → Sunday; nil on a day without data, never 0.
+    var dailyLoad: [Double?]?
+    var dailySleepScore: [Double?]?
+    var byType: [SportShare]?
     var sessionsDone: Int?
     var sessionsPlanned: Int?
     var totalLoad: Double?

@@ -155,12 +155,20 @@ week is ready. The week appears session by session from the server's `partial` e
 server-side, so drafts are the only progress there is. « Ajouter » sends the kept sessions to
 `/api/v1/coach/plan/insert`. « Bilan de la semaine » (Plan's « … ») is SharpIt Pro:
 `WeeklyReviewView` reads the latest review from `/api/v1/coach/weekly-review`, writes the current
-week's on demand, and shows a `SharpitProTeaser` on the server's 403.
+week's on demand, and shows a `SharpitProTeaser` on the server's 403. It is read at a glance:
+coloured figures, load and sleep by day (Swift Charts), time by sport, then « Ce qui a bien marché »
+(green) and « À surveiller » (amber) split from the markdown's fixed headings
+(`WeeklyReviewSections`), the full text folded at the end. Sessions the server's Gate rejected are
+shown with the reason and never kept: storing one is refused with a 422. A finished generation
+posts a local notification when the app is not in front (`LocalNotifications`); its tap opens
+Plan's generator (`ShellRouter.isShowingPlanGenerator`).
 
-**Objectifs.** `GoalsView` leads with the next race on the ink plate (`GoalOrdering.nextRace`: the
-nearest A race ahead, else the nearest race), then goal cards. A goal (`GoalDetailView`) and a new
-goal (`GoalCreateView`) are pages pushed in the Objectifs stack, never a sheet over the Objectifs
-sheet.
+**Objectifs.** `GoalsView` is one list, no tabs: the next race on the ink plate
+(`GoalOrdering.nextRace`: the nearest A race ahead, else the nearest race), the goals in progress,
+then — further down, only when there are any — the goals reached. Its `GoalStore` is owned by
+`PlanView`, so reopening Objectifs shows the goals at once and refreshes them quietly. A goal
+(`GoalDetailView`) and a new goal (`GoalCreateView`) are pages pushed in the Objectifs stack, never a
+sheet over the Objectifs sheet.
 
 **Feature shape.** A feature is a `@Observable` store plus a view that only composes
 design-system components: `TodayStore` owns a `phase` enum (loading / loaded / empty /

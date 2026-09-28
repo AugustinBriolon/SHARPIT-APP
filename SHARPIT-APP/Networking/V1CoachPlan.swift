@@ -90,19 +90,43 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
     }
 }
 
+/// The server's safety check on one proposed session (the web's plan Gate). A rejected session
+/// can never be stored — the server refuses it with a 422 — so it is never offered to add.
+nonisolated struct V1GateVerdict: Codable, Sendable, Hashable {
+    nonisolated struct Finding: Codable, Sendable, Hashable {
+        let severity: String
+        let rationale: String
+    }
+
+    /// `ACCEPTED`, `WARNING`, `REQUIRES_CONFIRMATION` or `REJECTED`.
+    let status: String
+    var findings: [Finding] = []
+
+    var isRejected: Bool { status == "REJECTED" }
+
+    /// The worst finding's words, for a line under the session.
+    var reason: String? { findings.first { $0.severity == status }?.rationale ?? findings.first?.rationale }
+}
+
+nonisolated struct V1PlanGate: Codable, Sendable, Hashable {
+    var sessions: [V1GateVerdict] = []
+}
+
 nonisolated struct V1GeneratedPlan: Codable, Sendable {
     let summary: String
     let startDate: String?
     let sessions: [V1GeneratedSession]
+    var gate: V1PlanGate?
 
     enum CodingKeys: String, CodingKey {
-        case summary, startDate, sessions
+        case summary, startDate, sessions, gate
     }
 
-    init(summary: String, startDate: String? = nil, sessions: [V1GeneratedSession]) {
+    init(summary: String, startDate: String? = nil, sessions: [V1GeneratedSession], gate: V1PlanGate? = nil) {
         self.summary = summary
         self.startDate = startDate
         self.sessions = sessions
+        self.gate = gate
     }
 
     init(from decoder: Decoder) throws {
@@ -110,6 +134,18 @@ nonisolated struct V1GeneratedPlan: Codable, Sendable {
         summary = (try? container.decode(String.self, forKey: .summary)) ?? ""
         startDate = try container.decodeIfPresent(String.self, forKey: .startDate)
         sessions = (try? container.decode([V1GeneratedSession].self, forKey: .sessions)) ?? []
+        gate = try? container.decodeIfPresent(V1PlanGate.self, forKey: .gate)
+    }
+
+    /// The Gate's verdict on the session at `index`, in the order the sessions came.
+    func verdict(at index: Int) -> V1GateVerdict? {
+        guard let verdicts = gate?.sessions, verdicts.indices.contains(index) else { return nil }
+        return verdicts[index]
+    }
+
+    /// The sessions the plan may take: every one the Gate did not reject.
+    var insertableIndices: Set<Int> {
+        Set(sessions.indices.filter { verdict(at: $0)?.isRejected != true })
     }
 }
 

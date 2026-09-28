@@ -9,17 +9,21 @@ struct GeneratedWeekView: View {
     var isWriting = false
     /// Indices kept for the plan; nil shows the sessions without a choice.
     var selection: Set<Int>?
+    /// The server's safety verdict per index, when it has one.
+    var verdicts: [Int: V1GateVerdict] = [:]
     var onToggle: (Int) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             ForEach(Array(sessions.enumerated()), id: \.offset) { index, session in
-                if let selection {
+                if let verdict = verdicts[index], verdict.isRejected {
+                    GeneratedSessionRow(session: session, rejection: verdict.reason ?? "Écartée par le contrôle de sécurité.")
+                } else if let selection {
                     Button {
                         SharpitHaptics.play(.light)
                         onToggle(index)
                     } label: {
-                        GeneratedSessionRow(session: session, isSelected: selection.contains(index))
+                        GeneratedSessionRow(session: session, isSelected: selection.contains(index), warning: verdicts[index]?.reason)
                     }
                     .buttonStyle(.plain)
                 } else {
@@ -48,6 +52,10 @@ struct GeneratedWeekView: View {
 struct GeneratedSessionRow: View {
     let session: V1GeneratedSession
     var isSelected: Bool?
+    /// A caution from the safety check, shown under the title.
+    var warning: String?
+    /// Why the safety check set the session aside: shown instead of a choice, the row dimmed.
+    var rejection: String?
 
     private var day: String {
         guard let date = TrainingDayId.date(session.date) else { return session.date }
@@ -72,6 +80,12 @@ struct GeneratedSessionRow: View {
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(2)
+                if let note = rejection ?? warning {
+                    Label(note, systemImage: rejection != nil ? "nosign" : "exclamationmark.triangle")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(rejection != nil ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                        .lineLimit(3)
+                }
             }
             Spacer(minLength: 0)
             if session.durationMin > 0 {
@@ -88,7 +102,7 @@ struct GeneratedSessionRow: View {
         }
         .padding(SharpitSpacing.sm + 2)
         .sharpitSurface(.panel)
-        .opacity(isSelected == false ? 0.55 : 1)
+        .opacity(isSelected == false || rejection != nil ? 0.55 : 1)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected == true ? .isSelected : [])

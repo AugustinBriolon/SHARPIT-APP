@@ -7,6 +7,7 @@ private final class StreamingPlanClient: CoachPlanServing {
     private(set) var inserted: [(sessions: [V1GeneratedSession], goalId: String?)] = []
     var fails = false
     var insertFails = false
+    var gate: V1PlanGate?
 
     static let week = [
         V1GeneratedSession(date: "2026-09-29", type: .run, intensity: "ENDURANCE", title: "Footing", description: "", durationMin: 45, load: 40),
@@ -23,7 +24,7 @@ private final class StreamingPlanClient: CoachPlanServing {
     ) async throws -> V1GeneratedPlan {
         onDraft(Array(Self.week.prefix(1)))
         if fails { throw SharpitAPIError.server }
-        return V1GeneratedPlan(summary: "Semaine", sessions: Self.week)
+        return V1GeneratedPlan(summary: "Semaine", sessions: Self.week, gate: gate)
     }
 
     func adaptPlan(days _: Int, focus _: String?, token _: String, onReasoning _: @escaping @Sendable (String) -> Void) async throws -> V1AdaptPlanResult {
@@ -113,4 +114,42 @@ private func settled(_ store: PlanGenerationStore) async {
     store.start()
     await settled(store)
     #expect(store.isReady)
+}
+
+/// A session the server's safety check rejected would be refused (422) and fail the whole
+/// week: it is never kept, and cannot be ticked back.
+@MainActor
+@Test func aSessionTheGateRejectedIsNeverKept() async {
+    let client = StreamingPlanClient()
+    client.gate = V1PlanGate(sessions: [
+        V1GateVerdict(status: "ACCEPTED"),
+        V1GateVerdict(status: "REJECTED", findings: [.init(severity: "REJECTED", rationale: "Zone sensible : genou.")]),
+    ])
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), tokenProvider: { "t" })
+    store.start()
+    await settled(store)
+
+    store.toggle(1)
+    guard case .ready(let plan, let selected) = store.phase else {
+        Issue.record("The week should be ready")
+        return
+    }
+    #expect(selected == [0])
+    #expect(plan.verdict(at: 1)?.reason == "Zone sensible : genou.")
+
+    _ = await store.insert()
+    #expect(client.inserted.first?.sessions.map(\.title) == ["Footing"])
+}
+
+@Test func theGateVerdictDecodesFromThePlan() throws {
+    let json = Data(#"""
+    { "summary": "S", "sessions": [], "gate": { "sessions": [
+        { "status": "WARNING", "findings": [ { "ruleCode": "load", "severity": "WARNING", "rationale": "Charge élevée.", "evidenceRefs": [] } ],
+          "requiredAssumptions": [], "saferAlternative": null, "proposal": {} } ], "planLevelFindings": [] } }
+    """#.utf8)
+
+    let plan = try JSONDecoder().decode(V1GeneratedPlan.self, from: json)
+
+    #expect(plan.gate?.sessions.first?.status == "WARNING")
+    #expect(plan.gate?.sessions.first?.reason == "Charge élevée.")
 }
