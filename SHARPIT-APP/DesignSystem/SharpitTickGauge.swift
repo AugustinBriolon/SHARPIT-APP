@@ -64,6 +64,8 @@ enum SharpitTickGaugeGeometry {
 struct SharpitTickGauge: View, Animatable {
     /// 0…100, or nil for an unread dial.
     var score: CGFloat?
+    /// Draws the thumb at 0 too — a progress dial shows where it starts; a readout at 0 does not.
+    var showsThumbAtStart = false
 
     var animatableData: CGFloat {
         get { score ?? 0 }
@@ -99,7 +101,7 @@ struct SharpitTickGauge: View, Animatable {
                 )
             }
 
-            guard let score, score > 0.5 else { return }
+            guard let score, score > 0.5 || showsThumbAtStart else { return }
             let thumb = SharpitTickGaugeGeometry.thumb(forScore: score)
             let radius = SharpitTickGaugeGeometry.thumbRadius * scale
             let dot = Path(

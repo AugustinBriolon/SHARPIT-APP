@@ -164,16 +164,18 @@ private struct OnboardingHeader: View {
 
             Spacer(minLength: 0)
 
-            VStack(spacing: 2) {
-                SharpitTickGauge(score: CGFloat(store.progress * 100))
-                    .frame(width: 88, height: 88 / SharpitTickGaugeGeometry.aspectRatio)
+            // The position sits inside the arc, and the dial's thumb shows from the first step —
+            // at its start, the way still to go.
+            ZStack(alignment: .bottom) {
+                SharpitTickGauge(score: CGFloat(store.progress * 100), showsThumbAtStart: true)
+                    .frame(width: 104, height: 104 / SharpitTickGaugeGeometry.aspectRatio)
                     .animation(SharpitMotion.gaugeFill, value: store.progress)
-                // The position, not the step's name: the title under the dial already says it.
                 Text("\(store.position) / \(store.path.count)")
                     .font(SharpitTypography.label.monospacedDigit())
                     .tracking(SharpitTypography.labelTracking)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .contentTransition(.numericText(value: Double(store.position)))
+                    .padding(.bottom, 8)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Étape \(store.position) sur \(store.path.count), \(store.step.label)")
@@ -331,7 +333,6 @@ struct OnboardingBootstrapView: View {
                     .foregroundStyle(SharpitColor.primary)
                     .opacity(isComplete ? 1 : 0)
                     .scaleEffect(isComplete ? 1 : 0.4)
-                    .symbolEffect(.wiggle.byLayer, value: isComplete)
             }
             .frame(width: 56, height: 56)
             .revealed(hasAppeared, index: 0)

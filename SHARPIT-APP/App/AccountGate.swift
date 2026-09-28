@@ -66,10 +66,13 @@ final class AccountGateModel {
         do {
             let token = try await tokenProvider()
             async let consentsRead = consentClient.consents(token: token)
-            async let profileRead: V1AthleteProfile? = onboarded ? nil : profileClient.athleteProfile(token: token)
+            // Read even when remembered: the server is the truth. A new account's very first read
+            // can come before its row exists, and the phone once remembered « done » from it.
+            async let profileRead = profileClient.athleteProfile(token: token)
             let consents = try await consentsRead
             self.consents = consents
-            if !onboarded, let profile = try await profileRead, profile.needsOnboarding {
+            let profile = try await profileRead
+            if profile.needsOnboarding {
                 onboardingStore = makeOnboardingStore(consents.wallReason != nil, consents, userId)
                 move(to: .onboarding)
                 return
@@ -78,7 +81,9 @@ final class AccountGateModel {
                 move(to: .consent(reason))
                 return
             }
-            if !onboarded { remember(userId) }
+            // Remembered only once the server says so: a profile without the field (no row yet,
+            // an older server) lets the athlete in, but decides nothing for next time.
+            if profile.onboardingCompletedAt != nil { remember(userId) }
             move(to: .ready)
         } catch {
             move(to: .ready)

@@ -136,9 +136,14 @@ services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`
 
 The page is one page: the header's tick dial (`SharpitTickGauge`, animatable, so it sweeps from step
 to step) and the step's title stay put, and only the content under them slides in from the side the
-athlete is heading. Sport tiles and choice chips (`OnboardingChoiceChip`) bounce their SF Symbol
-on the tap itself, so the choice left behind never animates, and never scale; triathlon is
-the app's own symbol (`triathlon.circles` in the asset catalog), SF Symbols drawing none.
+athlete is heading. The dial's thumb shows from the first step, at its start, with the position
+(« 1 / 9 ») inside the arc. A choice is seen by its fill and felt by a light haptic — no symbol
+animates (a wiggle on every tile read as unfinished); triathlon is the app's own symbol
+(`triathlon.circles` in the asset catalog), SF Symbols drawing none. Toi uses the design system's
+inputs: `SharpitFormField` (the label above a soft well, a ring while focused — no card),
+`SharpitSegmentedChoice` for the sex, `SharpitRulerPicker` for the height (a tape measure settling
+on each centimetre with a selection haptic, nil until moved) and `SharpitDateField` (the age
+beside it, the wheel opening in place).
 
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
 Paramètres is not a tab: it is a sheet (`SettingsView`) opened through `ShellRouter.openSettings()`

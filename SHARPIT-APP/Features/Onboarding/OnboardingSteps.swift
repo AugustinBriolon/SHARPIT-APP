@@ -9,7 +9,7 @@ import UIKit
 struct OnboardingIdentityStep: View {
     @Binding var draft: OnboardingIdentityDraft
 
-    private static let heights = Array(120...220)
+    private static let heights = 120...220
     private static let birthDates: ClosedRange<Date> = {
         let calendar = Calendar.current
         let earliest = calendar.date(byAdding: .year, value: -100, to: .now) ?? .distantPast
@@ -18,81 +18,47 @@ struct OnboardingIdentityStep: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitFormField("Prénom", placeholder: "Ton prénom", text: $draft.firstName)
                 .textContentType(.givenName)
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 SharpitFieldLabel("Sexe")
-                HStack(spacing: SharpitSpacing.xs) {
-                    ForEach(AthleteSex.allCases) { sex in
-                        OnboardingChoiceChip(title: sex.label, isSelected: draft.sex == sex) {
-                            SharpitMotion.run(SharpitMotion.selection) { draft.sex = sex }
-                        }
-                    }
-                }
+                SharpitSegmentedChoice(options: AthleteSex.allCases, label: \.label, selection: $draft.sex)
             }
 
-            VStack(spacing: SharpitSpacing.sm) {
-                HStack {
-                    Text("Taille")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Spacer()
-                    Picker("Taille", selection: heightBinding) {
-                        Text("—").tag(Int?.none)
-                        ForEach(Self.heights, id: \.self) { height in
-                            Text("\(height) cm").tag(Int?.some(height))
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .tint(SharpitColor.foreground)
-                }
-                Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
-                DatePicker(
-                    "Date de naissance",
-                    selection: birthDateBinding,
-                    in: Self.birthDates,
-                    displayedComponents: .date
-                )
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.foreground)
-                .tint(SharpitColor.primary)
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                SharpitFieldLabel("Taille")
+                SharpitRulerPicker(value: $draft.heightCm, range: Self.heights, unit: "cm", resting: 170)
             }
-            .padding(SharpitSpacing.cardPadding)
-            .sharpitSurface(.panel)
+
+            SharpitDateField(
+                title: "Date de naissance",
+                date: $draft.birthDate,
+                range: Self.birthDates,
+                resting: Calendar.current.date(byAdding: .year, value: -30, to: .now) ?? .now,
+                caption: { birth in
+                    let years = Calendar.current.dateComponents([.year], from: birth, to: .now).year ?? 0
+                    return "\(years) ans"
+                }
+            )
         }
-    }
-
-    private var heightBinding: Binding<Int?> {
-        Binding(get: { draft.heightCm }, set: { draft.heightCm = $0 })
-    }
-
-    /// A date is always shown; picking one is what records it.
-    private var birthDateBinding: Binding<Date> {
-        Binding(
-            get: { draft.birthDate ?? Calendar.current.date(byAdding: .year, value: -30, to: .now) ?? .now },
-            set: { draft.birthDate = $0 }
-        )
     }
 }
 
 // MARK: - Shared controls
 
-/// One choice of a few, its symbol (if any) filling and bouncing when it is picked — the bounce
-/// is played by the tap, so the choice left behind never animates.
+/// One choice of a few: picked, it fills. No symbol animation — a choice is seen by its fill and
+/// felt by a light haptic, nothing more.
 struct OnboardingChoiceChip: View {
     let title: String
     var symbol: String?
     let isSelected: Bool
     let onSelect: () -> Void
 
-    @State private var taps = 0
-
     var body: some View {
         Button {
             SharpitHaptics.play(.light)
-            taps += 1
             onSelect()
         } label: {
             HStack(spacing: SharpitSpacing.xs) {
@@ -101,7 +67,6 @@ struct OnboardingChoiceChip: View {
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
-                        .symbolEffect(.wiggle.byLayer, value: taps)
                         .frame(width: 22)
                 }
                 Text(title)
@@ -126,8 +91,7 @@ struct OnboardingChoiceChip: View {
 
 // MARK: - Sports
 
-/// Endurance first, complements after. A tile answers the touch with its own symbol — it
-/// bounces and fills — never by growing.
+/// Endurance first, complements after. A tile answers the touch by filling, never by moving.
 struct OnboardingSportsStep: View {
     let store: OnboardingStore
 
@@ -160,12 +124,9 @@ struct OnboardingSportTile: View {
     let isSelected: Bool
     let onToggle: () -> Void
 
-    @State private var taps = 0
-
     var body: some View {
         Button {
             SharpitHaptics.play(isSelected ? .soft : .light)
-            taps += 1
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -174,7 +135,6 @@ struct OnboardingSportTile: View {
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 30, weight: .medium))
                         .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                        .symbolEffect(.wiggle.byLayer, value: taps)
                         .frame(height: 36, alignment: .leading)
                     Spacer(minLength: 0)
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -288,7 +248,6 @@ private struct OnboardingEquipmentRow: View {
                 Image(systemName: item.symbolName)
                     .font(.system(size: 17, weight: .medium))
                     .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
-                    .symbolEffect(.wiggle.byLayer, value: isOwned)
                     .frame(width: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.label)
@@ -420,7 +379,6 @@ struct OnboardingWeekStep: View {
 /// what the plan has to work with.
 struct OnboardingGoalStep: View {
     @Binding var draft: OnboardingIntentionDraft
-    @State private var kindTaps: [OnboardingIntentionKind: Int] = [:]
 
     private var weeksLeft: Int {
         max(Calendar.current.dateComponents([.weekOfYear], from: .now, to: draft.raceDate).weekOfYear ?? 0, 0)
@@ -471,14 +429,12 @@ struct OnboardingGoalStep: View {
         let isSelected = draft.kind == kind
         return Button {
             SharpitHaptics.play(.light)
-            if !isSelected { kindTaps[kind, default: 0] += 1 }
             SharpitMotion.run(SharpitMotion.selection) { draft.kind = kind }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: symbol)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                    .symbolEffect(.wiggle.byLayer, value: kindTaps[kind, default: 0])
                 Text(title)
                     .font(SharpitTypography.cardTitle)
                     .foregroundStyle(SharpitColor.foreground)

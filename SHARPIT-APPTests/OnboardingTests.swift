@@ -789,6 +789,32 @@ private func makeGate(
     #expect(online.status == .onboarding)
 }
 
+/// A new account's very first read can come before its row exists: the profile says nothing
+/// about the wizard. The athlete is let in, but « done » is not remembered from it.
+@MainActor
+@Test func aProfileSilentAboutTheWizardDecidesNothingForNextTime() async throws {
+    let defaults = try freshDefaults("account-gate-silent")
+    let first = makeGate(profile: RecordingProfileClient(V1AthleteProfile()), defaults: defaults)
+    await first.resolve(userId: "user_7") { "t" }
+    #expect(first.status == .ready)
+
+    let next = makeGate(profile: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)), defaults: defaults)
+    await next.resolve(userId: "user_7") { "t" }
+    #expect(next.status == .onboarding)
+}
+
+/// A phone that remembered « done » wrongly is put right by the server on the next launch.
+@MainActor
+@Test func theServerOutranksWhatThePhoneRemembers() async throws {
+    let defaults = try freshDefaults("account-gate-remembered")
+    defaults.set(true, forKey: "sharpit.onboarding.completed.user_8")
+    let gate = makeGate(profile: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)), defaults: defaults)
+
+    await gate.resolve(userId: "user_8") { "t" }
+
+    #expect(gate.status == .onboarding)
+}
+
 /// A new account meets the consents inside the wizard, just before its sources — not a wall
 /// in front of it.
 @MainActor
