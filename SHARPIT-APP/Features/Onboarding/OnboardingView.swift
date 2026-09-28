@@ -66,7 +66,7 @@ struct OnboardingView: View {
                 OnboardingActionBar(store: store)
             }
         }
-        .sensoryFeedback(.selection, trigger: store.step)
+        .onChange(of: store.step) { _, _ in SharpitHaptics.play(.light) }
     }
 
     private var pageTransition: AnyTransition {
@@ -204,7 +204,8 @@ private struct OnboardingActionBar: View {
     let store: OnboardingStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        // The generator's dock and button: a fade to the bottom edge, a button a touch taller.
+        SharpitActionDock {
             if let error = store.error {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .font(SharpitTypography.meta)
@@ -224,24 +225,13 @@ private struct OnboardingActionBar: View {
                     .transition(.opacity)
             }
 
-            Button { [step = store.step] in
+            SharpitPrimaryButton(
+                title: primaryLabel,
+                isBusy: store.isBusy || store.firstWeek == .generating && store.step == .firstWeek
+            ) { [step = store.step] in
                 SharpitHaptics.play(.light)
                 Task { await store.advance(from: step) }
-            } label: {
-                HStack(spacing: SharpitSpacing.xs) {
-                    if store.isBusy || store.firstWeek == .generating && store.step == .firstWeek {
-                        ProgressView()
-                            .tint(SharpitColor.primaryForeground)
-                    }
-                    Text(primaryLabel)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        .contentTransition(.opacity)
-                }
-                .frame(maxWidth: .infinity)
             }
-            .sharpitGlassButton(prominent: true)
-            .tint(SharpitColor.primary)
             .disabled(!store.canAdvance || store.isBusy)
 
             if showsFinishWithout {
@@ -254,16 +244,6 @@ private struct OnboardingActionBar: View {
         }
         .animation(SharpitMotion.fade, value: store.error)
         .animation(SharpitMotion.selection, value: store.step)
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.top, SharpitSpacing.sm)
-        .padding(.bottom, SharpitSpacing.sm)
-        .background(
-            LinearGradient(
-                colors: [SharpitColor.background.opacity(0), SharpitColor.background.opacity(0.85), SharpitColor.background],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
     }
 
     private var hint: String? {

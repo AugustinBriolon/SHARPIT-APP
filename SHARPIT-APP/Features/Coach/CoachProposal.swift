@@ -350,7 +350,7 @@ struct CoachProposalCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
         .sharpitCardSpecularBorder()
-        .sensoryFeedback(.selection, trigger: confirmingDelete)
+        .onChange(of: confirmingDelete) { _, _ in SharpitHaptics.play(.light) }
     }
 
     /// « Course · 45 min · Seuil · charge 60 » as chips: each figure read on its own.

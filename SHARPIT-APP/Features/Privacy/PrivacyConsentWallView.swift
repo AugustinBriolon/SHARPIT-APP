@@ -62,7 +62,7 @@ struct PrivacyConsentWallView: View {
         .sheet(item: $openDocument) { document in
             LegalDocumentSheet(document: document)
         }
-        .sensoryFeedback(.success, trigger: canSubmit) { _, ready in ready }
+        .onChange(of: canSubmit) { _, ready in if ready { SharpitHaptics.play(.success) } }
         .onAppear { SharpitMotion.run { hasAppeared = true } }
     }
 

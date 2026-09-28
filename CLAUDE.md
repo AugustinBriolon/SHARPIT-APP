@@ -142,8 +142,8 @@ animates (a wiggle on every tile read as unfinished); triathlon is the app's own
 (`triathlon.circles` in the asset catalog), SF Symbols drawing none. Toi uses the design system's
 inputs: `SharpitFormField` (the label above a soft well, a ring while focused — no card),
 `SharpitSegmentedChoice` for the sex, `SharpitRulerPicker` for the height (a tape measure settling
-on each centimetre with a rigid tick — SwiftUI's `sensoryFeedback` bound to the value, a bare UIKit
-generator with no view staying silent on recent iOS — nil until moved) and `SharpitDateField` (the age beside it, the wheel in a
+on each centimetre, firmer on the tens — `SharpitHaptics`, Core Haptics, prepared as the finger
+lands — nil until moved) and `SharpitDateField` (the age beside it, the wheel in a
 short sheet: opened in place it grew the page into a scroll).
 
 **Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
@@ -451,6 +451,9 @@ What makes a surface feel finished, applied everywhere new work lands:
 - **No dead ends.** An empty day offers the next step (sync, another day, link a source); a
   failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server) — an
   expired MFP session asks to reconnect.
+- **Haptics through `SharpitHaptics` only** — Core Haptics. On the athlete's iPhone neither
+  `UIFeedbackGenerator` nor SwiftUI's `sensoryFeedback` played anything in the app, while a Core
+  Haptics transient did; never reach for either.
 - **Animate meaning only.** Figures move between days and a seal arrives once; nothing animates on
   input or on every refresh, and `SharpitMotion` honours Reduce Motion.
 

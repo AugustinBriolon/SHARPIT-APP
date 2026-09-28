@@ -255,7 +255,7 @@ struct ThresholdsView: View {
                 ForEach([25, 50], id: \.self) { length in
                     let isSelected = form.poolLength == "\(length)"
                     Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        SharpitHaptics.play(.light)
                         withAnimation(.snappy(duration: 0.2)) {
                             form.poolLength = "\(length)"
                         }
