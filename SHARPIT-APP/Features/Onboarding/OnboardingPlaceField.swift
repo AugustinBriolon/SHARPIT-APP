@@ -63,7 +63,7 @@ struct OnboardingPlaceField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            OnboardingFieldLabel(title)
+            SharpitFieldLabel(title)
             HStack(spacing: SharpitSpacing.xs) {
                 Image(systemName: "mappin.and.ellipse")
                     .foregroundStyle(SharpitColor.mutedForeground)

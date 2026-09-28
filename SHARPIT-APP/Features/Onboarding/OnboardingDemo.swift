@@ -98,7 +98,7 @@ private struct DemoConsentClient: PrivacyConsentServing {
     }
 }
 
-/// Reasons for a few seconds, then plans four sessions across the coming week.
+/// Writes four sessions across the coming week, one every second, as the server streams them.
 private struct DemoPlanClient: CoachPlanServing {
     func generateWeek(
         days: Int,
@@ -106,19 +106,21 @@ private struct DemoPlanClient: CoachPlanServing {
         focus: String?,
         startDate: Date?,
         token: String,
-        onReasoning: @escaping @Sendable (String) -> Void
+        onDraft: @escaping @Sendable ([V1GeneratedSession]) -> Void
     ) async throws -> V1GeneratedPlan {
-        for _ in 0..<40 {
-            try await Task.sleep(for: .milliseconds(120))
-            onReasoning("…")
-        }
         let day = { (offset: Int) in TrainingDayId.today(now: Calendar.current.date(byAdding: .day, value: offset, to: .now)!) }
-        return V1GeneratedPlan(summary: "Une semaine d'installation : du volume facile, une séance de qualité.", sessions: [
+        let sessions = [
             V1GeneratedSession(date: day(1), type: .run, intensity: "ENDURANCE", title: "Footing en endurance", description: "", durationMin: 45, load: 40),
             V1GeneratedSession(date: day(3), type: .run, intensity: "THRESHOLD", title: "Seuil 3 × 8 min", description: "", durationMin: 55, load: 62),
             V1GeneratedSession(date: day(4), type: .strength, intensity: "MODERATE", title: "Renforcement tronc et hanches", description: "", durationMin: 30, load: 20),
             V1GeneratedSession(date: day(6), type: .run, intensity: "ENDURANCE", title: "Sortie longue", description: "", durationMin: 80, load: 70),
-        ])
+        ]
+        try await Task.sleep(for: .seconds(2))
+        for count in 1...sessions.count {
+            onDraft(Array(sessions.prefix(count)))
+            try await Task.sleep(for: .seconds(1))
+        }
+        return V1GeneratedPlan(summary: "Une semaine d'installation : du volume facile, une séance de qualité.", sessions: sessions)
     }
 
     func adaptPlan(days: Int, focus: String?, token: String, onReasoning: @escaping @Sendable (String) -> Void) async throws -> V1AdaptPlanResult {

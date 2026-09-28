@@ -17,6 +17,8 @@ struct PlanView: View {
     @State private var showingCalendar = false
     @State private var showingMacroPlan = false
     @State private var showingGenerator = false
+    /// Owned here, not by the sheet: closing it mid-generation keeps the week coming.
+    @State private var generation: PlanGenerationStore
     @State private var showingAdapter = false
     @State private var showingGoals = false
 
@@ -32,6 +34,7 @@ struct PlanView: View {
         self.watchPusher = watchPusher ?? (client as? (any PlannedSessionWatchPushing)) ?? PlannedSessionClient()
         self.activityClient = activityClient
         self.tokenProvider = tokenProvider
+        _generation = State(initialValue: PlanGenerationStore(tokenProvider: tokenProvider))
         _store = State(
             initialValue: PlanStore(
                 client: client,
@@ -136,7 +139,7 @@ struct PlanView: View {
                 }
             }
             .sheet(isPresented: $showingGenerator) {
-                PlanGeneratorSheet(tokenProvider: tokenProvider) {
+                PlanGeneratorSheet(store: generation) {
                     Task { await store.loadAroundSelection() }
                 }
             }
@@ -146,6 +149,10 @@ struct PlanView: View {
                 }
             }
             .task { await store.loadAroundSelection() }
+            .onChange(of: generation.isReady) { _, ready in
+                guard ready, !showingGenerator else { return }
+                toastCenter?.show("Ta semaine est prête", symbol: "calendar.badge.checkmark", tone: .success, autoDismissAfter: 4.0)
+            }
             // Every way of changing week — swipe, the strip's "Aujourd'hui", the calendar —
             // ends in `selectedOffset`, so loading follows from that one change.
             .onChange(of: store.selectedOffset) { _, _ in

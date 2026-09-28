@@ -1,13 +1,16 @@
 import Foundation
 
 protocol CoachPlanServing: Sendable {
+    /// Streams the week as the coach writes it: `onDraft` receives the sessions written so far,
+    /// each time the list grows or a session fills in. The model's reasoning is not sent
+    /// (the server hides it), so the drafts are the only sign of progress.
     func generateWeek(
         days: Int,
         goalId: String?,
         focus: String?,
         startDate: Date?,
         token: String,
-        onReasoning: @escaping @Sendable (String) -> Void
+        onDraft: @escaping @Sendable ([V1GeneratedSession]) -> Void
     ) async throws -> V1GeneratedPlan
 
     func adaptPlan(
@@ -38,7 +41,7 @@ actor CoachPlanClient: CoachPlanServing {
         focus: String?,
         startDate: Date? = nil,
         token: String,
-        onReasoning: @escaping @Sendable (String) -> Void
+        onDraft: @escaping @Sendable ([V1GeneratedSession]) -> Void
     ) async throws -> V1GeneratedPlan {
         var payload: [String: Any] = [
             "days": days
@@ -59,7 +62,11 @@ actor CoachPlanClient: CoachPlanServing {
             path: "/api/v1/coach/plan",
             payload: payload,
             token: token,
-            onReasoning: onReasoning
+            onReasoning: { _ in },
+            onPartial: { data in
+                guard let draft = try? JSONDecoder().decode(V1GeneratedPlan.self, from: data) else { return }
+                onDraft(draft.sessions.filter(\.isDrafted))
+            }
         )
     }
 
@@ -106,7 +113,8 @@ actor CoachPlanClient: CoachPlanServing {
         path: String,
         payload: [String: Any],
         token: String,
-        onReasoning: @escaping @Sendable (String) -> Void
+        onReasoning: @escaping @Sendable (String) -> Void,
+        onPartial: (@Sendable (Data) -> Void)? = nil
     ) async throws -> T {
         var request = URLRequest(url: baseURL.appending(path: path))
         request.httpMethod = "POST"
@@ -141,6 +149,11 @@ actor CoachPlanClient: CoachPlanServing {
                     if let delta = event["delta"] as? String {
                         reasoning += delta
                         onReasoning(reasoning)
+                    }
+                case "partial":
+                    if let onPartial, let value = event["value"],
+                       let data = try? JSONSerialization.data(withJSONObject: value) {
+                        onPartial(data)
                     }
                 case "result":
                     if let value = event["value"] {

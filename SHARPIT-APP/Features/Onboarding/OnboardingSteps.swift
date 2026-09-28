@@ -19,11 +19,11 @@ struct OnboardingIdentityStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            OnboardingField("Prénom", placeholder: "Ton prénom", text: $draft.firstName)
+            SharpitFormField("Prénom", placeholder: "Ton prénom", text: $draft.firstName)
                 .textContentType(.givenName)
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                OnboardingFieldLabel("Sexe")
+                SharpitFieldLabel("Sexe")
                 HStack(spacing: SharpitSpacing.xs) {
                     ForEach(AthleteSex.allCases) { sex in
                         OnboardingChoiceChip(title: sex.label, isSelected: draft.sex == sex) {
@@ -79,50 +79,6 @@ struct OnboardingIdentityStep: View {
 
 // MARK: - Shared controls
 
-/// The small uppercase label above a field or a row of choices.
-struct OnboardingFieldLabel: View {
-    let title: String
-
-    init(_ title: String) { self.title = title }
-
-    var body: some View {
-        Text(title)
-            .font(SharpitTypography.label)
-            .tracking(SharpitTypography.labelTracking)
-            .textCase(.uppercase)
-            .foregroundStyle(SharpitColor.mutedForeground)
-    }
-}
-
-/// A labelled text field on a panel.
-struct OnboardingField: View {
-    let title: String
-    let placeholder: String
-    @Binding var text: String
-    var keyboard: UIKeyboardType = .default
-
-    init(_ title: String, placeholder: String, text: Binding<String>, keyboard: UIKeyboardType = .default) {
-        self.title = title
-        self.placeholder = placeholder
-        _text = text
-        self.keyboard = keyboard
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            OnboardingFieldLabel(title)
-            TextField(placeholder, text: $text)
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
-                .keyboardType(keyboard)
-                .submitLabel(.done)
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-    }
-}
-
 /// One choice of a few, its symbol (if any) filling and bouncing when it is picked — the bounce
 /// is played by the tap, so the choice left behind never animates.
 struct OnboardingChoiceChip: View {
@@ -145,7 +101,7 @@ struct OnboardingChoiceChip: View {
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
-                        .symbolEffect(.bounce.up.byLayer, value: taps)
+                        .symbolEffect(.wiggle.byLayer, value: taps)
                         .frame(width: 22)
                 }
                 Text(title)
@@ -218,7 +174,7 @@ struct OnboardingSportTile: View {
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 30, weight: .medium))
                         .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                        .symbolEffect(.bounce.up.byLayer, value: taps)
+                        .symbolEffect(.wiggle.byLayer, value: taps)
                         .frame(height: 36, alignment: .leading)
                     Spacer(minLength: 0)
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -332,7 +288,7 @@ private struct OnboardingEquipmentRow: View {
                 Image(systemName: item.symbolName)
                     .font(.system(size: 17, weight: .medium))
                     .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
-                    .symbolEffect(.bounce, value: isOwned)
+                    .symbolEffect(.wiggle.byLayer, value: isOwned)
                     .frame(width: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.label)
@@ -479,7 +435,7 @@ struct OnboardingGoalStep: View {
 
             switch draft.kind {
             case .race:
-                OnboardingField("Nom de l'épreuve", placeholder: "Marathon de Paris, 70.3 Nice…", text: $draft.raceTitle)
+                SharpitFormField("Nom de l'épreuve", placeholder: "Marathon de Paris, 70.3 Nice…", text: $draft.raceTitle)
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                     DatePicker("Date", selection: $draft.raceDate, in: Date()..., displayedComponents: .date)
                         .font(SharpitTypography.bodyEmphasis)
@@ -501,10 +457,10 @@ struct OnboardingGoalStep: View {
                 .sharpitSurface(.panel)
                 OnboardingPlaceField(title: "Lieu (optionnel)", text: $draft.raceLocation)
             case .metric:
-                OnboardingField("Ce que tu veux atteindre", placeholder: "FTP, VMA, allure 10 km…", text: $draft.metricTitle)
+                SharpitFormField("Ce que tu veux atteindre", placeholder: "FTP, VMA, allure 10 km…", text: $draft.metricTitle)
                 HStack(spacing: SharpitSpacing.sm) {
-                    OnboardingField("Valeur", placeholder: "280", text: $draft.metricTargetText, keyboard: .decimalPad)
-                    OnboardingField("Unité", placeholder: "W, km/h…", text: $draft.metricUnit)
+                    SharpitFormField("Valeur", placeholder: "280", text: $draft.metricTargetText, keyboard: .decimalPad)
+                    SharpitFormField("Unité", placeholder: "W, km/h…", text: $draft.metricUnit)
                 }
             }
         }
@@ -522,7 +478,7 @@ struct OnboardingGoalStep: View {
                 Image(systemName: symbol)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                    .symbolEffect(.bounce, value: kindTaps[kind, default: 0])
+                    .symbolEffect(.wiggle.byLayer, value: kindTaps[kind, default: 0])
                 Text(title)
                     .font(SharpitTypography.cardTitle)
                     .foregroundStyle(SharpitColor.foreground)
@@ -573,7 +529,7 @@ struct OnboardingInjuriesStep: View {
             }
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                OnboardingFieldLabel(store.injuries.isEmpty ? "Où as-tu mal ?" : "Une autre zone ?")
+                SharpitFieldLabel(store.injuries.isEmpty ? "Où as-tu mal ?" : "Une autre zone ?")
                 LazyVGrid(
                     columns: Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3),
                     spacing: SharpitSpacing.xs
@@ -707,7 +663,7 @@ private struct OnboardingInjurySheet: View {
 
     private func question(_ title: String, @ViewBuilder choices: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            OnboardingFieldLabel(title)
+            SharpitFieldLabel(title)
             HStack(spacing: SharpitSpacing.xs) { choices() }
         }
     }
@@ -816,17 +772,7 @@ struct OnboardingFirstWeekStep: View {
     }
 
     private var generating: some View {
-        VStack(spacing: SharpitSpacing.md) {
-            SharpitTickGauge(score: CGFloat(store.firstWeekProgress * 100))
-                .frame(width: 180, height: 180 / SharpitTickGaugeGeometry.aspectRatio)
-                .animation(SharpitMotion.gaugeFill, value: store.firstWeekProgress)
-            Text("Le coach place tes séances sur tes jours, vers ton objectif.")
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, SharpitSpacing.lg)
+        GeneratedWeekView(sessions: store.firstWeekDrafts, isWriting: true)
     }
 
     private func ready(summary: String, sessions: [V1GeneratedSession]) -> some View {
@@ -835,13 +781,9 @@ struct OnboardingFirstWeekStep: View {
                 Text(summary)
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(3)
             }
-            ForEach(Array(sessions.enumerated()), id: \.element.id) { index, session in
-                OnboardingSessionRow(session: session)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: index)), value: sessions.count)
-            }
+            GeneratedWeekView(sessions: sessions)
         }
     }
 
@@ -864,44 +806,6 @@ struct OnboardingFirstWeekStep: View {
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
-    }
-}
-
-private struct OnboardingSessionRow: View {
-    let session: V1GeneratedSession
-
-    private var day: String {
-        guard let date = TrainingDayId.date(session.date) else { return session.date }
-        return date.sharpitFormatted(.dateTime.weekday(.wide).day()).capitalized
-    }
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            ZStack {
-                Circle().fill(SharpitSportTone.label(for: session.type).opacity(0.14)).frame(width: 38, height: 38)
-                Image(systemName: session.type.symbolName)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(SharpitSportTone.label(for: session.type))
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(day)
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                Text(session.title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(2)
-            }
-            Spacer(minLength: 0)
-            Text("\(Int(session.durationMin)) min")
-                .font(SharpitTypography.instrument)
-                .foregroundStyle(SharpitColor.foreground)
-        }
-        .padding(SharpitSpacing.sm + 2)
-        .sharpitSurface(.panel)
-        .accessibilityElement(children: .combine)
     }
 }
 

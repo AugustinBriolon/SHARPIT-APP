@@ -39,8 +39,8 @@ final class OnboardingStore {
     private(set) var isBusy = false
     private(set) var error: String?
     private(set) var firstWeek: FirstWeek = .idle
-    /// How far the coach has got, 0…1, from the reasoning it streams — never a fake timer.
-    private(set) var firstWeekProgress: Double = 0
+    /// The sessions the coach has written so far, shown as they arrive.
+    private(set) var firstWeekDrafts: [V1GeneratedSession] = []
 
     var identity = OnboardingIdentityDraft()
     /// Catalog order, as the web stores it.
@@ -220,13 +220,13 @@ final class OnboardingStore {
     func advance(from origin: OnboardingStep? = nil) async {
         guard !isBusy, canAdvance, origin == nil || origin == step else { return }
         switch step {
-        case .identity: await leaveIdentity()
-        case .sports: await leaveSports()
-        case .equipment: await leaveEquipment()
-        case .week: await leaveWeek()
-        case .goal: await submitGoal()
-        case .injuries: await leaveInjuries()
-        case .privacy: await leavePrivacy()
+        case .identity: leaveIdentity()
+        case .sports: leaveSports()
+        case .equipment: leaveEquipment()
+        case .week: leaveWeek()
+        case .goal: submitGoal()
+        case .injuries: leaveInjuries()
+        case .privacy: leavePrivacy()
         case .sources: leaveSources()
         case .firstWeek: await addFirstWeekAndFinish()
         }
@@ -237,12 +237,12 @@ final class OnboardingStore {
     func skip(from origin: OnboardingStep? = nil) async {
         guard !isBusy, step.allowsSkip, origin == nil || origin == step else { return }
         switch step {
-        case .equipment: await leaveEquipment()
-        case .week: await leaveWeek()
+        case .equipment: leaveEquipment()
+        case .week: leaveWeek()
         case .goal: moveNext()
         case .injuries:
             injuries = []
-            await leaveInjuries()
+            leaveInjuries()
         default: break
         }
     }
@@ -259,73 +259,64 @@ final class OnboardingStore {
         move(to: next)
     }
 
-    private func leaveIdentity() async {
+    private func leaveIdentity() {
         let draft = identity
-        await perform(failure: "Impossible d'enregistrer ton profil. Réessaie.") { token in
+        enqueue(failure: "Impossible d'enregistrer ton profil.") { token in
             try await self.services.saveFirstName(draft.trimmedFirstName)
             let patch = draft.profilePatch
             if !patch.fields.isEmpty {
                 _ = try await self.services.profile.patchAthleteProfile(patch, token: token)
             }
-        } onSuccess: {
-            self.moveNext()
         }
+        moveNext()
     }
 
-    private func leaveSports() async {
+    private func leaveSports() {
         var patch = AthleteProfilePatch()
         patch.setPracticedSports(V1AthletePracticedSports(sports: sports))
-        if await save(patch, failure: "Impossible d'enregistrer tes sports. Réessaie.") {
-            moveNext()
-        }
+        enqueue(patch, failure: "Impossible d'enregistrer tes sports.")
+        moveNext()
     }
 
-    private func leaveEquipment() async {
-        guard equipmentIsDirty else {
-            moveNext()
-            return
-        }
-        var patch = AthleteProfilePatch()
-        patch.setEquipment(V1AthleteEquipment(
-            strengthVenue: strengthVenue.rawValue,
-            owned: ownedEquipment.sorted()
-        ))
-        if await save(patch, failure: "Impossible d'enregistrer ton matériel. Réessaie.") {
+    private func leaveEquipment() {
+        if equipmentIsDirty {
+            var patch = AthleteProfilePatch()
+            patch.setEquipment(V1AthleteEquipment(
+                strengthVenue: strengthVenue.rawValue,
+                owned: ownedEquipment.sorted()
+            ))
+            enqueue(patch, failure: "Impossible d'enregistrer ton matériel.")
             equipmentIsDirty = false
-            moveNext()
         }
+        moveNext()
     }
 
-    private func leaveWeek() async {
+    private func leaveWeek() {
         var patch = AthleteProfilePatch()
         patch.setTrainingAvailability(availability)
-        if await save(patch, failure: "Impossible d'enregistrer ta semaine. Réessaie.") {
-            moveNext()
-        }
+        enqueue(patch, failure: "Impossible d'enregistrer ta semaine.")
+        moveNext()
     }
 
-    private func submitGoal() async {
+    private func submitGoal() {
         guard let input = intention.goalInput else { return }
-        await perform(failure: "Impossible de créer l'objectif. Réessaie.") { token in
+        enqueue(failure: "Impossible de créer l'objectif.") { token in
             let goal = try await self.services.goals.createGoal(input, token: token)
             self.createdGoalId = goal.id
-        } onSuccess: {
-            self.moveNext()
         }
+        moveNext()
     }
 
-    private func leaveInjuries() async {
-        guard !path.contains(.privacy) else {
-            injuriesAwaitingConsent = injuries
-            moveNext()
-            return
-        }
+    private func leaveInjuries() {
         let declared = injuries
-        await perform(failure: "Impossible d'enregistrer tes blessures. Réessaie.") { token in
-            try await self.write(declared, token: token)
-        } onSuccess: {
-            self.moveNext()
+        if path.contains(.privacy) {
+            injuriesAwaitingConsent = declared
+        } else if !declared.isEmpty {
+            enqueue(failure: "Impossible d'enregistrer tes blessures.") { token in
+                try await self.write(declared, token: token)
+            }
         }
+        moveNext()
     }
 
     private func write(_ declared: [OnboardingInjuryDraft], token: String) async throws {
@@ -334,26 +325,77 @@ final class OnboardingStore {
         }
     }
 
-    private func leavePrivacy() async {
+    /// The consents go first in the queue, then the injuries they allow; the first week is
+    /// generated once both are in (`startFirstWeek` waits for the queue).
+    private func leavePrivacy() {
         let waiting = injuriesAwaitingConsent
-        await perform(failure: "Enregistrement impossible. Réessaie.") { token in
-            _ = try await self.services.consents.updateConsents(
-                .wall(ai: self.consents.ai, unofficialProviders: self.consents.unofficialProviders),
-                token: token
-            )
+        let update = PrivacyConsentUpdate.wall(ai: consents.ai, unofficialProviders: consents.unofficialProviders)
+        enqueue(failure: "Impossible d'enregistrer tes choix de confidentialité.") { token in
+            _ = try await self.services.consents.updateConsents(update, token: token)
             try await self.write(waiting, token: token)
-        } onSuccess: {
-            self.injuriesAwaitingConsent = []
-            self.hasAIConsent = self.consents.ai
-            // Generated while the athlete links their sources, so it is waiting at the end.
-            self.startFirstWeek()
-            self.moveNext()
         }
+        injuriesAwaitingConsent = []
+        hasAIConsent = consents.ai
+        // Generated while the athlete links their sources, so it is waiting at the end.
+        startFirstWeek()
+        moveNext()
     }
 
     private func leaveSources() {
         startFirstWeek()
         moveNext()
+    }
+
+    // MARK: - Background writes
+
+    /// A write a step queued, kept to be tried again when it failed.
+    private struct QueuedWrite {
+        let failure: String
+        let work: (String) async throws -> Void
+    }
+
+    /// Writes run behind the athlete, in the order the steps were left: a step moves on at
+    /// once instead of waiting on the network.
+    private var writeQueue: Task<Void, Never>?
+    private var failedWrites: [QueuedWrite] = []
+
+    private func enqueue(_ patch: AthleteProfilePatch, failure: String) {
+        enqueue(failure: failure) { token in
+            _ = try await self.services.profile.patchAthleteProfile(patch, token: token)
+        }
+    }
+
+    private func enqueue(failure: String, _ work: @escaping (String) async throws -> Void) {
+        let write = QueuedWrite(failure: failure, work: work)
+        let previous = writeQueue
+        writeQueue = Task { [weak self] in
+            await previous?.value
+            await self?.run(write)
+        }
+    }
+
+    private func run(_ write: QueuedWrite) async {
+        do {
+            try await write.work(try await tokenProvider())
+        } catch {
+            failedWrites.append(write)
+            self.error = message(for: error, failure: "\(write.failure) On réessaie avant de continuer.")
+        }
+    }
+
+    /// Waits for every queued write and tries the failed ones once more — before anything
+    /// depends on them. True when everything the athlete answered is saved.
+    @discardableResult
+    func flushWrites() async -> Bool {
+        await writeQueue?.value
+        guard !failedWrites.isEmpty else { return true }
+        let retrying = failedWrites
+        failedWrites = []
+        for write in retrying {
+            await run(write)
+        }
+        if failedWrites.isEmpty { error = nil }
+        return failedWrites.isEmpty
     }
 
     // MARK: - First week
@@ -366,10 +408,15 @@ final class OnboardingStore {
             return
         }
         firstWeek = .generating
-        firstWeekProgress = 0
-        let goalId = createdGoalId
+        firstWeekDrafts = []
         generation = Task { [weak self] in
             guard let self else { return }
+            // The consents, the goal and the injuries must be in before the coach reads them.
+            guard await self.flushWrites() else {
+                self.firstWeek = .failed(self.error ?? "Tes réponses ne sont pas encore enregistrées. Réessaie.")
+                return
+            }
+            let goalId = self.createdGoalId
             do {
                 let token = try await self.tokenProvider()
                 let plan = try await self.services.plan.generateWeek(
@@ -378,11 +425,10 @@ final class OnboardingStore {
                     focus: nil,
                     startDate: Calendar.current.date(byAdding: .day, value: 1, to: .now),
                     token: token
-                ) { [weak self] _ in
-                    Task { @MainActor in self?.noteReasoning() }
+                ) { [weak self] drafts in
+                    Task { @MainActor in self?.noteDrafts(drafts) }
                 }
                 guard !Task.isCancelled else { return }
-                self.firstWeekProgress = 1
                 self.firstWeek = plan.sessions.isEmpty
                     ? .failed("Le coach n'a proposé aucune séance. Tu pourras lui demander ta semaine depuis le Plan.")
                     : .ready(summary: plan.summary, sessions: plan.sessions)
@@ -398,9 +444,9 @@ final class OnboardingStore {
         return false
     }
 
-    /// Each reasoning chunk moves the dial a little closer to full, never reaching it.
-    private func noteReasoning() {
-        firstWeekProgress += (0.92 - firstWeekProgress) * 0.04
+    private func noteDrafts(_ drafts: [V1GeneratedSession]) {
+        guard firstWeek == .generating else { return }
+        firstWeekDrafts = drafts
     }
 
     /// Puts the week in the plan, then finishes. A failed insert stays on the step, the week
@@ -423,6 +469,10 @@ final class OnboardingStore {
     }
 
     private func finish() async {
+        isBusy = true
+        let saved = await flushWrites()
+        isBusy = false
+        guard saved else { return }
         await perform(failure: "Impossible de terminer l'onboarding. Réessaie.") { token in
             try await self.services.onboarding.completeOnboarding(token: token)
         } onSuccess: {
@@ -440,16 +490,6 @@ final class OnboardingStore {
         stepMemory?.step = target
     }
 
-    private func save(_ patch: AthleteProfilePatch, failure: String) async -> Bool {
-        var saved = false
-        await perform(failure: failure) { token in
-            _ = try await self.services.profile.patchAthleteProfile(patch, token: token)
-        } onSuccess: {
-            saved = true
-        }
-        return saved
-    }
-
     private func perform(
         failure: String,
         _ work: (String) async throws -> Void,
@@ -462,12 +502,16 @@ final class OnboardingStore {
             let token = try await tokenProvider()
             try await work(token)
             onSuccess()
-        } catch SharpitAPIError.unauthorized {
-            self.error = "Session expirée. Reconnecte-toi."
-        } catch SharpitAPIError.transport {
-            self.error = "Pas de connexion internet. Vérifie ton réseau, puis réessaie."
         } catch {
-            self.error = failure
+            self.error = message(for: error, failure: failure)
+        }
+    }
+
+    private func message(for error: Error, failure: String) -> String {
+        switch error as? SharpitAPIError {
+        case .unauthorized: "Session expirée. Reconnecte-toi."
+        case .transport: "Pas de connexion internet. Vérifie ton réseau, puis réessaie."
+        default: failure
         }
     }
 }

@@ -68,6 +68,10 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         raw = nil
     }
 
+    /// Whether a session streamed mid-generation is far enough along to show: its day and its
+    /// title are written.
+    var isDrafted: Bool { !date.isEmpty && !title.isEmpty && title != "Séance" }
+
     /// What `/api/v1/coach/plan/insert` receives for this session.
     var insertBody: JSONValue {
         if let raw { return raw }

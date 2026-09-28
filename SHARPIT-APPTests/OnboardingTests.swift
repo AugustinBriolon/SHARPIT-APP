@@ -73,11 +73,11 @@ private final class RecordingPlanClient: CoachPlanServing {
         focus _: String?,
         startDate _: Date?,
         token _: String,
-        onReasoning: @escaping @Sendable (String) -> Void
+        onDraft: @escaping @Sendable ([V1GeneratedSession]) -> Void
     ) async throws -> V1GeneratedPlan {
         requestedGoalIds.append(goalId)
         if fails { throw SharpitAPIError.server }
-        onReasoning("…")
+        onDraft([])
         return V1GeneratedPlan(summary: "Installation", sessions: [
             V1GeneratedSession(date: "2026-09-28", type: .run, intensity: "ENDURANCE", title: "Footing", description: "", durationMin: 45, load: 40),
             V1GeneratedSession(date: "2026-09-30", type: .run, intensity: "THRESHOLD", title: "Seuil", description: "", durationMin: 55, load: 62),
@@ -355,6 +355,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
     #expect(store.step == .sports)
     #expect(!store.canAdvance)
+    await store.flushWrites()
     #expect(await profile.patches.isEmpty)
 }
 
@@ -371,6 +372,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.advance()
 
     #expect(store.step == .equipment)
+    await store.flushWrites()
     let patches = await profile.patches
     #expect(patches.first?.fields["practicedSports"] == .object([
         "version": .number(1),
@@ -379,7 +381,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 }
 
 @MainActor
-@Test func aFailedSaveKeepsTheAthleteOnTheStep() async {
+@Test func aFailedSaveIsShownAndHoldsWhatDependsOnIt() async {
     let store = makeStore(profile: RecordingProfileClient(failsPatch: true))
     await store.load()
     store.identity.firstName = "Zoé"
@@ -388,8 +390,9 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     store.toggleSport("bike")
     await store.advance()
 
-    #expect(store.step == .sports)
-    #expect(store.error == "Impossible d'enregistrer tes sports. Réessaie.")
+    #expect(store.step == .equipment)
+    #expect(await store.flushWrites() == false)
+    #expect(store.error == "Impossible d'enregistrer tes sports. On réessaie avant de continuer.")
     #expect(!store.isBusy)
 }
 
@@ -402,6 +405,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.skip()
 
     #expect(store.step == .week)
+    await store.flushWrites()
     #expect(await profile.patches.count == 1)
 }
 
@@ -418,6 +422,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.skip(from: .equipment)
 
     #expect(store.step == .week)
+    await store.flushWrites()
     #expect(await profile.patches.count == 1)
 }
 
@@ -431,6 +436,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.skip()
 
     #expect(store.step == .goal)
+    await store.flushWrites()
     #expect(await profile.patches.last?.fields.keys.contains("trainingAvailability") == true)
 }
 
@@ -463,6 +469,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     store.intention.raceTitle = "Triathlon de Nice"
     await store.advance()
     #expect(store.step == .injuries)
+    await store.flushWrites()
     #expect(await goals.created.map(\.title) == ["Triathlon de Nice"])
 
     var knee = OnboardingInjuryDraft(bodyPart: "Genou")
@@ -472,6 +479,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     store.saveInjury(knee)
     await store.advance()
     #expect(store.step == .privacy)
+    await store.flushWrites()
     #expect(await notes.notes.isEmpty)
 
     await store.advance()
@@ -480,7 +488,9 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     store.consents.acceptAll()
     await store.advance()
     #expect(store.step == .sources)
+    await store.flushWrites()
     #expect(await consents.updates == [.wall(ai: true, unofficialProviders: true)])
+    await store.flushWrites()
     #expect(await notes.notes.map(\.title) == ["Douleur genou droit"])
 
     guard case .ready(_, let week) = await settledFirstWeek(store) else {
@@ -607,7 +617,9 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.advance()
 
     #expect(store.step == .sports)
+    await store.flushWrites()
     #expect(await names.names == ["Zoé"])
+    await store.flushWrites()
     let patch = await profile.patches.first
     #expect(patch?.fields["sex"] == .string("female"))
     #expect(patch?.fields["heightCm"] == .number(168))
@@ -656,6 +668,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.advance()
 
     #expect(store.step == .sources)
+    await store.flushWrites()
     let written = await notes.notes
     #expect(written.map(\.title) == ["Blessure cheville gauche"])
     #expect(written.first?.category == "INJURY")
