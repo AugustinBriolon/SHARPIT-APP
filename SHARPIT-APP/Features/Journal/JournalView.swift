@@ -29,7 +29,12 @@ struct JournalView: View {
                 client: client,
                 tokenProvider: tokenProvider,
                 modelContext: modelContext,
-                journalDays: { try await dataDaysClient.dataDays(domain: .journal, from: $0, to: $1, token: $2) }
+                journalDays: { try await dataDaysClient.dataDays(domain: .journal, from: $0, to: $1, token: $2) },
+                checkinMood: { dayId, token in
+                    try await wellness.wellnessCheckin(trainingDayId: dayId, token: token).entry
+                        .flatMap { WellnessScore(rawValue: $0.mood) }
+                        .map { WellnessDimension.mood.label(for: $0) }
+                }
             )
         )
     }

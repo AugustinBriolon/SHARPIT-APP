@@ -29,6 +29,10 @@ final class JournalStore {
     private(set) var completedDayIds: Set<String> = []
     /// Which days hold an answer, read across the picker's history; nil without a data-days reader.
     private let answeredDays: DataDaysMarker?
+    /// The mood of the day's morning check-in, where the journal's mood actually lives: the
+    /// journal row only echoes it when the check-in was made from the journal.
+    private(set) var checkinMoodLabel: String?
+    private let fetchCheckinMood: (@Sendable (_ trainingDayId: String, _ token: String) async throws -> String?)?
 
     private let client: any JournalServing
     private let tokenProvider: () async throws -> String
@@ -46,8 +50,10 @@ final class JournalStore {
         trainingDayId: String = TrainingDayId.today(),
         saveDelay: Duration = .milliseconds(700),
         modelContext: ModelContext? = nil,
-        journalDays: (@Sendable (_ from: String, _ to: String, _ token: String) async throws -> [String])? = nil
+        journalDays: (@Sendable (_ from: String, _ to: String, _ token: String) async throws -> [String])? = nil,
+        checkinMood: (@Sendable (_ trainingDayId: String, _ token: String) async throws -> String?)? = nil
     ) {
+        self.fetchCheckinMood = checkinMood
         self.answeredDays = journalDays.map { DataDaysMarker(tokenProvider: tokenProvider, fetch: $0) }
         self.client = client
         self.tokenProvider = tokenProvider
@@ -80,6 +86,7 @@ final class JournalStore {
             phase = .ready
             // After the preferences, because they decide whether it is worth asking.
             await loadChecklist(token: token)
+            await loadCheckinMood(token: token)
             persistCache()
         } catch is CancellationError {
         } catch {
@@ -143,6 +150,20 @@ final class JournalStore {
         checklist = signals.checklist
     }
 
+    /// Reads the morning check-in's mood when the journal row carries none. A failed read
+    /// leaves the row as it was: the check-in is shown, never required.
+    private func loadCheckinMood(token: String) async {
+        guard entry.moodLabel == nil, let fetchCheckinMood else { return }
+        let requested = entry.trainingDayId
+        let label = try? await fetchCheckinMood(requested, token)
+        guard requested == entry.trainingDayId else { return }
+        checkinMoodLabel = label ?? nil
+        updateCompletionState()
+    }
+
+    /// Something was noted on the open day — on the journal row or in the morning check-in.
+    private var openDayHasAnswer: Bool { entry.hasAnyAnswer || checkinMoodLabel != nil }
+
     /// The trackables the athlete turned on, in catalogue order, then their own items.
     var visibleTrackables: [JournalTrackable] {
         JournalCatalogue.all.filter { prefs.isEnabled($0.id) }
@@ -184,7 +205,7 @@ final class JournalStore {
     }
 
     var moodLabel: String? {
-        entry.moodLabel
+        entry.moodLabel ?? checkinMoodLabel
     }
 
     var trainingDayId: String { entry.trainingDayId }
@@ -211,7 +232,7 @@ final class JournalStore {
     /// rather than claiming it empty.
     func hasAnswer(on date: Date) -> Bool? {
         let id = TrainingDayId.today(now: date)
-        if id == entry.trainingDayId, phase == .ready { return entry.hasAnyAnswer }
+        if id == entry.trainingDayId, phase == .ready { return openDayHasAnswer }
         if completedDayIds.contains(id) { return true }
         return answeredDays?[id]
     }
@@ -222,8 +243,8 @@ final class JournalStore {
     }
 
     private func updateCompletionState() {
-        answeredDays?.note(entry.trainingDayId, hasData: entry.hasAnyAnswer)
-        if entry.hasAnyAnswer {
+        answeredDays?.note(entry.trainingDayId, hasData: openDayHasAnswer)
+        if openDayHasAnswer {
             completedDayIds.insert(entry.trainingDayId)
         } else {
             completedDayIds.remove(entry.trainingDayId)
@@ -236,6 +257,7 @@ final class JournalStore {
         selectedDate = date
         let newDayId = TrainingDayId.today(now: date)
         entry = V1DayJournalEntry(trainingDayId: newDayId)
+        checkinMoodLabel = nil
         checklist = []
         saveFailure = nil
 
@@ -249,6 +271,7 @@ final class JournalStore {
             entry = try await client.dayJournal(trainingDayId: newDayId, token: token)
             phase = .ready
             await loadChecklist(token: token)
+            await loadCheckinMood(token: token)
             persistCache()
             updateCompletionState()
         } catch is CancellationError {

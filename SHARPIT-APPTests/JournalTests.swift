@@ -835,3 +835,35 @@ private struct FailingJournalClient: JournalServing {
     let longAgo = calendar.date(byAdding: .year, value: -5, to: today)!
     #expect(store.hasAnswer(on: longAgo) == nil)
 }
+
+@MainActor
+@Test func theMoodComesFromTheMorningCheckinWhenTheJournalCarriesNone() async throws {
+    // The mood lives on the check-in; the journal row only echoes it when answered from here.
+    let store = JournalStore(
+        client: StubJournalClient(entry: V1DayJournalEntry(trainingDayId: "2026-09-21")),
+        tokenProvider: { "token" },
+        trainingDayId: "2026-09-21",
+        checkinMood: { _, _ in "Bien" }
+    )
+
+    await store.load()
+
+    #expect(store.moodLabel == "Bien")
+    // A day with only a check-in is a day with something noted.
+    #expect(store.hasAnswer(on: TrainingDayId.date("2026-09-21")!) == true)
+}
+
+@MainActor
+@Test func theJournalsOwnMoodWinsOverTheCheckin() async throws {
+    let entry = V1DayJournalEntry(trainingDayId: "2026-09-21", moodLabel: "Au top")
+    let store = JournalStore(
+        client: StubJournalClient(entry: entry),
+        tokenProvider: { "token" },
+        trainingDayId: "2026-09-21",
+        checkinMood: { _, _ in "Bien" }
+    )
+
+    await store.load()
+
+    #expect(store.moodLabel == "Au top")
+}
