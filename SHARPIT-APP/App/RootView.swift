@@ -237,6 +237,8 @@ struct RootView: View {
             router.openActivity(id: id)
         case .plannedSession(let id):
             router.openPlannedSession(id: id)
+        case .goals:
+            router.open(.goals)
         case nil:
             break
         }

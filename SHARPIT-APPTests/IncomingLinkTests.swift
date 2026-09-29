@@ -44,6 +44,7 @@ struct IncomingLinkTests {
         #expect(link("https://sharpit.app/me") == .tab(.body))
         #expect(link("https://sharpit.app/settings") == .settings(nil))
         #expect(link("https://sharpit.app/settings/sources") == .settings(.sources))
+        #expect(link("https://sharpit.app/goals") == .goals)
         #expect(link("https://sharpit.app/unknown") == nil)
     }
 }

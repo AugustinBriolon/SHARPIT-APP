@@ -22,7 +22,6 @@ struct PlanView: View {
     @State private var showingAdapter = false
     /// Plan's, not the sheet's: closing it mid-analysis keeps the proposal coming.
     @State private var adjustment: PlanAdjustmentStore
-    @State private var showingGoals = false
     /// Plan's, not the sheet's: reopening Objectifs shows the goals at once.
     @State private var goals: GoalStore
 
@@ -81,7 +80,7 @@ struct PlanView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     PlanActionsMenu(
-                        onOpenGoals: { showingGoals = true },
+                        onOpenGoals: { router.isShowingGoals = true },
                         onOpenMacroPlan: { showingMacroPlan = true },
                         onOpenGenerator: { router.isShowingPlanGenerator = true },
                         onOpenWeeklyReview: { router.isShowingWeeklyReview = true },
@@ -118,12 +117,12 @@ struct PlanView: View {
                 PlanCalendarSheet(store: store)
             }
             // Goals moved here from Moi: they are what the plan is built toward.
-            .sheet(isPresented: $showingGoals) {
+            .sheet(isPresented: Bindable(router).isShowingGoals) {
                 NavigationStack {
                     GoalsView(store: goals)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
-                                Button("OK") { showingGoals = false }
+                                Button("OK") { router.isShowingGoals = false }
                             }
                         }
                 }

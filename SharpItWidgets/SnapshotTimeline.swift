@@ -11,6 +11,12 @@ struct SnapshotEntry: TimelineEntry {
     var nutrition: WidgetSnapshot.Nutrition? { snapshot?.nutrition(on: date) }
     /// The latest weigh-in, whatever its day — a weight holds until the next one.
     var weight: WidgetSnapshot.Weight? { snapshot?.weight }
+    /// Résumé's regularity strip, today's only.
+    var regularity: WidgetSnapshot.Regularity? { snapshot?.regularity(on: date) }
+    /// The last two weeks recorded, read for whatever week `date` falls in.
+    var training: WidgetSnapshot.Training? { snapshot?.training }
+    /// The next race while it is ahead.
+    var goal: WidgetSnapshot.Goal? { snapshot?.goal(on: date) }
 }
 
 /// Reads the snapshot the app wrote. The app reloads the timelines when it writes a new one;
@@ -60,6 +66,32 @@ extension WidgetSnapshot {
                 Macro(kind: .fat, grams: 48, goalGrams: 75),
             ]
         ),
-        weight: Weight(kilograms: 72.4, measuredAt: .now, previousKilograms: 73.0, changeWindowDays: 30, targetKilograms: 70)
+        weight: Weight(kilograms: 72.4, measuredAt: .now, previousKilograms: 73.0, changeWindowDays: 30, targetKilograms: 70),
+        regularity: Regularity(
+            trainingDayId: dayId(.now),
+            days: (-6...1).map { offset in
+                let day = Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now
+                return RegularityDay(
+                    date: dayId(day),
+                    weekdayLabel: day.formatted(.dateTime.weekday(.narrow).locale(Locale(identifier: "fr_FR"))),
+                    dayOfMonth: Calendar.current.component(.day, from: day),
+                    hasActivity: [-6, -5, -3, -1, 0].contains(offset),
+                    isToday: offset == 0,
+                    isFuture: offset > 0
+                )
+            },
+            weekSessionCount: 4
+        ),
+        training: Training(sessions: [(-9, 8_200.0, 2_700.0), (-7, 12_400, 4_100), (-3, 10_000, 3_300), (-2, 6_100, 2_100), (0, 14_300, 4_500)]
+            .map { offset, meters, seconds in
+                TrainedSession(
+                    dayId: dayId(Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now),
+                    sport: .run, distanceMeters: meters, durationSeconds: seconds
+                )
+            }),
+        goal: Goal(
+            id: "g1", title: "Ironman 70.3 Nice", date: Calendar.current.date(byAdding: .day, value: 42, to: .now) ?? .now,
+            location: "Nice", format: "70.3", targetPerformance: "5 h 15"
+        )
     )
 }

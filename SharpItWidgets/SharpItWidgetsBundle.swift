@@ -14,5 +14,10 @@ struct SharpItWidgetsBundle: WidgetBundle {
         NutritionWidget()
         SleepWidget()
         WeightWidget()
+        VolumeWidget()
+        RegularityWidget()
+        NextGoalWidget()
+        CoachWidget()
+        CoachControl()
     }
 }

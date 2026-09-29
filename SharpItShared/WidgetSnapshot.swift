@@ -12,11 +12,24 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     var day: Day?
     var nutrition: Nutrition?
     var weight: Weight?
+    var regularity: Regularity?
+    var training: Training?
+    var goal: Goal?
 
-    init(day: Day? = nil, nutrition: Nutrition? = nil, weight: Weight? = nil) {
+    init(
+        day: Day? = nil,
+        nutrition: Nutrition? = nil,
+        weight: Weight? = nil,
+        regularity: Regularity? = nil,
+        training: Training? = nil,
+        goal: Goal? = nil
+    ) {
         self.day = day
         self.nutrition = nutrition
         self.weight = weight
+        self.regularity = regularity
+        self.training = training
+        self.goal = goal
     }
 
     // MARK: Day
@@ -110,6 +123,56 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         var targetKilograms: Double?
     }
 
+    // MARK: Regularity
+
+    /// Résumé's regularity strip: the days around today and the week's session count, as the
+    /// server counts them.
+    nonisolated struct Regularity: Codable, Equatable, Sendable {
+        var trainingDayId: String
+        var days: [RegularityDay]
+        var weekSessionCount: Int
+    }
+
+    nonisolated struct RegularityDay: Codable, Equatable, Sendable, Identifiable {
+        /// `yyyy-MM-dd`.
+        var date: String
+        var weekdayLabel: String
+        var dayOfMonth: Int
+        var hasActivity: Bool
+        var isToday: Bool
+        var isFuture: Bool
+
+        var id: String { date }
+    }
+
+    // MARK: Training
+
+    /// What was recorded over the last two weeks, kept small: the volume widget sums it for
+    /// the sport it was set to, and compares with last week at the same point.
+    nonisolated struct Training: Codable, Equatable, Sendable {
+        var sessions: [TrainedSession]
+    }
+
+    nonisolated struct TrainedSession: Codable, Equatable, Sendable {
+        /// `yyyy-MM-dd`, the athlete's day.
+        var dayId: String
+        var sport: V1ActivityType
+        var distanceMeters: Double?
+        var durationSeconds: Double?
+    }
+
+    // MARK: Goal
+
+    /// The next race, as Objectifs puts it on its plate.
+    nonisolated struct Goal: Codable, Equatable, Sendable {
+        var id: String
+        var title: String
+        var date: Date
+        var location: String?
+        var format: String?
+        var targetPerformance: String?
+    }
+
     // MARK: Freshness
 
     func day(on date: Date, calendar: Calendar = .current) -> Day? {
@@ -120,6 +183,17 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     func nutrition(on date: Date, calendar: Calendar = .current) -> Nutrition? {
         guard let nutrition, nutrition.trainingDayId == Self.dayId(date, calendar: calendar) else { return nil }
         return nutrition
+    }
+
+    func regularity(on date: Date, calendar: Calendar = .current) -> Regularity? {
+        guard let regularity, regularity.trainingDayId == Self.dayId(date, calendar: calendar) else { return nil }
+        return regularity
+    }
+
+    /// The next race while it is still ahead.
+    func goal(on date: Date, calendar: Calendar = .current) -> Goal? {
+        guard let goal, calendar.startOfDay(for: goal.date) >= calendar.startOfDay(for: date) else { return nil }
+        return goal
     }
 
     static func dayId(_ date: Date, calendar: Calendar = .current) -> String {

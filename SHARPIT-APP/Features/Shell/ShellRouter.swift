@@ -27,6 +27,9 @@ final class ShellRouter {
     /// Plan's « Bilan de la semaine » sheet — here so « Ton bilan est prêt » can open it.
     var isShowingWeeklyReview = false
 
+    /// Plan's Objectifs sheet — here so the « Prochain objectif » widget can open it.
+    var isShowingGoals = false
+
     /// An activity to open in Activité, once — a done session tapped in a widget.
     var pendingActivityId: String?
     /// A planned session to open in Plan's drawer, once — a session to do tapped in a widget.
@@ -70,6 +73,9 @@ final class ShellRouter {
         case .weeklyReview:
             select(.plan)
             isShowingWeeklyReview = true
+        case .goals:
+            select(.plan)
+            isShowingGoals = true
         case .settings(let route):
             openSettings(on: route)
         }
@@ -94,6 +100,7 @@ enum NotificationDestination: Equatable {
     case tab(ShellTab)
     case planGenerator
     case weeklyReview
+    case goals
     case settings(SettingsRoute?)
 }
 

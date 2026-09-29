@@ -4,7 +4,10 @@ import Observation
 @MainActor
 @Observable
 final class GoalStore {
-    private(set) var goals: [V1Goal] = []
+    /// Every change reaches the « Prochain objectif » widget: a race added, done or deleted.
+    private(set) var goals: [V1Goal] = [] {
+        didSet { if goals != oldValue { WidgetSnapshotPublisher.publish(goals) } }
+    }
     private(set) var sessions: [V1PlannedSessionItem] = []
     private(set) var activities: [V1ActivityListItem] = []
     private(set) var profile: V1AthleteProfile?

@@ -190,11 +190,16 @@ dashed, next week, and the full text on its own page. `-SharpitWeeklyReviewDemo`
 fixed week in Debug builds.
 
 **Widgets.** `SharpItWidgets` is a WidgetKit extension (« Séance du jour », « Verdict du jour »,
-« Nutrition », « Sommeil », « Poids »; home screen and lock screen). The snapshot is in sections —
-`day` (verdict, sessions, last night's sleep) from Résumé's fold, `nutrition` from the food log card
-(`NutritionTodayStore`), `weight` from Corps' web overview and the profile's target — each written
-by the screen that reads it and merged (`WidgetSnapshotStore.update`); the silent push reads all
-four. How a section reads (the dial's figure, the target line) is in `WidgetSnapshotReadout`, shared
+« Nutrition », « Sommeil », « Poids », « Volume de la semaine », « Régularité », « Prochain objectif »,
+« Demander au coach » and its Control Center button; home screen and lock screen). The snapshot is in
+sections — `day` (verdict, sessions, last night's sleep) and `regularity` from Résumé's fold,
+`nutrition` from the food log card (`NutritionTodayStore`), `weight` from Corps' web overview and the
+profile's target, `training` (the last two weeks recorded) from Activité's list, `goal` (Objectifs'
+next race, `GoalOrdering.nextRace`) from `GoalStore` — each written by the screen that reads it and
+merged (`WidgetSnapshotStore.update`); the silent push reads them all. The volume widget is an
+`AppIntentConfiguration` (`VolumeSport`): kilometres for one sport, time for strength or all sports,
+Monday first, with last week at the same point as a fact, never a verdict. No streaks. `/goals`
+opens Plan's Objectifs (`ShellRouter.isShowingGoals`). How a section reads (the dial's figure, the target line) is in `WidgetSnapshotReadout`, shared
 and tested; the energy and sleep dials are the app's `SharpitTickGauge` (`DialReadout`). A widget never calls the API — no Clerk session, a small reload
 budget: the app writes a `WidgetSnapshot` into the App Group `group.app.sharpit.ios`
 (`WidgetSnapshotStore`) from Résumé's fold each time it reads today, and on a silent push the

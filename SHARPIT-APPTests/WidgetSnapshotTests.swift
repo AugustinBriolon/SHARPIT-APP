@@ -146,3 +146,88 @@ private func card(_ id: String, _ kind: V1TodaySessionKind, sport: String = "Cou
     #expect(noTarget.movesTowardsTarget == nil)
     #expect(noTarget.targetLine == nil)
 }
+
+// MARK: - Phase 3: volume, regularity, next race
+
+private var parisCalendar: Calendar {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "Europe/Paris")!
+    return calendar
+}
+
+/// Wednesday 30 September 2026, noon in Paris.
+private let wednesday = parisCalendar.date(from: DateComponents(year: 2026, month: 9, day: 30, hour: 12))!
+
+private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes: Double) -> WidgetSnapshot.TrainedSession {
+    WidgetSnapshot.TrainedSession(dayId: day, sport: sport, distanceMeters: km * 1000, durationSeconds: minutes * 60)
+}
+
+@Test func theWeeksVolumeCountsItsSportFromMondayAndComparesWithLastWeekSoFar() {
+    let training = WidgetSnapshot.Training(sessions: [
+        trained("2026-09-22", .run, km: 8, minutes: 45),   // last Tuesday: counted in last week so far
+        trained("2026-09-25", .run, km: 20, minutes: 110), // last Friday: after this weekday, left out
+        trained("2026-09-28", .run, km: 10, minutes: 50),  // Monday
+        trained("2026-09-28", .bike, km: 40, minutes: 80),
+        trained("2026-09-30", .run, km: 12.4, minutes: 60), // today
+    ])
+
+    let run = training.week(of: wednesday, sport: .run, calendar: parisCalendar)
+    #expect(run.readsInDistance)
+    #expect(run.sessionCount == 2)
+    #expect(abs(run.distanceKilometers - 22.4) < 0.001)
+    #expect(run.lastWeekSoFar == 8)
+    #expect(run.days.map(\.initial) == ["L", "M", "M", "J", "V", "S", "D"])
+    #expect(run.days[2].isToday)
+    #expect(run.days[3].isFuture)
+    #expect(run.figureText == "22,4")
+    #expect(run.detailLine == "2 séances · 1 h 50")
+
+    // Every sport together reads in time: kilometres of cycling and running add up to nothing.
+    let all = training.week(of: wednesday, sport: nil, calendar: parisCalendar)
+    #expect(!all.readsInDistance)
+    #expect(all.sessionCount == 3)
+    #expect(all.figureText == "3 h 10")
+}
+
+@Test func theNextRaceIsTheNearestARaceAheadAndCountsDown() {
+    let goals = [
+        V1Goal(id: "b", title: "10 km", kind: .race, targetDate: wednesday.addingTimeInterval(10 * 86_400), priority: .b),
+        V1Goal(id: "a", title: "Ironman 70.3 Nice", kind: .race, targetDate: wednesday.addingTimeInterval(42 * 86_400),
+               location: "Nice", priority: .a, raceFormat: "70.3", targetPerformance: "5 h 15"),
+        V1Goal(id: "old", title: "Semi", kind: .race, targetDate: wednesday.addingTimeInterval(-5 * 86_400), priority: .a),
+    ]
+    let goal = WidgetSnapshot.Goal(goals: goals, now: wednesday)
+
+    #expect(goal?.id == "a")
+    #expect(goal?.daysLeft(from: wednesday, calendar: parisCalendar) == 42)
+    #expect(goal?.countdownCaption(from: wednesday, calendar: parisCalendar) == "42 jours · 6 sem.")
+    #expect(goal?.contextLine == "70.3 · Nice · visé 5 h 15")
+    #expect(WidgetSnapshot.Goal(goals: [], now: wednesday) == nil)
+}
+
+@Test func aRacePassedLeavesTheWidgetEmpty() {
+    let snapshot = WidgetSnapshot(goal: WidgetSnapshot.Goal(id: "g", title: "Semi", date: wednesday))
+
+    #expect(snapshot.goal(on: wednesday) != nil)
+    #expect(snapshot.goal(on: wednesday.addingTimeInterval(86_400)) == nil)
+}
+
+@Test func regularityFollowsResumesStripAndIsTodaysOnly() {
+    var consistencyFold = fold(day: "2026-09-28", sessions: [])
+    consistencyFold.consistency = V1TodayConsistency(
+        days: [V1TodayConsistencyDay(date: "2026-09-28", weekdayLabel: "lun.", dayOfMonth: 28, hasActivity: true, isToday: true, isFuture: false)],
+        thisWeekSessionCount: 3
+    )
+    let regularity = WidgetSnapshot.Regularity(consistency: consistencyFold.consistency, trainingDayId: consistencyFold.trainingDayId)
+
+    #expect(regularity?.weekSessionCount == 3)
+    #expect(regularity?.days.first?.hasActivity == true)
+    #expect(WidgetSnapshot.Regularity(consistency: nil, trainingDayId: "2026-09-28") == nil)
+}
+
+@Test func durationsReadInHoursAndMinutes() {
+    #expect(SharpitFigureFormat.duration(minutes: 45) == "45 min")
+    #expect(SharpitFigureFormat.duration(minutes: 120) == "2 h")
+    #expect(SharpitFigureFormat.duration(minutes: 185) == "3 h 05")
+    #expect(SharpitFigureFormat.kilometers(128.4) == "128")
+}

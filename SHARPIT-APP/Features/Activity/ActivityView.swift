@@ -95,6 +95,7 @@ struct ActivityView: View {
         do {
             let token = try await tokenProvider()
             let activities = try await client.activities(forceRefresh: force, token: token)
+            WidgetSnapshotPublisher.publish(activities)
             // Only a list that changed is swapped in. Replacing an identical list while the
             // pull-to-refresh gesture was ending left the scroll view stuck pulled down.
             if case .loaded(let shown) = phase {

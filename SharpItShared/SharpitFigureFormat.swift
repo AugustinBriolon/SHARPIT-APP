@@ -36,4 +36,19 @@ nonisolated enum SharpitFigureFormat {
         if abs(delta) < 0.05 { return "stable" }
         return "\(delta < 0 ? "−" : "+")\(magnitude) kg"
     }
+
+    /// `32,4` — kilometres, one decimal below a hundred, whole above.
+    static func kilometers(_ value: Double) -> String {
+        value >= 100
+            ? Int(value.rounded()).formatted(.number.locale(french))
+            : value.formatted(.number.precision(.fractionLength(1)).locale(french))
+    }
+
+    /// `3 h 10`, `45 min` — a length of time.
+    static func duration(minutes: Double) -> String {
+        let total = Int(minutes.rounded())
+        guard total >= 60 else { return "\(total) min" }
+        let rest = total % 60
+        return rest == 0 ? "\(total / 60) h" : "\(total / 60) h \(String(format: "%02d", rest))"
+    }
 }

@@ -14,6 +14,8 @@ enum IncomingLink: Equatable {
     case activity(id: String)
     /// A planned session, opened in Plan's drawer — a session to do tapped in a widget.
     case plannedSession(id: String)
+    /// Plan's Objectifs — the next race tapped in a widget.
+    case goals
 
     nonisolated static let trustedHost = "sharpit.app"
 
@@ -32,6 +34,9 @@ enum IncomingLink: Equatable {
         }
         if components.path == "/settings/sources" {
             return .settings(.sources)
+        }
+        if components.path == "/goals" {
+            return .goals
         }
         if let id = identifier(in: components.path, after: "/activity/") {
             return .activity(id: id)
