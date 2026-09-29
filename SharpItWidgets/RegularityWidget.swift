@@ -21,6 +21,15 @@ struct RegularityWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
+        if entry.features.isOn(.regularity) {
+            content
+        } else {
+            WidgetFeatureOff(feature: .regularity)
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch family {
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: 3) {

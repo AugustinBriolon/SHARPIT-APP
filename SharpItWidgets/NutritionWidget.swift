@@ -21,6 +21,15 @@ struct NutritionWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
+        if entry.features.isOn(.nutrition) {
+            content
+        } else {
+            WidgetFeatureOff(feature: .nutrition)
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch family {
         case .accessoryCircular: NutritionCircular(nutrition: entry.nutrition)
         case .accessoryRectangular: NutritionRectangular(nutrition: entry.nutrition)

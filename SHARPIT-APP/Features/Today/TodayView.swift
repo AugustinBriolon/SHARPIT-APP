@@ -9,6 +9,7 @@ struct TodayView: View {
     private let appleHealth: AppleHealthSource?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(ShellRouter.self) private var router
+    @Environment(\.features) private var features
 
     /// Kept so an activity opened from here can load itself. Nil in previews and
     /// fixtures, where a done session has nothing to fetch.
@@ -153,7 +154,7 @@ extension TodayView {
                 if let activityStatusStore {
                     ActivityStatusButton(store: activityStatusStore, showsLabel: true)
                 }
-                if let journalClient, let wellnessClient, let tokenProvider {
+                if features.isOn(.journal), let journalClient, let wellnessClient, let tokenProvider {
                     NavigationLink {
                         JournalView(
                             client: journalClient,
@@ -197,6 +198,7 @@ extension TodayView {
 private struct TodayFoldView: View {
     @Environment(ShellRouter.self) private var router
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
+    @Environment(\.features) private var features
 
     let fold: TodayFold
     var hasCompletedArrival: Bool = false
@@ -286,7 +288,7 @@ private struct TodayFoldView: View {
                         value: phase.showsGauges
                     )
                 }
-                if let consistency = fold.consistency, !consistency.days.isEmpty {
+                if features.isOn(.regularity), let consistency = fold.consistency, !consistency.days.isEmpty {
                     ConsistencyStrip(
                         consistency: consistency,
                         consecutiveWeeks: consecutiveWeeks
@@ -301,7 +303,7 @@ private struct TodayFoldView: View {
                         value: phase.showsGauges
                     )
                 }
-                if let nutrition {
+                if features.isOn(.nutrition), let nutrition {
                     NutritionTodayCard(phase: nutrition.phase) { openNutrition(nutrition.phase) }
                         .opacity(phase.showsGauges ? 1 : 0)
                         .offset(y: phase.showsGauges ? 0 : 18)

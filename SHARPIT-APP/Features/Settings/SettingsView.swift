@@ -16,6 +16,7 @@ struct SettingsView: View {
     let syncClient: any SyncServing
     let profileClient: any AthleteProfileServing & BodyCompositionServing
     let displayMode: DisplayModeStore
+    let features: FeatureStore
     let tokenProvider: () async throws -> String
     let modelContext: ModelContext?
     let privacyClient: any PrivacyConsentServing
@@ -35,6 +36,7 @@ struct SettingsView: View {
         syncClient: any SyncServing,
         profileClient: any AthleteProfileServing & BodyCompositionServing,
         displayMode: DisplayModeStore,
+        features: FeatureStore,
         tokenProvider: @escaping () async throws -> String,
         modelContext: ModelContext?,
         privacyClient: any PrivacyConsentServing = PrivacyConsentClient(),
@@ -46,6 +48,7 @@ struct SettingsView: View {
         self.syncClient = syncClient
         self.profileClient = profileClient
         self.displayMode = displayMode
+        self.features = features
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
         self.privacyClient = privacyClient
@@ -98,6 +101,15 @@ struct SettingsView: View {
                     SettingsGroup(title: "Entraînement") {
                         NavigationLink(value: SettingsRoute.equipment) {
                             SettingsRow(symbol: "figure.run.square.stack", tint: SettingsTone.gear, title: "Sports & équipement", detail: sportsDetail)
+                        }
+                        SettingsDivider()
+                        NavigationLink(value: SettingsRoute.features) {
+                            SettingsRow(
+                                symbol: "square.grid.2x2.fill",
+                                tint: SettingsTone.density,
+                                title: "Pages et widgets",
+                                detail: featuresDetail
+                            )
                         }
                         SettingsDivider()
                         NavigationLink(value: SettingsRoute.density) {
@@ -199,6 +211,12 @@ struct SettingsView: View {
         return labels.isEmpty ? "Tes disciplines et ton matériel" : labels.joined(separator: " · ")
     }
 
+    /// « Tout est affiché », or what is hidden.
+    private var featuresDetail: String {
+        let off = SharpitFeature.allCases.filter { !features.isOn($0) }.map(\.title)
+        return off.isEmpty ? "Tout est affiché" : "Masqué : " + off.joined(separator: ", ")
+    }
+
     private var footer: some View {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "—"
@@ -237,6 +255,8 @@ struct SettingsView: View {
             PrivacySettingsView(client: privacyClient, tokenProvider: tokenProvider)
         case .notifications:
             NotificationPrefsView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        case .features:
+            FeaturesView(store: features, tokenProvider: tokenProvider)
         case .density:
             DisplayModeView(
                 client: profileClient,
@@ -257,6 +277,7 @@ enum SettingsRoute: Hashable {
     case privacy
     case notifications
     case density
+    case features
 }
 
 private extension String {

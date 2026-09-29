@@ -22,6 +22,15 @@ struct WeightWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
+        if entry.features.isOn(.health) {
+            content
+        } else {
+            WidgetFeatureOff(feature: .health)
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch family {
         case .accessoryInline:
             if let weight = entry.weight {

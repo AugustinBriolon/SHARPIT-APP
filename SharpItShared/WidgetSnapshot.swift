@@ -15,6 +15,8 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     var regularity: Regularity?
     var training: Training?
     var goal: Goal?
+    /// The parts of SharpIt the athlete uses: a widget of a feature turned off says so.
+    var features: V1FeaturePrefs?
 
     init(
         day: Day? = nil,
@@ -22,7 +24,8 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         weight: Weight? = nil,
         regularity: Regularity? = nil,
         training: Training? = nil,
-        goal: Goal? = nil
+        goal: Goal? = nil,
+        features: V1FeaturePrefs? = nil
     ) {
         self.day = day
         self.nutrition = nutrition
@@ -30,6 +33,7 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         self.regularity = regularity
         self.training = training
         self.goal = goal
+        self.features = features
     }
 
     // MARK: Day

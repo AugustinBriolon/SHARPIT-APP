@@ -208,3 +208,27 @@ struct WidgetAwaitingDay: View {
         }
     }
 }
+
+/// A widget whose feature the athlete turned off in Paramètres: it says so rather than show a
+/// part of SharpIt they chose to hide. The system keeps a placed widget; only they can remove it.
+struct WidgetFeatureOff: View {
+    let feature: SharpitFeature
+    @Environment(\.widgetFamily) private var family
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                Image(systemName: feature.symbolName).font(.title3)
+            }
+        case .accessoryRectangular, .accessoryInline:
+            Label("\(feature.title) masqué", systemImage: feature.symbolName)
+                .font(.headline)
+        default:
+            WidgetFrame(feature.title, symbol: feature.symbolName) {
+                WidgetCaption(text: "Masqué dans SharpIt. Réactive-le dans Paramètres › Pages et widgets.", lines: 4)
+            }
+        }
+    }
+}

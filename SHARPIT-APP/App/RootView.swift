@@ -22,6 +22,8 @@ struct RootView: View {
     @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
     /// The reading density, read once and handed to every surface through the environment.
     @State private var displayMode = DisplayModeStore(client: AthleteProfileClient())
+    /// The parts of SharpIt the athlete uses: a feature off has no tab, card or widget.
+    @State private var features = FeatureStore(client: AthleteProfileClient())
     /// The app's one toast slot — a sync starting or failing, wherever the athlete is.
     @State private var toastCenter = SharpitToastCenter()
     /// Push notification manager for Moment 1 (Wake / Morning verdict) APNs registration and routing.
@@ -83,18 +85,27 @@ struct RootView: View {
                     tokenProvider: liveToken
                 )
             }
-            Tab(
-                ShellDestination.body.title,
-                systemImage: ShellDestination.body.systemImage,
-                value: ShellTab.body
-            ) {
-                CorpsView(
-                    profileClient: profileClient,
-                    recoveryClient: sharpitClient,
-                    tokenProvider: liveToken,
-                    modelContext: modelContext
-                )
+            if features.isOn(.health) {
+                Tab(
+                    ShellDestination.body.title,
+                    systemImage: ShellDestination.body.systemImage,
+                    value: ShellTab.body
+                ) {
+                    CorpsView(
+                        profileClient: profileClient,
+                        recoveryClient: sharpitClient,
+                        tokenProvider: liveToken,
+                        modelContext: modelContext
+                    )
+                }
             }
+        }
+        // A tab turned off while showing, or a link to it, lands on Résumé.
+        .onChange(of: router.selectedTab, initial: true) { _, tab in
+            if tab == .body, !features.isOn(.health) { router.select(.today) }
+        }
+        .onChange(of: features.prefs) { _, _ in
+            if router.selectedTab == .body, !features.isOn(.health) { router.select(.today) }
         }
         .background(SharpitCanvasBackground())
         // Paramètres is a sheet over whichever tab is showing, opened from the avatar.
@@ -104,6 +115,7 @@ struct RootView: View {
                 syncClient: sharpitClient,
                 profileClient: profileClient,
                 displayMode: displayMode,
+                features: features,
                 tokenProvider: liveToken,
                 modelContext: modelContext,
                 openingOn: router.settingsRoute
@@ -116,6 +128,7 @@ struct RootView: View {
         // Read once for the whole app: every surface that shows a technical figure asks this
         // rather than the profile (ADR 0006).
         .environment(\.displayMode, displayMode)
+        .environment(\.features, features)
         .environment(historyImport)
         .environment(pro)
         .task {
@@ -140,12 +153,13 @@ struct RootView: View {
             // Only while the athlete has not switched SharpIt's notifications off.
             let pushEnabled = pushManager.isEnabledByAthlete
             async let modeLoad: () = displayMode.load(tokenProvider: liveToken)
+            async let featuresLoad: () = features.load(tokenProvider: liveToken)
             async let pushSetup: () = {
                 guard pushEnabled else { return }
                 _ = await pushManager.requestAuthorization()
                 await pushManager.syncDeviceTokenIfNeeded(tokenProvider: liveToken, client: sharpitClient)
             }()
-            _ = await (modeLoad, pushSetup)
+            _ = await (modeLoad, featuresLoad, pushSetup)
 
             if let destination = pushManager.consumePendingDestination() { router.open(destination) }
             await refreshSessionReminders()

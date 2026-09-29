@@ -379,6 +379,14 @@ the overview says `biologicalAgeAccess: pro_required` and Corps shows a `Sharpit
 when Pro but data is missing, `BiologicalAgePendingCard` says what the estimate needs and pushes
 `AccountView` in Corps' own stack.
 
+**Pages et widgets.** Paramètres › Pages et widgets (`FeaturesView`) turns a part of SharpIt off —
+Journal, Nutrition, Corps, Régularité (`SharpitFeature`). Off, it disappears everywhere it shows: the
+Résumé chip or card, the page, the Corps tab, the home-screen widget (a placed widget says it is
+hidden, `WidgetFeatureOff`); its data is kept. `FeatureStore` in the environment (`\.features`)
+holds the choice, saved to the account (`featurePrefs` on the profile, merged server-side like
+`notificationPrefs`), applied at once and put back if the save fails; the last choice is kept in the
+widget snapshot so the app opens with the right tabs.
+
 **Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then the one setting
 answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's
 `overrideUserInterfaceStyle` so open sheets switch at once) — then Notifications, a page

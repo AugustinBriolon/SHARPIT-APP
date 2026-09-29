@@ -17,6 +17,8 @@ struct SnapshotEntry: TimelineEntry {
     var training: WidgetSnapshot.Training? { snapshot?.training }
     /// The next race while it is ahead.
     var goal: WidgetSnapshot.Goal? { snapshot?.goal(on: date) }
+    /// The parts of SharpIt the athlete uses — all on until the app said otherwise.
+    var features: V1FeaturePrefs { snapshot?.features ?? V1FeaturePrefs() }
 }
 
 /// Reads the snapshot the app wrote. The app reloads the timelines when it writes a new one;
