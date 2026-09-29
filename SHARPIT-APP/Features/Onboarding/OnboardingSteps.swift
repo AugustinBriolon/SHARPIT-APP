@@ -91,185 +91,29 @@ struct OnboardingChoiceChip: View {
 
 // MARK: - Sports
 
-/// Endurance first, complements after. A tile answers the touch by filling, never by moving.
+/// Endurance first, complements after — the same tiles as Paramètres › Sports & équipement.
 struct OnboardingSportsStep: View {
     let store: OnboardingStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            group(title: "Endurance", items: PracticedSportCatalog.endurance)
-            group(title: "En complément", items: PracticedSportCatalog.complementary)
-        }
-    }
-
-    private func group(title: String, items: [PracticedSportItem]) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(title)
-            LazyVGrid(
-                columns: [GridItem(.flexible(), spacing: SharpitSpacing.sm), GridItem(.flexible(), spacing: SharpitSpacing.sm)],
-                spacing: SharpitSpacing.sm
-            ) {
-                ForEach(items) { item in
-                    OnboardingSportTile(item: item, isSelected: store.sports.contains(item.id)) {
-                        store.toggleSport(item.id)
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct OnboardingSportTile: View {
-    let item: PracticedSportItem
-    let isSelected: Bool
-    let onToggle: () -> Void
-
-    var body: some View {
-        Button {
-            SharpitHaptics.play(.soft)
-            SharpitMotion.run(SharpitMotion.selection) { onToggle() }
-        } label: {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                HStack(alignment: .top) {
-                    item.image
-                        .symbolVariant(isSelected ? .fill : .none)
-                        .font(.system(size: 30, weight: .medium))
-                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-                        .frame(height: 36, alignment: .leading)
-                    Spacer(minLength: 0)
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35))
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.label)
-                        .font(SharpitTypography.cardTitle)
-                        .tracking(SharpitTypography.cardTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                    Text(item.subtitle)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2, reservesSpace: true)
-                        .multilineTextAlignment(.leading)
-                }
-            }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(isSelected ? SharpitColor.primary.opacity(0.18) : SharpitColor.analysisSurface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(SharpitColor.primary, lineWidth: isSelected ? 2 : 0)
-            )
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(item.label)
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        SportChoiceGroups(selected: Set(store.sports)) { store.toggleSport($0) }
     }
 }
 
 // MARK: - Equipment
 
-/// Only the kit the chosen sports use, one card per sport; strength asks where the athlete
-/// trains before listing what they own.
+/// Only the kit the chosen sports use, one card per sport — the same cards as Paramètres.
 struct OnboardingEquipmentStep: View {
     let store: OnboardingStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            ForEach(store.equipmentSports) { sport in
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    SharpitCardHeader(title: sport.label, symbol: sport.symbolName, showsChevron: false)
-                    if sport == .strength {
-                        venuePicker
-                    }
-                    let items = EquipmentCatalog.items(for: sport, venue: store.strengthVenue)
-                    if items.isEmpty {
-                        Text("Rien de particulier pour ce type de renforcement.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    } else {
-                        VStack(spacing: 0) {
-                            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                                OnboardingEquipmentRow(item: item, isOwned: store.ownedEquipment.contains(item.id)) {
-                                    store.toggleEquipment(item.id)
-                                }
-                                if index < items.count - 1 {
-                                    Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1).padding(.leading, 44)
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
-                .sharpitCardSpecularBorder()
-            }
-        }
-    }
-
-    private var venuePicker: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            LazyVGrid(
-                columns: [GridItem(.flexible(), spacing: SharpitSpacing.xs), GridItem(.flexible(), spacing: SharpitSpacing.xs)],
-                spacing: SharpitSpacing.xs
-            ) {
-                ForEach(V1AthleteEquipment.StrengthVenue.allCases) { venue in
-                    OnboardingChoiceChip(title: venue.title, symbol: venue.symbolName, isSelected: store.strengthVenue == venue) {
-                        SharpitMotion.run(SharpitMotion.selection) { store.setStrengthVenue(venue) }
-                    }
-                }
-            }
-            Text(store.strengthVenue.description)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .contentTransition(.opacity)
-        }
-    }
-}
-
-private struct OnboardingEquipmentRow: View {
-    let item: EquipmentCatalogItem
-    let isOwned: Bool
-    let onToggle: () -> Void
-
-    var body: some View {
-        Button {
-            SharpitHaptics.play(.soft)
-            SharpitMotion.run(SharpitMotion.selection) { onToggle() }
-        } label: {
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: item.symbolName)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
-                    .frame(width: 32)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.label)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text(item.impact)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.leading)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: isOwned ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35))
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .padding(.vertical, SharpitSpacing.sm)
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isOwned ? [.isButton, .isSelected] : .isButton)
+        EquipmentBySport(
+            sports: store.equipmentSports,
+            venue: store.strengthVenue,
+            owned: store.ownedEquipment,
+            onVenue: { store.setStrengthVenue($0) },
+            onToggle: { store.toggleEquipment($0) }
+        )
     }
 }
 

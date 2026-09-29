@@ -55,151 +55,201 @@ enum PracticedSportCatalog {
             }
         }
     }
+}
 
-    static func color(for id: String) -> Color {
-        switch id {
-        case "run": SharpitSportColor.color(SharpitSportColor.run)
-        case "bike": SharpitSportColor.color(SharpitSportColor.bike)
-        case "swim": SharpitSportColor.color(SharpitSportColor.swim)
-        case "triathlon": SharpitSportColor.color(SharpitSportColor.triathlon)
-        case "strength": SharpitSportColor.color(SharpitSportColor.strength)
-        case "mobility": SharpitSportColor.color(SharpitSportColor.other)
-        case "stretching": Color(red: 0.18, green: 0.82, blue: 0.65)
-        default: SharpitColor.primary
+/// The practiced sports, endurance first, complements after — one grid of tiles, shared by the
+/// onboarding and Paramètres › Sports & équipement so both read and answer the same.
+struct SportChoiceGroups: View {
+    let selected: Set<String>
+    let onToggle: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            group(title: "Endurance", items: PracticedSportCatalog.endurance)
+            group(title: "En complément", items: PracticedSportCatalog.complementary)
+        }
+    }
+
+    private func group(title: String, items: [PracticedSportItem]) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow(title)
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: SharpitSpacing.sm), GridItem(.flexible(), spacing: SharpitSpacing.sm)],
+                spacing: SharpitSpacing.sm
+            ) {
+                ForEach(items) { item in
+                    SportChoiceTile(item: item, isSelected: selected.contains(item.id)) { onToggle(item.id) }
+                }
+            }
         }
     }
 }
 
-/// One practiced sport as a toggle tile — shared by Sports & équipement and the onboarding.
-struct PracticedSportTile: View {
+/// One practiced sport as a tile. It answers the touch by filling, never by moving.
+struct SportChoiceTile: View {
     let item: PracticedSportItem
     let isSelected: Bool
-    let action: () -> Void
+    let onToggle: () -> Void
 
     var body: some View {
-        let color = PracticedSportCatalog.color(for: item.id)
-
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 0) {
+        Button {
+            SharpitHaptics.play(.soft)
+            SharpitMotion.run(SharpitMotion.selection) { onToggle() }
+        } label: {
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 HStack(alignment: .top) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                            .fill(isSelected ? color.opacity(0.18) : SharpitColor.analysisGrid.opacity(0.35))
-                            .frame(width: 34, height: 34)
-                        item.image
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(isSelected ? color : SharpitColor.mutedForeground)
-                            .symbolEffect(.bounce, value: isSelected)
-                    }
-
-                    Spacer()
-
+                    item.image
+                        .symbolVariant(isSelected ? .fill : .none)
+                        .font(.system(size: 30, weight: .medium))
+                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
+                        .frame(height: 36, alignment: .leading)
+                    Spacer(minLength: 0)
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 18, weight: isSelected ? .bold : .regular))
-                        .foregroundStyle(isSelected ? color : SharpitColor.mutedForeground.opacity(0.3))
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35))
                         .contentTransition(.symbolEffect(.replace))
                 }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.label)
+                        .font(SharpitTypography.cardTitle)
+                        .tracking(SharpitTypography.cardTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Text(item.subtitle)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(2, reservesSpace: true)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+            .padding(SharpitSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .fill(isSelected ? SharpitColor.primary.opacity(0.18) : SharpitColor.analysisSurface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .strokeBorder(SharpitColor.primary, lineWidth: isSelected ? 2 : 0)
+            )
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(item.label)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+}
 
-                Spacer(minLength: 8)
+/// The kit the chosen sports use, one card per sport; strength asks where the athlete trains
+/// before listing what they own. Shared by the onboarding and Paramètres.
+struct EquipmentBySport: View {
+    let sports: [EquipmentSport]
+    let venue: V1AthleteEquipment.StrengthVenue
+    let owned: Set<String>
+    let onVenue: (V1AthleteEquipment.StrengthVenue) -> Void
+    let onToggle: (String) -> Void
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            ForEach(sports) { sport in
+                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                    SharpitCardHeader(title: sport.label, symbol: sport.symbolName, showsChevron: false)
+                    if sport == .strength {
+                        venuePicker
+                    }
+                    let items = EquipmentCatalog.items(for: sport, venue: venue)
+                    if items.isEmpty {
+                        Text("Rien de particulier pour ce type de renforcement.")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    } else {
+                        VStack(spacing: 0) {
+                            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                                EquipmentChoiceRow(item: item, isOwned: owned.contains(item.id)) { onToggle(item.id) }
+                                if index < items.count - 1 {
+                                    Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1).padding(.leading, 44)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(SharpitSpacing.cardPadding)
+                .sharpitSurface(.panel)
+                .sharpitCardSpecularBorder()
+            }
+        }
+    }
+
+    private var venuePicker: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: SharpitSpacing.xs), GridItem(.flexible(), spacing: SharpitSpacing.xs)],
+                spacing: SharpitSpacing.xs
+            ) {
+                ForEach(V1AthleteEquipment.StrengthVenue.allCases) { choice in
+                    OnboardingChoiceChip(title: choice.title, symbol: choice.symbolName, isSelected: venue == choice) {
+                        SharpitMotion.run(SharpitMotion.selection) { onVenue(choice) }
+                    }
+                }
+            }
+            Text(venue.description)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .contentTransition(.opacity)
+        }
+    }
+}
+
+/// One piece of equipment: its glyph, what it changes for the coach, whether it is owned.
+struct EquipmentChoiceRow: View {
+    let item: EquipmentCatalogItem
+    let isOwned: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button {
+            SharpitHaptics.play(.soft)
+            SharpitMotion.run(SharpitMotion.selection) { onToggle() }
+        } label: {
+            HStack(spacing: SharpitSpacing.sm) {
+                Image(systemName: item.symbolName)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
+                    .frame(width: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.label)
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.9)
-
-                    Text(item.subtitle)
-                        .font(.system(size: 11))
-                        .lineSpacing(1.5)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(height: 30, alignment: .topLeading)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, minHeight: 124, maxHeight: 124, alignment: .topLeading)
-            .background(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(isSelected ? color.opacity(0.08) : SharpitColor.card.opacity(0.55))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(isSelected ? color.opacity(0.8) : SharpitColor.border.opacity(0.5), lineWidth: isSelected ? 1.5 : 1)
-            )
-        }
-        // Sinks under the finger, like every tile that changes something (`docs/adr/0004`).
-        .buttonStyle(.sharpitPressable)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
-/// One piece of equipment as a toggle row — shared by Sports & équipement and the onboarding.
-struct EquipmentItemTile: View {
-    let item: EquipmentCatalogItem
-    let isOwned: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                        .fill(isOwned ? SharpitColor.primary.opacity(0.12) : SharpitColor.analysisGrid.opacity(0.4))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: item.symbolName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
-                        .symbolEffect(.bounce, value: isOwned)
-                }
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.label)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-
                     Text(item.impact)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
                 }
-
-                Spacer()
-
+                Spacer(minLength: 0)
                 Image(systemName: isOwned ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20, weight: isOwned ? .bold : .regular))
-                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.3))
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35))
                     .contentTransition(.symbolEffect(.replace))
             }
-            .padding(SharpitSpacing.cardPadding)
-            .sharpitSurface(.panel)
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(isOwned ? SharpitColor.primary.opacity(0.35) : Color.clear, lineWidth: 1)
-            )
+            .padding(.vertical, SharpitSpacing.sm)
+            .contentShape(.rect)
         }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityAddTraits(isOwned ? .isSelected : [])
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isOwned ? [.isButton, .isSelected] : .isButton)
     }
 }
 
-/// Réglages → Sports & équipement: modern, tactile practiced sports & equipment manager.
+/// Réglages › Sports & équipement: the onboarding's own tiles and cards, saved as they change.
 struct EquipmentView: View {
     @State private var store: AthleteProfileStore
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
-    @State private var practicedSports: Set<String> = ["run", "bike", "swim", "strength"]
-    @State private var strengthVenue: V1AthleteEquipment.StrengthVenue? = .bodyweight
+    @State private var practicedSports: Set<String> = []
+    @State private var strengthVenue: V1AthleteEquipment.StrengthVenue = .bodyweight
     @State private var owned: Set<String> = []
-    @State private var selectedSportTab: EquipmentSport = .run
     @State private var hasLoaded = false
     @State private var autoSaveTask: Task<Void, Never>?
-
-    private let columns = [
-        GridItem(.flexible(), spacing: SharpitSpacing.sm),
-        GridItem(.flexible(), spacing: SharpitSpacing.sm)
-    ]
 
     init(
         client: any AthleteProfileServing,
@@ -213,25 +263,37 @@ struct EquipmentView: View {
         ))
     }
 
+    private var hasEndurance: Bool { PracticedSportCatalog.hasEnduranceSport(practicedSports) }
+
     var body: some View {
         ScrollView {
-            VStack(spacing: SharpitSpacing.lg) {
-                practicedSportsSection(
-                    title: "Sports d'endurance",
-                    caption: "Oriente les objectifs et les plans d'entraînement.",
-                    items: PracticedSportCatalog.endurance
-                )
-
-                practicedSportsSection(
-                    title: "Pratiques complémentaires",
-                    caption: "Pour le renforcement, la mobilité et la prévention.",
-                    items: PracticedSportCatalog.complementary
-                )
-
-                equipmentInventorySection
+            VStack(alignment: .leading, spacing: SharpitSpacing.xl) {
+                VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                    SportChoiceGroups(selected: practicedSports, onToggle: toggleSport)
+                    if !hasEndurance {
+                        Label("Garde au moins un sport d'endurance : SharpIt construit tes plans dessus.", systemImage: "exclamationmark.circle")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.signalCaution)
+                    }
+                }
+                VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                    SharpitEyebrow("Matériel")
+                    Text("Le coach adapte les séances à ce que tu possèdes.")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                    EquipmentBySport(
+                        sports: PracticedSportCatalog.equipmentSports(for: practicedSports),
+                        venue: strengthVenue,
+                        owned: owned,
+                        onVenue: { strengthVenue = $0; scheduleAutoSave() },
+                        onToggle: toggleEquipment
+                    )
+                }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
+            .disabled(!hasLoaded)
+            .redacted(reason: hasLoaded ? [] : .placeholder)
         }
         .background(SharpitCanvasBackground())
         .navigationTitle("Sports & équipement")
@@ -239,8 +301,7 @@ struct EquipmentView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 if store.isSaving {
-                    ProgressView()
-                        .controlSize(.small)
+                    ProgressView().controlSize(.small)
                 }
             }
         }
@@ -248,279 +309,25 @@ struct EquipmentView: View {
             await store.load()
             syncFromProfile()
         }
-        .onChange(of: store.profile) { _, _ in
-            if !hasLoaded {
-                syncFromProfile()
-            }
-        }
     }
 
-    // MARK: - Practiced Sports Bento Grid
-
-    private func practicedSportsSection(
-        title: String,
-        caption: String,
-        items: [PracticedSportItem]
-    ) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(SharpitTypography.sectionTitle)
-                    .foregroundStyle(SharpitColor.foreground)
-
-                Text(caption)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-
-            LazyVGrid(columns: columns, spacing: SharpitSpacing.sm) {
-                ForEach(items) { item in
-                    sportCard(item)
-                }
-            }
-        }
+    private func toggleSport(_ id: String) {
+        if practicedSports.contains(id) { practicedSports.remove(id) } else { practicedSports.insert(id) }
+        scheduleAutoSave()
     }
 
-    private func sportCard(_ item: PracticedSportItem) -> some View {
-        PracticedSportTile(item: item, isSelected: practicedSports.contains(item.id)) {
-            let isSelected = practicedSports.contains(item.id)
-            SharpitHaptics.play(.soft)
-            withAnimation(.snappy(duration: 0.2)) {
-                if isSelected {
-                    practicedSports.remove(item.id)
-                } else {
-                    practicedSports.insert(item.id)
-                }
-                ensureValidSelectedTab()
-            }
-            scheduleAutoSave()
-        }
-    }
-
-    // MARK: - Equipment Inventory Section with Tabs
-
-    private var equipmentInventorySection: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Inventaire matériel")
-                    .font(SharpitTypography.sectionTitle)
-                    .foregroundStyle(SharpitColor.foreground)
-
-                Text("Le coach adapte les séances en fonction de ce que tu possèdes.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-
-            if visibleEquipmentSports.isEmpty {
-                emptyPracticedSportsView
-            } else {
-                sportTabsBar
-
-                VStack(spacing: SharpitSpacing.sm) {
-                    if selectedSportTab == .strength {
-                        strengthVenueSelector
-                    }
-
-                    let items = EquipmentCatalog.items(for: selectedSportTab, venue: strengthVenue)
-                    if items.isEmpty {
-                        emptyVenueEquipmentView
-                    } else {
-                        ForEach(items) { item in
-                            equipmentCard(item)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var emptyPracticedSportsView: some View {
-        VStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: "hand.tap")
-                .font(.system(size: 28))
-                .foregroundStyle(SharpitColor.mutedForeground)
-            Text("Sélectionne au moins une discipline ci-dessus pour configurer ton matériel.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(SharpitSpacing.lg)
-        .sharpitSurface(.panelAlt)
-    }
-
-    private var emptyVenueEquipmentView: some View {
-        Text("Aucun équipement spécifique requis pour ce mode de renforcement.")
-            .font(SharpitTypography.meta)
-            .foregroundStyle(SharpitColor.mutedForeground)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(SharpitSpacing.cardPadding)
-            .sharpitSurface(.panelAlt)
-    }
-
-    // MARK: - Sport Tabs Bar
-
-    private var sportTabsBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: SharpitSpacing.xs) {
-                ForEach(visibleEquipmentSports) { sport in
-                    let isSelected = selectedSportTab == sport
-                    let items = EquipmentCatalog.items(for: sport, venue: strengthVenue)
-                    let ownedCount = items.filter { owned.contains($0.id) }.count
-
-                    Button {
-                        SharpitHaptics.play(.soft)
-                        withAnimation(.snappy(duration: 0.2)) {
-                            selectedSportTab = sport
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: sport.symbolName)
-                                .font(.system(size: 13, weight: .semibold))
-
-                            Text(sport.label)
-                                .font(SharpitTypography.meta)
-
-                            Text("\(ownedCount)/\(items.count)")
-                                .font(.system(size: 10, weight: .bold))
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(
-                                    (isSelected ? SharpitColor.primaryForeground : SharpitColor.primary).opacity(0.18),
-                                    in: Capsule()
-                                )
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            isSelected ? SharpitColor.primary : SharpitColor.card,
-                            in: Capsule()
-                        )
-                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                        .overlay(
-                            Capsule()
-                                .strokeBorder(isSelected ? Color.clear : SharpitColor.border.opacity(0.6), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.vertical, 2)
-        }
-    }
-
-    // MARK: - Strength Venue Selector (Visual Cards)
-
-    private var strengthVenueSelector: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            Text("Lieu principal de renforcement")
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.foreground)
-
-            LazyVGrid(columns: columns, spacing: SharpitSpacing.xs) {
-                ForEach(V1AthleteEquipment.StrengthVenue.allCases) { venue in
-                    venueCard(venue)
-                }
-            }
-
-            if let venue = strengthVenue {
-                Text(venue.description)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .padding(.top, 2)
-            }
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panelAlt)
-    }
-
-    private func venueCard(_ venue: V1AthleteEquipment.StrengthVenue) -> some View {
-        let isSelected = strengthVenue == venue
-        let icon = venue.symbolName
-
-        return Button {
-            SharpitHaptics.play(.soft)
-            withAnimation(.snappy(duration: 0.2)) {
-                strengthVenue = venue
-            }
-            scheduleAutoSave()
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
-
-                Text(venue.title)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground)
-
-                Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(SharpitColor.primary)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                    .fill(isSelected ? SharpitColor.card : SharpitColor.analysisGrid.opacity(0.3))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                    .strokeBorder(isSelected ? SharpitColor.primary : Color.clear, lineWidth: 1.5)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Equipment Item Card
-
-    private func equipmentCard(_ item: EquipmentCatalogItem) -> some View {
-        EquipmentItemTile(item: item, isOwned: owned.contains(item.id)) {
-            let isOwned = owned.contains(item.id)
-            SharpitHaptics.play(.soft)
-            withAnimation(.snappy(duration: 0.2)) {
-                if isOwned {
-                    owned.remove(item.id)
-                } else {
-                    owned.insert(item.id)
-                }
-            }
-            scheduleAutoSave()
-        }
-    }
-
-    // MARK: - Helpers & Data Sync
-
-    private var visibleEquipmentSports: [EquipmentSport] {
-        PracticedSportCatalog.equipmentSports(for: practicedSports)
-    }
-
-    private func ensureValidSelectedTab() {
-        if !visibleEquipmentSports.contains(selectedSportTab), let first = visibleEquipmentSports.first {
-            selectedSportTab = first
-        }
+    private func toggleEquipment(_ id: String) {
+        if owned.contains(id) { owned.remove(id) } else { owned.insert(id) }
+        scheduleAutoSave()
     }
 
     private func syncFromProfile() {
-        if let ps = store.profile.practicedSports, !ps.sports.isEmpty {
-            practicedSports = Set(ps.sports)
+        guard !hasLoaded, store.phase == .loaded else { return }
+        practicedSports = Set(store.profile.practicedSports?.sports ?? [])
+        if let equipment = store.profile.equipment {
+            strengthVenue = equipment.strengthVenue.flatMap(V1AthleteEquipment.StrengthVenue.init(rawValue:)) ?? .bodyweight
+            owned = Set(equipment.owned)
         }
-
-        if let eq = store.profile.equipment {
-            if let rawVenue = eq.strengthVenue, let v = V1AthleteEquipment.StrengthVenue(rawValue: rawVenue) {
-                strengthVenue = v
-            } else {
-                strengthVenue = .bodyweight
-            }
-            owned = Set(eq.owned)
-        } else {
-            strengthVenue = .bodyweight
-        }
-        ensureValidSelectedTab()
         hasLoaded = true
     }
 
@@ -528,33 +335,28 @@ struct EquipmentView: View {
         guard hasLoaded else { return }
         autoSaveTask?.cancel()
         autoSaveTask = Task {
-            try? await Task.sleep(nanoseconds: 350_000_000)
+            try? await Task.sleep(for: .milliseconds(350))
             guard !Task.isCancelled else { return }
             await save()
         }
     }
 
-    @MainActor
     private func save() async {
         var patch = AthleteProfilePatch()
-
-        // 1. Practiced sports
-        let ps = V1AthletePracticedSports(
+        // Without an endurance sport the selection is not one SharpIt can plan on: the sports
+        // wait until one is back, the equipment saves as it changes.
+        if hasEndurance {
+            patch.setPracticedSports(V1AthletePracticedSports(
+                version: 1,
+                sports: PracticedSportCatalog.ordered(practicedSports)
+            ))
+        }
+        patch.setEquipment(V1AthleteEquipment(
             version: 1,
-            sports: Array(practicedSports).sorted()
-        )
-        patch.setPracticedSports(ps)
-
-        // 2. Equipment
-        let eq = V1AthleteEquipment(
-            version: 1,
-            strengthVenue: strengthVenue?.rawValue,
+            strengthVenue: strengthVenue.rawValue,
             owned: Array(owned).sorted()
-        )
-        patch.setEquipment(eq)
-
-        let success = await store.save(patch)
-        if !success, let error = store.saveError {
+        ))
+        if await store.save(patch) == false, let error = store.saveError {
             toastCenter?.show(error, symbol: "exclamationmark.triangle.fill", tone: .error)
         }
     }

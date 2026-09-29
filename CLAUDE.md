@@ -387,7 +387,7 @@ an hour before a session's `startTime` or at 7:30 that day, by `SessionReminderP
 tapped notification goes through `PushNotificationManager.destination(for:)` to
 `ShellRouter.open(_:)` — `/plan/generator`, `/plan/review`, `/settings/sources`, a tab), Sources de
 données, Synchronisation iCloud (`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer`
-events from launch), Sports & équipement, Densité de lecture (its own page: the choice needs its
+events from launch), Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: the choice needs its
 explanation) and Confidentialité, each row saying its state before it is opened. Compte edits in
 place: first and last name through Clerk's `user.update`, sex, height and birth date through
 `AthleteProfilePatch`; e-mail, password and photo stay in Clerk's own sheet.
