@@ -8,12 +8,37 @@ import SwiftUI
 /// sit in their norm and the ruler has one tick per marker, in its tone. The halo is the page's
 /// one departure from "no decorative wash": it carries the reading's tone, nothing else.
 struct SanteHero: View {
+    /// What the hero stands on. Below Pro the web never computes the age, so the locked hero shows
+    /// a fixed placeholder, blurred — nothing the app holds could reveal it.
+    enum Mode: Equatable {
+        case age(V1BiologicalAge)
+        case locked
+        case norms
+
+        init(_ synthesis: V1HealthSynthesis) {
+            // Locked first: below Pro nothing shows an age, whatever the payload holds.
+            if synthesis.biologicalAgeRequiresPro {
+                self = .locked
+            } else if let age = synthesis.biologicalAge {
+                self = .age(age)
+            } else {
+                self = .norms
+            }
+        }
+    }
+
+    /// Drawn under the blur. A constant, never derived from anything the athlete measured.
+    static let lockedPlaceholder = "00"
+
     let synthesis: V1HealthSynthesis
     /// Every normed marker's tone, in page order, for the fallback ruler.
     let tones: [V1HealthTone]
     let watchCount: Int
 
     @State private var hasAppeared = false
+    @Environment(ProStore.self) private var pro: ProStore?
+
+    private var mode: Mode { Mode(synthesis) }
 
     var body: some View {
         VStack(spacing: SharpitSpacing.md) {
@@ -23,7 +48,14 @@ struct SanteHero: View {
                 .textCase(.uppercase)
                 .foregroundStyle(SharpitColor.mutedForeground)
             figure
-            if let pill {
+            if mode == .locked {
+                unlock
+                if let line = SanteReadout.synthesis(synthesis) {
+                    Text(line)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+            } else if let pill {
                 Text(pill)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(tone)
@@ -38,7 +70,7 @@ struct SanteHero: View {
             if !synthesis.highlights.isEmpty {
                 highlights
             }
-            if synthesis.biologicalAge != nil {
+            if mode != .norms {
                 Text(BiologicalAgeReadout.disclaimer)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
@@ -58,12 +90,25 @@ struct SanteHero: View {
     // MARK: - What it shows
 
     private var caption: String {
-        synthesis.biologicalAge != nil ? "Âge biologique" : "Repères dans leur norme"
+        mode == .norms ? "Repères dans leur norme" : "Âge biologique"
     }
 
     @ViewBuilder
     private var figure: some View {
-        if let age = synthesis.biologicalAge {
+        if mode == .locked {
+            Text(Self.lockedPlaceholder)
+                .font(SharpitTypography.showcaseScore)
+                .tracking(SharpitTypography.showcaseScoreTracking)
+                // Enough to read as two digits, never enough to read which.
+                .foregroundStyle(SharpitColor.foreground.opacity(0.8))
+                .blur(radius: 11)
+                .overlay {
+                    Image(systemName: "lock.fill")
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(SharpitColor.foreground)
+                }
+                .accessibilityHidden(true)
+        } else if case .age(let age) = mode {
             Text(BiologicalAgeReadout.years(hasAppeared ? age.years : (age.chronologicalYears ?? age.years)))
                 .font(SharpitTypography.showcaseScore)
                 .tracking(SharpitTypography.showcaseScoreTracking)
@@ -105,14 +150,38 @@ struct SanteHero: View {
             case nil: return SharpitColor.primary
             }
         }
+        if mode == .locked { return SharpitColor.primary }
         return watchCount == 0 ? SharpitColor.signalRecovery : SharpitColor.signalCaution
+    }
+
+    /// The way to Pro, where the pill would say the gap.
+    @ViewBuilder
+    private var unlock: some View {
+        let label = HStack(spacing: SharpitSpacing.xs) {
+            Image(systemName: "sparkle")
+            Text("Débloquer avec SharpIt Pro")
+        }
+        .font(SharpitTypography.bodyEmphasis)
+        .foregroundStyle(SharpitColor.highlightForeground)
+        .padding(.horizontal, SharpitSpacing.md)
+        .padding(.vertical, SharpitSpacing.xs + 2)
+        .background(SharpitColor.highlight, in: Capsule())
+        if let pro {
+            NavigationLink { ProView(store: pro) } label: { label }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Ton âge biologique, calculé par SharpIt à partir de ta VO₂max")
+        } else {
+            label
+        }
     }
 
     // MARK: - Ruler
 
     @ViewBuilder
     private var ruler: some View {
-        if let age = synthesis.biologicalAge, let civil = age.chronologicalYears {
+        if mode == .locked {
+            SanteBlankRuler()
+        } else if let age = synthesis.biologicalAge, let civil = age.chronologicalYears {
             SanteAgeRuler(civil: civil, biological: age.years, tone: tone, isRevealed: hasAppeared)
         } else if !tones.isEmpty {
             SanteToneRuler(tones: tones)
@@ -240,5 +309,21 @@ private struct SanteToneRuler: View {
             }
         }
         .padding(.horizontal, SharpitSpacing.lg)
+    }
+}
+
+/// The locked hero's ruler: the same ticks, nothing placed on them.
+private struct SanteBlankRuler: View {
+    var body: some View {
+        Canvas { context, size in
+            let count = 20
+            let step = size.width / CGFloat(count)
+            for index in 0...count {
+                let isMajor = index % 5 == 0
+                let rect = CGRect(x: CGFloat(index) * step - 0.5, y: 0, width: 1, height: isMajor ? 22 : 12)
+                context.fill(Path(rect), with: .color(SharpitColor.mutedForeground.opacity(isMajor ? 0.5 : 0.28)))
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

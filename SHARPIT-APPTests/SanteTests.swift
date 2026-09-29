@@ -126,3 +126,21 @@ private actor StubHealthClient: HealthOverviewServing {
     await store.load()
     #expect(store.phase == .failed("Lecture de ta santé impossible."))
 }
+
+@MainActor
+@Test func theHeroLocksTheAgeBelowProAndNeverKeepsIt() throws {
+    // Even a payload that carried an age below Pro keeps none of it.
+    let leaked = """
+    { "biologicalAge": { "years": 31, "chronologicalYears": 35 }, "biologicalAgeAccess": "pro_required",
+      "normed": 4, "inNorm": 4, "highlights": [] }
+    """
+    let synthesis = try JSONDecoder().decode(V1HealthSynthesis.self, from: Data(leaked.utf8))
+    #expect(synthesis.biologicalAge == nil)
+    #expect(SanteHero.Mode(synthesis) == .locked)
+    // What the blur covers is a constant, not the athlete's age.
+    #expect(SanteHero.lockedPlaceholder == "00")
+
+    let age = V1BiologicalAge(years: 31, chronologicalYears: 35, method: nil, confidence: nil, computedAt: nil)
+    #expect(SanteHero.Mode(V1HealthSynthesis(biologicalAge: age)) == .age(age))
+    #expect(SanteHero.Mode(V1HealthSynthesis(normed: 3, inNorm: 2)) == .norms)
+}

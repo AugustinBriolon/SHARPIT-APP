@@ -88,8 +88,11 @@ nonisolated struct V1HealthSynthesis: Decodable, Equatable, Sendable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        biologicalAge = try? container.decodeIfPresent(V1BiologicalAge.self, forKey: .biologicalAge)
         biologicalAgeRequiresPro = (try? container.decode(String.self, forKey: .biologicalAgeAccess)) == "pro_required"
+        // The web never sends it below Pro; were it ever to, it is not kept.
+        biologicalAge = biologicalAgeRequiresPro
+            ? nil
+            : try? container.decodeIfPresent(V1BiologicalAge.self, forKey: .biologicalAge)
         normed = (try? container.decode(Int.self, forKey: .normed)) ?? 0
         inNorm = (try? container.decode(Int.self, forKey: .inNorm)) ?? 0
         highlights = (try? container.decode([Tolerant<V1HealthHighlight>].self, forKey: .highlights))?

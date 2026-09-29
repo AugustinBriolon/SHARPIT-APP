@@ -122,16 +122,12 @@ struct SanteView: View {
         .onAppear { hasAppeared = true }
     }
 
-    /// The way to the biological age when the hero cannot show it: Pro, or the data it needs.
+    /// What the biological age still needs when Pro cannot compute it yet.
     @ViewBuilder
     private func biologicalAgeAccess(_ synthesis: V1HealthSynthesis) -> some View {
         Group {
-            if synthesis.biologicalAgeRequiresPro {
-                SharpitProTeaser(
-                    title: "Âge biologique",
-                    message: "Ton âge forme, calculé par SharpIt à partir de ta VO₂max."
-                )
-            } else if synthesis.biologicalAge == nil {
+            // Below Pro the hero itself is the way to Pro.
+            if !synthesis.biologicalAgeRequiresPro && synthesis.biologicalAge == nil {
                 NavigationLink {
                     AccountView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
                 } label: {
