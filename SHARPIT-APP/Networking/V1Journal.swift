@@ -112,14 +112,17 @@ nonisolated struct V1JournalAutoChecklistItem: Codable, Equatable, Sendable, Ide
 nonisolated struct V1JournalDaySignals: Codable, Equatable, Sendable {
     var trainingDayId: String
     var checklist: [V1JournalAutoChecklistItem]
+    /// The day's own values — absent from a server older than the field, or an old cache.
+    var day: V1JournalDayData?
 
-    init(trainingDayId: String = "", checklist: [V1JournalAutoChecklistItem] = []) {
+    init(trainingDayId: String = "", checklist: [V1JournalAutoChecklistItem] = [], day: V1JournalDayData? = nil) {
         self.trainingDayId = trainingDayId
         self.checklist = checklist
+        self.day = day
     }
 
     private enum CodingKeys: String, CodingKey {
-        case trainingDayId, checklist
+        case trainingDayId, checklist, day
     }
 
     init(from decoder: Decoder) throws {
@@ -129,12 +132,14 @@ nonisolated struct V1JournalDaySignals: Codable, Equatable, Sendable {
         // checklist, as an unknown factor state is on the entry above.
         let lines = try container.decodeIfPresent([LenientLine].self, forKey: .checklist) ?? []
         checklist = lines.compactMap(\.item)
+        day = try? container.decodeIfPresent(V1JournalDayData.self, forKey: .day)
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(trainingDayId, forKey: .trainingDayId)
         try container.encode(checklist, forKey: .checklist)
+        try container.encodeIfPresent(day, forKey: .day)
     }
 
     /// Decodes a line without committing to its status, so one unknown value costs one line.
@@ -273,4 +278,31 @@ nonisolated struct JournalPrefs: Equatable, Sendable {
 nonisolated struct V1JournalPrefsEnvelope: Decodable {
     let prefs: JSONValue?
     let isPro: Bool?
+}
+
+/// The day's values as the devices reported them — the web's `JournalDayData`. The checklist's
+/// verdicts are derived from these; the journal shows the numbers themselves.
+nonisolated struct V1JournalDayData: Codable, Equatable, Sendable {
+    nonisolated struct Sleep: Codable, Equatable, Sendable {
+        var minutes: Int?
+        var score: Int?
+        /// Minutes after local midnight.
+        var bedtimeMin: Int?
+        var wakeMin: Int?
+    }
+
+    nonisolated struct Activities: Codable, Equatable, Sendable {
+        var count: Int
+        var minutes: Int
+    }
+
+    var sleep: Sleep
+    var napMinutes: Int?
+    var hrv: Int?
+    var restingHr: Int?
+    var readiness: Int?
+    var steps: Int?
+    var stress: Int?
+    var bodyBattery: Int?
+    var activities: Activities
 }

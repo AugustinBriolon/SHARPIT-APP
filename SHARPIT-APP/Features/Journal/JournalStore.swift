@@ -22,6 +22,8 @@ final class JournalStore {
     /// The derived lines, read-only and possibly empty: the checklist is a reading of the
     /// day's devices, so its absence never stops the athlete recording their own answers.
     private(set) var checklist: [V1JournalAutoChecklistItem] = []
+    /// The day's own values — sleep, recovery, movement — shown whatever the preferences.
+    private(set) var dayData: V1JournalDayData?
     /// Set when a write did not land. The answer stays on screen either way — losing
     /// what the athlete just tapped would be worse than showing it unsaved.
     private(set) var saveFailure: String?
@@ -101,6 +103,7 @@ final class JournalStore {
         if let cachedEntry = cached.entry { entry = cachedEntry }
         if let cachedPrefs = cached.prefs { prefs = cachedPrefs }
         checklist = cached.signals?.checklist ?? []
+        dayData = cached.signals?.day
         phase = .ready
         return true
     }
@@ -112,31 +115,29 @@ final class JournalStore {
             trainingDayId: entry.trainingDayId,
             entry: entry,
             prefs: prefs,
-            signals: V1JournalDaySignals(trainingDayId: entry.trainingDayId, checklist: checklist),
+            signals: V1JournalDaySignals(trainingDayId: entry.trainingDayId, checklist: checklist, day: dayData),
             context: modelContext
         )
     }
 
-    /// Reads the derived lines, and only when the athlete turned one on.
+    /// Reads the day's values, and the derived lines when the athlete turned one on.
     ///
-    /// Never throws onward: a failed read leaves the checklist empty and the journal usable.
-    /// It is the one part of the screen the athlete cannot act on, so it is also the one part
-    /// whose absence is not worth an error.
+    /// Never throws onward: a failed read leaves what is on screen and the journal usable. It is
+    /// the one part of the screen the athlete cannot act on, so it is also the one part whose
+    /// absence is not worth an error.
     private func loadChecklist(token: String) async {
-        guard prefs.hasAnyAutoItem else {
-            // Nothing enabled: the section is gone, so whatever was cached is stale.
-            checklist = []
-            return
-        }
+        // Nothing enabled: the section is gone, so whatever was cached is stale.
+        if !prefs.hasAnyAutoItem { checklist = [] }
         guard let signals = try? await client.journalDaySignals(
             trainingDayId: entry.trainingDayId,
             token: token
         ) else {
-            // Keep what is on screen. Clearing here would erase a checklist the cache had
-            // already painted, and the next `persistCache` would write that emptiness back.
+            // Keep what is on screen. Clearing here would erase what the cache had already
+            // painted, and the next `persistCache` would write that emptiness back.
             return
         }
-        checklist = signals.checklist
+        dayData = signals.day
+        if prefs.hasAnyAutoItem { checklist = signals.checklist }
     }
 
     /// The trackables the athlete turned on, in catalogue order, then their own items.
@@ -177,6 +178,7 @@ final class JournalStore {
     /// enabled only derived lines has a journal to read, even with nothing to answer.
     var hasNothingToShow: Bool {
         visibleTrackables.isEmpty && visibleCustomItems.isEmpty && checklist.isEmpty
+            && !(dayData.map(JournalDayReadout.hasAny) ?? false)
     }
 
     var moodLabel: String? {
@@ -225,6 +227,7 @@ final class JournalStore {
         let newDayId = TrainingDayId.today(now: date)
         entry = V1DayJournalEntry(trainingDayId: newDayId)
         checklist = []
+        dayData = nil
         saveFailure = nil
 
         let hadCache = hydrateFromCache()
