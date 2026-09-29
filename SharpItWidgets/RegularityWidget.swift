@@ -33,9 +33,50 @@ struct RegularityWidgetView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         case .systemMedium:
-            RegularityBody(regularity: entry.regularity, markSize: 12, showsLabels: true)
+            RegularityMedium(regularity: entry.regularity)
         default:
             RegularityBody(regularity: entry.regularity, markSize: 11, showsLabels: false)
+        }
+    }
+}
+
+/// The count on the left, the days on the right — as the volume widget sets its bars. Stacked,
+/// the count, the marks and their two label rows overran the widget's height and pressed
+/// against its top and bottom edges.
+struct RegularityMedium: View {
+    let regularity: WidgetSnapshot.Regularity?
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 0) {
+                WidgetEyebrow(text: "Régularité")
+                Spacer(minLength: 0)
+                if let regularity {
+                    Text("\(regularity.weekSessionCount)")
+                        .font(SharpitTypography.heroScore)
+                        .tracking(SharpitTypography.heroScoreTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .monospacedDigit()
+                    Text(regularity.weekSessionCount == 1 ? "séance cette semaine" : "séances cette semaine")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(2)
+                } else {
+                    WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            if let regularity {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                    Spacer(minLength: 0)
+                    RegularityMarks(days: regularity.days, size: 12, showsLabels: true)
+                }
+                .frame(width: 184)
+                .frame(maxHeight: .infinity)
+            }
         }
     }
 }
