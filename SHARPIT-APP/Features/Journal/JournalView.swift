@@ -106,7 +106,16 @@ struct JournalView: View {
     private var content: some View {
         switch store.phase {
         case .loading:
-            JournalLoadingRows()
+            // The picker stays put while the day loads, so the screen does not jump when it
+            // arrives; the rows below are the journal's own, redacted.
+            ScrollView {
+                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                    JournalDatePicker(store: store)
+                    JournalLoadingRows()
+                }
+                .padding(SharpitSpacing.pageInset)
+            }
+            .scrollDisabled(true)
         case .failed(let message):
             ContentUnavailableView {
                 Label("Journal indisponible", systemImage: "wifi.slash")
@@ -225,22 +234,24 @@ struct JournalView: View {
     }
 }
 
-/// Rows in the shape the journal is about to show. The shared loading instrument
-/// draws a verdict plate and gauges, which this screen never has.
+/// The journal's own rows, redacted, in the shape it is about to show: the day's values, then
+/// the answered signals. Drawn with the real row views so the skeleton cannot drift from them.
 private struct JournalLoadingRows: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Journée")
-            ForEach(0..<5, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                    .fill(SharpitColor.analysisSurface)
-                    .frame(height: 64)
+        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            JournalSection(title: "Journée") {
+                JournalMetricRow(label: "Humeur", symbolName: "face.smiling", value: "Non renseigné") {}
+                JournalMetricRow(label: "Caféine", symbolName: "cup.and.saucer", value: "— mg") {}
+            }
+            JournalSection(title: "Signaux du jour") {
+                ForEach(["Alcool", "Écrans tard", "Repas tardif", "Sieste"], id: \.self) { label in
+                    JournalFactorRow(label: label, symbolName: "circle", state: .unset) { _ in }
+                }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(SharpitSpacing.pageInset)
         .redacted(reason: .placeholder)
         .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Chargement du journal")
     }
 }
@@ -673,6 +684,9 @@ private struct JournalDatePicker: View {
                 onPick: pick,
                 onToday: { pick(.now) }
             )
+        }
+        .onChange(of: weekOffset) { _, offset in
+            Task { await store.markAnsweredDays(around: weeks.weekStart(forOffset: offset)) }
         }
         .onChange(of: store.selectedDate) { _, newDate in
             let targetOffset = weeks.offset(forWeekContaining: newDate)

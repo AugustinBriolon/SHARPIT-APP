@@ -267,6 +267,5 @@ private struct CountingPlannedSessionClient: PlannedSessionServing {
     #expect(weeks.selectableDates.lowerBound <= firstActivity)
     #expect(PlanStore.offsets.lowerBound == -SharpitWeeks.historyWeeks)
     // The day screens mark every day of that range, window after window.
-    #expect(DayResourceStore<V1NutritionResponse>.markedWindows * DayResourceStore<V1NutritionResponse>.markedWindowDays
-        >= SharpitWeeks.historyWeeks * 7)
+    #expect(DataDaysMarker.windowCount * DataDaysMarker.windowDays >= SharpitWeeks.historyWeeks * 7)
 }

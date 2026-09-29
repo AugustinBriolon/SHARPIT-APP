@@ -27,11 +27,8 @@ final class JournalStore {
     private(set) var saveFailure: String?
     private(set) var selectedDate: Date
     private(set) var completedDayIds: Set<String> = []
-    /// Which days the server says hold an answer, read across the picker's history: true for
-    /// a day with something noted, false for one read and empty. Absent while unknown.
-    private(set) var answeredByDay: [String: Bool] = [:]
-    @ObservationIgnored private var hasMarkedDays = false
-    private let fetchJournalDays: (@Sendable (_ from: String, _ to: String, _ token: String) async throws -> [String])?
+    /// Which days hold an answer, read across the picker's history; nil without a data-days reader.
+    private let answeredDays: DataDaysMarker?
 
     private let client: any JournalServing
     private let tokenProvider: () async throws -> String
@@ -51,7 +48,7 @@ final class JournalStore {
         modelContext: ModelContext? = nil,
         journalDays: (@Sendable (_ from: String, _ to: String, _ token: String) async throws -> [String])? = nil
     ) {
-        self.fetchJournalDays = journalDays
+        self.answeredDays = journalDays.map { DataDaysMarker(tokenProvider: tokenProvider, fetch: $0) }
         self.client = client
         self.tokenProvider = tokenProvider
         self.saveDelay = saveDelay
@@ -216,37 +213,16 @@ final class JournalStore {
         let id = TrainingDayId.today(now: date)
         if id == entry.trainingDayId, phase == .ready { return entry.hasAnyAnswer }
         if completedDayIds.contains(id) { return true }
-        return answeredByDay[id]
+        return answeredDays?[id]
     }
 
-    /// Reads the answered days across the picker's history once, in the route's 91-day
-    /// windows, most recent first — each window shows as it arrives.
-    func markAnsweredDays() async {
-        guard !hasMarkedDays, let fetchJournalDays, let token = try? await tokenProvider() else { return }
-        hasMarkedDays = true
-        let calendar = Calendar.current
-        let windowDays = 91
-        let windows = (SharpitWeeks.historyWeeks * 7 + windowDays - 1) / windowDays
-        var end = calendar.startOfDay(for: .now)
-        for _ in 0..<windows {
-            guard let start = calendar.date(byAdding: .day, value: -windowDays, to: end) else { break }
-            guard let days = try? await fetchJournalDays(TrainingDayId.today(now: start), TrainingDayId.today(now: end), token) else { break }
-            var marks = answeredByDay
-            var day = start
-            while day <= end {
-                marks[TrainingDayId.today(now: day)] = false
-                guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
-                day = next
-            }
-            for id in days { marks[id] = true }
-            answeredByDay = marks
-            guard let previous = calendar.date(byAdding: .day, value: -1, to: start) else { break }
-            end = previous
-        }
+    /// Reads the marks around `day` now, and the rest of the history on its own.
+    func markAnsweredDays(around day: Date = .now) async {
+        await answeredDays?.ensure(around: day)
     }
 
     private func updateCompletionState() {
-        answeredByDay[entry.trainingDayId] = entry.hasAnyAnswer
+        answeredDays?.note(entry.trainingDayId, hasData: entry.hasAnyAnswer)
         if entry.hasAnyAnswer {
             completedDayIds.insert(entry.trainingDayId)
         } else {

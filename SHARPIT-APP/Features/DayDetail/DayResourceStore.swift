@@ -38,11 +38,6 @@ final class DayResourceStore<Payload: V1DayResource> {
         case unauthorized
     }
 
-    /// How far back the picker's marks reach: its whole history, in the route's 92-day windows.
-    static var markedWindowDays: Int { 91 }
-    static var markedWindows: Int {
-        (SharpitWeeks.historyWeeks * 7 + markedWindowDays - 1) / markedWindowDays
-    }
     /// Days with data read ahead after the first load.
     static var prefetchCount: Int { 6 }
 
@@ -53,15 +48,17 @@ final class DayResourceStore<Payload: V1DayResource> {
     private(set) var isSwitchingDay = false
     /// Which days hold data: from the data-days read, then every payload's own history. A day
     /// outside all of them is simply unknown.
-    private(set) var dataByDay: [String: Bool] = [:]
+    var dataByDay: [String: Bool] { marker?.byDay ?? payloadDays }
 
     private let fetch: @Sendable (_ trainingDayId: String, _ token: String) async throws -> Payload
-    private let fetchDataDays: (@Sendable (_ from: String, _ to: String, _ token: String) async throws -> [String])?
+    /// Reads the picker's history; nil for a screen without a data-days domain.
+    private let marker: DataDaysMarker?
+    /// What payloads said about days, for a screen without a marker.
+    private var payloadDays: [String: Bool] = [:]
     private let tokenProvider: () async throws -> String
     private var trainingDayId: String { TrainingDayId.today(now: selectedDay) }
     private let failureMessage: String
     private var cache: [String: Payload] = [:]
-    private var hasMarkedDays = false
     private var prefetchTask: Task<Void, Never>?
 
     init(
@@ -74,7 +71,7 @@ final class DayResourceStore<Payload: V1DayResource> {
         self.failureMessage = failureMessage
         self.tokenProvider = tokenProvider
         selectedDay = day
-        fetchDataDays = dataDays
+        marker = dataDays.map { DataDaysMarker(tokenProvider: tokenProvider, fetch: $0) }
         self.fetch = fetch
     }
 
@@ -85,8 +82,13 @@ final class DayResourceStore<Payload: V1DayResource> {
 
     func load() async {
         await load(keepingDayOnFailure: true)
-        await markDataDaysIfNeeded()
+        await marker?.ensure(around: selectedDay)
         prefetchRecentDays()
+    }
+
+    /// Reads the marks of the weeks the strip or the calendar is about to show.
+    func markDays(around day: Date) async {
+        await marker?.ensure(around: day)
     }
 
     /// After fresh data came in (a sync): forgets every day read and every mark, then reads again.
@@ -94,7 +96,8 @@ final class DayResourceStore<Payload: V1DayResource> {
         prefetchTask?.cancel()
         prefetchTask = nil
         cache = [:]
-        hasMarkedDays = false
+        marker?.reset()
+        payloadDays = [:]
         await load()
     }
 
@@ -133,7 +136,9 @@ final class DayResourceStore<Payload: V1DayResource> {
             let payload = try await fetch(requestedDay, token)
             cache[requestedDay] = payload
             // A quicker answer for a day picked since must not be overwritten by this one.
-            dataByDay.merge(payload.dataByDay) { _, new in new }
+            for (dayId, hasData) in payload.dataByDay {
+                if let marker { marker.note(dayId, hasData: hasData) } else { payloadDays[dayId] = hasData }
+            }
             guard requestedDay == trainingDayId else { return }
             show(payload)
         } catch is CancellationError {
@@ -143,34 +148,6 @@ final class DayResourceStore<Payload: V1DayResource> {
             guard requestedDay == trainingDayId else { return }
             if keepingDayOnFailure, case .loaded = phase { return }
             phase = .failed(Self.failure(error, fallback: failureMessage))
-        }
-    }
-
-    /// Marks the picker's whole range once: every day in it is known, with data or without.
-    private func markDataDaysIfNeeded() async {
-        guard !hasMarkedDays, let fetchDataDays, let token = try? await tokenProvider() else { return }
-        hasMarkedDays = true
-        let calendar = Calendar.current
-        var end = calendar.startOfDay(for: .now)
-        var marks: [String: Bool] = [:]
-        for _ in 0..<Self.markedWindows {
-            guard let start = calendar.date(byAdding: .day, value: -Self.markedWindowDays, to: end) else { break }
-            let from = TrainingDayId.today(now: start)
-            let to = TrainingDayId.today(now: end)
-            guard let days = try? await fetchDataDays(from, to, token) else { break }
-            var day = start
-            while day <= end {
-                marks[TrainingDayId.today(now: day)] = false
-                guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
-                day = next
-            }
-            for id in days { marks[id] = true }
-            // Each window shows as it arrives, most recent first: three years take a dozen reads,
-            // and the weeks the athlete looks at first should not wait on the oldest.
-            // What a payload already said about a day is newer than the range read.
-            dataByDay = marks.merging(dataByDay) { _, known in known }
-            guard let previous = calendar.date(byAdding: .day, value: -1, to: start) else { break }
-            end = previous
         }
     }
 

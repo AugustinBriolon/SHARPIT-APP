@@ -7,6 +7,8 @@ import SwiftUI
 struct DayDetailDatePicker: View {
     let selectedDay: Date
     var hasData: (Date) -> Bool? = { _ in nil }
+    /// Asks for the marks of a week about to be seen — the strip scrolled back, a month opened.
+    var onShowWeek: (Date) -> Void = { _ in }
     let onSelect: (Date) -> Void
 
     private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
@@ -16,10 +18,12 @@ struct DayDetailDatePicker: View {
     init(
         selectedDay: Date,
         hasData: @escaping (Date) -> Bool? = { _ in nil },
+        onShowWeek: @escaping (Date) -> Void = { _ in },
         onSelect: @escaping (Date) -> Void
     ) {
         self.selectedDay = selectedDay
         self.hasData = hasData
+        self.onShowWeek = onShowWeek
         self.onSelect = onSelect
         _weekOffset = State(initialValue: weeks.offset(forWeekContaining: selectedDay))
     }
@@ -73,6 +77,7 @@ struct DayDetailDatePicker: View {
                 onToday: { pick(.now) }
             )
         }
+        .onChange(of: weekOffset) { _, offset in onShowWeek(weeks.weekStart(forOffset: offset)) }
         // The day can change from outside — the navigation bar's "Aujourd'hui" — and the
         // strip follows it to that day's week.
         .onChange(of: selectedDay) { _, day in

@@ -21,7 +21,8 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
         VStack(spacing: 0) {
             DayDetailDatePicker(
                 selectedDay: store.selectedDay,
-                hasData: store.hasData(on:)
+                hasData: store.hasData(on:),
+                onShowWeek: { day in Task { await store.markDays(around: day) } }
             ) { day in
                 Task { await store.select(day) }
             }

@@ -269,7 +269,7 @@ payload omits, so sending back only what the app renders would silently reset th
 catalogue in `JournalTrackables.swift` therefore covers the signals the app can render, never
 all of the web's.
 
-The day picker marks the journal as the day screens mark their data (`SharpitDataDayMark`): a dot where something was noted, a ring where the day was read and holds nothing, nothing while unknown — from `/api/v1/data-days?domain=journal` across the whole history, most recent window first.
+The day picker marks the journal as the day screens mark their data (`SharpitDataDayMark`): a dot where something was noted, a ring where the day was read and holds nothing, nothing while unknown — from `/api/v1/data-days?domain=journal`. The journal and the day screens read their marks through one `DataDaysMarker`: the 91-day window holding the week in view first (the strip scrolled back, a month opened), then the rest of the history in a task of its own that a screen left mid-way does not cancel; a window that failed is read again when next needed. The journal's skeleton is its own rows redacted, under a date picker that stays put.
 
 Sections follow *when* a signal happened, not what kind of thing it is: Journée (the three
 metrics), Checklist auto, Nuit dernière, Signaux du jour. `JournalDayWindow` is its own axis
@@ -292,7 +292,7 @@ nutrition card (`NutritionTodayCard`, below Régularité). All three are a
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
 day's drill-down is a v1 resource plus a sections view, not a new store. The store keeps every day it
 read for the life of the screen (a day seen again appears at once and refreshes behind), marks the
-picker's history (`SharpitWeeks.history`, three years — Plan, Journal and the day screens share it) on first load from `/api/v1/data-days`, a 91-day window at a time, most recent first (so a logged day is marked before it is
+picker's history (`SharpitWeeks.history`, three years — Plan, Journal and the day screens share it) from `/api/v1/data-days` through `DataDaysMarker` (so a logged day is marked before it is
 opened), and reads the six most recent days with data ahead of the athlete.
 
 **Nutrition.** The food log is the athlete's own data and open to everyone; only the coach's
