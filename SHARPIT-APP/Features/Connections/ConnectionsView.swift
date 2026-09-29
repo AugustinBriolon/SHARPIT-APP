@@ -40,6 +40,22 @@ struct ConnectionsView: View {
             }
             .sharpitListRows()
 
+            Section {
+                NavigationLink {
+                    SourcePrioritiesView(tokenProvider: tokenProvider)
+                } label: {
+                    Label {
+                        Text("Priorités par catégorie")
+                            .font(SharpitTypography.bodyEmphasis)
+                    } icon: {
+                        SharpitRowIcon(symbol: "list.number")
+                    }
+                }
+            } footer: {
+                SharpitListFooter("Quand deux sources mesurent la même chose, choisis celle qui fait foi.")
+            }
+            .sharpitListRows()
+
             if isGarminConnected, historyImport != nil {
                 Section(
                     eyebrow: "Garmin",
@@ -239,7 +255,7 @@ struct ConnectionsView: View {
                 if on {
                     Task { await appleHealth.enable(token: tokenProvider) }
                 } else {
-                    appleHealth.disable()
+                    Task { await appleHealth.disable(token: tokenProvider) }
                 }
             }
         )

@@ -99,8 +99,11 @@ private final class StubReader: HealthReading, @unchecked Sendable {
     }
 }
 
-private actor UploadRecorder: HealthUploadServing {
+private actor UploadRecorder: HealthUploadServing, AppleHealthLinking {
     private(set) var uploads = 0
+    private(set) var links: [Bool] = []
+
+    func linkAppleHealth(_ linked: Bool, token: String) async throws { links.append(linked) }
     private(set) var workoutBatches: [[String]] = []
     var acceptsWorkouts = true
     var error: SharpitAPIError?
@@ -285,4 +288,15 @@ private func workout(_ id: String, endingDaysAgo days: Double) -> HealthWorkout 
 
 @Test func aWorkoutWithoutHeartRateOrRouteHasNoStream() {
     #expect(HealthWorkoutStreamBuilder.build(start: .now, durationSec: 600, heartRate: [], route: []) == nil)
+}
+
+@MainActor
+@Test func theSwitchTellsTheWebWhenAppleHealthIsLinkedOrNot() async {
+    let recorder = UploadRecorder()
+    let apple = source(StubReader(), recorder)
+
+    await apple.enable(token: { "t" })
+    await apple.disable(token: { "t" })
+
+    #expect(await recorder.links == [true, false])
 }

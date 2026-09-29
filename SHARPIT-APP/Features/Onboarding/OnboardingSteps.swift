@@ -727,7 +727,7 @@ struct OnboardingSourcesStep: View {
                 if on {
                     Task { await appleHealth.enable(token: tokenProvider) }
                 } else {
-                    appleHealth.disable()
+                    Task { await appleHealth.disable(token: tokenProvider) }
                 }
             }
         )

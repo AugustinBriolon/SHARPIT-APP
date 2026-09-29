@@ -51,7 +51,7 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadServing, NutritionServing, DataDaysServing, MyFitnessPalServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing {
+actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadServing, NutritionServing, DataDaysServing, MyFitnessPalServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing, SourcePrefsServing, AppleHealthLinking {
     private let session: URLSession
     private let baseURL: URL
 
@@ -154,6 +154,26 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadSe
             token: token,
             body: body
         ).updatedDays
+    }
+
+    func sourcePrefs(token: String) async throws -> V1SourcePrefsResponse {
+        try await send(V1SourcePrefsResponse.self, path: "/api/v1/integrations/source-prefs", method: "GET", token: token)
+    }
+
+    func updateSourcePrefs(_ action: SourcePrefsAction, dataClass: String, provider: String, token: String) async throws -> V1SourcePrefs {
+        let body = try JSONEncoder().encode(SourcePrefsPatch(action: action, dataClass: dataClass, provider: provider))
+        return try await send(
+            SourcePrefsPatchResult.self,
+            path: "/api/v1/integrations/source-prefs",
+            method: "PATCH",
+            token: token,
+            body: body
+        ).prefs
+    }
+
+    func linkAppleHealth(_ linked: Bool, token: String) async throws {
+        let body = try JSONEncoder().encode(["linked": linked])
+        _ = try await send(AppleHealthLinkResult.self, path: "/api/v1/apple-health/link", method: "POST", token: token, body: body)
     }
 
     func uploadWorkouts(_ workouts: [HealthWorkout], token: String) async throws -> HealthWorkoutUploadResult {
@@ -309,6 +329,20 @@ private nonisolated struct GarminFullSyncResult: Decodable {
 private nonisolated struct HealthUpload: Encodable {
     let source: String
     let days: [HealthDailySummary]
+}
+
+private nonisolated struct SourcePrefsPatch: Encodable {
+    let action: SourcePrefsAction
+    let dataClass: String
+    let provider: String
+}
+
+private nonisolated struct SourcePrefsPatchResult: Decodable {
+    let prefs: V1SourcePrefs
+}
+
+private nonisolated struct AppleHealthLinkResult: Decodable {
+    let linked: Bool
 }
 
 private nonisolated struct HealthWorkoutUpload: Encodable {

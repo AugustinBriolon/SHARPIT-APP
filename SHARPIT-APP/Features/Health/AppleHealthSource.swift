@@ -34,7 +34,7 @@ final class AppleHealthSource {
     private(set) var lastSentAt: Date?
 
     private let reader: any HealthReading
-    private let client: any HealthUploadServing
+    private let client: any HealthUploadServing & AppleHealthLinking
     private let defaults: UserDefaults
     private let now: () -> Date
     private let calendar = Calendar.current
@@ -44,7 +44,7 @@ final class AppleHealthSource {
 
     init(
         reader: any HealthReading,
-        client: any HealthUploadServing,
+        client: any HealthUploadServing & AppleHealthLinking,
         defaults: UserDefaults = .standard,
         now: @escaping () -> Date = Date.init
     ) {
@@ -89,14 +89,24 @@ final class AppleHealthSource {
             return
         }
         setEnabled(true)
+        await link(true, token: token)
         if marker(.days) == nil { setMarker(.days, historyStart) }
         if marker(.workouts) == nil { setMarker(.workouts, historyStart) }
         _ = await send(token: token)
     }
 
-    func disable() {
+    func disable(token: @escaping () async throws -> String) async {
         setEnabled(false)
         state = .idle
+        await link(false, token: token)
+    }
+
+    /// Tells the web the switch moved, so Apple Health counts among the athlete's sources
+    /// (SHARPIT ADR-054). Sending links it too, so a failure here costs nothing lasting.
+    private func link(_ linked: Bool, token: @escaping () async throws -> String) async {
+        _ = try? await SharpitRetry.run {
+            try await client.linkAppleHealth(linked, token: try await token())
+        }
     }
 
     /// Sends what Apple Health holds since the last send, when the source is on: the days (the

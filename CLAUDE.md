@@ -368,8 +368,12 @@ the days (`/api/v1/health-samples`, 31 per call, the last week always re-sent; t
 them into the Core's sleep, HRV and resting-HR observations) and the workouts
 (`/api/v1/health-workouts`, five per call, a month read at a time — `HealthWorkout`, its heart
 rate and route laid on one 5-second axis by `HealthWorkoutStreamBuilder`). The server stores a
-workout as an activity only while no Garmin or Strava account is connected; it answers
-`acceptsWorkouts: false` otherwise and the app stops sending them. HealthKit is read-only and entitled in `SharpIt.entitlements`. Paramètres → Sources de données also offers the import on demand
+workout while Apple Health is enabled for activities in the athlete's sources; it answers
+`acceptsWorkouts: false` otherwise and the app stops sending them. Apple Health is a source like
+the others (SHARPIT ADR-054): its switch links it on the web (`/api/v1/apple-health/link`), and
+Sources de données › Priorités par catégorie (`SourcePrioritiesView`, `SourcePrefsStore`,
+`/api/v1/integrations/source-prefs`) turns each connected source on or off per data class and picks
+the primary — the web applies it: the primary's values win, the others fill what it lacks. HealthKit is read-only and entitled in `SharpIt.entitlements`. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
 
 **Activity cache.** The list (`ActivityView`) is one scroll view for every phase, holding the

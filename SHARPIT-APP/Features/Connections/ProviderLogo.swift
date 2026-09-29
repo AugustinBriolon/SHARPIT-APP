@@ -11,12 +11,34 @@ struct ProviderLogo: View {
         case garmin
         case appleHealth
         case myFitnessPal
+        case strava
+        case withings
+        case renpho
+        case google
+
+        /// The web's integration id (`garmin`, `apple-health`…), for lists the web sends.
+        init?(integrationId: String) {
+            switch integrationId {
+            case "garmin": self = .garmin
+            case "apple-health": self = .appleHealth
+            case "myfitnesspal": self = .myFitnessPal
+            case "strava": self = .strava
+            case "withings": self = .withings
+            case "renpho": self = .renpho
+            case "google": self = .google
+            default: return nil
+            }
+        }
 
         var assetName: String {
             switch self {
             case .garmin: "Provider/Garmin"
             case .appleHealth: "Provider/AppleHealth"
             case .myFitnessPal: "Provider/MyFitnessPal"
+            case .strava: "Provider/Strava"
+            case .withings: "Provider/Withings"
+            case .renpho: "Provider/Renpho"
+            case .google: "Provider/Google"
             }
         }
 
@@ -25,6 +47,9 @@ struct ProviderLogo: View {
             case .garmin: "applewatch.side.right"
             case .appleHealth: "heart.fill"
             case .myFitnessPal: "fork.knife"
+            case .strava: "figure.run"
+            case .withings, .renpho: "scalemass"
+            case .google: "calendar"
             }
         }
     }
