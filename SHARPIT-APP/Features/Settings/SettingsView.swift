@@ -192,7 +192,7 @@ struct SettingsView: View {
     }
 
     private var sourcesDetail: String {
-        appleHealth.isEnabled ? "Garmin · Apple Santé" : "Garmin"
+        appleHealth.isEnabled ? "Apple Santé activé" : "Garmin, Apple Santé, MyFitnessPal"
     }
 
     private var iCloudDetail: String {

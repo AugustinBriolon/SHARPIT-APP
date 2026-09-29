@@ -17,8 +17,16 @@ nonisolated protocol SyncServing: Sendable {
 }
 
 /// Sends day summaries read from Apple Health; the server fills only what no provider wrote.
+/// Workouts become activities, while no Garmin or Strava account is connected.
 nonisolated protocol HealthUploadServing: Sendable {
     func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int
+    func uploadWorkouts(_ workouts: [HealthWorkout], token: String) async throws -> HealthWorkoutUploadResult
+}
+
+nonisolated struct HealthWorkoutUploadResult: Decodable, Equatable, Sendable {
+    /// False while Garmin or Strava is connected: those stay the source of sessions.
+    let acceptsWorkouts: Bool
+    let imported: Int
 }
 
 /// Pulls a provider's whole history once — every activity Garmin holds, with no date bound.
@@ -146,6 +154,17 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadSe
             token: token,
             body: body
         ).updatedDays
+    }
+
+    func uploadWorkouts(_ workouts: [HealthWorkout], token: String) async throws -> HealthWorkoutUploadResult {
+        let body = try JSONEncoder().encode(HealthWorkoutUpload(source: "apple-health", workouts: workouts))
+        return try await send(
+            HealthWorkoutUploadResult.self,
+            path: "/api/v1/health-workouts",
+            method: "POST",
+            token: token,
+            body: body
+        )
     }
 
     func registerDeviceToken(_ deviceToken: String, debug: Bool = false, token: String) async throws {
@@ -290,6 +309,11 @@ private nonisolated struct GarminFullSyncResult: Decodable {
 private nonisolated struct HealthUpload: Encodable {
     let source: String
     let days: [HealthDailySummary]
+}
+
+private nonisolated struct HealthWorkoutUpload: Encodable {
+    let source: String
+    let workouts: [HealthWorkout]
 }
 
 private nonisolated struct HealthUploadResult: Decodable {

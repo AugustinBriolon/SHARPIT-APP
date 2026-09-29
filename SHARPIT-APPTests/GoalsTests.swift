@@ -74,7 +74,14 @@ private struct StubGoalClient: GoalServing {
         V1Goal(id: "2", title: "Course 2", kind: .race, achieved: true),
         V1Goal(id: "3", title: "Métrique 1", kind: .metric, achieved: false)
     ])
-    let store = GoalStore(client: client, tokenProvider: { "token" })
+    // No session, profile or activity client: a test never reaches the network.
+    let store = GoalStore(
+        client: client,
+        plannedSessionClient: nil,
+        profileClient: nil,
+        activityClient: nil,
+        tokenProvider: { "token" }
+    )
     await store.load()
 
     #expect(store.activeGoals.map(\.id) == ["1", "3"])

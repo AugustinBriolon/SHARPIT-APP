@@ -60,7 +60,7 @@ enum ConnectionsReadout {
     static func appleHealthSubtitle(isAvailable: Bool, state: AppleHealthSource.State) -> Line {
         guard isAvailable else { return Line(text: "Indisponible sur cet iPhone", isProblem: false) }
         if case .failed(let message) = state { return Line(text: message, isProblem: true) }
-        return Line(text: "Complète Garmin entre deux synchros", isProblem: false)
+        return Line(text: "Séances, sommeil et cœur de ta montre", isProblem: false)
     }
 
     static func iCloud(_ status: CKAccountStatus?) -> String {

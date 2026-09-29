@@ -361,7 +361,15 @@ full-history Garmin import once per Clerk user, the first time Garmin is seen co
 off by the server's five-minute limit is picked up on the next foreground, and the server skips
 what it already holds. Streams are not in that pass: `/api/v1/sync` backfills them a batch at a
 time. Apple Health only fills gaps; Garmin stays the reference (`docs/adr/0005`, SHARPIT
-ADR-043). HealthKit is read-only and entitled in `SharpIt.entitlements`. Paramètres → Sources de données also offers the import on demand
+ADR-043) — yet it is enough on its own: an Apple Watch without Garmin gets the whole app.
+Switching it on sends the last year, then each sync sends what came in since, a marker per kind
+and per account moving forward batch by batch (so a send cut short picks up where it stopped):
+the days (`/api/v1/health-samples`, 31 per call, the last week always re-sent; the server turns
+them into the Core's sleep, HRV and resting-HR observations) and the workouts
+(`/api/v1/health-workouts`, five per call, a month read at a time — `HealthWorkout`, its heart
+rate and route laid on one 5-second axis by `HealthWorkoutStreamBuilder`). The server stores a
+workout as an activity only while no Garmin or Strava account is connected; it answers
+`acceptsWorkouts: false` otherwise and the app stops sending them. HealthKit is read-only and entitled in `SharpIt.entitlements`. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
 
 **Activity cache.** The list (`ActivityView`) is one scroll view for every phase, holding the

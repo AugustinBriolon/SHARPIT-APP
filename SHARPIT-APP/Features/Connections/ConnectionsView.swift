@@ -59,7 +59,7 @@ struct ConnectionsView: View {
             switch state {
             case .sending:
                 appleHealthToastToken = toastCenter.show(
-                    "Envoi vers Apple Santé…",
+                    "Import depuis Apple Santé…",
                     symbol: "heart.text.square",
                     autoDismissAfter: nil
                 )

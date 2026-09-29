@@ -27,7 +27,7 @@ import Testing
     let unavailable = ConnectionsReadout.appleHealthSubtitle(isAvailable: false, state: .idle)
     let refused = ConnectionsReadout.appleHealthSubtitle(isAvailable: true, state: .failed("Accès refusé."))
 
-    #expect(normal == .init(text: "Complète Garmin entre deux synchros", isProblem: false))
+    #expect(normal == .init(text: "Séances, sommeil et cœur de ta montre", isProblem: false))
     #expect(sending == normal)
     #expect(unavailable == .init(text: "Indisponible sur cet iPhone", isProblem: false))
     #expect(refused == .init(text: "Accès refusé.", isProblem: true))

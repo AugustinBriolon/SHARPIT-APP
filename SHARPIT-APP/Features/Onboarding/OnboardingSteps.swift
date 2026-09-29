@@ -690,7 +690,7 @@ struct OnboardingSourcesStep: View {
 
     private var appleHealthDetail: String {
         let line = ConnectionsReadout.appleHealthSubtitle(isAvailable: appleHealth.isAvailable, state: appleHealth.state)
-        return appleHealth.isAvailable && !line.isProblem ? "Pas, fréquence cardiaque au repos et sommeil." : line.text
+        return appleHealth.isAvailable && !line.isProblem ? "Séances, sommeil, VFC et poids. Suffit sans Garmin." : line.text
     }
 
     @ViewBuilder
