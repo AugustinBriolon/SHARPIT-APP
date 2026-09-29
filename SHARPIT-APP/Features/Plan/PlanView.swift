@@ -15,6 +15,8 @@ struct PlanView: View {
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var store: PlanStore
     @State private var selection: PlanSelection?
+    /// The expert reading's load layer, shown above this week (ADR 0006); nil otherwise.
+    @State private var trainingLoad: V1TrainingLoad?
     @State private var showingCalendar = false
     @State private var showingMacroPlan = false
     /// Owned here, not by the sheet: closing it mid-generation keeps the week coming.
@@ -64,6 +66,7 @@ struct PlanView: View {
                     store: store,
                     activityClient: activityClient,
                     tokenProvider: tokenProvider,
+                    trainingLoad: isExpertReading ? trainingLoad : nil,
                     onSelect: { selection = $0 }
                 )
             }
@@ -158,6 +161,7 @@ struct PlanView: View {
                 }
             }
             .task { await store.loadAroundSelection() }
+            .task(id: isExpertReading) { await loadTrainingLoad() }
             .task { await generation.resume() }
             // A session to do, tapped in a widget: today's week, its drawer open.
             .onChange(of: router.pendingPlannedSessionId, initial: true) { _, id in
@@ -178,7 +182,10 @@ struct PlanView: View {
                 Task { await store.loadAroundSelection() }
             }
             .onChange(of: router.calendarRevision) { _, _ in
-                Task { await store.reload() }
+                Task {
+                    await store.reload()
+                    await loadTrainingLoad()
+                }
             }
         }
     }
@@ -198,6 +205,14 @@ extension PlanView {
             case .executed: nil
             }
         }.first
+    }
+
+    /// Read only in the expert reading: the essential one never shows it, so never asks for it.
+    fileprivate func loadTrainingLoad() async {
+        guard isExpertReading, let token = try? await tokenProvider() else { return }
+        if let load = try? await SharpitClient().trainingLoad(trainingDayId: TrainingDayId.today(), token: token) {
+            trainingLoad = load
+        }
     }
 
     fileprivate func linkContext(on date: Date) -> SessionLinkContext {
@@ -282,6 +297,7 @@ private struct PlanWeekPager: View {
     let store: PlanStore
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
+    let trainingLoad: V1TrainingLoad?
     let onSelect: (PlanSelection) -> Void
 
     @State private var position: Int?
@@ -295,6 +311,7 @@ private struct PlanWeekPager: View {
                         offset: offset,
                         activityClient: activityClient,
                         tokenProvider: tokenProvider,
+                        trainingLoad: offset == 0 ? trainingLoad : nil,
                         onSelect: onSelect
                     )
                     .containerRelativeFrame(.horizontal)
@@ -327,6 +344,7 @@ private struct PlanWeekPage: View {
     let offset: Int
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
+    let trainingLoad: V1TrainingLoad?
     let onSelect: (PlanSelection) -> Void
 
     var body: some View {
@@ -340,6 +358,7 @@ private struct PlanWeekPage: View {
                 entries: entries,
                 activityClient: activityClient,
                 tokenProvider: tokenProvider,
+                trainingLoad: trainingLoad,
                 onSelect: onSelect
             )
         case .error(let message):
@@ -366,12 +385,16 @@ private struct PlanWeekContent: View {
     let entries: [PlanEntry]
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
+    let trainingLoad: V1TrainingLoad?
     let onSelect: (PlanSelection) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                    if let trainingLoad, !trainingLoad.days.isEmpty {
+                        TrainingLoadCard(load: trainingLoad)
+                    }
                     if let focus = store.focusSession(from: entries) {
                         Button { onSelect(focus) } label: {
                             PlanFocusSession(

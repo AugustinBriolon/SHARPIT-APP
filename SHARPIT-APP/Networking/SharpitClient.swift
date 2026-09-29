@@ -43,7 +43,7 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, NutritionServing, DataDaysServing, MyFitnessPalServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing {
+actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadServing, NutritionServing, DataDaysServing, MyFitnessPalServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -62,6 +62,10 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, NutritionServi
 
     func recovery(trainingDayId: String, token: String) async throws -> V1RecoveryResponse {
         try await day(V1RecoveryResponse.self, path: "/api/v1/recovery", trainingDayId: trainingDayId, token: token)
+    }
+
+    func trainingLoad(trainingDayId: String, token: String) async throws -> V1TrainingLoad {
+        try await day(V1TrainingLoad.self, path: "/api/v1/training-load", trainingDayId: trainingDayId, token: token)
     }
 
     func nutrition(trainingDayId: String, token: String) async throws -> V1NutritionResponse {

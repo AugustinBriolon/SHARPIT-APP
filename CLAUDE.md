@@ -409,7 +409,7 @@ StoreKit Configuration).
 `DisplayModeStore` in the environment; a surface asks `\.isExpertReading` rather than the
 profile (`docs/adr/0006`). It governs what is shown and how it is named, never what is
 measured — session load appears in both readings, as « charge 78 » or « 78 TSS », mirroring
-the web's `formatTrainingLoad`. It is a reading preference, not an access tier: `tier`
+the web's `formatTrainingLoad`. In expert, Activité adds « Analyse technique » (the streams' `analysis`) and Plan adds « Forme » (`/api/v1/training-load`: CTL/ATL/TSB, weekly TSS); the picker page lists exactly that. It is a reading preference, not an access tier: `tier`
 (FREE / PRO) gates features, the density gates nothing.
 
 **Weather** comes from WeatherKit + Core Location (`LocationWeatherService`), never from

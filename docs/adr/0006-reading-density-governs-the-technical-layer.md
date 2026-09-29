@@ -105,3 +105,20 @@ source of truth for a value the profile already holds.
 - `../SHARPIT/src/components/display-mode/expert-only.tsx` — how the web hides an expert block
 - ADR 0004 — semantic color and a tinted coach pill
 - SHARPIT ADR-040 — native never calls `/api/presentation/*`
+
+## Update — 2026-09-30: the expert layer ships on iOS
+
+Until now the expert reading changed one word in the app (« Charge 78 » → « 78 TSS ») while the
+picker promised IF, CTL/ATL/TSB, zones and decoupling. The athlete chose to make the promise true
+rather than drop the picker. In the expert reading the app now shows:
+
+- **Activité › Analyse technique** (`ActivityTechnicalSection`): NP, IF, VI, TSS, efficiency
+  factor, cardiac decoupling, time per heart-rate and power zone, and the thresholds they were read
+  against — the `analysis` the server already sends with `/api/v1/activities/<id>/streams`,
+  worded as the web's `buildPerformanceRows`.
+- **Plan › Forme** (`TrainingLoadCard`) above the current week: chronic form (CTL), acute fatigue
+  (ATL), net form (TSB) against the web's −20…+10 band over six weeks, and eight weeks of TSS,
+  from the new `/api/v1/training-load` (the Effort page's PMC, projected for native clients).
+
+The essential reading fetches neither the load nor shows the analysis. The picker page says
+exactly what Expert adds, screen by screen.

@@ -161,6 +161,9 @@ nonisolated struct V1ActivityStreamPayload: Decodable, Sendable, Equatable {
     let path: [[Double]]?
     let samples: [V1ActivityStreamSample]
     let stats: V1ActivityStreamStats?
+    /// The technical reading the server computed from these streams — shown in the expert
+    /// reading only (ADR 0006).
+    var analysis: V1ActivityAnalysis? = nil
 
     var route: [V1ActivityCoordinate] {
         (path ?? []).compactMap { pair in

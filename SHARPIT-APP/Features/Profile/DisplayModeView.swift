@@ -48,18 +48,39 @@ struct DisplayModeView: View {
                 Section {
                     choice(
                         title: "Essentiel",
-                        detail: "Ce qui s'est passé, ce que ça a coûté, quoi faire ensuite.",
-                        example: "Charge 78 · ressenti solide",
+                        detail: "Ce qui s'est passé, ce que ça a coûté, quoi faire ensuite — en mots plutôt qu'en sigles.",
+                        example: "Charge 78",
                         isExpert: false
                     )
                     choice(
                         title: "Expert",
-                        detail: "Ajoute la couche technique : TSS, IF, CTL/ATL/TSB, zones, découplage.",
-                        example: "78 TSS · IF 0,82 · TSB −12",
+                        detail: "Les mêmes écrans, plus la couche technique qui les fonde.",
+                        example: "78 TSS · IF 0,81 · CTL 52 · TSB −10",
                         isExpert: true
                     )
                 } footer: {
                     saveStatus
+                }
+                .sharpitListRows()
+
+                // Said exactly, screen by screen: a preference that promises more than it changes
+                // is worse than none.
+                Section(eyebrow: "Ce qu'Expert ajoute") {
+                    change(
+                        symbol: "waveform.path.ecg",
+                        title: "Analyse technique de chaque séance",
+                        text: "Dans Activité : NP, IF, VI, TSS, facteur d'efficacité, découplage cardiaque, temps par zone cardiaque et de puissance, et les seuils utilisés."
+                    )
+                    change(
+                        symbol: "chart.xyaxis.line",
+                        title: "Ta forme dans Plan",
+                        text: "En haut de la semaine : forme chronique (CTL), fatigue aiguë (ATL), forme nette (TSB) sur six semaines, et ta charge TSS des huit dernières."
+                    )
+                    change(
+                        symbol: "gauge.with.dots.needle.50percent",
+                        title: "La charge nommée en TSS",
+                        text: "Sur les séances faites et prévues : « 78 TSS » au lieu de « Charge 78 ». Le chiffre est le même."
+                    )
                 }
                 .sharpitListRows()
 
@@ -100,6 +121,23 @@ struct DisplayModeView: View {
         }
         .disabled(store.isSaving)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private func change(symbol: String, title: String, text: String) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                Text(text)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } icon: {
+            SharpitRowIcon(symbol: symbol)
+        }
+        .padding(.vertical, SharpitSpacing.xxs)
     }
 
     private func audience(title: String, text: String) -> some View {

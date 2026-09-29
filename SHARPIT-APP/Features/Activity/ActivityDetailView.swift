@@ -488,6 +488,15 @@ private struct ActivityDetailContent: View {
                     .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 6)), value: appeared)
             }
 
+            // The expert reading's technical layer (ADR 0006): absent otherwise, never teased.
+            if isExpertReading, let analysis = streamPayload?.analysis,
+               !ActivityTechnicalSection(analysis: analysis).isEmpty {
+                ActivityTechnicalSection(analysis: analysis)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 12)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 6)), value: appeared)
+            }
+
             if !splits.isEmpty {
                 ActivitySplitsSection(
                     splits: splits,
