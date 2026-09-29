@@ -83,7 +83,7 @@ nonisolated enum SharpitFeature: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .journal: "book.closed"
         case .nutrition: "fork.knife"
-        case .health: "heart.text.square"
+        case .health: "heart"
         case .regularity: "calendar"
         }
     }

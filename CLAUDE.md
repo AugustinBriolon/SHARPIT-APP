@@ -384,8 +384,11 @@ payload does not carry, is kept there too: the drawer opens on the last one read
 plan again behind it, since a plan is edited where a recorded session is not.
 
 **Santé.** The athlete's health as a check-up (`SanteView`, SHARPIT ADR-053), ranked by what
-matters most: « Bilan du mois » (the biological age, how many markers sit in their norm, up to three
-that moved), « À surveiller » (only when something deserves attention — resting HR up for days, HRV
+matters most. It opens on `SanteHero`, on the page rather than in a card: the biological age in
+`SharpitTypography.showcaseScore` on a halo in the reading's tone, a pill with the gap to the civil age,
+and a ruler ten years either side of it — or, without the age (below Pro, missing data), how many
+markers sit in their norm with one tick per marker in its tone — then up to three markers that moved.
+Then: « À surveiller » (only when something deserves attention — resting HR up for days, HRV
 under the athlete's range, short nights, a fast weight change, an active sensitive zone), then
 « Signes vitaux » (resting HR, HRV, sleep, VO₂max), « Corps » (weight with its target, body fat,
 visceral fat, muscle) and « Au quotidien » (steps, breathing during sleep). Everything comes from
@@ -514,6 +517,9 @@ What makes a surface feel finished, applied everywhere new work lands:
 
 Screen structure follows the web causal column: state → evidence → recommendation →
 projection → limit → confidence.
+
+The one wash allowed in content is Santé's hero halo: it carries the reading's tone (younger or
+older, anything to watch), behind the one number the tab stands on — never decoration elsewhere.
 
 Forbidden, on both platforms: streak counters, radial gauges dominating a hero, sparkle /
 chatbot chrome, colored glow shadows, invented metrics, motivational micro-copy.

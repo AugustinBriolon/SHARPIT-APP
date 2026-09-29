@@ -59,7 +59,8 @@ struct SanteView: View {
             }
             .background(SharpitCanvasBackground())
             .navigationTitle("Santé")
-            .navigationBarTitleDisplayMode(.large)
+            // Inline: the hero is the page's headline, its halo rises under the bar.
+            .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -90,22 +91,30 @@ struct SanteView: View {
 
     private var readout: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            VStack(spacing: 0) {
                 if let overview = store.overview {
-                    synthesis(overview.synthesis)
-                        .revealed(hasAppeared, index: 0)
-                    if !overview.watch.isEmpty {
-                        SanteWatchCard(items: overview.watch)
-                            .revealed(hasAppeared, index: 1)
+                    // Full width, on the page itself: the headline is not a card.
+                    SanteHero(
+                        synthesis: overview.synthesis,
+                        tones: overview.allMarkers.compactMap(\.norm?.tone),
+                        watchCount: overview.watch.count
+                    )
+                    VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                        biologicalAgeAccess(overview.synthesis)
+                        if !overview.watch.isEmpty {
+                            SanteWatchCard(items: overview.watch)
+                                .revealed(hasAppeared, index: 1)
+                        }
+                        section("Signes vitaux", overview.vitals, index: 2)
+                        section("Corps", overview.body, index: 3)
+                        section("Au quotidien", overview.daily, index: 4)
                     }
-                    section("Signes vitaux", overview.vitals, index: 2)
-                    section("Corps", overview.body, index: 3)
-                    section("Au quotidien", overview.daily, index: 4)
+                    .padding(.horizontal, SharpitSpacing.pageInset)
                 } else {
                     SanteSkeleton()
+                        .padding(.horizontal, SharpitSpacing.pageInset)
                 }
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.xl)
         }
         .modifier(ScrollUnderGlass())
@@ -113,10 +122,10 @@ struct SanteView: View {
         .onAppear { hasAppeared = true }
     }
 
+    /// The way to the biological age when the hero cannot show it: Pro, or the data it needs.
     @ViewBuilder
-    private func synthesis(_ synthesis: V1HealthSynthesis) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SanteSynthesisCard(synthesis: synthesis)
+    private func biologicalAgeAccess(_ synthesis: V1HealthSynthesis) -> some View {
+        Group {
             if synthesis.biologicalAgeRequiresPro {
                 SharpitProTeaser(
                     title: "Âge biologique",
@@ -170,89 +179,7 @@ struct SanteView: View {
     }
 }
 
-// MARK: - Synthesis
-
-/// The month in one card: the biological age when SharpIt has it, how many markers sit in their
-/// norm, and the few that moved.
-private struct SanteSynthesisCard: View {
-    let synthesis: V1HealthSynthesis
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(title: "Bilan du mois", symbol: "heart.text.square", showsChevron: false)
-            if let age = synthesis.biologicalAge {
-                BiologicalAgeHeadline(age: age)
-            }
-            if let line = SanteReadout.synthesis(synthesis) {
-                Text(line)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-            }
-            if !synthesis.highlights.isEmpty {
-                // Three at most: in a row when they fit, stacked when they do not.
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: SharpitSpacing.xs) { chips }
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) { chips }
-                }
-            }
-        }
-        .padding(SharpitSpacing.md + 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
-        .accessibilityElement(children: .combine)
-    }
-
-    private var chips: some View {
-        ForEach(synthesis.highlights, id: \.key) { highlight in
-            Text(SanteReadout.highlight(highlight))
-                .font(SharpitTypography.meta.weight(.semibold))
-                .foregroundStyle(highlight.tone.color)
-                .lineLimit(1)
-                .fixedSize()
-                .padding(.horizontal, SharpitSpacing.sm)
-                .padding(.vertical, SharpitSpacing.xxs + 2)
-                .background(highlight.tone.color.opacity(0.14), in: Capsule())
-        }
-    }
-}
-
-/// The biological age, large, the civil age beside it, and what it is not.
-private struct BiologicalAgeHeadline: View {
-    let age: V1BiologicalAge
-
-    private var tone: Color {
-        switch BiologicalAgeReadout.isYounger(age) {
-        case true?: SharpitColor.signalRecovery
-        case false?: SharpitColor.signalCaution
-        case nil: SharpitColor.foreground
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                Text(BiologicalAgeReadout.years(age.years))
-                    .font(SharpitTypography.heroScore)
-                    .tracking(SharpitTypography.heroScoreTracking)
-                    .foregroundStyle(tone)
-                    .contentTransition(.numericText())
-                Text("ans d'âge biologique")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            if let comparison = BiologicalAgeReadout.comparison(age) {
-                Text(comparison)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-            }
-            Text(BiologicalAgeReadout.disclaimer)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-}
+// MARK: - Biological age
 
 /// Pro, but the web could not estimate it: what the estimate needs, opening Compte to fill it in.
 private struct BiologicalAgePendingCard: View {
@@ -350,37 +277,52 @@ struct SanteMarkerTile: View {
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
                 }
-                HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xxs) {
+                Spacer(minLength: SharpitSpacing.xs)
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xxs) {
                     Text(value.text)
-                        .font(SharpitTypography.data)
-                        .tracking(SharpitTypography.dataTracking)
+                        .font(SharpitTypography.gaugeScore)
+                        .tracking(SharpitTypography.gaugeScoreTracking)
                         .foregroundStyle(SharpitColor.foreground)
                         .contentTransition(.numericText(value: marker.value))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                     if let unit = value.unit {
                         Text(unit)
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
                             .lineLimit(1)
                     }
+                    Spacer(minLength: 0)
+                    if let trend = marker.trend, !trend.stable {
+                        // The month's change, beside the value it moved.
+                        Text(SanteReadout.signedDelta(trend.delta, for: marker.key))
+                            .font(SharpitTypography.label.weight(.semibold))
+                            .foregroundStyle(trend.tone == .neutral ? SharpitColor.foreground : trend.tone.color)
+                            .lineLimit(1)
+                            .fixedSize()
+                            .padding(.horizontal, SharpitSpacing.xs)
+                            .padding(.vertical, 3)
+                            .background(
+                                (trend.tone == .neutral ? SharpitColor.mutedForeground : trend.tone.color).opacity(0.15),
+                                in: Capsule()
+                            )
+                    }
                 }
-                Text(marker.norm?.label ?? SanteReadout.basis(marker))
-                    .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(marker.norm?.tone.color ?? SharpitColor.mutedForeground)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
-                    Text(SanteReadout.trend(marker) ?? " ")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(marker.trend.map { $0.stable ? SharpitColor.mutedForeground : $0.tone.color } ?? SharpitColor.mutedForeground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                HStack(alignment: .center, spacing: SharpitSpacing.xs) {
+                    Text(marker.norm?.label ?? SanteReadout.basis(marker))
+                        .font(SharpitTypography.meta.weight(.semibold))
+                        .foregroundStyle(marker.norm?.tone.color ?? SharpitColor.mutedForeground)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                     if marker.series.count > 2 {
                         CorpsSparkline(points: marker.series, tone: SharpitColor.primary)
-                            .frame(width: 44, height: 18)
+                            .frame(width: 40, height: 18)
                     }
                 }
             }
+            .frame(minHeight: 112, alignment: .top)
             .padding(SharpitSpacing.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .sharpitSurface(.panel)

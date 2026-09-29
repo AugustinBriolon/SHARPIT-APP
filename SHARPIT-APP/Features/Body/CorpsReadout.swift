@@ -430,6 +430,18 @@ enum BiologicalAgeReadout {
     }
 
     /// Younger than the civil age reads as recovery green; older is a caution, never a risk red.
+    /// « 4 ans de moins » — the gap alone, for the Santé hero's pill.
+    static func gap(_ age: V1BiologicalAge) -> String? {
+        guard let civil = age.chronologicalYears else { return nil }
+        switch Int(civil.rounded()) - Int(age.years.rounded()) {
+        case 0: return "Ton âge civil"
+        case 1: return "1 an de moins"
+        case -1: return "1 an de plus"
+        case let years where years > 0: return "\(years) ans de moins"
+        case let years: return "\(-years) ans de plus"
+        }
+    }
+
     static func isYounger(_ age: V1BiologicalAge) -> Bool? {
         age.chronologicalYears.map { age.years < $0 }
     }

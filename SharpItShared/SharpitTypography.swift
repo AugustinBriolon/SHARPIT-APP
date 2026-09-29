@@ -117,6 +117,11 @@ enum SharpitTypography {
     static var heroScore: Font { instrument(size: 56, weight: .medium, relativeTo: .largeTitle) }
     static var heroScoreTracking: CGFloat { tracking(em: -0.03, size: 56) }
 
+    /// The one number a whole tab stands on — Santé's biological age. Twice a drill-down's hero,
+    /// alone on its halo, never inside a card.
+    static var showcaseScore: Font { instrument(size: 112, weight: .medium, relativeTo: .largeTitle) }
+    static var showcaseScoreTracking: CGFloat { tracking(em: -0.05, size: 112) }
+
     /// CSS tracking is relative to the font size; SwiftUI's is absolute.
     static func tracking(em: CGFloat, size: CGFloat) -> CGFloat {
         em * size

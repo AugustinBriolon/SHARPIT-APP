@@ -26,7 +26,7 @@ enum ShellDestination: String, CaseIterable, Sendable {
         case .plan: "calendar"
         case .coach: "bubble.left.and.bubble.right"
         case .activity: "figure.run"
-        case .body: "heart.text.square"
+        case .body: "heart"
         }
     }
 
