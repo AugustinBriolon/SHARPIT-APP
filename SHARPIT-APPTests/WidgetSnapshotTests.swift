@@ -231,3 +231,15 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     #expect(SharpitFigureFormat.duration(minutes: 185) == "3 h 05")
     #expect(SharpitFigureFormat.kilometers(128.4) == "128")
 }
+
+@Test func aSportRecordedWithoutDistancesReadsInTime() {
+    // Rides come without a distance: « 0,0 km » beside 1 h 15 said nothing true.
+    let training = WidgetSnapshot.Training(sessions: [
+        WidgetSnapshot.TrainedSession(dayId: "2026-09-29", sport: .bike, distanceMeters: nil, durationSeconds: 75 * 60),
+    ])
+    let bike = training.week(of: wednesday, sport: .bike, calendar: parisCalendar)
+
+    #expect(!bike.readsInDistance)
+    #expect(bike.figureText == "1 h 15")
+    #expect(bike.days[1].value == 75)
+}

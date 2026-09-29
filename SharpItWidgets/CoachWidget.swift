@@ -52,11 +52,7 @@ struct CoachWidgetView: View {
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                     Spacer(minLength: 0)
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        .frame(width: 22, height: 22)
-                        .background(SharpitColor.primary, in: Circle())
+                    SendMark()
                 }
                 .padding(.leading, 10)
                 .padding(.trailing, 4)
@@ -64,6 +60,28 @@ struct CoachWidgetView: View {
                 .background(SharpitColor.foreground.opacity(0.07), in: Capsule())
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+}
+
+/// The composer's send button. In full color, a Forest disc with the arrow knocked out; in a
+/// tinted or clear home screen the system paints every shape one color, so the arrow is cut
+/// out of the disc instead of drawn over it — else it vanished into it.
+private struct SendMark: View {
+    @Environment(\.widgetRenderingMode) private var renderingMode
+
+    var body: some View {
+        if renderingMode == .fullColor {
+            Image(systemName: "arrow.up")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(SharpitColor.primaryForeground)
+                .frame(width: 22, height: 22)
+                .background(SharpitColor.primary, in: Circle())
+        } else {
+            Image(systemName: "arrow.up.circle.fill")
+                .font(.system(size: 22))
+                .symbolRenderingMode(.monochrome)
+                .widgetAccentable()
         }
     }
 }

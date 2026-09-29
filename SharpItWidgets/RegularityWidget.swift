@@ -33,7 +33,7 @@ struct RegularityWidgetView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         case .systemMedium:
-            RegularityBody(regularity: entry.regularity, markSize: 14, showsLabels: true)
+            RegularityBody(regularity: entry.regularity, markSize: 12, showsLabels: true)
         default:
             RegularityBody(regularity: entry.regularity, markSize: 11, showsLabels: false)
         }
@@ -68,7 +68,9 @@ struct RegularityBody: View {
                         .lineLimit(2)
                 }
                 .padding(.bottom, 10)
+                // Held in from the edges like the other widgets' content, not spread to them.
                 RegularityMarks(days: regularity.days, size: markSize, showsLabels: showsLabels)
+                    .padding(.horizontal, showsLabels ? 10 : 2)
             } else {
                 WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
             }

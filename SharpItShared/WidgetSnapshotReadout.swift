@@ -69,8 +69,9 @@ nonisolated struct WeekVolume: Equatable, Sendable {
     var minutes: Double
     /// Last week up to the same weekday, in the same unit as the figure.
     var lastWeekSoFar: Double
-    /// Read in kilometres for a sport that has them; in time for strength or for all sports,
-    /// since kilometres of swimming and of cycling do not add up to anything.
+    /// Read in kilometres for a sport whose sessions carry them; in time otherwise — strength,
+    /// all sports (kilometres of swimming and of cycling add up to nothing), or a sport recorded
+    /// without distances.
     var readsInDistance: Bool
 
     var figure: Double { readsInDistance ? distanceKilometers : minutes }
@@ -85,8 +86,11 @@ extension WidgetSnapshot.Training {
         calendar.firstWeekday = 2
         let today = calendar.startOfDay(for: date)
         let monday = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
-        let readsInDistance = sport != nil && sport != .strength
         let counted = self.sessions.filter { sport == nil || $0.sport == sport }
+        // Kilometres only where the sessions carry them: a ride recorded without a distance
+        // read « 0,0 km » beside its hour and a quarter.
+        let readsInDistance = sport != nil && sport != .strength
+            && counted.contains { ($0.distanceMeters ?? 0) > 0 }
         func value(_ session: WidgetSnapshot.TrainedSession) -> Double {
             readsInDistance ? (session.distanceMeters ?? 0) / 1000 : (session.durationSeconds ?? 0) / 60
         }
