@@ -205,7 +205,10 @@ budget: the app writes a `WidgetSnapshot` into the App Group `group.app.sharpit.
 (`WidgetSnapshotStore`) from Résumé's fold each time it reads today, and on a silent push the
 server sends after each scheduled sync (`refresh: today`), then reloads the timelines. A snapshot
 of another day shows as stale, never as today; signing out or a new account erases it.
-A widget draws the app's canvas (`SharpitCanvasTexture`: dot grid, brand halos; the verdict adds a
+Every home-screen widget is built on `WidgetFrame` (`WidgetStyle.swift`): one header — its name
+and one glyph, same height and gap on every widget — then the body anchored to the bottom, with one
+type scale (`WidgetHero` for the main number, `WidgetTitle`, `WidgetCaption`) and `WidgetMetrics`;
+a widget never lays out its own header. A widget draws the app's canvas (`SharpitCanvasTexture`: dot grid, brand halos; the verdict adds a
 halo in its posture's tone) and speaks its type — the brand faces are registered in the extension
 too. A session opens itself: `https://sharpit.app/activity/<id>` once done (Activité pushes its
 detail), `/plan/session/<id>` before (Plan opens today's week and the session's drawer).

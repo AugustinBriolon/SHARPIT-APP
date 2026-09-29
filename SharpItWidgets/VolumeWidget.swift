@@ -115,22 +115,16 @@ struct VolumeSmall: View {
     let entry: VolumeEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VolumeHeader(sport: entry.sport)
-            Spacer(minLength: 0)
+        WidgetFrame(entry.sport.shortTitle, symbol: entry.sport.symbolName, tint: entry.sport.tone) {
             if let volume = entry.volume {
-                VolumeFigure(volume: volume)
-                Text(volume.detailLine)
-                    .font(SharpitTypography.meta.monospacedDigit())
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
+                WidgetHero(value: volume.figureText, unit: volume.unit)
+                WidgetCaption(text: volume.detailLine)
                     .padding(.bottom, 8)
-                WeekBars(volume: volume, tone: entry.sport.tone, height: 26, showsInitials: false)
+                WeekBars(volume: volume, tone: entry.sport.tone, height: 22, showsInitials: false)
             } else {
                 WidgetAwaitingData(text: "Ouvre Activité pour charger ta semaine.")
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -138,66 +132,21 @@ struct VolumeMedium: View {
     let entry: VolumeEntry
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 0) {
-                VolumeHeader(sport: entry.sport)
-                Spacer(minLength: 0)
-                if let volume = entry.volume {
-                    VolumeFigure(volume: volume)
-                    Text(volume.detailLine)
-                        .font(SharpitTypography.meta.monospacedDigit())
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(1)
-                    Text(volume.lastWeekLine)
-                        .font(SharpitTypography.meta.monospacedDigit())
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                        .padding(.top, 4)
-                } else {
-                    WidgetAwaitingData(text: "Ouvre Activité pour charger ta semaine.")
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        WidgetFrame(entry.sport.title, symbol: entry.sport.symbolName, tint: entry.sport.tone) {
             if let volume = entry.volume {
-                WeekBars(volume: volume, tone: entry.sport.tone, height: 96, showsInitials: true)
-                    .frame(width: 136)
-                    .frame(maxHeight: .infinity, alignment: .bottom)
-            }
-        }
-    }
-}
-
-private struct VolumeHeader: View {
-    let sport: VolumeSport
-
-    var body: some View {
-        HStack {
-            WidgetEyebrow(text: sport.title)
-            Spacer(minLength: 4)
-            Image(systemName: sport.symbolName)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(sport.tone)
-                .widgetAccentable()
-        }
-    }
-}
-
-private struct VolumeFigure: View {
-    let volume: WeekVolume
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 3) {
-            Text(volume.figureText)
-                .font(SharpitTypography.gaugeScore)
-                .tracking(SharpitTypography.gaugeScoreTracking)
-                .foregroundStyle(SharpitColor.foreground)
-                .monospacedDigit()
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
-            if !volume.unit.isEmpty {
-                Text(volume.unit)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                HStack(alignment: .bottom, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        WidgetHero(value: volume.figureText, unit: volume.unit)
+                        WidgetCaption(text: volume.detailLine)
+                        WidgetCaption(text: volume.lastWeekLine, lines: 2)
+                            .padding(.top, WidgetMetrics.lineGap)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    WeekBars(volume: volume, tone: entry.sport.tone, height: 72, showsInitials: true)
+                        .frame(width: 136)
+                }
+            } else {
+                WidgetAwaitingData(text: "Ouvre Activité pour charger ta semaine.")
             }
         }
     }
@@ -259,24 +208,10 @@ extension VolumeSport {
         }
     }
 
+    /// The small widget's header: the sport alone, the week being said by the bars.
+    var shortTitle: String { activityType?.label ?? "Tous sports" }
+
     var symbolName: String { activityType?.symbolName ?? "figure.mixed.cardio" }
 
     var tone: Color { activityType.map { SharpitSportColor.color($0.identity) } ?? SharpitColor.primary }
-}
-
-/// A section the app has not written yet: where to open it, with the brand mark.
-struct WidgetAwaitingData: View {
-    let text: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: "circle.hexagonpath.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(SharpitColor.primary)
-            Text(text)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(3)
-        }
-    }
 }

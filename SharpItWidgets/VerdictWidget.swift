@@ -38,34 +38,17 @@ struct VerdictSmall: View {
 
     var body: some View {
         if let verdict {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    WidgetEyebrow(text: "Verdict")
-                    Spacer()
-                    Image(systemName: verdict.posture.symbolName)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(verdict.posture.tone)
-                        .widgetAccentable()
-                }
-                Spacer(minLength: 6)
+            WidgetFrame("Verdict", symbol: verdict.posture.symbolName, tint: verdict.posture.tone) {
                 WidgetEyebrow(text: verdict.status, tint: verdict.posture.tone)
-                Text(verdict.headline)
-                    .font(SharpitTypography.verdict)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(3)
-                    .minimumScaleFactor(0.75)
+                WidgetTitle(text: verdict.headline, lines: 3)
                     .padding(.top, 2)
                 if let action = verdict.action {
-                    Text(action)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                        .padding(.top, 6)
+                    WidgetCaption(text: action, lines: 2)
+                        .padding(.top, WidgetMetrics.lineGap)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
-            WidgetAwaitingDay(eyebrow: "Verdict du jour")
+            WidgetAwaitingDay(eyebrow: "Verdict", symbol: "questionmark.circle")
         }
     }
 }

@@ -35,18 +35,9 @@ private struct NutritionAwaiting: View {
     let nutrition: WidgetSnapshot.Nutrition?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            WidgetEyebrow(text: "Nutrition")
-            Spacer(minLength: 0)
-            Image(systemName: "fork.knife")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(SharpitColor.primary)
-            Text(message)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(3)
+        WidgetFrame("Nutrition", symbol: "fork.knife") {
+            WidgetAwaitingData(text: message)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var message: String {
@@ -61,16 +52,11 @@ struct NutritionSmall: View {
 
     var body: some View {
         if let nutrition, nutrition.hasLog {
-            VStack(alignment: .leading, spacing: 4) {
-                WidgetEyebrow(text: "Nutrition")
-                Spacer(minLength: 0)
+            WidgetFrame("Nutrition", symbol: "fork.knife") {
                 DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure)
-                Text(nutrition.dialCaption)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                WidgetCaption(text: nutrition.dialCaption)
                     .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
             NutritionAwaiting(nutrition: nutrition)
         }
@@ -82,21 +68,20 @@ struct NutritionMedium: View {
 
     var body: some View {
         if let nutrition, nutrition.hasLog {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(spacing: 2) {
-                    DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure)
-                    Text(nutrition.dialCaption)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+            WidgetFrame("Nutrition", symbol: "fork.knife") {
+                HStack(alignment: .bottom, spacing: 16) {
+                    VStack(spacing: 2) {
+                        DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure)
+                        WidgetCaption(text: nutrition.dialCaption)
+                    }
+                    .frame(width: 118)
+                    VStack(alignment: .leading, spacing: 7) {
+                        WidgetCaption(text: "\(SharpitFigureFormat.kcal(nutrition.calories)) / \(SharpitFigureFormat.kcal(nutrition.calorieGoal)) kcal")
+                        ForEach(nutrition.macros) { MacroLine(macro: $0) }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(width: 128)
-                VStack(alignment: .leading, spacing: 9) {
-                    WidgetEyebrow(text: "\(SharpitFigureFormat.kcal(nutrition.calories)) / \(SharpitFigureFormat.kcal(nutrition.calorieGoal)) kcal")
-                    ForEach(nutrition.macros) { MacroLine(macro: $0) }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             NutritionAwaiting(nutrition: nutrition)
         }

@@ -53,46 +53,19 @@ struct WeightSmall: View {
     let weight: WidgetSnapshot.Weight?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                WidgetEyebrow(text: "Poids")
-                Spacer(minLength: 4)
-                Image(systemName: "scalemass")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            Spacer(minLength: 0)
+        WidgetFrame("Poids", symbol: "scalemass") {
             if let weight {
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(SharpitFigureFormat.kilograms(weight.kilograms))
-                        .font(SharpitTypography.heroScore)
-                        .tracking(SharpitTypography.heroScoreTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .minimumScaleFactor(0.6)
-                        .lineLimit(1)
-                    Text("kg")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
+                WidgetHero(value: SharpitFigureFormat.kilograms(weight.kilograms), unit: "kg")
                 if let changeLine = weight.changeLine {
-                    Text(changeLine)
-                        .font(SharpitTypography.meta.monospacedDigit())
-                        .foregroundStyle(weight.movesTowardsTarget == true ? SharpitColor.primary : SharpitColor.mutedForeground)
-                        .padding(.top, 2)
+                    WidgetCaption(text: changeLine, tint: weight.movesTowardsTarget == true ? SharpitColor.primary : SharpitColor.mutedForeground)
                 }
                 if let targetLine = weight.targetLine {
-                    Text(targetLine)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                        .padding(.top, 6)
+                    WidgetCaption(text: targetLine, lines: 2)
+                        .padding(.top, WidgetMetrics.lineGap)
                 }
             } else {
-                Text("Aucune pesée pour l'instant.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                WidgetAwaitingData(text: "Aucune pesée pour l'instant.")
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }

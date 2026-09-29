@@ -83,7 +83,7 @@ struct TodaySessionSmall: View {
                     .widgetURL(WidgetSnapshot.link("/plan"))
             }
         } else {
-            WidgetAwaitingDay(eyebrow: "Séance du jour")
+            WidgetAwaitingDay(eyebrow: "Séance du jour", symbol: "figure.run")
         }
     }
 }
@@ -97,68 +97,61 @@ struct TodaySessionMedium: View {
 
     var body: some View {
         if let day {
-            HStack(alignment: .top, spacing: 14) {
-                VStack(alignment: .leading, spacing: 10) {
-                    WidgetEyebrow(text: eyebrow)
-                    if day.sessions.isEmpty {
-                        Spacer(minLength: 0)
-                        Text("Repos")
-                            .font(SharpitTypography.verdict)
-                            .foregroundStyle(SharpitColor.foreground)
-                        Text("Rien de prévu aujourd'hui.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    } else {
-                        ForEach(day.sessions.prefix(2)) { session in
-                            Link(destination: session.link) { SessionLine(session: session) }
-                        }
-                        Spacer(minLength: 0)
-                        if day.sessions.count > 2 {
-                            Text("+ \(day.sessions.count - 2) autre\(day.sessions.count > 3 ? "s" : "")")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+            WidgetFrame(title: eyebrow) {
+                if let verdict = day.verdict {
+                    WidgetGlyph(symbol: verdict.posture.symbolName, tint: verdict.posture.tone)
+                } else {
+                    WidgetGlyph(symbol: "calendar")
+                }
+            } content: {
+                HStack(alignment: .bottom, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if day.sessions.isEmpty {
+                            WidgetTitle(text: "Repos")
+                            WidgetCaption(text: "Rien de prévu aujourd'hui.")
+                        } else {
+                            ForEach(day.sessions.prefix(2)) { session in
+                                Link(destination: session.link) { SessionLine(session: session) }
+                            }
+                            if day.sessions.count > 2 {
+                                WidgetCaption(text: "+ \(day.sessions.count - 2) autre\(day.sessions.count > 3 ? "s" : "")")
+                            }
                         }
                     }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                if let verdict = day.verdict {
-                    Link(destination: WidgetSnapshot.link("/today")) { VerdictPanel(verdict: verdict) }
+                    .frame(maxWidth: .infinity, alignment: .bottomLeading)
+                    if let verdict = day.verdict {
+                        Link(destination: WidgetSnapshot.link("/today")) { VerdictPanel(verdict: verdict) }
+                    }
                 }
             }
             .widgetURL(WidgetSnapshot.link("/plan"))
         } else {
-            WidgetAwaitingDay(eyebrow: "Séance du jour")
+            WidgetAwaitingDay(eyebrow: "Séance du jour", symbol: "figure.run")
         }
     }
 }
 
-/// The small widget's session: the day and the sport, the title in the heading face, the
-/// figures in the instrument one.
+/// The small widget's session: the day and its glyph above, the sport, the title, the figures.
 private struct SessionHero: View {
     let session: WidgetSnapshot.Session
     let eyebrow: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .center) {
-                WidgetEyebrow(text: eyebrow)
-                Spacer(minLength: 4)
-                if session.isDone { DoneSeal() } else { SportGlyph(sport: session.sport) }
+        WidgetFrame(title: eyebrow) {
+            if session.isDone {
+                WidgetGlyph(symbol: "checkmark.circle.fill", tint: SharpitColor.primary)
+            } else {
+                WidgetGlyph(symbol: session.sport.symbolName, tint: SharpitSportColor.color(session.sport.identity))
             }
-            Spacer(minLength: 6)
+        } content: {
             WidgetEyebrow(text: session.isDone ? "Faite · \(session.sport.label)" : session.sport.label, tint: SharpitSportColor.color(session.sport.identity))
-            Text(session.title)
-                .font(SharpitTypography.sectionTitle)
-                .foregroundStyle(SharpitColor.foreground)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
+            WidgetTitle(text: session.title)
                 .padding(.top, 2)
-            Spacer(minLength: 8)
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 ForEach(session.figures.prefix(2), id: \.value) { WidgetFigure(figure: $0, large: true) }
             }
+            .padding(.top, 8)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -187,27 +180,16 @@ private struct SessionLine: View {
     }
 }
 
-/// A day with nothing planned: rest, said plainly, with the day's verdict when there is one.
+/// A day with nothing planned: rest, said plainly.
 private struct RestDay: View {
     let eyebrow: String
     let verdict: WidgetSnapshot.Verdict?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            WidgetEyebrow(text: eyebrow)
-            Spacer(minLength: 0)
-            Image(systemName: "figure.cooldown")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(SharpitColor.primary)
-            Text("Repos")
-                .font(SharpitTypography.verdict)
-                .foregroundStyle(SharpitColor.foreground)
-            Text("Rien de prévu aujourd'hui.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(2)
+        WidgetFrame(eyebrow, symbol: "figure.cooldown") {
+            WidgetTitle(text: "Repos")
+            WidgetCaption(text: "Rien de prévu aujourd'hui.", lines: 2)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 

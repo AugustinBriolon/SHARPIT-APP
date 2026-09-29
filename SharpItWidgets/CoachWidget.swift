@@ -31,21 +31,8 @@ struct CoachWidgetView: View {
             }
             .accessibilityLabel("Demander au coach")
         default:
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    WidgetEyebrow(text: "Coach")
-                    Spacer(minLength: 4)
-                    Image(systemName: "circle.hexagonpath.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(SharpitColor.primary)
-                        .widgetAccentable()
-                }
-                Spacer(minLength: 0)
-                Text("Demander au coach")
-                    .font(SharpitTypography.sectionTitle)
-                    .tracking(SharpitTypography.sectionTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(2)
+            WidgetFrame("Coach", symbol: "bubble.left.and.text.bubble.right", tint: SharpitColor.primary) {
+                WidgetTitle(text: "Demander au coach")
                     .padding(.bottom, 10)
                 HStack(spacing: 6) {
                     Text("Ta question…")
@@ -59,7 +46,6 @@ struct CoachWidgetView: View {
                 .padding(.vertical, 4)
                 .background(SharpitColor.foreground.opacity(0.07), in: Capsule())
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 }

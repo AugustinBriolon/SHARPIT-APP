@@ -40,42 +40,24 @@ struct RegularityWidgetView: View {
     }
 }
 
-/// The count on the left, the days on the right — as the volume widget sets its bars. Stacked,
-/// the count, the marks and their two label rows overran the widget's height and pressed
-/// against its top and bottom edges.
+/// The count on the left, the days on the right — as the volume widget sets its bars.
 struct RegularityMedium: View {
     let regularity: WidgetSnapshot.Regularity?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 0) {
-                WidgetEyebrow(text: "Régularité")
-                Spacer(minLength: 0)
-                if let regularity {
-                    Text("\(regularity.weekSessionCount)")
-                        .font(SharpitTypography.heroScore)
-                        .tracking(SharpitTypography.heroScoreTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .monospacedDigit()
-                    Text(regularity.weekSessionCount == 1 ? "séance cette semaine" : "séances cette semaine")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                } else {
-                    WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        WidgetFrame("Régularité", symbol: "calendar") {
             if let regularity {
-                VStack(alignment: .trailing, spacing: 0) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                    Spacer(minLength: 0)
+                HStack(alignment: .bottom, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        WidgetHero(value: "\(regularity.weekSessionCount)")
+                        WidgetCaption(text: regularity.weekCaption, lines: 2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     RegularityMarks(days: regularity.days, size: 12, showsLabels: true)
+                        .frame(width: 184)
                 }
-                .frame(width: 184)
-                .frame(maxHeight: .infinity)
+            } else {
+                WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
             }
         }
     }
@@ -87,36 +69,16 @@ struct RegularityBody: View {
     let showsLabels: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                WidgetEyebrow(text: "Régularité")
-                Spacer(minLength: 4)
-                Image(systemName: "calendar")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            Spacer(minLength: 0)
+        WidgetFrame("Régularité", symbol: "calendar") {
             if let regularity {
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text("\(regularity.weekSessionCount)")
-                        .font(SharpitTypography.heroScore)
-                        .tracking(SharpitTypography.heroScoreTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .monospacedDigit()
-                    Text(regularity.weekSessionCount == 1 ? "séance\ncette semaine" : "séances\ncette semaine")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                }
-                .padding(.bottom, 10)
-                // Held in from the edges like the other widgets' content, not spread to them.
+                WidgetHero(value: "\(regularity.weekSessionCount)")
+                WidgetCaption(text: regularity.weekCaption)
+                    .padding(.bottom, 10)
                 RegularityMarks(days: regularity.days, size: markSize, showsLabels: showsLabels)
-                    .padding(.horizontal, showsLabels ? 10 : 2)
             } else {
                 WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -161,5 +123,8 @@ struct RegularityMarks: View {
 }
 
 extension WidgetSnapshot.Regularity {
+    /// What the count counts, under it.
+    var weekCaption: String { weekSessionCount == 1 ? "séance cette semaine" : "séances cette semaine" }
+
     var weekLine: String { weekSessionCount == 1 ? "1 séance cette semaine" : "\(weekSessionCount) séances cette semaine" }
 }

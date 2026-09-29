@@ -51,37 +51,14 @@ struct SleepSmall: View {
     let hasDay: Bool
 
     var body: some View {
-        if let sleep, let score = sleep.score {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    WidgetEyebrow(text: "Nuit dernière")
-                    Spacer(minLength: 4)
-                    Image(systemName: "moon.zzz")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-                Spacer(minLength: 0)
+        WidgetFrame("Nuit dernière", symbol: "moon.zzz") {
+            if let sleep, let score = sleep.score {
                 DialReadout(score: CGFloat(score), figure: "\(score)")
-                Text(sleep.caption ?? "Score de sommeil")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
+                WidgetCaption(text: sleep.caption ?? "Score de sommeil")
                     .frame(maxWidth: .infinity)
+            } else {
+                WidgetAwaitingData(text: hasDay ? "Pas encore de nuit synchronisée." : "Ouvre SharpIt pour charger ta journée.")
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        } else {
-            VStack(alignment: .leading, spacing: 6) {
-                WidgetEyebrow(text: "Nuit dernière")
-                Spacer(minLength: 0)
-                Image(systemName: "moon.zzz")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primary)
-                Text(hasDay ? "Pas encore de nuit synchronisée." : "Ouvre SharpIt pour charger ta journée.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(3)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 }

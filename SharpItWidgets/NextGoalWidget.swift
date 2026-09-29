@@ -54,55 +54,19 @@ struct NextGoalBody: View {
     let showsContext: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                WidgetEyebrow(text: showsContext ? "Prochain objectif" : "Objectif")
-                Spacer(minLength: 4)
-                Image(systemName: "flag.checkered")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primary)
-                    .widgetAccentable()
-            }
-            Spacer(minLength: 0)
+        WidgetFrame(showsContext ? "Prochain objectif" : "Objectif", symbol: "flag.checkered", tint: SharpitColor.primary) {
             if let goal {
                 let days = goal.daysLeft(from: date)
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(days == 0 ? "Jour J" : "\(days)")
-                        .font(SharpitTypography.heroScore)
-                        .tracking(SharpitTypography.heroScoreTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .monospacedDigit()
-                        .minimumScaleFactor(0.6)
-                        .lineLimit(1)
-                    if days > 0 {
-                        Text(days == 1 ? "jour" : "jours")
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-                }
-                Text(goal.title)
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(showsContext ? 1 : 2)
-                Text(goal.dateLine)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
+                WidgetHero(value: days == 0 ? "Jour J" : "\(days)", unit: days == 0 ? nil : (days == 1 ? "jour" : "jours"))
+                WidgetTitle(text: goal.title, lines: 1)
+                WidgetCaption(text: goal.dateLine)
                 if showsContext, let context = goal.contextLine {
-                    Text(context)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.primary)
-                        .lineLimit(1)
+                    WidgetCaption(text: context, tint: SharpitColor.primary)
                         .padding(.top, 2)
                 }
             } else {
-                Text("Aucune course prévue. Ajoute-la dans Objectifs.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(3)
+                WidgetAwaitingData(text: "Aucune course prévue. Ajoute-la dans Objectifs.")
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }

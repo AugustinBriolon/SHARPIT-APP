@@ -54,18 +54,6 @@ struct WidgetFigure: View {
     }
 }
 
-/// A sport's glyph in its identity color.
-struct SportGlyph: View {
-    let sport: V1ActivityType
-
-    var body: some View {
-        Image(systemName: sport.symbolName)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(SharpitSportColor.color(sport.identity))
-            .widgetAccentable()
-    }
-}
-
 /// Done: a filled check — a status mark, the one place a symbol is filled.
 struct DoneSeal: View {
     var body: some View {
@@ -88,22 +76,135 @@ enum WidgetDay {
     }
 }
 
-/// Before the app has written today: what to do, with the brand mark — never yesterday's day.
-struct WidgetAwaitingDay: View {
-    let eyebrow: String
+/// Every home-screen widget's frame: one header — its name and one glyph, the same height on
+/// every widget — then the body, anchored to the bottom, inside the system's content margins.
+/// Written once so no widget drifts a point from the others: a header without a glyph, a
+/// glyph of another size, a body starting higher.
+struct WidgetFrame<Glyph: View, Content: View>: View {
+    let title: String
+    @ViewBuilder let glyph: Glyph
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 6) {
+                WidgetEyebrow(text: title)
+                Spacer(minLength: 4)
+                glyph
+                    .font(.system(size: WidgetMetrics.glyphSize, weight: .semibold))
+                    .frame(height: WidgetMetrics.headerHeight)
+            }
+            .frame(height: WidgetMetrics.headerHeight)
+            VStack(alignment: .leading, spacing: 0) { content }
+                .padding(.top, WidgetMetrics.headerGap)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+extension WidgetFrame where Glyph == WidgetGlyph {
+    init(_ title: String, symbol: String, tint: Color = SharpitColor.mutedForeground, @ViewBuilder content: () -> Content) {
+        self.init(title: title, glyph: { WidgetGlyph(symbol: symbol, tint: tint) }, content: content)
+    }
+}
+
+/// The header's glyph: stroked, muted unless it carries a state or a sport.
+struct WidgetGlyph: View {
+    let symbol: String
+    var tint: Color = SharpitColor.mutedForeground
+
+    var body: some View {
+        Image(systemName: symbol)
+            .foregroundStyle(tint)
+            .widgetAccentable()
+    }
+}
+
+/// The widgets' one set of measures.
+enum WidgetMetrics {
+    static let headerHeight: CGFloat = 18
+    static let glyphSize: CGFloat = 14
+    static let headerGap: CGFloat = 8
+    /// Between the hero figure and the lines under it.
+    static let lineGap: CGFloat = 4
+}
+
+/// The widget's main number, the same face and size on every widget, its unit beside it.
+struct WidgetHero: View {
+    let value: String
+    var unit: String?
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(value)
+                .font(SharpitTypography.heroScore)
+                .tracking(SharpitTypography.heroScoreTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .monospacedDigit()
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+            if let unit, !unit.isEmpty {
+                Text(unit)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(1)
+            }
+        }
+    }
+}
+
+/// A widget's title line — a session, a verdict, a race: the section face, everywhere.
+struct WidgetTitle: View {
+    let text: String
+    var lines = 2
+
+    var body: some View {
+        Text(text)
+            .font(SharpitTypography.sectionTitle)
+            .tracking(SharpitTypography.sectionTitleTracking)
+            .foregroundStyle(SharpitColor.foreground)
+            .lineLimit(lines)
+            .minimumScaleFactor(0.85)
+    }
+}
+
+/// A quiet line under the figure or the title.
+struct WidgetCaption: View {
+    let text: String
+    var tint: Color = SharpitColor.mutedForeground
+    var lines = 1
+
+    var body: some View {
+        Text(text)
+            .font(SharpitTypography.meta.monospacedDigit())
+            .foregroundStyle(tint)
+            .lineLimit(lines)
+    }
+}
+
+/// A section the app has not written yet: where to open it, with the brand mark.
+struct WidgetAwaitingData: View {
+    let text: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            WidgetEyebrow(text: eyebrow)
-            Spacer(minLength: 0)
             Image(systemName: "circle.hexagonpath.fill")
-                .font(.system(size: 22))
+                .font(.system(size: 20))
                 .foregroundStyle(SharpitColor.primary)
-            Text("Ouvre SharpIt pour charger ta journée.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(3)
+            WidgetCaption(text: text, lines: 3)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+/// Before the app has written today: its header, what to do — never yesterday's day.
+struct WidgetAwaitingDay: View {
+    let eyebrow: String
+    let symbol: String
+
+    var body: some View {
+        WidgetFrame(eyebrow, symbol: symbol) {
+            WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
+        }
     }
 }
