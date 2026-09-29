@@ -54,6 +54,31 @@ nonisolated enum SharpitFeature: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Why follow it — what it adds to the rest of SharpIt, in a few sentences. No promise the
+    /// data cannot keep, no motivational line.
+    var why: String {
+        switch self {
+        case .journal:
+            "Ce que tes montres ne voient pas : l'alcool, les écrans tard, un repas lourd, ton humeur au réveil. Noté jour après jour, SharpIt rapproche ces habitudes de ta nuit et de ta récupération, et te montre celles qui comptent vraiment pour toi."
+        case .nutrition:
+            "Ce que tu manges face à ce que tu dépenses. Relié à MyFitnessPal, SharpIt compare ton énergie et tes macros à ta charge du jour, et signale quand le carburant manque avant une séance exigeante."
+        case .health:
+            "Ton corps sur la durée : poids, variabilité cardiaque, fréquence de repos, VO₂max, composition, seuils. Des tendances plutôt que des chiffres isolés, pour voir ce qui bouge vraiment d'un mois à l'autre."
+        case .regularity:
+            "Les jours où tu t'es entraîné autour d'aujourd'hui, et tes séances de la semaine. Un coup d'œil sur ton rythme, sans série à entretenir ni compteur à ne pas casser."
+        }
+    }
+
+    /// Where it shows, one place per line.
+    var places: [String] {
+        switch self {
+        case .journal: ["Le bouton Journal dans Résumé", "La page du journal et ses enseignements"]
+        case .nutrition: ["La carte Nutrition dans Résumé", "La page Nutrition du jour", "Le widget Nutrition"]
+        case .health: ["L'onglet Corps", "Le widget Poids"]
+        case .regularity: ["La carte Régularité dans Résumé", "Le widget Régularité"]
+        }
+    }
+
     var symbolName: String {
         switch self {
         case .journal: "book.closed"

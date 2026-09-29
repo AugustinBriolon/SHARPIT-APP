@@ -351,7 +351,7 @@ private struct JournalCustomItemRow: View {
 
 /// An interactive metric row (Caféine, Hydratation, Humeur) with formatted readout
 /// and a forward action indicator opening dedicated input sheets.
-private struct JournalMetricRow: View {
+struct JournalMetricRow: View {
     let label: String
     let symbolName: String
     var iconColor: Color = SharpitColor.mutedForeground
@@ -458,7 +458,7 @@ private extension JournalAutoStatus {
 
 /// A yes / no / unanswered signal. Unanswered is its own answer — the analyses only
 /// weigh what the athlete actually said — so it stays a visible third choice.
-private struct JournalFactorRow: View, Equatable {
+struct JournalFactorRow: View, Equatable {
     let label: String
     let symbolName: String
     var iconColor: Color = SharpitColor.mutedForeground

@@ -65,3 +65,13 @@ private func tempDirectory() -> URL {
     #expect(store.isOn(.health))
     #expect(store.saveError != nil)
 }
+
+@Test func everyFeaturePageSaysWhyAndWhere() {
+    for feature in SharpitFeature.allCases {
+        #expect(!feature.why.isEmpty)
+        #expect(!feature.places.isEmpty)
+    }
+    // A widget's place is named only for the features that have one.
+    #expect(SharpitFeature.journal.places.allSatisfy { !$0.contains("widget") })
+    #expect(SharpitFeature.nutrition.places.contains { $0.contains("widget") })
+}

@@ -380,7 +380,9 @@ when Pro but data is missing, `BiologicalAgePendingCard` says what the estimate 
 `AccountView` in Corps' own stack.
 
 **Pages et widgets.** Paramètres › Pages et widgets (`FeaturesView`) turns a part of SharpIt off —
-Journal, Nutrition, Corps, Régularité (`SharpitFeature`). Off, it disappears everywhere it shows: the
+Journal, Nutrition, Corps, Régularité (`SharpitFeature`). Each row says « Affiché » or « Masqué » and opens
+its own page (`FeatureDetailView`): what it looks like (`FeatureShowcase`, the app's own components on example
+figures, so the picture never drifts from the screen), the switch, why follow it and where it shows. Off, it disappears everywhere it shows: the
 Résumé chip or card, the page, the Corps tab, the home-screen widget (a placed widget says it is
 hidden, `WidgetFeatureOff`); its data is kept. `FeatureStore` in the environment (`\.features`)
 holds the choice, saved to the account (`featurePrefs` on the profile, merged server-side like

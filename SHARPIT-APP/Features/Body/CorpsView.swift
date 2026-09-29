@@ -259,7 +259,7 @@ extension CorpsTone {
 }
 
 /// The weight, large, with its change and a line of the last weeks.
-private struct CorpsHeroTile: View {
+struct CorpsHeroTile: View {
     let metric: CorpsMetric
     let targetKg: Double?
     let action: () -> Void
@@ -318,7 +318,7 @@ private struct CorpsHeroTile: View {
 }
 
 /// One metric: its value, a short reading and a small trend, opening the drawer.
-private struct CorpsMetricTile: View {
+struct CorpsMetricTile: View {
     let metric: CorpsMetric
     let action: () -> Void
 
@@ -375,7 +375,7 @@ private struct CorpsMetricTile: View {
 }
 
 /// A trend at a glance: no axes, no labels — the drawer carries those.
-private struct CorpsSparkline: View {
+struct CorpsSparkline: View {
     let points: [CorpsPoint]
     let tone: Color
 
