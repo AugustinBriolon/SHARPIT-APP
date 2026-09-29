@@ -19,7 +19,7 @@ extension WidgetSnapshot.Day {
                 WidgetSnapshot.Session(
                     id: card.id,
                     isDone: card.kind == .done,
-                    title: card.title,
+                    title: card.brickChain ?? card.title,
                     sport: V1ActivityType(sportLabel: card.sport ?? ""),
                     plannedSessionId: card.plannedSessionId,
                     figures: card.metrics.prefix(2).map {

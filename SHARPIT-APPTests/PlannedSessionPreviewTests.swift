@@ -211,3 +211,18 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
 
     #expect(PlannedBrickPreview(card: card, date: nil) == nil)
 }
+
+@Test func aBrickPlateReadsItsChainAndEachLegsLength() {
+    let card = SessionCardModel(
+        id: "brick-group", kind: .planned, title: "Brick · Vélo → Course", subtitle: "1 h 20 · Sert Ironman Nice",
+        metrics: [], sport: "Triathlon", priority: true, plannedSessionId: "bike",
+        brickLegs: [
+            V1TodayBrickLeg(id: "bike", type: "BIKE", title: "Vélo", durationMin: 60),
+            V1TodayBrickLeg(id: "run", type: "RUN", title: "Course", durationMin: 20),
+        ]
+    )
+
+    #expect(card.brickChain == "Vélo → Course")
+    #expect(card.brickLegMetrics?.map(\.label) == ["Vélo", "Course", "Total"])
+    #expect(card.brickLegMetrics?.last?.value == "80")
+}

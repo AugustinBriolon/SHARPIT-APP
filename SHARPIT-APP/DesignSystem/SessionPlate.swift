@@ -57,8 +57,10 @@ struct SessionPlate: View {
 
     private var headerRow: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.xs) {
-            // Sport Identity Capsule with SF Symbol
-            if let sport = session.sport, !sport.isEmpty {
+            // A brick names its chain, not the « Triathlon » the line is filed under.
+            if let legs = session.brickLegs {
+                BrickChainCapsule(sports: legs.map { V1ActivityType(rawValue: $0.type) ?? .other })
+            } else if let sport = session.sport, !sport.isEmpty {
                 HStack(spacing: 5) {
                     Image(systemName: SharpitSportTone.symbolName(for: sport))
                         .font(.system(size: 11, weight: .semibold))
@@ -137,7 +139,7 @@ struct SessionPlate: View {
 
     private var titleAndObjectiveBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(session.title)
+            Text(session.brickChain ?? session.title)
                 .font(.custom(SharpitFontFamily.heading.resolvedName(for: .semibold) ?? "System", size: 18, relativeTo: .title3))
                 .tracking(-0.3)
                 .foregroundStyle(SharpitColor.foreground)
@@ -248,6 +250,13 @@ struct SessionPlate: View {
 
     /// Extracts objective from metrics or subtitle so it doesn't break the horizontal metric grid.
     private var objectiveText: String? {
+        // A brick's subtitle repeats its duration; only the goal it serves is worth a pill.
+        if session.brickLegs != nil {
+            return session.subtitle?
+                .components(separatedBy: " · ")
+                .first { $0.hasPrefix("Sert ") }
+                .map { String($0.dropFirst(5)) }
+        }
         if let objMetric = session.metrics.first(where: {
             let label = $0.label.lowercased()
             return label.contains("objectif") || label.contains("goal") || label.contains("target")
@@ -262,7 +271,8 @@ struct SessionPlate: View {
 
     /// Clean telemetry metrics excluding long objective strings.
     private var telemetryMetrics: [V1TodayMetric] {
-        session.metrics.filter { metric in
+        if let legMetrics = session.brickLegMetrics { return legMetrics }
+        return session.metrics.filter { metric in
             let label = metric.label.lowercased()
             return !label.contains("objectif") && !label.contains("goal") && !label.contains("target")
         }
@@ -295,9 +305,9 @@ struct SessionPlate: View {
         let status = session.kind == .done ? "Faite" : "Prévue"
         let metrics = session.metrics.map { "\($0.label) \($0.value)\($0.unit)" }.joined(separator: ", ")
         return [
-            session.sport,
+            session.brickLegs == nil ? session.sport : "Brick",
             showPriorityTag ? "Prioritaire" : nil,
-            session.title,
+            session.brickChain ?? session.title,
             objectiveText != nil ? "Objectif: \(objectiveText!)" : nil,
             status,
             metrics,
@@ -305,6 +315,60 @@ struct SessionPlate: View {
         .compactMap { $0 }
         .filter { !$0.isEmpty }
         .joined(separator: ", ")
+    }
+}
+
+extension SessionCardModel {
+    /// « Vélo → Course » for a brick line, nil otherwise.
+    var brickChain: String? {
+        brickLegs.map { legs in
+            legs.map { (V1ActivityType(rawValue: $0.type) ?? .other).label }.joined(separator: " → ")
+        }
+    }
+
+    /// A brick's telemetry: each leg's length in order, then the whole — what the plate
+    /// reads across, as the chain is done.
+    var brickLegMetrics: [V1TodayMetric]? {
+        guard let legs = brickLegs else { return nil }
+        let legMetrics = legs.map { leg in
+            V1TodayMetric(
+                label: (V1ActivityType(rawValue: leg.type) ?? .other).label,
+                value: leg.durationMin.map(String.init) ?? "–",
+                unit: leg.durationMin == nil ? "" : "min"
+            )
+        }
+        let durations = legs.compactMap(\.durationMin)
+        guard durations.count == legs.count else { return legMetrics }
+        return legMetrics + [V1TodayMetric(label: "Total", value: "\(durations.reduce(0, +))", unit: "min")]
+    }
+}
+
+/// The brick's mark: its sports' glyphs joined by arrows, under « Brick ».
+private struct BrickChainCapsule: View {
+    let sports: [V1ActivityType]
+
+    var body: some View {
+        HStack(spacing: 5) {
+            ForEach(Array(sports.enumerated()), id: \.offset) { index, sport in
+                if index > 0 {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+                Image(systemName: sport.symbolName)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(SharpitSportTone.label(for: sport))
+            }
+            Text("BRICK")
+                .font(SharpitTypography.label)
+                .tracking(SharpitTypography.labelTracking)
+                .foregroundStyle(SharpitColor.primary)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4.5)
+        .background(SharpitColor.primary.opacity(0.10), in: Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Brick")
     }
 }
 
