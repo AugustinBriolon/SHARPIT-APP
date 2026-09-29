@@ -244,7 +244,6 @@ struct EquipmentChoiceRow: View {
 /// Réglages › Sports & équipement: the onboarding's own tiles and cards, saved as they change.
 struct EquipmentView: View {
     @State private var store: AthleteProfileStore
-    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var practicedSports: Set<String> = []
     @State private var strengthVenue: V1AthleteEquipment.StrengthVenue = .bodyweight
     @State private var owned: Set<String> = []
@@ -298,13 +297,6 @@ struct EquipmentView: View {
         .background(SharpitCanvasBackground())
         .navigationTitle("Sports & équipement")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                if store.isSaving {
-                    ProgressView().controlSize(.small)
-                }
-            }
-        }
         .task {
             await store.load()
             syncFromProfile()
@@ -337,11 +329,11 @@ struct EquipmentView: View {
         autoSaveTask = Task {
             try? await Task.sleep(for: .milliseconds(350))
             guard !Task.isCancelled else { return }
-            await save()
+            save()
         }
     }
 
-    private func save() async {
+    private func save() {
         var patch = AthleteProfilePatch()
         // Without an endurance sport the selection is not one SharpIt can plan on: the sports
         // wait until one is back, the equipment saves as it changes.
@@ -356,8 +348,6 @@ struct EquipmentView: View {
             strengthVenue: strengthVenue.rawValue,
             owned: Array(owned).sorted()
         ))
-        if await store.save(patch) == false, let error = store.saveError {
-            toastCenter?.show(error, symbol: "exclamationmark.triangle.fill", tone: .error)
-        }
+        store.save(patch)
     }
 }

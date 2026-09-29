@@ -54,8 +54,9 @@ final class ActivityStatusStore {
         )
         phase = .saving
         do {
-            let token = try await tokenProvider()
-            store = try await client.setActivityStatus(write, token: token)
+            store = try await SharpitRetry.run {
+                try await client.setActivityStatus(write, token: try await tokenProvider())
+            }
             phase = .ready
         } catch {
             store = previous

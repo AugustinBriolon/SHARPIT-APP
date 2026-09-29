@@ -179,11 +179,6 @@ struct AccountView: View {
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Compte")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                if store.isSaving { ProgressView().controlSize(.small) }
-            }
-        }
         .task {
             firstName = clerk.user?.firstName ?? ""
             lastName = clerk.user?.lastName ?? ""
@@ -203,7 +198,7 @@ struct AccountView: View {
             set: { sex in
                 var patch = AthleteProfilePatch()
                 patch.setSex(sex)
-                Task { await store.save(patch) }
+                store.save(patch)
             }
         )
     }
@@ -249,10 +244,7 @@ struct AccountView: View {
             if !ProfileFieldFormat.isSameDay(form.birthDate, store.profile.birthDate) {
                 patch.set(.birthDate, string: ProfileFieldFormat.isoDay(form.birthDate))
             }
-            guard !patch.isEmpty else { return }
-            if await store.save(patch) == false, let error = store.saveError {
-                toastCenter?.show(error, symbol: "exclamationmark.triangle.fill", tone: .error)
-            }
+            store.save(patch)
         }
     }
 
@@ -346,15 +338,6 @@ struct NotificationPrefsView: View {
                 }
                 .listRowBackground(Color.clear)
             }
-
-            if let error = store.saveError {
-                Section {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.signalRisk)
-                }
-                .listRowBackground(Color.clear)
-            }
         }
         .sharpitGroupedList()
         .animation(SharpitMotion.reveal, value: isOn)
@@ -436,10 +419,9 @@ struct NotificationPrefsView: View {
             set: { on in
                 var patch = AthleteProfilePatch()
                 patch.setNotificationPrefs([key: .bool(on)])
-                Task {
-                    await store.save(patch)
-                    if key == "sessionReminder" { await refreshSessionReminders() }
-                }
+                store.save(patch)
+                // The scheduler reads the server's prefs, so it waits for the write to land.
+                if key == "sessionReminder" { Task { await store.settle(); await refreshSessionReminders() } }
             }
         )) {
             Label {

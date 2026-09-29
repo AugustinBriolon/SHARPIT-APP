@@ -57,15 +57,6 @@ struct SleepTargetsSheet: View {
                     }
                 }
                 .sharpitListRows()
-
-                if let error = store.saveError {
-                    Section {
-                        Label(error, systemImage: "exclamationmark.triangle")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalRisk)
-                    }
-                    .listRowBackground(Color.clear)
-                }
             }
             .sharpitGroupedList()
             .disabled(!hasLoaded)
@@ -77,12 +68,8 @@ struct SleepTargetsSheet: View {
                     Button("Annuler") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if store.isSaving {
-                        ProgressView()
-                    } else {
-                        Button("OK") { Task { await save() } }
-                            .disabled(!hasLoaded)
-                    }
+                    Button("OK") { save() }
+                        .disabled(!hasLoaded)
                 }
             }
             .task {
@@ -100,7 +87,7 @@ struct SleepTargetsSheet: View {
         .sharpitSheet()
     }
 
-    private func save() async {
+    private func save() {
         var patch = AthleteProfilePatch()
         patch.setIfChanged(.sleepTargetMinutes, int: minutes, was: store.profile.sleepTargetMinutes)
         patch.setIfChanged(
@@ -108,7 +95,8 @@ struct SleepTargetsSheet: View {
             int: hasBedtime ? Self.minutes(from: bedtime) : nil,
             was: store.profile.sleepBedtimeTargetMin
         )
-        if await store.save(patch) { dismiss() }
+        store.save(patch)
+        dismiss()
     }
 
     static func date(fromMinutes minutes: Int) -> Date {
@@ -180,20 +168,11 @@ struct WeightTargetSheet: View {
                     if store.profile.targetWeightKg != nil {
                         Button("Retirer l'objectif", role: .destructive) {
                             text = ""
-                            Task { await save() }
+                            save()
                         }
                     }
                 }
                 .sharpitListRows()
-
-                if let error = store.saveError {
-                    Section {
-                        Label(error, systemImage: "exclamationmark.triangle")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalRisk)
-                    }
-                    .listRowBackground(Color.clear)
-                }
             }
             .sharpitGroupedList()
             .disabled(!hasLoaded)
@@ -204,12 +183,8 @@ struct WeightTargetSheet: View {
                     Button("Annuler") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if store.isSaving {
-                        ProgressView()
-                    } else {
-                        Button("OK") { Task { await save() } }
-                            .disabled(!hasLoaded || !isValid)
-                    }
+                    Button("OK") { save() }
+                        .disabled(!hasLoaded || !isValid)
                 }
             }
             .task {
@@ -224,9 +199,10 @@ struct WeightTargetSheet: View {
         .sharpitSheet()
     }
 
-    private func save() async {
+    private func save() {
         var patch = AthleteProfilePatch()
         patch.setIfChanged(.targetWeightKg, double: parsed, was: store.profile.targetWeightKg)
-        if await store.save(patch) { dismiss() }
+        store.save(patch)
+        dismiss()
     }
 }

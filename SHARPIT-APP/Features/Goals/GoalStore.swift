@@ -112,8 +112,9 @@ final class GoalStore {
     @discardableResult
     func create(_ input: CreateGoalInput) async -> Bool {
         do {
-            let token = try await tokenProvider()
-            let newGoal = try await client.createGoal(input, token: token)
+            let newGoal = try await SharpitRetry.run {
+                try await client.createGoal(input, token: try await tokenProvider())
+            }
             goals.append(newGoal)
             return true
         } catch {
@@ -127,8 +128,9 @@ final class GoalStore {
         guard let index = goals.firstIndex(where: { $0.id == goal.id }) else { return }
         goals[index].achieved = newAchieved
         do {
-            let token = try await tokenProvider()
-            let updated = try await client.toggleAchieved(id: goal.id, achieved: newAchieved, token: token)
+            let updated = try await SharpitRetry.run {
+                try await client.toggleAchieved(id: goal.id, achieved: newAchieved, token: try await tokenProvider())
+            }
             if let idx = goals.firstIndex(where: { $0.id == updated.id }) {
                 goals[idx] = updated
             }
@@ -145,8 +147,9 @@ final class GoalStore {
         let backup = goals
         goals.removeAll { $0.id == id }
         do {
-            let token = try await tokenProvider()
-            try await client.deleteGoal(id: id, token: token)
+            try await SharpitRetry.run {
+                try await client.deleteGoal(id: id, token: try await tokenProvider())
+            }
         } catch {
             goals = backup
             errorMessage = "Suppression impossible"

@@ -39,11 +39,15 @@ struct DisplayModeView: View {
         .navigationTitle("Densité de lecture")
         .navigationBarTitleDisplayMode(.inline)
         .task { if store.phase != .loaded { await store.load() } }
+        // Every surface reading the density follows the profile — the tap at once, and a write
+        // that failed for good once the profile is read back.
+        .onChange(of: store.isExpertReading) { _, isExpert in
+            if store.phase == .loaded { displayMode.adopt(isExpert: isExpert) }
+        }
     }
 
     private var list: some View {
         List {
-            SharpitListIntro("Ce que SharpIt affiche, pas ce qu'il mesure : les deux lectures partent des mêmes calculs. Tu peux changer quand tu veux.")
             if store.phase == .loaded {
                 Section {
                     choice(
@@ -59,7 +63,7 @@ struct DisplayModeView: View {
                         isExpert: true
                     )
                 } footer: {
-                    saveStatus
+                    SharpitListFooter("Ce que SharpIt affiche, pas ce qu'il mesure : les deux lectures partent des mêmes calculs. Tu peux changer quand tu veux.")
                 }
                 .sharpitListRows()
 
@@ -102,24 +106,14 @@ struct DisplayModeView: View {
         .sharpitGroupedList()
     }
 
-    @ViewBuilder
-    private var saveStatus: some View {
-        if store.isSaving {
-            SharpitListFooter("Enregistrement…")
-        } else if let saveError = store.saveError {
-            SharpitListFooter(saveError, tone: SharpitColor.signalRisk)
-        }
-    }
-
     /// One row of a single-choice group, marked with a check as the system's own settings do.
     private func choice(title: String, detail: String, example: String, isExpert: Bool) -> some View {
         let isSelected = store.isExpertReading == isExpert
         return Button {
-            Task { await select(isExpert) }
+            select(isExpert)
         } label: {
             DisplayModeChoiceRow(title: title, detail: detail, example: example, isSelected: isSelected)
         }
-        .disabled(store.isSaving)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
@@ -153,12 +147,9 @@ struct DisplayModeView: View {
         .padding(.vertical, SharpitSpacing.xxs)
     }
 
-    /// Tells the shared store what the profile now holds, so every surface reading the
-    /// density follows without a second network read.
-    private func select(_ isExpert: Bool) async {
+    private func select(_ isExpert: Bool) {
         guard store.isExpertReading != isExpert else { return }
-        await store.setExpertReading(isExpert)
-        displayMode.adopt(isExpert: store.isExpertReading)
+        store.setExpertReading(isExpert)
     }
 }
 

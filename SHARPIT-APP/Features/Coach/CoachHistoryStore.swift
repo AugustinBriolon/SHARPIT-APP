@@ -47,7 +47,9 @@ final class CoachHistoryStore {
         deletionFailure = nil
         phase = .loaded(list.filter { $0.id != summary.id })
         do {
-            try await conversations.delete(id: summary.id, token: try await tokenProvider())
+            try await SharpitRetry.run {
+                try await conversations.delete(id: summary.id, token: try await tokenProvider())
+            }
             onDeleted(summary.id)
         } catch {
             phase = .loaded(list)

@@ -13,7 +13,8 @@ private actor FeatureProfileClient: AthleteProfileServing {
     }
 
     func patchAthleteProfile(_ patch: AthleteProfilePatch, token: String) async throws -> V1AthleteProfile {
-        if failsPatch { throw URLError(.notConnectedToInternet) }
+        // A refusal: a transient failure would be tried again for seconds first.
+        if failsPatch { throw SharpitAPIError.badRequest }
         if case .object(let object)? = patch.fields["featurePrefs"] {
             for feature in SharpitFeature.allCases {
                 if case .bool(let on)? = object[feature.rawValue] { stored.set(feature, on) }
@@ -63,7 +64,6 @@ private func tempDirectory() -> URL {
     await store.set(.health, on: false, tokenProvider: { "t" })
 
     #expect(store.isOn(.health))
-    #expect(store.saveError != nil)
 }
 
 @Test func everyFeaturePageSaysWhyAndWhere() {

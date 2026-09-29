@@ -12,7 +12,6 @@ final class MorningWellnessStore {
     enum Phase: Equatable {
         case loading
         case ready
-        case saving
         case failed(String)
     }
 
@@ -24,6 +23,7 @@ final class MorningWellnessStore {
 
     private let client: any WellnessServing
     private let tokenProvider: () async throws -> String
+    @ObservationIgnored private var write: Task<Void, Never>?
     private let trainingDayId: String
 
     init(
@@ -92,8 +92,14 @@ final class MorningWellnessStore {
         notes = entry.notes ?? ""
     }
 
-    /// The mood's label on success, so the journal can echo it the way the web does.
-    func submit() async -> String? {
+    /// Waits for the check-in sent last — for a test.
+    func settle() async {
+        await write?.value
+    }
+
+    /// The mood's label once every dimension is picked, so the journal can echo it the way the
+    /// web does. The write goes out behind it: the sheet never waits on the server.
+    func submit() -> String? {
         guard
             let mood = picks[.mood],
             let energy = picks[.energy],
@@ -110,22 +116,26 @@ final class MorningWellnessStore {
             notes: trimmed.isEmpty ? nil : String(trimmed.prefix(500))
         )
 
-        phase = .saving
-        do {
-            let token = try await tokenProvider()
-            try await client.submitWellnessCheckin(
-                entry,
-                trainingDayId: trainingDayId,
-                token: token
-            )
-            phase = .ready
-            alreadyCompleted = true
-            SharpitHaptics.play(.success)
-            return WellnessDimension.mood.label(for: mood)
-        } catch {
-            phase = .failed(Self.message(for: error, fallback: "Ton ressenti n'a pas pu être enregistré."))
-            return nil
+        alreadyCompleted = true
+        SharpitHaptics.play(.success)
+        // Sent behind the closing sheet, retried on a transient failure; the sheet is gone by
+        // the time a write fails for good, so that is said in the app's toast.
+        write = Task { [client, tokenProvider, trainingDayId] in
+            do {
+                try await SharpitRetry.run {
+                    try await client.submitWellnessCheckin(
+                        entry,
+                        trainingDayId: trainingDayId,
+                        token: try await tokenProvider()
+                    )
+                }
+            } catch {
+                SharpitWriteFailures.shared.report(
+                    Self.message(for: error, fallback: "Ton ressenti n'a pas pu être enregistré.")
+                )
+            }
         }
+        return WellnessDimension.mood.label(for: mood)
     }
 
     private static func message(for error: Error, fallback: String) -> String {

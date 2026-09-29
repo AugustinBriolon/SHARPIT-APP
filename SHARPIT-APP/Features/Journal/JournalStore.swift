@@ -367,9 +367,11 @@ final class JournalStore {
 
     private func saveEntry() async {
         let sentRevision = localRevision
+        let sent = entry
         do {
-            let token = try await tokenProvider()
-            let saved = try await client.saveDayJournal(entry, token: token)
+            let saved = try await SharpitRetry.run {
+                try await client.saveDayJournal(sent, token: try await tokenProvider())
+            }
             // A tap made during the request is newer than the server's echo: adopting the
             // echo would flip that answer back on screen, and the next save would send the
             // reverted value.
@@ -428,9 +430,11 @@ final class JournalStore {
         let previous = prefs
         prefs = next
         do {
-            let token = try await tokenProvider()
             // The server caps a free plan and strips custom items, so its answer wins.
-            let result = try await client.saveJournalPrefs(next, token: token)
+            let result = try await SharpitRetry.run {
+                try await client.saveJournalPrefs(next, token: try await tokenProvider())
+            }
+            let token = try await tokenProvider()
             prefs = result.prefs
             isPro = result.isPro
             saveFailure = nil

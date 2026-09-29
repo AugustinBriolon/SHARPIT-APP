@@ -49,8 +49,10 @@ final class PrivacySettingsStore {
         saveError = nil
         defer { isSaving = false }
         do {
-            let token = try await tokenProvider()
-            let saved = try await client.updateConsents(update, token: token)
+            // Consents stay confirmed by the server before they show: the gate reads them.
+            let saved = try await SharpitRetry.run {
+                try await client.updateConsents(update, token: try await tokenProvider())
+            }
             SharpitMotion.run(SharpitMotion.selection) { consents = saved }
             return saved
         } catch SharpitAPIError.unauthorized {

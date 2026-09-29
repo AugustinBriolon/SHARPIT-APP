@@ -8,7 +8,6 @@ struct FeaturesView: View {
 
     var body: some View {
         List {
-            SharpitListIntro("Masque ce que tu n'utilises pas. Tes données restent enregistrées : tout revient tel quel quand tu réactives.")
             Section {
                 ForEach(SharpitFeature.allCases) { feature in
                     NavigationLink {
@@ -26,6 +25,8 @@ struct FeaturesView: View {
                         }
                     }
                 }
+            } footer: {
+                SharpitListFooter("Masque ce que tu n'utilises pas. Tes données restent enregistrées : tout revient tel quel quand tu réactives.")
             }
             .sharpitListRows()
         }
@@ -65,12 +66,6 @@ struct FeatureDetailView: View {
                 .tint(SharpitColor.primary)
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
-
-                if let error = store.saveError {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.signalRisk)
-                }
 
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                     SharpitEyebrow("Pourquoi le suivre")

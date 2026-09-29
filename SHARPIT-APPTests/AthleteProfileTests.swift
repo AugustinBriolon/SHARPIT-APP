@@ -440,11 +440,13 @@ private func weighIn(_ daysAgo: Int, _ weightKg: Double) -> V1BodyMeasurement {
 private actor StubProfileClient: AthleteProfileServing {
     private let profile: V1AthleteProfile
     private let fails: Bool
+    private let refusesPatch: Bool
     private(set) var patches: [AthleteProfilePatch] = []
 
-    init(_ profile: V1AthleteProfile, fails: Bool = false) {
+    init(_ profile: V1AthleteProfile, fails: Bool = false, refusesPatch: Bool = false) {
         self.profile = profile
         self.fails = fails
+        self.refusesPatch = refusesPatch
     }
 
     func athleteProfile(token _: String) async throws -> V1AthleteProfile {
@@ -457,6 +459,7 @@ private actor StubProfileClient: AthleteProfileServing {
         token _: String
     ) async throws -> V1AthleteProfile {
         patches.append(patch)
+        if refusesPatch { throw SharpitAPIError.badRequest }
         var saved = profile
         if case .string(let mode) = patch.fields["displayMode"] {
             saved.displayMode = mode
@@ -504,9 +507,51 @@ private actor StubProfileClient: AthleteProfileServing {
     let store = AthleteProfileStore(client: client, tokenProvider: { "t" })
 
     await store.load()
-    await store.setExpertReading(true)
+    store.setExpertReading(true)
+    // Shown on the tap, before the server has answered.
+    #expect(store.isExpertReading)
+    await store.settle()
 
     #expect(store.isExpertReading)
     // A one-field save must not mention the thresholds beside it.
     #expect(await client.recordedPatches().map(\.fields) == [["displayMode": .string("expert")]])
+}
+
+@MainActor
+@Test func aRefusedSaveIsSaidAndTheProfileReadBack() async {
+    let client = StubProfileClient(V1AthleteProfile(displayMode: "essential"), refusesPatch: true)
+    let failures = SharpitWriteFailures()
+    let store = AthleteProfileStore(client: client, tokenProvider: { "t" }, failures: failures)
+    await store.load()
+
+    store.setExpertReading(true)
+    #expect(store.isExpertReading)
+    await store.settle()
+
+    // Refused, so not tried again, and what shows is what the server holds.
+    #expect(await client.recordedPatches().count == 1)
+    #expect(!store.isExpertReading)
+    #expect(failures.latest?.message == "Profil non enregistré. Réessaie plus tard.")
+}
+
+@Test func aPatchAppliesToTheProfileAsTheServerWill() {
+    let profile = V1AthleteProfile(
+        heightCm: 180,
+        ftpW: 245,
+        notificationPrefs: V1NotificationPrefs(),
+        featurePrefs: V1FeaturePrefs()
+    )
+    var patch = AthleteProfilePatch()
+    patch.set(.heightCm, int: 182)
+    patch.set(.ftpW, int: nil)
+    patch.setFeature(.nutrition, on: false)
+
+    let applied = profile.applying(patch)
+
+    #expect(applied.heightCm == 182)
+    #expect(applied.ftpW == nil)
+    // A blob the server merges keeps the keys the patch did not name.
+    #expect(applied.featurePrefs?.isOn(.nutrition) == false)
+    #expect(applied.featurePrefs?.isOn(.journal) == true)
+    #expect(applied.notificationPrefs == profile.notificationPrefs)
 }

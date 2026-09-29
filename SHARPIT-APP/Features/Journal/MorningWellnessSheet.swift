@@ -69,7 +69,7 @@ struct MorningWellnessSheet: View {
             } actions: {
                 Button("Réessayer") { Task { await store.load() } }
             }
-        case .ready, .saving, .failed:
+        case .ready, .failed:
             ScrollView {
                 VStack(spacing: SharpitSpacing.sm) {
                     VStack(spacing: SharpitSpacing.xs) {
@@ -97,20 +97,13 @@ struct MorningWellnessSheet: View {
                     .padding(.top, SharpitSpacing.xxs)
 
                     Button {
-                        Task {
-                            guard let label = await store.submit() else { return }
-                            onCompleted(label)
-                            dismiss()
-                        }
+                        guard let label = store.submit() else { return }
+                        onCompleted(label)
+                        dismiss()
                     } label: {
                         HStack(spacing: 8) {
-                            if store.phase == .saving {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 14, weight: .bold))
-                            }
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 14, weight: .bold))
                             Text("Enregistrer")
                                 .font(SharpitTypography.bodyEmphasis)
                         }
@@ -121,7 +114,7 @@ struct MorningWellnessSheet: View {
                         .sharpitShadow(.control)
                     }
                     .buttonStyle(.sharpitPressable)
-                    .disabled(!store.canSubmit || store.phase == .saving)
+                    .disabled(!store.canSubmit)
                     .opacity(store.canSubmit ? 1 : 0.45)
                     .padding(.top, SharpitSpacing.xxs)
                 }

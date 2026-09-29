@@ -111,8 +111,9 @@ final class SessionLinkStore {
         guard phase != .linking, phase != .loading else { return false }
         phase = .linking
         do {
-            let token = try await tokenProvider()
-            try await linker.link(sessionId: sessionId, activityId: candidate.id, token: token)
+            try await SharpitRetry.run {
+                try await linker.link(sessionId: sessionId, activityId: candidate.id, token: try await tokenProvider())
+            }
             // Every list read after this would otherwise repeat the answer from before.
             await activities.invalidateActivities()
             phase = .ready

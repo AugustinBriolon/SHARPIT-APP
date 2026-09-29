@@ -21,9 +21,6 @@ final class AthleteProfileStore {
     private(set) var phase: Phase = .idle
     private(set) var profile = V1AthleteProfile()
     private(set) var history: [V1ThresholdSnapshot] = []
-    /// Set while a save is in flight, so a form can refuse a second submit.
-    private(set) var isSaving = false
-    private(set) var saveError: String?
     /// Set when a refresh over a painted cache failed. The profile stays on screen either
     /// way — a screen never trades known content for an error banner (`docs/adr/0008`).
     private(set) var refreshFailure: String?
@@ -31,12 +28,17 @@ final class AthleteProfileStore {
     private let client: any AthleteProfileServing
     private let tokenProvider: () async throws -> String
     private let modelContext: ModelContext?
+    private let failures: SharpitWriteFailures
+    @ObservationIgnored private var writeChain: Task<Void, Never>?
+    @ObservationIgnored private var pendingWrites = 0
 
     init(
         client: any AthleteProfileServing,
         tokenProvider: @escaping () async throws -> String,
-        modelContext: ModelContext? = nil
+        modelContext: ModelContext? = nil,
+        failures: SharpitWriteFailures = .shared
     ) {
+        self.failures = failures
         self.client = client
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
@@ -88,41 +90,62 @@ final class AthleteProfileStore {
         history = (try? await client.thresholdHistory(token: token)) ?? []
     }
 
-    /// Saves the fields of one patch and adopts the profile the server returns.
+    /// Applies a patch at once and writes it behind: the screen never waits on the server.
     ///
-    /// Returns false when nothing was written, so a form can stay open on an error rather
-    /// than dismissing on a save that did not happen.
-    @discardableResult
-    func save(_ patch: AthleteProfilePatch) async -> Bool {
-        guard !isSaving else { return false }
-        guard !patch.isEmpty else { return true }
-        isSaving = true
-        saveError = nil
-        defer { isSaving = false }
+    /// Writes go out one after another, in the order they were made. A write that fails for
+    /// good (`SharpitRetry`) is said in the app's toast and the profile is read again, so what
+    /// shows is what the server holds rather than a change that never landed.
+    func save(_ patch: AthleteProfilePatch) {
+        guard !patch.isEmpty else { return }
+        profile = profile.applying(patch)
+        persistCache()
+        pendingWrites += 1
+        let previous = writeChain
+        writeChain = Task { [weak self] in
+            await previous?.value
+            await self?.write(patch)
+        }
+    }
+
+    /// Waits for every write made so far — for a test, or a caller that must read the echo.
+    func settle() async {
+        await writeChain?.value
+    }
+
+    private func write(_ patch: AthleteProfilePatch) async {
+        defer { pendingWrites -= 1 }
         do {
-            let token = try await tokenProvider()
-            profile = try await client.patchAthleteProfile(patch, token: token)
+            let saved = try await SharpitRetry.run { [client, tokenProvider] in
+                try await client.patchAthleteProfile(patch, token: try await tokenProvider())
+            }
+            // A change made meanwhile is newer than this echo; its own write brings the next one.
+            if pendingWrites == 1 {
+                profile = saved
+                persistCache()
+            }
             // A saved threshold writes a snapshot server-side; the list held here is stale.
             history = []
-            persistCache()
-            return true
-        } catch SharpitAPIError.unauthorized {
-            saveError = "Session expirée. Reconnecte-toi."
-            return false
         } catch {
-            saveError = "Enregistrement impossible. Réessaie."
-            return false
+            failures.report(Self.failureMessage(for: error))
+            await load()
         }
+    }
+
+    private static func failureMessage(for error: any Error) -> String {
+        if let apiError = error as? SharpitAPIError, apiError == .unauthorized {
+            return "Session expirée. Reconnecte-toi."
+        }
+        return "Profil non enregistré. Réessaie plus tard."
     }
 
     /// Switches the reading density. Its own method because it saves on the tap, with no
     /// form to submit — as the web's picker does.
-    func setExpertReading(_ isExpert: Bool) async {
+    func setExpertReading(_ isExpert: Bool) {
         var patch = AthleteProfilePatch()
         patch.set(
             .displayMode,
             string: isExpert ? AthleteProfileField.expertDisplayMode : AthleteProfileField.essentialDisplayMode
         )
-        await save(patch)
+        save(patch)
     }
 }

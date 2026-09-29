@@ -68,22 +68,3 @@ struct SharpitListFooter: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 }
-
-/// The line of explanation a screen opens with, above its first group — no surface, because
-/// it is prose and not a row.
-struct SharpitListIntro: View {
-    let text: String
-
-    init(_ text: String) {
-        self.text = text
-    }
-
-    var body: some View {
-        Section {
-            Text(text)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .listRowBackground(Color.clear)
-    }
-}

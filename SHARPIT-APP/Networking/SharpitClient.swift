@@ -239,6 +239,9 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadSe
 
             // The server says why in French, but a caller needs to know it was only too soon.
             if statusCode == 429 { throw SharpitAPIError.rateLimited }
+            // A 5xx is the server failing, not refusing: `.server` lets a write try again
+            // (`SharpitRetry`) where a message would read as a refusal.
+            if statusCode >= 500 { throw SharpitAPIError.server }
 
             if let errorObj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 if let errorMessage = errorObj["error"] as? String {
@@ -260,15 +263,11 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadSe
                 throw SharpitAPIError.unauthorized
             case 404:
                 throw SharpitAPIError.message("Route introuvable sur le serveur (404)")
-            case 429:
-                throw SharpitAPIError.rateLimited
-            case 504:
-                throw SharpitAPIError.message("Délai d'attente dépassé (504)")
             default:
                 if !bodyString.isEmpty && !bodyString.hasPrefix("<") && bodyString.count < 150 {
                     throw SharpitAPIError.message(bodyString)
                 }
-                throw SharpitAPIError.message("Erreur serveur (\(statusCode))")
+                throw SharpitAPIError.message("Requête refusée (\(statusCode))")
             }
         }
 

@@ -272,6 +272,33 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     }
 }
 
+nonisolated extension V1AthleteProfile {
+    /// The blobs the server merges key by key rather than replaces (the web's `jsonBlobPatch`).
+    private static let mergedFields: Set<String> = ["notificationPrefs", "featurePrefs"]
+
+    /// The profile as the server will hold it once `patch` lands — what a save shows at once.
+    /// Built through the profile's own coding, so a field reads exactly as the server's echo
+    /// would; a patch this cannot apply leaves the profile as it is, and the echo corrects it.
+    func applying(_ patch: AthleteProfilePatch) -> V1AthleteProfile {
+        guard let data = try? JSONEncoder().encode(self),
+              case .object(var fields)? = try? JSONDecoder().decode(JSONValue.self, from: data)
+        else { return self }
+        for (key, value) in patch.fields {
+            if Self.mergedFields.contains(key),
+               case .object(let current)? = fields[key],
+               case .object(let changes) = value {
+                fields[key] = .object(current.merging(changes) { _, new in new })
+            } else {
+                fields[key] = value
+            }
+        }
+        guard let merged = try? JSONEncoder().encode(JSONValue.object(fields)),
+              let applied = try? JSONDecoder().decode(V1AthleteProfile.self, from: merged)
+        else { return self }
+        return applied
+    }
+}
+
 /// The profile fields the app can write, with the server's key for each.
 ///
 /// Named rather than stringly-typed at the call site so a patch cannot invent a key the API

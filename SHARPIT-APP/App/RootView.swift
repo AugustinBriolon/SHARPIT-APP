@@ -122,6 +122,11 @@ struct RootView: View {
             )
         }
         .overlay(alignment: .top) { SharpitToastHost(center: toastCenter) }
+        // A write retried in the background and still refused: said once, wherever the athlete is.
+        .onChange(of: SharpitWriteFailures.shared.latest) { _, failure in
+            guard let failure else { return }
+            toastCenter.show(failure.message, symbol: "exclamationmark.triangle.fill", tone: .error, autoDismissAfter: 4)
+        }
         .tint(SharpitColor.primary)
         .environment(router)
         .environment(toastCenter)

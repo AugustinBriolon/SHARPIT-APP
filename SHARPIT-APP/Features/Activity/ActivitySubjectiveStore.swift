@@ -98,8 +98,11 @@ final class ActivitySubjectiveStore: Identifiable {
         let sentFeeling = storedFeeling
         status = .saving
         do {
-            let token = try await tokenProvider()
-            try await client.updateSubjective(id: activityId, rpe: sentRPE, feeling: sentFeeling, token: token)
+            try await SharpitRetry.run {
+                try await client.updateSubjective(
+                    id: activityId, rpe: sentRPE, feeling: sentFeeling, token: try await tokenProvider()
+                )
+            }
             status = .saved
             onSaved(sentRPE, sentFeeling)
         } catch is CancellationError {

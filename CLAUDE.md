@@ -241,6 +241,18 @@ projections). One call stays web-internal: `/api/coach/chat`, which has no `/api
 Its tools no longer act without asking — calendar changes wait for the athlete's approval, on
 the web and here — so moving it is a web task, not a design one.
 
+**Writes.** A write never makes the athlete wait: the change shows on the tap and goes out behind.
+Every write goes through `SharpitRetry`: a dropped connection, a timeout, a 429 or a 5xx is tried again
+(four tries, 1 s, 2 s, 4 s apart); a refusal (4xx, a session gone) is not, since the same request gets
+the same answer. Only a write that fails for good is said — inline where the screen has an error line,
+otherwise in the app's toast through `SharpitWriteFailures`, which `RootView` watches, because a sheet
+or a form may be closed by then. `AthleteProfileStore.save` applies the patch to the profile at once
+(`V1AthleteProfile.applying`, merging `notificationPrefs` and `featurePrefs` as the server does),
+queues the writes in order, and reads the profile back when one fails for good; `settle()` waits for
+the queue. The morning check-in closes on the tap the same way. A creation that needs the server's id
+(a goal, a coach constraint) and the consents (the gate reads them) still wait for the answer, retried.
+Clients map a 5xx to `SharpitAPIError.server` so it can be told from a refusal.
+
 **Coach turns and proposals.** A coach turn is kept as the AI SDK's UI-message parts
 (`CoachMessage.parts`), rebuilt from the route's stream by `CoachUIMessageAssembler` — a port of
 the SDK's `processUIMessageStream` — and sent back whole: on the next question, on an approval,
@@ -400,7 +412,8 @@ tapped notification goes through `PushNotificationManager.destination(for:)` to
 `ShellRouter.open(_:)` — `/plan/generator`, `/plan/review`, `/settings/sources`, a tab), Sources de
 données, Synchronisation iCloud (`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer`
 events from launch), Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: the choice needs its
-explanation) and Confidentialité, each row saying its state before it is opened. Compte edits in
+explanation) and Confidentialité, each row saying its state before it is opened. A page's explanation is the footer of its
+list (`SharpitListFooter`), never a paragraph above it. Compte edits in
 place: first and last name through Clerk's `user.update`, sex, height and birth date through
 `AthleteProfilePatch`; e-mail, password and photo stay in Clerk's own sheet.
 `AthleteProfilePatch` carries only the fields the athlete changed — an absent key means

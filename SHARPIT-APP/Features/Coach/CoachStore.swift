@@ -196,11 +196,16 @@ final class CoachStore {
     /// one saves the whole thread again, so nothing is lost by waiting.
     private func persist(token: String) async {
         guard let conversations else { return }
+        let thread = messages
         do {
             if let conversationId {
-                try await conversations.save(id: conversationId, messages: messages, token: token)
+                try await SharpitRetry.run {
+                    try await conversations.save(id: conversationId, messages: thread, token: token)
+                }
             } else {
-                conversationId = try await conversations.create(messages: messages, token: token)
+                conversationId = try await SharpitRetry.run {
+                    try await conversations.create(messages: thread, token: token)
+                }
             }
         } catch {}
     }

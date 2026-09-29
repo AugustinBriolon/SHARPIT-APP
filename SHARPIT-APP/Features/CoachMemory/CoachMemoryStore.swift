@@ -52,8 +52,10 @@ final class CoachMemoryStore {
         errorMessage = nil
         defer { isSavingContext = false }
         do {
-            let token = try await tokenProvider()
-            try await client.saveProfileContext(profileContextText, token: token)
+            let text = profileContextText
+            try await SharpitRetry.run {
+                try await client.saveProfileContext(text, token: try await tokenProvider())
+            }
             lastSavedContext = profileContextText
             return true
         } catch {
@@ -65,8 +67,9 @@ final class CoachMemoryStore {
     @discardableResult
     func createEntry(_ input: CreateCoachMemoryInput) async -> Bool {
         do {
-            let token = try await tokenProvider()
-            let newEntry = try await client.createEntry(input, token: token)
+            let newEntry = try await SharpitRetry.run {
+                try await client.createEntry(input, token: try await tokenProvider())
+            }
             var current = snapshot
             current.entries.removeAll { $0.id == newEntry.id }
             current.entries.insert(newEntry, at: 0)
@@ -88,8 +91,9 @@ final class CoachMemoryStore {
         current.entries.removeAll { $0.id == id }
         self.snapshot = current
         do {
-            let token = try await tokenProvider()
-            try await client.deleteEntry(id: id, token: token)
+            try await SharpitRetry.run {
+                try await client.deleteEntry(id: id, token: try await tokenProvider())
+            }
             await self.load()
         } catch {
             await self.load()

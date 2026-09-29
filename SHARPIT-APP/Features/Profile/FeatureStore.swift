@@ -3,8 +3,9 @@ import SwiftUI
 import WidgetKit
 
 /// The parts of SharpIt the athlete uses, read once and handed to every surface through the
-/// environment — the shape of `DisplayModeStore`. A switch saves on the tap and applies at once;
-/// a save that fails puts the switch back.
+/// environment — the shape of `DisplayModeStore`. A switch applies at once and saves behind,
+/// tried again on a transient failure (`SharpitRetry`); only a save that fails for good puts the
+/// switch back and says so.
 ///
 /// The last known choice is kept in the widget snapshot, so the app opens with the right tabs
 /// and the widgets know a feature is off without asking the API.
@@ -12,7 +13,6 @@ import WidgetKit
 @Observable
 final class FeatureStore {
     private(set) var prefs: V1FeaturePrefs
-    private(set) var saveError: String?
 
     private let client: any AthleteProfileServing
     private let snapshotDirectory: URL?
@@ -37,16 +37,16 @@ final class FeatureStore {
         var next = prefs
         next.set(feature, on)
         adopt(next)
-        saveError = nil
         var patch = AthleteProfilePatch()
         patch.setFeature(feature, on: on)
         do {
-            let token = try await tokenProvider()
-            let profile = try await client.patchAthleteProfile(patch, token: token)
+            let profile = try await SharpitRetry.run { [client] in
+                try await client.patchAthleteProfile(patch, token: try await tokenProvider())
+            }
             adopt(profile.featurePrefs ?? next)
         } catch {
             adopt(previous)
-            saveError = "Enregistrement impossible. Réessaie."
+            SharpitWriteFailures.shared.report("\(feature.title) : choix non enregistré.")
         }
     }
 

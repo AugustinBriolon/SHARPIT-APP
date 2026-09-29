@@ -6,7 +6,6 @@ import SwiftUI
 /// and reactive auto-save without manual confirmation button.
 struct ThresholdsView: View {
     @State private var store: AthleteProfileStore
-    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var form = ProfileFormState()
     @State private var autoSaveTask: Task<Void, Never>?
     @State private var hasLoaded = false
@@ -50,14 +49,6 @@ struct ThresholdsView: View {
         .background(SharpitCanvasBackground())
         .navigationTitle("Seuils & repères")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                if store.isSaving {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-            }
-        }
         .task {
             if store.phase != .loaded {
                 await store.load()
@@ -469,20 +460,16 @@ struct ThresholdsView: View {
         autoSaveTask = Task {
             try? await Task.sleep(nanoseconds: 600_000_000)
             guard !Task.isCancelled else { return }
-            await performAutoSave()
+            performAutoSave()
         }
     }
 
     @MainActor
-    private func performAutoSave() async {
+    private func performAutoSave() {
         guard Self.ownedFields.allSatisfy({ form.error(for: $0) == nil }) else { return }
         let patch = form.patch(against: store.profile)
         guard !patch.isEmpty else { return }
-
-        let success = await store.save(patch)
-        if !success, let err = store.saveError {
-            toastCenter?.show(err, symbol: "exclamationmark.triangle.fill", tone: .error)
-        }
+        store.save(patch)
     }
 }
 

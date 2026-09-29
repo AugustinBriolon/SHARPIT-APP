@@ -48,7 +48,8 @@ private actor SubjectiveRecorder {
     func record(_ rpe: Double?, _ feeling: String?) throws {
         if failNext {
             failNext = false
-            throw SharpitAPIError.server
+            // A refusal: a transient failure is tried again by `SharpitRetry` before it shows.
+            throw SharpitAPIError.badRequest
         }
         writes.append((rpe, feeling))
     }

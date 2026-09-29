@@ -53,7 +53,7 @@ private actor StubWellnessClient: WellnessServing {
         trainingDayId _: String,
         token _: String
     ) async throws {
-        if failsSubmit { throw SharpitAPIError.server }
+        if failsSubmit { throw SharpitAPIError.badRequest }
         submitted.append(entry)
     }
 
@@ -111,7 +111,8 @@ private actor StubWellnessClient: WellnessServing {
     store.pick(.five, for: .energy)
     store.pick(.five, for: .soreness)
     store.pick(.two, for: .stress)
-    let label = await store.submit()
+    let label = store.submit()
+    await store.settle()
 
     #expect(label == "Bien")
     let sent = await client.recorded()
@@ -136,7 +137,8 @@ private actor StubWellnessClient: WellnessServing {
     }
     store.notes = "   \n  "
 
-    _ = await store.submit()
+    _ = store.submit()
+    await store.settle()
 
     let sent = await client.recorded()
     #expect(sent.first?.notes == nil)
@@ -179,9 +181,10 @@ private actor StubWellnessClient: WellnessServing {
         store.pick(.three, for: dimension)
     }
 
-    let label = await store.submit()
+    let label = store.submit()
+    await store.settle()
 
-    #expect(label == nil)
-    #expect(store.phase == .failed("Ton ressenti n'a pas pu être enregistré."))
+    // The sheet closed on the tap; a refusal is said in the app's toast, the picks are kept.
+    #expect(label == WellnessDimension.mood.label(for: .three))
     #expect(store.picks[.mood] == .three)
 }
