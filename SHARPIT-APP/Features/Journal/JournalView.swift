@@ -598,7 +598,7 @@ private struct JournalAnswerToggle: View, Equatable {
 
 private struct JournalDatePicker: View {
     @Bindable var store: JournalStore
-    private let weeks = SharpitWeeks(offsets: -26...0)
+    private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
     @State private var weekOffset: Int
     @State private var showingCalendar = false
 

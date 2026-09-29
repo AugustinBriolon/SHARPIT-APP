@@ -38,9 +38,11 @@ final class DayResourceStore<Payload: V1DayResource> {
         case unauthorized
     }
 
-    /// How far back the picker's marks reach: its 26 weeks, in the route's 92-day windows.
-    static var markedWindows: Int { 2 }
+    /// How far back the picker's marks reach: its whole history, in the route's 92-day windows.
     static var markedWindowDays: Int { 91 }
+    static var markedWindows: Int {
+        (SharpitWeeks.historyWeeks * 7 + markedWindowDays - 1) / markedWindowDays
+    }
     /// Days with data read ahead after the first load.
     static var prefetchCount: Int { 6 }
 
@@ -163,11 +165,13 @@ final class DayResourceStore<Payload: V1DayResource> {
                 day = next
             }
             for id in days { marks[id] = true }
+            // Each window shows as it arrives, most recent first: three years take a dozen reads,
+            // and the weeks the athlete looks at first should not wait on the oldest.
+            // What a payload already said about a day is newer than the range read.
+            dataByDay = marks.merging(dataByDay) { _, known in known }
             guard let previous = calendar.date(byAdding: .day, value: -1, to: start) else { break }
             end = previous
         }
-        // What a payload already said about a day is newer than the range read.
-        dataByDay = marks.merging(dataByDay) { _, known in known }
     }
 
     /// Reads the most recent days with data ahead of the athlete, one at a time.

@@ -255,3 +255,18 @@ private struct CountingPlannedSessionClient: PlannedSessionServing {
         return []
     }
 }
+
+// MARK: - History depth
+
+@Test func weekPickersReachThreeYearsBack() {
+    // The athlete's history starts in November 2023; 26 weeks stopped every picker at March 2026.
+    let now = ISO8601DateFormatter().date(from: "2026-09-29T12:00:00Z")!
+    let weeks = SharpitWeeks(offsets: SharpitWeeks.history, now: { now })
+    let firstActivity = ISO8601DateFormatter().date(from: "2023-11-09T08:00:00Z")!
+
+    #expect(weeks.selectableDates.lowerBound <= firstActivity)
+    #expect(PlanStore.offsets.lowerBound == -SharpitWeeks.historyWeeks)
+    // The day screens mark every day of that range, window after window.
+    #expect(DayResourceStore<V1NutritionResponse>.markedWindows * DayResourceStore<V1NutritionResponse>.markedWindowDays
+        >= SharpitWeeks.historyWeeks * 7)
+}

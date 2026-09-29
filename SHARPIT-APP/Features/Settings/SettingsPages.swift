@@ -294,8 +294,18 @@ struct NotificationPrefsView: View {
     private let tokenProvider: () async throws -> String
     private let profileClient: any AthleteProfileServing
 
-    init(profileClient: any AthleteProfileServing, tokenProvider: @escaping () async throws -> String) {
-        _store = State(initialValue: AthleteProfileStore(client: profileClient, tokenProvider: tokenProvider))
+    /// The context paints the profile read last time at once: without it, every opening showed
+    /// the switches as placeholders until the network answered — and for good when it did not.
+    init(
+        profileClient: any AthleteProfileServing,
+        tokenProvider: @escaping () async throws -> String,
+        modelContext: ModelContext? = nil
+    ) {
+        _store = State(initialValue: AthleteProfileStore(
+            client: profileClient,
+            tokenProvider: tokenProvider,
+            modelContext: modelContext
+        ))
         self.tokenProvider = tokenProvider
         self.profileClient = profileClient
     }
@@ -323,6 +333,18 @@ struct NotificationPrefsView: View {
 
             if isOn {
                 kinds
+            }
+
+            if case .failed(let message) = store.phase {
+                Section {
+                    Button {
+                        Task { await store.load() }
+                    } label: {
+                        Label("\(message) Réessayer", systemImage: "arrow.clockwise")
+                            .font(SharpitTypography.meta)
+                    }
+                }
+                .listRowBackground(Color.clear)
             }
 
             if let error = store.saveError {
@@ -401,8 +423,10 @@ struct NotificationPrefsView: View {
             toggle("Alertes de synchronisation", detail: "Quand une source doit être reconnectée.", symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
         }
         .sharpitListRows()
+        // Placeholders only while the very first read is under way; a failure says so below
+        // with a retry instead of leaving the switches greyed out.
         .disabled(store.phase != .loaded)
-        .redacted(reason: store.phase == .loaded ? [] : .placeholder)
+        .redacted(reason: store.phase == .loading ? .placeholder : [])
         .transition(.opacity)
     }
 

@@ -9,7 +9,7 @@ struct DayDetailDatePicker: View {
     var hasData: (Date) -> Bool? = { _ in nil }
     let onSelect: (Date) -> Void
 
-    private let weeks = SharpitWeeks(offsets: -26...0)
+    private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
     @State private var weekOffset: Int
     @State private var showingCalendar = false
 

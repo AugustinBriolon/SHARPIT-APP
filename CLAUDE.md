@@ -287,7 +287,7 @@ nutrition card (`NutritionTodayCard`, below Régularité). All three are a
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
 day's drill-down is a v1 resource plus a sections view, not a new store. The store keeps every day it
 read for the life of the screen (a day seen again appears at once and refreshes behind), marks the
-picker's 26 weeks on first load from `/api/v1/data-days` (so a logged day is marked before it is
+picker's history (`SharpitWeeks.history`, three years — Plan, Journal and the day screens share it) on first load from `/api/v1/data-days`, a 91-day window at a time, most recent first (so a logged day is marked before it is
 opened), and reads the six most recent days with data ahead of the athlete.
 
 **Nutrition.** The food log is the athlete's own data and open to everyone; only the coach's

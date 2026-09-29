@@ -236,7 +236,7 @@ struct SettingsView: View {
         case .privacy:
             PrivacySettingsView(client: privacyClient, tokenProvider: tokenProvider)
         case .notifications:
-            NotificationPrefsView(profileClient: profileClient, tokenProvider: tokenProvider)
+            NotificationPrefsView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
         case .density:
             DisplayModeView(
                 client: profileClient,

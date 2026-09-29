@@ -6,6 +6,14 @@ import Foundation
 /// ahead. The range is bounded so a pager holds a fixed set of pages instead of an
 /// infinite one, which is where paging bugs live.
 struct SharpitWeeks: Sendable {
+    /// How far back every week picker reaches: three years. It was 26 weeks, which stopped Plan,
+    /// Journal and the day screens at the end of March while the athlete's history went back to
+    /// 2023.
+    static let historyWeeks = 156
+
+    /// The past a day screen can open: the history, up to this week.
+    static var history: ClosedRange<Int> { -historyWeeks...0 }
+
     let offsets: ClosedRange<Int>
     let calendar: Calendar
     private let now: @Sendable () -> Date

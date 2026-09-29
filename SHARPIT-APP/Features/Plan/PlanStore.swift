@@ -19,7 +19,7 @@ final class PlanStore {
 
     /// Half a year either side of today. Bounded so the pager stays a fixed set of pages
     /// instead of an infinite one, which is where paging bugs live.
-    static let offsets: ClosedRange<Int> = -26...26
+    static let offsets: ClosedRange<Int> = -SharpitWeeks.historyWeeks...26
 
     let weekCalendar = SharpitWeeks(offsets: PlanStore.offsets)
 
