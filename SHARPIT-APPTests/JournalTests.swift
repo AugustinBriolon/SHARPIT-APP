@@ -471,8 +471,7 @@ private func daySignals(_ json: String) throws -> V1JournalDaySignals {
 /// An athlete with no derived line enabled must not pay for a request whose answer would
 /// render nothing.
 @MainActor
-@Test func noDerivedLineStillReadsTheDaysValuesButShowsNoChecklist() async throws {
-    // The day's values (« Ta journée ») come with the signals, whatever the preferences.
+@Test func noDerivedLineMeansNoRequest() async throws {
     let client = StubJournalClient(
         prefs: try prefs(#"{ "version": 2, "enabled": { "alcohol": true } }"#)
     )
@@ -480,7 +479,7 @@ private func daySignals(_ json: String) throws -> V1JournalDaySignals {
 
     await store.load()
 
-    #expect(await client.signalReadCount() == 1)
+    #expect(await client.signalReadCount() == 0)
     #expect(store.checklist.isEmpty)
 }
 
@@ -810,53 +809,3 @@ private struct FailingJournalClient: JournalServing {
     #expect(await client.saveCount() == 1)
 }
 
-
-// MARK: - Ta journée
-
-private let measuredDay = V1JournalDayData(
-    sleep: .init(minutes: 432, score: 82, bedtimeMin: 1_390, wakeMin: 405),
-    napMinutes: 20, hrv: 61, restingHr: 47, readiness: 74,
-    steps: 11_234, stress: 28, bodyBattery: 64,
-    activities: .init(count: 2, minutes: 90)
-)
-
-@Test func theDayReadsItsMeasuresInTheJournalsWords() {
-    let tiles = JournalDayReadout.tiles(measuredDay)
-
-    #expect(tiles.map(\.kind) == [.night, .recovery, .movement, .sessions, .energy])
-    #expect(tiles[0].value == "7 h 12")
-    #expect(tiles[0].caption == "Score 82 · 23:10 → 6:45")
-    #expect(tiles[0].destination == .sleep)
-    #expect(tiles[1].value == "61 ms")
-    #expect(tiles[1].caption == "FC repos 47 · Disponibilité 74")
-    // French grouping: a narrow no-break space, as every figure in the app.
-    #expect(tiles[2].value == 11_234.formatted(.number.locale(Locale(identifier: "fr_FR"))))
-    #expect(tiles[2].caption == "Sieste 20 min")
-    #expect(tiles[3].value == "2 séances")
-    #expect(tiles[3].caption == "1 h 30")
-    #expect(tiles[4].caption == "Body Battery 64")
-}
-
-@Test func aDayWithoutDevicesShowsNoTileRatherThanZeros() {
-    let empty = V1JournalDayData(sleep: .init(), activities: .init(count: 0, minutes: 0))
-
-    #expect(JournalDayReadout.tiles(empty).isEmpty)
-    #expect(!JournalDayReadout.hasAny(empty))
-}
-
-@Test func theDaySignalsCarryTheDaysValues() throws {
-    let json = #"""
-    { "trainingDayId": "2026-09-29", "checklist": [], "nutrition": null, "dietLabels": [],
-      "day": { "sleep": { "minutes": 432, "score": 82, "bedtimeMin": 1390, "wakeMin": 405 },
-               "napMinutes": null, "hrv": 61, "restingHr": 47, "readiness": 74,
-               "steps": 11234, "stress": 28, "bodyBattery": 64,
-               "activities": { "count": 2, "minutes": 90 } } }
-    """#
-    let signals = try JSONDecoder().decode(V1JournalDaySignals.self, from: Data(json.utf8))
-
-    #expect(signals.day?.sleep.score == 82)
-    #expect(signals.day?.activities.count == 2)
-    // Written back into the cache and read again unchanged.
-    let roundTrip = try JSONDecoder().decode(V1JournalDaySignals.self, from: JSONEncoder().encode(signals))
-    #expect(roundTrip == signals)
-}

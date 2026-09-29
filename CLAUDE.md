@@ -269,8 +269,6 @@ payload omits, so sending back only what the app renders would silently reset th
 catalogue in `JournalTrackables.swift` therefore covers the signals the app can render, never
 all of the web's.
 
-« Ta journée » opens the screen: the day's measured values (sleep with score and bed/wake times, HRV, resting HR, readiness, steps, nap, sessions, stress, Body Battery) from the day-signals route's `day`, read whatever the preferences, a tile only where something was measured; the night and recovery tiles open Sommeil and Récupération on that day (`JournalDayReadout`).
-
 Sections follow *when* a signal happened, not what kind of thing it is: Journée (the three
 metrics), Checklist auto, Nuit dernière, Signaux du jour. `JournalDayWindow` is its own axis
 beside `JournalCategory`, which still drives the drawer's filters — the web separates them

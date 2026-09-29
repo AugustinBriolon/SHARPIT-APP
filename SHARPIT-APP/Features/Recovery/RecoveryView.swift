@@ -11,7 +11,6 @@ struct RecoveryView: View {
     init(
         client: any RecoveryServing,
         tokenProvider: @escaping () async throws -> String,
-        day: Date = .now,
         dataDaysClient: any DataDaysServing = SharpitClient(),
         syncClient: any SyncServing = SharpitClient()
     ) {
@@ -20,7 +19,6 @@ struct RecoveryView: View {
         _store = State(initialValue: DayResourceStore(
             failureMessage: "Ta récupération n'a pas pu être chargée.",
             tokenProvider: tokenProvider,
-            day: day,
             dataDays: { try await dataDaysClient.dataDays(domain: .recovery, from: $0, to: $1, token: $2) },
             fetch: { try await client.recovery(trainingDayId: $0, token: $1) }
         ))

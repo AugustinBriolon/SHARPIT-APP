@@ -138,17 +138,6 @@ struct JournalView: View {
                 // ended this morning, then the day's own signals. Grouped by when a signal
                 // happened rather than by what kind of thing it is — an athlete answers a
                 // journal in the order they lived it.
-                // What was measured comes first: the answers below are read against it.
-                if let dayData = store.dayData, JournalDayReadout.hasAny(dayData) {
-                    JournalDaySection(day: dayData) { target in
-                        switch target {
-                        case .sleep:
-                            SleepView(client: SharpitClient(), tokenProvider: tokenProvider, day: store.selectedDate)
-                        case .recovery:
-                            RecoveryView(client: SharpitClient(), tokenProvider: tokenProvider, day: store.selectedDate)
-                        }
-                    }
-                }
                 dayMetricsSection
                 checklistSection
                 priorNightSection
