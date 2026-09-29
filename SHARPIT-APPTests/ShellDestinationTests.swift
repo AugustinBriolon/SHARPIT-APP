@@ -5,7 +5,7 @@ import Testing
     #expect(ShellDestination.plan.title == "Plan")
     #expect(ShellDestination.coach.title == "Coach")
     #expect(ShellDestination.activity.title == "Activité")
-    #expect(ShellDestination.body.title == "Corps")
+    #expect(ShellDestination.body.title == "Santé")
 }
 
 @Test func planShellIsIconFirst() {
@@ -15,7 +15,7 @@ import Testing
 }
 
 @Test func bodyShellListsItsSections() {
-    #expect(ShellDestination.body.surfaces.map(\.label) == ["Composition", "Récupération", "Seuils"])
+    #expect(ShellDestination.body.surfaces.map(\.label) == ["Signes vitaux", "Corps", "Au quotidien"])
 }
 
 @Test func signalKeysExposeSymbols() {

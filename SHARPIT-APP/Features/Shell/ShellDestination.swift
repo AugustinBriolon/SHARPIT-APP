@@ -17,7 +17,7 @@ enum ShellDestination: String, CaseIterable, Sendable {
         case .plan: "Plan"
         case .coach: "Coach"
         case .activity: "Activité"
-        case .body: "Corps"
+        case .body: "Santé"
         }
     }
 
@@ -26,7 +26,7 @@ enum ShellDestination: String, CaseIterable, Sendable {
         case .plan: "calendar"
         case .coach: "bubble.left.and.bubble.right"
         case .activity: "figure.run"
-        case .body: "figure.stand"
+        case .body: "heart.text.square"
         }
     }
 
@@ -62,9 +62,9 @@ enum ShellDestination: String, CaseIterable, Sendable {
             ]
         case .body:
             [
-                ShellSurfaceMark(symbolName: "scalemass", label: "Composition"),
-                ShellSurfaceMark(symbolName: "waveform.path.ecg", label: "Récupération"),
-                ShellSurfaceMark(symbolName: "gauge.with.dots.needle.67percent", label: "Seuils"),
+                ShellSurfaceMark(symbolName: "heart", label: "Signes vitaux"),
+                ShellSurfaceMark(symbolName: "scalemass", label: "Corps"),
+                ShellSurfaceMark(symbolName: "figure.walk", label: "Au quotidien"),
             ]
         }
     }

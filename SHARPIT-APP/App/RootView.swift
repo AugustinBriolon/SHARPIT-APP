@@ -91,7 +91,7 @@ struct RootView: View {
                     systemImage: ShellDestination.body.systemImage,
                     value: ShellTab.body
                 ) {
-                    CorpsView(
+                    SanteView(
                         profileClient: profileClient,
                         recoveryClient: sharpitClient,
                         tokenProvider: liveToken,

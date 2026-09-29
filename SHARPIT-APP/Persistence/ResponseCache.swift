@@ -35,6 +35,7 @@ nonisolated enum ResponseCacheKey {
     static let syncStatus = "sync-status"
     static let coachConversations = "coach-conversations"
     static let thresholdHistory = "threshold-history"
+    static let healthOverview = "health-overview"
 
     /// A plan week, addressed by the Monday it starts on: the plan is read a week at a time.
     static func planWeek(startingOn day: String) -> String { "plan-week:\(day)" }
@@ -68,7 +69,13 @@ enum ResponseCache {
         key: String,
         context: ModelContext?
     ) {
-        guard let context, let data = try? JSONEncoder().encode(payload) else { return }
+        guard let data = try? JSONEncoder().encode(payload) else { return }
+        write(data: data, key: key, context: context)
+    }
+
+    /// The server's answer as it came — for a wire type the app only decodes.
+    static func write(data: Data, key: String, context: ModelContext?) {
+        guard let context else { return }
         if let row = newest(key: key, context: context) {
             row.payloadJSON = data
             row.fetchedAt = .now

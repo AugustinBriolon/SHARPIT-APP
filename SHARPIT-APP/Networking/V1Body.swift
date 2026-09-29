@@ -147,8 +147,14 @@ nonisolated protocol BodyServing: Sendable {
     func bodySeries(metric: CorpsMetricKey, range: CorpsRange, token: String) async throws -> V1BodySeries
 }
 
-/// `/api/v1/body/*` — the Corps tab's native projection.
-actor BodyClient: BodyServing {
+/// `/api/v1/health/overview` — Santé's check-up (SHARPIT ADR-053).
+nonisolated protocol HealthOverviewServing: Sendable {
+    /// The answer as sent, so the page can keep it whole and paint it offline.
+    func healthOverviewData(token: String) async throws -> Data
+}
+
+/// `/api/v1/body/*` and `/api/v1/health/overview` — Santé's native projections.
+actor BodyClient: BodyServing, HealthOverviewServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -173,12 +179,25 @@ actor BodyClient: BodyServing {
         )
     }
 
+    func healthOverviewData(token: String) async throws -> Data {
+        try await data(path: "/api/v1/health/overview", query: [], token: token)
+    }
+
     private func get<Payload: Decodable>(
         _: Payload.Type,
         path: String,
         query: [URLQueryItem],
         token: String
     ) async throws -> Payload {
+        let data = try await data(path: path, query: query, token: token)
+        do {
+            return try JSONDecoder().decode(Payload.self, from: data)
+        } catch {
+            throw SharpitAPIError.server
+        }
+    }
+
+    private func data(path: String, query: [URLQueryItem], token: String) async throws -> Data {
         var url = baseURL.appending(path: path)
         if !query.isEmpty { url = url.appending(queryItems: query) }
         var request = URLRequest(url: url)
@@ -197,10 +216,6 @@ actor BodyClient: BodyServing {
             if status == 401 { throw SharpitAPIError.unauthorized }
             throw SharpitAPIError.server
         }
-        do {
-            return try JSONDecoder().decode(Payload.self, from: data)
-        } catch {
-            throw SharpitAPIError.server
-        }
+        return data
     }
 }

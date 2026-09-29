@@ -103,6 +103,11 @@ struct SettingsView: View {
                             SettingsRow(symbol: "figure.run.square.stack", tint: SettingsTone.gear, title: "Sports & équipement", detail: sportsDetail)
                         }
                         SettingsDivider()
+                        // They calibrate training, not health: here rather than in Santé (SHARPIT ADR-053).
+                        NavigationLink(value: SettingsRoute.thresholds) {
+                            SettingsRow(symbol: "gauge.with.dots.needle.67percent", tint: SettingsTone.gear, title: "Seuils d'entraînement", detail: "FTP, FC, allure, CSS")
+                        }
+                        SettingsDivider()
                         NavigationLink(value: SettingsRoute.features) {
                             SettingsRow(
                                 symbol: "square.grid.2x2.fill",
@@ -251,6 +256,8 @@ struct SettingsView: View {
             ICloudSyncView(monitor: cloudSync)
         case .equipment:
             EquipmentView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        case .thresholds:
+            ThresholdsView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
         case .privacy:
             PrivacySettingsView(client: privacyClient, tokenProvider: tokenProvider)
         case .notifications:
@@ -274,6 +281,7 @@ enum SettingsRoute: Hashable {
     case sources
     case iCloud
     case equipment
+    case thresholds
     case privacy
     case notifications
     case density

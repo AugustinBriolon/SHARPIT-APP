@@ -57,12 +57,14 @@ struct FeatureShowcase: View {
     }
 
     private var health: some View {
-        VStack(spacing: SharpitSpacing.sm) {
-            CorpsHeroTile(metric: Self.metric(.weight, 72.4, from: 73.4, note: "−0,6 kg · 30 j"), targetKg: 70) {}
-            HStack(spacing: SharpitSpacing.sm) {
-                CorpsMetricTile(metric: Self.metric(.hrv, 61, from: 55, note: "dans ta zone", tone: .inRange)) {}
-                CorpsMetricTile(metric: Self.metric(.restingHr, 47, from: 49, note: "−2 bpm")) {}
-            }
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: SharpitSpacing.sm), GridItem(.flexible(), spacing: SharpitSpacing.sm)],
+            spacing: SharpitSpacing.sm
+        ) {
+            SanteMarkerTile(marker: Self.marker(.restingHr, 47, from: 50, norm: ("Niveau athlète", .good), trend: .good)) {}
+            SanteMarkerTile(marker: Self.marker(.hrv, 61, from: 57, norm: ("Dans ta plage habituelle", .good), trend: .good)) {}
+            SanteMarkerTile(marker: Self.marker(.sleep, 412, from: 440, norm: ("Un peu court", .neutral), trend: .watch)) {}
+            SanteMarkerTile(marker: Self.marker(.vo2max, 54, from: 53, norm: ("Bien au-dessus de ton âge", .good), trend: nil)) {}
         }
     }
 
@@ -83,9 +85,13 @@ struct FeatureShowcase: View {
       "meals": [] }
     """.utf8))
 
-    private static func metric(
-        _ key: CorpsMetricKey, _ value: Double, from start: Double, note: String?, tone: CorpsTone = .neutral
-    ) -> CorpsMetric {
+    private static func marker(
+        _ key: V1HealthMarker.Key,
+        _ value: Double,
+        from start: Double,
+        norm: (label: String, tone: V1HealthTone),
+        trend: V1HealthTone?
+    ) -> V1HealthMarker {
         let now = Date.now
         let series = (0..<30).map { day in
             CorpsPoint(
@@ -93,7 +99,15 @@ struct FeatureShowcase: View {
                 value: start + (value - start) * Double(day) / 29 + sin(Double(day) / 3) * abs(value - start) * 0.2
             )
         }
-        return CorpsMetric(key: key, value: value, measuredAt: now, source: nil, series: series, baseline: nil, note: note, tone: tone)
+        return V1HealthMarker(
+            key: key,
+            value: value,
+            basis: .average7,
+            measuredAt: now,
+            norm: V1HealthNorm(band: "", label: norm.label, tone: norm.tone, reference: ""),
+            trend: trend.map { V1HealthTrend(recent: value, baseline: start, delta: value - start, stable: false, tone: $0) },
+            series: series
+        )
     }
 
     private static var consistency: V1TodayConsistency {

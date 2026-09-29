@@ -146,10 +146,10 @@ on each centimetre, firmer on the tens — `SharpitHaptics`, Core Haptics, prepa
 lands — nil until moved) and `SharpitDateField` (the age beside it, the wheel in a
 short sheet: opened in place it grew the page into a scroll).
 
-**Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Corps).
+**Shell.** `RootView` is a five-tab `TabView` (Résumé / Plan / Coach / Activité / Santé).
 Paramètres is not a tab: it is a sheet (`SettingsView`) opened through `ShellRouter.openSettings()`
 from the avatar (`AccountAvatarButton`, the Clerk photo or the initials) in Résumé's header, or a
-`/settings` link. Résumé's date is its large title, folding into the centre of the bar on scroll as Corps' does;
+`/settings` link. Résumé's date is its large title, folding into the centre of the bar on scroll as Santé's does;
 the mode, Journal and weather are the fold's first row of glass chips (`sharpitGlassChip`) and
 scroll away with it. Goals open from Plan's « … »
 menu, the coach's memory (context, trips) from Coach's toolbar.
@@ -193,7 +193,7 @@ fixed week in Debug builds.
 « Nutrition », « Sommeil », « Poids », « Volume de la semaine », « Régularité », « Prochain objectif »,
 « Demander au coach » and its Control Center button; home screen and lock screen). The snapshot is in
 sections — `day` (verdict, sessions, last night's sleep) and `regularity` from Résumé's fold,
-`nutrition` from the food log card (`NutritionTodayStore`), `weight` from Corps' web overview and the
+`nutrition` from the food log card (`NutritionTodayStore`), `weight` from Santé's body overview (`CorpsStore`) and the
 profile's target, `training` (the last two weeks recorded) from Activité's list, `goal` (Objectifs'
 next race, `GoalOrdering.nextRace`) from `GoalStore` — each written by the screen that reads it and
 merged (`WidgetSnapshotStore.update`); the silent push reads them all. The volume widget is an
@@ -383,27 +383,27 @@ generated narrative rewrites the detail, a subjective rating drops it. A planned
 payload does not carry, is kept there too: the drawer opens on the last one read and asks the
 plan again behind it, since a plan is edited where a recorded session is not.
 
-**Corps.** The body as a readout (`CorpsView`): weight, then Récupération (HRV with Garmin's
-band, resting HR, VO₂max), Composition (scale metrics, visceral fat, BMR, the scale's body and
-vascular ages), Seuils (edited in `ThresholdsView` from the section). `CorpsStore` reads
-`/api/v1/body/overview` (`BodyClient`, the web's `body-v1.ts`) and, alongside, the body
-composition, `/api/v1/recovery`, the profile and its threshold history: those give the tiles their
-small trends and stand in for the overview on a server without it (`CorpsReadout.merging`). Every
-metric is a tile opening `CorpsMetricDrawer`, which reads `/api/v1/body/series` per range
-(30 j / 90 j / 1 an / Tout); a metric with no data is absent. The weight target is set from Corps'
-toolbar (`WeightTargetSheet`) and drawn on the weight's hero and chart; the sleep targets from
-Sommeil's (`SleepTargetsSheet`). Biological age is web-owned (SHARPIT ADR-045): `/api/v1/body/overview` serves it since
-2026-09-27 and Corps leads with it, above the weight (`BiologicalAgeCard`), with the civil age beside it and
-the ADR's wording: a training estimate, not a diagnosis. SHARPIT computes it, so it is Pro: below Pro
-the overview says `biologicalAgeAccess: pro_required` and Corps shows a `SharpitProTeaser` instead;
-when Pro but data is missing, `BiologicalAgePendingCard` says what the estimate needs and pushes
-`AccountView` in Corps' own stack.
+**Santé.** The athlete's health as a check-up (`SanteView`, SHARPIT ADR-053), ranked by what
+matters most: « Bilan du mois » (the biological age, how many markers sit in their norm, up to three
+that moved), « À surveiller » (only when something deserves attention — resting HR up for days, HRV
+under the athlete's range, short nights, a fast weight change, an active sensitive zone), then
+« Signes vitaux » (resting HR, HRV, sleep, VO₂max), « Corps » (weight with its target, body fat,
+visceral fat, muscle) and « Au quotidien » (steps, breathing during sleep). Everything comes from
+`/api/v1/health/overview` (`SanteStore`, kept whole in the response cache so the page paints
+offline): each marker read against a published norm, its source named, and against the athlete's
+own month — the app computes none of it; `SanteReadout` only words it. A marker opens
+`CorpsMetricDrawer` with its reading (`SanteReadingBlock`) when the web keeps its longer history
+(`/api/v1/body/series`, through `CorpsStore`, which also still feeds the Poids widget), else its month
+(`SanteMarkerSheet`). Free except the biological age, which is Pro (`SharpitProTeaser`); Pro without
+the data it needs pushes `AccountView`. The weight target is set from the toolbar
+(`WeightTargetSheet`), the sleep targets from Sommeil's (`SleepTargetsSheet`). Training thresholds are
+not health: Paramètres › Entraînement › Seuils d'entraînement (`ThresholdsView`).
 
 **Pages et widgets.** Paramètres › Pages et widgets (`FeaturesView`) turns a part of SharpIt off —
-Journal, Nutrition, Corps, Régularité (`SharpitFeature`). Each row says « Affiché » or « Masqué » and opens
+Journal, Nutrition, Santé, Régularité (`SharpitFeature`). Each row says « Affiché » or « Masqué » and opens
 its own page (`FeatureDetailView`): what it looks like (`FeatureShowcase`, the app's own components on example
 figures, so the picture never drifts from the screen), the switch, why follow it and where it shows. Off, it disappears everywhere it shows: the
-Résumé chip or card, the page, the Corps tab, the home-screen widget (a placed widget says it is
+Résumé chip or card, the page, the Santé tab, the home-screen widget (a placed widget says it is
 hidden, `WidgetFeatureOff`); its data is kept. `FeatureStore` in the environment (`\.features`)
 holds the choice, saved to the account (`featurePrefs` on the profile, merged server-side like
 `notificationPrefs`), applied at once and put back if the save fails; the last choice is kept in the
