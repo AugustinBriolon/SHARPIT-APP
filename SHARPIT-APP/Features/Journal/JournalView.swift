@@ -19,7 +19,8 @@ struct JournalView: View {
         client: any JournalServing,
         wellness: any WellnessServing,
         tokenProvider: @escaping () async throws -> String,
-        modelContext: ModelContext? = nil
+        modelContext: ModelContext? = nil,
+        dataDaysClient: any DataDaysServing = SharpitClient()
     ) {
         self.wellness = wellness
         self.tokenProvider = tokenProvider
@@ -27,7 +28,8 @@ struct JournalView: View {
             initialValue: JournalStore(
                 client: client,
                 tokenProvider: tokenProvider,
-                modelContext: modelContext
+                modelContext: modelContext,
+                journalDays: { try await dataDaysClient.dataDays(domain: .journal, from: $0, to: $1, token: $2) }
             )
         )
     }
@@ -84,6 +86,7 @@ struct JournalView: View {
                 JournalInsightsSheet(store: store)
             }
             .task { await store.load() }
+            .task { await store.markAnsweredDays() }
             .onDisappear {
                 Task { await store.flushPendingSave() }
             }
@@ -645,17 +648,17 @@ private struct JournalDatePicker: View {
 
             SharpitWeekStrip(weekOffset: $weekOffset, weeks: weeks) { day in
                 let isFuture = Calendar.current.startOfDay(for: day) > Calendar.current.startOfDay(for: .now)
-                let isCompleted = store.isDayCompleted(date: day)
+                let hasAnswer = isFuture ? nil : store.hasAnswer(on: day)
                 Button {
                     pick(day)
                 } label: {
                     SharpitStripDay(day: day, emphasis: emphasis(for: day, isFuture: isFuture)) {
-                        JournalDayMark(isCompleted: isFuture ? nil : isCompleted)
+                        SharpitDataDayMark(hasData: hasAnswer)
                     }
                 }
                 .buttonStyle(.plain)
                 .disabled(isFuture)
-                .accessibilityLabel(accessibilityLabel(for: day, isFuture: isFuture, isCompleted: isCompleted))
+                .accessibilityLabel(accessibilityLabel(for: day, isFuture: isFuture, hasAnswer: hasAnswer))
                 .accessibilityAddTraits(Calendar.current.isDate(day, inSameDayAs: store.selectedDate) ? [.isButton, .isSelected] : .isButton)
             }
         }
@@ -665,8 +668,8 @@ private struct JournalDatePicker: View {
                 initial: store.selectedDate,
                 weeks: weeks,
                 range: weeks.selectableDates.lowerBound...Date.now,
-                marks: completedMarks,
-                legend: [(.filled, "Journal rempli")],
+                marks: calendarMarks,
+                legend: [(.filled, "Journal rempli"), (.muted, "Rien de noté")],
                 onPick: pick,
                 onToday: { pick(.now) }
             )
@@ -679,31 +682,40 @@ private struct JournalDatePicker: View {
         }
     }
 
-    /// The days whose journal is filled, as the strip marks them.
-    private var completedMarks: [Date: SharpitCalendarMark] {
+    /// The strip's marks for every day the calendar shows: filled where something was noted,
+    /// muted where the day was read and holds nothing, nothing while unknown.
+    private var calendarMarks: [Date: SharpitCalendarMark] {
         let calendar = weeks.calendar
         let today = calendar.startOfDay(for: .now)
         var marks: [Date: SharpitCalendarMark] = [:]
         var day = calendar.startOfDay(for: weeks.selectableDates.lowerBound)
         while day <= today {
-            if store.isDayCompleted(date: day) { marks[day] = .filled }
+            switch store.hasAnswer(on: day) {
+            case true?: marks[day] = .filled
+            case false?: marks[day] = .muted
+            case nil: break
+            }
             guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
             day = next
         }
         return marks
     }
 
-    private func emphasis(for day: Date, isFuture: Bool) -> SharpitStripDay<JournalDayMark>.Emphasis {
+    private func emphasis(for day: Date, isFuture: Bool) -> SharpitStripDay<SharpitDataDayMark>.Emphasis {
         if isFuture { return .unavailable }
         if Calendar.current.isDate(day, inSameDayAs: store.selectedDate) { return .filled }
         if Calendar.current.isDateInToday(day) { return .accent }
         return .plain
     }
 
-    private func accessibilityLabel(for day: Date, isFuture: Bool, isCompleted: Bool) -> String {
+    private func accessibilityLabel(for day: Date, isFuture: Bool, hasAnswer: Bool?) -> String {
         let date = day.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide))
         if isFuture { return "\(date), non disponible" }
-        return isCompleted ? "\(date), journal complété" : "\(date), journal incomplet"
+        switch hasAnswer {
+        case true?: return "\(date), journal rempli"
+        case false?: return "\(date), rien de noté"
+        case nil: return date
+        }
     }
 
     private func pick(_ day: Date) {
@@ -711,21 +723,6 @@ private struct JournalDatePicker: View {
         weekOffset = weeks.offset(forWeekContaining: day)
         Task {
             await store.selectDate(day)
-        }
-    }
-}
-
-private struct JournalDayMark: View {
-    let isCompleted: Bool?
-
-    var body: some View {
-        switch isCompleted {
-        case true?:
-            Circle().fill(SharpitColor.primary)
-        case false?:
-            Circle().strokeBorder(SharpitColor.mutedForeground.opacity(0.4), lineWidth: 1)
-        case nil:
-            Color.clear
         }
     }
 }

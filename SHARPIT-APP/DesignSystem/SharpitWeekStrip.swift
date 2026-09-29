@@ -342,3 +342,21 @@ struct SharpitTodayButton: View {
         .accessibilityHint("Revient à aujourd'hui")
     }
 }
+
+/// Under a day of a strip: a filled dot when the day holds data, a ring when it was read and
+/// holds none — shape as well as colour, as on the Plan strip. Nothing while the day is unknown.
+/// Shared by the day screens and the journal, so every picker marks its days the same way.
+struct SharpitDataDayMark: View {
+    let hasData: Bool?
+
+    var body: some View {
+        switch hasData {
+        case true?:
+            Circle().fill(SharpitColor.primary)
+        case false?:
+            Circle().strokeBorder(SharpitColor.mutedForeground.opacity(0.6), lineWidth: 1.25)
+        case nil:
+            Color.clear
+        }
+    }
+}

@@ -269,6 +269,8 @@ payload omits, so sending back only what the app renders would silently reset th
 catalogue in `JournalTrackables.swift` therefore covers the signals the app can render, never
 all of the web's.
 
+The day picker marks the journal as the day screens mark their data (`SharpitDataDayMark`): a dot where something was noted, a ring where the day was read and holds nothing, nothing while unknown — from `/api/v1/data-days?domain=journal` across the whole history, most recent window first.
+
 Sections follow *when* a signal happened, not what kind of thing it is: Journée (the three
 metrics), Checklist auto, Nuit dernière, Signaux du jour. `JournalDayWindow` is its own axis
 beside `JournalCategory`, which still drives the drawer's filters — the web separates them

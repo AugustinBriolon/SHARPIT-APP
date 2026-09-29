@@ -809,3 +809,29 @@ private struct FailingJournalClient: JournalServing {
     #expect(await client.saveCount() == 1)
 }
 
+
+// MARK: - Calendar marks
+
+@MainActor
+@Test func thePickerMarksAnsweredDaysAndEmptyOnesFromTheServer() async throws {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: .now)
+    let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: today)!
+    let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+    let answered = TrainingDayId.today(now: twoDaysAgo)
+    let store = JournalStore(
+        client: StubJournalClient(),
+        tokenProvider: { "token" },
+        journalDays: { _, _, _ in [answered] }
+    )
+
+    #expect(store.hasAnswer(on: twoDaysAgo) == nil)
+    await store.markAnsweredDays()
+
+    #expect(store.hasAnswer(on: twoDaysAgo) == true)
+    // Read and empty: a ring, not nothing.
+    #expect(store.hasAnswer(on: yesterday) == false)
+    // Beyond the history the picker reaches, nothing is claimed.
+    let longAgo = calendar.date(byAdding: .year, value: -5, to: today)!
+    #expect(store.hasAnswer(on: longAgo) == nil)
+}

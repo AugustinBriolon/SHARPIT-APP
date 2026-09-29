@@ -52,7 +52,7 @@ struct DayDetailDatePicker: View {
                 let isFuture = Calendar.current.startOfDay(for: day) > Calendar.current.startOfDay(for: .now)
                 Button { pick(day) } label: {
                     SharpitStripDay(day: day, emphasis: emphasis(for: day, isFuture: isFuture)) {
-                        DataMark(hasData: isFuture ? nil : hasData(day))
+                        SharpitDataDayMark(hasData: isFuture ? nil : hasData(day))
                     }
                 }
                 .buttonStyle(.plain)
@@ -111,7 +111,7 @@ struct DayDetailDatePicker: View {
         }
     }
 
-    private func emphasis(for day: Date, isFuture: Bool) -> SharpitStripDay<DataMark>.Emphasis {
+    private func emphasis(for day: Date, isFuture: Bool) -> SharpitStripDay<SharpitDataDayMark>.Emphasis {
         if isFuture { return .unavailable }
         if Calendar.current.isDate(day, inSameDayAs: selectedDay) { return .filled }
         if Calendar.current.isDateInToday(day) { return .accent }
@@ -122,23 +122,6 @@ struct DayDetailDatePicker: View {
         SharpitHaptics.play(.soft)
         weekOffset = weeks.offset(forWeekContaining: day)
         onSelect(day)
-    }
-}
-
-/// A filled dot when the day holds data, a ring when it holds none — shape as well as
-/// colour, as on the Plan strip. Nothing when the day has not been read yet.
-private struct DataMark: View {
-    let hasData: Bool?
-
-    var body: some View {
-        switch hasData {
-        case true?:
-            Circle().fill(SharpitColor.primary)
-        case false?:
-            Circle().strokeBorder(SharpitColor.mutedForeground.opacity(0.6), lineWidth: 1.25)
-        case nil:
-            Color.clear
-        }
     }
 }
 
