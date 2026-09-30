@@ -9,6 +9,9 @@ import Foundation
 /// tool approval's `signature`). Anything dropped here would break the next turn server-side.
 nonisolated struct CoachUIMessageAssembler {
     private(set) var parts: [JSONValue]
+    /// The id the server gave this answer, read from its `start` chunk. The server saves the
+    /// turn under it; nil until the chunk arrives, or when the server names none.
+    private(set) var messageId: String?
     private var activeText: [String: Int] = [:]
     private var activeReasoning: [String: Int] = [:]
 
@@ -25,6 +28,8 @@ nonisolated struct CoachUIMessageAssembler {
         let id = chunk["id"]?.string ?? ""
 
         switch type {
+        case "start":
+            messageId = chunk["messageId"]?.string ?? messageId
         case "start-step":
             parts.append(.object(["type": .string("step-start")]))
         case "finish-step":

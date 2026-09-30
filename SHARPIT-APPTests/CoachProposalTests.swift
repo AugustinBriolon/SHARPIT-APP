@@ -135,14 +135,14 @@ private func assembled(_ chunks: [JSONValue]) -> [JSONValue] {
 /// Answers each request with the next response, and keeps what it was sent.
 private final class SequencedCoachClient: CoachChatServing, @unchecked Sendable {
     private var responses: [[JSONValue]]
-    private(set) var requests: [[CoachMessage]] = []
+    private(set) var requests: [CoachChatRequest] = []
 
     init(_ responses: [[JSONValue]]) {
         self.responses = responses
     }
 
-    func reply(to messages: [CoachMessage], token: String) -> AsyncThrowingStream<JSONValue, Error> {
-        requests.append(messages)
+    func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error> {
+        requests.append(request)
         let next = responses.isEmpty ? [] : responses.removeFirst()
         return AsyncThrowingStream { continuation in
             next.forEach { continuation.yield($0) }
@@ -176,7 +176,7 @@ private final class SequencedCoachClient: CoachChatServing, @unchecked Sendable 
 
     // The same turn went back, answered, and was continued in place.
     #expect(client.requests.count == 2)
-    #expect(client.requests[1].last?.parts?[2]["state"]?.string == "approval-responded")
+    #expect(client.requests[1].latest?.parts?[2]["state"]?.string == "approval-responded")
     #expect(coach.messages.count == 2)
     #expect(!coach.hasPendingApproval)
     #expect(coach.messages[1].text.hasSuffix("C'est fait."))

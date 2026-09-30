@@ -37,6 +37,12 @@ nonisolated struct CoachMessage: Identifiable, Sendable, Equatable {
         self.parts = parts
     }
 
+    /// The same turn under the id the server gave it. The server names a coach answer when it
+    /// starts streaming, and saves it under that name: a later approval must reach it by it.
+    func reidentified(as newId: String) -> CoachMessage {
+        CoachMessage(id: newId, role: role, text: text, context: context, stored: stored, parts: parts)
+    }
+
     /// Reads a stored UI message. Nil for a turn the app has no place for (a system message,
     /// say), which is left out of the thread rather than shown wrong.
     init?(stored: JSONValue) {
@@ -82,10 +88,37 @@ nonisolated enum CoachStreamEvent: Equatable {
     case other(String)
 }
 
+/// What a turn sends to `/api/coach/chat`.
+nonisolated enum CoachChatRequest: Sendable, Equatable {
+    /// The whole thread: a conversation the server does not keep (a preview, or one whose
+    /// creation failed). The server answers it and keeps nothing.
+    case thread([CoachMessage])
+    /// A stored conversation: only its id and the turn to answer. The server reads the thread
+    /// and saves the answer into it.
+    case stored(conversationId: String, message: CoachMessage)
+
+    /// The turn this request asks the coach to answer.
+    var latest: CoachMessage? {
+        switch self {
+        case .thread(let messages): messages.last
+        case .stored(_, let message): message
+        }
+    }
+
+    var body: [String: Any] {
+        switch self {
+        case .thread(let messages):
+            ["messages": messages.map(CoachChatClient.wireMessage)]
+        case .stored(let conversationId, let message):
+            ["conversationId": conversationId, "message": CoachChatClient.wireMessage(message)]
+        }
+    }
+}
+
 protocol CoachChatServing: Sendable {
     /// Streams the coach's answer as the route's UI-message chunks, for
     /// `CoachUIMessageAssembler`. An `error` chunk ends the stream as `CoachChatError`.
-    func reply(to messages: [CoachMessage], token: String) -> AsyncThrowingStream<JSONValue, Error>
+    func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error>
 }
 
 /// Talks to `/api/coach/chat`.
@@ -106,13 +139,13 @@ actor CoachChatClient: CoachChatServing {
     }
 
     nonisolated func reply(
-        to messages: [CoachMessage],
+        to request: CoachChatRequest,
         token: String
     ) -> AsyncThrowingStream<JSONValue, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    for try await chunk in try await self.stream(messages: messages, token: token) {
+                    for try await chunk in try await self.stream(request: request, token: token) {
                         continuation.yield(chunk)
                     }
                     continuation.finish()
@@ -125,7 +158,7 @@ actor CoachChatClient: CoachChatServing {
     }
 
     private func stream(
-        messages: [CoachMessage],
+        request chatRequest: CoachChatRequest,
         token: String
     ) async throws -> AsyncThrowingStream<JSONValue, Error> {
         var request = URLRequest(url: baseURL.appending(path: "/api/coach/chat"))
@@ -134,7 +167,7 @@ actor CoachChatClient: CoachChatServing {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.httpBody = try JSONSerialization.data(
-            withJSONObject: ["messages": messages.map(Self.wireMessage)]
+            withJSONObject: chatRequest.body
         )
 
         let (bytes, response) = try await session.bytes(for: request)

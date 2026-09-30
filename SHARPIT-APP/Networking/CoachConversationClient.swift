@@ -35,14 +35,13 @@ protocol CoachConversationServing: Sendable {
     func conversation(id: String, token: String) async throws -> CoachConversation
     /// Creates the conversation from its first turns and returns its id.
     func create(messages: [CoachMessage], token: String) async throws -> String
-    /// Replaces the whole history, the way the web saves it.
-    func save(id: String, messages: [CoachMessage], token: String) async throws
     func delete(id: String, token: String) async throws
 }
 
 /// Talks to `/api/coach/conversations`.
 ///
-/// The server keeps the history; the client saves it whole after each answer, as the web does.
+/// The server keeps the history and saves each answer into it (`/api/coach/chat`); the app
+/// creates a conversation from its first question, then lists, opens and deletes them.
 actor CoachConversationClient: CoachConversationServing {
     private let session: URLSession
     private let baseURL: URL
@@ -74,15 +73,6 @@ actor CoachConversationClient: CoachConversationServing {
             token: token
         )
         return try decode(StoredConversation.self, from: data).id
-    }
-
-    func save(id: String, messages: [CoachMessage], token: String) async throws {
-        _ = try await send(
-            "PUT",
-            path: "/api/v1/coach/conversations/\(id)",
-            body: Self.body(for: messages),
-            token: token
-        )
     }
 
     func delete(id: String, token: String) async throws {

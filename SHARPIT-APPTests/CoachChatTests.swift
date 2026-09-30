@@ -99,7 +99,7 @@ struct StubCoachClient: CoachChatServing {
     var chunks: [JSONValue]?
     var failure: (any Error)?
 
-    func reply(to messages: [CoachMessage], token: String) -> AsyncThrowingStream<JSONValue, Error> {
+    func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error> {
         AsyncThrowingStream { continuation in
             if let failure {
                 continuation.finish(throwing: failure)
@@ -232,4 +232,42 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
     let body = Data(#"{"error":"Active le traitement IA dans Confidentialité.","code":"ai_processing_consent_required"}"#.utf8)
     #expect(CoachChatClient.errorMessage(inBody: body) == "Active le traitement IA dans Confidentialité.")
     #expect(CoachChatError.refused(status: 429, message: nil).errorDescription == "Trop de messages d'affilée. Réessaie dans un instant.")
+}
+
+// MARK: - Server-owned conversation
+
+@Test func aStoredConversationSendsOnlyItsIdAndTheTurn() {
+    let question = CoachMessage(id: "q", role: .user, text: "Et vendredi ?")
+    let body = CoachChatRequest.stored(conversationId: "c1", message: question).body
+
+    #expect(body["conversationId"] as? String == "c1")
+    #expect((body["message"] as? [String: Any])?["id"] as? String == "q")
+    #expect(body["messages"] == nil)
+}
+
+@Test func aThreadTheServerDoesNotKeepGoesWhole() {
+    let thread = [CoachMessage(id: "a", role: .user, text: "Un"), CoachMessage(id: "b", role: .assistant, text: "Deux")]
+    let body = CoachChatRequest.thread(thread).body
+
+    #expect((body["messages"] as? [[String: Any]])?.count == 2)
+    #expect(body["conversationId"] == nil)
+}
+
+@Test func theAssemblerReadsTheIdTheServerGaveTheAnswer() {
+    var assembler = CoachUIMessageAssembler()
+    #expect(assembler.messageId == nil)
+    assembler.apply(chunk(#"{"type":"start","messageId":"srv-1"}"#))
+    #expect(assembler.messageId == "srv-1")
+}
+
+@MainActor
+@Test func theAnswerTakesTheIdTheServerSavesItUnder() async {
+    let chunks = [chunk(#"{"type":"start","messageId":"srv-1"}"#)] + StubCoachClient.textChunks(["Oui"])
+    let coach = store(StubCoachClient(chunks: chunks))
+    coach.draft = "Je pousse demain ?"
+
+    await coach.send()
+
+    #expect(coach.messages.last?.id == "srv-1")
+    #expect(coach.messages.last?.text == "Oui")
 }

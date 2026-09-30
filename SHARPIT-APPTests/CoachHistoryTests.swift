@@ -82,11 +82,9 @@ func aPlanningHorizonIsReadWhetherTheWebOrTheAppWroteIt(json: String, days: Int)
 
 private actor Saved {
     private(set) var created: [[CoachMessage]] = []
-    private(set) var saved: [(id: String, messages: [CoachMessage])] = []
     private(set) var deleted: [String] = []
 
     func recordCreate(_ messages: [CoachMessage]) { created.append(messages) }
-    func recordSave(_ id: String, _ messages: [CoachMessage]) { saved.append((id, messages)) }
     func recordDelete(_ id: String) { deleted.append(id) }
 }
 
@@ -112,14 +110,26 @@ private struct StubConversations: CoachConversationServing {
         return "conversation-1"
     }
 
-    func save(id: String, messages: [CoachMessage], token: String) async throws {
-        if failing { throw SharpitAPIError.transport }
-        await saved.recordSave(id, messages)
-    }
-
     func delete(id: String, token: String) async throws {
         if failing { throw SharpitAPIError.server }
         await saved.recordDelete(id)
+    }
+}
+
+/// Answers « Oui » to every turn, and keeps what each turn sent.
+private final class RecordingCoachClient: CoachChatServing, @unchecked Sendable {
+    private(set) var requests: [CoachChatRequest] = []
+
+    func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error> {
+        requests.append(request)
+        return StubCoachClient(deltas: ["Oui"]).reply(to: request, token: token)
+    }
+
+    /// The conversation id and the turn text of request `index`, when it went as a stored one.
+    func stored(_ index: Int) -> (id: String, text: String)? {
+        guard requests.indices.contains(index),
+              case .stored(let id, let message) = requests[index] else { return nil }
+        return (id, message.text)
     }
 }
 
@@ -127,10 +137,11 @@ private struct StubConversations: CoachConversationServing {
 private func coachStore(
     opened: CoachConversation? = nil,
     failing: Bool = false,
-    saved: Saved = Saved()
+    saved: Saved = Saved(),
+    client: RecordingCoachClient = RecordingCoachClient()
 ) -> CoachStore {
     CoachStore(
-        client: StubCoachClient(deltas: ["Oui"]),
+        client: client,
         conversations: StubConversations(opened: opened, failing: failing, saved: saved),
         tokenProvider: { "token" }
     )
@@ -143,40 +154,43 @@ private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
 }
 
 @MainActor
-@Test func theFirstExchangeCreatesTheConversation() async {
+@Test func theFirstQuestionCreatesTheConversationThenGoesAlone() async {
     let saved = Saved()
-    let store = coachStore(saved: saved)
+    let client = RecordingCoachClient()
+    let store = coachStore(saved: saved, client: client)
 
     await ask(store)
 
     #expect(store.conversationId == "conversation-1")
-    #expect(await saved.created.count == 1)
-    #expect(await saved.created.first?.map(\.role) == [.user, .assistant])
-    #expect(await saved.saved.isEmpty)
+    #expect(await saved.created.first?.map(\.role) == [.user])
+    #expect(client.stored(0)?.id == "conversation-1")
+    #expect(client.stored(0)?.text == "Bonjour")
 }
 
 @MainActor
-@Test func laterExchangesReplaceTheWholeThread() async {
+@Test func laterQuestionsSendOnlyThemselves() async {
     let saved = Saved()
-    let store = coachStore(saved: saved)
+    let client = RecordingCoachClient()
+    let store = coachStore(saved: saved, client: client)
     await ask(store, "Une")
     await ask(store, "Deux")
 
     #expect(await saved.created.count == 1)
-    #expect(await saved.saved.count == 1)
-    #expect(await saved.saved.first?.id == "conversation-1")
-    #expect(await saved.saved.first?.messages.count == 4)
+    #expect(client.stored(1)?.id == "conversation-1")
+    #expect(client.stored(1)?.text == "Deux")
 }
 
 @MainActor
-@Test func aFailedSaveDoesNotHideTheAnswer() async {
-    let store = coachStore(failing: true)
+@Test func aConversationThatCannotBeCreatedStillGetsAnAnswer() async {
+    let client = RecordingCoachClient()
+    let store = coachStore(failing: true, client: client)
 
     await ask(store)
 
     #expect(store.messages.map(\.role) == [.user, .assistant])
     #expect(store.failure == nil)
     #expect(store.conversationId == nil)
+    #expect(client.requests.first == .thread([store.messages[0]]))
 }
 
 @MainActor
@@ -200,7 +214,8 @@ private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
         id: "past-1",
         messages: [CoachMessage(id: "a", role: .user, text: "Hier"), CoachMessage(id: "b", role: .assistant, text: "Oui")]
     )
-    let store = coachStore(opened: past, saved: saved)
+    let client = RecordingCoachClient()
+    let store = coachStore(opened: past, saved: saved, client: client)
     await ask(store, "Brouillon")
 
     let opened = await store.open(conversationId: "past-1")
@@ -209,8 +224,8 @@ private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
     #expect(store.conversationId == "past-1")
 
     await ask(store, "Suite")
-    #expect(await saved.saved.last?.id == "past-1")
-    #expect(await saved.saved.last?.messages.count == 4)
+    #expect(client.stored(1)?.id == "past-1")
+    #expect(client.stored(1)?.text == "Suite")
 }
 
 @MainActor
@@ -308,7 +323,6 @@ private struct FailingDeletes: CoachConversationServing {
     func conversations(token: String) async throws -> [CoachConversationSummary] { list }
     func conversation(id: String, token: String) async throws -> CoachConversation { throw SharpitAPIError.server }
     func create(messages: [CoachMessage], token: String) async throws -> String { "x" }
-    func save(id: String, messages: [CoachMessage], token: String) async throws {}
     func delete(id: String, token: String) async throws { throw SharpitAPIError.server }
 }
 

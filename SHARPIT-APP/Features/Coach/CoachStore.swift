@@ -83,7 +83,7 @@ final class CoachStore {
         let answer = CoachMessage(role: .assistant, text: "", parts: [])
         let history = messages
         messages.append(answer)
-        await stream(into: answer.id, history: history)
+        await stream(into: answer.id, turn: question, history: history)
     }
 
     /// The athlete's answer to a proposal card. Once every proposal of the step has one, the
@@ -103,11 +103,12 @@ final class CoachStore {
               !sentApprovals.contains(fingerprint)
         else { return }
         sentApprovals.insert(fingerprint)
-        await stream(into: messages[index].id, history: messages)
+        await stream(into: messages[index].id, turn: messages[index], history: messages)
     }
 
-    /// Streams the server's answer into the turn `id`, building its parts chunk by chunk.
-    private func stream(into id: String, history: [CoachMessage]) async {
+    /// Streams the server's answer to `turn` into the coach turn `id`, building its parts chunk
+    /// by chunk. The coach turn takes the id the server gives it, which is the one it saves.
+    private func stream(into id: String, turn: CoachMessage, history: [CoachMessage]) async {
         isReplying = true
         defer { isReplying = false }
 
@@ -120,11 +121,17 @@ final class CoachStore {
         let appliedBefore = messages.first { $0.id == id }?.parts.map(CoachUIParts.appliedChanges) ?? 0
         do {
             let token = try await tokenProvider()
+            let request = await chatRequest(turn: turn, history: history, token: token)
             var assembler = CoachUIMessageAssembler(parts: messages.first { $0.id == id }?.parts ?? [])
+            var answerId = id
 
-            for try await chunk in client.reply(to: history, token: token) {
+            for try await chunk in client.reply(to: request, token: token) {
                 assembler.apply(chunk)
-                guard let index = messages.firstIndex(where: { $0.id == id }) else { break }
+                guard let index = messages.firstIndex(where: { $0.id == answerId }) else { break }
+                if let serverId = assembler.messageId, serverId != answerId {
+                    messages[index] = messages[index].reidentified(as: serverId)
+                    answerId = serverId
+                }
                 messages[index].parts = assembler.parts
                 messages[index].text = assembler.text
             }
@@ -134,8 +141,6 @@ final class CoachStore {
             if !CoachUIParts.hasContent(assembler.parts) {
                 dropEmptyAnswer()
                 failure = "Le coach n'a pas répondu. Réessaie."
-            } else {
-                await persist(token: token)
             }
             if CoachUIParts.appliedChanges(assembler.parts) > appliedBefore {
                 onCalendarChanged?()
@@ -191,23 +196,24 @@ final class CoachStore {
         startNewConversation()
     }
 
-    /// Saves the whole thread after an answer, the way the web does: created on the first
-    /// exchange, then replaced. A failure is not shown — the answer is on screen and the next
-    /// one saves the whole thread again, so nothing is lost by waiting.
-    private func persist(token: String) async {
-        guard let conversations else { return }
-        let thread = messages
+    /// A stored conversation sends only the turn: the server reads the thread and saves the
+    /// answer. The first question creates the conversation before it is sent. Where nothing is
+    /// kept (previews), or when the conversation cannot be created, the whole thread goes and
+    /// the answer is still shown, only not saved.
+    private func chatRequest(turn: CoachMessage, history: [CoachMessage], token: String) async -> CoachChatRequest {
+        guard let conversations else { return .thread(history) }
+        if let conversationId {
+            return .stored(conversationId: conversationId, message: turn)
+        }
         do {
-            if let conversationId {
-                try await SharpitRetry.run {
-                    try await conversations.save(id: conversationId, messages: thread, token: token)
-                }
-            } else {
-                conversationId = try await SharpitRetry.run {
-                    try await conversations.create(messages: thread, token: token)
-                }
+            let created = try await SharpitRetry.run {
+                try await conversations.create(messages: [turn], token: token)
             }
-        } catch {}
+            conversationId = created
+            return .stored(conversationId: created, message: turn)
+        } catch {
+            return .thread(history)
+        }
     }
 
     private func dropEmptyAnswer() {
