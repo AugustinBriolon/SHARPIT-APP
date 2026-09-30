@@ -33,6 +33,8 @@ struct SessionCardModel: Sendable, Equatable, Identifiable {
     var plannedSessionId: String?
     /// A brick's legs, in order — two at least, else nil.
     var brickLegs: [V1TodayBrickLeg]? = nil
+    /// A brick under way: seconds between legs, nil where unknown.
+    var brickTransitionsSec: [Int?]? = nil
 }
 
 struct OvernightGaugeModel: Sendable, Equatable, Identifiable {
@@ -111,7 +113,8 @@ enum TodayFoldMapper {
                     sport: session.sport,
                     priority: session.priority ?? false,
                     plannedSessionId: session.plannedSessionId,
-                    brickLegs: (session.brickLegs?.count ?? 0) > 1 ? session.brickLegs : nil
+                    brickLegs: (session.brickLegs?.count ?? 0) > 1 ? session.brickLegs : nil,
+                    brickTransitionsSec: session.brickTransitionsSec
                 )
             },
             gauges: response.signals

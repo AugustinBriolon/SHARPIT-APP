@@ -217,6 +217,7 @@ private struct TodayFoldView: View {
 
     @State private var selectedPreview: PlannedSessionPreview?
     @State private var selectedBrick: PlannedBrickPreview?
+    @State private var selectedDoneBrick: DoneBrickPreview?
     @State private var openedSignal: V1TodaySignalKey?
     @State private var openedNutrition: NutritionDestination?
     @State private var consecutiveWeeks: Int? = nil
@@ -340,6 +341,9 @@ private struct TodayFoldView: View {
             ) { context in
                 router.discussWithCoach(about: context)
             }
+        }
+        .sheet(item: $selectedDoneBrick) { brick in
+            DoneBrickDrawer(brick: brick, tokenProvider: tokenProvider)
         }
         .sheet(item: $selectedBrick) { brick in
             BrickSessionDrawer(
@@ -553,7 +557,8 @@ private struct TodayFoldView: View {
                         celebrateDone: sessionDoneCelebrations.contains(session.id),
                         tokenProvider: tokenProvider,
                         onOpenPreview: { selectedPreview = $0 },
-                        onOpenBrick: { selectedBrick = $0 }
+                        onOpenBrick: { selectedBrick = $0 },
+                        onOpenDoneBrick: { selectedDoneBrick = $0 }
                     )
                 }
             }
@@ -574,6 +579,7 @@ private struct TodaySessionLink: View {
     let tokenProvider: (() async throws -> String)?
     let onOpenPreview: (PlannedSessionPreview) -> Void
     let onOpenBrick: (PlannedBrickPreview) -> Void
+    let onOpenDoneBrick: (DoneBrickPreview) -> Void
 
     private var plate: some View {
         SessionPlate(
@@ -583,25 +589,37 @@ private struct TodaySessionLink: View {
         )
     }
 
+    /// A single done session opens its own record — only when the screen can actually fetch it.
+    /// A fixture-backed Today has no token, and a link that dead-ends is worse than a plate that
+    /// does not move.
+    @ViewBuilder
+    private var doneLink: some View {
+        if let tokenProvider {
+            NavigationLink {
+                ActivityDetailView(
+                    activity: session.id,
+                    initialActivity: nil,
+                    client: ActivityClient(),
+                    tokenProvider: tokenProvider
+                )
+            } label: {
+                plate
+            }
+            .buttonStyle(.sharpitPressable)
+        } else {
+            plate
+        }
+    }
+
     var body: some View {
         switch session.kind {
         case .done:
-            // Only when the screen can actually fetch it. A fixture-backed Today has no
-            // token, and a link that dead-ends is worse than a plate that does not move.
-            if let tokenProvider {
-                NavigationLink {
-                    ActivityDetailView(
-                        activity: session.id,
-                        initialActivity: nil,
-                        client: ActivityClient(),
-                        tokenProvider: tokenProvider
-                    )
-                } label: {
-                    plate
-                }
-                .buttonStyle(.sharpitPressable)
+            // A brick opens as the chain it was, each leg beside its activity.
+            if let brick = DoneBrickPreview(card: session) {
+                Button { onOpenDoneBrick(brick) } label: { plate }
+                    .buttonStyle(.sharpitPressable)
             } else {
-                plate
+                doneLink
             }
         case .planned:
             Button {

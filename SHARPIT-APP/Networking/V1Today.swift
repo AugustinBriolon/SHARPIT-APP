@@ -85,6 +85,8 @@ nonisolated struct V1TodaySession: Codable, Sendable, Equatable, Identifiable {
     var plannedSessionId: String? = nil
     /// Set on a brick line: its legs in order, so the chain opens as one session.
     var brickLegs: [V1TodayBrickLeg]? = nil
+    /// Set on a brick under way: seconds from each leg's end to the next's start (T2, …).
+    var brickTransitionsSec: [Int?]? = nil
 }
 
 /// One leg of a brick line.
@@ -93,6 +95,19 @@ nonisolated struct V1TodayBrickLeg: Codable, Sendable, Equatable, Identifiable {
     var type: String
     var title: String
     var durationMin: Int?
+    /// Done, and by which activity: absent from servers that predate a brick under way.
+    var completed: Bool? = nil
+    var activityId: String? = nil
+    /// What the leg actually was, with the athlete's notes; nil while only planned.
+    var actual: V1TodayBrickLegActual? = nil
+}
+
+/// A done leg as its activity recorded it.
+nonisolated struct V1TodayBrickLegActual: Codable, Sendable, Equatable {
+    var durationSec: Int?
+    var load: Double?
+    var rpe: Int?
+    var feeling: String?
 }
 
 nonisolated enum V1TodaySessionKind: String, Codable, Sendable {

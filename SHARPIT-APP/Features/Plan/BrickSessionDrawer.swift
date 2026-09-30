@@ -168,7 +168,7 @@ struct BrickSessionDrawer: View {
 }
 
 /// The sports of the chain, joined by arrows — the brick's mark where a session has one glyph.
-private struct BrickChainGlyphs: View {
+struct BrickChainGlyphs: View {
     let sports: [String]
 
     var body: some View {
