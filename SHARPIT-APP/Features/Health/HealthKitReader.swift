@@ -134,6 +134,9 @@ final class HealthKitReader: HealthReading, @unchecked Sendable {
             end: workout.endDate,
             durationSec: durationSec
         )
+        if let zone = (workout.metadata?[HKMetadataKeyTimeZone] as? String).flatMap(TimeZone.init(identifier:)) {
+            summary.timeZone = zone
+        }
         summary.distanceM = sport.distanceType.flatMap {
             workout.statistics(for: HKQuantityType($0))?.sumQuantity()?.doubleValue(for: .meter())
         }

@@ -300,3 +300,26 @@ private func workout(_ id: String, endingDaysAgo days: Double) -> HealthWorkout 
 
     #expect(await recorder.links == [true, false])
 }
+
+// MARK: - Workout start
+
+@Test func aWorkoutStartTravelsWithItsOffsetNotInUTC() throws {
+    let paris = try #require(TimeZone(identifier: "Europe/Paris"))
+    // 10:23:34 UTC is 12:23:34 in Paris in summer: the wall clock Garmin stores the same session at.
+    let start = Date(timeIntervalSince1970: 1_790_763_814)
+
+    #expect(HealthWorkout.startString(start, in: paris) == "2026-09-30T12:23:34+02:00")
+}
+
+@Test func anEncodedWorkoutCarriesItsOwnTimeZone() throws {
+    var workout = HealthWorkout(
+        id: "HK-1", type: .bike, title: "Vélo",
+        start: Date(timeIntervalSince1970: 1_790_763_814),
+        end: Date(timeIntervalSince1970: 1_790_768_630),
+        durationSec: 4_816
+    )
+    workout.timeZone = try #require(TimeZone(identifier: "America/New_York"))
+
+    let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(workout)) as? [String: Any]
+    #expect(json?["start"] as? String == "2026-09-30T06:23:34-04:00")
+}

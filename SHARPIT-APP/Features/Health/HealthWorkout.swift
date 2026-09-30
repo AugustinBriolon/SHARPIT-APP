@@ -29,6 +29,9 @@ nonisolated struct HealthWorkout: Encodable, Equatable, Sendable {
     var avgPowerW: Double?
     var avgCadence: Double?
     var stream: HealthWorkoutStream?
+    /// Where the workout took place, for its start's offset: the server stores the wall clock the
+    /// athlete saw, as Garmin's sessions are, so the same session from both is recognised.
+    var timeZone: TimeZone = .current
 
     private enum CodingKeys: String, CodingKey {
         case id, type, title, start, durationSec, distanceM, energyKcal
@@ -40,7 +43,7 @@ nonisolated struct HealthWorkout: Encodable, Equatable, Sendable {
         try container.encode(id, forKey: .id)
         try container.encode(type, forKey: .type)
         try container.encode(title, forKey: .title)
-        try container.encode(start.formatted(.iso8601), forKey: .start)
+        try container.encode(Self.startString(start, in: timeZone), forKey: .start)
         try container.encode(durationSec, forKey: .durationSec)
         try container.encodeIfPresent(distanceM, forKey: .distanceM)
         try container.encodeIfPresent(energyKcal, forKey: .energyKcal)
@@ -50,6 +53,16 @@ nonisolated struct HealthWorkout: Encodable, Equatable, Sendable {
         try container.encodeIfPresent(avgPowerW, forKey: .avgPowerW)
         try container.encodeIfPresent(avgCadence, forKey: .avgCadence)
         try container.encodeIfPresent(stream, forKey: .stream)
+    }
+}
+
+extension HealthWorkout {
+    /// ISO 8601 with the workout's own offset (`2026-09-30T12:23:34+02:00`), never bare UTC.
+    nonisolated static func startString(_ start: Date, in timeZone: TimeZone) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        formatter.timeZone = timeZone
+        return formatter.string(from: start)
     }
 }
 
