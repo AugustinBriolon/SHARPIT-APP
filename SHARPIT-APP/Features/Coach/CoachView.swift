@@ -14,9 +14,18 @@ struct CoachView: View {
     /// from Moi, beside the conversation that reads it.
     @State private var showingMemory = false
     @FocusState private var composerIsFocused: Bool
+    @State private var showsJumpToLatest = false
+    @State private var scrollPosition = ScrollPosition(idType: String.self)
+    @State private var dictation = CoachDictation()
+    /// Set by a send, so only a question just asked rises to the top.
+    @State private var risesOnSend = false
 
     private let conversations: any CoachConversationServing
     private let tokenProvider: (() async throws -> String)?
+    #if DEBUG
+    /// Questions asked by themselves, one after the other — the simulator demo only.
+    var demoQuestions: [String] = []
+    #endif
 
     init(
         client: any CoachChatServing,
@@ -36,11 +45,21 @@ struct CoachView: View {
 
     var body: some View {
         NavigationStack {
-            thread
+            ZStack(alignment: .bottom) {
+                thread
+                if showsJumpToLatest {
+                    jumpToLatestButton
+                        .padding(.bottom, SharpitSpacing.sm)
+                }
+            }
                 // A bar rather than a stacked row: the system then knows the composer is
                 // chrome and keeps the tab bar below it instead of over it.
                 .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+                .onDisappear { dictation.stop() }
                 .background(SharpitCanvasBackground())
+                #if DEBUG
+                .task { await askDemoQuestions() }
+                #endif
             .navigationTitle("Coach")
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
@@ -118,56 +137,94 @@ struct CoachView: View {
         }
     }
 
+    /// The thread reads like a conversation, not a log: a question sent rises to the top of the
+    /// screen and its answer unrolls below it, the view never moving on its own while the coach
+    /// writes. Once the answer runs past the bottom, an arrow above the composer takes the
+    /// athlete down, when they choose to follow.
     private var thread: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    if store.isEmpty {
-                        CoachEmptyState()
+        ScrollView {
+            let turns = CoachThreadLayout(messages: store.messages)
+            // Not lazy: a thread is a few dozen turns, and a lazy stack lost the position it
+            // was scrolled to whenever a row it had not laid out changed.
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                if store.isEmpty {
+                    CoachEmptyState()
+                }
+                ForEach(turns.earlier) { message in
+                    messageRow(message)
+                }
+                // The turn under way fills at least the screen, so its question can rise
+                // to the top even while its answer is still one line.
+                ZStack(alignment: .top) {
+                    if !turns.current.isEmpty {
+                        Color.clear
+                            .containerRelativeFrame(.vertical) { length, _ in
+                                max(0, length - SharpitSpacing.md * 2)
+                            }
                     }
-                    ForEach(store.messages) { message in
-                        CoachMessageRow(
-                            message: message,
-                            isStreaming: isStreaming(message),
-                            onAnswer: answerHandler
-                        )
-                        .id(message.id)
-                    }
-                    if let failure = store.failure {
-                        Text(failure)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalCaution)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                        ForEach(turns.current) { message in
+                            messageRow(message)
+                        }
+                        if let failure = store.failure {
+                            Text(failure)
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.signalCaution)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                 }
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.vertical, SharpitSpacing.md)
+                // Every child of the layout carries an id, the turn under way included: the
+                // scroll position is kept by id, and a child without one sent it back to the top.
+                .id(CoachThreadLayout.turnId(turns.current.first?.id))
+                Color.clear
+                    .frame(height: 1)
+                    .id(CoachThreadLayout.endId)
             }
-            .modifier(ScrollUnderGlass())
-            // Reading is the signal that writing is over: the keyboard follows the drag
-            // down rather than waiting to be dismissed.
-            .scrollDismissesKeyboard(.interactively)
-            // Anchored to the bottom only once there is a thread to follow; an empty
-            // screen anchored there pins its invitation to the composer.
-            .defaultScrollAnchor(store.isEmpty ? .top : .bottom)
-            .onChange(of: store.messages.last?.text) { _, _ in
-                scrollToLatest(proxy)
-            }
-            .onChange(of: store.messages.last?.parts?.count) { _, _ in
-                scrollToLatest(proxy)
-            }
-            // The keyboard going down uncovers the thread; the newest turn is what the
-            // athlete was writing about, so it is what should be under their eyes.
-            .onChange(of: composerIsFocused) { _, focused in
-                guard !focused else { return }
-                scrollToLatest(proxy)
+            .scrollTargetLayout()
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.vertical, SharpitSpacing.md)
+        }
+        .scrollPosition($scrollPosition)
+        // A thumb moving on the thread puts the keyboard away at once — even on an empty
+        // conversation, which bounces so the gesture always registers. Before the glass
+        // modifier, whose size-based bounce would otherwise win.
+        .scrollDismissesKeyboard(.immediately)
+        .scrollBounceBehavior(.always, axes: .vertical)
+        .modifier(ScrollUnderGlass())
+        // Opens at the latest turn, and only then: anchored for size changes too, the view
+        // followed every word the coach wrote.
+        .defaultScrollAnchor(store.isEmpty ? .top : .bottom, for: .initialOffset)
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            CoachThreadLayout.showsJumpToLatest(
+                contentHeight: geometry.contentSize.height,
+                visibleBottom: geometry.visibleRect.maxY - geometry.contentInsets.bottom
+            )
+        } action: { _, shows in
+            withAnimation(SharpitMotion.selection) { showsJumpToLatest = shows }
+        }
+        // A question just sent rises to the top; an opened conversation stays at its end.
+        .onChange(of: store.messages.last(where: { $0.role == .user })?.id) { _, id in
+            guard risesOnSend, let id else { return }
+            risesOnSend = false
+            // Once the new turn is laid out at its full height: scrolled before, the view
+            // stopped at the old end of the thread, halfway up.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(60))
+                withAnimation(SharpitMotion.reveal) {
+                    scrollPosition.scrollTo(id: CoachThreadLayout.turnId(id), anchor: .top)
+                }
             }
         }
     }
 
-    private func scrollToLatest(_ proxy: ScrollViewProxy) {
-        guard let last = store.messages.last?.id else { return }
-        withAnimation(SharpitMotion.reveal) { proxy.scrollTo(last, anchor: .bottom) }
+    private func messageRow(_ message: CoachMessage) -> some View {
+        CoachMessageRow(
+            message: message,
+            isStreaming: isStreaming(message),
+            onAnswer: answerHandler
+        )
+        .id(message.id)
     }
 
     /// Answers a proposal card; nil while a reply streams, so the buttons wait with it.
@@ -189,6 +246,12 @@ struct CoachView: View {
 
     private var composer: some View {
         VStack(spacing: SharpitSpacing.xs) {
+            if let failure = dictation.failure {
+                Text(failure)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.signalCaution)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             if let context = store.pendingContext {
                 CoachContextTag(context: context) { store.dropContext() }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -196,25 +259,6 @@ struct CoachView: View {
 
             SharpitGlassGroup {
                 HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
-                    // The explicit way down, for the athlete who is neither scrolling nor
-                    // sending. In the row rather than in a keyboard toolbar, which floated
-                    // over the send button. Only while writing — otherwise it is a control
-                    // that does nothing.
-                    if composerIsFocused {
-                        Button {
-                            composerIsFocused = false
-                        } label: {
-                            Image(systemName: "chevron.down")
-                                .font(SharpitTypography.bodyEmphasis)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                                .frame(width: Self.controlHeight, height: Self.controlHeight)
-                                .sharpitGlassControl(in: Circle(), fallback: SharpitColor.analysisSurfaceAlt)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Masquer le clavier")
-                        .transition(.scale.combined(with: .opacity))
-                    }
-
                     TextField(
                         store.hasPendingApproval ? "Réponds à la proposition, ou écris pour l'ignorer" : "Pose ta question",
                         text: $store.draft,
@@ -247,23 +291,7 @@ struct CoachView: View {
                         .animation(SharpitMotion.selection, value: store.draft.count / 40)
                         .submitLabel(.send)
 
-                    Button(action: submit) {
-                        Image(systemName: store.isReplying ? "stop.fill" : "arrow.up")
-                            .font(SharpitTypography.bodyEmphasis)
-                            // Untinted glass is light: the arrow goes muted there, not white.
-                            .foregroundStyle(store.canSend ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
-                            .frame(width: Self.controlHeight, height: Self.controlHeight)
-                            .contentTransition(.symbolEffect(.replace))
-                            .sharpitGlassControl(
-                                in: Circle(),
-                                tint: store.canSend ? SharpitColor.primary : nil,
-                                fallback: SharpitColor.radialTrack
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!store.canSend)
-                    .accessibilityLabel("Envoyer")
-                    .animation(SharpitMotion.selection, value: store.canSend)
+                    composerButton
                 }
             }
         }
@@ -273,12 +301,89 @@ struct CoachView: View {
         .animation(SharpitMotion.reveal, value: composerIsFocused)
     }
 
+    /// Small, and glass as the composer under it. Plain glass: interactive glass, on the label
+    /// or through the system's glass button, kept the tap for itself here.
+    private var jumpToLatestButton: some View {
+        Button {
+            withAnimation(SharpitMotion.reveal) {
+                scrollPosition.scrollTo(id: CoachThreadLayout.endId, anchor: .bottom)
+            }
+        } label: {
+            Image(systemName: "arrow.down")
+                .font(SharpitTypography.label.weight(.semibold))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(width: 30, height: 30)
+                .sharpitGlassCircle()
+                .contentShape(Circle())
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel("Aller à la fin de la réponse")
+        .transition(.scale(scale: 0.6).combined(with: .opacity))
+    }
+
+    #if DEBUG
+    private func askDemoQuestions() async {
+        for question in demoQuestions {
+            try? await Task.sleep(for: .seconds(1.5))
+            store.draft = question
+            risesOnSend = true
+            await store.send()
+        }
+    }
+    #endif
+
+    private var composerAction: CoachComposerAction {
+        CoachComposerAction(isReplying: store.isReplying, isDictating: dictation.isListening, draft: store.draft)
+    }
+
+    /// The composer's one round button: the microphone on an empty field, send once there are
+    /// words, stop while listening. The symbol morphs from one to the other.
+    private var composerButton: some View {
+        let action = composerAction
+        return Button { perform(action) } label: {
+            Image(systemName: action.symbol)
+                .font(SharpitTypography.bodyEmphasis)
+                // Untinted glass is light: the symbol goes muted there, not white.
+                .foregroundStyle(action.isProminent ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
+                .symbolEffect(.variableColor.iterative, isActive: action == .stopDictation)
+                .frame(width: Self.controlHeight, height: Self.controlHeight)
+                .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
+                .sharpitGlassControl(
+                    in: Circle(),
+                    tint: action.isProminent ? SharpitColor.primary : nil,
+                    fallback: SharpitColor.radialTrack
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(action == .waiting)
+        .accessibilityLabel(action.accessibilityLabel)
+        .animation(SharpitMotion.selection, value: action)
+    }
+
+    private func perform(_ action: CoachComposerAction) {
+        switch action {
+        case .dictate:
+            let store = store
+            Task {
+                await dictation.start(typed: store.draft) { text in store.draft = text }
+            }
+        case .stopDictation:
+            dictation.stop()
+        case .send:
+            submit()
+        case .waiting:
+            break
+        }
+    }
+
     /// Return and the send button do the same thing: put the keyboard away, and send when
     /// there is something to send. Lowering it on an empty field is deliberate — the
     /// athlete asked to stop writing, and the thread is what they want to see.
     private func submit() {
+        dictation.stop()
         composerIsFocused = false
         guard store.canSend else { return }
+        risesOnSend = true
         Task { await store.send() }
     }
 }
@@ -416,5 +521,38 @@ private struct CoachEmptyState: View {
             .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// How the coach thread is laid out: the turns before, and the one under way — from the last
+/// question on — which fills the screen so the question can rise to its top.
+struct CoachThreadLayout {
+    let earlier: [CoachMessage]
+    let current: [CoachMessage]
+
+    init(messages: [CoachMessage]) {
+        guard let lastQuestion = messages.lastIndex(where: { $0.role == .user }) else {
+            earlier = messages
+            current = []
+            return
+        }
+        earlier = Array(messages[..<lastQuestion])
+        current = Array(messages[lastQuestion...])
+    }
+
+    /// The id of the turn under way, from its question's: the container a sent question rises with.
+    static func turnId(_ questionId: String?) -> String {
+        "turn-\(questionId ?? "none")"
+    }
+
+    /// The id of the thread's last line, which the arrow down scrolls to.
+    static let endId = "thread-end"
+
+    /// Past this many points below the screen, the answer has run out of sight.
+    static let jumpThreshold: CGFloat = 24
+
+    /// Whether the arrow down shows: the thread goes on below what the screen shows.
+    static func showsJumpToLatest(contentHeight: CGFloat, visibleBottom: CGFloat) -> Bool {
+        contentHeight - visibleBottom > jumpThreshold
     }
 }

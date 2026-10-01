@@ -271,3 +271,48 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
     #expect(coach.messages.last?.id == "srv-1")
     #expect(coach.messages.last?.text == "Oui")
 }
+
+// MARK: - Thread layout
+
+@Test func theTurnUnderWayStartsAtTheLastQuestion() {
+    let messages = [
+        CoachMessage(id: "q1", role: .user, text: "Ma nuit ?"),
+        CoachMessage(id: "a1", role: .assistant, text: "Courte."),
+        CoachMessage(id: "q2", role: .user, text: "Et demain ?"),
+        CoachMessage(id: "a2", role: .assistant, text: "Repos."),
+    ]
+    let layout = CoachThreadLayout(messages: messages)
+
+    #expect(layout.earlier.map(\.id) == ["q1", "a1"])
+    #expect(layout.current.map(\.id) == ["q2", "a2"])
+}
+
+@Test func aThreadWithoutQuestionHasNoTurnUnderWay() {
+    let layout = CoachThreadLayout(messages: [CoachMessage(id: "a", role: .assistant, text: "Bonjour")])
+    #expect(layout.earlier.map(\.id) == ["a"])
+    #expect(layout.current.isEmpty)
+}
+
+@Test func theArrowShowsOnlyOnceTheAnswerRunsPastTheScreen() {
+    #expect(!CoachThreadLayout.showsJumpToLatest(contentHeight: 800, visibleBottom: 790))
+    #expect(CoachThreadLayout.showsJumpToLatest(contentHeight: 1_200, visibleBottom: 790))
+}
+
+// MARK: - Composer button
+
+@Test func anEmptyFieldOffersTheMicrophone() {
+    #expect(CoachComposerAction(isReplying: false, isDictating: false, draft: "") == .dictate)
+    #expect(CoachComposerAction(isReplying: false, isDictating: false, draft: "   ") == .dictate)
+}
+
+@Test func wordsOfferToSendListeningToStopAndAnAnswerWaits() {
+    #expect(CoachComposerAction(isReplying: false, isDictating: false, draft: "Ma nuit ?") == .send)
+    #expect(CoachComposerAction(isReplying: false, isDictating: true, draft: "Ma nuit") == .stopDictation)
+    #expect(CoachComposerAction(isReplying: true, isDictating: false, draft: "") == .waiting)
+}
+
+@Test func dictatedWordsFollowWhatWasTyped() {
+    #expect(CoachDictation.merged(typed: "", heard: "comment était ma nuit") == "comment était ma nuit")
+    #expect(CoachDictation.merged(typed: "Salut", heard: "comment était ma nuit") == "Salut comment était ma nuit")
+    #expect(CoachDictation.merged(typed: "Salut", heard: "  ") == "Salut")
+}

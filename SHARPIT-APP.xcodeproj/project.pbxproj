@@ -448,6 +448,8 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "SHARPIT utilise le micro pour que tu dictes tes questions au coach.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "SHARPIT transcrit ce que tu dictes pour l'écrire dans ta question au coach.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -494,6 +496,8 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "SHARPIT utilise le micro pour que tu dictes tes questions au coach.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "SHARPIT transcrit ce que tu dictes pour l'écrire dans ta question au coach.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
