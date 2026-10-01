@@ -93,8 +93,8 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
 - Résumé: `GET /api/v1/today` via `SharpitClient` + Bearer token from `clerk.auth.getToken()`.
   The server links the day's finished activities to their planned sessions on that read
   ([ADR-042](../SHARPIT/docs/adr/ADR-042-today-links-activities-on-read.md)); a session it
-  missed can be linked by hand from the planned session's drawer. A done brick opens as one
-  chain; once every leg is done, its evaluation (overall RPE, transitions, feeling, notes) is
+  missed can be linked by hand from the planned session's drawer. A done brick is one entry in
+  Plan and opens as one chain; once every leg is done, its evaluation (overall RPE, transitions, feeling, notes) is
   read and saved on tap through `/api/v1/planned-sessions/brick/evaluation` (web ADR-059).
 - Coach: `/api/coach/chat` streams the answer; the conversation is kept server-side through
   `/api/coach/conversations`, and the history sheet lists, reopens and deletes them
@@ -110,7 +110,9 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   account already linked on the web keeps syncing server-side
 - Journal: the day's signals via `/api/day-journal`, and what it asks for via
   `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
-  render — diet flags, the nutrition panel, thresholds — survive a save from the phone.
+  render — the nutrition panel, thresholds — survive a save from the phone.
+  The drawer's Nutrition section also sets the diet followed (the web's `diet_*` keys), which
+  Nutrition names and the coach reads the day against.
   Sections follow when a signal happened (Journée, Checklist auto, Nuit dernière, Signaux du
   jour), and the automatic checklist is read from `/api/journal/day-signals` rather than
   recomputed — the thresholds and sport rules live on the web
@@ -151,7 +153,8 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   server, so the iPhone sends it nothing; « Données Open Food Facts (ODbL) » is shown where its
   products are listed. Each write goes out behind the tap (`FoodLogStore`), then
   `/api/v1/nutrition` is read again for the totals. Macro targets are set in grams or as % of the
-  energy; « Mes aliments » lists, edits and deletes the athlete's own foods. MyFitnessPal is never
+  energy; « Mes aliments » lists, edits and deletes the athlete's own foods, from the add-food sheet
+  or from Paramètres › Nutrition. The coach opened from Nutrition carries the day's nutrition. MyFitnessPal is never
   linked from the iPhone (App Review 5.2.2, [ADR 0010](docs/adr/0010-import-the-myfitnesspal-export-instead-of-linking-it.md)):
   the athlete imports their own export file from Nutrition's « … » menu
 - Activity detail: effort and feeling are rated in one drawer that saves on each tap

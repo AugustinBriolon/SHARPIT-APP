@@ -173,7 +173,8 @@ The row opens the session; its check is a button of its own.
 A brick (legs sharing `brickGroupId`) is one entry in Plan (`PlanEntry.brick`, `PlanBrickCard`) and one
 line in Résumé (`brickLegs`), and opens `BrickSessionDrawer`: the chain, the legs with their steps and the
 transition between them; a leg pushes the single session's drawer (`isEmbedded`) for the watch and linking.
-One leg left is a plain session, as the web demotes it. A breakdown's repeated steps are gathered by their
+Done, it stays one entry (`PlanEntry.doneBrick`, `PlanDoneBrickCard`) when two legs or more were recorded
+against it, and opens `DoneBrickDrawer`. One leg left is a plain session, as the web demotes it. A breakdown's repeated steps are gathered by their
 server `group` (`PlannedStepSet`) under one « N fois » well — the block and its recovery, N times.
 « Ajuster le planning » (`PlanAdapterSheet`, its `PlanAdjustmentStore` owned by `PlanView`) is laid
 out as the generator — `CoachWorkingHeader`, `SharpitActionDock`, `SharpitPrimaryButton`, rows with
@@ -285,11 +286,12 @@ category, so a silent answer names its cause.
 
 **Journal.** `JournalView` asks for the day signals the athlete turned on, and
 `JournalPrefsDrawer` chooses them. Preferences are kept as the raw JSON the server sent
-(`JournalPrefs.raw`): the web stores keys the app does not model — diet flags, nutrition
-panel, thresholds — and the server rebuilds its enable map from defaults for every key a
+(`JournalPrefs.raw`): the web stores keys the app does not model — nutrition panel,
+thresholds — and the server rebuilds its enable map from defaults for every key a
 payload omits, so sending back only what the app renders would silently reset the rest. The
 catalogue in `JournalTrackables.swift` therefore covers the signals the app can render, never
-all of the web's.
+all of the web's. The diets (`diet_*`, kind `.diet`) sit in the drawer's Nutrition section and draw
+no row on the day: Nutrition's header names them and the coach reads the food against them.
 
 Humeur reads the morning check-in (`/api/v1/wellness-checkin`) when the journal row carries no mood — the mood lives there, the row only echoes it when answered from the journal; a day with only a check-in counts as noted, here and in the server's journal data days. The day picker marks the journal as the day screens mark their data (`SharpitDataDayMark`): a dot where something was noted, a ring where the day was read and holds nothing, nothing while unknown — from `/api/v1/data-days?domain=journal`. The journal and the day screens read their marks through one `DataDaysMarker`: the 91-day window holding the week in view first (the strip scrolled back, a month opened), then the rest of the history in a task of its own that a screen left mid-way does not cancel; a window that failed is read again when next needed. The journal's skeleton is its own rows redacted, under a date picker that stays put.
 
@@ -326,10 +328,11 @@ tick dial (`SharpitTickGauge`) with goal, exercise and remaining under it, the c
 the ink plate, the three macros as tiles and the energy split by macro, the meals as a list whose
 rows push `NutritionMealView` (entries heaviest first, with the coach's flags), and 14 days of regularity against the calorie goal
 (each day's adherence is the server's; the strip reads, it does not navigate). A header carries the
-diet in force (from the journal) and the coach pill; the « … » menu adds or scans a food, opens
+diet in force (from the journal) and the coach pill — the coach pill and the reading's button attach
+`CoachDiscussTarget.nutrition` (« Ta nutrition du jour »), never the day state; the « … » menu adds or scans a food, opens
 the nutrition targets (`NutritionTargetsSheet`: macros in grams or as % of the energy, the split's
-arithmetic in `NutritionTargetSplit`), opens the weight target (`WeightTargetSheet`) or creates one,
-opens the coach and, last, « Importer depuis MyFitnessPal ». The Résumé card follows the gauge cells: tinted badge, energy against
+arithmetic in `NutritionTargetSplit`), opens the weight target (`WeightTargetSheet`) or creates one
+and, last, « Importer depuis MyFitnessPal ». The Résumé card follows the gauge cells: tinted badge, energy against
 the goal, the macros as columns, a context capsule. Goals, percentages and the reading are the
 web's; `NutritionReadout` formats them and derives only the energy split (Atwater).
 
@@ -340,7 +343,8 @@ targets and the recent foods. Each meal row has its « + », which opens `FoodAd
 (`FoodSearchStore`, debounced, own foods then Open Food Facts), the barcode scanner
 (`BarcodeScannerView`, VisionKit's `DataScannerViewController`, offered only where it is supported
 and available), « Mes aliments » (`OwnFoodsStore`, `/api/v1/food-log/foods/mine`: tap to pick, swipe
-to edit through the custom-food form or delete after asking — logged entries keep their snapshot),
+to edit through the custom-food form or delete after asking — logged entries keep their snapshot;
+also Paramètres › Nutrition, `OwnFoodsSettingsView`),
 a quick add, a custom food per 100 g, then the portion (`FoodPortionPage`: grams
 with presets and a live preview, `FoodPortion` mirroring the web's `portionNutrients`). A meal's
 page (`FoodLogMealPage`) edits an entry on tap (`FoodEntryEditSheet`) and deletes it on swipe. Every
