@@ -162,6 +162,16 @@ final class FoodLogStore {
         }
     }
 
+    /// An own food edited from the sheet: the recent list picks it with its new values.
+    func productChanged(_ product: V1FoodProduct) {
+        recent = recent.map { $0.product.id == product.id ? V1FoodLogRecentFood(product: product, lastGrams: $0.lastGrams) : $0 }
+    }
+
+    /// An own food deleted: it can no longer be picked. Entries logged with it stay.
+    func productDeleted(_ product: V1FoodProduct) {
+        recent.removeAll { $0.product.id == product.id }
+    }
+
     // MARK: Helpers
 
     private func replace(_ id: String, with entry: V1FoodLogEntry) {

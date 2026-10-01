@@ -4,7 +4,7 @@ import SwiftUI
 nonisolated enum NutritionMealsMode: Equatable {
     /// The day's own log: the four meals, each with its « + », entries editable.
     case foodLog
-    /// A day only MyFitnessPal filled (or the log not read yet): its meals, read-only.
+    /// A day imported from MyFitnessPal (or the log not read yet): its meals, read-only.
     case imported
     /// Nothing to list.
     case none

@@ -150,8 +150,10 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   page and the athlete's targets set from the « … » menu. Open Food Facts is only ever asked by the
   server, so the iPhone sends it nothing; « Données Open Food Facts (ODbL) » is shown where its
   products are listed. Each write goes out behind the tap (`FoodLogStore`), then
-  `/api/v1/nutrition` is read again for the totals. The MyFitnessPal sync is offered only while it
-  is linked (`mfpConnected`)
+  `/api/v1/nutrition` is read again for the totals. Macro targets are set in grams or as % of the
+  energy; « Mes aliments » lists, edits and deletes the athlete's own foods. MyFitnessPal is never
+  linked from the iPhone (App Review 5.2.2, [ADR 0010](docs/adr/0010-import-the-myfitnesspal-export-instead-of-linking-it.md)):
+  the athlete imports their own export file from Nutrition's « … » menu
 - Activity detail: effort and feeling are rated in one drawer that saves on each tap
   (`ActivitySubjectiveStore`); compliance opens a drawer with the verdict in words
 - ADRs specific to the native client: `docs/adr/`

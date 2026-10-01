@@ -97,59 +97,75 @@ struct FoodEntryEditSheet: View {
     }
 }
 
-/// The athlete's own daily targets: energy and the three macros. An empty field clears its
-/// target. Saved on « OK »; the day's goals follow on the server.
+/// The athlete's own daily targets: energy and the three macros, in grams or as shares of the
+/// energy (« % », which needs the energy and three shares totalling 100). An empty grams field
+/// clears its target. Saved on « OK »; the day's goals follow on the server.
 struct NutritionTargetsSheet: View {
     let store: FoodLogStore
 
+    @State private var mode: NutritionTargetsMode
     @State private var kcal: String
     @State private var protein: String
     @State private var carbs: String
     @State private var fat: String
+    @State private var proteinPct: String
+    @State private var carbsPct: String
+    @State private var fatPct: String
     @Environment(\.dismiss) private var dismiss
 
     init(store: FoodLogStore) {
         self.store = store
-        _kcal = State(initialValue: NutritionTargetsInput.text(store.targets.kcal.map(Double.init)))
-        _protein = State(initialValue: NutritionTargetsInput.text(store.targets.proteinG))
-        _carbs = State(initialValue: NutritionTargetsInput.text(store.targets.carbsG))
-        _fat = State(initialValue: NutritionTargetsInput.text(store.targets.fatG))
+        let targets = store.targets
+        let split = NutritionTargetSplit.prefill(from: targets)
+        _mode = State(initialValue: targets.mode)
+        _kcal = State(initialValue: NutritionTargetsInput.text(targets.kcal.map(Double.init)))
+        _protein = State(initialValue: NutritionTargetsInput.text(targets.proteinG))
+        _carbs = State(initialValue: NutritionTargetsInput.text(targets.carbsG))
+        _fat = State(initialValue: NutritionTargetsInput.text(targets.fatG))
+        _proteinPct = State(initialValue: split.proteinPct.map(String.init) ?? "")
+        _carbsPct = State(initialValue: split.carbsPct.map(String.init) ?? "")
+        _fatPct = State(initialValue: split.fatPct.map(String.init) ?? "")
+    }
+
+    private var gramsTargets: V1NutritionTargets? {
+        NutritionTargetsInput.parse(kcal: kcal, protein: protein, carbs: carbs, fat: fat)
+    }
+
+    private var split: NutritionTargetSplit {
+        NutritionTargetSplit(kcal: kcal, protein: proteinPct, carbs: carbsPct, fat: fatPct)
     }
 
     private var parsed: V1NutritionTargets? {
-        NutritionTargetsInput.parse(kcal: kcal, protein: protein, carbs: carbs, fat: fat)
+        mode == .grams ? gramsTargets : split.targets
     }
 
     var body: some View {
         NavigationStack {
             List {
-                Section(
-                    eyebrow: "Énergie",
-                    footer: "Entre 800 et 8 000 kcal par jour. Ta dépense d'entraînement s'y ajoute chaque jour."
-                ) {
+                Section {
+                    Picker("Saisie des macros", selection: $mode) {
+                        Text("Grammes").tag(NutritionTargetsMode.grams)
+                        Text("%").tag(NutritionTargetsMode.percent)
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                }
+
+                Section(eyebrow: "Énergie", footer: energyFooter) {
                     FoodNumberRow(title: "Calories", unit: "kcal", placeholder: "—", text: $kcal)
                 }
                 .sharpitListRows()
 
-                Section(eyebrow: "Macronutriments", footer: "Optionnels. Un champ vide retire l'objectif.") {
-                    FoodNumberRow(title: "Protéines", unit: "g", placeholder: "—", text: $protein)
-                    FoodNumberRow(title: "Glucides", unit: "g", placeholder: "—", text: $carbs)
-                    FoodNumberRow(title: "Lipides", unit: "g", placeholder: "—", text: $fat)
-                }
-                .sharpitListRows()
-
-                if parsed == nil {
-                    Section {
-                        Text("Une valeur sort des bornes : 800 à 8 000 kcal, au plus 600 g de protéines, 1 500 g de glucides, 500 g de lipides.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalRisk)
-                    }
-                    .sharpitListRows()
+                switch mode {
+                case .grams: gramsSections
+                case .percent: percentSections
                 }
             }
             .sharpitGroupedList()
             .navigationTitle("Objectifs")
             .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: mode) { _, newMode in carryOver(to: newMode) }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
@@ -165,11 +181,118 @@ struct NutritionTargetsSheet: View {
         .sharpitSheet()
     }
 
+    private var energyFooter: String {
+        let range = "Entre 800 et 8 000 kcal par jour. Ta dépense d'entraînement s'y ajoute chaque jour."
+        return mode == .percent ? "Obligatoire pour répartir en %. \(range)" : range
+    }
+
+    @ViewBuilder
+    private var gramsSections: some View {
+        Section(eyebrow: "Macronutriments", footer: "Optionnels. Un champ vide retire l'objectif.") {
+            FoodNumberRow(title: "Protéines", unit: "g", placeholder: "—", text: $protein)
+            FoodNumberRow(title: "Glucides", unit: "g", placeholder: "—", text: $carbs)
+            FoodNumberRow(title: "Lipides", unit: "g", placeholder: "—", text: $fat)
+        }
+        .sharpitListRows()
+
+        if gramsTargets == nil {
+            Section {
+                Text("Une valeur sort des bornes : 800 à 8 000 kcal, au plus 600 g de protéines, 1 500 g de glucides, 500 g de lipides.")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.signalRisk)
+            }
+            .sharpitListRows()
+        }
+    }
+
+    @ViewBuilder
+    private var percentSections: some View {
+        let split = split
+        Section(eyebrow: "Répartition", footer: "Des nombres entiers. Les grammes suivent ton énergie.") {
+            NutritionShareRow(title: "Protéines", grams: split.proteinG, text: $proteinPct)
+            NutritionShareRow(title: "Glucides", grams: split.carbsG, text: $carbsPct)
+            NutritionShareRow(title: "Lipides", grams: split.fatG, text: $fatPct)
+            LabeledContent("Total") {
+                Text("\(split.total) %")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .monospacedDigit()
+                    .foregroundStyle(split.isBalanced ? SharpitColor.foreground : SharpitColor.signalRisk)
+                    .contentTransition(.numericText(value: Double(split.total)))
+            }
+            .animation(SharpitMotion.selection, value: split.total)
+            .accessibilityValue(split.isBalanced ? "\(split.total) %" : "\(split.total) %, il faut 100 %")
+        }
+        .sharpitListRows()
+
+        if let problem = percentProblem(split) {
+            Section {
+                Text(problem)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.signalRisk)
+            }
+            .sharpitListRows()
+        }
+    }
+
+    private func percentProblem(_ split: NutritionTargetSplit) -> String? {
+        if split.hasInvalidShare { return "Chaque part est un nombre entier entre 0 et 100." }
+        if split.kcal == nil { return "Entre ton énergie, entre 800 et 8 000 kcal, pour répartir tes macros." }
+        if !split.isBalanced { return "Les trois parts doivent faire 100 % (\(split.total) % pour l'instant)." }
+        return nil
+    }
+
+    /// What one mode already says carries into the other, so switching never empties the form.
+    private func carryOver(to newMode: NutritionTargetsMode) {
+        switch newMode {
+        case .percent:
+            guard let shares = NutritionTargetSplit.fromGramsForm(kcal: kcal, protein: protein, carbs: carbs, fat: fat) else { return }
+            proteinPct = shares.proteinPct.map(String.init) ?? ""
+            carbsPct = shares.carbsPct.map(String.init) ?? ""
+            fatPct = shares.fatPct.map(String.init) ?? ""
+        case .grams:
+            guard let targets = split.targets else { return }
+            protein = NutritionTargetsInput.text(targets.proteinG)
+            carbs = NutritionTargetsInput.text(targets.carbsG)
+            fat = NutritionTargetsInput.text(targets.fatG)
+        }
+    }
+
     private func save() {
         guard let parsed else { return }
         if parsed != store.targets {
             Task { await store.setTargets(parsed) }
         }
         dismiss()
+    }
+}
+
+/// One macro's share of the energy, typed as a whole number, with the grams it is worth.
+private struct NutritionShareRow: View {
+    let title: String
+    let grams: Int?
+    @Binding var text: String
+
+    var body: some View {
+        LabeledContent {
+            HStack(spacing: SharpitSpacing.xxs) {
+                TextField("—", text: $text)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .accessibilityLabel("\(title) en pourcentage")
+                Text("%")
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(grams.map { "≈ \(FoodPortion.gramsLabel(Double($0)))" } ?? "— g")
+                    .font(SharpitTypography.meta)
+                    .monospacedDigit()
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .contentTransition(.numericText(value: Double(grams ?? 0)))
+            }
+            .animation(SharpitMotion.selection, value: grams)
+        }
     }
 }

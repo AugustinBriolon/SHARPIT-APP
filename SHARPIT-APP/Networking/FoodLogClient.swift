@@ -6,11 +6,14 @@ nonisolated enum FoodLogError: Error, Equatable, LocalizedError {
     case notFound
     /// Open Food Facts did not answer the server.
     case openFoodFactsUnavailable
+    /// The file sent for an import is over the server's limit.
+    case fileTooLarge
 
     var errorDescription: String? {
         switch self {
         case .notFound: "Cet aliment n'existe plus."
         case .openFoodFactsUnavailable: "Open Food Facts ne répond pas. Réessaie dans un instant."
+        case .fileTooLarge: "Ce fichier dépasse 4 Mo. Exporte une période plus courte."
         }
     }
 }
@@ -25,6 +28,13 @@ nonisolated protocol FoodLogServing: Sendable {
     /// Nil when Open Food Facts does not know the code.
     func product(barcode: String, token: String) async throws -> V1FoodProduct?
     func createCustomFood(_ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct
+    /// The athlete's own foods, to pick, edit or delete.
+    func ownFoods(token: String) async throws -> [V1FoodProduct]
+    /// Entries already logged keep the nutrients they were logged with.
+    func updateCustomFood(id: String, _ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct
+    func deleteCustomFood(id: String, token: String) async throws
+    /// The athlete's own MyFitnessPal export (the ZIP or its nutrition CSV), sent as it is.
+    func importMyFitnessPal(_ file: FoodLogImportFile, token: String) async throws -> V1FoodLogImportResult
     func setTargets(_ targets: V1NutritionTargets, trainingDayId: String, token: String) async throws -> V1NutritionTargets
 }
 
@@ -84,6 +94,34 @@ actor FoodLogClient: FoodLogServing {
         return try decode(V1FoodProductEnvelope.self, from: try await send(request)).product
     }
 
+    func ownFoods(token: String) async throws -> [V1FoodProduct] {
+        let request = try request("\(Self.path)/foods/mine", method: "GET", token: token)
+        return try decode(V1FoodProductList.self, from: try await send(request)).foods
+    }
+
+    func updateCustomFood(id: String, _ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct {
+        var request = try request("\(Self.path)/foods/\(id)", method: "PATCH", token: token)
+        request.httpBody = try Self.body(for: draft)
+        return try decode(V1FoodProductEnvelope.self, from: try await send(request)).product
+    }
+
+    func deleteCustomFood(id: String, token: String) async throws {
+        _ = try await send(try request("\(Self.path)/foods/\(id)", method: "DELETE", token: token))
+    }
+
+    /// The server unpacks and reads a whole export, so the wait can pass the default minute. A
+    /// refusal carries the server's own French words, shown as they are.
+    func importMyFitnessPal(_ file: FoodLogImportFile, token: String) async throws -> V1FoodLogImportResult {
+        let boundary = "sharpit-\(UUID().uuidString)"
+        var request = try request("\(Self.path)/import/myfitnesspal", method: "POST", token: token)
+        request.timeoutInterval = Self.importTimeout
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = MultipartFormData.body(boundary: boundary, fieldName: "file", file: file)
+        return try decode(V1FoodLogImportResult.self, from: try await send(request, readsRefusal: true))
+    }
+
+    nonisolated static let importTimeout: TimeInterval = 90
+
     func setTargets(_ targets: V1NutritionTargets, trainingDayId: String, token: String) async throws -> V1NutritionTargets {
         var request = try request(
             "\(Self.path)/targets", method: "PUT", query: [URLQueryItem(name: "trainingDayId", value: trainingDayId)], token: token
@@ -140,14 +178,20 @@ actor FoodLogClient: FoodLogServing {
         return try JSONSerialization.data(withJSONObject: payload)
     }
 
-    /// Every target is sent, nil as JSON null, so a cleared field clears on the server.
+    /// In grams every target is sent, nil as JSON null, so a cleared field clears on the server.
+    /// In percent only the energy and the three shares go out: the server derives the grams.
     nonisolated static func body(for targets: V1NutritionTargets) throws -> Data {
-        let payload: [String: Any] = [
-            "kcal": targets.kcal ?? NSNull(),
-            "proteinG": targets.proteinG ?? NSNull(),
-            "carbsG": targets.carbsG ?? NSNull(),
-            "fatG": targets.fatG ?? NSNull(),
-        ]
+        var payload: [String: Any] = ["mode": targets.mode.rawValue, "kcal": targets.kcal ?? NSNull()]
+        switch targets.mode {
+        case .grams:
+            payload["proteinG"] = targets.proteinG ?? NSNull()
+            payload["carbsG"] = targets.carbsG ?? NSNull()
+            payload["fatG"] = targets.fatG ?? NSNull()
+        case .percent:
+            payload["proteinPct"] = targets.proteinPct ?? NSNull()
+            payload["carbsPct"] = targets.carbsPct ?? NSNull()
+            payload["fatPct"] = targets.fatPct ?? NSNull()
+        }
         return try JSONSerialization.data(withJSONObject: payload)
     }
 
@@ -170,7 +214,8 @@ actor FoodLogClient: FoodLogServing {
         return request
     }
 
-    private func send(_ request: URLRequest) async throws -> Data {
+    /// `readsRefusal`: a 400 carries `{ error }` in French, meant for the athlete.
+    private func send(_ request: URLRequest, readsRefusal: Bool = false) async throws -> Data {
         let data: Data
         let response: URLResponse
         do {
@@ -178,13 +223,26 @@ actor FoodLogClient: FoodLogServing {
         } catch {
             throw SharpitAPIError.transport
         }
-        try Self.check(status: (response as? HTTPURLResponse)?.statusCode ?? 0)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if readsRefusal, status == 400, let refusal = Self.refusal(in: data) {
+            throw SharpitAPIError.message(refusal)
+        }
+        try Self.check(status: status)
         return data
+    }
+
+    nonisolated static func refusal(in data: Data) -> String? {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let text = (object["error"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty
+        else { return nil }
+        return text
     }
 
     nonisolated static func check(status: Int) throws {
         switch status {
         case 200...299: return
+        case 413: throw FoodLogError.fileTooLarge
         case 400: throw SharpitAPIError.badRequest
         case 401, 403: throw SharpitAPIError.unauthorized
         case 404: throw FoodLogError.notFound

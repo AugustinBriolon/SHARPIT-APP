@@ -189,7 +189,7 @@ struct SettingsView: View {
     }
 
     private var sourcesDetail: String {
-        appleHealth.isEnabled ? "Apple Santé activé" : "Apple Santé, MyFitnessPal"
+        appleHealth.isEnabled ? "Apple Santé activé" : "Apple Santé"
     }
 
     private var sportsDetail: String {

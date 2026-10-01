@@ -124,6 +124,14 @@ nonisolated enum NutritionTargetsInput {
         )
     }
 
+    /// The energy a « % » split is taken from: required, whole, within the server's range.
+    static func requiredKcal(_ text: String) -> Int? {
+        guard case .some(.some(let value)) = field(text, in: Double(kcalRange.lowerBound)...Double(kcalRange.upperBound)) else {
+            return nil
+        }
+        return Int(value.rounded())
+    }
+
     /// `.some(nil)` for an empty field, `.some(value)` in range, nil when invalid.
     private static func field(_ text: String, in range: ClosedRange<Double>) -> Double?? {
         let trimmed = text.trimmingCharacters(in: .whitespaces)

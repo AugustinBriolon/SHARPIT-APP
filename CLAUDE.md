@@ -131,7 +131,7 @@ it before writing anything; Plan's generator uses the same route. Then `/api/v1/
 finishes the wizard. Without AI consent the step says so and finishes without a week. Sources links
 Garmin in-app through `GarminConnect` (SHARPIT ADR-047), switches Apple Health on — a switch per
 Clerk account (`AppleHealthSource.bind(userId:)`), so a new account on the same iPhone starts off
-— and links MyFitnessPal (`MyFitnessPalConnectSheet`). Debug builds open the wizard on in-memory
+— and offers nothing for MyFitnessPal, which the app never links (`docs/adr/0010`). Debug builds open the wizard on in-memory
 services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`).
 
 The page is one page: the header's tick dial (`SharpitTickGauge`, animatable, so it sweeps from step
@@ -327,8 +327,9 @@ the ink plate, the three macros as tiles and the energy split by macro, the meal
 rows push `NutritionMealView` (entries heaviest first, with the coach's flags), and 14 days of regularity against the calorie goal
 (each day's adherence is the server's; the strip reads, it does not navigate). A header carries the
 diet in force (from the journal) and the coach pill; the « … » menu adds or scans a food, opens
-the nutrition targets (`NutritionTargetsSheet`), syncs MFP while it is linked, opens the weight
-target (`WeightTargetSheet`) or creates one, and opens the coach. The Résumé card follows the gauge cells: tinted badge, energy against
+the nutrition targets (`NutritionTargetsSheet`: macros in grams or as % of the energy, the split's
+arithmetic in `NutritionTargetSplit`), opens the weight target (`WeightTargetSheet`) or creates one,
+opens the coach and, last, « Importer depuis MyFitnessPal ». The Résumé card follows the gauge cells: tinted badge, energy against
 the goal, the macros as columns, a context capsule. Goals, percentages and the reading are the
 web's; `NutritionReadout` formats them and derives only the energy split (Atwater).
 
@@ -338,19 +339,20 @@ page is never a « connect a provider » wall (`connected` is always true). `Foo
 targets and the recent foods. Each meal row has its « + », which opens `FoodAddSheet` — the search
 (`FoodSearchStore`, debounced, own foods then Open Food Facts), the barcode scanner
 (`BarcodeScannerView`, VisionKit's `DataScannerViewController`, offered only where it is supported
-and available), a quick add, a custom food per 100 g, then the portion (`FoodPortionPage`: grams
+and available), « Mes aliments » (`OwnFoodsStore`, `/api/v1/food-log/foods/mine`: tap to pick, swipe
+to edit through the custom-food form or delete after asking — logged entries keep their snapshot),
+a quick add, a custom food per 100 g, then the portion (`FoodPortionPage`: grams
 with presets and a live preview, `FoodPortion` mirroring the web's `portionNutrients`). A meal's
 page (`FoodLogMealPage`) edits an entry on tap (`FoodEntryEditSheet`) and deletes it on swipe. Every
 write shows at once and goes out through `SharpitRetry`, put back and toasted if it fails for good;
 the server rebuilds the day, so the page reads `/api/v1/nutrition` again for the totals. Open Food
 Facts is asked by the server only, and « Données Open Food Facts (ODbL) » stands wherever its
-products are listed or picked. A day only MyFitnessPal filled keeps its meals read-only
-(`NutritionMealView`); the day's own log wins once it holds an entry. MyFitnessPal still links in
-the app (`MyFitnessPalConnectSheet`): the athlete signs in on MFP's own site in a private web view,
-the app reads the session cookie next-auth sets (whole or chunked) and posts it to
-`/api/v1/myfitnesspal/connect`. Nutrition syncs it (`/api/v1/myfitnesspal/sync`, menu or pull, and
-on opening past 15 minutes) only while `mfpConnected`; Sources de données links, syncs and unlinks
-it too. A day without a log draws its own empty plate (never the scaffold's generic empty screen),
+products are listed or picked. The iPhone app never links or syncs MyFitnessPal — its access is
+unofficial, App Review 5.2.2 (`docs/adr/0010`, a test guards the routes): the athlete imports their
+own MFP export instead (`MyFitnessPalImportSheet`, a ZIP or CSV picked in Fichiers, posted as
+multipart to `/api/v1/food-log/import/myfitnesspal`, `MultipartFormData`). A day imported (or synced
+on the web) keeps its meals read-only (`NutritionMealView`); the day's own log wins once it holds an
+entry. A day without a log draws its own empty plate (never the scaffold's generic empty screen),
 which invites to scan or search a first food.
 
 **Pro gating.** Pro gates what SHARPIT adds — analyses, computed metrics, pushes to the watch —
@@ -524,15 +526,14 @@ What makes a surface feel finished, applied everywhere new work lands:
 - **One component per recurring shape.** Every readout card uses `SharpitCardHeader` (badge,
   label, chevron) and `SharpitTelemetryCapsule` (the foot line); never a local copy that drifts a
   point. Symbols are stroked in content; filled only for a status mark (a check, a seal).
-- **Anticipate.** A screen fetches what is stale before being asked (Nutrition pulls MFP on opening
-  past 15 minutes) and says it quietly (a spinner beside the header), never with a blocking state.
+- **Anticipate.** A screen fetches what is stale before being asked (providers are pulled on launch
+  and foreground, `ProviderSyncStore`) and says it quietly, never with a blocking state.
 - **Announce news, not work.** After a sync, say what came in (« 3 aliments ajoutés »); say « à jour »
   only when the athlete asked.
 - **Reward, don't nag.** A kept day earns its seal (`NutritionGoalSeal`), found by opening it, with
   one haptic the first time. No streak counters.
 - **No dead ends.** An empty day offers the next step (sync, another day, link a source); a
-  failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server) — an
-  expired MFP session asks to reconnect.
+  failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server).
 - **Haptics confirm what the finger does, nothing else.** A notch dialled (a ruler, painted days),
   a choice picked (one `.soft`), a real success once (a source linked, the wizard's week set).
   Never navigation: continuing, a step changing, a field or a sheet opening. Everywhere at once

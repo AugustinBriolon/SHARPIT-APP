@@ -61,7 +61,7 @@ nonisolated enum SharpitFeature: String, CaseIterable, Identifiable, Sendable {
         case .journal:
             "Ce que tes montres ne voient pas : l'alcool, les écrans tard, un repas lourd, ton humeur au réveil. Noté jour après jour, SharpIt rapproche ces habitudes de ta nuit et de ta récupération, et te montre celles qui comptent vraiment pour toi."
         case .nutrition:
-            "Ce que tu manges face à ce que tu dépenses. Relié à MyFitnessPal, SharpIt compare ton énergie et tes macros à ta charge du jour, et signale quand le carburant manque avant une séance exigeante."
+            "Ce que tu manges face à ce que tu dépenses. Noté dans ton journal, SharpIt compare ton énergie et tes macros à ta charge du jour, et signale quand le carburant manque avant une séance exigeante."
         case .health:
             "Un bilan de ta santé : cœur au repos, VFC, sommeil, VO₂max, composition. Chaque repère est situé face à une norme publiée et face à ton propre mois, et SharpIt te signale ce qui mérite ton attention."
         case .regularity:

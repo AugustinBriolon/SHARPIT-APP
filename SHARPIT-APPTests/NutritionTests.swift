@@ -149,23 +149,6 @@ private struct StubNutrition: NutritionServing {
     #expect(store.phase == .failed)
 }
 
-// MARK: - MyFitnessPal sign-in
-
-@Test func theSessionCookieIsReadWholeOrFromItsChunks() {
-    #expect(MyFitnessPalSession.sessionToken(from: [(name: "other", value: "x")]) == nil)
-    #expect(MyFitnessPalSession.sessionToken(from: [
-        (name: "__Secure-next-auth.session-token", value: "whole"),
-    ]) == "whole")
-    #expect(MyFitnessPalSession.sessionToken(from: [
-        (name: "__Secure-next-auth.session-token.1", value: "B"),
-        (name: "__Secure-next-auth.session-token.0", value: "A"),
-    ]) == "AB")
-    // Half a token is worse than none.
-    #expect(MyFitnessPalSession.sessionToken(from: [
-        (name: "__Secure-next-auth.session-token.1", value: "B"),
-    ]) == nil)
-}
-
 // MARK: - Day store
 
 private actor CountingNutrition {
@@ -261,11 +244,4 @@ private actor CountingNutrition {
         .hasPrefix("Ton sommeil n'a pas pu être chargé."))
     #expect(DayResourceStore<V1NutritionResponse>.failure(SharpitAPIError.server, fallback: "Ton journal n'a pas pu être chargé.")
         == "Ton journal n'a pas pu être chargé. Réessaie dans un instant.")
-}
-
-@Test func anExpiredFoodLogSessionIsRecognised() {
-    #expect(SharpitErrorGuidance.isExpiredFoodLogSession(
-        SharpitAPIError.message("Session MyFitnessPal expirée. Reconnecte-toi avec un nouveau cookie de session.")
-    ))
-    #expect(!SharpitErrorGuidance.isExpiredFoodLogSession(SharpitAPIError.transport))
 }

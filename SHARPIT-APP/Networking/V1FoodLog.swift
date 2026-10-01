@@ -83,33 +83,74 @@ nonisolated struct V1FoodProduct: Codable, Sendable, Equatable, Hashable, Identi
     var isOpenFoodFacts: Bool { source == "OFF" }
 }
 
-/// The athlete's own daily targets. Nil means not set.
+/// How the athlete sets their macros: in grams, or as shares of the energy target.
+nonisolated enum NutritionTargetsMode: String, Codable, Sendable, CaseIterable {
+    case grams = "GRAMS"
+    case percent = "PERCENT"
+
+    /// A mode this app does not know yet reads as grams, which the server always fills.
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = NutritionTargetsMode(rawValue: raw.uppercased()) ?? .grams
+    }
+}
+
+/// The athlete's own daily targets. Nil means not set. The grams are always filled, also in
+/// `percent` mode, where the server derives them from the energy and the three shares.
 nonisolated struct V1NutritionTargets: Codable, Sendable, Equatable {
+    var mode: NutritionTargetsMode
     var kcal: Int?
     var proteinG: Double?
     var carbsG: Double?
     var fatG: Double?
+    /// Set only in `percent` mode.
+    var proteinPct: Int?
+    var carbsPct: Int?
+    var fatPct: Int?
 
     static let none = V1NutritionTargets(kcal: nil, proteinG: nil, carbsG: nil, fatG: nil)
 
-    /// The kilocalorie target is a whole number, but a server that sends `2400.0` must still read.
+    enum CodingKeys: String, CodingKey {
+        case mode, kcal, proteinG, carbsG, fatG, proteinPct, carbsPct, fatPct
+    }
+
+    /// A whole number may arrive as `2400.0`, and a server older than the percent mode sends
+    /// neither `mode` nor the shares: both must still read.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let whole = try? container.decodeIfPresent(Int.self, forKey: .kcal) {
-            kcal = whole
-        } else {
-            kcal = try container.decodeIfPresent(Double.self, forKey: .kcal).map { Int($0.rounded()) }
-        }
+        mode = (try? container.decodeIfPresent(NutritionTargetsMode.self, forKey: .mode)) ?? .grams
+        kcal = try Self.wholeNumber(container, .kcal)
         proteinG = try container.decodeIfPresent(Double.self, forKey: .proteinG)
         carbsG = try container.decodeIfPresent(Double.self, forKey: .carbsG)
         fatG = try container.decodeIfPresent(Double.self, forKey: .fatG)
+        proteinPct = try Self.wholeNumber(container, .proteinPct)
+        carbsPct = try Self.wholeNumber(container, .carbsPct)
+        fatPct = try Self.wholeNumber(container, .fatPct)
     }
 
-    init(kcal: Int?, proteinG: Double?, carbsG: Double?, fatG: Double?) {
+    init(
+        mode: NutritionTargetsMode = .grams,
+        kcal: Int?,
+        proteinG: Double?,
+        carbsG: Double?,
+        fatG: Double?,
+        proteinPct: Int? = nil,
+        carbsPct: Int? = nil,
+        fatPct: Int? = nil
+    ) {
+        self.mode = mode
         self.kcal = kcal
         self.proteinG = proteinG
         self.carbsG = carbsG
         self.fatG = fatG
+        self.proteinPct = proteinPct
+        self.carbsPct = carbsPct
+        self.fatPct = fatPct
+    }
+
+    private static func wholeNumber(_ container: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) throws -> Int? {
+        if let whole = try? container.decodeIfPresent(Int.self, forKey: key) { return whole }
+        return try container.decodeIfPresent(Double.self, forKey: key).map { Int($0.rounded()) }
     }
 }
 
@@ -163,6 +204,39 @@ nonisolated struct V1FoodProductEnvelope: Decodable, Sendable {
 
 nonisolated struct V1NutritionTargetsEnvelope: Decodable, Sendable {
     let targets: V1NutritionTargets
+}
+
+/// `GET /api/v1/food-log/foods/mine` — the athlete's own foods.
+nonisolated struct V1FoodProductList: Decodable, Sendable, Equatable {
+    let foods: [V1FoodProduct]
+}
+
+/// `POST /api/v1/food-log/import/myfitnesspal` — what the athlete's MyFitnessPal export brought:
+/// one day per date with meals in it, each meal as its total.
+nonisolated struct V1FoodLogImportResult: Decodable, Sendable, Equatable {
+    let importedDays: Int
+    /// `YYYY-MM-DD`; nil when nothing was imported.
+    let firstDay: String?
+    let lastDay: String?
+    /// Lines of the file the server could not read.
+    let skippedRows: Int
+
+    enum CodingKeys: String, CodingKey { case importedDays, firstDay, lastDay, skippedRows }
+
+    init(importedDays: Int, firstDay: String?, lastDay: String?, skippedRows: Int = 0) {
+        self.importedDays = importedDays
+        self.firstDay = firstDay
+        self.lastDay = lastDay
+        self.skippedRows = skippedRows
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        importedDays = try container.decode(Int.self, forKey: .importedDays)
+        firstDay = try container.decodeIfPresent(String.self, forKey: .firstDay)
+        lastDay = try container.decodeIfPresent(String.self, forKey: .lastDay)
+        skippedRows = try container.decodeIfPresent(Int.self, forKey: .skippedRows) ?? 0
+    }
 }
 
 /// Typed in by hand: a name and its energy, macros optional.

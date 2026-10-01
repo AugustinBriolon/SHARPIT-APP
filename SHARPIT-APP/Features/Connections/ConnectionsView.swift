@@ -2,11 +2,12 @@ import AuthenticationServices
 import ClerkKit
 import SwiftUI
 
-/// Paramètres → Sources de données: every source SHARPIT reads from — Garmin, Apple Health and
-/// MyFitnessPal, the food log, signed in to in the app like Garmin.
+/// Paramètres → Sources de données: every source the iPhone app links — Apple Health, and Garmin
+/// when `ProviderAvailability` offers it; until then a Garmin watch reaches SHARPIT through Apple
+/// Health. MyFitnessPal is not linked here: its days come in once from the athlete's own export,
+/// imported from Nutrition (docs/adr/0010).
 ///
-/// Apple Health is switched on here, because only the phone can read it. Garmin shows only when
-/// `ProviderAvailability` offers it; until then a Garmin watch reaches SHARPIT through Apple Health.
+/// Apple Health is switched on here, because only the phone can read it.
 ///
 /// Each source is one two-line row — its own mark, its name, one short status — so the rows
 /// keep the same height whatever the status says. Recency surfaces on the toast shown while a
@@ -16,10 +17,6 @@ struct ConnectionsView: View {
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
     var garminClient: any GarminHandoffServing = SharpitClient()
-    var mfpClient: any MyFitnessPalServing = SharpitClient()
-    @State private var isConnectingMfp = false
-    @State private var isManagingMfp = false
-    @State private var isSyncingMfp = false
 
     @Environment(SharpitToastCenter.self) private var toastCenter
     @Environment(Clerk.self) private var clerk
@@ -37,7 +34,6 @@ struct ConnectionsView: View {
                     garminRow
                 }
                 appleHealthRow
-                mfpRow
             }
             .sharpitListRows()
 
@@ -118,74 +114,6 @@ struct ConnectionsView: View {
         }
         .foregroundStyle(SharpitColor.foreground)
         .accessibilityHint("Connecter Garmin directement dans l'application")
-    }
-
-    private var isMfpConnected: Bool {
-        status?.providers.contains(where: { $0.key == "myfitnesspal" }) ?? false
-    }
-
-    private var mfpRow: some View {
-        Button {
-            if isMfpConnected { isManagingMfp = true } else { isConnectingMfp = true }
-        } label: {
-            HStack(spacing: SharpitSpacing.sm) {
-                ProviderLogo(provider: .myFitnessPal)
-                sourceTitle(
-                    "MyFitnessPal",
-                    status: isSyncingMfp ? "Synchronisation…" : (isMfpConnected ? "Journal alimentaire relié" : "Journal alimentaire"),
-                    tone: SharpitColor.mutedForeground
-                )
-                Spacer(minLength: SharpitSpacing.xs)
-                if isSyncingMfp {
-                    ProgressView()
-                } else if isMfpConnected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(SharpitColor.primary)
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                        .accessibilityHidden(true)
-                }
-            }
-            .contentShape(.rect)
-        }
-        .foregroundStyle(SharpitColor.foreground)
-        .accessibilityHint(isMfpConnected ? "Synchroniser ou déconnecter MyFitnessPal" : "Connecter MyFitnessPal dans l'application")
-        .sheet(isPresented: $isConnectingMfp) {
-            MyFitnessPalConnectSheet(client: mfpClient, tokenProvider: tokenProvider) {
-                toastCenter.show("MyFitnessPal connecté", symbol: "checkmark.circle.fill", tone: .success)
-                Task { await loadStatus() }
-            }
-            .sharpitSheet()
-        }
-        .confirmationDialog("MyFitnessPal", isPresented: $isManagingMfp, titleVisibility: .visible) {
-            Button("Synchroniser maintenant") { Task { await syncMfp() } }
-            Button("Déconnecter", role: .destructive) { Task { await disconnectMfp() } }
-        } message: {
-            Text("Les données déjà importées sont conservées si tu te déconnectes.")
-        }
-    }
-
-    private func syncMfp() async {
-        isSyncingMfp = true
-        defer { isSyncingMfp = false }
-        do {
-            try await mfpClient.syncMyFitnessPal(token: try await tokenProvider())
-            toastCenter.show("MyFitnessPal synchronisé", symbol: "checkmark.circle.fill", tone: .success)
-        } catch {
-            toastCenter.show("Synchronisation MyFitnessPal impossible.", symbol: "exclamationmark.triangle", tone: .error)
-        }
-    }
-
-    private func disconnectMfp() async {
-        do {
-            try await mfpClient.disconnectMyFitnessPal(token: try await tokenProvider())
-            await loadStatus()
-        } catch {
-            toastCenter.show("Déconnexion impossible pour l'instant.", symbol: "exclamationmark.triangle", tone: .error)
-        }
     }
 
     private var isGarminConnected: Bool {

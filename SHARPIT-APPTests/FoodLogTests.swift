@@ -69,20 +69,134 @@ private let dayJSON = """
     #expect(entry.meal == .snacks)
 }
 
-@Test func theNutritionDayTellsMyFitnessPalApartFromTheLog() throws {
+@Test func theNutritionDayDecodesWithOrWithoutTheRetiredMyFitnessPalFlag() throws {
     let json = { (extra: String) in
         """
         { "apiVersion": 1, "trainingDayId": "2026-10-01", "connected": true, \(extra) "empty": null, "day": null,
           "coachReading": null, "diet": [], "history": [] }
         """
     }
-    let current = try JSONDecoder().decode(V1NutritionResponse.self, from: Data(json("\"mfpConnected\": false,").utf8))
-    #expect(current.connected)
-    #expect(!current.mfpConnected)
+    // The app no longer reads `mfpConnected` (docs/adr/0010); a server still sending it must not cost the day.
+    #expect(try JSONDecoder().decode(V1NutritionResponse.self, from: Data(json("\"mfpConnected\": true,").utf8)).connected)
+    #expect(try JSONDecoder().decode(V1NutritionResponse.self, from: Data(json("").utf8)).connected)
+}
 
-    // A server older than ADR-061 only said `connected`, which then meant MyFitnessPal.
-    let older = try JSONDecoder().decode(V1NutritionResponse.self, from: Data(json("").utf8))
-    #expect(older.mfpConnected)
+// MARK: - Targets payload
+
+@Test func targetsInPercentDecodeTheirModeAndShares() throws {
+    let targets = try JSONDecoder().decode(V1NutritionTargetsEnvelope.self, from: Data("""
+    { "targets": { "mode": "PERCENT", "kcal": 2400, "proteinG": 150, "carbsG": 270, "fatG": 80,
+                   "proteinPct": 25, "carbsPct": 45, "fatPct": 30 } }
+    """.utf8)).targets
+    #expect(targets == V1NutritionTargets(
+        mode: .percent, kcal: 2400, proteinG: 150, carbsG: 270, fatG: 80, proteinPct: 25, carbsPct: 45, fatPct: 30
+    ))
+}
+
+@Test func targetsFromAnOlderServerReadAsGrams() throws {
+    let older = try JSONDecoder().decode(V1NutritionTargets.self, from: Data("""
+    { "kcal": 2400.0, "proteinG": 140, "carbsG": null, "fatG": 80.5 }
+    """.utf8))
+    #expect(older.mode == .grams)
+    #expect(older.kcal == 2400)
+    #expect(older.proteinPct == nil && older.carbsPct == nil && older.fatPct == nil)
+
+    let unknownMode = try JSONDecoder().decode(V1NutritionTargets.self, from: Data("""
+    { "mode": "RATIO", "kcal": null, "proteinG": null, "carbsG": null, "fatG": null, "proteinPct": 30.0 }
+    """.utf8))
+    #expect(unknownMode.mode == .grams)
+    #expect(unknownMode.proteinPct == 30)
+}
+
+// MARK: - Own foods and import payloads
+
+@Test func ownFoodsDecode() throws {
+    let list = try JSONDecoder().decode(V1FoodProductList.self, from: Data("""
+    { "foods": [
+        { "id": "c2", "source": "CUSTOM", "ownerId": "a1", "name": "Pâte à tartiner maison", "brand": null,
+          "kcalPer100g": 520, "proteinPer100g": 6, "carbsPer100g": 55, "fatPer100g": 30, "servingGrams": 15 },
+        { "id": "c1", "source": "CUSTOM", "ownerId": "a1", "name": "Granola maison", "kcalPer100g": 450,
+          "proteinPer100g": 12, "carbsPer100g": 55, "fatPer100g": 18 } ] }
+    """.utf8))
+    #expect(list.foods.map(\.id) == ["c2", "c1"])
+    #expect(list.foods.allSatisfy { !$0.isOpenFoodFacts })
+    #expect(list.foods[0].servingGrams == 15)
+    #expect(OwnFoodsStore.sorted(list.foods).map(\.name) == ["Granola maison", "Pâte à tartiner maison"])
+    #expect(try JSONDecoder().decode(V1FoodProductList.self, from: Data(#"{ "foods": [] }"#.utf8)).foods.isEmpty)
+}
+
+@Test func anImportResultDecodesAndReadsInFrench() throws {
+    let result = try JSONDecoder().decode(V1FoodLogImportResult.self, from: Data("""
+    { "importedDays": 412, "firstDay": "2024-01-03", "lastDay": "2026-09-30", "skippedRows": 3 }
+    """.utf8))
+    #expect(result == V1FoodLogImportResult(importedDays: 412, firstDay: "2024-01-03", lastDay: "2026-09-30", skippedRows: 3))
+    #expect(MyFitnessPalImport.summary(of: result) == "412 jours importés, du 3 janv. 2024 au 30 sept. 2026")
+    #expect(MyFitnessPalImport.skippedNote(of: result) == "3 lignes illisibles ont été ignorées.")
+
+    let one = V1FoodLogImportResult(importedDays: 1, firstDay: "2026-05-01", lastDay: "2026-05-01")
+    #expect(MyFitnessPalImport.summary(of: one) == "1 jour importé, le 1 mai 2026")
+    #expect(MyFitnessPalImport.skippedNote(of: one) == nil)
+    #expect(MyFitnessPalImport.skippedNote(of: V1FoodLogImportResult(importedDays: 2, firstDay: nil, lastDay: nil, skippedRows: 1))
+        == "1 ligne illisible a été ignorée.")
+
+    let empty = try JSONDecoder().decode(V1FoodLogImportResult.self, from: Data("""
+    { "importedDays": 0, "firstDay": null, "lastDay": null, "skippedRows": 0 }
+    """.utf8))
+    #expect(MyFitnessPalImport.summary(of: empty) == "Aucun jour à importer dans ce fichier.")
+    #expect(MyFitnessPalImport.dayLabel("2026-02-30") == nil)
+}
+
+@Test func anImportFailureSaysTheServersWords() {
+    #expect(MyFitnessPalImport.message(for: SharpitAPIError.message("Ce fichier n'est pas un export MyFitnessPal."))
+        == "Ce fichier n'est pas un export MyFitnessPal.")
+    #expect(MyFitnessPalImport.message(for: FoodLogError.fileTooLarge) == "Ce fichier dépasse 4 Mo. Exporte une période plus courte.")
+    #expect(MyFitnessPalImport.message(for: SharpitAPIError.rateLimited).hasPrefix("Un import vient d'être lancé."))
+    #expect(throws: FoodLogError.fileTooLarge) { try FoodLogClient.check(status: 413) }
+    #expect(FoodLogClient.refusal(in: Data(#"{ "error": " Fichier illisible. " }"#.utf8)) == "Fichier illisible.")
+    #expect(FoodLogClient.refusal(in: Data("<html>".utf8)) == nil)
+}
+
+@Test func anExportIsTypedByItsExtensionAndRefusedOverFourMegabytes() throws {
+    #expect(MyFitnessPalImport.contentType(forExtension: "ZIP") == "application/zip")
+    #expect(MyFitnessPalImport.contentType(forExtension: "csv") == "text/csv")
+    #expect(MyFitnessPalImport.contentType(forExtension: "txt") == "text/plain")
+
+    let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let csv = directory.appending(path: "Nutrition-Summary.csv")
+    try Data("Date,Meal,Calories\n".utf8).write(to: csv)
+    let file = try MyFitnessPalImport.file(at: csv)
+    #expect(file == FoodLogImportFile(filename: "Nutrition-Summary.csv", contentType: "text/csv", data: Data("Date,Meal,Calories\n".utf8)))
+
+    let large = directory.appending(path: "export.zip")
+    try Data(count: MyFitnessPalImport.maximumBytes + 1).write(to: large)
+    #expect(throws: FoodLogError.fileTooLarge) { try MyFitnessPalImport.file(at: large) }
+}
+
+// MARK: - Multipart
+
+@Test func theMultipartBodyCarriesOneFileField() {
+    let file = FoodLogImportFile(filename: "File-Export.zip", contentType: "application/zip", data: Data([0x50, 0x4B, 0x03, 0x04]))
+    let body = MultipartFormData.body(boundary: "XYZ", fieldName: "file", file: file)
+
+    var expected = Data("""
+    --XYZ\r
+    Content-Disposition: form-data; name="file"; filename="File-Export.zip"\r
+    Content-Type: application/zip\r
+    \r
+
+    """.utf8)
+    expected.append(Data([0x50, 0x4B, 0x03, 0x04]))
+    expected.append(Data("\r\n--XYZ--\r\n".utf8))
+    #expect(body == expected)
+}
+
+@Test func aFilenameCannotBreakTheMultipartHeader() throws {
+    let file = FoodLogImportFile(filename: "my \"export\"\r\n.csv", contentType: "text/csv", data: Data())
+    let text = try #require(String(data: MultipartFormData.body(boundary: "B", fieldName: "file", file: file), encoding: .utf8))
+    #expect(text.contains(#"filename="my %22export%22.csv""#))
 }
 
 // MARK: - Request bodies
@@ -133,10 +247,37 @@ private func object(_ data: Data) throws -> [String: Any] {
 
 @Test func clearedTargetsGoOutAsNull() throws {
     let body = try object(FoodLogClient.body(for: V1NutritionTargets(kcal: 2200, proteinG: nil, carbsG: 280, fatG: nil)))
+    #expect(body["mode"] as? String == "GRAMS")
     #expect(body["kcal"] as? Int == 2200)
     #expect(body["proteinG"] is NSNull)
     #expect(body["carbsG"] as? Double == 280)
     #expect(body["fatG"] is NSNull)
+    #expect(body["proteinPct"] == nil)
+}
+
+@Test func targetsInPercentSendTheEnergyAndTheSharesOnly() throws {
+    let split = try #require(NutritionTargetSplit(kcal: "2400", protein: "25", carbs: "45", fat: "30").targets)
+    let body = try object(FoodLogClient.body(for: split))
+    #expect(body.keys.sorted() == ["carbsPct", "fatPct", "kcal", "mode", "proteinPct"])
+    #expect(body["mode"] as? String == "PERCENT")
+    #expect(body["kcal"] as? Int == 2400)
+    #expect(body["proteinPct"] as? Int == 25)
+    #expect(body["carbsPct"] as? Int == 45)
+    #expect(body["fatPct"] as? Int == 30)
+}
+
+@Test func anEditedOwnFoodSendsEveryField() throws {
+    let granola = V1FoodProduct(
+        id: "c1", source: "CUSTOM", barcode: nil, name: "Granola", brand: "Maison",
+        kcalPer100g: 450, proteinPer100g: 12, carbsPer100g: 55, fatPer100g: 18,
+        fiberPer100g: nil, sugarPer100g: 20, servingGrams: 40, servingLabel: nil
+    )
+    let body = try object(FoodLogClient.body(for: FoodCustomDraft(product: granola)))
+    #expect(body["name"] as? String == "Granola")
+    #expect(body["brand"] as? String == "Maison")
+    #expect(body["fiberPer100g"] is NSNull)
+    #expect(body["sugarPer100g"] as? Double == 20)
+    #expect(body["servingGrams"] as? Double == 40)
 }
 
 @Test func aCustomFoodSendsItsMissingOptionsAsNull() throws {
@@ -206,6 +347,82 @@ private func object(_ data: Data) throws -> [String: Any] {
     #expect(NutritionTargetsInput.text(2400) == "2400")
 }
 
+// MARK: - Targets split
+
+@Test func percentagesBecomeTheServersGrams() throws {
+    let split = NutritionTargetSplit(kcal: "2400", protein: "25", carbs: "45", fat: "30")
+    #expect(split.total == 100)
+    #expect(split.isBalanced)
+    // round(2400 × 25 / 100 / 4) = 150, round(2400 × 45 / 100 / 4) = 270, round(2400 × 30 / 100 / 9) = 80.
+    #expect([split.proteinG, split.carbsG, split.fatG] == [150, 270, 80])
+    let targets = try #require(split.targets)
+    #expect(targets.mode == .percent)
+    #expect(targets.proteinG == 150 && targets.carbsG == 270 && targets.fatG == 80)
+    #expect(NutritionTargetSplit.grams(kcal: 2150, pct: 33, kcalPerGram: 9) == 79)
+}
+
+@Test func aSplitIsRefusedUnlessTheEnergyIsSetAndTheSharesMakeAHundred() {
+    let short = NutritionTargetSplit(kcal: "2400", protein: "25", carbs: "45", fat: "")
+    #expect(short.total == 70)
+    #expect(!short.isBalanced)
+    #expect(short.targets == nil)
+    #expect(short.fatG == nil)
+
+    #expect(NutritionTargetSplit(kcal: "", protein: "25", carbs: "45", fat: "30").targets == nil)
+    #expect(NutritionTargetSplit(kcal: "", protein: "25", carbs: "45", fat: "30").proteinG == nil)
+    #expect(NutritionTargetSplit(kcal: "500", protein: "25", carbs: "45", fat: "30").targets == nil)
+    #expect(NutritionTargetSplit(kcal: "2400", protein: "30", carbs: "45", fat: "30").targets == nil)
+
+    let decimal = NutritionTargetSplit(kcal: "2400", protein: "25,5", carbs: "45", fat: "30")
+    #expect(decimal.hasInvalidShare)
+    #expect(decimal.targets == nil)
+    #expect(NutritionTargetSplit(kcal: "2400", protein: "120", carbs: "0", fat: "0").hasInvalidShare)
+    #expect(NutritionTargetSplit(kcal: "2400", protein: "100", carbs: "0", fat: "0").targets != nil)
+}
+
+@Test func gramsSwitchedToPercentGiveSharesThatMakeAHundred() throws {
+    // 150 g × 4 = 600 kcal (25 %), 270 g × 4 = 1080 (45 %), 80 g × 9 = 720 (30 %).
+    let exact = try #require(NutritionTargetSplit.fromGramsForm(kcal: "2400", protein: "150", carbs: "270", fat: "80"))
+    #expect([exact.proteinPct, exact.carbsPct, exact.fatPct] == [25, 45, 30])
+
+    // 140 g → 23,3 %, 280 g → 46,7 %, 80 g → 30 %: rounded to a total of exactly 100.
+    let rounded = try #require(NutritionTargetSplit.fromGramsForm(kcal: "2400", protein: "140", carbs: "280", fat: "80"))
+    #expect([rounded.proteinPct, rounded.carbsPct, rounded.fatPct] == [23, 47, 30])
+    #expect(rounded.total == 100)
+
+    // Grams that do not fill the energy keep their own shares: the total says they are off.
+    let partial = try #require(NutritionTargetSplit.fromGramsForm(kcal: "2400", protein: "150", carbs: "", fat: "80"))
+    #expect([partial.proteinPct, partial.carbsPct, partial.fatPct] == [25, nil, 30])
+    #expect(!partial.isBalanced)
+
+    #expect(NutritionTargetSplit.fromGramsForm(kcal: "", protein: "150", carbs: "270", fat: "80") == nil)
+    #expect(NutritionTargetSplit.fromGramsForm(kcal: "2400", protein: "", carbs: "", fat: "") == nil)
+}
+
+@Test func theTargetsSheetOpensOnTheStoredMode() {
+    let percent = V1NutritionTargets(
+        mode: .percent, kcal: 2400, proteinG: 150, carbsG: 270, fatG: 80, proteinPct: 25, carbsPct: 45, fatPct: 30
+    )
+    #expect(NutritionTargetSplit.prefill(from: percent) == NutritionTargetSplit(kcal: 2400, proteinPct: 25, carbsPct: 45, fatPct: 30))
+
+    let grams = V1NutritionTargets(kcal: 2400, proteinG: 150, carbsG: 270, fatG: 80)
+    #expect(grams.mode == .grams)
+    #expect(NutritionTargetSplit.prefill(from: grams) == NutritionTargetSplit(kcal: 2400, proteinPct: 25, carbsPct: 45, fatPct: 30))
+    #expect(NutritionTargetSplit.prefill(from: .none) == NutritionTargetSplit(kcal: nil, proteinPct: nil, carbsPct: nil, fatPct: nil))
+}
+
+@Test func theCustomFoodFormReadsTheLabel() {
+    let draft = FoodCustomForm.draft(
+        name: " Granola ", brand: "", kcal: "450", protein: "12,5", carbs: "", fat: "18", fiber: "", sugar: "20", serving: "40"
+    )
+    #expect(draft == FoodCustomDraft(
+        name: "Granola", brand: nil, kcalPer100g: 450, proteinPer100g: 12.5, carbsPer100g: 0, fatPer100g: 18,
+        fiberPer100g: nil, sugarPer100g: 20, servingGrams: 40
+    ))
+    #expect(FoodCustomForm.draft(name: "", brand: "", kcal: "450", protein: "", carbs: "", fat: "", fiber: "", sugar: "", serving: "") == nil)
+    #expect(FoodCustomForm.draft(name: "x", brand: "", kcal: "1200", protein: "", carbs: "", fat: "", fiber: "", sugar: "", serving: "") == nil)
+}
+
 @Test func theMealSuggestedFollowsTheHour() throws {
     let calendar = Calendar(identifier: .gregorian)
     func at(_ hour: Int) throws -> Date {
@@ -220,7 +437,7 @@ private func object(_ data: Data) throws -> [String: Any] {
 @Test func theDaysOwnLogWinsOverImportedMeals() {
     #expect(NutritionMealsMode.resolve(foodLogReady: true, foodLogEntries: 2, importedMeals: 3) == .foodLog)
     #expect(NutritionMealsMode.resolve(foodLogReady: true, foodLogEntries: 0, importedMeals: 0) == .foodLog)
-    // A day only MyFitnessPal filled keeps its meals, read-only.
+    // A day imported from MyFitnessPal keeps its meals, read-only.
     #expect(NutritionMealsMode.resolve(foodLogReady: true, foodLogEntries: 0, importedMeals: 3) == .imported)
     #expect(NutritionMealsMode.resolve(foodLogReady: false, foodLogEntries: 0, importedMeals: 0) == .none)
 }
@@ -233,10 +450,39 @@ private actor StubFoodLog: FoodLogServing {
     private(set) var added: [FoodLogDraft] = []
     private(set) var deleted: [String] = []
     private(set) var targetsSent: [V1NutritionTargets] = []
+    var ownFoods: [V1FoodProduct] = []
+    private(set) var deletedFoods: [String] = []
+    private(set) var imported: [FoodLogImportFile] = []
+    var importResult = V1FoodLogImportResult(importedDays: 3, firstDay: "2026-09-28", lastDay: "2026-09-30")
 
-    init(day: V1FoodLogDay? = nil, failure: (any Error)? = nil) {
+    init(day: V1FoodLogDay? = nil, failure: (any Error)? = nil, ownFoods: [V1FoodProduct] = []) {
         if let day { self.day = day }
         self.failure = failure
+        self.ownFoods = ownFoods
+    }
+
+    func ownFoods(token: String) async throws -> [V1FoodProduct] {
+        if let failure { throw failure }
+        return ownFoods
+    }
+
+    func updateCustomFood(id: String, _ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct {
+        if let failure { throw failure }
+        var product = try #require(ownFoods.first { $0.id == id })
+        product.name = draft.name
+        product.kcalPer100g = draft.kcalPer100g
+        return product
+    }
+
+    func deleteCustomFood(id: String, token: String) async throws {
+        if let failure { throw failure }
+        deletedFoods.append(id)
+    }
+
+    func importMyFitnessPal(_ file: FoodLogImportFile, token: String) async throws -> V1FoodLogImportResult {
+        if let failure { throw failure }
+        imported.append(file)
+        return importResult
     }
 
     func day(trainingDayId: String, token: String) async throws -> V1FoodLogDay { day }
@@ -427,4 +673,94 @@ private func makeStore(_ client: StubFoodLog, recorder: Recorder) -> FoodLogStor
 @Test func anUnknownBarcodeOffersToTypeItIn() async {
     let search = FoodSearchStore(client: StubFoodLog(), tokenProvider: { "t" }, debounce: .zero)
     #expect(await search.lookUp(barcode: "3017620422003") == .unknown)
+}
+
+// MARK: - Own foods
+
+private nonisolated func ownFood(_ id: String, _ name: String) -> V1FoodProduct {
+    V1FoodProduct(
+        id: id, source: "CUSTOM", barcode: nil, name: name, brand: nil,
+        kcalPer100g: 400, proteinPer100g: 10, carbsPer100g: 50, fatPer100g: 15,
+        fiberPer100g: nil, sugarPer100g: nil, servingGrams: nil, servingLabel: nil
+    )
+}
+
+@MainActor
+@Test func ownFoodsLoadSortedAndAnEditReplacesTheFood() async throws {
+    let client = StubFoodLog(ownFoods: [ownFood("c2", "Muesli"), ownFood("c1", "Granola")])
+    let store = OwnFoodsStore(client: client, tokenProvider: { "t" })
+    await store.load()
+    #expect(store.phase == .ready)
+    #expect(store.foods.map(\.name) == ["Granola", "Muesli"])
+
+    var draft = FoodCustomDraft(product: store.foods[1])
+    draft.name = "Avoine"
+    draft.kcalPer100g = 380
+    let stored = try await store.update(store.foods[1], with: draft)
+    #expect(stored.kcalPer100g == 380)
+    #expect(store.foods.map(\.name) == ["Avoine", "Granola"])
+}
+
+@MainActor
+@Test func aDeletedOwnFoodLeavesTheListAndComesBackIfRefused() async {
+    let client = StubFoodLog(ownFoods: [ownFood("c1", "Granola"), ownFood("c2", "Muesli")])
+    let store = OwnFoodsStore(client: client, tokenProvider: { "t" })
+    await store.load()
+
+    #expect(await store.delete(store.foods[0]))
+    #expect(store.foods.map(\.id) == ["c2"])
+    #expect(await client.deletedFoods == ["c1"])
+
+    let refusing = StubFoodLog(failure: SharpitAPIError.badRequest, ownFoods: [ownFood("c1", "Granola")])
+    let refused = OwnFoodsStore(client: refusing, tokenProvider: { "t" })
+    await refused.load()
+    #expect(refused.phase == .failed(SharpitErrorGuidance.message(for: SharpitAPIError.badRequest, subject: "La liste de tes aliments")))
+}
+
+@MainActor
+@Test func aCreatedFoodJoinsMyFoodsAndTheRecentFollowEdits() async throws {
+    let store = OwnFoodsStore(client: StubFoodLog(), tokenProvider: { "t" })
+    await store.load()
+    store.add(ownFood("c9", "Barre maison"))
+    store.add(rice)
+    #expect(store.foods.map(\.id) == ["c9"])
+
+    let day = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    let log = makeStore(StubFoodLog(day: day), recorder: Recorder())
+    await log.load(trainingDayId: "2026-10-01")
+    var renamed = try #require(log.recent.first?.product)
+    renamed.name = "Riz complet"
+    log.productChanged(renamed)
+    #expect(log.recent.first?.product.name == "Riz complet")
+    #expect(log.recent.first?.lastGrams == 150)
+    log.productDeleted(renamed)
+    #expect(log.recent.isEmpty)
+}
+
+// MARK: - Import
+
+@MainActor
+@Test func anImportUploadsTheFileAndRefreshesTheDays() async {
+    let client = StubFoodLog()
+    var reloads = 0
+    let store = MyFitnessPalImportStore(client: client, tokenProvider: { "t" }, onImported: { reloads += 1 })
+    let file = FoodLogImportFile(filename: "export.zip", contentType: "application/zip", data: Data([1, 2, 3]))
+
+    await store.upload(file)
+    #expect(store.phase == .imported(V1FoodLogImportResult(importedDays: 3, firstDay: "2026-09-28", lastDay: "2026-09-30")))
+    #expect(await client.imported == [file])
+    #expect(reloads == 1)
+}
+
+@MainActor
+@Test func aRefusedImportShowsTheServersMessageAndReloadsNothing() async {
+    var reloads = 0
+    let store = MyFitnessPalImportStore(
+        client: StubFoodLog(failure: SharpitAPIError.message("Aucune ligne de nutrition dans ce fichier.")),
+        tokenProvider: { "t" },
+        onImported: { reloads += 1 }
+    )
+    await store.upload(FoodLogImportFile(filename: "a.csv", contentType: "text/csv", data: Data()))
+    #expect(store.phase == .failed("Aucune ligne de nutrition dans ce fichier."))
+    #expect(reloads == 0)
 }

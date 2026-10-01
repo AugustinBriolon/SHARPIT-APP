@@ -37,6 +37,20 @@ import Testing
     #expect(ProviderAvailability.garminInApp == false)
 }
 
+/// MyFitnessPal's access is unofficial (5.2.2): the app never signs in to it, it only reads the
+/// athlete's own export file. Nothing in the app target may call the link or sync routes.
+@Test func theAppNeverLinksMyFitnessPal() throws {
+    let sources = URL(filePath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .appending(path: "SHARPIT-APP")
+    let files = try #require(FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil))
+    for case let file as URL in files where file.pathExtension == "swift" {
+        let text = try String(contentsOf: file, encoding: .utf8)
+        #expect(!text.contains("/api/v1/myfitnesspal"), "\(file.lastPathComponent) calls a MyFitnessPal link route")
+        #expect(!text.contains("myfitnesspal.com"), "\(file.lastPathComponent) opens MyFitnessPal's site")
+    }
+}
+
 /// The barcode scanner opens the camera: App Review refuses a build that asks without saying why.
 @Test func theAppExplainsWhyItUsesTheCamera() {
     let text = Bundle.main.object(forInfoDictionaryKey: "NSCameraUsageDescription") as? String

@@ -5,7 +5,8 @@ import UIKit
 ///
 /// The artwork comes from the asset catalog (`Provider/Garmin`, `Provider/AppleHealth`), as
 /// each provider ships it — SHARPIT never redraws a brand. Until an asset is added the row
-/// shows a neutral tile with a system symbol, so the screen never has a hole in it.
+/// shows a neutral tile with a system symbol, so the screen never has a hole in it. MyFitnessPal
+/// keeps its case: the web still lists it in Priorités par catégorie for accounts it imported.
 struct ProviderLogo: View {
     enum Provider {
         case garmin

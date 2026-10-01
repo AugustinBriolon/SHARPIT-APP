@@ -15,10 +15,4 @@ nonisolated enum SharpitErrorGuidance {
             "\(subject) n'a pas pu être chargé. Le serveur n'a pas répondu, réessaie dans un instant."
         }
     }
-
-    /// MyFitnessPal refused the stored session: only signing in again fixes it.
-    static func isExpiredFoodLogSession(_ error: Error) -> Bool {
-        guard case .message(let text)? = error as? SharpitAPIError else { return false }
-        return text.localizedCaseInsensitiveContains("expir")
-    }
 }

@@ -38,7 +38,11 @@ enum NutritionReadout {
 
         /// Kilocalories per gram (Atwater).
         var kcalPerGram: Double {
-            self == .fat ? 9 : 4
+            switch self {
+            case .protein: NutritionTargetSplit.proteinKcalPerGram
+            case .carbohydrates: NutritionTargetSplit.carbsKcalPerGram
+            case .fat: NutritionTargetSplit.fatKcalPerGram
+            }
         }
 
         func consumed(in day: V1NutritionDay) -> Double {

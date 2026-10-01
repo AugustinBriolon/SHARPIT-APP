@@ -621,11 +621,9 @@ struct OnboardingSourcesStep: View {
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
     var garminClient: any GarminHandoffServing = SharpitClient()
-    var mfpClient: any MyFitnessPalServing = SharpitClient()
 
     @State private var status: V1SyncStatus?
     @State private var isConnectingGarmin = false
-    @State private var isConnectingMfp = false
     /// The last connection's outcome when it did not link Garmin, said under the card: the
     /// onboarding sits before the shell and its toasts.
     @State private var garminFailure: GarminConnectOutcome?
@@ -660,16 +658,6 @@ struct OnboardingSourcesStep: View {
                     .tint(SharpitColor.primary)
                     .disabled(!appleHealth.isAvailable)
             }
-            OnboardingSourceCard(
-                provider: .myFitnessPal,
-                title: "MyFitnessPal",
-                detail: "Ton journal alimentaire, pour que le coach voie ce que tu manges."
-            ) {
-                connectButton(isConnected: isConnected("myfitnesspal"), isBusy: false) {
-                    isConnectingMfp = true
-                }
-            }
-
             Text("Tout est optionnel et se règle plus tard dans Paramètres › Sources.")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
@@ -677,13 +665,6 @@ struct OnboardingSourcesStep: View {
                 .padding(.top, SharpitSpacing.xxs)
         }
         .task { await loadStatus() }
-        .sheet(isPresented: $isConnectingMfp) {
-            MyFitnessPalConnectSheet(client: mfpClient, tokenProvider: tokenProvider) {
-                SharpitHaptics.play(.success)
-                Task { await loadStatus() }
-            }
-            .sharpitSheet()
-        }
     }
 
     private func isConnected(_ key: String) -> Bool {
