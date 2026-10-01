@@ -82,7 +82,9 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 - Résumé: `GET /api/v1/today` via `SharpitClient` + Bearer token from `clerk.auth.getToken()`.
   The server links the day's finished activities to their planned sessions on that read
   ([ADR-042](../SHARPIT/docs/adr/ADR-042-today-links-activities-on-read.md)); a session it
-  missed can be linked by hand from the planned session's drawer.
+  missed can be linked by hand from the planned session's drawer. A done brick opens as one
+  chain; once every leg is done, its evaluation (overall RPE, transitions, feeling, notes) is
+  read and saved on tap through `/api/v1/planned-sessions/brick/evaluation` (web ADR-059).
 - Coach: `/api/coach/chat` streams the answer; the conversation is kept server-side through
   `/api/coach/conversations`, and the history sheet lists, reopens and deletes them
 - Sommeil / Récupération: drill-downs opened from the Today gauges, read from
