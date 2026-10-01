@@ -9,6 +9,10 @@ struct SharpitApp: App {
     private let modelContainer: ModelContainer
 
     init() {
+        // First, so a crash anywhere in launch is reported.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+            CrashReporting.start()
+        }
         SharpitFonts.register()
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
         do {

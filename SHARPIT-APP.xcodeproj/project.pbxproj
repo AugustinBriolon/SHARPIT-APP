@@ -10,6 +10,7 @@
 		000000000000000150000001 /* SharpItWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 000000000000000000000520 /* SharpItWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A10000000000000000000001 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000011 /* ClerkKit */; };
 		A10000000000000000000002 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000012 /* ClerkKitUI */; };
+		A10000000000000000000003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000021 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				A10000000000000000000001 /* ClerkKit in Frameworks */,
+				A10000000000000000000003 /* Sentry in Frameworks */,
 				A10000000000000000000002 /* ClerkKitUI in Frameworks */,
 			);
 		};
@@ -151,6 +153,7 @@
 			packageProductDependencies = (
 				A10000000000000000000011 /* ClerkKit */,
 				A10000000000000000000012 /* ClerkKitUI */,
+				A10000000000000000000021 /* Sentry */,
 			);
 			productName = SharpIt;
 			productReference = 000000000000000000000120 /* SharpIt.app */;
@@ -231,6 +234,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A10000000000000000000010 /* XCRemoteSwiftPackageReference "clerk-ios" */,
+				A10000000000000000000020 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -448,9 +452,9 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "SHARPIT utilise le micro pour que tu dictes tes questions au coach.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "SHARPIT transcrit ce que tu dictes pour l'écrire dans ta question au coach.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -496,9 +500,9 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "SHARPIT utilise le micro pour que tu dictes tes questions au coach.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "SHARPIT transcrit ce que tu dictes pour l'écrire dans ta question au coach.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -696,6 +700,14 @@
 				minimumVersion = 1.5.4;
 			};
 		};
+		A10000000000000000000020 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.30.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -708,6 +720,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000010 /* XCRemoteSwiftPackageReference "clerk-ios" */;
 			productName = ClerkKitUI;
+		};
+		A10000000000000000000021 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10000000000000000000020 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

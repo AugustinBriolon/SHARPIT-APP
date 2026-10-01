@@ -26,6 +26,7 @@ struct AuthGate<SignedIn: View>: View {
         }
         .task(id: clerk.user?.id) {
             LocalAccountData.claim(userId: clerk.user?.id, context: modelContext)
+            CrashReporting.identify(userId: clerk.user?.id)
         }
     }
 }

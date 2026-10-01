@@ -34,6 +34,7 @@ private func manifest() throws -> [String: Any] {
         "NSPrivacyCollectedDataTypeHealth",
         "NSPrivacyCollectedDataTypeFitness",
         "NSPrivacyCollectedDataTypeUserID",
+        "NSPrivacyCollectedDataTypeCrashData",
     ]))
     #expect(entries.allSatisfy { $0["NSPrivacyCollectedDataTypeTracking"] as? Bool == false })
 }
