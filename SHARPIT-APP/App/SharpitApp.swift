@@ -30,6 +30,9 @@ struct SharpitApp: App {
             } else if WeeklyReviewDemo.isRequested {
                 WeeklyReviewDemoHost()
                     .sharpitAppearance()
+            } else if CoachDemo.isRequested {
+                CoachDemoHost()
+                    .sharpitAppearance()
             } else {
                 app
             }
