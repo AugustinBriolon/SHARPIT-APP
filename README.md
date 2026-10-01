@@ -75,6 +75,10 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' test
 ```
 
+TestFlight: archive the Release scheme, then upload with
+`xcodebuild -exportArchive -archivePath <archive> -exportOptionsPlist Config/ExportOptions.plist -exportPath /tmp/SharpIt-export -allowProvisioningUpdates`,
+or from Xcode → Organizer.
+
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests on every push to
 `main` and every pull request: newest Xcode on a macOS runner, any iPhone simulator, no signing
 (`CODE_SIGNING_ALLOWED=NO`) and no `Config/Local.xcconfig`.
@@ -82,6 +86,9 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
 ## Architecture
 
 - Auth: ClerkKit + ClerkKitUI (`AuthGate` → `AuthView` sheet)
+- Crash reports: Sentry (EU), started first in `SharpitApp.init` and never in tests.
+  `CrashReporting` sends no PII, no tracing, no screenshots, strips request bodies and URL
+  queries, and tags a report with the Clerk user id only
 - Shell: five tabs (Résumé / Plan / Coach / Activité / Moi)
 - Résumé: `GET /api/v1/today` via `SharpitClient` + Bearer token from `clerk.auth.getToken()`.
   The server links the day's finished activities to their planned sessions on that read
