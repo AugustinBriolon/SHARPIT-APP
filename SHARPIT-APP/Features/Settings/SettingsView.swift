@@ -121,6 +121,16 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
 
+                    // Hidden with the Nutrition page: switched off, it shows nowhere.
+                    if features.isOn(.nutrition) {
+                        SettingsGroup(title: "Nutrition") {
+                            NavigationLink(value: SettingsRoute.ownFoods) {
+                                SettingsRow(symbol: "fork.knife", tint: SettingsTone.nutrition, title: "Mes aliments", detail: "Créer, modifier, supprimer")
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     SettingsGroup(title: "Confidentialité") {
                         NavigationLink(value: SettingsRoute.privacy) {
                             SettingsRow(symbol: "hand.raised.fill", tint: SettingsTone.privacy, title: "Confidentialité & conditions", detail: "Consentements, CGU, politique")
@@ -244,6 +254,8 @@ struct SettingsView: View {
             NotificationPrefsView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
         case .features:
             FeaturesView(store: features, tokenProvider: tokenProvider)
+        case .ownFoods:
+            OwnFoodsSettingsView(tokenProvider: tokenProvider)
         case .density:
             DisplayModeView(
                 client: profileClient,
@@ -265,6 +277,7 @@ enum SettingsRoute: Hashable {
     case notifications
     case density
     case features
+    case ownFoods
 }
 
 private extension String {
@@ -431,4 +444,5 @@ private enum SettingsTone {
     static let gear = SharpitColor.primary
     static let density = Color(red: 0.55, green: 0.36, blue: 0.86)
     static let privacy = Color(red: 0.44, green: 0.50, blue: 0.58)
+    static let nutrition = Color(red: 0.92, green: 0.52, blue: 0.20)
 }
