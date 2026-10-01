@@ -13,6 +13,7 @@ nonisolated enum CoachDiscussTarget: Equatable, Hashable, Sendable {
     case plannedSession(sessionId: String)
     case activity(activityId: String)
     case planning(horizonDays: Int)
+    case nutrition(trainingDayId: String)
 
     /// The discriminant the server reads. Matches the web's `discussKind` strings.
     var kind: String {
@@ -21,6 +22,7 @@ nonisolated enum CoachDiscussTarget: Equatable, Hashable, Sendable {
         case .plannedSession: "planned-session"
         case .activity: "activity"
         case .planning: "planning"
+        case .nutrition: "nutrition"
         }
     }
 }
@@ -56,6 +58,8 @@ nonisolated struct CoachDiscussContext: Equatable, Hashable, Sendable, Identifia
             fields["activityId"] = .string(activityId)
         case .planning(let horizonDays):
             fields["horizonDays"] = .number(Double(horizonDays))
+        case .nutrition(let trainingDayId):
+            fields["trainingDayId"] = .string(trainingDayId)
         }
         return fields
     }
@@ -89,6 +93,9 @@ nonisolated extension CoachDiscussContext {
             }
             guard let days else { return nil }
             target = .planning(horizonDays: days)
+        case "nutrition":
+            guard let day = metadata["trainingDayId"]?.string else { return nil }
+            target = .nutrition(trainingDayId: day)
         default:
             return nil
         }
@@ -123,6 +130,8 @@ nonisolated enum CoachDiscuss {
             resolved.map { "Séance réalisée · \($0)" } ?? "Une séance réalisée"
         case .planning(let horizonDays):
             "Ta semaine · \(planningHorizonLabel(horizonDays))"
+        case .nutrition:
+            "Ta nutrition du jour"
         }
 
         return CoachDiscussContext(target: target, label: label)

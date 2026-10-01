@@ -15,7 +15,6 @@ struct NutritionView: View {
     @State private var isImporting = false
     @State private var isEditingWeightTarget = false
     @State private var targetWeightKg: Double?
-    @Environment(ShellRouter.self) private var router
     private let profileClient: any AthleteProfileServing
     private let foodLogClient: any FoodLogServing
     private let tokenProvider: () async throws -> String
@@ -94,12 +93,6 @@ struct NutritionView: View {
                         }
                     }
                     Divider()
-                    Button {
-                        router.discussWithCoach(about: CoachDiscuss.describe(.today))
-                    } label: {
-                        Label("Discuter avec le coach", systemImage: "bubble.left.and.text.bubble.right")
-                    }
-                    Divider()
                     Button { isImporting = true } label: {
                         Label("Importer depuis MyFitnessPal", systemImage: "square.and.arrow.down")
                     }
@@ -158,13 +151,13 @@ struct NutritionSections: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             if let day = nutrition.day {
-                NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete)
+                NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete, dayId: nutrition.trainingDayId)
                 NutritionEnergyPlate(day: day, dayId: nutrition.trainingDayId, keptGoal: keptGoal(day))
                 coachReading
                 NutritionMacrosSection(day: day)
                 meals(importedMeals: day.meals)
             } else {
-                NutritionDayHeader(diet: nutrition.diet, isComplete: false)
+                NutritionDayHeader(diet: nutrition.diet, isComplete: false, dayId: nutrition.trainingDayId)
                 if foodLog?.hasEntries != true {
                     NutritionEmptyDayPlate(
                         isToday: isToday,
@@ -224,7 +217,7 @@ struct NutritionSections: View {
                 message: "Le coach lit ce que tu as mangé face à ton entraînement, et te donne une action concrète."
             )
         case let reading?:
-            NutritionCoachPlate(reading: reading)
+            NutritionCoachPlate(reading: reading, dayId: nutrition.trainingDayId)
         case nil:
             EmptyView()
         }
@@ -440,6 +433,7 @@ private struct NutritionGoalSeal: View {
 private struct NutritionCoachPlate: View {
     @Environment(ShellRouter.self) private var router
     let reading: V1NutritionCoachReading
+    let dayId: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
@@ -508,7 +502,7 @@ private struct NutritionCoachPlate: View {
             .background(SharpitColor.inkSurfaceForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
             Button {
                 SharpitHaptics.play(.soft)
-                router.discussWithCoach(about: CoachDiscuss.describe(.today))
+                router.discussWithCoach(about: CoachDiscuss.describe(.nutrition(trainingDayId: dayId)))
             } label: {
                 Label("Discuter avec le coach", systemImage: "bubble.left.and.text.bubble.right")
                     .font(SharpitTypography.bodyEmphasis)
@@ -740,6 +734,7 @@ private struct NutritionDayHeader: View {
     @Environment(ShellRouter.self) private var router
     let diet: [String]
     let isComplete: Bool
+    let dayId: String
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.xs) {
@@ -751,7 +746,7 @@ private struct NutritionDayHeader: View {
             }
             Spacer(minLength: 0)
             CoachDiscussButton(title: "Coach") {
-                router.discussWithCoach(about: CoachDiscuss.describe(.today))
+                router.discussWithCoach(about: CoachDiscuss.describe(.nutrition(trainingDayId: dayId)))
             }
         }
     }

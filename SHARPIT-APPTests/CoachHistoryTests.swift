@@ -337,3 +337,8 @@ private struct FailingDeletes: CoachConversationServing {
     #expect(list.map(\.title) == ["Ma semaine", "Sans fraction"])
     #expect(list[0].updatedAt > list[1].updatedAt)
 }
+
+@Test func aStoredNutritionTurnKeepsItsDay() {
+    let json = #"{ "discussKind": "nutrition", "trainingDayId": "2026-10-01" }"#
+    #expect(CoachDiscussContext(storedMetadata: stored(json))?.target == .nutrition(trainingDayId: "2026-10-01"))
+}

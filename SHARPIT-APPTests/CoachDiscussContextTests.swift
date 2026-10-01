@@ -98,3 +98,11 @@ import Testing
     #expect(router.selectedTab == .plan)
     #expect(router.pendingCoachContext == nil)
 }
+
+@Test func aDaysNutritionIsDiscussedAsNutritionNotAsTheDayState() {
+    let context = CoachDiscuss.describe(.nutrition(trainingDayId: "2026-10-01"))
+    #expect(context.kind == "nutrition")
+    #expect(context.label == "Ta nutrition du jour")
+    #expect(context.metadata["discussKind"] == .string("nutrition"))
+    #expect(context.metadata["trainingDayId"] == .string("2026-10-01"))
+}
