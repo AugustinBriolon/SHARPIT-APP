@@ -87,6 +87,9 @@ nonisolated struct V1TodaySession: Codable, Sendable, Equatable, Identifiable {
     var brickLegs: [V1TodayBrickLeg]? = nil
     /// Set on a brick under way: seconds from each leg's end to the next's start (T2, …).
     var brickTransitionsSec: [Int?]? = nil
+    /// Set on a brick line: the group that addresses the brick as a whole (its evaluation).
+    /// `id` cannot: a done brick's `id` is its first activity, for older app builds.
+    var brickGroupId: String? = nil
 }
 
 /// One leg of a brick line.

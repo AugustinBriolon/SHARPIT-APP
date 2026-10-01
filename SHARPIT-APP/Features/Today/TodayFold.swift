@@ -35,6 +35,8 @@ struct SessionCardModel: Sendable, Equatable, Identifiable {
     var brickLegs: [V1TodayBrickLeg]? = nil
     /// A brick under way: seconds between legs, nil where unknown.
     var brickTransitionsSec: [Int?]? = nil
+    /// A brick's group, which addresses the brick as a whole.
+    var brickGroupId: String? = nil
 }
 
 struct OvernightGaugeModel: Sendable, Equatable, Identifiable {
@@ -114,7 +116,8 @@ enum TodayFoldMapper {
                     priority: session.priority ?? false,
                     plannedSessionId: session.plannedSessionId,
                     brickLegs: (session.brickLegs?.count ?? 0) > 1 ? session.brickLegs : nil,
-                    brickTransitionsSec: session.brickTransitionsSec
+                    brickTransitionsSec: session.brickTransitionsSec,
+                    brickGroupId: session.brickGroupId
                 )
             },
             gauges: response.signals

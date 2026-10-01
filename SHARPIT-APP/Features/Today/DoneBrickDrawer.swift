@@ -14,6 +14,8 @@ struct DoneBrickPreview: Identifiable, Equatable {
     }
 
     let id: String
+    /// The brick's group, which its evaluation is saved under; nil from servers that predate it.
+    let brickGroupId: String?
     let summary: String?
     let legs: [Leg]
     /// Seconds from each leg's end to the next's start; nil where unknown.
@@ -21,10 +23,14 @@ struct DoneBrickPreview: Identifiable, Equatable {
 
     var chain: String { legs.map(\.sport).joined(separator: " → ") }
 
+    /// Every leg done — the brick can be judged as a whole.
+    var isComplete: Bool { legs.allSatisfy(\.isDone) }
+
     /// Résumé's done brick line; nil for any other line.
     init?(card: SessionCardModel) {
         guard card.kind == .done, let legs = card.brickLegs, legs.count > 1 else { return nil }
         self.id = card.id
+        self.brickGroupId = card.brickGroupId
         self.summary = card.subtitle
         self.legs = legs.map { leg in
             Leg(
@@ -76,6 +82,8 @@ struct DoneBrickDrawer: View {
     let tokenProvider: (() async throws -> String)?
 
     @Environment(\.dismiss) private var dismiss
+    @State private var evaluation: BrickEvaluationStore?
+    @State private var isEvaluating = false
 
     var body: some View {
         NavigationStack {
@@ -90,11 +98,20 @@ struct DoneBrickDrawer: View {
                             legPanel(index: index + 1, leg: leg)
                         }
                     }
+                    if let evaluation {
+                        BrickEvaluationTile(store: evaluation) { isEvaluating = true }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(SharpitSpacing.pageInset)
             }
             .background(SharpitCanvasBackground())
+            .task { await loadEvaluation() }
+            .sheet(isPresented: $isEvaluating) {
+                if let evaluation {
+                    BrickEvaluationSheet(store: evaluation)
+                }
+            }
             .navigationTitle("Enchaînement")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -106,6 +123,18 @@ struct DoneBrickDrawer: View {
         .presentationDetents([.large])
         .sharpitSheet()
         .presentationDragIndicator(.visible)
+    }
+
+    /// Only a fully done brick is evaluated: the web asks the same, every leg linked.
+    private func loadEvaluation() async {
+        guard evaluation == nil, brick.isComplete, let groupId = brick.brickGroupId, let tokenProvider else { return }
+        let store = BrickEvaluationStore(
+            brickGroupId: groupId,
+            client: BrickEvaluationClient(),
+            tokenProvider: tokenProvider
+        )
+        evaluation = store
+        await store.load()
     }
 
     private var header: some View {

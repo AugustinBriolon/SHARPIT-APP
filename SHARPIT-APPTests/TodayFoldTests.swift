@@ -254,3 +254,22 @@ import Testing
     #expect(streak == 52)
 }
 
+
+// MARK: - Brick group
+
+/// A done brick's `id` is its first activity, so the fold keeps the group for its evaluation.
+@Test func foldCarriesABrickLinesGroup() throws {
+    var response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
+    response.sessions = [
+        V1TodaySession(
+            id: "act-bike", kind: .done, title: "Brick · Vélo → Course", subtitle: nil, metrics: [],
+            brickLegs: [
+                V1TodayBrickLeg(id: "leg-bike", type: "BIKE", title: "Vélo"),
+                V1TodayBrickLeg(id: "leg-run", type: "RUN", title: "Course"),
+            ],
+            brickGroupId: "brick-1"
+        ),
+    ]
+
+    #expect(TodayFoldMapper.map(response).sessions.first?.brickGroupId == "brick-1")
+}

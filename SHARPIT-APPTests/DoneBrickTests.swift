@@ -13,7 +13,8 @@ private func card(legs: [V1TodayBrickLeg], transitions: [Int?]? = [124]) -> Sess
         priority: false,
         plannedSessionId: "leg-bike",
         brickLegs: legs,
-        brickTransitionsSec: transitions
+        brickTransitionsSec: transitions,
+        brickGroupId: "brick-1"
     )
 }
 
@@ -32,6 +33,14 @@ private let run = V1TodayBrickLeg(id: "leg-run", type: "RUN", title: "Course", d
     #expect(brick.legs.first?.activityId == "act-bike")
     #expect(brick.transition(before: 1) == 124)
     #expect(brick.transition(before: 0) == nil)
+    #expect(brick.brickGroupId == "brick-1")
+    #expect(!brick.isComplete)
+}
+
+@Test func aBrickWithEveryLegDoneIsComplete() throws {
+    let doneRun = V1TodayBrickLeg(id: "leg-run", type: "RUN", title: "Course", durationMin: 30, completed: true, activityId: "act-run")
+    let brick = try #require(DoneBrickPreview(card: card(legs: [bike, doneRun])))
+    #expect(brick.isComplete)
 }
 
 @Test func aPlannedOrSingleLineIsNoDoneBrick() {
