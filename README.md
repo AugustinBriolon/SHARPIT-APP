@@ -104,6 +104,10 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
 - Freshness: Today starts a provider pull on launch, foreground and pull-to-refresh
   (`/api/v1/sync`), and Moi can switch on Apple Health as a gap-filling source, with a
   diagnostic of what Apple Health holds ([ADR 0005](docs/adr/0005-app-started-sync-and-apple-health.md))
+- Garmin is not offered in the app (`ProviderAvailability.garminInApp`): its access is
+  unofficial and its developer program takes no new applications, so no connect row, onboarding
+  card, history import or workout push. A Garmin watch reaches SHARPIT through Apple Health; an
+  account already linked on the web keeps syncing server-side
 - Journal: the day's signals via `/api/day-journal`, and what it asks for via
   `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
   render — diet flags, the nutrition panel, thresholds — survive a save from the phone.
@@ -113,7 +117,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
 - Activity status: the training mode (actif / en pause / blessé / malade) via
   `/api/activity-status`, written on every pick from Today's toolbar
 - Moi: a grouped hub mirroring the web's Réglages — Modèle (Corps, Seuils & repères),
-  Compte (Profil), Préférences (densité de lecture), Données (Garmin, Apple Santé,
+  Compte (Profil), Préférences (densité de lecture), Données (Apple Santé,
   diagnostic), À propos. Profil and Seuils edit `/api/athlete-profile` through a partial
   PATCH that names only the fields the athlete changed; Corps reads `/api/body-composition`
   and is read-only, since a weigh-in is written by a scale
