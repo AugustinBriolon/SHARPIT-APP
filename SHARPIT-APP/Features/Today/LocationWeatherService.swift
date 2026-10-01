@@ -8,10 +8,22 @@ struct AppleWeatherReading: Codable, Equatable, Sendable {
     var symbolName: String
 }
 
+/// What WeatherKit requires next to any data it served: Apple Weather's mark and a link to
+/// its legal attribution page.
+struct AppleWeatherAttribution: Equatable, Sendable {
+    var lightMarkURL: URL
+    var darkMarkURL: URL
+    var legalPageURL: URL
+
+    /// Shown until WeatherKit answers with its own — the page WeatherKit itself links to.
+    static let fallbackLegalPageURL = URL(string: "https://weatherkit.apple.com/legal-attribution.html")!
+}
+
 @Observable
 final class LocationWeatherService {
     var reading: AppleWeatherReading?
     var statusLine: String = "Météo"
+    var attribution: AppleWeatherAttribution?
 
     @ObservationIgnored
     private let locator = LocationFixBroker()
@@ -45,6 +57,7 @@ final class LocationWeatherService {
         // also asks for the minute forecast, which WeatherKit does not serve in France — it
         // logged "Missing minute forecast conditions" on every launch.
         async let weather = WeatherService.shared.weather(for: location, including: .current)
+        async let mark = WeatherService.shared.attribution
 
         do {
             let current = try await weather
@@ -57,6 +70,13 @@ final class LocationWeatherService {
             )
             statusLine = reading?.city ?? "Météo"
             Self.storeCachedReading(reading)
+            if let mark = try? await mark {
+                attribution = AppleWeatherAttribution(
+                    lightMarkURL: mark.combinedMarkLightURL,
+                    darkMarkURL: mark.combinedMarkDarkURL,
+                    legalPageURL: mark.legalPageURL
+                )
+            }
         } catch {
             if reading == nil {
                 statusLine = "Météo indisponible"
