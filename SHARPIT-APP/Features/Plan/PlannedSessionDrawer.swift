@@ -297,7 +297,7 @@ struct PlannedSessionDrawer: View {
                         showingLinkPicker = true
                     }
                 }
-                if preview.sessionId != nil, let watchPush {
+                if ProviderAvailability.garminInApp, preview.sessionId != nil, let watchPush {
                     watchActionSection(context: watchPush)
                 }
             }

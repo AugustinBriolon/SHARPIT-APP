@@ -5,8 +5,8 @@ import SwiftUI
 /// Paramètres → Sources de données: every source SHARPIT reads from — Garmin, Apple Health and
 /// MyFitnessPal, the food log, signed in to in the app like Garmin.
 ///
-/// Garmin is connected on the web, where its sign-in lives; Apple Health is switched on here,
-/// because only the phone can read it.
+/// Apple Health is switched on here, because only the phone can read it. Garmin shows only when
+/// `ProviderAvailability` offers it; until then a Garmin watch reaches SHARPIT through Apple Health.
 ///
 /// Each source is one two-line row — its own mark, its name, one short status — so the rows
 /// keep the same height whatever the status says. Recency surfaces on the toast shown while a
@@ -33,7 +33,9 @@ struct ConnectionsView: View {
     var body: some View {
         List {
             Section(eyebrow: "Sources") {
-                garminRow
+                if ProviderAvailability.garminInApp {
+                    garminRow
+                }
                 appleHealthRow
                 mfpRow
             }
@@ -55,7 +57,7 @@ struct ConnectionsView: View {
             }
             .sharpitListRows()
 
-            if isGarminConnected, historyImport != nil {
+            if ProviderAvailability.garminInApp, isGarminConnected, historyImport != nil {
                 Section(
                     eyebrow: "Garmin",
                     footer: "Toutes tes activités Garmin, depuis la première. Celles déjà présentes ne sont pas dupliquées ; l'import peut prendre quelques minutes."

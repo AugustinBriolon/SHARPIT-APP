@@ -31,3 +31,8 @@ import Testing
     #expect(plist["com.apple.developer.healthkit"] as? Bool == true)
     #expect(plist["com.apple.developer.healthkit.access"] == nil)
 }
+
+/// Garmin's access is unofficial: the App Store build offers no way to connect it (5.2.2).
+@Test func theAppStoreBuildDoesNotOfferGarmin() {
+    #expect(ProviderAvailability.garminInApp == false)
+}

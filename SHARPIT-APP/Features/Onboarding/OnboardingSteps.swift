@@ -614,7 +614,7 @@ struct OnboardingFirstWeekStep: View {
 
 // MARK: - Sources
 
-/// Where the readings come from. Garmin is connected natively in-app; Apple Health is switched on here.
+/// Where the readings come from: Apple Health is switched on here (Garmin only when `ProviderAvailability` offers it).
 /// Connecting nothing is a valid path: Finaliser is never held back by this step.
 struct OnboardingSourcesStep: View {
     let appleHealth: AppleHealthSource
@@ -633,13 +633,15 @@ struct OnboardingSourcesStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            OnboardingSourceCard(
-                provider: .garmin,
-                title: "Garmin Connect",
-                detail: "Activités GPS, fréquence cardiaque, sommeil et charge."
-            ) {
-                connectButton(isConnected: isConnected("garmin"), isBusy: isConnectingGarmin) {
-                    Task { await connectGarmin() }
+            if ProviderAvailability.garminInApp {
+                OnboardingSourceCard(
+                    provider: .garmin,
+                    title: "Garmin Connect",
+                    detail: "Activités GPS, fréquence cardiaque, sommeil et charge."
+                ) {
+                    connectButton(isConnected: isConnected("garmin"), isBusy: isConnectingGarmin) {
+                        Task { await connectGarmin() }
+                    }
                 }
             }
             if let garminFailure {
@@ -690,7 +692,7 @@ struct OnboardingSourcesStep: View {
 
     private var appleHealthDetail: String {
         let line = ConnectionsReadout.appleHealthSubtitle(isAvailable: appleHealth.isAvailable, state: appleHealth.state)
-        return appleHealth.isAvailable && !line.isProblem ? "Séances, sommeil, VFC et poids. Suffit sans Garmin." : line.text
+        return appleHealth.isAvailable && !line.isProblem ? "Séances, sommeil, VFC et poids — y compris ceux de ta montre Garmin." : line.text
     }
 
     @ViewBuilder

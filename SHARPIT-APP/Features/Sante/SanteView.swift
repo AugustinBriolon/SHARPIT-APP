@@ -51,7 +51,7 @@ struct SanteView: View {
                     SharpitStateMessage(
                         title: "Rien de mesuré pour l'instant",
                         symbol: "heart.text.square",
-                        detail: "Active Apple Santé ou connecte Garmin ou une balance dans Paramètres → Sources de données : ton bilan se construira ici."
+                        detail: "Active Apple Santé dans Paramètres → Sources de données : ton bilan se construira ici."
                     )
                 case .loading, .loaded:
                     readout
