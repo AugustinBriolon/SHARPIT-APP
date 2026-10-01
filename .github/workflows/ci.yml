@@ -1,0 +1,65 @@
+name: CI
+
+# Builds the app and runs SHARPIT-APPTests on a simulator, on each push to main and each pull
+# request. No signing: CI needs no team, and Config/Local.xcconfig (gitignored) is an optional
+# include, so the Debug build reaches its default origins.
+on:
+  push:
+    branches: [main]
+    paths-ignore: &docs-only
+      - 'docs/**'
+      - '**/*.md'
+  pull_request:
+    paths-ignore: *docs-only
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The project's format needs a recent Xcode: take the newest the runner has.
+      - name: Select the newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData/ci/SourcePackages
+          key: ${{ runner.os }}-spm-${{ hashFiles('SHARPIT-APP.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+      - name: Pick a simulator
+        id: simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
+          test -n "$UDID" && test "$UDID" != "null"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project SHARPIT-APP.xcodeproj \
+            -scheme SHARPIT-APP \
+            -destination "id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild.log | grep -E "error:|✘|Test run with|TEST (SUCCEEDED|FAILED)"
+
+      - name: Upload the build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
