@@ -266,6 +266,16 @@ back and the server carries out the approved ones and goes on writing in the sam
 (`dismissingUnresolved`), and an applied change bumps `ShellRouter.calendarRevision` so Plan and
 Résumé reload. The wording follows the web's `coach-tool-approval-helpers.tsx`.
 
+**Coach thread.** The thread reads like ChatGPT's: a question sent rises to the top
+(`CoachThreadLayout` splits the turn under way, which fills at least the screen) and the answer
+unrolls below without moving the view; once it runs past the composer, a small glass arrow takes
+the athlete to its end. Plain glass on that arrow: interactive glass on a floating button kept
+its taps. A thumb on the thread puts the keyboard away, even on an empty conversation. An empty
+field turns the send button into the microphone (`CoachDictation`, French, on-device when
+possible); the frameworks' callbacks are built in nonisolated functions, since main-actor
+closures trap when called on their queues. `-SharpitCoachDemo` scripts two questions on a
+streamed answer in Debug builds.
+
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON
 (`CoachMessage.stored`) and goes back as it came, its parts brought up to date. The chat route
