@@ -118,7 +118,7 @@ struct StubCoachClient: CoachChatServing {
     }
 }
 
-func chunk(_ json: String) -> JSONValue {
+nonisolated func chunk(_ json: String) -> JSONValue {
     (try? JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))) ?? .null
 }
 
