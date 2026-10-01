@@ -1,4 +1,3 @@
-import CloudKit
 import Foundation
 import SwiftUI
 
@@ -63,15 +62,4 @@ enum ConnectionsReadout {
         return Line(text: "Séances, sommeil et cœur de ta montre", isProblem: false)
     }
 
-    static func iCloud(_ status: CKAccountStatus?) -> String {
-        guard let status else { return "—" }
-        switch status {
-        case .available: return "Actif"
-        case .noAccount: return "Aucun compte"
-        case .restricted: return "Restreint"
-        case .temporarilyUnavailable: return "Indisponible"
-        case .couldNotDetermine: return "Inconnu"
-        @unknown default: return "Inconnu"
-        }
-    }
 }

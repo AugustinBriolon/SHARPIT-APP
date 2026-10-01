@@ -20,7 +20,6 @@ struct SettingsView: View {
     let tokenProvider: () async throws -> String
     let modelContext: ModelContext?
     let privacyClient: any PrivacyConsentServing
-    let cloudSync: CloudSyncMonitor
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .system
@@ -40,7 +39,6 @@ struct SettingsView: View {
         tokenProvider: @escaping () async throws -> String,
         modelContext: ModelContext?,
         privacyClient: any PrivacyConsentServing = PrivacyConsentClient(),
-        cloudSync: CloudSyncMonitor = .shared,
         openingOn route: SettingsRoute? = nil
     ) {
         _path = State(initialValue: route.map { [$0] } ?? [])
@@ -52,7 +50,6 @@ struct SettingsView: View {
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
         self.privacyClient = privacyClient
-        self.cloudSync = cloudSync
         _profile = State(initialValue: AthleteProfileStore(
             client: profileClient,
             tokenProvider: tokenProvider,
@@ -90,10 +87,6 @@ struct SettingsView: View {
                     SettingsGroup(title: "Données") {
                         NavigationLink(value: SettingsRoute.sources) {
                             SettingsRow(symbol: "link", tint: SettingsTone.sources, title: "Sources de données", detail: sourcesDetail)
-                        }
-                        SettingsDivider()
-                        NavigationLink(value: SettingsRoute.iCloud) {
-                            SettingsRow(symbol: "icloud.fill", tint: SettingsTone.iCloud, title: "Synchronisation iCloud", detail: iCloudDetail)
                         }
                     }
                     .buttonStyle(.plain)
@@ -153,7 +146,6 @@ struct SettingsView: View {
             .navigationDestination(for: SettingsRoute.self, destination: destination)
             .task { await profile.load() }
             .task { await refreshNotificationStatus() }
-            .task { await cloudSync.refreshAccountStatus() }
         }
         .sharpitSheet()
     }
@@ -200,16 +192,6 @@ struct SettingsView: View {
         appleHealth.isEnabled ? "Apple Santé activé" : "Garmin, Apple Santé, MyFitnessPal"
     }
 
-    private var iCloudDetail: String {
-        if let error = cloudSync.lastError, !error.isEmpty { return "Erreur de synchronisation" }
-        guard let last = [cloudSync.events[.exporting], cloudSync.events[.importing]]
-            .compactMap({ $0?.endedAt }).max() else {
-            return ConnectionsReadout.iCloud(cloudSync.accountStatus)
-        }
-        let when = Date.RelativeFormatStyle(presentation: .named, locale: SharpitLocale.french).format(last)
-        return "À jour · \(when)"
-    }
-
     private var sportsDetail: String {
         let sports = PracticedSportCatalog.ordered(profile.profile.practicedSports?.sports ?? [])
         let labels = sports.compactMap { id in PracticedSportCatalog.all.first { $0.id == id }?.label }
@@ -252,8 +234,6 @@ struct SettingsView: View {
             }
         case .sources:
             ConnectionsView(appleHealth: appleHealth, syncClient: syncClient, tokenProvider: tokenProvider)
-        case .iCloud:
-            ICloudSyncView(monitor: cloudSync)
         case .equipment:
             EquipmentView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
         case .thresholds:
@@ -279,7 +259,6 @@ enum SettingsRoute: Hashable {
     case account
     case pro
     case sources
-    case iCloud
     case equipment
     case thresholds
     case privacy
@@ -449,7 +428,6 @@ private enum SettingsTone {
     static let appearance = Color(red: 0.34, green: 0.44, blue: 0.86)
     static let notifications = Color(red: 0.90, green: 0.36, blue: 0.40)
     static let sources = Color(red: 0.12, green: 0.62, blue: 0.56)
-    static let iCloud = Color(red: 0.20, green: 0.50, blue: 0.95)
     static let gear = SharpitColor.primary
     static let density = Color(red: 0.55, green: 0.36, blue: 0.86)
     static let privacy = Color(red: 0.44, green: 0.50, blue: 0.58)

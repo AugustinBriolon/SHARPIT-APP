@@ -26,7 +26,7 @@ enum LocalAccountData {
         defaults.set(userId, forKey: ownerKey)
     }
 
-    /// Everything, now. The CloudKit replicas follow the deletions.
+    /// Everything, now.
     static func erase(context: ModelContext, defaults: UserDefaults = .standard, disk: ActivityDiskCache = .shared) {
         // A batch delete runs on the store: pending inserts would survive it unsaved.
         try? context.save()

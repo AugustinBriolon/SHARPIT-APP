@@ -8,8 +8,8 @@ import SwiftData
 /// request they answer, and `key` says which. Today and the journal keep their own models
 /// because they cache a composed day rather than a single response.
 ///
-/// CloudKit-shaped like the rest of the cache (`docs/adr/0007`): no `#Unique`, a default for
-/// every attribute, an optional payload. Uniqueness is enforced on read.
+/// Shaped like the rest of the cache (`docs/adr/0007`, `docs/adr/0009`): no `#Unique`, a default
+/// for every attribute, an optional payload. Uniqueness is enforced on read.
 @Model
 final class CachedResponse {
     /// What this row answers — `ResponseCacheKey` builds it, never a literal at a call site.
@@ -94,8 +94,7 @@ enum ResponseCache {
 
     /// The most recent row for a key, deleting any older duplicate.
     ///
-    /// Replaces the `#Unique` CloudKit refuses: two devices can each insert a row for the same
-    /// key before either has seen the other's, so the read path is where both become visible.
+    /// Replaces the `#Unique` the schema does not declare: the read path keeps the newest row.
     private static func newest(key: String, context: ModelContext) -> CachedResponse? {
         let wanted = key
         let descriptor = FetchDescriptor<CachedResponse>(

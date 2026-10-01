@@ -9,9 +9,9 @@ import SwiftData
 /// state — the preferences read can succeed while the entry read fails — so each is optional
 /// and read independently.
 ///
-/// Written to be CloudKit-replicable from the start (`docs/adr/0007`): no `#Unique`, a default
-/// for every attribute, and optional payloads. CloudKit accepts none of the three otherwise,
-/// and retrofitting them later would be a schema migration.
+/// Shaped for CloudKit when the cache replicated (`docs/adr/0007`): no `#Unique`, a default for
+/// every attribute, optional payloads. The cache is device-only now (`docs/adr/0009`); the shape
+/// stays so existing stores open without a migration.
 @Model
 final class JournalDaySnapshot {
     var trainingDayId: String = ""
@@ -89,9 +89,8 @@ enum JournalSnapshotRepository {
 
     /// The most recent row for a day, deleting any older duplicate.
     ///
-    /// A `#Unique` constraint would do this in the store, but CloudKit refuses one, so the
-    /// uniqueness is enforced on read instead: two devices can both insert the same day
-    /// before either has seen the other's row.
+    /// A `#Unique` constraint would do this in the store; the schema has none (see the type),
+    /// so uniqueness is enforced on read.
     private static func newest(
         trainingDayId: String,
         context: ModelContext

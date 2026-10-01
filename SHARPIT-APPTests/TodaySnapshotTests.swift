@@ -109,3 +109,20 @@ private struct FailingTodayClient: TodayServing {
 
     #expect(try TodaySnapshotRepository.load(trainingDayId: "2026-09-21", context: context) == nil)
 }
+
+/// Apple forbids HealthKit data in iCloud, and every cached model holds some (`docs/adr/0009`).
+@Test func theOnDiskCacheNeverReplicatesToICloud() {
+    #expect(SharpitPersistence.configuration(inMemory: false).cloudKitContainerIdentifier == nil)
+}
+
+/// No iCloud entitlement either, so a later configuration change cannot quietly turn it back on.
+@Test func theAppIsNotEntitledToICloud() throws {
+    let entitlements = URL(filePath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .appending(path: "SHARPIT-APP/SHARPIT.entitlements")
+    let plist = try #require(
+        try PropertyListSerialization.propertyList(from: Data(contentsOf: entitlements), format: nil) as? [String: Any]
+    )
+    #expect(plist["com.apple.developer.icloud-services"] == nil)
+    #expect(plist["com.apple.developer.icloud-container-identifiers"] == nil)
+}

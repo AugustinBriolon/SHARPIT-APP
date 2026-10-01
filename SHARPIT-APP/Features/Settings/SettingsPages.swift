@@ -1,64 +1,8 @@
-import CloudKit
 import ClerkKit
 import SwiftData
 import SwiftUI
 import UIKit
 import UserNotifications
-
-// MARK: - Synchronisation iCloud
-
-/// Whether the iCloud copy of the cache works, and when it last moved (`docs/adr/0007`).
-struct ICloudSyncView: View {
-    let monitor: CloudSyncMonitor
-
-    var body: some View {
-        List {
-            Section(eyebrow: "Compte iCloud") {
-                LabeledContent {
-                    Text(ConnectionsReadout.iCloud(monitor.accountStatus))
-                        .foregroundStyle(monitor.accountStatus == .available ? SharpitColor.signalRecovery : SharpitColor.mutedForeground)
-                } label: {
-                    Label {
-                        Text("Statut")
-                    } icon: {
-                        SharpitRowIcon(symbol: "icloud")
-                    }
-                }
-            }
-            .sharpitListRows()
-
-            Section(
-                eyebrow: "Activité",
-                footer: "iCloud garde une copie de ce que l'app a déjà lu, pour l'afficher hors ligne et sur tes autres appareils. Jamais tes réponses de journal ni tes réglages, qui restent sur le serveur."
-            ) {
-                ForEach([CloudSyncMonitor.Kind.exporting, .importing, .setup], id: \.self) { kind in
-                    LabeledContent(kind.label) {
-                        Text(eventLabel(monitor.events[kind]))
-                            .foregroundStyle(monitor.events[kind]?.succeeded == false ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
-                    }
-                }
-                if let error = monitor.lastError {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.signalCaution)
-                }
-            }
-            .sharpitListRows()
-        }
-        .sharpitGroupedList()
-        .navigationTitle("Synchronisation iCloud")
-        .navigationBarTitleDisplayMode(.inline)
-        .task { await monitor.refreshAccountStatus() }
-        .refreshable { await monitor.refreshAccountStatus() }
-    }
-
-    private func eventLabel(_ event: CloudSyncMonitor.Event?) -> String {
-        guard let event else { return "Jamais" }
-        let when = Date.RelativeFormatStyle(presentation: .named, locale: SharpitLocale.french)
-            .format(event.endedAt)
-        return event.succeeded ? when.capitalizedFirst : "Échec · \(when)"
-    }
-}
 
 // MARK: - Compte
 

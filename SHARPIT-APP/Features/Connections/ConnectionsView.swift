@@ -6,8 +6,7 @@ import SwiftUI
 /// MyFitnessPal, the food log, signed in to in the app like Garmin.
 ///
 /// Garmin is connected on the web, where its sign-in lives; Apple Health is switched on here,
-/// because only the phone can read it. The iCloud copy of the cache has its own page,
-/// Synchronisation iCloud (`docs/adr/0007`).
+/// because only the phone can read it.
 ///
 /// Each source is one two-line row — its own mark, its name, one short status — so the rows
 /// keep the same height whatever the status says. Recency surfaces on the toast shown while a

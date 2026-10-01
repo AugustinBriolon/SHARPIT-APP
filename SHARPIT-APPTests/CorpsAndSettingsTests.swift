@@ -105,19 +105,3 @@ private func weighIn(_ daysAgo: Double, weight: Double?, fat: Double? = nil, sou
     #expect(AppearancePreference.dark.colorScheme == .dark)
 }
 
-@MainActor
-@Test func iCloudKeepsTheLastEventOfEachKindAcrossLaunches() throws {
-    let defaults = try #require(UserDefaults(suiteName: "cloud-sync-monitor"))
-    defaults.removePersistentDomain(forName: "cloud-sync-monitor")
-    let monitor = CloudSyncMonitor(defaults: defaults)
-
-    monitor.record(.init(endedAt: Date(timeIntervalSince1970: 100), succeeded: false, errorDescription: "Quota"), as: .exporting)
-    #expect(monitor.lastError == "Quota")
-
-    monitor.record(.init(endedAt: Date(timeIntervalSince1970: 200), succeeded: true, errorDescription: nil), as: .importing)
-    #expect(monitor.lastError == nil)
-
-    let relaunched = CloudSyncMonitor(defaults: defaults)
-    #expect(relaunched.events[.exporting]?.errorDescription == "Quota")
-    #expect(relaunched.events[.importing]?.succeeded == true)
-}

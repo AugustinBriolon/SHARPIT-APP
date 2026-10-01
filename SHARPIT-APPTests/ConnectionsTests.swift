@@ -33,17 +33,6 @@ import Testing
     #expect(refused == .init(text: "Accès refusé.", isProblem: true))
 }
 
-// MARK: - iCloud
-
-@Test func everyICloudStatusHasAShortReading() {
-    #expect(ConnectionsReadout.iCloud(.available) == "Actif")
-    #expect(ConnectionsReadout.iCloud(.noAccount) == "Aucun compte")
-    #expect(ConnectionsReadout.iCloud(.restricted) == "Restreint")
-    #expect(ConnectionsReadout.iCloud(.temporarilyUnavailable) == "Indisponible")
-    #expect(ConnectionsReadout.iCloud(.couldNotDetermine) == "Inconnu")
-    #expect(ConnectionsReadout.iCloud(nil) == "—")
-}
-
 // MARK: - Garmin In-App Connection
 
 private nonisolated final class GarminStubURLProtocol: URLProtocol, @unchecked Sendable {

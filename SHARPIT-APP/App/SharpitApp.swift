@@ -11,8 +11,6 @@ struct SharpitApp: App {
     init() {
         SharpitFonts.register()
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
-        // Before the container, so its first CloudKit setup event is heard.
-        CloudSyncMonitor.shared.start()
         do {
             modelContainer = try SharpitPersistence.makeContainer()
         } catch {
