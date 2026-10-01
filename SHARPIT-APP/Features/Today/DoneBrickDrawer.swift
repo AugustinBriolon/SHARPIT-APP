@@ -44,6 +44,39 @@ struct DoneBrickPreview: Identifiable, Equatable {
         self.transitionsSec = card.brickTransitionsSec ?? []
     }
 
+    /// Plan's done brick: the prescribed legs beside the activities that realized them.
+    init(planned brick: PlanDoneBrick) {
+        self.id = brick.id
+        self.brickGroupId = brick.id
+        self.summary = brick.totalDurationMin.map { DoneBrickFormat.duration($0 * 60) + " au total" }
+        self.legs = brick.legs.map { leg in
+            Leg(
+                id: leg.session.id,
+                sport: leg.activity?.type.label ?? leg.session.displayType,
+                title: leg.session.title ?? leg.activity?.title ?? leg.session.displayType,
+                activityId: leg.activity?.id,
+                actual: leg.activity.map { activity in
+                    V1TodayBrickLegActual(
+                        durationSec: activity.duration.map { Int($0.rounded()) },
+                        load: activity.load,
+                        rpe: activity.rpe.map { Int($0.rounded()) },
+                        feeling: nil
+                    )
+                }
+            )
+        }
+        self.transitionsSec = zip(brick.legs, brick.legs.dropFirst()).map { previous, next in
+            Self.transitionSec(from: previous.activity, to: next.activity)
+        }
+    }
+
+    /// From one leg's end to the next's start; nil when either is unknown or they overlap.
+    static func transitionSec(from previous: V1ActivityListItem?, to next: V1ActivityListItem?) -> Int? {
+        guard let previous, let next, let duration = previous.duration else { return nil }
+        let gap = next.date.timeIntervalSince(previous.date.addingTimeInterval(duration))
+        return gap >= 0 ? Int(gap.rounded()) : nil
+    }
+
     /// The transition before leg `index` (1 is T2), when measured.
     func transition(before index: Int) -> Int? {
         let position = index - 1

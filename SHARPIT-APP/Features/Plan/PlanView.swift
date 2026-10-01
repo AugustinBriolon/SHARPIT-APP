@@ -114,6 +114,8 @@ struct PlanView: View {
                     ) { context in
                         router.discussWithCoach(about: context)
                     }
+                case .doneBrick(let brick):
+                    DoneBrickDrawer(brick: DoneBrickPreview(planned: brick), tokenProvider: tokenProvider)
                 }
             }
             .sheet(isPresented: $showingCalendar) {
@@ -202,6 +204,7 @@ extension PlanView {
             switch entry {
             case .planned(let session), .missed(let session): session.id == id ? .session(session) : nil
             case .brick(let brick): brick.contains(sessionId: id) ? .brick(brick) : nil
+            case .doneBrick(let brick): brick.contains(sessionId: id) ? .doneBrick(brick) : nil
             case .executed: nil
             }
         }.first
@@ -442,13 +445,14 @@ private struct PlanFocusSession: View {
         switch focus {
         case .session(let session): session.title ?? session.displayType
         case .brick(let brick): brick.chain
+        case .doneBrick(let brick): brick.chain
         }
     }
 
     private var sport: String {
         switch focus {
         case .session(let session): session.displayType
-        case .brick: "Brick"
+        case .brick, .doneBrick: "Brick"
         }
     }
 
@@ -456,6 +460,7 @@ private struct PlanFocusSession: View {
         switch focus {
         case .session(let session): session.durationMin
         case .brick(let brick): brick.totalDurationMin
+        case .doneBrick(let brick): brick.totalDurationMin
         }
     }
 
@@ -463,6 +468,7 @@ private struct PlanFocusSession: View {
         switch focus {
         case .session(let session): [session.symbolName]
         case .brick(let brick): brick.legs.map(\.symbolName)
+        case .doneBrick(let brick): brick.symbolNames
         }
     }
 
@@ -470,6 +476,7 @@ private struct PlanFocusSession: View {
         switch focus {
         case .session(let session): session.garminWorkoutId != nil
         case .brick(let brick): brick.isOnWatch
+        case .doneBrick: false
         }
     }
 
@@ -644,6 +651,11 @@ private struct PlanEntryRow: View {
         case .brick(let brick):
             Button { onSelect(.brick(brick)) } label: {
                 PlanBrickCard(brick: brick)
+            }
+            .buttonStyle(.sharpitPressable)
+        case .doneBrick(let brick):
+            Button { onSelect(.doneBrick(brick)) } label: {
+                PlanDoneBrickCard(brick: brick)
             }
             .buttonStyle(.sharpitPressable)
         }
@@ -843,6 +855,65 @@ private struct PlanBrickCard: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Brick, \(brick.chain)" + (brick.totalDurationMin.map { ", \($0) minutes" } ?? ""))
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// A brick done, in the day's list: one card for the chain it was, as it was one session —
+/// the legs as recorded, their total under them.
+private struct PlanDoneBrickCard: View {
+    let brick: PlanDoneBrick
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            VStack(spacing: 2) {
+                ForEach(Array(brick.symbolNames.enumerated()), id: \.offset) { index, symbol in
+                    if index > 0 {
+                        Rectangle()
+                            .fill(SharpitColor.primary.opacity(0.5))
+                            .frame(width: 1.5, height: 6)
+                    }
+                    Image(systemName: symbol)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(SharpitColor.primary)
+                }
+            }
+            .frame(width: 28)
+            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                Text(brick.chain)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(2)
+                HStack(spacing: SharpitSpacing.xs) {
+                    Text("Brick réalisé")
+                        .font(SharpitTypography.label)
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SharpitColor.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(SharpitColor.primary.opacity(0.12), in: Capsule())
+                    if let totalDurationMin = brick.totalDurationMin {
+                        Text("\(totalDurationMin) min")
+                    }
+                }
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "checkmark")
+                .font(SharpitTypography.label)
+                .foregroundStyle(SharpitColor.primary)
+                .accessibilityHidden(true)
+            Image(systemName: "chevron.right")
+                .font(SharpitTypography.label)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, SharpitSpacing.xxs)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Brick réalisé, \(brick.chain)" + (brick.totalDurationMin.map { ", \($0) minutes" } ?? ""))
         .accessibilityAddTraits(.isButton)
     }
 }

@@ -12,12 +12,14 @@ import Foundation
 /// - `missed` — a prescription whose day has passed with nothing recorded against it
 ///
 /// A brick — legs chained without a break — is one prescription, so it is one entry: listed
-/// leg by leg it read as two sessions to do apart, which is exactly what a brick is not.
+/// leg by leg it read as two sessions to do apart, which is exactly what a brick is not. Done,
+/// it stays one entry (`doneBrick`): two activities side by side read as two separate outings.
 enum PlanEntry: Identifiable, Hashable {
     case executed(PlanExecutedEntry)
     case planned(V1PlannedSessionItem)
     case missed(V1PlannedSessionItem)
     case brick(PlanBrick)
+    case doneBrick(PlanDoneBrick)
 
     var id: String {
         switch self {
@@ -25,6 +27,7 @@ enum PlanEntry: Identifiable, Hashable {
         case .planned(let session): "planned-\(session.id)"
         case .missed(let session): "missed-\(session.id)"
         case .brick(let brick): "brick-\(brick.id)"
+        case .doneBrick(let brick): "done-brick-\(brick.id)"
         }
     }
 
@@ -33,15 +36,17 @@ enum PlanEntry: Identifiable, Hashable {
         case .executed(let entry): entry.activity.date
         case .planned(let session), .missed(let session): session.date
         case .brick(let brick): brick.date
+        case .doneBrick(let brick): brick.date
         }
     }
 
-    /// What tapping the entry opens, when it is a prescription.
+    /// What tapping the entry opens, when it opens a drawer rather than an activity's screen.
     var selection: PlanSelection? {
         switch self {
         case .executed: nil
         case .planned(let session), .missed(let session): .session(session)
         case .brick(let brick): .brick(brick)
+        case .doneBrick(let brick): .doneBrick(brick)
         }
     }
 }
@@ -75,15 +80,48 @@ struct PlanBrick: Hashable, Identifiable {
     func contains(sessionId: String) -> Bool { legs.contains { $0.id == sessionId } }
 }
 
-/// A prescription opened from Plan: one session, or a brick as a whole.
+/// A brick done: its legs in order, each beside the activity that realized it.
+struct PlanDoneBrick: Hashable, Identifiable {
+    struct Leg: Hashable {
+        let session: V1PlannedSessionItem
+        /// Nil for a leg left undone while the others were recorded.
+        let activity: V1ActivityListItem?
+    }
+
+    /// The legs' shared `brickGroupId`.
+    let id: String
+    /// In the order they were prescribed; two done at least.
+    let legs: [Leg]
+
+    /// When the first recorded leg started.
+    var date: Date { legs.compactMap(\.activity?.date).min() ?? legs[0].session.date }
+
+    var sports: [String] { legs.map { $0.activity?.type.label ?? $0.session.displayType } }
+
+    var chain: String { sports.joined(separator: " → ") }
+
+    var symbolNames: [String] { legs.map { $0.activity?.type.symbolName ?? $0.session.symbolName } }
+
+    /// What was recorded, in minutes; nil when no leg carries a duration.
+    var totalDurationMin: Int? {
+        let seconds = legs.compactMap(\.activity?.duration)
+        return seconds.isEmpty ? nil : Int((seconds.reduce(0, +) / 60).rounded())
+    }
+
+    func contains(sessionId: String) -> Bool { legs.contains { $0.session.id == sessionId } }
+}
+
+/// What a tap in Plan opens as a drawer: one session, a brick as a whole, or a brick done.
 enum PlanSelection: Identifiable, Hashable {
     case session(V1PlannedSessionItem)
     case brick(PlanBrick)
+    case doneBrick(PlanDoneBrick)
 
     var id: String {
         switch self {
         case .session(let session): "session-\(session.id)"
         case .brick(let brick): "brick-\(brick.id)"
+        case .doneBrick(let brick): "done-brick-\(brick.id)"
         }
     }
 
@@ -91,6 +129,7 @@ enum PlanSelection: Identifiable, Hashable {
         switch self {
         case .session(let session): session.date
         case .brick(let brick): brick.date
+        case .doneBrick(let brick): brick.date
         }
     }
 }
@@ -123,9 +162,12 @@ enum PlanEntryBuilder {
             }
         }
         let startOfToday = calendar.startOfDay(for: now)
+        let realizedBricks = doneBricks(planned: planned, activities: activities)
+        let inDoneBrick = Set(realizedBricks.flatMap { brick in brick.legs.compactMap(\.activity?.id) })
+        let legsInDoneBrick = Set(realizedBricks.flatMap { brick in brick.legs.map(\.session.id) })
 
-        let executed = activities.map { activity in
-            let matchingPlanned = planned.first { $0.activityId == activity.id || $0.id == activity.plannedSession?.id }
+        let executed = activities.filter { !inDoneBrick.contains($0.id) }.map { activity in
+            let matchingPlanned = planned.first { session in session.realizes(activity) }
             let title = activity.plannedSession?.title ?? matchingPlanned?.title ?? (matchingPlanned != nil ? matchingPlanned?.displayType : nil)
             let score = activity.plannedSession?.analysis?.complianceScore
 
@@ -139,11 +181,30 @@ enum PlanEntryBuilder {
         }
 
         let remaining = prescriptions(
-            planned.filter { !absorbed.contains($0.id) },
+            planned.filter { !absorbed.contains($0.id) && !legsInDoneBrick.contains($0.id) },
             isPast: { calendar.startOfDay(for: $0) < startOfToday }
         )
 
-        return (executed + remaining).sorted { $0.date < $1.date }
+        return (executed + realizedBricks.map(PlanEntry.doneBrick) + remaining).sorted { $0.date < $1.date }
+    }
+
+    /// The bricks two activities or more realized, each gathered with every one of its legs —
+    /// one left undone shows inside the brick rather than beside it.
+    private static func doneBricks(
+        planned: [V1PlannedSessionItem],
+        activities: [V1ActivityListItem]
+    ) -> [PlanDoneBrick] {
+        let legsByBrick = Dictionary(grouping: planned.filter { $0.brickGroupId != nil }) { $0.brickGroupId! }
+        return legsByBrick.compactMap { brickId, sessions in
+            let legs = sessions
+                .sorted { ($0.brickOrder ?? 0) < ($1.brickOrder ?? 0) }
+                .map { session in
+                    PlanDoneBrick.Leg(session: session, activity: activities.first { session.realizes($0) })
+                }
+            guard legs.compactMap(\.activity).count > 1 else { return nil }
+            return PlanDoneBrick(id: brickId, legs: legs)
+        }
+        .sorted { $0.date < $1.date }
     }
 
     /// The sessions still owed, a brick's legs gathered into one entry. A brick with one leg
@@ -165,6 +226,13 @@ enum PlanEntryBuilder {
     }
 }
 
+private extension V1PlannedSessionItem {
+    /// The session was recorded as this activity — linked from either side.
+    func realizes(_ activity: V1ActivityListItem) -> Bool {
+        activityId == activity.id || id == activity.plannedSession?.id
+    }
+}
+
 /// What one day of the week strip says at a glance.
 ///
 /// The strip is an index, not a second copy of the list: it answers "which days did I
@@ -177,7 +245,12 @@ enum PlanDayStatus: Equatable, Sendable {
     case missed
 
     static func status(of entries: [PlanEntry]) -> PlanDayStatus? {
-        if entries.contains(where: { if case .executed = $0 { true } else { false } }) {
+        if entries.contains(where: {
+            switch $0 {
+            case .executed, .doneBrick: true
+            default: false
+            }
+        }) {
             return .executed
         }
         if entries.contains(where: {

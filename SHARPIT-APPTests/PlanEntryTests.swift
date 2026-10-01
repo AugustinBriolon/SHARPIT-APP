@@ -248,3 +248,107 @@ private func leg(_ id: String, on date: Date, brick: String, order: Int, type: S
     #expect(brick.isMissed)
     #expect(result.first?.selection == .brick(brick))
 }
+
+// MARK: - Done bricks
+
+private func doneLeg(_ id: String, on date: Date, brick: String, order: Int, type: String, activityId: String) -> V1PlannedSessionItem {
+    V1PlannedSessionItem(
+        id: id, date: date, title: id, type: type, durationMin: 60,
+        completed: true, activityId: activityId, brickGroupId: brick, brickOrder: order
+    )
+}
+
+private func recorded(_ id: String, type: V1ActivityType, at date: Date, minutes: Double, rpe: Double? = nil) -> V1ActivityListItem {
+    V1ActivityListItem(id: id, type: type, date: date, title: "Réalisé \(id)", duration: minutes * 60, rpe: rpe)
+}
+
+@Test func aBrickDoneLegByLegIsOneEntry() {
+    let start = yesterday.addingTimeInterval(8 * 3600)
+    let result = entries(
+        planned: [
+            doneLeg("run", on: yesterday, brick: "b1", order: 1, type: "RUN", activityId: "a2"),
+            doneLeg("bike", on: yesterday, brick: "b1", order: 0, type: "BIKE", activityId: "a1"),
+        ],
+        activities: [
+            recorded("a1", type: .bike, at: start, minutes: 60),
+            recorded("a2", type: .run, at: start.addingTimeInterval(3600 + 124), minutes: 20),
+        ]
+    )
+
+    #expect(result.count == 1)
+    guard case .doneBrick(let brick) = result.first else {
+        Issue.record("expected one done brick")
+        return
+    }
+    #expect(brick.id == "b1")
+    #expect(brick.legs.map(\.session.id) == ["bike", "run"])
+    #expect(brick.legs.map { $0.activity?.id } == ["a1", "a2"])
+    #expect(brick.chain == "Vélo → Course")
+    #expect(brick.totalDurationMin == 80)
+    #expect(PlanDayStatus.status(of: result) == .executed)
+    #expect(result.first?.selection == .doneBrick(brick))
+    #expect(result.first?.id == "done-brick-b1")
+}
+
+@Test func aDoneBrickMatchesLegsLinkedFromTheActivitySide() {
+    let bike = leg("bike", on: yesterday, brick: "b1", order: 0, type: "BIKE", minutes: 60)
+    let run = leg("run", on: yesterday, brick: "b1", order: 1, type: "RUN", minutes: 20)
+    let result = entries(
+        planned: [bike, run],
+        activities: [
+            activity("a1", on: yesterday, plannedId: "bike"),
+            activity("a2", on: yesterday.addingTimeInterval(4000), plannedId: "run"),
+        ]
+    )
+
+    #expect(result.count == 1)
+    #expect(result.contains { if case .doneBrick = $0 { true } else { false } })
+}
+
+@Test func aBrickWithOneLegRecordedStaysAnActivityBesideTheLegLeft() {
+    let result = entries(
+        planned: [
+            doneLeg("bike", on: yesterday, brick: "b1", order: 0, type: "BIKE", activityId: "a1"),
+            leg("run", on: yesterday, brick: "b1", order: 1, type: "RUN", minutes: 20),
+        ],
+        activities: [recorded("a1", type: .bike, at: yesterday, minutes: 60)]
+    )
+
+    #expect(!result.contains { if case .doneBrick = $0 { true } else { false } })
+    #expect(result.contains { if case .executed = $0 { true } else { false } })
+}
+
+@Test func aDoneBrickPreviewMeasuresTransitionsAndCarriesTheGroup() {
+    let start = yesterday.addingTimeInterval(8 * 3600)
+    let brick = PlanDoneBrick(
+        id: "b1",
+        legs: [
+            .init(
+                session: doneLeg("bike", on: yesterday, brick: "b1", order: 0, type: "BIKE", activityId: "a1"),
+                activity: recorded("a1", type: .bike, at: start, minutes: 60, rpe: 6)
+            ),
+            .init(
+                session: doneLeg("run", on: yesterday, brick: "b1", order: 1, type: "RUN", activityId: "a2"),
+                activity: recorded("a2", type: .run, at: start.addingTimeInterval(3600 + 124), minutes: 20)
+            ),
+            .init(session: leg("swim", on: yesterday, brick: "b1", order: 2, type: "SWIM", minutes: 10), activity: nil),
+        ]
+    )
+
+    let preview = DoneBrickPreview(planned: brick)
+
+    #expect(preview.brickGroupId == "b1")
+    #expect(preview.legs.map(\.activityId) == ["a1", "a2", nil])
+    #expect(preview.legs[0].actual?.durationSec == 3600)
+    #expect(preview.legs[0].actual?.rpe == 6)
+    #expect(preview.transitionsSec == [124, nil])
+    #expect(!preview.isComplete)
+}
+
+@Test func aTransitionIsUnknownWhenLegsOverlap() {
+    let first = recorded("a1", type: .bike, at: today, minutes: 60)
+    let overlapping = recorded("a2", type: .run, at: today.addingTimeInterval(1800), minutes: 20)
+
+    #expect(DoneBrickPreview.transitionSec(from: first, to: overlapping) == nil)
+    #expect(DoneBrickPreview.transitionSec(from: first, to: nil) == nil)
+}
