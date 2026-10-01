@@ -320,22 +320,38 @@ opened), and reads the six most recent days with data ahead of the athlete.
 **Nutrition.** The food log is the athlete's own data and open to everyone; only the coach's
 reading is SharpIt Pro (the server sends `{ state: 'pro_required' }` below it and never generates
 it), and `NutritionView` shows a `SharpitProTeaser` in its place. `NutritionTodayStore` maps the
-answer to the card's states (disconnected, empty, loaded, failed — a failed read says so and opens
+answer to the card's states (empty, loaded, failed — an empty day invites to log a meal, a failed read says so and opens
 the day, which can retry). `NutritionView` is native, not the web's page: the energy on the app's
 tick dial (`SharpitTickGauge`) with goal, exercise and remaining under it, the coach's reading on
 the ink plate, the three macros as tiles and the energy split by macro, the meals as a list whose
 rows push `NutritionMealView` (entries heaviest first, with the coach's flags), and 14 days of regularity against the calorie goal
 (each day's adherence is the server's; the strip reads, it does not navigate). A header carries the
-diet in force (from the journal) and the coach pill; the « … » menu syncs MFP, opens the weight
+diet in force (from the journal) and the coach pill; the « … » menu adds or scans a food, opens
+the nutrition targets (`NutritionTargetsSheet`), syncs MFP while it is linked, opens the weight
 target (`WeightTargetSheet`) or creates one, and opens the coach. The Résumé card follows the gauge cells: tinted badge, energy against
 the goal, the macros as columns, a context capsule. Goals, percentages and the reading are the
-web's; `NutritionReadout` formats them and derives only the energy split (Atwater). The food log is
-MyFitnessPal. It links in the app (`MyFitnessPalConnectSheet`): the athlete signs in on MFP's own
-site in a private web view, the app reads the session cookie next-auth sets (whole or chunked) and
-posts it to `/api/v1/myfitnesspal/connect` — the web asks for the same cookie copied by hand.
-Nutrition syncs MFP alone (`/api/v1/myfitnesspal/sync`, toolbar or pull) and forgets every day read;
-Sources de données links, syncs and unlinks it too. A day without a log draws its own empty plate
-(never the scaffold's generic empty screen), and a missing log shows the link plate.
+web's; `NutritionReadout` formats them and derives only the energy split (Atwater).
+
+**Food log.** The log lives in SHARPIT (SHARPIT ADR-061, `/api/v1/food-log`, `FoodLogClient`): the
+page is never a « connect a provider » wall (`connected` is always true). `FoodLogStore`, owned by
+`NutritionView`, holds the day's entries by meal (Petit-déjeuner, Déjeuner, Dîner, Collations), the
+targets and the recent foods. Each meal row has its « + », which opens `FoodAddSheet` — the search
+(`FoodSearchStore`, debounced, own foods then Open Food Facts), the barcode scanner
+(`BarcodeScannerView`, VisionKit's `DataScannerViewController`, offered only where it is supported
+and available), a quick add, a custom food per 100 g, then the portion (`FoodPortionPage`: grams
+with presets and a live preview, `FoodPortion` mirroring the web's `portionNutrients`). A meal's
+page (`FoodLogMealPage`) edits an entry on tap (`FoodEntryEditSheet`) and deletes it on swipe. Every
+write shows at once and goes out through `SharpitRetry`, put back and toasted if it fails for good;
+the server rebuilds the day, so the page reads `/api/v1/nutrition` again for the totals. Open Food
+Facts is asked by the server only, and « Données Open Food Facts (ODbL) » stands wherever its
+products are listed or picked. A day only MyFitnessPal filled keeps its meals read-only
+(`NutritionMealView`); the day's own log wins once it holds an entry. MyFitnessPal still links in
+the app (`MyFitnessPalConnectSheet`): the athlete signs in on MFP's own site in a private web view,
+the app reads the session cookie next-auth sets (whole or chunked) and posts it to
+`/api/v1/myfitnesspal/connect`. Nutrition syncs it (`/api/v1/myfitnesspal/sync`, menu or pull, and
+on opening past 15 minutes) only while `mfpConnected`; Sources de données links, syncs and unlinks
+it too. A day without a log draws its own empty plate (never the scaffold's generic empty screen),
+which invites to scan or search a first food.
 
 **Pro gating.** Pro gates what SHARPIT adds — analyses, computed metrics, pushes to the watch —
 never the athlete's own data. `SharpitProTeaser` stands where such a feature would sit below Pro

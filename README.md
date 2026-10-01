@@ -144,6 +144,14 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   separators between them; `SharpitFieldGroup` / `SharpitField` are its form counterpart
 - Semantic color, pressable tiles and the coach pill under each title
   ([ADR 0004](docs/adr/0004-semantic-color-and-a-tinted-coach-pill.md))
+- Nutrition: the food log lives in SHARPIT (web ADR-061). Each meal has its « + »: search
+  (`/api/v1/food-log/foods`, the athlete's own foods then Open Food Facts), a VisionKit barcode
+  scanner, a quick add or a custom food per 100 g; entries are edited or swiped away on the meal's
+  page and the athlete's targets set from the « … » menu. Open Food Facts is only ever asked by the
+  server, so the iPhone sends it nothing; « Données Open Food Facts (ODbL) » is shown where its
+  products are listed. Each write goes out behind the tap (`FoodLogStore`), then
+  `/api/v1/nutrition` is read again for the totals. The MyFitnessPal sync is offered only while it
+  is linked (`mfpConnected`)
 - Activity detail: effort and feeling are rated in one drawer that saves on each tap
   (`ActivitySubjectiveStore`); compliance opens a drawer with the verdict in words
 - ADRs specific to the native client: `docs/adr/`
