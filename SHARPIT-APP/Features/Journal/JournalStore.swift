@@ -199,9 +199,10 @@ final class JournalStore {
     }
 
     /// True when there is nothing on screen at all. The checklist counts: an athlete who
-    /// enabled only derived lines has a journal to read, even with nothing to answer.
+    /// enabled only derived lines has a journal to read, even with nothing to answer. A diet
+    /// draws no row on the day, so it does not count.
     var hasNothingToShow: Bool {
-        visibleTrackables.isEmpty && visibleCustomItems.isEmpty && checklist.isEmpty
+        !visibleTrackables.contains { $0.kind != .diet } && visibleCustomItems.isEmpty && checklist.isEmpty
     }
 
     var moodLabel: String? {

@@ -110,10 +110,9 @@ nonisolated enum JournalDayWindow: Hashable, Sendable {
 
 /// One thing the athlete can record on a day.
 ///
-/// `id` is the preferences key and, for every entry here, also the factor key stored on
-/// the day. The web's catalogue is larger: its automatic items are filled by device sync,
-/// its diet flags and nutrition panel read other endpoints. Those stay out of this list
-/// and out of the app's screens, but their preferences survive a save — see `JournalPrefs`.
+/// `id` is the preferences key and, for a factor, also the key stored on the day. The web's
+/// nutrition panel reads another endpoint: it stays out of this list and out of the app's
+/// screens, but its preference survives a save — see `JournalPrefs`.
 nonisolated struct JournalTrackable: Identifiable, Equatable, Sendable {
     enum Kind: Equatable, Sendable {
         /// A yes / no / unanswered signal stored in the day's factor bag.
@@ -124,6 +123,9 @@ nonisolated struct JournalTrackable: Identifiable, Equatable, Sendable {
         /// Derived from the devices, never answered: the athlete turns it on in the drawer
         /// and reads it in the checklist. It carries no state on the day's entry.
         case auto
+        /// A diet the athlete follows, switched on in the drawer: the coach reads the day's food
+        /// against it and Nutrition names it. A standing choice, so no row on the day.
+        case diet
     }
 
     let id: String
@@ -261,6 +263,13 @@ nonisolated enum JournalCatalogue {
             category: .nutrition,
             symbolName: "fork.knife.circle"
         ),
+        // The web's diet trackables: its keys, labels and order.
+        JournalTrackable(id: "diet_low_carb", label: "Pauvre en glucides", category: .nutrition, symbolName: "carrot", kind: .diet),
+        JournalTrackable(id: "diet_keto", label: "Cétogène", category: .nutrition, symbolName: "flame", kind: .diet),
+        JournalTrackable(id: "diet_gluten_free", label: "Sans gluten", category: .nutrition, symbolName: "nosign", kind: .diet),
+        JournalTrackable(id: "diet_dairy_free", label: "Sans produits laitiers", category: .nutrition, symbolName: "drop.triangle", kind: .diet),
+        JournalTrackable(id: "diet_vegetarian", label: "Végétarien", category: .nutrition, symbolName: "leaf", kind: .diet),
+        JournalTrackable(id: "diet_vegan", label: "Végétalien", category: .nutrition, symbolName: "leaf.circle", kind: .diet),
 
         // Compléments
         JournalTrackable(id: "omega3", label: "Oméga-3", category: .complement, symbolName: "pill"),

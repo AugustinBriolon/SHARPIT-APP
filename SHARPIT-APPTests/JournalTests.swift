@@ -867,3 +867,25 @@ private struct FailingJournalClient: JournalServing {
 
     #expect(store.moodLabel == "Au top")
 }
+
+@Test func theDietsAreTheWebsKeysUnderNutrition() {
+    let diets = JournalCatalogue.all.filter { $0.kind == .diet }
+    #expect(diets.map(\.id) == [
+        "diet_low_carb", "diet_keto", "diet_gluten_free", "diet_dairy_free", "diet_vegetarian", "diet_vegan",
+    ])
+    #expect(diets.allSatisfy { $0.category == .nutrition })
+}
+
+@MainActor
+@Test func aDietIsChosenInTheDrawerButAsksNothingOnTheDay() async throws {
+    let client = StubJournalClient(
+        prefs: try prefs(#"{ "version": 2, "enabled": { "diet_vegetarian": true } }"#)
+    )
+    let store = JournalStore(client: client, tokenProvider: { "token" })
+
+    await store.load()
+
+    #expect(store.prefs.isEnabled("diet_vegetarian"))
+    #expect(store.dayTrackables.isEmpty)
+    #expect(store.hasNothingToShow)
+}

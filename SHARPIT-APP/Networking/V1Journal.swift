@@ -191,8 +191,8 @@ nonisolated struct JournalCustomItem: Identifiable, Equatable, Sendable {
 
 /// The profile's journal preferences, kept as the JSON the server sent.
 ///
-/// The web stores keys the app does not model — auto-checklist ids fed by device sync,
-/// diet flags, analysis thresholds — and the server rebuilds the enable map from
+/// The web stores keys the app does not model — the nutrition panel, analysis
+/// thresholds — and the server rebuilds the enable map from
 /// defaults for every key a payload omits. Sending back only what the app renders
 /// would therefore silently reset the rest, so the untouched keys travel along.
 nonisolated struct JournalPrefs: Equatable, Sendable {

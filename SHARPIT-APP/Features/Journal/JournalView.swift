@@ -324,9 +324,8 @@ private struct JournalTrackableRow: View {
                 value: store.moodLabel ?? "Non renseigné",
                 onOpen: onOpenWellness
             )
-        case .auto:
-            // A derived line carries no answer, so it has no row here: the checklist section
-            // renders it from the server's verdict instead.
+        case .auto, .diet:
+            // A derived line or a standing diet carries no answer, so it has no row here.
             EmptyView()
         }
     }
