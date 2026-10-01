@@ -10,7 +10,7 @@
 		000000000000000150000001 /* SharpItWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 000000000000000000000520 /* SharpItWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A10000000000000000000001 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000011 /* ClerkKit */; };
 		A10000000000000000000002 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000012 /* ClerkKitUI */; };
-		A10000000000000000000003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000021 /* Sentry */; };
+		A10000000000000000000003 /* SentrySPM in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000021 /* SentrySPM */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,7 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				A10000000000000000000001 /* ClerkKit in Frameworks */,
-				A10000000000000000000003 /* Sentry in Frameworks */,
+				A10000000000000000000003 /* SentrySPM in Frameworks */,
 				A10000000000000000000002 /* ClerkKitUI in Frameworks */,
 			);
 		};
@@ -153,7 +153,7 @@
 			packageProductDependencies = (
 				A10000000000000000000011 /* ClerkKit */,
 				A10000000000000000000012 /* ClerkKitUI */,
-				A10000000000000000000021 /* Sentry */,
+				A10000000000000000000021 /* SentrySPM */,
 			);
 			productName = SharpIt;
 			productReference = 000000000000000000000120 /* SharpIt.app */;
@@ -721,10 +721,10 @@
 			package = A10000000000000000000010 /* XCRemoteSwiftPackageReference "clerk-ios" */;
 			productName = ClerkKitUI;
 		};
-		A10000000000000000000021 /* Sentry */ = {
+		A10000000000000000000021 /* SentrySPM */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000020 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
-			productName = Sentry;
+			productName = SentrySPM;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

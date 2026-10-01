@@ -1,5 +1,5 @@
 import Foundation
-import Sentry
+import SentrySwift
 
 /// Crash and error reports to Sentry (EU), and nothing more.
 ///

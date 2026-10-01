@@ -1,5 +1,5 @@
 import Foundation
-import Sentry
+import SentrySwift
 import Testing
 @testable import Sharpit
 
