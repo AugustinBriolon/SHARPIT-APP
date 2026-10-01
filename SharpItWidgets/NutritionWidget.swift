@@ -8,7 +8,7 @@ struct NutritionWidget: Widget {
         StaticConfiguration(kind: "Nutrition", provider: SnapshotProvider()) { entry in
             NutritionWidgetView(entry: entry)
                 .containerBackground(for: .widget) { WidgetCanvas() }
-                .widgetURL(entry.nutrition?.isConnected == false ? WidgetSnapshot.link("/settings/sources") : WidgetSnapshot.link("/today"))
+                .widgetURL(WidgetSnapshot.link("/today"))
         }
         .configurationDisplayName("Nutrition")
         .description("Tes calories restantes et tes macros du jour.")
@@ -50,9 +50,8 @@ private struct NutritionAwaiting: View {
     }
 
     private var message: String {
-        guard let nutrition else { return "Ouvre SharpIt pour charger ta journée." }
-        if !nutrition.isConnected { return "Relie MyFitnessPal pour suivre tes calories." }
-        return "Rien de noté aujourd'hui."
+        guard nutrition != nil else { return "Ouvre SharpIt pour charger ta journée." }
+        return "Note ton premier repas dans SharpIt."
     }
 }
 
@@ -163,7 +162,7 @@ struct NutritionRectangular: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            Label(nutrition?.isConnected == false ? "Relie MyFitnessPal" : "Rien de noté", systemImage: "fork.knife")
+            Label("Note un repas", systemImage: "fork.knife")
                 .font(.headline)
         }
     }

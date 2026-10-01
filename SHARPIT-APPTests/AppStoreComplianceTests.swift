@@ -36,3 +36,9 @@ import Testing
 @Test func theAppStoreBuildDoesNotOfferGarmin() {
     #expect(ProviderAvailability.garminInApp == false)
 }
+
+/// The barcode scanner opens the camera: App Review refuses a build that asks without saying why.
+@Test func theAppExplainsWhyItUsesTheCamera() {
+    let text = Bundle.main.object(forInfoDictionaryKey: "NSCameraUsageDescription") as? String
+    #expect(text?.contains("code-barres") == true)
+}

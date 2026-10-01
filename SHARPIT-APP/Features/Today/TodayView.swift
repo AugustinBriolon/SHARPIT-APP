@@ -330,6 +330,12 @@ private struct TodayFoldView: View {
         .task(id: fold.trainingDayId) {
             await nutrition?.load(trainingDayId: fold.trainingDayId)
         }
+        // Meals are logged on the Nutrition page: the card (and the widget) read the day again
+        // when the athlete comes back from it.
+        .onChange(of: openedNutrition) { _, destination in
+            guard destination == nil else { return }
+            Task { await nutrition?.load(trainingDayId: fold.trainingDayId) }
+        }
 
         .sheet(item: $selectedPreview) { preview in
             PlannedSessionDrawer(
@@ -444,7 +450,7 @@ private struct TodayFoldView: View {
 
     private func openNutrition(_ phase: NutritionTodayStore.Phase) {
         switch phase {
-        case .loaded, .empty, .failed, .disconnected: openedNutrition = .day
+        case .loaded, .empty, .failed: openedNutrition = .day
         case .loading: break
         }
     }

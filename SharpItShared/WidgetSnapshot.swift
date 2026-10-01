@@ -97,7 +97,8 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     /// Today's food log, as its Résumé card reads it.
     nonisolated struct Nutrition: Codable, Equatable, Sendable {
         var trainingDayId: String
-        /// No food log linked: the widget offers to link one.
+        /// Always true since the food log lives in SHARPIT (ADR-061); kept so a snapshot written
+        /// by an older build still decodes.
         var isConnected: Bool
         var calories: Double?
         /// The day's budget, exercise included, as the server computes it.

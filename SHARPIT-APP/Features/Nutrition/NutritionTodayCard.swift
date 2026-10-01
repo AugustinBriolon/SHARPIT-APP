@@ -3,7 +3,7 @@ import SwiftUI
 /// Résumé's nutrition card, built like the overnight gauges above it: a tinted badge and a
 /// label on top, the day's energy against its goal on the left, the three macros as columns
 /// filling toward their goals on the right, and one line of context at the foot. It opens the
-/// day's food log — where a missing food log is linked too.
+/// day's food log, where a meal is logged.
 struct NutritionTodayCard: View {
     let phase: NutritionTodayStore.Phase
     let onOpen: () -> Void
@@ -38,9 +38,7 @@ struct NutritionTodayCard: View {
             NutritionDayGlance(day: NutritionReadout.placeholderDay)
                 .redacted(reason: .placeholder)
         case .empty:
-            message("Rien de noté aujourd'hui", detail: "Tes repas apparaîtront ici dès qu'ils seront dans ton journal.")
-        case .disconnected:
-            message("Aucun journal alimentaire", detail: "Connecte MyFitnessPal pour suivre ce que tu manges.")
+            message("Rien de noté aujourd'hui", detail: "Note ton premier repas : scanne un emballage ou cherche un aliment.")
         case .failed:
             message("Journal indisponible", detail: "Touche pour réessayer.")
         }
@@ -60,7 +58,7 @@ struct NutritionTodayCard: View {
     }
 
     private var hint: String {
-        phase == .disconnected ? "Ouvre la connexion à MyFitnessPal" : "Ouvre le journal alimentaire du jour"
+        phase == .empty ? "Ouvre le journal pour noter un repas" : "Ouvre le journal alimentaire du jour"
     }
 }
 

@@ -137,7 +137,8 @@ private struct StubNutrition: NutritionServing {
     await loaded.load(trainingDayId: "2026-09-27")
     #expect(loaded.phase == .loaded(try #require(decoded.day)))
 
-    #expect(NutritionTodayStore.phase(for: V1NutritionResponse(trainingDayId: "2026-09-27", connected: false, day: nil)) == .disconnected)
+    // The food log lives in SHARPIT: an empty day invites to log a meal, never to link a provider.
+    #expect(NutritionTodayStore.phase(for: V1NutritionResponse(trainingDayId: "2026-09-27", connected: false, day: nil)) == .empty)
     #expect(NutritionTodayStore.phase(for: V1NutritionResponse(trainingDayId: "2026-09-27", day: nil)) == .empty)
 }
 

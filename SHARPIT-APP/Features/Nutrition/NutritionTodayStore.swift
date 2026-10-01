@@ -1,16 +1,14 @@
 import Foundation
 import Observation
 
-/// Today's food log for the Résumé card. The log is the athlete's own data, open to all; the
-/// server says whether one is connected and the card reflects the answer.
+/// Today's food log for the Résumé card. The log is the athlete's own data, open to all, and
+/// lives in SHARPIT (ADR-061): there is no food log to connect, only a day to fill.
 @MainActor
 @Observable
 final class NutritionTodayStore {
     enum Phase: Equatable {
         case loading
-        /// No food log connected.
-        case disconnected
-        /// Connected, nothing logged yet today.
+        /// Nothing logged yet today: the card invites to log a meal.
         case empty
         case loaded(V1NutritionDay)
         /// The read failed: the card says so quietly and opens the day, which can retry.
@@ -42,8 +40,6 @@ final class NutritionTodayStore {
     }
 
     static func phase(for nutrition: V1NutritionResponse) -> Phase {
-        guard nutrition.connected else { return .disconnected }
-        guard let day = nutrition.day else { return .empty }
-        return .loaded(day)
+        nutrition.day.map(Phase.loaded) ?? .empty
     }
 }

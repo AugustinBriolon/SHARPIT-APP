@@ -8,8 +8,12 @@ import Foundation
 nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
     let apiVersion: Int
     let trainingDayId: String
-    /// A food log is connected (MyFitnessPal today).
+    /// Always true since the food log lives in SHARPIT (ADR-061); older servers sent false
+    /// without MyFitnessPal.
     let connected: Bool
+    /// MyFitnessPal is linked, so its sync is offered. A server older than ADR-061 does not
+    /// send it, and `connected` then meant exactly this.
+    let mfpConnected: Bool
     /// The server's words for a day without a log. The page draws its own empty day, with the
     /// week and the way to sync, so the drill-down's generic empty screen is never used.
     let emptyState: V1DayEmpty?
@@ -24,13 +28,14 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
     let regularity: V1NutritionRegularity?
 
     enum CodingKeys: String, CodingKey {
-        case apiVersion, trainingDayId, connected, empty, day, coachReading, diet, history, regularity
+        case apiVersion, trainingDayId, connected, mfpConnected, empty, day, coachReading, diet, history, regularity
     }
 
     init(
         apiVersion: Int = 1,
         trainingDayId: String,
         connected: Bool = true,
+        mfpConnected: Bool = false,
         empty: V1DayEmpty? = nil,
         day: V1NutritionDay?,
         coachReading: V1NutritionCoachReading? = nil,
@@ -41,6 +46,7 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
         self.apiVersion = apiVersion
         self.trainingDayId = trainingDayId
         self.connected = connected
+        self.mfpConnected = mfpConnected
         self.emptyState = empty
         self.day = day
         self.coachReading = coachReading
@@ -54,6 +60,7 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
         apiVersion = try container.decode(Int.self, forKey: .apiVersion)
         trainingDayId = try container.decode(String.self, forKey: .trainingDayId)
         connected = try container.decode(Bool.self, forKey: .connected)
+        mfpConnected = try container.decodeIfPresent(Bool.self, forKey: .mfpConnected) ?? connected
         emptyState = try container.decodeIfPresent(V1DayEmpty.self, forKey: .empty)
         day = try container.decodeIfPresent(V1NutritionDay.self, forKey: .day)
         // The reading is an extra: a shape the app does not know yet must not cost the day.

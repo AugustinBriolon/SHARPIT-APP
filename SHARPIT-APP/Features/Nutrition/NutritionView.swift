@@ -3,10 +3,14 @@ import SwiftUI
 
 /// The day's food log, open to every athlete. Read top to bottom like the other day screens:
 /// the energy dial, the coach's reading on the ink plate, the macros and where the energy came
-/// from, the meals — each opening its own page — and the week, where a bar opens its day. The
-/// food log syncs from here (toolbar or pull), and links from here when it is not connected.
+/// from, the meals — each with its « + », each opening its own page where a food is edited or
+/// taken out — and the week. The log is written here (SHARPIT ADR-061): searched, scanned or
+/// typed in. MyFitnessPal still syncs from here (toolbar or pull) when it is linked.
 struct NutritionView: View {
     @State private var store: DayResourceStore<V1NutritionResponse>
+    @State private var foodLog: FoodLogStore
+    @State private var addRequest: FoodAddRequest?
+    @State private var isEditingTargets = false
     @State private var isSyncing = false
     @State private var isConnecting = false
     @State private var isEditingWeightTarget = false
@@ -29,25 +33,38 @@ struct NutritionView: View {
         dataDaysClient: any DataDaysServing = SharpitClient(),
         profileClient: any AthleteProfileServing = AthleteProfileClient(),
         syncStatusClient: any SyncServing = SharpitClient(),
+        foodLogClient: any FoodLogServing = FoodLogClient(),
         day: Date = .now
     ) {
         self.mfp = mfp
         self.profileClient = profileClient
         self.syncStatusClient = syncStatusClient
         self.tokenProvider = tokenProvider
-        _store = State(initialValue: DayResourceStore(
+        let dayStore = DayResourceStore<V1NutritionResponse>(
             failureMessage: "Ton journal alimentaire n'a pas pu être chargé.",
             tokenProvider: tokenProvider,
             day: day,
             dataDays: { try await dataDaysClient.dataDays(domain: .nutrition, from: $0, to: $1, token: $2) },
             fetch: { try await client.nutrition(trainingDayId: $0, token: $1) }
+        )
+        _store = State(initialValue: dayStore)
+        // Every write rebuilds the day on the server: the totals, goals and reading are read
+        // back from `/api/v1/nutrition`, never added up here.
+        _foodLog = State(initialValue: FoodLogStore(
+            trainingDayId: TrainingDayId.today(now: day),
+            client: foodLogClient,
+            tokenProvider: tokenProvider,
+            onChange: { [weak dayStore] in await dayStore?.load() }
         ))
     }
 
-    private var isConnected: Bool {
-        if case .loaded(let nutrition) = store.phase { return nutrition.connected }
+    /// MyFitnessPal is linked: its sync is offered and run when stale.
+    private var isMFPConnected: Bool {
+        if case .loaded(let nutrition) = store.phase { return nutrition.mfpConnected }
         return false
     }
+
+    private var selectedDayId: String { TrainingDayId.today(now: store.selectedDay) }
 
     var body: some View {
         DayDetailScaffold(
@@ -58,29 +75,41 @@ struct NutritionView: View {
             content: { nutrition in
                 NutritionSections(
                     nutrition: nutrition,
-                    selectedDayId: TrainingDayId.today(now: store.selectedDay),
+                    selectedDayId: selectedDayId,
+                    foodLog: foodLog,
                     isSyncing: isSyncing,
                     onSync: { Task { await sync() } },
-                    onConnect: { isConnecting = true }
+                    onAdd: { addRequest = $0 }
                 )
             },
-            refresh: { await sync() },
+            refresh: {
+                await sync()
+                await foodLog.load(trainingDayId: selectedDayId)
+            },
             loadingPlaceholder: NutritionReadout.placeholderResponse
         )
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    if isConnected {
+                    Button { addRequest = FoodAddRequest(meal: suggestedMeal) } label: {
+                        Label("Ajouter un aliment", systemImage: "plus")
+                    }
+                    if BarcodeScannerView.isAvailable {
+                        Button { addRequest = FoodAddRequest(meal: suggestedMeal, start: .scan) } label: {
+                            Label("Scanner un code-barres", systemImage: "barcode.viewfinder")
+                        }
+                    }
+                    Button { isEditingTargets = true } label: {
+                        Label("Objectifs nutritionnels", systemImage: "scope")
+                    }
+                    .disabled(foodLog.phase != .ready)
+                    if isMFPConnected {
                         Button {
                             Task { await sync() }
                         } label: {
                             Label(isSyncing ? "Synchronisation…" : "Synchroniser MyFitnessPal", systemImage: "arrow.triangle.2.circlepath")
                         }
                         .disabled(isSyncing)
-                    } else {
-                        Button { isConnecting = true } label: {
-                            Label("Connecter MyFitnessPal", systemImage: "link")
-                        }
                     }
                     Button { isEditingWeightTarget = true } label: {
                         if let targetWeightKg {
@@ -106,6 +135,9 @@ struct NutritionView: View {
         }
         .task { await loadWeightTarget() }
         .task { await syncIfStale() }
+        .task(id: selectedDayId) { await foodLog.load(trainingDayId: selectedDayId) }
+        .sheet(item: $addRequest) { FoodAddSheet(store: foodLog, request: $0) }
+        .sheet(isPresented: $isEditingTargets) { NutritionTargetsSheet(store: foodLog) }
         .alert("Session MyFitnessPal expirée", isPresented: $isFoodLogExpired) {
             Button("Reconnecter") { isConnecting = true }
             Button("Plus tard", role: .cancel) {}
@@ -121,6 +153,12 @@ struct NutritionView: View {
         }
     }
 
+    /// The meal a food added from the menu goes in: the one the hour suggests today, lunch on
+    /// another day.
+    private var suggestedMeal: FoodLogMeal {
+        Calendar.current.isDateInToday(store.selectedDay) ? FoodLogMeal.suggested(at: .now) : .lunch
+    }
+
     private func loadWeightTarget() async {
         guard let token = try? await tokenProvider(),
               let profile = try? await profileClient.athleteProfile(token: token)
@@ -128,8 +166,9 @@ struct NutritionView: View {
         targetWeightKg = profile.targetWeightKg
     }
 
-    /// Anticipates the pull: the food log is fetched on opening when the last sync is old, so the
-    /// athlete never has to think of it. Quiet — only news is announced.
+    /// Anticipates the pull: MyFitnessPal is fetched on opening when the last sync is old, so the
+    /// athlete never has to think of it. Quiet — only news is announced. Sync-status lists
+    /// MyFitnessPal only once linked, so an athlete without it is never pulled.
     private func syncIfStale() async {
         guard let token = try? await tokenProvider(),
               let status = try? await syncStatusClient.syncStatus(token: token),
@@ -142,7 +181,7 @@ struct NutritionView: View {
 
     /// Pulls the food log from MyFitnessPal, then reads every day again, and says what came in.
     private func sync(announcesNothingNew: Bool = true) async {
-        guard isConnected, !isSyncing else {
+        guard isMFPConnected, !isSyncing else {
             await store.load()
             return
         }
@@ -192,31 +231,36 @@ struct NutritionView: View {
 struct NutritionSections: View {
     let nutrition: V1NutritionResponse
     var selectedDayId: String?
+    /// The day's own log; nil while a placeholder is drawn.
+    var foodLog: FoodLogStore?
     var isSyncing = false
     var onSync: () -> Void = {}
-    var onConnect: () -> Void = {}
+    var onAdd: (FoodAddRequest) -> Void = { _ in }
+
+    private var isToday: Bool { nutrition.trainingDayId == TrainingDayId.today(now: .now) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            if !nutrition.connected {
-                NutritionConnectPlate(onConnect: onConnect)
-            } else if let day = nutrition.day {
+            if let day = nutrition.day {
                 NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete, isSyncing: isSyncing)
                 NutritionEnergyPlate(day: day, dayId: nutrition.trainingDayId, keptGoal: keptGoal(day))
                 coachReading
                 NutritionMacrosSection(day: day)
-                if !day.meals.isEmpty {
-                    NutritionMealsSection(meals: day.meals, flags: flags)
-                }
+                meals(importedMeals: day.meals)
             } else {
                 NutritionDayHeader(diet: nutrition.diet, isComplete: false, isSyncing: isSyncing)
-                NutritionEmptyDayPlate(
-                    isToday: nutrition.trainingDayId == TrainingDayId.today(now: .now),
-                    isSyncing: isSyncing,
-                    onSync: onSync
-                )
+                if foodLog?.hasEntries != true {
+                    NutritionEmptyDayPlate(
+                        isToday: isToday,
+                        canSync: nutrition.mfpConnected,
+                        isSyncing: isSyncing,
+                        onSync: onSync,
+                        onAdd: { onAdd(FoodAddRequest(meal: suggestedMeal, start: $0)) }
+                    )
+                }
+                meals(importedMeals: [])
             }
-            if nutrition.connected, !nutrition.history.isEmpty {
+            if !nutrition.history.isEmpty {
                 NutritionRegularitySection(
                     history: nutrition.history,
                     regularity: nutrition.regularity,
@@ -226,6 +270,29 @@ struct NutritionSections: View {
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.bottom, SharpitSpacing.xl)
+    }
+
+    private var suggestedMeal: FoodLogMeal { isToday ? FoodLogMeal.suggested(at: .now) : .lunch }
+
+    /// The day's own log once read; a day only MyFitnessPal filled keeps its meals read-only, so
+    /// nothing logged twice is ever shown (ADR-061: SHARPIT wins a day once it holds an entry).
+    @ViewBuilder
+    private func meals(importedMeals: [V1NutritionMeal]) -> some View {
+        let mode = NutritionMealsMode.resolve(
+            foodLogReady: foodLog?.phase == .ready,
+            foodLogEntries: foodLog?.entries.count ?? 0,
+            importedMeals: importedMeals.count
+        )
+        switch mode {
+        case .foodLog:
+            if let foodLog {
+                FoodLogMealsSection(store: foodLog, flags: flags) { onAdd(FoodAddRequest(meal: $0)) }
+            }
+        case .imported:
+            NutritionMealsSection(meals: importedMeals, flags: flags)
+        case .none:
+            EmptyView()
+        }
     }
 
     /// A day kept on target and done with — a past day, or today once closed — earns its seal.
@@ -261,11 +328,14 @@ struct NutritionSections: View {
 
 // MARK: - Empty and unlinked days
 
-/// A day with nothing logged: the empty dial, what to do next, and the sync one tap away.
+/// A day with nothing logged: the empty dial and the next step — scan or search a first food,
+/// and the MyFitnessPal sync when it is linked.
 private struct NutritionEmptyDayPlate: View {
     let isToday: Bool
+    let canSync: Bool
     let isSyncing: Bool
     let onSync: () -> Void
+    let onAdd: (FoodAddStart) -> Void
 
     var body: some View {
         VStack(spacing: SharpitSpacing.md) {
@@ -293,89 +363,57 @@ private struct NutritionEmptyDayPlate: View {
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
                 Text(isToday
-                     ? "Note tes repas dans MyFitnessPal : ils arrivent ici avec leurs calories, macros et la lecture du coach."
-                     : "Si tu as noté des repas ce jour-là, une synchronisation les ramène.")
+                     ? "Note ton premier repas : scanne un emballage ou cherche un aliment. Calories, macros et lecture du coach suivent."
+                     : "Ajoute ce que tu as mangé ce jour-là, repas par repas.")
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Button(action: onSync) {
-                HStack(spacing: SharpitSpacing.xs) {
-                    if isSyncing {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                    }
-                    Text(isSyncing ? "Synchronisation…" : "Synchroniser MyFitnessPal")
+            HStack(spacing: SharpitSpacing.xs) {
+                if BarcodeScannerView.isAvailable {
+                    capsule("Scanner", symbol: "barcode.viewfinder") { onAdd(.scan) }
                 }
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.primary)
-                .padding(.horizontal, SharpitSpacing.md)
-                .padding(.vertical, SharpitSpacing.sm)
-                .background(SharpitColor.primary.opacity(0.10), in: Capsule())
+                capsule("Chercher un aliment", symbol: "magnifyingglass") { onAdd(.search) }
             }
-            .buttonStyle(.sharpitPressable)
-            .disabled(isSyncing)
+
+            if canSync {
+                Button(action: onSync) {
+                    HStack(spacing: SharpitSpacing.xs) {
+                        if isSyncing {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                        }
+                        Text(isSyncing ? "Synchronisation…" : "Synchroniser MyFitnessPal")
+                    }
+                    .font(SharpitTypography.meta.weight(.medium))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                }
+                .buttonStyle(.sharpitPressable)
+                .disabled(isSyncing)
+            }
         }
         .padding(SharpitSpacing.lg)
         .frame(maxWidth: .infinity)
         .sharpitSurface(.panel)
         .sharpitCardSpecularBorder()
     }
-}
 
-/// No food log yet: what linking brings, and the in-app sign-in.
-private struct NutritionConnectPlate: View {
-    let onConnect: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            ZStack {
-                Circle().fill(SharpitColor.primary.opacity(0.12)).frame(width: 52, height: 52)
-                Image(systemName: "fork.knife")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primary)
-            }
-            Text("Relie ton journal alimentaire")
-                .font(SharpitTypography.verdict)
-                .tracking(SharpitTypography.verdictTracking)
-                .foregroundStyle(SharpitColor.foreground)
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                benefit("flame", "Tes calories face à ton objectif, chaque jour")
-                benefit("chart.bar", "Protéines, glucides et lipides, repas par repas")
-                benefit("sparkles.rectangle.stack", "La lecture du coach face à ton entraînement")
-            }
-            Button(action: onConnect) {
-                Text("Connecter MyFitnessPal")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.background)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, SharpitSpacing.sm + 2)
-                    .background(SharpitColor.foreground, in: Capsule())
-            }
-            .buttonStyle(.sharpitPressable)
-            Text("Tu te connectes sur le site de MyFitnessPal, dans l'app. SharpIt ne voit pas ton mot de passe.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-        }
-        .padding(SharpitSpacing.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
-    }
-
-    private func benefit(_ symbol: String, _ text: String) -> some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: symbol)
-                .font(.system(size: 13, weight: .semibold))
+    private func capsule(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol)
+                .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(SharpitColor.primary)
-                .frame(width: 22)
-            Text(text)
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .padding(.horizontal, SharpitSpacing.md)
+                .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                .background(SharpitColor.primary.opacity(0.10), in: Capsule())
         }
+        .buttonStyle(.sharpitPressable)
     }
 }
 
@@ -386,6 +424,11 @@ struct NutritionEntryFlag: Hashable {
 
     func matches(meal other: V1NutritionMeal, entry name: String) -> Bool {
         (meal == other.name || meal == other.label) && entry == name
+    }
+
+    /// The coach keys a flag by the stored meal name (`breakfast`) or its label.
+    func matches(meal other: FoodLogMeal, entry name: String) -> Bool {
+        (meal == other.storedName || meal == other.label) && entry == name
     }
 }
 
