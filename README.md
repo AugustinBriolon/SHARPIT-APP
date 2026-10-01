@@ -75,6 +75,10 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' test
 ```
 
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests on every push to
+`main` and every pull request: newest Xcode on a macOS runner, any iPhone simulator, no signing
+(`CODE_SIGNING_ALLOWED=NO`) and no `Config/Local.xcconfig`.
+
 ## Architecture
 
 - Auth: ClerkKit + ClerkKitUI (`AuthGate` → `AuthView` sheet)
