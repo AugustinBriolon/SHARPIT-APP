@@ -31,9 +31,9 @@ run destination and press Run. On the phone, enable Developer Mode (Settings →
 Security), and trust the developer under Settings → General → VPN & Device Management the
 first time. A free Personal Team signs for 7 days.
 
-WeatherKit, HealthKit and CloudKit are entitled and need a paid team; on a free Personal Team
-the app still builds and runs, but the weather chip reads "Météo indisponible", Apple Health
-cannot be enabled, and the cache stays device-local. Associated Domains is not entitled yet.
+WeatherKit and HealthKit are entitled and need a paid team; on a free Personal Team the app
+still builds and runs, but the weather chip reads "Météo indisponible" and Apple Health cannot
+be enabled. Associated Domains is not entitled yet.
 
 ## Brand fonts
 
@@ -112,9 +112,9 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   ([ADR 0006](docs/adr/0006-reading-density-governs-the-technical-layer.md))
 - Local cache: SwiftData snapshots of a day's Today and journal, so both screens paint before
   the network answers and offline. The server stays the source of truth — a write always goes
-  to `/api` and the cache is written from its echo — and the cache replicates through the
-  athlete's private iCloud
-  ([ADR 0007](docs/adr/0007-icloud-replicates-the-read-cache-only.md))
+  to `/api` and the cache is written from its echo — and the cache never leaves the iPhone:
+  it holds health-derived data, which Apple forbids in iCloud
+  ([ADR 0009](docs/adr/0009-the-read-cache-stays-on-the-device.md))
 - Weather chip: WeatherKit + Core Location (not API weather)
 - Design system: `SHARPIT-APP/DesignSystem/`. Colour and radius are **generated** from the
   web design system — edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or

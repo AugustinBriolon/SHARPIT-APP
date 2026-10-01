@@ -73,10 +73,10 @@ The app target supports `iphoneos` as well as the simulator. The team is not in 
 each machine sets `DEVELOPMENT_TEAM` in the gitignored `Config/Local.xcconfig`, which also
 holds the API origin override.
 
-WeatherKit, HealthKit, CloudKit and Push Notifications (`aps-environment`) are all entitled in
+WeatherKit, HealthKit and Push Notifications (`aps-environment`) are all entitled in
 `SharpIt.entitlements` and all need a paid team. `Config/Info-Extra.plist` declares the
-`remote-notification` background mode: CloudKit's sync pushes and the morning-verdict APNs
-push both need it. Automatic signing stamps `aps-environment` as `production` on an archive, so
+`remote-notification` background mode: the morning-verdict APNs push needs it. No iCloud: the
+cache holds health-derived data (`docs/adr/0009`). Automatic signing stamps `aps-environment` as `production` on an archive, so
 the file keeps `development`. WeatherKit also has to be ticked on the App ID in the developer
 portal, under both Capabilities and App Services; until it is, weatherd logs
 `WDSJWTAuthenticatorServiceListener.Errors Code=2` and the chip reads "Météo indisponible". Xcode reissues the managed profile when an entitlement is added, so a capability that
@@ -350,12 +350,11 @@ checklist. One repository each, and they are the only accessors, so both screens
 before the network answers.
 
 The cache is never the truth — the server is. A write goes to `/api`, the cache is written from
-the server's echo and never merged with it. It replicates through the athlete's **private**
-CloudKit database (`docs/adr/0007`), which costs the schema a `#Unique`: CloudKit refuses one, so
-each repository resolves a day by fetching every row for it sorted by `fetchedAt` descending,
-keeping the newest and deleting the rest. Every attribute has a default and every payload is
-optional for the same reason. An in-memory container skips CloudKit, so a test never reaches the
-network.
+the server's echo and never merged with it. It stays on the iPhone (`cloudKitDatabase: .none`,
+`docs/adr/0009`): every model holds health-derived data, which Apple forbids in iCloud. The
+schema keeps the shape CloudKit once required (`docs/adr/0007`) — no `#Unique`, so each
+repository resolves a day by fetching every row for it sorted by `fetchedAt` descending, keeping
+the newest and deleting the rest; a default on every attribute and an optional payload.
 
 **Local data belongs to an account.** Nothing cached on the iPhone is keyed by account, so
 `LocalAccountData` records the Clerk user it was written for (`AuthGate` claims it on each
@@ -435,8 +434,7 @@ reschedules them from the plan on launch, on each return, on `calendarRevision` 
 an hour before a session's `startTime` or at 7:30 that day, by `SessionReminderPlanner`'s rules; every
 tapped notification goes through `PushNotificationManager.destination(for:)` to
 `ShellRouter.open(_:)` — `/plan/generator`, `/plan/review`, `/settings/sources`, a tab), Sources de
-données, Synchronisation iCloud (`CloudSyncMonitor`, which records `NSPersistentCloudKitContainer`
-events from launch), Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: the choice needs its
+données, Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: the choice needs its
 explanation) and Confidentialité, each row saying its state before it is opened. A page's explanation is the footer of its
 list (`SharpitListFooter`), never a paragraph above it. Compte edits in
 place: first and last name through Clerk's `user.update`, sex, height and birth date through

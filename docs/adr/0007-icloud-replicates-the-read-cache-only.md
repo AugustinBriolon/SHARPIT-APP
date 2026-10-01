@@ -4,7 +4,7 @@ Date: 2026-09-21
 
 ## Status
 
-Accepted
+Superseded by [ADR-0009](0009-the-read-cache-stays-on-the-device.md)
 
 ## Context
 
