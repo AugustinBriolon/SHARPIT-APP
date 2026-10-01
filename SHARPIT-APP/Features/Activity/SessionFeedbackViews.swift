@@ -4,7 +4,7 @@ import SwiftUI
 
 /// A half-width readout that opens a drawer: a caption with a chevron on top, the value
 /// below. Both tiles of a row stretch to the taller one.
-private struct ReadoutTile<Value: View>: View {
+struct ReadoutTile<Value: View>: View {
     let caption: String
     let action: () -> Void
     @ViewBuilder let value: Value
@@ -72,7 +72,7 @@ struct SessionFeedbackTile: View {
     }
 }
 
-private struct ScaleReadout: View {
+struct ScaleReadout: View {
     let value: Int?
     let outOf: Int
     let tone: Color
@@ -177,7 +177,7 @@ struct SubjectiveEditorSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    scale(
+                    SubjectiveScale(
                         title: "Effort perçu",
                         value: store.rpe,
                         outOf: 10,
@@ -191,7 +191,7 @@ struct SubjectiveEditorSheet: View {
                         ) { store.setRPE($0) }
                     }
 
-                    scale(
+                    SubjectiveScale(
                         title: "Ressenti",
                         value: store.feeling?.rawValue,
                         outOf: 5,
@@ -216,15 +216,18 @@ struct SubjectiveEditorSheet: View {
         }
         .onDisappear { Task { await store.flush() } }
     }
+}
 
-    private func scale<Grid: View>(
-        title: String,
-        value: Int?,
-        outOf: Int,
-        caption: String,
-        tone: Color?,
-        @ViewBuilder grid: () -> Grid
-    ) -> some View {
+/// One titled scale: its value read large on the right, the grid, a caption that reads the choice.
+struct SubjectiveScale<Grid: View>: View {
+    let title: String
+    let value: Int?
+    let outOf: Int
+    let caption: String
+    let tone: Color?
+    @ViewBuilder let grid: Grid
+
+    var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(alignment: .lastTextBaseline) {
                 SharpitEyebrow(title)
@@ -239,7 +242,7 @@ struct SubjectiveEditorSheet: View {
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
             }
-            grid()
+            grid
             Text(caption)
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
@@ -249,8 +252,8 @@ struct SubjectiveEditorSheet: View {
     }
 }
 
-private struct SaveStatusLine: View {
-    let status: ActivitySubjectiveStore.Status
+struct SaveStatusLine: View {
+    let status: SubjectiveSaveStatus
 
     var body: some View {
         Group {
@@ -278,7 +281,7 @@ private struct SaveStatusLine: View {
 
 /// A row of numbered steps. The selected one fills with its own tone, so the scale reads
 /// as a ramp and not as a column of identical buttons.
-private struct RatingGrid: View {
+struct RatingGrid: View {
     let values: [Int]
     let selection: Int?
     let tone: (Int) -> Color

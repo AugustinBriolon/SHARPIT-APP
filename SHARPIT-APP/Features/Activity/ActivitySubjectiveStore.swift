@@ -1,6 +1,14 @@
 import Foundation
 import Observation
 
+/// Where a tap-to-save answer stands — shown under the scales it saves.
+enum SubjectiveSaveStatus: Equatable {
+    case idle
+    case saving
+    case saved
+    case failed(String)
+}
+
 /// Effort and feeling for one session, saved as the athlete taps.
 ///
 /// There is no save button: a tap is the answer, as in the journal. Writes are debounced so
@@ -9,12 +17,7 @@ import Observation
 @MainActor
 @Observable
 final class ActivitySubjectiveStore: Identifiable {
-    enum Status: Equatable {
-        case idle
-        case saving
-        case saved
-        case failed(String)
-    }
+    typealias Status = SubjectiveSaveStatus
 
     private(set) var rpe: Int?
     private(set) var feeling: SessionFeeling?
