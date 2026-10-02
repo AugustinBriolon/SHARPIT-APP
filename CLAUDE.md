@@ -91,7 +91,10 @@ The test target imports the module as `Sharpit` (`@testable import Sharpit`), no
 **Entry / auth.** `SharpitApp` configures Clerk and the SwiftData `ModelContainer`, then
 wraps `RootView` in `AuthGate`. Every network call takes a Bearer token produced by
 `clerk.auth.getToken()`; views receive it as an injected `tokenProvider` closure rather
-than reaching for Clerk themselves.
+than reaching for Clerk themselves. The sign-in drawer puts Apple first, as Apple's own
+`ASAuthorizationAppleIDButton` (`SharpitAppleSignInButton`: black on light, white on dark), with
+Clerk's `signInWithApple()` running the native authorization; Google sits under it in Google's
+branding colours and the official « G » (`SharpitGoogleSignInButton`), same shape and height.
 
 **Consent.** `AccountGate` sits between `AuthGate` and `RootView`. A new account meets the
 consents inside the onboarding, as its step just before Sources; the legal wall
@@ -252,7 +255,9 @@ or a form may be closed by then. `AthleteProfileStore.save` applies the patch to
 queues the writes in order, and reads the profile back when one fails for good; `settle()` waits for
 the queue. The morning check-in closes on the tap the same way. A creation that needs the server's id
 (a goal, a coach constraint) and the consents (the gate reads them) still wait for the answer, retried.
-Clients map a 5xx to `SharpitAPIError.server` so it can be told from a refusal.
+Clients map a 5xx to `SharpitAPIError.server` so it can be told from a refusal. The journal says
+what the server refused (400/422 carry its message, 429 is `rateLimited`) and sends its saves one
+at a time (`JournalStore.saveChain`), so a save retried in the background never races the next.
 
 **Coach turns and proposals.** A coach turn is kept as the AI SDK's UI-message parts
 (`CoachMessage.parts`), rebuilt from the route's stream by `CoachUIMessageAssembler` — a port of
@@ -406,6 +411,10 @@ Sources de données › Priorités par catégorie (`SourcePrioritiesView`, `Sour
 `/api/v1/integrations/source-prefs`) turns each connected source on or off per data class and picks
 the primary — the web applies it: the primary's values win, the others fill what it lacks. HealthKit is read-only and entitled in `SharpIt.entitlements`. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
+
+**Strength sessions.** A strength activity lists its exercises in the order done
+(`ActivityStrengthSection`): each block of sets as « 4 × 8 · 60 kg » (« 3 × 45 s » when timed, no
+load when bodyweight) and the exercise's volume; `StrengthExerciseReadout` words it, tested.
 
 **Activity cache.** The list (`ActivityView`) is one scroll view for every phase, holding the
 refresh control: swapping the scroll view with the phase left the control stuck pulled down. An activity's detail and streams are kept on disk as the raw JSON the server
