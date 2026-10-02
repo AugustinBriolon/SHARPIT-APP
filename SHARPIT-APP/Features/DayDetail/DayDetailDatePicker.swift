@@ -9,6 +9,8 @@ struct DayDetailDatePicker: View {
     var hasData: (Date) -> Bool? = { _ in nil }
     /// Asks for the marks of a week about to be seen — the strip scrolled back, a month opened.
     var onShowWeek: (Date) -> Void = { _ in }
+    /// Back to today, offered beside the date only while another day is open.
+    var onToday: (() -> Void)?
     let onSelect: (Date) -> Void
 
     private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
@@ -19,11 +21,13 @@ struct DayDetailDatePicker: View {
         selectedDay: Date,
         hasData: @escaping (Date) -> Bool? = { _ in nil },
         onShowWeek: @escaping (Date) -> Void = { _ in },
+        onToday: (() -> Void)? = nil,
         onSelect: @escaping (Date) -> Void
     ) {
         self.selectedDay = selectedDay
         self.hasData = hasData
         self.onShowWeek = onShowWeek
+        self.onToday = onToday
         self.onSelect = onSelect
         _weekOffset = State(initialValue: weeks.offset(forWeekContaining: selectedDay))
     }
@@ -47,9 +51,15 @@ struct DayDetailDatePicker: View {
                 .buttonStyle(.plain)
                 .accessibilityHint("Ouvre le calendrier")
 
-                // "Aujourd'hui" lives in the navigation bar (`DayDetailScaffold`).
+                // Beside the date it moves, not in the bar: there it merged into one glass pill
+                // with each screen's own actions.
                 Spacer(minLength: 0)
+                if let onToday, !Calendar.current.isDateInToday(selectedDay) {
+                    SharpitTodayChip(action: onToday)
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
             }
+            .animation(SharpitMotion.selection, value: Calendar.current.isDateInToday(selectedDay))
             .padding(.horizontal, SharpitSpacing.pageInset)
 
             SharpitWeekStrip(weekOffset: $weekOffset, weeks: weeks) { day in

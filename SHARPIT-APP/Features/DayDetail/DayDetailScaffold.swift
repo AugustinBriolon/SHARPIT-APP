@@ -22,7 +22,8 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
             DayDetailDatePicker(
                 selectedDay: store.selectedDay,
                 hasData: store.hasData(on:),
-                onShowWeek: { day in Task { await store.markDays(around: day) } }
+                onShowWeek: { day in Task { await store.markDays(around: day) } },
+                onToday: { Task { await store.select(.now) } }
             ) { day in
                 Task { await store.select(day) }
             }
@@ -36,14 +37,6 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
         .background(SharpitCanvasBackground())
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            // Right of the title, in the bar's glass — and only while away from today.
-            if !Calendar.current.isDateInToday(store.selectedDay) {
-                ToolbarItem(placement: .topBarTrailing) {
-                    SharpitTodayButton { Task { await store.select(.now) } }
-                }
-            }
-        }
         .task { await store.load() }
     }
 
