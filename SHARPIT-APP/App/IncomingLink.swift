@@ -16,6 +16,8 @@ enum IncomingLink: Equatable {
     case plannedSession(id: String)
     /// Plan's Objectifs — the next race tapped in a widget.
     case goals
+    /// Nutrition opened on the barcode scanner — the « Scanner un produit » widget or control.
+    case foodScan
 
     nonisolated static let trustedHost = "sharpit.app"
 
@@ -37,6 +39,9 @@ enum IncomingLink: Equatable {
         }
         if components.path == "/goals" {
             return .goals
+        }
+        if components.path == "/nutrition/scan" {
+            return .foodScan
         }
         if let id = identifier(in: components.path, after: "/activity/") {
             return .activity(id: id)

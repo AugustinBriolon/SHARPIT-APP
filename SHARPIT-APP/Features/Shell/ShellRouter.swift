@@ -34,6 +34,13 @@ final class ShellRouter {
     var pendingActivityId: String?
     /// A planned session to open in Plan's drawer, once — a session to do tapped in a widget.
     var pendingPlannedSessionId: String?
+    /// Nutrition to open on the barcode scanner, once — the « Scanner un produit » widget.
+    var pendingFoodScan = false
+
+    func openFoodScan() {
+        pendingFoodScan = true
+        selectedTab = .today
+    }
 
     func openActivity(id: String) {
         pendingActivityId = id

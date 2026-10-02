@@ -47,4 +47,20 @@ struct IncomingLinkTests {
         #expect(link("https://sharpit.app/goals") == .goals)
         #expect(link("https://sharpit.app/unknown") == nil)
     }
+
+    @Test func theScanWidgetOpensTheScannerOnlyOnOurHost() {
+        #expect(link("https://sharpit.app/nutrition/scan") == .foodScan)
+        #expect(link("https://api.sharpit.app/nutrition/scan") == nil)
+    }
+}
+
+@MainActor
+@Test func openingTheScannerGoesToRésuméAndWaitsForIt() {
+    let router = ShellRouter()
+    router.select(.coach)
+
+    router.openFoodScan()
+
+    #expect(router.selectedTab == .today)
+    #expect(router.pendingFoodScan)
 }

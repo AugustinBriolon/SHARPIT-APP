@@ -336,6 +336,12 @@ private struct TodayFoldView: View {
             guard destination == nil else { return }
             Task { await nutrition?.load(trainingDayId: fold.trainingDayId) }
         }
+        .onChange(of: router.pendingFoodScan, initial: true) { _, pending in
+            guard pending else { return }
+            router.pendingFoodScan = false
+            guard features.isOn(.nutrition) else { return }
+            openedNutrition = .scan
+        }
 
         .sheet(item: $selectedPreview) { preview in
             PlannedSessionDrawer(
@@ -461,6 +467,10 @@ private struct TodayFoldView: View {
         case .day:
             if let nutritionClient, let tokenProvider {
                 NutritionView(client: nutritionClient, tokenProvider: tokenProvider)
+            }
+        case .scan:
+            if let nutritionClient, let tokenProvider {
+                NutritionView(client: nutritionClient, tokenProvider: tokenProvider, opensScanner: true)
             }
         }
     }
@@ -664,6 +674,8 @@ private struct TodayEmptyView: View {
 /// Where Résumé's nutrition card leads.
 private enum NutritionDestination: Hashable, Identifiable {
     case day
+    /// Opened from the « Scanner un produit » widget: the day, its scanner already up.
+    case scan
 
     var id: Self { self }
 }

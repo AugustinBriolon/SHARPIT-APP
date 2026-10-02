@@ -19,5 +19,7 @@ struct SharpItWidgetsBundle: WidgetBundle {
         NextGoalWidget()
         CoachWidget()
         CoachControl()
+        ScanFoodWidget()
+        ScanFoodControl()
     }
 }

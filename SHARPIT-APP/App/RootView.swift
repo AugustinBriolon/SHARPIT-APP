@@ -258,6 +258,8 @@ struct RootView: View {
             router.openPlannedSession(id: id)
         case .goals:
             router.open(.goals)
+        case .foodScan:
+            router.openFoodScan()
         case nil:
             break
         }
