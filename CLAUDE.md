@@ -195,7 +195,9 @@ fixed week in Debug builds.
 
 **Widgets.** `SharpItWidgets` is a WidgetKit extension (« Séance du jour », « Verdict du jour »,
 « Nutrition », « Sommeil », « Poids », « Volume de la semaine », « Régularité », « Prochain objectif »,
-« Demander au coach » and its Control Center button; home screen and lock screen). The snapshot is in
+« Demander au coach » and its Control Center button, « Scanner un produit » and its control —
+`/nutrition/scan` opens Nutrition from Résumé with the scanner up, hidden with Nutrition; home screen
+and lock screen). The snapshot is in
 sections — `day` (verdict, sessions, last night's sleep) and `regularity` from Résumé's fold,
 `nutrition` from the food log card (`NutritionTodayStore`), `weight` from Santé's body overview (`CorpsStore`) and the
 profile's target, `training` (the last two weeks recorded) from Activité's list, `goal` (Objectifs'
@@ -339,7 +341,11 @@ the nutrition targets (`NutritionTargetsSheet`: macros in grams or as % of the e
 arithmetic in `NutritionTargetSplit`), opens the weight target (`WeightTargetSheet`) or creates one
 and, last, « Importer depuis MyFitnessPal ». The Résumé card follows the gauge cells: tinted badge, energy against
 the goal, the macros as columns, a context capsule. Goals, percentages and the reading are the
-web's; `NutritionReadout` formats them and derives only the energy split (Atwater).
+web's; `NutritionReadout` formats them and derives only the energy split (Atwater). Colour carries
+meaning, as Activité's sports and Paramètres' settings do (`SharpitNutritionTone`): each meal its hue
+(petit-déjeuner amber, déjeuner coral, dîner indigo, collations rose) on its glyph and « + », each way
+into the add sheet its tile, and every food, entry and portion a thin bar of its energy split in the
+macros' hues (`NutritionMacroSplitBar`).
 
 **Food log.** The log lives in SHARPIT (SHARPIT ADR-061, `/api/v1/food-log`, `FoodLogClient`): the
 page is never a « connect a provider » wall (`connected` is always true). `FoodLogStore`, owned by
@@ -416,6 +422,12 @@ the primary — the web applies it: the primary's values win, the others fill wh
 (`ActivityStrengthSection`): each block of sets as « 4 × 8 · 60 kg » (« 3 × 45 s » when timed, no
 load when bodyweight) and the exercise's volume; `StrengthExerciseReadout` words it, tested.
 
+**Route intensity.** The expanded map's layers menu colours the route by heart rate (by speed
+without it), in the training zones' family (`RouteIntensity`, `RouteIntensityTone`): five levels
+between the session's own 10th and 90th percentiles, so one sprint does not flatten the rest. The
+path and the samples are both thinned evenly by the server from one recording, so a point takes the
+sample at the same share of the session — no server change.
+
 **Activity cache.** The list (`ActivityView`) is one scroll view for every phase, holding the
 refresh control: swapping the scroll view with the phase left the control stuck pulled down. An activity's detail and streams are kept on disk as the raw JSON the server
 answered (`ActivityDiskCache`, Application Support), because the in-memory cache died with each
@@ -441,7 +453,9 @@ offline): each marker read against a published norm, its source named, and again
 own month — the app computes none of it; `SanteReadout` only words it. A marker opens
 `CorpsMetricDrawer` with its reading (`SanteReadingBlock`) when the web keeps its longer history
 (`/api/v1/body/series`, through `CorpsStore`, which also still feeds the Poids widget), else its month
-(`SanteMarkerSheet`). Free except the biological age, which is Pro (`SharpitProTeaser`); Pro without
+(`SanteMarkerSheet`). The drawer's curve follows the finger (`chartXSelection`: the nearest measure
+and its date, a notch per measure) and draws itself left to right, its dots after, when a range
+arrives. Free except the biological age, which is Pro (`SharpitProTeaser`); Pro without
 the data it needs pushes `AccountView`. The weight target is set from the toolbar
 (`WeightTargetSheet`), the sleep targets from Sommeil's (`SleepTargetsSheet`). Training thresholds are
 not health: Paramètres › Entraînement › Seuils d'entraînement (`ThresholdsView`).
