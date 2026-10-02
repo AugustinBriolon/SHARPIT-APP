@@ -58,10 +58,7 @@ enum CrashReporting {
     }
 
     static var defaultEnvironment: String {
-        #if DEBUG
-        "debug"
-        #else
-        Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" ? "testflight" : "production"
-        #endif
+        if AppDistribution.isDebug { return "debug" }
+        return AppDistribution.isTestFlight ? "testflight" : "production"
     }
 }

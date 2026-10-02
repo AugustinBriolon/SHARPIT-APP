@@ -32,9 +32,12 @@ import Testing
     #expect(plist["com.apple.developer.healthkit.access"] == nil)
 }
 
-/// Garmin's access is unofficial: the App Store build offers no way to connect it (5.2.2).
+/// Garmin's access is unofficial: the App Store build offers no way to connect it (5.2.2);
+/// Xcode and TestFlight builds keep it.
 @Test func theAppStoreBuildDoesNotOfferGarmin() {
-    #expect(ProviderAvailability.garminInApp == false)
+    #expect(ProviderAvailability.garminInApp(debug: false, testFlight: false) == false)
+    #expect(ProviderAvailability.garminInApp(debug: true, testFlight: false))
+    #expect(ProviderAvailability.garminInApp(debug: false, testFlight: true))
 }
 
 /// MyFitnessPal's access is unofficial (5.2.2): the app never signs in to it, it only reads the
