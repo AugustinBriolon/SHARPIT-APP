@@ -469,6 +469,13 @@ private struct ActivityDetailContent: View {
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 2)), value: appeared)
 
+            if detail.type == .strength, !strengthExercises.isEmpty {
+                ActivityStrengthSection(exercises: strengthExercises)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 12)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 3)), value: appeared)
+            }
+
             if detail.type == .triathlon, !detail.multisportLegs.isEmpty {
                 multisportLegsSection
                     .opacity(appeared ? 1 : 0)
@@ -693,6 +700,10 @@ private struct ActivityDetailContent: View {
 
     private var exerciseCount: Int {
         Set(detail.strengthSets.map(\.exercise)).count
+    }
+
+    private var strengthExercises: [StrengthExerciseReadout] {
+        StrengthExerciseReadout.exercises(from: detail.strengthSets)
     }
 
     private var totalStrengthSets: Int {
