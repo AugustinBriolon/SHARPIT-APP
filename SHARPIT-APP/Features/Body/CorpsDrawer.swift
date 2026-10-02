@@ -53,6 +53,11 @@ struct CorpsMetricDrawer: View {
     @State private var range: CorpsRange = .ninetyDays
     @State private var loaded: [CorpsPoint]?
     @State private var isLoading = false
+    /// Where the finger is on the chart; the nearest measure is read out.
+    @State private var scrubbedDate: Date?
+    /// The curve drawn left to right, then its dots, each time a range arrives.
+    @State private var drawProgress: CGFloat = 0
+    @State private var dotScale: CGFloat = 0
 
     var body: some View {
         NavigationStack {
@@ -102,8 +107,21 @@ struct CorpsMetricDrawer: View {
         .task(id: range) {
             isLoading = true
             let fetched = await loadSeries(range)
-            SharpitMotion.run { loaded = fetched }
+            scrubbedDate = nil
             isLoading = false
+            // The first answer refines the curve already drawn from the tile; a new range draws anew.
+            guard loaded != nil else {
+                SharpitMotion.run { loaded = fetched }
+                return
+            }
+            drawProgress = 0
+            dotScale = 0
+            loaded = fetched
+            drawCurve()
+        }
+        .onAppear(perform: drawCurve)
+        .onChange(of: scrubbed?.date) { _, date in
+            if date != nil { SharpitHaptics.play(.notch(major: false)) }
         }
     }
 
@@ -136,6 +154,15 @@ struct CorpsMetricDrawer: View {
         loaded ?? range.filter(metric.series)
     }
 
+    private func drawCurve() {
+        withAnimation(SharpitMotion.gaugeFill) { drawProgress = 1 }
+        withAnimation(SharpitMotion.reveal.delay(SharpitMotion.reduceMotion ? 0 : 0.45)) { dotScale = 1 }
+    }
+
+    private var scrubbed: CorpsPoint? {
+        scrubbedDate.flatMap { CorpsFormat.nearest(points, to: $0) }
+    }
+
     private var chart: some View {
         let shown = points
         let values = shown.map(\.value) + [metric.baseline?.lowerBound, metric.baseline?.upperBound, target].compactMap { $0 }
@@ -165,7 +192,24 @@ struct CorpsMetricDrawer: View {
                     .foregroundStyle(SharpitColor.primary)
                 PointMark(x: .value("Jour", point.date), y: .value(metric.key.label, point.value))
                     .foregroundStyle(SharpitColor.primary)
-                    .symbolSize(shown.count > 40 ? 6 : 22)
+                    .symbolSize((shown.count > 40 ? 6 : 22) * dotScale)
+            }
+            if let scrubbed {
+                RuleMark(x: .value("Jour", scrubbed.date))
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                    .lineStyle(StrokeStyle(lineWidth: 1))
+                PointMark(x: .value("Jour", scrubbed.date), y: .value(metric.key.label, scrubbed.value))
+                    .foregroundStyle(SharpitColor.primary)
+                    .symbolSize(90)
+                    .annotation(position: .top, spacing: 6, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                        scrubLabel(scrubbed)
+                    }
+            }
+        }
+        .chartXSelection(value: $scrubbedDate)
+        .mask(alignment: .leading) {
+            GeometryReader { geo in
+                Rectangle().frame(width: geo.size.width * drawProgress)
             }
         }
         // Never zero-based: these measures move by a few percent, and a zero axis would
@@ -189,8 +233,23 @@ struct CorpsMetricDrawer: View {
         .frame(height: 220)
         .padding(SharpitSpacing.md)
         .sharpitSurface(.panel)
-        .animation(SharpitMotion.reveal, value: range)
         .accessibilityLabel("\(metric.key.label), \(range.label)")
+    }
+
+    private func scrubLabel(_ point: CorpsPoint) -> some View {
+        VStack(spacing: 1) {
+            Text(CorpsReadout.format(point.value, for: metric.key) + (metric.key.unit.map { " \($0)" } ?? ""))
+                .font(SharpitTypography.instrument)
+                .monospacedDigit()
+                .foregroundStyle(SharpitColor.foreground)
+            Text(point.date.sharpitFormatted(.dateTime.day().month(.abbreviated)))
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(SharpitElevatedColor.panelOnSheet, in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+        .sharpitShadow(.control)
     }
 
     @ViewBuilder
@@ -249,6 +308,11 @@ enum CorpsFormat {
     }
 
     /// Padding either side so a flat series still has room, never a zero-based axis.
+    /// The measure closest in time to where the finger is.
+    static func nearest(_ points: [CorpsPoint], to date: Date) -> CorpsPoint? {
+        points.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+    }
+
     static func domain(_ values: [Double], padding: Double) -> ClosedRange<Double> {
         guard let low = values.min(), let high = values.max() else { return 0...1 }
         let span = max(high - low, abs(high) * 0.02, 0.5)
