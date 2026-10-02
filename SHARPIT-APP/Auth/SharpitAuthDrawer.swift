@@ -139,60 +139,12 @@ struct SharpitAuthDrawer: View {
             }
             .padding(.vertical, 4)
 
-            // 4. Social Auth: Google & Apple
+            // 4. Social Auth: Apple first, as App Review asks, Google beside it in the same shape
             VStack(spacing: 12) {
-                // Google Sign In
-                Button {
-                    Task { await handleGoogleSignIn() }
-                } label: {
-                    HStack(spacing: 12) {
-                        googleIcon
-                        Text("Continuer avec Google")
-                            .font(.custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 15))
-                            .foregroundStyle(SharpitColor.foreground)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background {
-                        RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                            .fill(SharpitColor.card)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                                    .strokeBorder(SharpitColor.border, lineWidth: 1)
-                            )
-                            .sharpitShadow(.control)
-                    }
-                }
-                .buttonStyle(.sharpitPressable)
-                .disabled(isLoading)
-
-                // Apple Sign In
-                Button {
-                    Task { await handleAppleSignIn() }
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 17))
-                            .foregroundStyle(SharpitColor.foreground)
-
-                        Text("Continuer avec Apple")
-                            .font(.custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 15))
-                            .foregroundStyle(SharpitColor.foreground)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background {
-                        RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                            .fill(SharpitColor.card)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                                    .strokeBorder(SharpitColor.border, lineWidth: 1)
-                            )
-                            .sharpitShadow(.control)
-                    }
-                }
-                .buttonStyle(.sharpitPressable)
-                .disabled(isLoading)
+                SharpitAppleSignInButton { Task { await handleAppleSignIn() } }
+                    .disabled(isLoading)
+                SharpitGoogleSignInButton { Task { await handleGoogleSignIn() } }
+                    .disabled(isLoading)
             }
 
             // 5. Trust Footnote
@@ -388,12 +340,6 @@ struct SharpitAuthDrawer: View {
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(SharpitColor.destructive.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    private var googleIcon: some View {
-        Image(systemName: "g.circle.fill")
-            .font(.system(size: 19))
-            .foregroundStyle(SharpitColor.foreground)
     }
 
     // MARK: – Authentication Actions
