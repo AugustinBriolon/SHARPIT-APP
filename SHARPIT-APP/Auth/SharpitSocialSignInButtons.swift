@@ -46,21 +46,15 @@ private struct AppleIDButton: UIViewRepresentable {
     }
 }
 
-/// Google's button in its branding colours, set against Apple's: the dark theme where Apple's is
-/// black, the light theme where it is white — same shape, height and type, the official « G ».
+/// Google's button in its light theme, white in both appearances — same shape, height and type
+/// as Apple's, with the official « G ».
 struct SharpitGoogleSignInButton: View {
-    @Environment(\.colorScheme) private var colorScheme
     let action: () -> Void
 
-    private var isDark: Bool { colorScheme == .dark }
-    // Google's published theme values (developers.google.com/identity/branding-guidelines).
-    private var fill: Color { isDark ? .white : Color(red: 0x13 / 255, green: 0x13 / 255, blue: 0x14 / 255) }
-    private var stroke: Color {
-        isDark ? Color(red: 0x74 / 255, green: 0x77 / 255, blue: 0x75 / 255) : Color(red: 0x8E / 255, green: 0x91 / 255, blue: 0x8F / 255)
-    }
-    private var title: Color {
-        isDark ? Color(red: 0x1F / 255, green: 0x1F / 255, blue: 0x1F / 255) : Color(red: 0xE3 / 255, green: 0xE3 / 255, blue: 0xE3 / 255)
-    }
+    // Google's published light theme (developers.google.com/identity/branding-guidelines).
+    private let fill = Color.white
+    private let stroke = Color(red: 0x74 / 255, green: 0x77 / 255, blue: 0x75 / 255)
+    private let title = Color(red: 0x1F / 255, green: 0x1F / 255, blue: 0x1F / 255)
 
     var body: some View {
         Button(action: action) {
