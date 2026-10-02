@@ -18,6 +18,9 @@ struct ActivityDetailView: View {
     @State private var isMapExpanded = false
     @State private var mapCameraPosition: MapCameraPosition = .automatic
     @State private var mapStyleSelection: MapStyleOption = .standard
+    @State private var colorsRouteByIntensity = false
+    /// Built once per stream read, not on every render: the path and samples are hundreds long.
+    @State private var routeIntensity: RouteIntensity?
     @Environment(\.dismiss) private var dismiss
 
     init(
@@ -49,7 +52,16 @@ struct ActivityDetailView: View {
                 if reservesMapSpace {
                     ZStack(alignment: .top) {
                         Group {
-                            if let stream = detail.stream, stream.available, !stream.route.isEmpty {
+                            if colorsRouteByIntensity, let intensity = routeIntensity {
+                                ActivityRouteHero(
+                                    route: streamPayload?.route ?? route,
+                                    tone: activityTone(detail.type),
+                                    isExpanded: isMapExpanded,
+                                    position: $mapCameraPosition,
+                                    mapStyle: mapStyleSelection.mapStyle,
+                                    intensity: intensity
+                                )
+                            } else if let stream = detail.stream, stream.available, !stream.route.isEmpty {
                                 ActivityRouteHero(
                                     route: stream.route,
                                     tone: activityTone(detail.type),
@@ -152,6 +164,9 @@ struct ActivityDetailView: View {
         .modifier(ScrollUnderGlass())
         .toolbar(.hidden, for: .navigationBar)
         .enableInteractivePopGesture()
+        .onChange(of: streamPayload, initial: true) { _, payload in
+            routeIntensity = payload.flatMap { RouteIntensity.make(route: $0.route, samples: $0.samples) }
+        }
         .overlay(alignment: .topLeading) {
             Button {
                 if isMapExpanded {
@@ -206,6 +221,12 @@ struct ActivityDetailView: View {
                                         Text(option.rawValue).tag(option)
                                     }
                                 }
+                                if let intensity = routeIntensity {
+                                    Divider()
+                                    Toggle(isOn: $colorsRouteByIntensity) {
+                                        Label("Couleur selon \(intensity.metric.label.lowercased())", systemImage: "flame")
+                                    }
+                                }
                             } label: {
                                 Image(systemName: "square.2.layers.3d")
                                     .font(.system(size: 16, weight: .semibold))
@@ -241,6 +262,14 @@ struct ActivityDetailView: View {
                     .padding(.top, 12)
                     .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isMapExpanded)
                 }
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            if isMapExpanded, colorsRouteByIntensity, let intensity = routeIntensity {
+                RouteIntensityLegend(metric: intensity.metric)
+                    .padding(.leading, 16)
+                    .padding(.top, 72)
+                    .transition(.opacity)
             }
         }
         .overlay(alignment: .bottom) {
@@ -1281,6 +1310,8 @@ private struct ActivityRouteHero: View {
     var isExpanded: Bool = false
     @Binding var position: MapCameraPosition
     var mapStyle: MapStyle = .standard(elevation: .realistic)
+    /// When set, the route is drawn stretch by stretch in its intensity's tone.
+    var intensity: RouteIntensity? = nil
 
     private var coordinates: [CLLocationCoordinate2D] {
         route.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
@@ -1293,8 +1324,17 @@ private struct ActivityRouteHero: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             Map(position: $position, interactionModes: isExpanded ? .all : []) {
-                MapPolyline(coordinates: coordinates)
-                    .stroke(tone, lineWidth: 5)
+                if let intensity {
+                    ForEach(Array(intensity.segments.enumerated()), id: \.offset) { _, segment in
+                        MapPolyline(coordinates: segment.coordinates.map {
+                            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+                        })
+                        .stroke(RouteIntensityTone.color(level: segment.level), lineWidth: 5)
+                    }
+                } else {
+                    MapPolyline(coordinates: coordinates)
+                        .stroke(tone, lineWidth: 5)
+                }
                 if let start = coordinates.first {
                     Annotation("Départ", coordinate: start) {
                         RoutePointMarker(color: .white, stroke: tone)
