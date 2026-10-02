@@ -430,7 +430,10 @@ workout while Apple Health is enabled for activities in the athlete's sources; i
 the others (SHARPIT ADR-054): its switch links it on the web (`/api/v1/apple-health/link`), and
 Sources de données › Priorités par catégorie (`SourcePrioritiesView`, `SourcePrefsStore`,
 `/api/v1/integrations/source-prefs`) turns each connected source on or off per data class and picks
-the primary — the web applies it: the primary's values win, the others fill what it lacks. HealthKit is read-only and entitled in `SharpIt.entitlements`. Paramètres → Sources de données also offers the import on demand
+the primary — the web applies it: the primary's values win, the others fill what it lacks. HealthKit is read-only and entitled in `SharpIt.entitlements`. A night written to Health wakes the app
+(`HealthSleepObserver`: an `HKObserverQuery` on sleep with background delivery, registered in
+`SharpitAppDelegate` at every launch) and is sent at once, so the server sends the morning verdict as
+soon as the night is read. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
 
 **Strength sessions.** A strength activity lists its exercises in the order done

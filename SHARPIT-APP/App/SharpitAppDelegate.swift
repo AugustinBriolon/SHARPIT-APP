@@ -8,6 +8,11 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        // Before anything else returns: a background launch by HealthKit delivers only to
+        // observers registered here.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+            HealthSleepObserver.start()
+        }
         return true
     }
 
