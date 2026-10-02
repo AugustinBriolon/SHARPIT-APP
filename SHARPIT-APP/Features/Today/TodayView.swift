@@ -24,6 +24,7 @@ struct TodayView: View {
     private let nutritionClient: (any NutritionServing)?
     /// Today's food log for the nutrition card. Nil without a token or a client.
     @State private var nutrition: NutritionTodayStore?
+    @State private var showsCheckIn = false
     /// Held as well as handed to the store, because the journal opened from here caches its
     /// own day and needs the same context.
     private let modelContext: ModelContext?
@@ -93,6 +94,7 @@ struct TodayView: View {
                                 }
                             }
                         },
+                        onCheckIn: (wellnessClient != nil && tokenProvider != nil) ? { showsCheckIn = true } : nil,
                         controls: AnyView(controlsRow)
                     )
                 case .empty(let empty):
@@ -144,6 +146,16 @@ struct TodayView: View {
             }
             .onChange(of: router.checkInRevision) { _, _ in
                 Task { await store.load(resetToLoading: false) }
+            }
+            .sheet(isPresented: $showsCheckIn) {
+                if let wellnessClient, let tokenProvider {
+                    MorningWellnessSheet(
+                        client: wellnessClient,
+                        tokenProvider: tokenProvider,
+                        trainingDayId: TrainingDayId.today(),
+                        onSaved: { router.noteMorningCheckIn() }
+                    ) { _ in }
+                }
             }
             .task {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
@@ -224,6 +236,8 @@ private struct TodayFoldView: View {
     var onSessionLinked: () -> Void = {}
     /// Answers the night's proposal for today's session; true accepts it.
     var onAnswerProposal: (Bool) -> Void = { _ in }
+    /// Opens the morning check-in, which refines the proposal.
+    var onCheckIn: (() -> Void)?
     /// Mode, Journal and weather — the fold's first row, scrolling away with the rest.
     var controls: AnyView?
 
@@ -252,6 +266,7 @@ private struct TodayFoldView: View {
         onArrivalCompleted: @escaping () -> Void = {},
         onSessionLinked: @escaping () -> Void = {},
         onAnswerProposal: @escaping (Bool) -> Void = { _ in },
+        onCheckIn: (() -> Void)? = nil,
         controls: AnyView? = nil
     ) {
         self.fold = fold
@@ -266,6 +281,7 @@ private struct TodayFoldView: View {
         self.onArrivalCompleted = onArrivalCompleted
         self.onSessionLinked = onSessionLinked
         self.onAnswerProposal = onAnswerProposal
+        self.onCheckIn = onCheckIn
         self.controls = controls
         _phase = State(initialValue: hasCompletedArrival ? .idle : .hidden)
     }
@@ -279,7 +295,7 @@ private struct TodayFoldView: View {
                 InkVerdictPlate(plate: fold.plate, revealed: phase.showsPlate)
 
                 if let proposal = fold.morningProposal {
-                    MorningProposalCard(proposal: proposal, onAnswer: onAnswerProposal)
+                    MorningProposalCard(proposal: proposal, onCheckIn: onCheckIn, onAnswer: onAnswerProposal)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 

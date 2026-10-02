@@ -100,3 +100,15 @@ private func loadedProposal(_ store: TodayStore) -> V1TodayMorningProposal? {
     #expect(MorningProposalReadout.headline(proposal.from) == "Seuil · 40 min")
     #expect(MorningProposalReadout.headline(.init(intensityLabel: nil, durationMin: nil, description: nil)) == "Séance")
 }
+
+@Test func aProposalReadFromTheNightAloneSaysTheCheckInIsToDo() throws {
+    let json = """
+    { "checkInDone": false, "decisionId": "d1", "sessionId": "s1", "direction": "DOWN",
+      "changeSummary": "Endurance → Récupération", "why": "RECOVER",
+      "from": { "intensityLabel": "Endurance", "durationMin": 60, "description": null },
+      "to": { "intensityLabel": "Récupération", "durationMin": 45, "description": null } }
+    """
+    let decoded = try JSONDecoder().decode(V1TodayMorningProposal.self, from: Data(json.utf8))
+    #expect(decoded.checkInDone == false)
+    #expect(proposal.checkInDone == nil)
+}

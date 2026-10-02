@@ -5,7 +5,11 @@ import SwiftUI
 /// server waits for an answer, after the morning check-in.
 struct MorningProposalCard: View {
     let proposal: V1TodayMorningProposal
+    /// Opens the morning check-in, which refines the proposal; nil where it cannot be opened.
+    var onCheckIn: (() -> Void)?
     let onAnswer: (_ accept: Bool) -> Void
+
+    private var invitesCheckIn: Bool { proposal.checkInDone == false && onCheckIn != nil }
 
     private var isEasing: Bool { proposal.direction == .down }
 
@@ -39,6 +43,10 @@ struct MorningProposalCard: View {
                 side("Proposé", proposal.to, emphasized: true)
             }
 
+            if invitesCheckIn, let onCheckIn {
+                checkInInvitation(onCheckIn)
+            }
+
             HStack(spacing: SharpitSpacing.xs) {
                 SharpitPrimaryButton(title: isEasing ? "Alléger" : "Augmenter") { onAnswer(true) }
                 Button { onAnswer(false) } label: {
@@ -59,6 +67,37 @@ struct MorningProposalCard: View {
     }
 
     private var tone: Color { isEasing ? SharpitColor.signalTempo : SharpitColor.signalRecovery }
+
+    /// Read from the night alone so far: the check-in adds how the athlete feels.
+    private func checkInInvitation(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: SharpitSpacing.sm) {
+                Image(systemName: "face.smiling")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.primary)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Lue sur ta nuit seulement")
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("Fais ton check-in du matin : la proposition s'affine avec ton ressenti.")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
+                    .accessibilityHidden(true)
+            }
+            .padding(SharpitSpacing.sm)
+            .background(SharpitColor.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityHint("Ouvre le check-in du matin")
+    }
 
     private func side(_ caption: String, _ side: V1TodayMorningProposal.Side, emphasized: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {

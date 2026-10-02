@@ -25,6 +25,8 @@ nonisolated struct V1TodayMorningProposal: Codable, Sendable, Equatable {
         var description: String?
     }
 
+    /// False until the morning check-in, which refines the proposal; absent reads as done.
+    var checkInDone: Bool? = nil
     var decisionId: String
     var sessionId: String
     var direction: Direction
