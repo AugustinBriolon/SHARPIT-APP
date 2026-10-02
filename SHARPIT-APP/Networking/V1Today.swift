@@ -10,6 +10,28 @@ nonisolated struct V1TodayResponse: Codable, Sendable, Equatable {
     var signals: [V1TodaySignal]
     /// Optional so a snapshot cached before this field existed still decodes.
     var consistency: V1TodayConsistency? = nil
+    /// The night's proposal for today's session while it waits for an answer.
+    var morningProposal: V1TodayMorningProposal? = nil
+}
+
+/// The morning recalibration the server proposes after the check-in: today's session eased
+/// (`down`) or raised (`up`), answered through `/api/v1/morning-recalibration/action`.
+nonisolated struct V1TodayMorningProposal: Codable, Sendable, Equatable {
+    enum Direction: String, Codable, Sendable { case down = "DOWN", up = "UP" }
+
+    struct Side: Codable, Sendable, Equatable {
+        var intensityLabel: String?
+        var durationMin: Int?
+        var description: String?
+    }
+
+    var decisionId: String
+    var sessionId: String
+    var direction: Direction
+    var changeSummary: String
+    var why: String
+    var from: Side
+    var to: Side
 }
 
 /// Regularity, computed server-side from the athlete's recent activities.

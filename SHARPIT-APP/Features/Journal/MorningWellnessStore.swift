@@ -25,15 +25,19 @@ final class MorningWellnessStore {
     private let tokenProvider: () async throws -> String
     @ObservationIgnored private var write: Task<Void, Never>?
     private let trainingDayId: String
+    /// Once the server holds the check-in: it has read the night against today's session by then.
+    private let onSaved: @MainActor () -> Void
 
     init(
         client: any WellnessServing,
         tokenProvider: @escaping () async throws -> String,
-        trainingDayId: String = TrainingDayId.today()
+        trainingDayId: String = TrainingDayId.today(),
+        onSaved: @escaping @MainActor () -> Void = {}
     ) {
         self.client = client
         self.tokenProvider = tokenProvider
         self.trainingDayId = trainingDayId
+        self.onSaved = onSaved
     }
 
     /// Steps are the four scales plus the note.
@@ -120,7 +124,7 @@ final class MorningWellnessStore {
         SharpitHaptics.play(.success)
         // Sent behind the closing sheet, retried on a transient failure; the sheet is gone by
         // the time a write fails for good, so that is said in the app's toast.
-        write = Task { [client, tokenProvider, trainingDayId] in
+        write = Task { [client, tokenProvider, trainingDayId, onSaved] in
             do {
                 try await SharpitRetry.run {
                     try await client.submitWellnessCheckin(
@@ -129,6 +133,7 @@ final class MorningWellnessStore {
                         token: try await tokenProvider()
                     )
                 }
+                onSaved()
             } catch {
                 SharpitWriteFailures.shared.report(
                     Self.message(for: error, fallback: "Ton ressenti n'a pas pu être enregistré.")

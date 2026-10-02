@@ -86,6 +86,13 @@ struct TodayView: View {
                         onArrival: { store.handleArrivalWins(fold: fold) },
                         onArrivalCompleted: { store.markArrivalCompleted() },
                         onSessionLinked: { Task { await store.refresh() } },
+                        onAnswerProposal: { accept in
+                            Task {
+                                if await store.respondToMorningProposal(accept: accept) {
+                                    router.noteCalendarChanged()
+                                }
+                            }
+                        },
                         controls: AnyView(controlsRow)
                     )
                 case .empty(let empty):
@@ -134,6 +141,9 @@ struct TodayView: View {
             }
             .onChange(of: router.calendarRevision) { _, _ in
                 Task { await store.refresh() }
+            }
+            .onChange(of: router.checkInRevision) { _, _ in
+                Task { await store.load(resetToLoading: false) }
             }
             .task {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
@@ -212,6 +222,8 @@ private struct TodayFoldView: View {
     var onArrivalCompleted: () -> Void = {}
     /// Called once a prescription has been linked, so Today reloads and shows it as done.
     var onSessionLinked: () -> Void = {}
+    /// Answers the night's proposal for today's session; true accepts it.
+    var onAnswerProposal: (Bool) -> Void = { _ in }
     /// Mode, Journal and weather — the fold's first row, scrolling away with the rest.
     var controls: AnyView?
 
@@ -239,6 +251,7 @@ private struct TodayFoldView: View {
         onArrival: @escaping () -> Void = {},
         onArrivalCompleted: @escaping () -> Void = {},
         onSessionLinked: @escaping () -> Void = {},
+        onAnswerProposal: @escaping (Bool) -> Void = { _ in },
         controls: AnyView? = nil
     ) {
         self.fold = fold
@@ -252,6 +265,7 @@ private struct TodayFoldView: View {
         self.onArrival = onArrival
         self.onArrivalCompleted = onArrivalCompleted
         self.onSessionLinked = onSessionLinked
+        self.onAnswerProposal = onAnswerProposal
         self.controls = controls
         _phase = State(initialValue: hasCompletedArrival ? .idle : .hidden)
     }
@@ -263,6 +277,11 @@ private struct TodayFoldView: View {
                     controls
                 }
                 InkVerdictPlate(plate: fold.plate, revealed: phase.showsPlate)
+
+                if let proposal = fold.morningProposal {
+                    MorningProposalCard(proposal: proposal, onAnswer: onAnswerProposal)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
 
                 evidenceSection
                     .opacity(phase.showsSession ? 1 : 0)

@@ -14,13 +14,15 @@ struct MorningWellnessSheet: View {
         client: any WellnessServing,
         tokenProvider: @escaping () async throws -> String,
         trainingDayId: String,
+        onSaved: @escaping @MainActor () -> Void = {},
         onCompleted: @escaping (String) -> Void
     ) {
         _store = State(
             initialValue: MorningWellnessStore(
                 client: client,
                 tokenProvider: tokenProvider,
-                trainingDayId: trainingDayId
+                trainingDayId: trainingDayId,
+                onSaved: onSaved
             )
         )
         self.onCompleted = onCompleted

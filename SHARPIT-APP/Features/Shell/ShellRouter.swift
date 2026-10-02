@@ -60,6 +60,14 @@ final class ShellRouter {
         calendarRevision += 1
     }
 
+    /// Bumped once a morning check-in reached the server, which then read the night against
+    /// today's session — Résumé reads the day again to show the proposal it may have made.
+    private(set) var checkInRevision = 0
+
+    func noteMorningCheckIn() {
+        checkInRevision += 1
+    }
+
     func select(_ tab: ShellTab) {
         selectedTab = tab
     }

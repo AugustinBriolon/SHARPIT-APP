@@ -11,6 +11,7 @@ struct JournalView: View {
     @State private var showsHydration = false
     @State private var showsInsights = false
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
+    @Environment(ShellRouter.self) private var router: ShellRouter?
 
     private let wellness: any WellnessServing
     private let tokenProvider: () async throws -> String
@@ -76,7 +77,8 @@ struct JournalView: View {
                 MorningWellnessSheet(
                     client: wellness,
                     tokenProvider: tokenProvider,
-                    trainingDayId: store.trainingDayId
+                    trainingDayId: store.trainingDayId,
+                    onSaved: { router?.noteMorningCheckIn() }
                 ) { label in
                     store.applyMoodLabel(label)
                 }

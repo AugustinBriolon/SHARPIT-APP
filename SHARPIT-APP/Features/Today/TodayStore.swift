@@ -24,17 +24,51 @@ final class TodayStore {
     }
 
     private let client: any TodayServing
+    private let proposals: any MorningProposalServing
     private let tokenProvider: (() async throws -> String)?
     private let modelContext: ModelContext?
 
     init(
         client: any TodayServing = FixtureTodayClient(),
+        proposals: any MorningProposalServing = SharpitClient(),
         tokenProvider: (() async throws -> String)? = nil,
         modelContext: ModelContext? = nil
     ) {
         self.client = client
+        self.proposals = proposals
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
+    }
+
+    /// Answers the night's proposal. The card leaves on the tap; it comes back with the failure
+    /// said if the server refuses. Accepted, the day is read again: the session changed.
+    /// Returns whether the plan changed.
+    @discardableResult
+    func respondToMorningProposal(accept: Bool) async -> Bool {
+        guard case .loaded(var fold) = phase, let proposal = fold.morningProposal else { return false }
+        fold.morningProposal = nil
+        phase = .loaded(fold)
+        do {
+            try await SharpitRetry.run {
+                try await self.proposals.respondToMorningProposal(
+                    decisionId: proposal.decisionId,
+                    accept: accept,
+                    token: try await self.tokenProvider?() ?? ""
+                )
+            }
+        } catch {
+            if case .loaded(var current) = phase, current.morningProposal == nil {
+                current.morningProposal = proposal
+                phase = .loaded(current)
+            }
+            SharpitWriteFailures.shared.report(Self.proposalFailureMessage(for: error))
+            return false
+        }
+        if accept {
+            SharpitHaptics.play(.soft)
+            await load(resetToLoading: false)
+        }
+        return accept
     }
 
     var phaseIdentity: String {
@@ -176,6 +210,12 @@ final class TodayStore {
                 pulseScores = false
             }
         }
+    }
+
+    /// The server's own refusal when it said why (« Cette proposition n’est plus en attente »).
+    static func proposalFailureMessage(for error: Error) -> String {
+        if case .message(let text)? = error as? SharpitAPIError { return text }
+        return "Réponse non enregistrée. Réessaie dans un instant."
     }
 
     private static func failureMessage(for error: Error) -> String {

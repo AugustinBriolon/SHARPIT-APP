@@ -51,7 +51,7 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing, SourcePrefsServing, AppleHealthLinking {
+actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, RecoveryServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing, SourcePrefsServing, AppleHealthLinking {
     private let session: URLSession
     private let baseURL: URL
 
@@ -62,6 +62,20 @@ actor SharpitClient: TodayServing, SleepServing, RecoveryServing, TrainingLoadSe
 
     func today(trainingDayId: String, token: String) async throws -> V1TodayResponse {
         try await day(V1TodayResponse.self, path: "/api/v1/today", trainingDayId: trainingDayId, token: token)
+    }
+
+    func respondToMorningProposal(decisionId: String, accept: Bool, token: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "decisionId": decisionId,
+            "action": accept ? "accept" : "reject",
+        ])
+        _ = try await send(
+            V1MorningProposalAnswer.self,
+            path: "/api/v1/morning-recalibration/action",
+            method: "POST",
+            token: token,
+            body: body
+        )
     }
 
     func sleep(trainingDayId: String, token: String) async throws -> V1SleepResponse {

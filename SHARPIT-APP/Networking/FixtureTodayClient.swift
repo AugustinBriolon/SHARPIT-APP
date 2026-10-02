@@ -4,6 +4,15 @@ protocol TodayServing: Sendable {
     func today(trainingDayId: String, token: String) async throws -> V1TodayResponse
 }
 
+/// Answers the morning recalibration: accepting rewrites today's session on the server.
+protocol MorningProposalServing: Sendable {
+    func respondToMorningProposal(decisionId: String, accept: Bool, token: String) async throws
+}
+
+nonisolated struct V1MorningProposalAnswer: Decodable, Sendable {
+    let ok: Bool
+}
+
 enum SharpitAPIError: Error, Equatable, LocalizedError {
     case unauthorized
     case badRequest
