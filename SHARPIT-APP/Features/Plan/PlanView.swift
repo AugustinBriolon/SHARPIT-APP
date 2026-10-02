@@ -156,6 +156,12 @@ struct PlanView: View {
                 }
                 .sharpitSheet()
             }
+            .environment(\.planCatchUp, PlanCatchUpAction { catchUp in
+                adjustment.reset()
+                adjustment.focus = catchUp.focus()
+                showingAdapter = true
+                Task { await adjustment.start() }
+            })
             .sheet(isPresented: $showingAdapter) {
                 PlanAdapterSheet(store: adjustment) {
                     // Plan reloads on the revision, and Résumé and the session reminders follow.
@@ -623,8 +629,19 @@ private struct PlanEntryRow: View {
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let onSelect: (PlanSelection) -> Void
+    @Environment(\.planCatchUp) private var catchUpAction
 
     var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+            card
+            if let catchUpAction, let catchUp = PlanCatchUp.offer(for: entry) {
+                PlanCatchUpButton(catchUp: catchUp, action: catchUpAction)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var card: some View {
         switch entry {
         case .executed(let executed):
             NavigationLink {
