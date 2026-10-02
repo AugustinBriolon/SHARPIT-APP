@@ -17,8 +17,15 @@ enum HealthSleepObserver {
         let observer = makeQuery(for: sleep)
         store.execute(observer)
         query = observer
-        // Fails quietly until the athlete granted Health access; the next launch tries again.
-        store.enableBackgroundDelivery(for: sleep, frequency: .immediate) { _, _ in }
+        enableBackgroundDelivery(for: sleep, on: store)
+    }
+
+    /// Outside the main actor for the same reason as the query: HealthKit calls the completion on
+    /// its own queue, and an empty closure written in `start()` still carried the main actor's
+    /// isolation check — it crashed the app at launch (Sentry APPLE-IOS-2). Fails quietly until
+    /// the athlete granted Health access; the next launch tries again.
+    nonisolated private static func enableBackgroundDelivery(for type: HKObjectType, on store: HKHealthStore) {
+        store.enableBackgroundDelivery(for: type, frequency: .immediate) { _, _ in }
     }
 
     /// The athlete's own switch decides: an account that never turned Apple Health on sends nothing.
