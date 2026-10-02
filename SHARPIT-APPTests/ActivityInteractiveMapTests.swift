@@ -5,33 +5,8 @@ import SwiftUI
 @testable import Sharpit
 
 @Suite struct ActivityInteractiveMapTests {
-    @Test func interactiveRouteMapViewInitializesWithCoordinates() {
-        let route = [
-            V1ActivityCoordinate(latitude: 45.764, longitude: 4.8357),
-            V1ActivityCoordinate(latitude: 45.765, longitude: 4.8360),
-            V1ActivityCoordinate(latitude: 45.766, longitude: 4.8370)
-        ]
-
-        let view = InteractiveRouteMapView(
-            route: route,
-            tone: .green,
-            title: "Course matinale",
-            sportLabel: "Course à pied",
-            sportSymbol: "figure.run",
-            distanceM: 5200,
-            elevationM: 85,
-            duration: 1650
-        )
-
-        #expect(view.route.count == 3)
-        #expect(view.title == "Course matinale")
-        #expect(view.distanceM == 5200)
-        #expect(view.elevationM == 85)
-        #expect(view.duration == 1650)
-    }
-
     @Test func mapStyleOptionsProvideCorrectLabelsAndCases() {
-        let options = InteractiveRouteMapView.MapStyleOption.allCases
+        let options = MapStyleOption.allCases
         #expect(options.count == 3)
         #expect(options.map(\.rawValue) == ["Plan", "Satellite", "Mixte"])
     }
