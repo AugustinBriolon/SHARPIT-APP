@@ -15,6 +15,8 @@ struct NutritionView: View {
     @State private var isImporting = false
     @State private var isEditingWeightTarget = false
     @State private var targetWeightKg: Double?
+    @State private var scannerOpened = false
+    private let opensScanner: Bool
     private let profileClient: any AthleteProfileServing
     private let foodLogClient: any FoodLogServing
     private let tokenProvider: () async throws -> String
@@ -25,8 +27,10 @@ struct NutritionView: View {
         dataDaysClient: any DataDaysServing = SharpitClient(),
         profileClient: any AthleteProfileServing = AthleteProfileClient(),
         foodLogClient: any FoodLogServing = FoodLogClient(),
-        day: Date = .now
+        day: Date = .now,
+        opensScanner: Bool = false
     ) {
+        self.opensScanner = opensScanner
         self.profileClient = profileClient
         self.foodLogClient = foodLogClient
         self.tokenProvider = tokenProvider
@@ -105,6 +109,11 @@ struct NutritionView: View {
             WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
         }
         .task { await loadWeightTarget() }
+        .onAppear {
+            guard opensScanner, !scannerOpened else { return }
+            scannerOpened = true
+            addRequest = FoodAddRequest(meal: suggestedMeal, start: .scan)
+        }
         .task(id: selectedDayId) { await foodLog.load(trainingDayId: selectedDayId) }
         .sheet(item: $addRequest) { FoodAddSheet(store: foodLog, request: $0) }
         .sheet(isPresented: $isEditingTargets) { NutritionTargetsSheet(store: foodLog) }
@@ -275,9 +284,9 @@ private struct NutritionEmptyDayPlate: View {
 
             HStack(spacing: SharpitSpacing.xs) {
                 if BarcodeScannerView.isAvailable {
-                    capsule("Scanner", symbol: "barcode.viewfinder") { onAdd(.scan) }
+                    capsule("Scanner", symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan) { onAdd(.scan) }
                 }
-                capsule("Chercher un aliment", symbol: "magnifyingglass") { onAdd(.search) }
+                capsule("Chercher un aliment", symbol: "magnifyingglass", tone: SharpitColor.primary) { onAdd(.search) }
             }
         }
         .padding(SharpitSpacing.lg)
@@ -286,16 +295,16 @@ private struct NutritionEmptyDayPlate: View {
         .sharpitCardSpecularBorder()
     }
 
-    private func capsule(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+    private func capsule(_ title: String, symbol: String, tone: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: symbol)
                 .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.primary)
+                .foregroundStyle(tone)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
                 .padding(.horizontal, SharpitSpacing.md)
                 .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                .background(SharpitColor.primary.opacity(0.10), in: Capsule())
+                .background(tone.opacity(0.10), in: Capsule())
         }
         .buttonStyle(.sharpitPressable)
     }
@@ -684,10 +693,10 @@ private struct MealRow: View {
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
             ZStack {
-                Circle().fill(SharpitColor.primary.opacity(0.12)).frame(width: 32, height: 32)
+                Circle().fill(SharpitNutritionTone.meal(meal.name).opacity(0.14)).frame(width: 32, height: 32)
                 Image(systemName: NutritionReadout.mealSymbol(meal.name))
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primary)
+                    .foregroundStyle(SharpitNutritionTone.mealLabel(meal.name))
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(meal.label)

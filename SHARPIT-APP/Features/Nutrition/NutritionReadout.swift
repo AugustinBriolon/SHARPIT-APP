@@ -118,7 +118,13 @@ enum NutritionReadout {
 
     /// Where the day's energy came from, by share of the macros' kilocalories. Empty without any.
     static func energySplit(_ day: V1NutritionDay) -> [(macro: Macro, share: Double)] {
-        let kcal = Macro.allCases.map { ($0, $0.consumed(in: day) * $0.kcalPerGram) }
+        energySplit(protein: day.protein, carbohydrates: day.carbohydrates, fat: day.fat)
+    }
+
+    /// Where a food's or a day's energy comes from, by macro (Atwater); empty without energy.
+    static func energySplit(protein: Double, carbohydrates: Double, fat: Double) -> [(macro: Macro, share: Double)] {
+        let grams: [Macro: Double] = [.protein: protein, .carbohydrates: carbohydrates, .fat: fat]
+        let kcal = Macro.allCases.map { ($0, max(grams[$0] ?? 0, 0) * $0.kcalPerGram) }
         let total = kcal.reduce(0) { $0 + $1.1 }
         guard total > 0 else { return [] }
         return kcal.map { (macro: $0.0, share: $0.1 / total) }

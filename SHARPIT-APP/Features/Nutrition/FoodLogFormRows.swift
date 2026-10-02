@@ -8,6 +8,14 @@ struct FoodPortionPreview: View {
     let nutrients: FoodPortion.Nutrients
 
     var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            figures
+            NutritionMacroSplitBar(protein: nutrients.protein, carbohydrates: nutrients.carbs, fat: nutrients.fat, height: 6)
+        }
+        .animation(SharpitMotion.selection, value: nutrients)
+    }
+
+    private var figures: some View {
         HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.md) {
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xxs) {
                 Text(NutritionReadout.kcal(nutrients.kcal))
@@ -24,7 +32,6 @@ struct FoodPortionPreview: View {
             macro(.carbohydrates, nutrients.carbs)
             macro(.fat, nutrients.fat)
         }
-        .animation(SharpitMotion.selection, value: nutrients)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
             "\(NutritionReadout.kcal(nutrients.kcal)) kilocalories, protéines \(FoodPortion.figure(nutrients.protein)) g, "
@@ -41,7 +48,7 @@ struct FoodPortionPreview: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text(macro.short)
                 .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(macro.tone)
         }
     }
 }

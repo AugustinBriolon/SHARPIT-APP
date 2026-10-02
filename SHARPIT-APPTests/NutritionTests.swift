@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import SwiftUI
 @testable import Sharpit
 
 // MARK: - /api/v1/nutrition
@@ -244,4 +245,19 @@ private actor CountingNutrition {
         .hasPrefix("Ton sommeil n'a pas pu être chargé."))
     #expect(DayResourceStore<V1NutritionResponse>.failure(SharpitAPIError.server, fallback: "Ton journal n'a pas pu être chargé.")
         == "Ton journal n'a pas pu être chargé. Réessaie dans un instant.")
+}
+
+@Test func aFoodsEnergySplitFollowsAtwater() {
+    // 10 g protein (40 kcal), 10 g carbohydrates (40 kcal), 20 g fat (180 kcal).
+    let split = NutritionReadout.energySplit(protein: 10, carbohydrates: 10, fat: 20)
+
+    #expect(split.map(\.macro) == [.protein, .carbohydrates, .fat])
+    #expect(abs(split[2].share - 180.0 / 260.0) < 0.0001)
+    #expect(NutritionReadout.energySplit(protein: 0, carbohydrates: 0, fat: 0).isEmpty)
+}
+
+@Test func eachMealHasItsOwnHue() {
+    let hues = ["breakfast", "lunch", "dinner", "snacks"].map { SharpitNutritionTone.meal($0).description }
+    #expect(Set(hues).count == 4)
+    #expect(SharpitNutritionTone.meal("SNACK").description == SharpitNutritionTone.meal("snacks").description)
 }

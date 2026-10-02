@@ -142,11 +142,11 @@ private struct FoodSearchPage: View {
         List {
             Section {
                 if BarcodeScannerView.isAvailable {
-                    actionRow("Scanner un code-barres", symbol: "barcode.viewfinder", action: onScan)
+                    actionRow("Scanner un code-barres", symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan, action: onScan)
                 }
-                actionRow("Mes aliments", symbol: "person.crop.square", action: onOwnFoods)
-                actionRow("Saisie rapide", symbol: "bolt", action: onQuickAdd)
-                actionRow("Créer un aliment", symbol: "plus.square.on.square", action: onCreate)
+                actionRow("Mes aliments", symbol: "person.crop.square", tone: SharpitNutritionTone.Action.ownFoods, action: onOwnFoods)
+                actionRow("Saisie rapide", symbol: "bolt", tone: SharpitNutritionTone.Action.quickAdd, action: onQuickAdd)
+                actionRow("Créer un aliment", symbol: "plus.square.on.square", tone: SharpitNutritionTone.Action.create, action: onCreate)
             }
             .sharpitListRows()
 
@@ -226,10 +226,10 @@ private struct FoodSearchPage: View {
         }
     }
 
-    private func actionRow(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+    private func actionRow(_ title: String, symbol: String, tone: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: SharpitSpacing.sm) {
-                SharpitRowIcon(symbol: symbol)
+                SharpitRowIcon(symbol: symbol, background: tone)
                 Text(title).foregroundStyle(SharpitColor.foreground)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
@@ -266,6 +266,9 @@ struct FoodProductRow: View {
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .lineLimit(1)
+                NutritionMacroSplitBar(product: product)
+                    .frame(maxWidth: 120)
+                    .padding(.top, 3)
             }
             Spacer(minLength: SharpitSpacing.xs)
             VStack(alignment: .trailing, spacing: 0) {

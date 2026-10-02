@@ -60,9 +60,9 @@ struct FoodLogMealsSection: View {
             Button { onAdd(section.meal) } label: {
                 Image(systemName: "plus")
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(SharpitColor.primary)
+                    .foregroundStyle(SharpitNutritionTone.mealLabel(section.meal.storedName))
                     .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
-                    .background(SharpitColor.primary.opacity(0.10), in: Circle())
+                    .background(SharpitNutritionTone.meal(section.meal.storedName).opacity(0.12), in: Circle())
                     .contentShape(Circle())
             }
             .buttonStyle(.sharpitPressable)
@@ -84,10 +84,10 @@ private struct FoodLogMealRow: View {
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
             ZStack {
-                Circle().fill(SharpitColor.primary.opacity(0.12)).frame(width: 32, height: 32)
+                Circle().fill(SharpitNutritionTone.meal(section.meal.storedName).opacity(0.14)).frame(width: 32, height: 32)
                 Image(systemName: NutritionReadout.mealSymbol(section.meal.storedName))
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primary)
+                    .foregroundStyle(SharpitNutritionTone.mealLabel(section.meal.storedName))
             }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
@@ -165,7 +165,7 @@ struct FoodLogMealPage: View {
             Section(eyebrow: countLabel(section.entries.count)) {
                 if section.entries.isEmpty {
                     Button("Ajouter un aliment") { addRequest = FoodAddRequest(meal: meal) }
-                        .foregroundStyle(SharpitColor.primary)
+                        .foregroundStyle(SharpitNutritionTone.mealLabel(meal.storedName))
                 }
                 ForEach(section.entries) { entry in
                     Button { editing = entry } label: {
@@ -226,6 +226,8 @@ private struct FoodLogEntryRow: View {
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
                     .foregroundStyle(SharpitColor.mutedForeground)
+                NutritionMacroSplitBar(entry: entry)
+                    .frame(maxWidth: 120)
                 if let flag {
                     Label(flag.label, systemImage: "exclamationmark.circle.fill")
                         .font(SharpitTypography.meta.weight(.semibold))
