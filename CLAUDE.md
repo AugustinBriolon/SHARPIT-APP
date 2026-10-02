@@ -316,6 +316,14 @@ and a second implementation would diverge the first time a threshold moved. Its 
 read-only, so they carry no toggle and no chevron, and the route is called only when the
 athlete enabled one.
 
+**Morning proposal.** Once the morning check-in reached the server (`MorningWellnessStore`'s
+`onSaved` bumps `ShellRouter.checkInRevision`, Résumé reads the day again), the web's morning
+recalibration may propose today's session eased or raised: `/api/v1/today`'s `morningProposal`,
+shown under the verdict (`MorningProposalCard`: what changes, why, the plan beside the proposal).
+« Alléger » / « Augmenter » or « Garder le plan » answers `/api/v1/morning-recalibration/action`
+(`TodayStore.respondToMorningProposal`): the card leaves on the tap, comes back with the server's
+reason if refused, and an accepted proposal reloads Résumé and bumps `calendarRevision`.
+
 **Activity status.** The mode chip in Today's toolbar writes `/api/activity-status` on every
 pick — no explicit save, as on the web. A deadline that has passed is resolved back to
 `active` server-side on read, so the app never expires one itself. Trips are not modelled:
