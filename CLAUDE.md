@@ -93,8 +93,9 @@ wraps `RootView` in `AuthGate`. Every network call takes a Bearer token produced
 `clerk.auth.getToken()`; views receive it as an injected `tokenProvider` closure rather
 than reaching for Clerk themselves. The sign-in drawer puts Apple first, as Apple's own
 `ASAuthorizationAppleIDButton` (`SharpitAppleSignInButton`: black on light, white on dark), with
-Clerk's `signInWithApple()` running the native authorization; Google sits under it in Google's
-branding colours and the official « G » (`SharpitGoogleSignInButton`), same shape and height.
+Clerk's `signInWithApple()` running the native authorization; Google sits under it, white in
+both appearances (Google's light theme) with the official « G » (`SharpitGoogleSignInButton`),
+same shape and height.
 
 **Consent.** `AccountGate` sits between `AuthGate` and `RootView`. A new account meets the
 consents inside the onboarding, as its step just before Sources; the legal wall
@@ -521,9 +522,10 @@ Genre is **instrument-editorial**: a precision readout, not a fitness dashboard.
 implies color reserved for semantic state and no decorative gradients or washes. Apple
 chrome (tab bar, navigation, Liquid Glass) stays system; brand meaning lives in the content.
 
-Liquid Glass is chrome only: the tab and navigation bars, toolbar controls — the day
-screens' `SharpitTodayButton` sits there, left of Plan's title and right of Sommeil's and
-Récupération's — and controls floating over scrolled content (the coach's composer, the
+Liquid Glass is chrome only: the tab and navigation bars, toolbar controls — Plan's
+`SharpitTodayButton` sits there, left of its title; the day screens put « Aujourd'hui » beside
+the date instead (`SharpitTodayChip` in `DayDetailDatePicker`), since in the bar it merged into one
+glass pill with each screen's own actions — and controls floating over scrolled content (the coach's composer, the
 docked actions of the onboarding and the consent wall; `sharpitGlassControl`,
 `sharpitGlassButton`). Content surfaces never take glass. The month view is `UICalendarView`
 (`SharpitCalendarSheet`) so a day can carry a mark: filled for an activity or data, a ring for
