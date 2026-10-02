@@ -40,6 +40,7 @@ final class JournalStore {
     /// Optional so a preview or a test can run without a store, as `TodayStore` does.
     private let modelContext: ModelContext?
     @ObservationIgnored private var pendingSave: Task<Void, Never>?
+    @ObservationIgnored private var saveChain: Task<Void, Never>?
     /// Bumped on every local edit, so a save can tell whether the athlete tapped again
     /// while its request was in flight.
     @ObservationIgnored private var localRevision = 0
@@ -366,7 +367,19 @@ final class JournalStore {
         await saveEntry()
     }
 
+    /// One write at a time: a save that started while another was still being tried again would
+    /// race it, and the server could keep the older of the two.
     private func saveEntry() async {
+        let previous = saveChain
+        let next = Task { [weak self] in
+            await previous?.value
+            await self?.sendEntry()
+        }
+        saveChain = next
+        await next.value
+    }
+
+    private func sendEntry() async {
         let sentRevision = localRevision
         let sent = entry
         do {
@@ -449,9 +462,15 @@ final class JournalStore {
     }
 
     private static func message(for error: Error, fallback: String) -> String {
-        if let apiError = error as? SharpitAPIError, apiError == .unauthorized {
+        switch error as? SharpitAPIError {
+        case .unauthorized?:
             return "Session expirée. Reconnecte-toi."
+        case .rateLimited?:
+            return "Trop de requêtes d'affilée. Réessaie dans un instant."
+        case .message(let text)?:
+            return text
+        default:
+            return fallback
         }
-        return fallback
     }
 }

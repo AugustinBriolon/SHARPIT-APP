@@ -153,15 +153,23 @@ private actor StubJournalClient: JournalServing {
         entry
     }
 
+    private var savesInFlight = 0
+    private(set) var mostSavesAtOnce = 0
+
     func saveDayJournal(
         _ entry: V1DayJournalEntry,
         token _: String
     ) async throws -> V1DayJournalEntry {
         entrySaves += 1
+        savesInFlight += 1
+        mostSavesAtOnce = max(mostSavesAtOnce, savesInFlight)
+        defer { savesInFlight -= 1 }
         self.entry = entry
         try await Task.sleep(for: saveLatency)
         return entry
     }
+
+    func peakConcurrentSaves() -> Int { mostSavesAtOnce }
 
     func journalPrefs(token _: String) async throws -> (prefs: JournalPrefs, isPro: Bool) {
         (storedPrefs, isPro)
@@ -888,4 +896,49 @@ private struct FailingJournalClient: JournalServing {
     #expect(store.prefs.isEnabled("diet_vegetarian"))
     #expect(store.dayTrackables.isEmpty)
     #expect(store.hasNothingToShow)
+}
+
+@MainActor
+@Test func journalSavesGoOutOneAtATime() async throws {
+    let client = StubJournalClient(saveLatency: .milliseconds(80))
+    let store = JournalStore(
+        client: client,
+        tokenProvider: { "token" },
+        trainingDayId: "2026-09-20",
+        saveDelay: .milliseconds(5)
+    )
+    await store.load()
+
+    store.cycle(factorId: "alcohol")
+    try await Task.sleep(for: .milliseconds(20))
+    store.cycle(factorId: "alcohol")
+    try await Task.sleep(for: .milliseconds(20))
+    await store.flushPendingSave()
+    try await Task.sleep(for: .milliseconds(200))
+
+    #expect(await client.saveCount() == 2)
+    #expect(await client.peakConcurrentSaves() == 1)
+}
+
+@Test(arguments: [
+    (200, nil as SharpitAPIError?),
+    (401, .unauthorized),
+    (400, .badRequest),
+    (429, .rateLimited),
+    (500, .server),
+])
+func journalStatusesAreToldApart(status: Int, expected: SharpitAPIError?) {
+    do {
+        try JournalClient.check(status: status, body: Data())
+        #expect(expected == nil)
+    } catch {
+        #expect(error as? SharpitAPIError == expected)
+    }
+}
+
+@Test func aRefusedJournalSaysWhatTheServerSaid() {
+    let body = Data(#"{ "error": "Journal invalide", "fields": ["moodLabel"] }"#.utf8)
+    #expect(throws: SharpitAPIError.message("Journal invalide")) {
+        try JournalClient.check(status: 422, body: body)
+    }
 }

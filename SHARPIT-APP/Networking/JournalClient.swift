@@ -131,11 +131,20 @@ actor JournalClient: JournalServing {
         }
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard status == 200 else {
-            if status == 401 { throw SharpitAPIError.unauthorized }
-            throw SharpitAPIError.server
-        }
+        try Self.check(status: status, body: data)
         return data
+    }
+
+    /// A refusal is told from a failure: only a dropped answer, a 429 or a 5xx is worth trying
+    /// again (`SharpitRetry`); a payload refused stays refused, and says why when the server did.
+    nonisolated static func check(status: Int, body: Data) throws {
+        switch status {
+        case 200...299: return
+        case 401, 403: throw SharpitAPIError.unauthorized
+        case 400, 422: throw FoodLogClient.refusal(in: body).map(SharpitAPIError.message) ?? .badRequest
+        case 429: throw SharpitAPIError.rateLimited
+        default: throw SharpitAPIError.server
+        }
     }
 
     private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
