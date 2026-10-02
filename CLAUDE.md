@@ -185,7 +185,10 @@ out as the generator — `CoachWorkingHeader`, `SharpitActionDock`, `SharpitPrim
 `SharpitSportBadge` and `SharpitKeepToggle` — and never shows the model's reasoning. The server
 takes out the changes its Gate rejects; the ones kept go back whole (`V1AdaptChange.applyBody`) to
 `/api/v1/coach/adapt/apply`, which stores them through the web adapter's own mapping, the coach's
-steps included.
+steps included. A session (or a brick) missed in the last seven days carries « Rattraper ma
+semaine » under its card in Plan (`PlanCatchUp`, read by the rows through the `planCatchUp`
+environment action): it opens the adapter with the miss already said and starts it — one tap to
+the coach's proposal for the rest of the week.
 « Bilan de la semaine » (Plan's « … ») is SharpIt Pro: `WeeklyReviewView` reads the latest review
 from `/api/v1/coach/weekly-review`, writes the current week's on demand, and shows a
 `SharpitProTeaser` on the server's 403. It is laid out like Health's summary: « Faits marquants »
