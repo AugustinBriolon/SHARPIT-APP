@@ -900,21 +900,25 @@ private struct FailingJournalClient: JournalServing {
 
 @MainActor
 @Test func journalSavesGoOutOneAtATime() async throws {
-    let client = StubJournalClient(saveLatency: .milliseconds(80))
+    let client = StubJournalClient(saveLatency: .milliseconds(300))
     let store = JournalStore(
         client: client,
         tokenProvider: { "token" },
         trainingDayId: "2026-09-20",
-        saveDelay: .milliseconds(5)
+        saveDelay: .seconds(60)
     )
     await store.load()
 
     store.cycle(factorId: "alcohol")
-    try await Task.sleep(for: .milliseconds(20))
+    let first = Task { await store.flushPendingSave() }
+    while await client.saveCount() < 1 {
+        try await Task.sleep(for: .milliseconds(5))
+    }
+    // The first write is now in flight; a second one must wait for it.
     store.cycle(factorId: "alcohol")
-    try await Task.sleep(for: .milliseconds(20))
-    await store.flushPendingSave()
-    try await Task.sleep(for: .milliseconds(200))
+    let second = Task { await store.flushPendingSave() }
+    await first.value
+    await second.value
 
     #expect(await client.saveCount() == 2)
     #expect(await client.peakConcurrentSaves() == 1)
