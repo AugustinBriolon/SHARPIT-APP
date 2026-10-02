@@ -58,12 +58,14 @@ struct FoodLogMealsSection: View {
                 .buttonStyle(.sharpitPressable)
             }
             Button { onAdd(section.meal) } label: {
+                // A small mark, a full-size target: the circle is drawn at 28 pt, the tap is 44.
                 Image(systemName: "plus")
-                    .font(.body.weight(.semibold))
+                    .font(.footnote.weight(.bold))
                     .foregroundStyle(SharpitNutritionTone.mealLabel(section.meal.storedName))
-                    .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
+                    .frame(width: 28, height: 28)
                     .background(SharpitNutritionTone.meal(section.meal.storedName).opacity(0.12), in: Circle())
-                    .contentShape(Circle())
+                    .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.sharpitPressable)
             .padding(.trailing, SharpitSpacing.sm)
