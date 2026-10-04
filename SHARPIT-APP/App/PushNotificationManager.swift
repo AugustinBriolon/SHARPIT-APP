@@ -126,6 +126,7 @@ final class PushNotificationManager {
     nonisolated static let weeklyReviewPath = "/plan/review"
     nonisolated static let sourcesPath = "/settings/sources"
     nonisolated static let activityPathPrefix = "/activity/"
+    nonisolated static let catchUpPath = "/plan/catch-up"
 
     /// Where a notification leads: by its category for the morning verdict, by its `url`
     /// otherwise. Pure, so every push the server sends is routed in a test.
@@ -140,9 +141,16 @@ final class PushNotificationManager {
         case planGeneratorPath: return .planGenerator
         case weeklyReviewPath: return .weeklyReview
         case sourcesPath: return .settings(.sources)
+        // « Dommage pour hier » opens « Ajuster le planning » with the miss said.
+        case catchUpPath:
+            guard let missed = userInfo["catchUp"] as? [String: Any],
+                  let label = missed["label"] as? String,
+                  let day = missed["day"] as? String
+            else { return .tab(.plan) }
+            return .catchUp(label: label, day: day)
         // A push's `/settings` predates the Paramètres sheet.
         case "/settings": return .settings(nil)
-        // « Séance comptée » opens the activity that counted.
+        // « Séance dans la boîte » opens the activity that counted.
         case let path where path.hasPrefix(activityPathPrefix):
             let id = String(path.dropFirst(activityPathPrefix.count))
             return id.isEmpty || id.contains("/") ? nil : .activity(id: id)

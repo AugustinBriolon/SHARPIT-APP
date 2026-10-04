@@ -48,14 +48,14 @@ enum SessionReminderPlanner {
             return SessionReminder(
                 id: identifierPrefix + session.id,
                 fireDate: start.addingTimeInterval(-leadTime),
-                title: "Séance à \(session.startTime ?? "")",
+                title: "Ta séance t’attend à \(session.startTime ?? "")",
                 body: detail
             )
         }
         guard let morning = calendar.date(bySettingHour: morningHour, minute: morningMinute, second: 0, of: day) else {
             return nil
         }
-        return SessionReminder(id: identifierPrefix + session.id, fireDate: morning, title: "Séance aujourd'hui", body: detail)
+        return SessionReminder(id: identifierPrefix + session.id, fireDate: morning, title: "Ta séance du jour t’attend", body: detail)
     }
 
     private static func clock(_ value: String) -> (hour: Int, minute: Int)? {

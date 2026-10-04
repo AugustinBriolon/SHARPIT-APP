@@ -156,12 +156,7 @@ struct PlanView: View {
                 }
                 .sharpitSheet()
             }
-            .environment(\.planCatchUp, PlanCatchUpAction { catchUp in
-                adjustment.reset()
-                adjustment.focus = catchUp.focus()
-                showingAdapter = true
-                Task { await adjustment.start() }
-            })
+            .environment(\.planCatchUp, PlanCatchUpAction(run: startCatchUp))
             .sheet(isPresented: $showingAdapter) {
                 PlanAdapterSheet(store: adjustment) {
                     // Plan reloads on the revision, and Résumé and the session reminders follow.
@@ -171,6 +166,12 @@ struct PlanView: View {
             .task { await store.loadAroundSelection() }
             .task(id: isExpertReading) { await loadTrainingLoad() }
             .task { await generation.resume() }
+            // « Dommage pour hier » tapped: the adapter, the miss already said.
+            .onChange(of: router.pendingCatchUp, initial: true) { _, catchUp in
+                guard let catchUp else { return }
+                router.pendingCatchUp = nil
+                startCatchUp(catchUp)
+            }
             // A session to do, tapped in a widget: today's week, its drawer open.
             .onChange(of: router.pendingPlannedSessionId, initial: true) { _, id in
                 guard let id else { return }
@@ -200,6 +201,14 @@ struct PlanView: View {
 }
 
 extension PlanView {
+    /// « Rattraper ma semaine »: the adapter opens with the miss said and starts at once.
+    fileprivate func startCatchUp(_ catchUp: PlanCatchUp) {
+        adjustment.reset()
+        adjustment.focus = catchUp.focus()
+        showingAdapter = true
+        Task { await adjustment.start() }
+    }
+
     /// Shows today's week and opens the session's drawer once the week is read.
     fileprivate func openPlannedSession(id: String) async {
         store.goToToday()

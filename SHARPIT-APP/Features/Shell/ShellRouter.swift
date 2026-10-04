@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 /// Cross-tab navigation for the shell.
@@ -34,6 +35,8 @@ final class ShellRouter {
     var pendingActivityId: String?
     /// A planned session to open in Plan's drawer, once — a session to do tapped in a widget.
     var pendingPlannedSessionId: String?
+    /// A missed session to catch up on in Plan, once — « Dommage pour hier » tapped.
+    var pendingCatchUp: PlanCatchUp?
     /// Nutrition to open on the barcode scanner, once — the « Scanner un produit » widget.
     var pendingFoodScan = false
 
@@ -95,6 +98,10 @@ final class ShellRouter {
             openSettings(on: route)
         case .activity(let id):
             openActivity(id: id)
+        case .catchUp(let label, let day):
+            let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now
+            pendingCatchUp = PlanCatchUp(label: label, date: TrainingDayId.date(day) ?? yesterday)
+            select(.plan)
         }
     }
 
@@ -120,6 +127,8 @@ enum NotificationDestination: Equatable {
     case goals
     case settings(SettingsRoute?)
     case activity(id: String)
+    /// A missed session, by the label the coach is told and its training day.
+    case catchUp(label: String, day: String)
 }
 
 enum ShellTab: Hashable, CaseIterable {

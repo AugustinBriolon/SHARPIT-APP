@@ -35,7 +35,7 @@ private func session(
 
     #expect(reminders.count == 1)
     #expect(reminders[0].fireDate == paris.date(from: DateComponents(year: 2026, month: 9, day: 30, hour: 17)))
-    #expect(reminders[0].title == "Séance à 18:00")
+    #expect(reminders[0].title == "Ta séance t’attend à 18:00")
     #expect(reminders[0].body == "Seuil · 55 min")
     #expect(reminders[0].id == "session-reminder-s1")
 }
@@ -48,7 +48,7 @@ private func session(
     )
 
     #expect(reminders.first?.fireDate == paris.date(from: DateComponents(year: 2026, month: 9, day: 30, hour: 7, minute: 30)))
-    #expect(reminders.first?.title == "Séance aujourd'hui")
+    #expect(reminders.first?.title == "Ta séance du jour t’attend")
 }
 
 @Test func aSessionDoneOrPastIsNeverAnnounced() {
@@ -72,5 +72,5 @@ private func session(
         now: day("2026-09-28"),
         calendar: paris
     )
-    #expect(reminders.first?.title == "Séance aujourd'hui")
+    #expect(reminders.first?.title == "Ta séance du jour t’attend")
 }

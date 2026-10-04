@@ -5,7 +5,7 @@ import HealthKit
 /// Wakes the app when Apple Health receives what the server answers to, and sends it:
 /// - a night — the watch ending its sleep tracking, Garmin Connect syncing into Health — so the
 ///   morning verdict and its proposal go out as soon as the night is read, not at a fixed hour;
-/// - a workout, so the server pairs it with the plan and says « Séance comptée » within the
+/// - a workout, so the server pairs it with the plan and says « Séance dans la boîte » within the
 ///   hour rather than once the athlete opens the app.
 ///
 /// Started at launch, a background launch included: HealthKit only delivers to queries

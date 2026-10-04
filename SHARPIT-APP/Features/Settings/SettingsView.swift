@@ -193,7 +193,8 @@ struct SettingsView: View {
             prefs.morningVerdict ? "verdict du matin" : nil,
             prefs.weeklyReview ? "bilan" : nil,
             prefs.sessionReminder ? "rappels" : nil,
-            prefs.sessionDone ? "séances comptées" : nil,
+            prefs.sessionDone ? "séances faites" : nil,
+            prefs.missedSession ? "séances manquées" : nil,
             prefs.syncAlerts ? "alertes" : nil,
         ].compactMap { $0 }
         return on.isEmpty ? "Aucune" : on.joined(separator: ", ").capitalizedFirstLetter

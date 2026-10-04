@@ -433,8 +433,8 @@ Sources de données › Priorités par catégorie (`SourcePrioritiesView`, `Sour
 the primary — the web applies it: the primary's values win, the others fill what it lacks. HealthKit is read-only and entitled in `SharpIt.entitlements`. A night or a workout written to Health wakes the
 app (`HealthUploadObserver`: an `HKObserverQuery` per type with background delivery, registered in
 `SharpitAppDelegate` at every launch, one send at a time) and is sent at once, so the server sends
-the morning verdict as soon as the night is read and « Séance comptée » once a workout counts for a
-planned session. Paramètres → Sources de données also offers the import on demand
+the morning verdict as soon as the night is read and « Séance dans la boîte » once a workout counts
+for a planned session. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
 
 **Strength sessions.** A strength activity lists its exercises in the order done
@@ -498,8 +498,10 @@ reschedules them from the plan on launch, on each return, on `calendarRevision` 
 an hour before a session's `startTime` or at 7:30 that day, by `SessionReminderPlanner`'s rules; every
 tapped notification goes through `PushNotificationManager.destination(for:)` to
 `ShellRouter.open(_:)` — `/plan/generator`, `/plan/review`, `/settings/sources`, `/activity/<id>`
-for « Séance comptée » (a synced activity counted for the plan: its share of the planned time and
-the next session, `sessionDone`), a tab), Sources de
+for « Séance dans la boîte » (a synced activity counted for the plan: its share of the planned time
+and the next session, `sessionDone`), `/plan/catch-up` for « Dommage pour hier » (yesterday's session
+missed, `missedSession`: `ShellRouter.pendingCatchUp` opens Plan's adapter with the miss said, as
+« Rattraper ma semaine » does), a tab), Sources de
 données, Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: the choice needs its
 explanation) and Confidentialité, each row saying its state before it is opened. A page's explanation is the footer of its
 list (`SharpitListFooter`), never a paragraph above it. Compte edits in
@@ -598,6 +600,11 @@ projection → limit → confidence.
 
 The one wash allowed in content is Santé's hero halo: it carries the reading's tone (younger or
 older, anything to watch), behind the one number the tab stands on — never decoration elsewhere.
+
+Notifications speak as a coach who knows the athlete: « tu », warm and plain (« Ta séance t'attend
+à 18:00 », « Dommage pour hier », « On se retrouve demain pour ton vélo endurance »), one honest
+remark at most, every figure true — never hype, emoji, praise for its own sake or guilt. The server
+writes the pushes (`session-alerts.ts`, `athlete-notifications.ts`); the app its local reminders.
 
 Forbidden, on both platforms: streak counters, radial gauges dominating a hero, sparkle /
 chatbot chrome, colored glow shadows, invented metrics, motivational micro-copy.

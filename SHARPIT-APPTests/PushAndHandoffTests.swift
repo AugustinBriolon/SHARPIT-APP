@@ -103,7 +103,23 @@ struct PushAndHandoffTests {
         #expect(PushNotificationManager.destination(for: [:]) == nil)
     }
 
-    /// « Séance comptée » opens the activity that counted.
+    /// « Dommage pour hier » opens the catch-up with the miss; without it, Plan.
+    @Test func aMissedSessionOpensTheCatchUp() {
+        let push: [AnyHashable: Any] = ["url": "/plan/catch-up", "catchUp": ["label": "Course seuil", "day": "2026-10-01"]]
+        #expect(PushNotificationManager.destination(for: push) == .catchUp(label: "Course seuil", day: "2026-10-01"))
+        #expect(PushNotificationManager.destination(for: ["url": "/plan/catch-up"]) == .tab(.plan))
+    }
+
+    @MainActor
+    @Test func theRouterHandsTheMissToPlan() {
+        let router = ShellRouter()
+        router.open(.catchUp(label: "Course seuil", day: "2026-10-01"))
+        #expect(router.selectedTab == .plan)
+        #expect(router.pendingCatchUp?.label == "Course seuil")
+        #expect(router.pendingCatchUp?.date == TrainingDayId.date("2026-10-01"))
+    }
+
+    /// « Séance dans la boîte » opens the activity that counted.
     @Test func aCountedSessionOpensItsActivity() {
         #expect(PushNotificationManager.destination(for: ["url": "/activity/act-1"]) == .activity(id: "act-1"))
         #expect(PushNotificationManager.destination(for: ["url": "https://sharpit.app/activity/act-1"]) == .activity(id: "act-1"))
