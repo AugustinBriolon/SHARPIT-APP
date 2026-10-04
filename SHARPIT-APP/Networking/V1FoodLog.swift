@@ -87,6 +87,19 @@ nonisolated struct V1FoodProduct: Codable, Sendable, Equatable, Hashable, Identi
 
     /// Open Food Facts data must carry its attribution wherever it is picked.
     var isOpenFoodFacts: Bool { source == "OFF" }
+    /// A generic food from the ANSES Ciqual table (SHARPIT ADR-065).
+    var isCiqual: Bool { source == "CIQUAL" }
+
+    static let openFoodFactsAttribution = "Données Open Food Facts (ODbL)"
+    static let ciqualAttribution = "Table Ciqual 2020, Anses (Licence Ouverte)"
+
+    /// The attribution line the listed foods' sources ask for; nil for the athlete's own foods only.
+    static func attribution(for products: [V1FoodProduct]) -> String? {
+        var parts: [String] = []
+        if products.contains(where: \.isCiqual) { parts.append(ciqualAttribution) }
+        if products.contains(where: \.isOpenFoodFacts) { parts.append(openFoodFactsAttribution) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
 }
 
 /// Sharpit food health score (server-computed, SHARPIT ADR-063): 0–100, what explains it
@@ -355,11 +368,31 @@ nonisolated struct V1FoodLogDay: Decodable, Sendable, Equatable {
 /// `GET /api/v1/food-log/foods?q=` — the athlete's own foods first, then Open Food Facts.
 nonisolated struct V1FoodSearchResults: Decodable, Sendable, Equatable {
     let own: [V1FoodProduct]
+    /// Generic foods from Ciqual (« Banane, pulpe, crue »), answered even when OFF is down.
+    let generic: [V1FoodProduct]
     let products: [V1FoodProduct]
-    /// Open Food Facts did not answer: only the athlete's own foods are listed.
+    /// Open Food Facts did not answer: only the athlete's own and generic foods are listed.
     let offUnavailable: Bool
 
-    var isEmpty: Bool { own.isEmpty && products.isEmpty }
+    var isEmpty: Bool { own.isEmpty && generic.isEmpty && products.isEmpty }
+
+    enum CodingKeys: String, CodingKey { case own, generic, products, offUnavailable }
+
+    init(own: [V1FoodProduct], generic: [V1FoodProduct] = [], products: [V1FoodProduct], offUnavailable: Bool) {
+        self.own = own
+        self.generic = generic
+        self.products = products
+        self.offUnavailable = offUnavailable
+    }
+
+    /// A server older than Ciqual sends no `generic`.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        own = try container.decode([V1FoodProduct].self, forKey: .own)
+        generic = try container.decodeIfPresent([V1FoodProduct].self, forKey: .generic) ?? []
+        products = try container.decode([V1FoodProduct].self, forKey: .products)
+        offUnavailable = try container.decode(Bool.self, forKey: .offUnavailable)
+    }
 }
 
 nonisolated struct V1FoodLogEntryEnvelope: Decodable, Sendable {

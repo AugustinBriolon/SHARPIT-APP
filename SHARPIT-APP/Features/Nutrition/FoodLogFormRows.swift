@@ -118,10 +118,15 @@ struct FoodMealPicker: View {
     }
 }
 
-/// Open Food Facts asks for its attribution wherever its products are listed or picked (ODbL).
-struct OpenFoodFactsAttribution: View {
+/// Open Food Facts (ODbL) and Ciqual (Licence Ouverte) ask for their attribution wherever their
+/// foods are listed or picked: one footer naming each source present.
+struct FoodSourcesAttribution: View {
+    let products: [V1FoodProduct]
+
     var body: some View {
-        SharpitListFooter("Données Open Food Facts (ODbL)")
+        if let text = V1FoodProduct.attribution(for: products) {
+            SharpitListFooter(text)
+        }
     }
 }
 

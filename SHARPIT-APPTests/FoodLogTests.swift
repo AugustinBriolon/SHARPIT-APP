@@ -111,6 +111,31 @@ private let scoredV2JSON = """
     #expect(health.incompatibleDiets.map(\.label) == ["Végétalien"])
 }
 
+@Test func searchResultsCarryGenericFoodsAndNameTheirSources() throws {
+    let json = """
+    { "own": [],
+      "generic": [{ "id": "g1", "source": "CIQUAL", "name": "Banane, pulpe, crue",
+                    "kcalPer100g": 90.5, "proteinPer100g": 1.06, "carbsPer100g": 19.7, "fatPer100g": 0.25 }],
+      "products": [{ "id": "p1", "source": "OFF", "barcode": "3017620422003", "name": "Nectar de banane",
+                     "kcalPer100g": 60, "proteinPer100g": 0.3, "carbsPer100g": 14, "fatPer100g": 0 }],
+      "offUnavailable": false }
+    """
+    let results = try JSONDecoder().decode(V1FoodSearchResults.self, from: Data(json.utf8))
+    #expect(results.generic.first?.isCiqual == true)
+    #expect(!results.isEmpty)
+    #expect(V1FoodProduct.attribution(for: results.generic) == "Table Ciqual 2020, Anses (Licence Ouverte)")
+    #expect(V1FoodProduct.attribution(for: results.generic + results.products)
+        == "Table Ciqual 2020, Anses (Licence Ouverte) · Données Open Food Facts (ODbL)")
+    #expect(V1FoodProduct.attribution(for: []) == nil)
+
+    let older = try JSONDecoder().decode(
+        V1FoodSearchResults.self,
+        from: Data(#"{ "own": [], "products": [], "offUnavailable": true }"#.utf8)
+    )
+    #expect(older.generic.isEmpty)
+    #expect(older.isEmpty)
+}
+
 @Test func theScoreReadsInWords() throws {
     let health = try JSONDecoder().decode(V1FoodHealth.self, from: Data(scoredV2JSON.utf8))
     #expect(FoodHealthPresentation.verdict(health) == "1 point à surveiller\n1 point fort")

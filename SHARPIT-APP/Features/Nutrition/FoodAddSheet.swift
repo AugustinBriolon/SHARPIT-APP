@@ -165,9 +165,7 @@ private struct FoodSearchPage: View {
                 } header: {
                     SharpitEyebrow("Récents")
                 } footer: {
-                    if store.recent.contains(where: { $0.product.isOpenFoodFacts }) {
-                        OpenFoodFactsAttribution()
-                    }
+                    FoodSourcesAttribution(products: store.recent.map(\.product))
                 }
                 .sharpitListRows()
             }
@@ -197,6 +195,16 @@ private struct FoodSearchPage: View {
                 }
                 .sharpitListRows()
             }
+            if !results.generic.isEmpty {
+                Section {
+                    ForEach(results.generic) { productRow($0) }
+                } header: {
+                    SharpitEyebrow("Aliments de base")
+                } footer: {
+                    FoodSourcesAttribution(products: results.generic)
+                }
+                .sharpitListRows()
+            }
             if !results.products.isEmpty || results.offUnavailable {
                 Section {
                     if results.offUnavailable {
@@ -208,7 +216,7 @@ private struct FoodSearchPage: View {
                 } header: {
                     SharpitEyebrow("Produits")
                 } footer: {
-                    OpenFoodFactsAttribution()
+                    FoodSourcesAttribution(products: results.products)
                 }
                 .sharpitListRows()
             }
@@ -298,6 +306,7 @@ struct FoodProductRow: View {
         if let brand = product.brand, !brand.isEmpty { parts.append(brand) }
         if let lastGrams { parts.append("Dernière fois \(FoodPortion.gramsLabel(lastGrams))") }
         if product.source == "CUSTOM" { parts.append("Mon aliment") }
+        if product.isCiqual { parts.append("Aliment de base") }
         return parts.isEmpty ? "Pour 100 g" : parts.joined(separator: " · ")
     }
 }
@@ -396,8 +405,8 @@ struct FoodPortionPage: View {
                 FoodHealthSections(health: health, isCompleting: isCompleting, showsScoreHeader: false)
             }
 
-            if product.isOpenFoodFacts {
-                Section {} footer: { OpenFoodFactsAttribution() }
+            if V1FoodProduct.attribution(for: [product]) != nil {
+                Section {} footer: { FoodSourcesAttribution(products: [product]) }
             }
         }
         .sharpitGroupedList()
