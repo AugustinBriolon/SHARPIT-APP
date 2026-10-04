@@ -347,6 +347,7 @@ struct NotificationPrefsView: View {
             toggle("Verdict du matin", detail: "Ta lecture du jour, une fois ta nuit synchronisée.", symbol: "sun.horizon", key: "morningVerdict", value: prefs.morningVerdict)
             toggle("Bilan de la semaine", detail: "Le résumé de ta semaine d'entraînement.", symbol: "calendar", key: "weeklyReview", value: prefs.weeklyReview)
             toggle("Rappel de séance", detail: "Une heure avant une séance prévue.", symbol: "figure.run", key: "sessionReminder", value: prefs.sessionReminder)
+            toggle("Séance comptée", detail: "Après une séance synchronisée : sa part du plan et la suivante.", symbol: "checkmark.seal", key: "sessionDone", value: prefs.sessionDone)
             toggle("Alertes de synchronisation", detail: "Quand une source doit être reconnectée.", symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
         }
         .sharpitListRows()

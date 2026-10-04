@@ -11,7 +11,7 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         // Before anything else returns: a background launch by HealthKit delivers only to
         // observers registered here.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
-            HealthSleepObserver.start()
+            HealthUploadObserver.start()
         }
         return true
     }

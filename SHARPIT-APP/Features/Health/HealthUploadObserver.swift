@@ -2,22 +2,34 @@ import ClerkKit
 import Foundation
 import HealthKit
 
-/// Wakes the app when a night is written to Apple Health — the watch ending its sleep tracking,
-/// Garmin Connect syncing into Health — and sends it, so the server sends the morning verdict and
-/// its proposal as soon as the night is read rather than at a fixed hour. Started at launch, a
-/// background launch included: HealthKit only delivers to queries registered then.
+/// Wakes the app when Apple Health receives what the server answers to, and sends it:
+/// - a night — the watch ending its sleep tracking, Garmin Connect syncing into Health — so the
+///   morning verdict and its proposal go out as soon as the night is read, not at a fixed hour;
+/// - a workout, so the server pairs it with the plan and says « Séance comptée » within the
+///   hour rather than once the athlete opens the app.
+///
+/// Started at launch, a background launch included: HealthKit only delivers to queries
+/// registered then.
 @MainActor
-enum HealthSleepObserver {
-    private static var query: HKObserverQuery?
+enum HealthUploadObserver {
+    private static var queries: [HKObserverQuery] = []
     private static let store = HKHealthStore()
+    /// One send at a time: a night and a workout often land together, and two sends would read
+    /// and upload the same samples twice.
+    private static var inFlight: Task<Void, Never>?
+
+    private static var observedTypes: [HKSampleType] {
+        [HKCategoryType(.sleepAnalysis), HKWorkoutType.workoutType()]
+    }
 
     static func start() {
-        guard HKHealthStore.isHealthDataAvailable(), query == nil else { return }
-        let sleep = HKCategoryType(.sleepAnalysis)
-        let observer = makeQuery(for: sleep)
-        store.execute(observer)
-        query = observer
-        enableBackgroundDelivery(for: sleep, on: store)
+        guard HKHealthStore.isHealthDataAvailable(), queries.isEmpty else { return }
+        for type in observedTypes {
+            let observer = makeQuery(for: type)
+            store.execute(observer)
+            queries.append(observer)
+            enableBackgroundDelivery(for: type, on: store)
+        }
     }
 
     /// Outside the main actor for the same reason as the query: HealthKit calls the completion on
@@ -28,8 +40,19 @@ enum HealthSleepObserver {
         store.enableBackgroundDelivery(for: type, frequency: .immediate) { _, _ in }
     }
 
+    /// Queued behind a send already under way, so what arrived meanwhile still goes out.
+    static func sendNewSamples() async {
+        let previous = inFlight
+        let next = Task {
+            await previous?.value
+            await send()
+        }
+        inFlight = next
+        await next.value
+    }
+
     /// The athlete's own switch decides: an account that never turned Apple Health on sends nothing.
-    static func sendNight() async {
+    private static func send() async {
         if Clerk.shared.user == nil {
             _ = try? await Clerk.shared.refreshClient()
         }
@@ -43,7 +66,7 @@ enum HealthSleepObserver {
     }
 
     /// Built outside the main actor: HealthKit calls the handler on its own queue, where a
-    /// main-actor closure would trap. The completion is called once the night went out, so iOS
+    /// main-actor closure would trap. The completion is called once the samples went out, so iOS
     /// keeps the app awake for the upload.
     nonisolated private static func makeQuery(for type: HKSampleType) -> HKObserverQuery {
         HKObserverQuery(sampleType: type, predicate: nil) { _, completion, error in
@@ -53,7 +76,7 @@ enum HealthSleepObserver {
             }
             let finish = ObserverCompletion(completion)
             Task {
-                await HealthSleepObserver.sendNight()
+                await HealthUploadObserver.sendNewSamples()
                 finish.run()
             }
         }

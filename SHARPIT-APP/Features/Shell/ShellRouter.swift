@@ -93,6 +93,8 @@ final class ShellRouter {
             isShowingGoals = true
         case .settings(let route):
             openSettings(on: route)
+        case .activity(let id):
+            openActivity(id: id)
         }
     }
 
@@ -117,6 +119,7 @@ enum NotificationDestination: Equatable {
     case weeklyReview
     case goals
     case settings(SettingsRoute?)
+    case activity(id: String)
 }
 
 enum ShellTab: Hashable, CaseIterable {

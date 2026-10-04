@@ -59,20 +59,22 @@ nonisolated enum AthleteSex: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// Which pushes the athlete wants, as the web resolves them (`notification-prefs.ts`): the
-/// server always serves a full v1, defaults included. Only the morning verdict drives a push
-/// today; the others are stored for the pushes to come.
+/// server always serves a full v1, defaults included. The morning verdict, the weekly review,
+/// « Séance comptée » and the sync alerts are pushed by the server; session reminders are
+/// scheduled on this iPhone.
 nonisolated struct V1NotificationPrefs: Codable, Sendable, Equatable {
     var morningVerdict = true
     /// "HH:mm", athlete-local; nil is the default morning slot.
     var morningTime: String?
     var weeklyReview = true
     var sessionReminder = true
+    var sessionDone = true
     var syncAlerts = true
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case morningVerdict, morningTime, weeklyReview, sessionReminder, syncAlerts
+        case morningVerdict, morningTime, weeklyReview, sessionReminder, sessionDone, syncAlerts
     }
 
     init(from decoder: Decoder) throws {
@@ -81,6 +83,7 @@ nonisolated struct V1NotificationPrefs: Codable, Sendable, Equatable {
         morningTime = try? container.decodeIfPresent(String.self, forKey: .morningTime)
         weeklyReview = (try? container.decodeIfPresent(Bool.self, forKey: .weeklyReview)) ?? true
         sessionReminder = (try? container.decodeIfPresent(Bool.self, forKey: .sessionReminder)) ?? true
+        sessionDone = (try? container.decodeIfPresent(Bool.self, forKey: .sessionDone)) ?? true
         syncAlerts = (try? container.decodeIfPresent(Bool.self, forKey: .syncAlerts)) ?? true
     }
 }

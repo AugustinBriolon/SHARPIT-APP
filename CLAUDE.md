@@ -430,10 +430,11 @@ workout while Apple Health is enabled for activities in the athlete's sources; i
 the others (SHARPIT ADR-054): its switch links it on the web (`/api/v1/apple-health/link`), and
 Sources de données › Priorités par catégorie (`SourcePrioritiesView`, `SourcePrefsStore`,
 `/api/v1/integrations/source-prefs`) turns each connected source on or off per data class and picks
-the primary — the web applies it: the primary's values win, the others fill what it lacks. HealthKit is read-only and entitled in `SharpIt.entitlements`. A night written to Health wakes the app
-(`HealthSleepObserver`: an `HKObserverQuery` on sleep with background delivery, registered in
-`SharpitAppDelegate` at every launch) and is sent at once, so the server sends the morning verdict as
-soon as the night is read. Paramètres → Sources de données also offers the import on demand
+the primary — the web applies it: the primary's values win, the others fill what it lacks. HealthKit is read-only and entitled in `SharpIt.entitlements`. A night or a workout written to Health wakes the
+app (`HealthUploadObserver`: an `HKObserverQuery` per type with background delivery, registered in
+`SharpitAppDelegate` at every launch, one send at a time) and is sent at once, so the server sends
+the morning verdict as soon as the night is read and « Séance comptée » once a workout counts for a
+planned session. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
 
 **Strength sessions.** A strength activity lists its exercises in the order done
@@ -496,7 +497,9 @@ the device server-side since iOS owns the permission, then each kind in `notific
 reschedules them from the plan on launch, on each return, on `calendarRevision` and on the switch,
 an hour before a session's `startTime` or at 7:30 that day, by `SessionReminderPlanner`'s rules; every
 tapped notification goes through `PushNotificationManager.destination(for:)` to
-`ShellRouter.open(_:)` — `/plan/generator`, `/plan/review`, `/settings/sources`, a tab), Sources de
+`ShellRouter.open(_:)` — `/plan/generator`, `/plan/review`, `/settings/sources`, `/activity/<id>`
+for « Séance comptée » (a synced activity counted for the plan: its share of the planned time and
+the next session, `sessionDone`), a tab), Sources de
 données, Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: the choice needs its
 explanation) and Confidentialité, each row saying its state before it is opened. A page's explanation is the footer of its
 list (`SharpitListFooter`), never a paragraph above it. Compte edits in

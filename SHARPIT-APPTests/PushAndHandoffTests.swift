@@ -103,6 +103,21 @@ struct PushAndHandoffTests {
         #expect(PushNotificationManager.destination(for: [:]) == nil)
     }
 
+    /// « Séance comptée » opens the activity that counted.
+    @Test func aCountedSessionOpensItsActivity() {
+        #expect(PushNotificationManager.destination(for: ["url": "/activity/act-1"]) == .activity(id: "act-1"))
+        #expect(PushNotificationManager.destination(for: ["url": "https://sharpit.app/activity/act-1"]) == .activity(id: "act-1"))
+        // No id: the Activité tab, as a bare `/activity` link.
+        #expect(PushNotificationManager.destination(for: ["url": "/activity/"]) == .tab(.activity))
+    }
+
+    @Test func theCountedSessionPushIsOnUntilSwitchedOff() throws {
+        let absent = try JSONDecoder().decode(V1NotificationPrefs.self, from: Data(#"{"version":1}"#.utf8))
+        let off = try JSONDecoder().decode(V1NotificationPrefs.self, from: Data(#"{"version":1,"sessionDone":false}"#.utf8))
+        #expect(absent.sessionDone)
+        #expect(!off.sessionDone)
+    }
+
     @Test func pushNotificationRoutingByUrl() {
         let manager = PushNotificationManager()
 
