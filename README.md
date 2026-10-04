@@ -155,7 +155,11 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   products are listed. Each write goes out behind the tap (`FoodLogStore`), then
   `/api/v1/nutrition` is read again for the totals. Macro targets are set in grams or as % of the
   energy; « Mes aliments » lists, edits and deletes the athlete's own foods, from the add-food sheet
-  or from Paramètres › Nutrition. The coach opened from Nutrition carries the day's nutrition. MyFitnessPal is never
+  or from Paramètres › Nutrition. Every food carries the server's Sharpit score (web ADR-063):
+  a badge in lists, a line when it breaks a declared diet, and on the portion page the dial,
+  the diet fit, what to watch, its strengths and the additives (`FoodHealthViews`); a search hit
+  is completed by its barcode read when opened. Search results come ranked by name (web ADR-064).
+  The coach opened from Nutrition carries the day's nutrition. MyFitnessPal is never
   linked from the iPhone (App Review 5.2.2, [ADR 0010](docs/adr/0010-import-the-myfitnesspal-export-instead-of-linking-it.md)):
   the athlete imports their own export file from Nutrition's « … » menu
 - Activity detail: effort and feeling are rated in one drawer that saves on each tap
