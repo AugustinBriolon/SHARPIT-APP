@@ -83,7 +83,7 @@ struct OnboardingView: View {
         case .sports: OnboardingSportsStep(store: store)
         case .equipment: OnboardingEquipmentStep(store: store)
         case .week: OnboardingWeekStep(store: store)
-        case .goal: OnboardingGoalStep(draft: $store.intention)
+        case .goal: OnboardingGoalStep(draft: $store.intention, isTriathlete: store.sports.contains("triathlon"))
         case .injuries: OnboardingInjuriesStep(store: store)
         case .privacy: OnboardingPrivacyStep(consents: $store.consents)
         case .sources:

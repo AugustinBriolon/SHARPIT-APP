@@ -131,6 +131,13 @@ struct SettingsView: View {
                         .buttonStyle(.plain)
                     }
 
+                    SettingsGroup(title: "Aide") {
+                        NavigationLink(value: SettingsRoute.feedback) {
+                            SettingsRow(symbol: "bubble.left.and.text.bubble.right.fill", tint: SettingsTone.feedback, title: "Donner un avis", detail: "Un bug, une idée : je lis tout")
+                        }
+                    }
+                    .buttonStyle(.plain)
+
                     SettingsGroup(title: "Confidentialité") {
                         NavigationLink(value: SettingsRoute.privacy) {
                             SettingsRow(symbol: "hand.raised.fill", tint: SettingsTone.privacy, title: "Confidentialité & conditions", detail: "Consentements, CGU, politique")
@@ -217,15 +224,12 @@ struct SettingsView: View {
     }
 
     private var footer: some View {
-        let info = Bundle.main.infoDictionary
-        let version = info?["CFBundleShortVersionString"] as? String ?? "—"
-        let build = info?["CFBundleVersion"] as? String ?? "—"
-        return VStack(spacing: SharpitSpacing.xxs) {
+        VStack(spacing: SharpitSpacing.xxs) {
             Text("SharpIt")
                 .font(SharpitTypography.eyebrow)
                 .tracking(SharpitTypography.eyebrowTracking * 2)
                 .foregroundStyle(SharpitColor.mutedForeground)
-            Text("Version \(version) (\(build))")
+            Text("Version \(AppVersion.display)")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground.opacity(0.7))
         }
@@ -258,6 +262,8 @@ struct SettingsView: View {
             FeaturesView(store: features, tokenProvider: tokenProvider)
         case .ownFoods:
             OwnFoodsSettingsView(tokenProvider: tokenProvider)
+        case .feedback:
+            FeedbackView(tokenProvider: tokenProvider)
         case .density:
             DisplayModeView(
                 client: profileClient,
@@ -280,6 +286,7 @@ enum SettingsRoute: Hashable {
     case density
     case features
     case ownFoods
+    case feedback
 }
 
 private extension String {
@@ -447,4 +454,5 @@ private enum SettingsTone {
     static let density = Color(red: 0.55, green: 0.36, blue: 0.86)
     static let privacy = Color(red: 0.44, green: 0.50, blue: 0.58)
     static let nutrition = Color(red: 0.92, green: 0.52, blue: 0.20)
+    static let feedback = Color(red: 0.20, green: 0.56, blue: 0.86)
 }

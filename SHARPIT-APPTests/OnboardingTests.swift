@@ -318,6 +318,20 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(input?.priority == .a)
     #expect(input?.targetDate == draft.raceDate)
     #expect(input?.location == nil)
+    #expect(input?.raceFormat == nil)
+    #expect(input?.targetPerformance == nil)
+}
+
+/// The distance is worded as the web's triathlon predictor reads it back.
+@Test func aTriathletesRaceCarriesItsDistanceAndAim() {
+    var draft = OnboardingIntentionDraft()
+    draft.raceTitle = "Nice"
+    draft.triathlonFormat = .half
+    draft.targetPerformance = " Sub 5 h "
+
+    #expect(draft.goalInput?.raceFormat == "70.3 (Half Ironman)")
+    #expect(draft.goalInput?.targetPerformance == "Sub 5 h")
+    #expect(OnboardingTriathlonFormat.allCases.map(\.shortLabel) == ["Sprint", "M", "70.3", "Ironman"])
 }
 
 @Test func aMetricNeedsATitleAPositiveTargetAndAUnit() {

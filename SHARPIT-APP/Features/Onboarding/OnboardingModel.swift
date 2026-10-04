@@ -217,6 +217,24 @@ nonisolated enum OnboardingIntentionKind: String, CaseIterable, Identifiable, Se
     }
 }
 
+/// A triathlon's distance, worded so the web's `resolveTriathlonFormat` reads it back — the
+/// race predictor and the coach's periodization hang on it.
+nonisolated enum OnboardingTriathlonFormat: String, CaseIterable, Sendable {
+    case sprint = "Triathlon sprint"
+    case olympic = "Triathlon olympique (M)"
+    case half = "70.3 (Half Ironman)"
+    case full = "Ironman"
+
+    var shortLabel: String {
+        switch self {
+        case .sprint: "Sprint"
+        case .olympic: "M"
+        case .half: "70.3"
+        case .full: "Ironman"
+        }
+    }
+}
+
 /// The few fields the wizard asks for a first goal, turned into the same payload as the
 /// web's `buildOnboardingGoalPayload` (`src/lib/onboarding/status/intention.ts`).
 nonisolated struct OnboardingIntentionDraft: Equatable, Sendable {
@@ -225,6 +243,10 @@ nonisolated struct OnboardingIntentionDraft: Equatable, Sendable {
     var raceTitle = ""
     var raceDate: Date
     var raceLocation = ""
+    /// Asked of a triathlete only; any race may name it in its title instead.
+    var triathlonFormat: OnboardingTriathlonFormat?
+    /// « Terminer », « Sub 5 h » — optional.
+    var targetPerformance = ""
 
     var metricTitle = ""
     var metricTargetText = ""
@@ -259,7 +281,9 @@ nonisolated struct OnboardingIntentionDraft: Equatable, Sendable {
                 kind: .race,
                 priority: .a,
                 targetDate: raceDate,
-                location: raceLocation.trimmed.isEmpty ? nil : raceLocation.trimmed
+                location: raceLocation.trimmed.isEmpty ? nil : raceLocation.trimmed,
+                raceFormat: triathlonFormat?.rawValue,
+                targetPerformance: targetPerformance.trimmed.isEmpty ? nil : targetPerformance.trimmed
             )
         case .metric:
             return CreateGoalInput(

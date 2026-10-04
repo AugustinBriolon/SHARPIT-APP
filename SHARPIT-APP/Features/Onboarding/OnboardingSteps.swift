@@ -223,6 +223,8 @@ struct OnboardingWeekStep: View {
 /// what the plan has to work with.
 struct OnboardingGoalStep: View {
     @Binding var draft: OnboardingIntentionDraft
+    /// A triathlete picks the distance: the plan of a sprint and of an Ironman share little.
+    var isTriathlete = false
 
     private var weeksLeft: Int {
         max(Calendar.current.dateComponents([.weekOfYear], from: .now, to: draft.raceDate).weekOfYear ?? 0, 0)
@@ -238,6 +240,18 @@ struct OnboardingGoalStep: View {
             switch draft.kind {
             case .race:
                 SharpitFormField("Nom de l'épreuve", placeholder: "Marathon de Paris, 70.3 Nice…", text: $draft.raceTitle)
+                if isTriathlete {
+                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                        Text("Format")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                        SharpitSegmentedChoice(
+                            options: OnboardingTriathlonFormat.allCases,
+                            label: \.shortLabel,
+                            selection: $draft.triathlonFormat
+                        )
+                    }
+                }
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                     DatePicker("Date", selection: $draft.raceDate, in: Date()..., displayedComponents: .date)
                         .font(SharpitTypography.bodyEmphasis)
@@ -257,6 +271,7 @@ struct OnboardingGoalStep: View {
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
+                SharpitFormField("Objectif visé (optionnel)", placeholder: "Terminer, sub 5 h…", text: $draft.targetPerformance)
                 OnboardingPlaceField(title: "Lieu (optionnel)", text: $draft.raceLocation)
             case .metric:
                 SharpitFormField("Ce que tu veux atteindre", placeholder: "FTP, VMA, allure 10 km…", text: $draft.metricTitle)

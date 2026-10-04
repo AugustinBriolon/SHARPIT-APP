@@ -123,7 +123,9 @@ and a read that fails lets the athlete in without remembering anything. `Account
 `OnboardingStepMemory` reopens the step reached after a quit. Each step is written as the athlete
 leaves it: the first name on the Clerk user, the body, practiced sports, equipment,
 `trainingAvailability`, a first goal through `/api/v1/goals` (its place picked from MapKit
-suggestions, `OnboardingPlaceField`), the injuries as physical notes (`/api/v1/physical-notes`, which
+suggestions, `OnboardingPlaceField`; a triathlete picks the distance — Sprint, M, 70.3, Ironman,
+`OnboardingTriathlonFormat`, worded as the web's triathlon predictor reads it — and any race may
+name its aim), the injuries as physical notes (`/api/v1/physical-notes`, which
 the coach reads as sensitive zones) and the consents. Injuries are health data: while the consents
 are owed they wait on the phone and are written with the privacy step, before the week is planned.
 A tap carries the step it was made on, so one delivered again after the page moved is dropped
@@ -503,7 +505,9 @@ and the next session, `sessionDone`), `/plan/catch-up` for « Dommage pour hier 
 missed, `missedSession`: `ShellRouter.pendingCatchUp` opens Plan's adapter with the miss said, as
 « Rattraper ma semaine » does), a tab), Sources de
 données, Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: the choice needs its
-explanation) and Confidentialité, each row saying its state before it is opened. A page's explanation is the footer of its
+explanation), Donner un avis (`FeedbackView`: a note to the team, shown as sent on the tap and
+posted behind to `/api/v1/feedback` with the app's version — the external beta's voice,
+`docs/beta-testflight.md`) and Confidentialité, each row saying its state before it is opened. A page's explanation is the footer of its
 list (`SharpitListFooter`), never a paragraph above it. Compte edits in
 place: first and last name through Clerk's `user.update`, sex, height and birth date through
 `AthleteProfilePatch`; e-mail, password and photo stay in Clerk's own sheet.
