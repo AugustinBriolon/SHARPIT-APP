@@ -60,6 +60,8 @@ nonisolated struct V1FoodLogEntry: Codable, Sendable, Equatable, Hashable, Ident
     var fiber: Double?
     var sugar: Double?
     var createdAt: String?
+    /// Live Sharpit score of the linked product, when known.
+    var health: V1FoodHealth? = nil
 }
 
 /// A food the athlete can log: an Open Food Facts product cached by the server, or their own.
@@ -76,11 +78,177 @@ nonisolated struct V1FoodProduct: Codable, Sendable, Equatable, Hashable, Identi
     var fatPer100g: Double
     var fiberPer100g: Double?
     var sugarPer100g: Double?
+    var saltPer100g: Double? = nil
+    var saturatedFatPer100g: Double? = nil
     var servingGrams: Double?
     var servingLabel: String?
+    /// Sharpit composition score when the server could compute one.
+    var health: V1FoodHealth? = nil
 
     /// Open Food Facts data must carry its attribution wherever it is picked.
     var isOpenFoodFacts: Bool { source == "OFF" }
+}
+
+/// Sharpit food health score (server-computed, SHARPIT ADR-063): 0–100, what explains it
+/// (highlights), the additives, and how the food fits the diets the athlete declared.
+nonisolated struct V1FoodHealth: Codable, Sendable, Equatable, Hashable {
+    var score: Int?
+    var scoreVersion: Int
+    var grade: Grade?
+    var coverage: Coverage
+    var nutriScore: String?
+    /// The letter was computed from the label, not read from Open Food Facts.
+    var nutriScoreEstimated: Bool = false
+    var nova: Int?
+    var nutrientFlags: NutrientFlags
+    var additives: [Additive]
+    var additivesKnown: AdditivesKnown = .list
+    var additiveCount: Int? = nil
+    var highlights: [Highlight] = []
+    var dietFit: [DietFit] = []
+    /// `summary` comes from a search hit: the product read by barcode completes it.
+    var detail: Detail = .full
+
+    enum Grade: String, Codable, Sendable, Equatable, Hashable {
+        case excellent, good, mediocre, poor
+
+        var label: String {
+            switch self {
+            case .excellent: "Excellent"
+            case .good: "Correct"
+            case .mediocre: "Médiocre"
+            case .poor: "À éviter"
+            }
+        }
+    }
+
+    enum Coverage: String, Codable, Sendable, Equatable, Hashable {
+        case full, partial, none
+    }
+
+    enum NutrientLevel: String, Codable, Sendable, Equatable, Hashable {
+        case low, moderate, high, unknown
+
+        var label: String {
+            switch self {
+            case .low: "Faible"
+            case .moderate: "Modéré"
+            case .high: "Élevé"
+            case .unknown: "—"
+            }
+        }
+    }
+
+    enum AdditiveRisk: String, Codable, Sendable, Equatable, Hashable {
+        case none, limited, high
+
+        var label: String {
+            switch self {
+            case .none: "Sans risque"
+            case .limited: "Risque limité"
+            case .high: "À risque"
+            }
+        }
+    }
+
+    enum AdditivesKnown: String, Codable, Sendable, Equatable, Hashable {
+        case list, count, unknown
+    }
+
+    enum Detail: String, Codable, Sendable, Equatable, Hashable {
+        case summary, full
+    }
+
+    struct NutrientFlags: Codable, Sendable, Equatable, Hashable {
+        var sugars: NutrientLevel
+        var salt: NutrientLevel
+        var saturatedFat: NutrientLevel
+    }
+
+    struct Additive: Codable, Sendable, Equatable, Hashable, Identifiable {
+        var code: String
+        var name: String
+        var risk: AdditiveRisk
+        var id: String { code }
+    }
+
+    /// One reason behind the score, worded by the server.
+    struct Highlight: Codable, Sendable, Equatable, Hashable, Identifiable {
+        enum Tone: String, Codable, Sendable, Equatable, Hashable {
+            case negative, positive, neutral
+        }
+
+        var key: String
+        var tone: Tone
+        var label: String
+        var detail: String?
+        var id: String { key }
+    }
+
+    /// How the food reads against one declared diet.
+    struct DietFit: Codable, Sendable, Equatable, Hashable, Identifiable {
+        enum Status: String, Codable, Sendable, Equatable, Hashable {
+            case compatible, uncertain, incompatible
+        }
+
+        var diet: String
+        var label: String
+        var status: Status
+        var reason: String
+        var id: String { diet }
+    }
+
+    var watchPoints: [Highlight] { highlights.filter { $0.tone == .negative } }
+    var strengths: [Highlight] { highlights.filter { $0.tone == .positive } }
+    var notes: [Highlight] { highlights.filter { $0.tone == .neutral } }
+    var incompatibleDiets: [DietFit] { dietFit.filter { $0.status == .incompatible } }
+
+    enum CodingKeys: String, CodingKey {
+        case score, scoreVersion, grade, coverage, nutriScore, nutriScoreEstimated, nova, nutrientFlags
+        case additives, additivesKnown, additiveCount, highlights, dietFit, detail
+    }
+
+    init(
+        score: Int?, scoreVersion: Int, grade: Grade?, coverage: Coverage, nutriScore: String?,
+        nutriScoreEstimated: Bool = false, nova: Int?, nutrientFlags: NutrientFlags, additives: [Additive],
+        additivesKnown: AdditivesKnown = .list, additiveCount: Int? = nil, highlights: [Highlight] = [],
+        dietFit: [DietFit] = [], detail: Detail = .full
+    ) {
+        self.score = score
+        self.scoreVersion = scoreVersion
+        self.grade = grade
+        self.coverage = coverage
+        self.nutriScore = nutriScore
+        self.nutriScoreEstimated = nutriScoreEstimated
+        self.nova = nova
+        self.nutrientFlags = nutrientFlags
+        self.additives = additives
+        self.additivesKnown = additivesKnown
+        self.additiveCount = additiveCount
+        self.highlights = highlights
+        self.dietFit = dietFit
+        self.detail = detail
+    }
+
+    /// A score stored before version 2 (or kept in the read cache) has none of the explaining
+    /// fields: it still reads, with nothing to explain.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        score = try container.decodeIfPresent(Int.self, forKey: .score)
+        scoreVersion = try container.decode(Int.self, forKey: .scoreVersion)
+        grade = try container.decodeIfPresent(Grade.self, forKey: .grade)
+        coverage = try container.decode(Coverage.self, forKey: .coverage)
+        nutriScore = try container.decodeIfPresent(String.self, forKey: .nutriScore)
+        nutriScoreEstimated = try container.decodeIfPresent(Bool.self, forKey: .nutriScoreEstimated) ?? false
+        nova = try container.decodeIfPresent(Int.self, forKey: .nova)
+        nutrientFlags = try container.decode(NutrientFlags.self, forKey: .nutrientFlags)
+        additives = try container.decodeIfPresent([Additive].self, forKey: .additives) ?? []
+        additivesKnown = (try? container.decodeIfPresent(AdditivesKnown.self, forKey: .additivesKnown)) ?? .list
+        additiveCount = try container.decodeIfPresent(Int.self, forKey: .additiveCount)
+        highlights = (try? container.decodeIfPresent([Highlight].self, forKey: .highlights)) ?? []
+        dietFit = (try? container.decodeIfPresent([DietFit].self, forKey: .dietFit)) ?? []
+        detail = (try? container.decodeIfPresent(Detail.self, forKey: .detail)) ?? .full
+    }
 }
 
 /// How the athlete sets their macros: in grams, or as shares of the energy target.
@@ -278,5 +446,7 @@ nonisolated struct FoodCustomDraft: Sendable, Equatable {
     var fatPer100g: Double
     var fiberPer100g: Double?
     var sugarPer100g: Double?
+    var saltPer100g: Double? = nil
+    var saturatedFatPer100g: Double? = nil
     var servingGrams: Double?
 }

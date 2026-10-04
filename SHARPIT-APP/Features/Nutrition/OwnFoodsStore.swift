@@ -89,6 +89,8 @@ nonisolated extension FoodCustomDraft {
             fatPer100g: product.fatPer100g,
             fiberPer100g: product.fiberPer100g,
             sugarPer100g: product.sugarPer100g,
+            saltPer100g: product.saltPer100g,
+            saturatedFatPer100g: product.saturatedFatPer100g,
             servingGrams: product.servingGrams
         )
     }

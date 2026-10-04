@@ -173,6 +173,8 @@ actor FoodLogClient: FoodLogServing {
             "fatPer100g": draft.fatPer100g,
             "fiberPer100g": draft.fiberPer100g ?? NSNull(),
             "sugarPer100g": draft.sugarPer100g ?? NSNull(),
+            "saltPer100g": draft.saltPer100g ?? NSNull(),
+            "saturatedFatPer100g": draft.saturatedFatPer100g ?? NSNull(),
             "servingGrams": draft.servingGrams ?? NSNull(),
         ]
         return try JSONSerialization.data(withJSONObject: payload)

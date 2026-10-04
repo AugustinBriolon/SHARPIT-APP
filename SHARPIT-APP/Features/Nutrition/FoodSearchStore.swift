@@ -66,6 +66,15 @@ final class FoodSearchStore {
         await pendingSearch?.value
     }
 
+    /// The whole product behind a search hit: Open Food Facts' search carries no additive list,
+    /// its barcode read does (SHARPIT ADR-063). Nil when it cannot be read; the hit stays shown.
+    func fullProduct(of product: V1FoodProduct) async -> V1FoodProduct? {
+        guard product.isOpenFoodFacts, let barcode = product.barcode,
+              case .found(let full) = await lookUp(barcode: barcode)
+        else { return nil }
+        return full
+    }
+
     func lookUp(barcode: String) async -> BarcodeOutcome {
         do {
             let product = try await SharpitRetry.run {

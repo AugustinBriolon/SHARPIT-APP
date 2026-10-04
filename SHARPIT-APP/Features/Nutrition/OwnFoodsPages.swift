@@ -151,6 +151,8 @@ struct FoodCustomPage: View {
     @State private var fat: String
     @State private var fiber: String
     @State private var sugar: String
+    @State private var salt: String
+    @State private var saturatedFat: String
     @State private var serving: String
     @State private var isSaving = false
     @State private var failure: String?
@@ -176,6 +178,8 @@ struct FoodCustomPage: View {
             _fat = State(initialValue: "")
             _fiber = State(initialValue: "")
             _sugar = State(initialValue: "")
+            _salt = State(initialValue: "")
+            _saturatedFat = State(initialValue: "")
             _serving = State(initialValue: "")
         case .edit(let product):
             _name = State(initialValue: product.name)
@@ -186,6 +190,8 @@ struct FoodCustomPage: View {
             _fat = State(initialValue: field(product.fatPer100g))
             _fiber = State(initialValue: field(product.fiberPer100g))
             _sugar = State(initialValue: field(product.sugarPer100g))
+            _salt = State(initialValue: field(product.saltPer100g))
+            _saturatedFat = State(initialValue: field(product.saturatedFatPer100g))
             _serving = State(initialValue: field(product.servingGrams))
         }
     }
@@ -198,7 +204,7 @@ struct FoodCustomPage: View {
     private var draft: FoodCustomDraft? {
         FoodCustomForm.draft(
             name: name, brand: brand, kcal: kcal, protein: protein, carbs: carbs, fat: fat,
-            fiber: fiber, sugar: sugar, serving: serving
+            fiber: fiber, sugar: sugar, salt: salt, saturatedFat: saturatedFat, serving: serving
         )
     }
 
@@ -218,15 +224,21 @@ struct FoodCustomPage: View {
             }
             .sharpitListRows()
 
-            Section(eyebrow: "Pour 100 g", footer: "Recopie l'étiquette nutritionnelle. Fibres et sucres sont optionnels.") {
+            Section(eyebrow: "Pour 100 g", footer: "Recopie l'étiquette. Fibres, sucres, sel et gras saturés sont optionnels ; avec les trois derniers, le score Sharpit lit tout l'aliment.") {
                 FoodNumberRow(title: "Énergie", unit: "kcal", text: $kcal)
                 FoodNumberRow(title: "Protéines", unit: "g", text: $protein)
                 FoodNumberRow(title: "Glucides", unit: "g", text: $carbs)
                 FoodNumberRow(title: "Lipides", unit: "g", text: $fat)
                 FoodNumberRow(title: "Fibres", unit: "g", placeholder: "—", text: $fiber)
                 FoodNumberRow(title: "Sucres", unit: "g", placeholder: "—", text: $sugar)
+                FoodNumberRow(title: "Sel", unit: "g", placeholder: "—", text: $salt)
+                FoodNumberRow(title: "Gras saturés", unit: "g", placeholder: "—", text: $saturatedFat)
             }
             .sharpitListRows()
+
+            if case .edit(let product) = purpose, let health = product.health, health.coverage != .none {
+                FoodHealthSections(health: health)
+            }
 
             Section {
                 FoodNumberRow(title: "Une portion", unit: "g", placeholder: "—", text: $serving)

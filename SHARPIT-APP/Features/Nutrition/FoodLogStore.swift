@@ -192,7 +192,8 @@ final class FoodLogStore {
             let portion = FoodPortion.nutrients(of: product, grams: draft.grams)
             return V1FoodLogEntry(
                 id: id, meal: draft.meal, productId: product.id, name: product.name, brand: product.brand,
-                grams: draft.grams, kcal: portion.kcal, protein: portion.protein, carbs: portion.carbs, fat: portion.fat
+                grams: draft.grams, kcal: portion.kcal, protein: portion.protein, carbs: portion.carbs, fat: portion.fat,
+                health: product.health
             )
         case .quick(let quick):
             return V1FoodLogEntry(

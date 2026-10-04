@@ -60,6 +60,74 @@ private let dayJSON = """
     """.utf8)).product
     #expect(product.barcode == "3274080005003")
     #expect(product.servingGrams == nil)
+    #expect(product.health == nil)
+
+    let scored = try JSONDecoder().decode(V1FoodProduct.self, from: Data("""
+    { "id": "p10", "source": "OFF", "barcode": "3017620422003", "name": "Nutella",
+      "kcalPer100g": 539, "proteinPer100g": 6.3, "carbsPer100g": 57.5, "fatPer100g": 30.9,
+      "health": {
+        "score": 18, "scoreVersion": 1, "grade": "poor", "coverage": "full",
+        "nutriScore": "e", "nova": 4,
+        "nutrientFlags": { "sugars": "high", "salt": "low", "saturatedFat": "high" },
+        "additives": [{ "code": "E322", "name": "Lécithines", "risk": "none" }]
+      } }
+    """.utf8))
+    #expect(scored.health?.score == 18)
+    #expect(scored.health?.grade == .poor)
+    #expect(scored.health?.nutrientFlags.sugars == .high)
+    #expect(scored.health?.additives.first?.code == "E322")
+    // A score stored before version 2 reads with nothing to explain.
+    #expect(scored.health?.highlights == [])
+    #expect(scored.health?.dietFit == [])
+    #expect(scored.health?.detail == .full)
+    #expect(scored.health?.additivesKnown == .list)
+}
+
+private let scoredV2JSON = """
+{ "score": 31, "scoreVersion": 2, "grade": "mediocre", "coverage": "full",
+  "nutriScore": "c", "nutriScoreEstimated": true, "nova": 4,
+  "nutrientFlags": { "sugars": "high", "salt": "low", "saturatedFat": "low" },
+  "additives": [], "additivesKnown": "count", "additiveCount": 2,
+  "highlights": [
+    { "key": "sports_nutrition", "tone": "neutral", "label": "Produit d’effort", "detail": "Sucres rapides voulus" },
+    { "key": "sugars_high", "tone": "negative", "label": "Trop sucré", "detail": "40 g/100 g" },
+    { "key": "protein_rich", "tone": "positive", "label": "Riche en protéines", "detail": "21 g/100 g" }
+  ],
+  "dietFit": [
+    { "diet": "vegan", "label": "Végétalien", "status": "incompatible", "reason": "Contient des ingrédients non végétaliens" },
+    { "diet": "keto", "label": "Cétogène", "status": "uncertain", "reason": "8 g de glucides/100 g — à doser" }
+  ],
+  "detail": "summary" }
+"""
+
+@Test func aVersionTwoScoreCarriesItsReasonsAndDiets() throws {
+    let health = try JSONDecoder().decode(V1FoodHealth.self, from: Data(scoredV2JSON.utf8))
+    #expect(health.detail == .summary)
+    #expect(health.additivesKnown == .count)
+    #expect(health.nutriScoreEstimated)
+    #expect(health.watchPoints.map(\.key) == ["sugars_high"])
+    #expect(health.strengths.map(\.key) == ["protein_rich"])
+    #expect(health.notes.map(\.key) == ["sports_nutrition"])
+    #expect(health.incompatibleDiets.map(\.label) == ["Végétalien"])
+}
+
+@Test func theScoreReadsInWords() throws {
+    let health = try JSONDecoder().decode(V1FoodHealth.self, from: Data(scoredV2JSON.utf8))
+    #expect(FoodHealthPresentation.verdict(health) == "1 point à surveiller\n1 point fort")
+    #expect(FoodHealthPresentation.sources(health) == "Nutri-Score C (estimé) · NOVA 4")
+    #expect(FoodHealthPresentation.additiveStatus(health, isCompleting: true) == "2 additifs, lecture du détail…")
+    #expect(FoodHealthPresentation.additiveStatus(health, isCompleting: false) == "2 additifs, détail indisponible")
+    #expect(FoodHealthPresentation.symbol(for: health.watchPoints[0]) == "cube")
+    #expect(FoodHealthPresentation.symbol(for: .init(key: "mystery", tone: .positive, label: "?", detail: nil)) == "checkmark.circle")
+
+    var quiet = health
+    quiet.highlights = []
+    quiet.nutriScore = nil
+    quiet.nova = nil
+    quiet.additivesKnown = .list
+    #expect(FoodHealthPresentation.verdict(quiet) == "Rien de marquant dans sa composition")
+    #expect(FoodHealthPresentation.sources(quiet) == nil)
+    #expect(FoodHealthPresentation.additiveStatus(quiet, isCompleting: false) == nil)
 }
 
 @Test func anUnknownMealKeyReadsAsASnack() throws {
@@ -277,17 +345,20 @@ private func object(_ data: Data) throws -> [String: Any] {
     #expect(body["brand"] as? String == "Maison")
     #expect(body["fiberPer100g"] is NSNull)
     #expect(body["sugarPer100g"] as? Double == 20)
+    #expect(body["saltPer100g"] is NSNull)
     #expect(body["servingGrams"] as? Double == 40)
 }
 
 @Test func aCustomFoodSendsItsMissingOptionsAsNull() throws {
     let body = try object(FoodLogClient.body(for: FoodCustomDraft(
         name: "Granola", brand: nil, kcalPer100g: 450, proteinPer100g: 12, carbsPer100g: 55, fatPer100g: 18,
-        fiberPer100g: 8, sugarPer100g: nil, servingGrams: nil
+        fiberPer100g: 8, sugarPer100g: nil, saltPer100g: 0.5, saturatedFatPer100g: nil, servingGrams: nil
     )))
     #expect(body["brand"] is NSNull)
     #expect(body["fiberPer100g"] as? Double == 8)
     #expect(body["sugarPer100g"] is NSNull)
+    #expect(body["saltPer100g"] as? Double == 0.5)
+    #expect(body["saturatedFatPer100g"] is NSNull)
     #expect(body["servingGrams"] is NSNull)
 }
 
@@ -413,14 +484,15 @@ private func object(_ data: Data) throws -> [String: Any] {
 
 @Test func theCustomFoodFormReadsTheLabel() {
     let draft = FoodCustomForm.draft(
-        name: " Granola ", brand: "", kcal: "450", protein: "12,5", carbs: "", fat: "18", fiber: "", sugar: "20", serving: "40"
+        name: " Granola ", brand: "", kcal: "450", protein: "12,5", carbs: "", fat: "18",
+        fiber: "", sugar: "20", salt: "", saturatedFat: "5", serving: "40"
     )
     #expect(draft == FoodCustomDraft(
         name: "Granola", brand: nil, kcalPer100g: 450, proteinPer100g: 12.5, carbsPer100g: 0, fatPer100g: 18,
-        fiberPer100g: nil, sugarPer100g: 20, servingGrams: 40
+        fiberPer100g: nil, sugarPer100g: 20, saltPer100g: nil, saturatedFatPer100g: 5, servingGrams: 40
     ))
-    #expect(FoodCustomForm.draft(name: "", brand: "", kcal: "450", protein: "", carbs: "", fat: "", fiber: "", sugar: "", serving: "") == nil)
-    #expect(FoodCustomForm.draft(name: "x", brand: "", kcal: "1200", protein: "", carbs: "", fat: "", fiber: "", sugar: "", serving: "") == nil)
+    #expect(FoodCustomForm.draft(name: "", brand: "", kcal: "450", protein: "", carbs: "", fat: "", fiber: "", sugar: "", salt: "", saturatedFat: "", serving: "") == nil)
+    #expect(FoodCustomForm.draft(name: "x", brand: "", kcal: "1200", protein: "", carbs: "", fat: "", fiber: "", sugar: "", salt: "", saturatedFat: "", serving: "") == nil)
 }
 
 @Test func theMealSuggestedFollowsTheHour() throws {
@@ -454,6 +526,10 @@ private actor StubFoodLog: FoodLogServing {
     private(set) var deletedFoods: [String] = []
     private(set) var imported: [FoodLogImportFile] = []
     var importResult = V1FoodLogImportResult(importedDays: 3, firstDay: "2026-09-28", lastDay: "2026-09-30")
+    var barcodeProducts: [String: V1FoodProduct] = [:]
+    private(set) var barcodesRead: [String] = []
+
+    func stock(_ product: V1FoodProduct, barcode: String) { barcodeProducts[barcode] = product }
 
     init(day: V1FoodLogDay? = nil, failure: (any Error)? = nil, ownFoods: [V1FoodProduct] = []) {
         if let day { self.day = day }
@@ -511,7 +587,10 @@ private actor StubFoodLog: FoodLogServing {
         V1FoodSearchResults(own: [], products: [], offUnavailable: false)
     }
 
-    func product(barcode: String, token: String) async throws -> V1FoodProduct? { nil }
+    func product(barcode: String, token: String) async throws -> V1FoodProduct? {
+        barcodesRead.append(barcode)
+        return barcodeProducts[barcode]
+    }
 
     func createCustomFood(_ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct { rice }
 
@@ -673,6 +752,28 @@ private func makeStore(_ client: StubFoodLog, recorder: Recorder) -> FoodLogStor
 @Test func anUnknownBarcodeOffersToTypeItIn() async {
     let search = FoodSearchStore(client: StubFoodLog(), tokenProvider: { "t" }, debounce: .zero)
     #expect(await search.lookUp(barcode: "3017620422003") == .unknown)
+}
+
+@MainActor
+@Test func aSearchHitIsCompletedByItsBarcodeRead() async throws {
+    let client = StubFoodLog()
+    let summary = try JSONDecoder().decode(V1FoodHealth.self, from: Data(scoredV2JSON.utf8))
+    var hit = V1FoodProduct(
+        id: "p1", source: "OFF", barcode: "3017620422003", name: "Gel", brand: nil,
+        kcalPer100g: 300, proteinPer100g: 0, carbsPer100g: 75, fatPer100g: 0,
+        fiberPer100g: nil, sugarPer100g: 40, servingGrams: nil, servingLabel: nil, health: summary
+    )
+    var full = hit
+    full.health?.detail = .full
+    full.health?.additivesKnown = .list
+    await client.stock(full, barcode: "3017620422003")
+    let search = FoodSearchStore(client: client, tokenProvider: { "t" }, debounce: .zero)
+
+    #expect(await search.fullProduct(of: hit)?.health?.detail == .full)
+
+    hit.source = "CUSTOM"
+    #expect(await search.fullProduct(of: hit) == nil)
+    #expect(await client.barcodesRead == ["3017620422003"])
 }
 
 // MARK: - Own foods

@@ -64,7 +64,12 @@ struct FoodAddSheet: View {
     private func destination(_ route: FoodAddRoute) -> some View {
         switch route {
         case .portion(let product):
-            FoodPortionPage(product: product, lastGrams: store.lastGrams(of: product), meal: request.meal) { meal, grams in
+            FoodPortionPage(
+                product: product,
+                lastGrams: store.lastGrams(of: product),
+                meal: request.meal,
+                complete: { await search.fullProduct(of: $0) }
+            ) { meal, grams in
                 log(FoodLogDraft(trainingDayId: store.trainingDayId, meal: meal, grams: grams, source: .product(product)))
             }
         case .quick(let name):
@@ -269,9 +274,12 @@ struct FoodProductRow: View {
                 NutritionMacroSplitBar(product: product)
                     .frame(maxWidth: 120)
                     .padding(.top, 3)
+                FoodDietConflictLine(health: product.health)
+                    .padding(.top, 2)
             }
             Spacer(minLength: SharpitSpacing.xs)
-            VStack(alignment: .trailing, spacing: 0) {
+            VStack(alignment: .trailing, spacing: SharpitSpacing.xs) {
+                FoodHealthBadge(health: product.health)
                 Text(NutritionReadout.kcal(product.kcalPer100g))
                     .font(SharpitTypography.instrument)
                     .monospacedDigit()
@@ -298,23 +306,38 @@ struct FoodProductRow: View {
 
 /// How much of a food, and in which meal: the grams with a few presets, what they bring, « Ajouter ».
 struct FoodPortionPage: View {
-    let product: V1FoodProduct
     let lastGrams: Double?
+    /// Reads the whole product when the one picked came from a search hit (its additives).
+    let complete: ((V1FoodProduct) async -> V1FoodProduct?)?
     let onAdd: (FoodLogMeal, Double) -> Void
 
+    @State private var product: V1FoodProduct
+    @State private var isCompleting = false
     @State private var gramsText: String
     @State private var meal: FoodLogMeal
     @FocusState private var isGramsFocused: Bool
 
-    init(product: V1FoodProduct, lastGrams: Double?, meal: FoodLogMeal, onAdd: @escaping (FoodLogMeal, Double) -> Void) {
-        self.product = product
+    init(
+        product: V1FoodProduct,
+        lastGrams: Double?,
+        meal: FoodLogMeal,
+        complete: ((V1FoodProduct) async -> V1FoodProduct?)? = nil,
+        onAdd: @escaping (FoodLogMeal, Double) -> Void
+    ) {
+        _product = State(initialValue: product)
         self.lastGrams = lastGrams
+        self.complete = complete
         self.onAdd = onAdd
         _gramsText = State(initialValue: FoodPortion.editableFigure(FoodPortion.initialGrams(for: product, lastGrams: lastGrams)))
         _meal = State(initialValue: meal)
     }
 
     private var grams: Double? { FoodLogForm.grams(gramsText) }
+
+    private var scoredHealth: V1FoodHealth? {
+        guard let health = product.health, health.coverage != .none else { return nil }
+        return health
+    }
 
     var body: some View {
         List {
@@ -333,6 +356,18 @@ struct FoodPortionPage: View {
                 FoodPortionPreview(nutrients: FoodPortion.nutrients(of: product, grams: grams ?? 0))
             }
             .sharpitListRows()
+
+            if let health = scoredHealth {
+                Section {
+                    FoodHealthScoreHeader(health: health)
+                    FoodDietConflictLine(health: health)
+                } header: {
+                    SharpitEyebrow("Score Sharpit")
+                } footer: {
+                    SharpitListFooter("Le détail du score est plus bas.")
+                }
+                .sharpitListRows()
+            }
 
             Section {
                 FoodGramsRows(
@@ -354,12 +389,19 @@ struct FoodPortionPage: View {
 
             Section {
                 FoodMealPicker(meal: $meal)
-            } footer: {
-                if product.isOpenFoodFacts { OpenFoodFactsAttribution() }
             }
             .sharpitListRows()
+
+            if let health = scoredHealth {
+                FoodHealthSections(health: health, isCompleting: isCompleting, showsScoreHeader: false)
+            }
+
+            if product.isOpenFoodFacts {
+                Section {} footer: { OpenFoodFactsAttribution() }
+            }
         }
         .sharpitGroupedList()
+        .task { await completeIfSummary() }
         .safeAreaInset(edge: .bottom) {
             SharpitActionDock {
                 SharpitPrimaryButton(title: "Ajouter") { add() }
@@ -373,6 +415,13 @@ struct FoodPortionPage: View {
     private func add() {
         guard let grams else { return }
         onAdd(meal, grams)
+    }
+
+    private func completeIfSummary() async {
+        guard let complete, product.health?.detail == .summary, !isCompleting else { return }
+        isCompleting = true
+        if let full = await complete(product) { product = full }
+        isCompleting = false
     }
 }
 
@@ -478,7 +527,7 @@ struct FoodNumberRow: View {
 nonisolated enum FoodCustomForm {
     static func draft(
         name: String, brand: String, kcal: String, protein: String, carbs: String, fat: String,
-        fiber: String, sugar: String, serving: String
+        fiber: String, sugar: String, salt: String, saturatedFat: String, serving: String
     ) -> FoodCustomDraft? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedBrand = brand.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -488,7 +537,9 @@ nonisolated enum FoodCustomForm {
               let carbsValue = FoodLogForm.amount(carbs.isEmpty ? "0" : carbs, in: 0...1000),
               let fatValue = FoodLogForm.amount(fat.isEmpty ? "0" : fat, in: 0...1000),
               let fiberValue = FoodLogForm.optionalAmount(fiber, in: 0...1000),
-              let sugarValue = FoodLogForm.optionalAmount(sugar, in: 0...1000)
+              let sugarValue = FoodLogForm.optionalAmount(sugar, in: 0...1000),
+              let saltValue = FoodLogForm.optionalAmount(salt, in: 0...1000),
+              let saturatedFatValue = FoodLogForm.optionalAmount(saturatedFat, in: 0...1000)
         else { return nil }
         let servingValue: Double?? = serving.trimmingCharacters(in: .whitespaces).isEmpty
             ? .some(nil) : FoodLogForm.grams(serving).map { .some($0) }
@@ -502,6 +553,8 @@ nonisolated enum FoodCustomForm {
             fatPer100g: fatValue,
             fiberPer100g: fiberValue,
             sugarPer100g: sugarValue,
+            saltPer100g: saltValue,
+            saturatedFatPer100g: saturatedFatValue,
             servingGrams: servingValue
         )
     }

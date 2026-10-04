@@ -240,9 +240,14 @@ private struct FoodLogEntryRow: View {
                 }
             }
             Spacer(minLength: 0)
-            Text(NutritionReadout.kcal(entry.kcal))
-                .font(SharpitTypography.instrument)
-                .foregroundStyle(SharpitColor.foreground)
+            VStack(alignment: .trailing, spacing: SharpitSpacing.xs) {
+                if entry.health != nil {
+                    FoodHealthBadge(health: entry.health)
+                }
+                Text(NutritionReadout.kcal(entry.kcal))
+                    .font(SharpitTypography.instrument)
+                    .foregroundStyle(SharpitColor.foreground)
+            }
         }
         .opacity(entry.isPending ? 0.55 : 1)
         .contentShape(Rectangle())
