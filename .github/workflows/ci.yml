@@ -62,9 +62,9 @@ jobs:
       - name: Show why the build failed
         if: failure()
         run: |
-          grep -nE "error:|fatal error|Stack dump|Please submit a bug report|signal|Assertion|Abort|Segmentation" xcodebuild.log | head -80 || true
-          echo "--- last lines ---"
-          tail -n 150 xcodebuild.log
+          grep -nE "error:|fatal error|Assertion|Abort|Segmentation" xcodebuild.log | head -80 || true
+          # A crash: what the compiler was doing (the declaration and file it names), not its addresses.
+          grep -n -B 40 -A 60 "Please submit a bug report" xcodebuild.log | grep -vE "0x[0-9a-f]{8,}" | head -200 || true
 
       - name: Upload the build log on failure
         if: failure()
