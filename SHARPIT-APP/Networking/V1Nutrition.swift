@@ -235,7 +235,7 @@ nonisolated protocol NutritionServing: Sendable {
 /// `GET /api/v1/data-days` — which days of a range carry data for a drill-down, so the day
 /// picker marks them before any of them is opened. At most 92 days per request.
 nonisolated enum V1DataDaysDomain: String, Sendable {
-    case sleep, recovery, nutrition, journal
+    case sleep, recovery, effort, adaptation, nutrition, journal
 }
 
 nonisolated struct V1DataDays: Decodable, Sendable {

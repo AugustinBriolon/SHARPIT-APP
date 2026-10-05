@@ -107,16 +107,28 @@ struct SharpitHeroScore: View {
     let score: Double?
     let label: String
     let tone: Color
+    /// The top of the scale: 100 for a score, 21 for the day's strain.
+    var scale: Int = 100
+    /// Decimals shown — a 0–21 strain reads to the tenth, a score whole.
+    var fractionDigits: Int = 0
+
+    private var figure: String {
+        guard let score else { return "—" }
+        guard fractionDigits > 0 else { return "\(Int(score.rounded()))" }
+        return score.formatted(
+            .number.precision(.fractionLength(fractionDigits)).locale(Locale(identifier: "fr_FR"))
+        )
+    }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-            Text(score.map { "\(Int($0.rounded()))" } ?? "—")
+            Text(figure)
                 .font(SharpitTypography.heroScore)
                 .tracking(SharpitTypography.heroScoreTracking)
                 .foregroundStyle(score == nil ? SharpitColor.mutedForeground : tone)
                 .contentTransition(.numericText())
                 .animation(SharpitMotion.selection, value: score)
-            Text("/100")
+            Text("/\(scale)")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
             Spacer(minLength: 0)
