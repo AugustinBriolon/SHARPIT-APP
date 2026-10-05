@@ -36,6 +36,7 @@ nonisolated enum ResponseCacheKey {
     static let coachConversations = "coach-conversations"
     static let thresholdHistory = "threshold-history"
     static let healthOverview = "health-overview"
+    static let sensitiveZones = "sensitive-zones"
 
     /// A plan week, addressed by the Monday it starts on: the plan is read a week at a time.
     static func planWeek(startingOn day: String) -> String { "plan-week:\(day)" }

@@ -13,6 +13,8 @@ struct SanteView: View {
     @State private var store: SanteStore
     /// The Corps reads: the longer histories behind a marker's sheet, and the Poids widget.
     @State private var history: CorpsStore
+    /// The declared zones, followed on their own page (SHARPIT ADR-068).
+    @State private var zones: SensitiveZonesStore
     private let profileClient: any AthleteProfileServing
     private let tokenProvider: () async throws -> String
     private let modelContext: ModelContext?
@@ -31,6 +33,7 @@ struct SanteView: View {
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
         _store = State(initialValue: SanteStore(tokenProvider: tokenProvider, modelContext: modelContext))
+        _zones = State(initialValue: SensitiveZonesStore(tokenProvider: tokenProvider, modelContext: modelContext))
         _history = State(initialValue: CorpsStore(
             profileClient: profileClient,
             bodyClient: profileClient,
@@ -86,7 +89,8 @@ struct SanteView: View {
     private func reload() async {
         async let overview: Void = store.load()
         async let corps: Void = history.load()
-        _ = await (overview, corps)
+        async let declared: Void = zones.load()
+        _ = await (overview, corps, declared)
     }
 
     private var readout: some View {
@@ -105,6 +109,8 @@ struct SanteView: View {
                             SanteWatchCard(items: overview.watch)
                                 .revealed(hasAppeared, index: 1)
                         }
+                        SensitiveZonesCard(store: zones)
+                            .revealed(hasAppeared, index: 1)
                         section("Signes vitaux", overview.vitals, index: 2)
                         section("Corps", overview.body, index: 3)
                         section("Au quotidien", overview.daily, index: 4)
