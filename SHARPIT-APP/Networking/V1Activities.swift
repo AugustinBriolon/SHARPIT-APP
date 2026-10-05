@@ -317,6 +317,19 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         )
     }
 
+    /// The same session once the athlete delinked it from its planned session.
+    func withoutPlannedSession() -> V1ActivityDetail {
+        V1ActivityDetail(
+            id: id, type: type, date: date, title: title, duration: duration, load: load,
+            rpe: rpe, feeling: feeling, weather: weather, notes: notes,
+            distanceM: distanceM, elevationM: elevationM, paceSecPerKm: paceSecPerKm,
+            avgPaceSecPer100m: avgPaceSecPer100m, avgHr: avgHr, cadence: cadence,
+            avgCadence: avgCadence, avgPower: avgPower, swimSets: swimSets, swolf: swolf,
+            calories: calories, strengthSets: strengthSets, plannedSession: nil,
+            narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs
+        )
+    }
+
     private init(
         id: String,
         type: V1ActivityType,

@@ -230,19 +230,16 @@ struct PlanningActionsTests {
         """.utf8)
 
         let client = PlannedSessionClient(session: makeStubURLSession(), baseURL: URL(string: "https://sharpit.example")!)
-        let payload = CreatePlannedSessionPayload(
-            type: "BIKE",
-            date: "2026-09-24T12:00:00Z",
-            startTime: "09:30",
-            title: "Sortie vélo",
-            description: "Zone 2",
-            durationMin: 90,
-            load: 80,
-            intensity: "MODERATE",
-            goalId: "goal-1",
-            decisionId: "dec-1"
-        )
-        let item = try await client.createSession(payload, token: "tok-create")
+        var fields = PlannedSessionFields()
+        fields.setType(.bike)
+        fields.setDay(TrainingDayId.date("2026-09-24")!)
+        fields.setStartTime("09:30")
+        fields.setTitle("Sortie vélo")
+        fields.setDescription("Zone 2")
+        fields.setDurationMin(90)
+        fields.setIntensity(.endurance)
+        fields.setGoal("goal-1")
+        let item = try await client.createSession(fields, token: "tok-create")
 
         let request = try #require(PlanningStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "POST")
@@ -255,6 +252,9 @@ struct PlanningActionsTests {
         #expect(body?["title"] as? String == "Sortie vélo")
         #expect(body?["durationMin"] as? Double == 90)
         #expect(body?["goalId"] as? String == "goal-1")
+        let sentDay = try #require((body?["date"] as? String).flatMap { try? Date.fromPlannedAPI($0) })
+        #expect(TrainingDayId.today(now: sentDay) == "2026-09-24")
+        #expect(body?["intensity"] as? String == "ENDURANCE")
     }
 
     @Test func updatePlannedSessionSendsPatch() async throws {
@@ -269,12 +269,11 @@ struct PlanningActionsTests {
         """.utf8)
 
         let client = PlannedSessionClient(session: makeStubURLSession(), baseURL: URL(string: "https://sharpit.example")!)
-        let patch = UpdatePlannedSessionPayload(
-            type: "RUN",
-            title: "Sortie modifiée",
-            durationMin: 45
-        )
-        let updated = try await client.updateSession(id: "session-to-update", patch: patch, token: "tok-up")
+        var fields = PlannedSessionFields()
+        fields.setTitle("Sortie modifiée")
+        fields.setDurationMin(45)
+        fields.setStartTime(nil)
+        let updated = try await client.updateSession(id: "session-to-update", fields: fields, token: "tok-up")
 
         let request = try #require(PlanningStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "PATCH")
@@ -284,6 +283,9 @@ struct PlanningActionsTests {
         let body = try JSONSerialization.jsonObject(with: try #require(PlanningStubURLProtocol.lastBody)) as? [String: Any]
         #expect(body?["title"] as? String == "Sortie modifiée")
         #expect(body?["durationMin"] as? Double == 45)
+        // Cleared, not left out: an absent key would keep the old hour.
+        #expect(body?["startTime"] is NSNull)
+        #expect(body?["type"] == nil)
     }
 
     @Test func deletePlannedSessionSendsDelete() async throws {

@@ -27,6 +27,9 @@ struct PlanView: View {
     @State private var adjustment: PlanAdjustmentStore
     /// Plan's, not the sheet's: reopening Objectifs shows the goals at once.
     @State private var goals: GoalStore
+    /// Plan's, so a change written behind outlives the drawer or the form that made it.
+    @State private var editor: PlanEditor
+    @State private var showingNewSession = false
 
     init(
         client: any PlannedSessionServing,
@@ -44,12 +47,14 @@ struct PlanView: View {
         _generation = State(initialValue: PlanGenerationStore(tokenProvider: tokenProvider))
         _adjustment = State(initialValue: PlanAdjustmentStore(tokenProvider: tokenProvider))
         _goals = State(initialValue: GoalStore(client: GoalClient(), tokenProvider: tokenProvider))
-        _store = State(
-            initialValue: PlanStore(
-                client: client,
-                activityClient: activityClient,
-                tokenProvider: tokenProvider
-            )
+        let store = PlanStore(
+            client: client,
+            activityClient: activityClient,
+            tokenProvider: tokenProvider
+        )
+        _store = State(initialValue: store)
+        _editor = State(
+            initialValue: PlanEditor(mutator: self.keyMutator, tokenProvider: tokenProvider, plan: store)
         )
     }
 
@@ -84,6 +89,12 @@ struct PlanView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button { showingNewSession = true } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("Ajouter une séance")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     PlanActionsMenu(
                         onOpenGoals: { router.isShowingGoals = true },
                         onOpenMacroPlan: { showingMacroPlan = true },
@@ -105,7 +116,8 @@ struct PlanView: View {
                         preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
                         linking: linkContext(on: session.date),
                         watchPush: watchPushContext(on: session.date),
-                        keyToggle: keyContext(on: session.date)
+                        keyToggle: keyContext(on: session.date),
+                        editing: editingContext(for: session)
                     ) { context in
                         router.discussWithCoach(about: context)
                     }
@@ -120,6 +132,9 @@ struct PlanView: View {
                 case .doneBrick(let brick):
                     DoneBrickDrawer(brick: DoneBrickPreview(planned: brick), tokenProvider: tokenProvider)
                 }
+            }
+            .sheet(isPresented: $showingNewSession) {
+                PlannedSessionCreateSheet(editor: editor, day: newSessionDay)
             }
             .sheet(isPresented: $showingCalendar) {
                 PlanCalendarSheet(store: store)
@@ -169,6 +184,10 @@ struct PlanView: View {
             .task { await store.loadAroundSelection() }
             .task(id: isExpertReading) { await loadTrainingLoad() }
             .task { await generation.resume() }
+            .onAppear {
+                let router = router
+                editor.onChanged = { router.noteCalendarChanged() }
+            }
             // « Dommage pour hier » tapped: the adapter, the miss already said.
             .onChange(of: router.pendingCatchUp, initial: true) { _, catchUp in
                 guard let catchUp else { return }
@@ -260,6 +279,21 @@ extension PlanView {
             mutator: keyMutator,
             tokenProvider: tokenProvider,
             onChanged: { Task { await store.reload(around: date) } }
+        )
+    }
+
+    /// A new session lands today in this week, else on the week's first day.
+    fileprivate var newSessionDay: Date {
+        store.isCurrentWeek ? Date() : store.weekStart
+    }
+
+    /// Hand editing of a single session. A brick's legs are the coach's chain: not edited here.
+    fileprivate func editingContext(for session: V1PlannedSessionItem) -> SessionEditingContext {
+        SessionEditingContext(
+            session: session,
+            editor: editor,
+            onSaved: { selection = .session($0) },
+            onDeleted: { selection = nil }
         )
     }
 

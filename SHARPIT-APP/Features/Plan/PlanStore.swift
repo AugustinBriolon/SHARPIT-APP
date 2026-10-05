@@ -126,6 +126,32 @@ final class PlanStore {
             .first
     }
 
+    // MARK: - Local edits
+
+    /// The athlete's own change, on screen before the server has it. The reload that follows
+    /// every write replaces it with the truth, so nothing here has to be undone by hand.
+    func showRemoved(sessionId: String) {
+        withAnimation(SharpitMotion.reveal) {
+            for (offset, phase) in weeks {
+                guard case .loaded(let entries) = phase else { continue }
+                let kept = entries.filter { !$0.isPrescription(id: sessionId) }
+                if kept.count != entries.count { weeks[offset] = .loaded(kept) }
+            }
+        }
+    }
+
+    /// Shows a session edited or added, in the week its day falls in.
+    func show(_ session: V1PlannedSessionItem, now: Date = Date()) {
+        showRemoved(sessionId: session.id)
+        let offset = offset(forWeekContaining: session.date)
+        guard case .loaded(let entries) = weeks[offset] else { return }
+        let isPast = calendar.startOfDay(for: session.date) < calendar.startOfDay(for: now)
+        let entry: PlanEntry = isPast ? .missed(session) : .planned(session)
+        withAnimation(SharpitMotion.reveal) {
+            weeks[offset] = .loaded((entries + [entry]).sorted { $0.date < $1.date })
+        }
+    }
+
     // MARK: - Loading
 
     /// Loads the selected week, then its neighbours, so a swipe lands on content instead
@@ -220,6 +246,16 @@ final class PlanStore {
             weeks[offset] = .unauthorized
         } catch {
             weeks[offset] = .error(error.localizedDescription)
+        }
+    }
+}
+
+private extension PlanEntry {
+    /// A session still to do (or missed) — the only kind the athlete edits by hand.
+    func isPrescription(id: String) -> Bool {
+        switch self {
+        case .planned(let session), .missed(let session): session.id == id
+        default: false
         }
     }
 }

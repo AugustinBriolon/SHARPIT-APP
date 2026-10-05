@@ -10,7 +10,6 @@ struct JournalView: View {
     @State private var showsCaffeine = false
     @State private var showsHydration = false
     @State private var showsDriving = false
-    @State private var showsInsights = false
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @Environment(ShellRouter.self) private var router: ShellRouter?
 
@@ -50,17 +49,6 @@ struct JournalView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        showsInsights = true
-                    } label: {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(SharpitColor.foreground)
-                    }
-                    .accessibilityLabel("Enseignements du journal")
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
                         showsPrefs = true
                     } label: {
                         Image(systemName: "slider.horizontal.3")
@@ -92,9 +80,6 @@ struct JournalView: View {
             }
             .sheet(isPresented: $showsHydration) {
                 HydrationInputSheet(store: store)
-            }
-            .sheet(isPresented: $showsInsights) {
-                JournalInsightsSheet(store: store)
             }
             .task { await store.load() }
             .task { await store.markAnsweredDays() }

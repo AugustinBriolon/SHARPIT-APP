@@ -235,6 +235,21 @@ texture, `V1ActivityType` with its identity color, `V1TodayPosture` with its ton
 The target was added by hand to `project.pbxproj` (IDs `…05…`); its Info.plist and entitlements are
 in `Config/`.
 
+**Editing the plan by hand.** Plan's « + » opens « Nouvelle séance » (`PlannedSessionCreateSheet`);
+a session's drawer carries « … » (`SessionActionsMenu`: Modifier, Déplacer to one of the next seven
+days, Supprimer after a confirmation). « Modifier » is pushed inside the drawer, one sheet at a
+time. `PlanEditor`, owned by `PlanView`, writes them: an edit, a move and a deletion show on the tap
+(`PlanStore.show` / `showRemoved`) and go out behind through `SharpitRetry`; a creation waits for
+the server's id. Every write bumps `calendarRevision`, and that reload is what puts a refused change
+back. `PlannedSessionDraft` sends only what changed (`PlannedSessionFields`: an absent key leaves a
+field, `null` clears it); the day goes as its local noon, as the web's form sends it. The server
+checks the déroulé (or a strength session's exercises) on a creation or a change of sport only, so a
+coach's session with structured steps and no prose stays editable; a change of sport clears those
+steps. A strength exercise keeps the keys the form does not show (rest, the watch's exercise), and a
+rename drops the two that name the old one. A brick is the coach's chain and is not edited by hand.
+A done session's « Conformité au plan » sheet can delink the activity (`link` with
+`activityId: null`): the session is to do again and its analysis is gone.
+
 **Objectifs.** `GoalsView` is one list, no tabs: the next race on the ink plate
 (`GoalOrdering.nextRace`: the nearest A race ahead, else the nearest race), the goals in progress,
 then — further down, only when there are any — the goals reached. Its `GoalStore` is owned by

@@ -15,7 +15,7 @@ struct CalendarSyncView: View {
                     eyebrow: "Synchro",
                     footer: "Tes séances des trois prochaines semaines s'écrivent dans un calendrier « SharpIt », et suivent chaque changement du plan. Le désactiver retire ce calendrier."
                 ) {
-                    Toggle("Copier mon plan dans Calendrier", isOn: Binding(get: { isOn }, set: switchTo))
+                    Toggle("Copier mon plan dans Calendrier", isOn: Binding(get: { isOn }, set: { switchTo($0) }))
                         .tint(SharpitColor.primary)
                     if refused {
                         Text("Accès refusé : autorise SharpIt dans Réglages › Confidentialité › Calendriers.")

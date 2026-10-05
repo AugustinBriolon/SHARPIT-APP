@@ -27,11 +27,13 @@ final class SessionKeyStore {
     func set(_ on: Bool) async {
         guard on != isKey else { return }
         isKey = on
+        var fields = PlannedSessionFields()
+        fields.setKey(on)
         do {
             _ = try await SharpitRetry.run {
                 try await context.mutator.updateSession(
                     id: sessionId,
-                    patch: UpdatePlannedSessionPayload(isKey: on),
+                    fields: fields,
                     token: try await context.tokenProvider()
                 )
             }
