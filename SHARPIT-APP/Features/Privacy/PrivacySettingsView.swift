@@ -158,7 +158,6 @@ struct PrivacySettingsView: View {
         do {
             try await accountDeletion.deleteAccount(token: try await tokenProvider())
             LocalAccountData.erase(context: modelContext)
-            SharpitHaptics.play(.success)
             try? await clerk.auth.signOut()
         } catch {
             deletionError = SharpitErrorGuidance.message(for: error, subject: "La suppression du compte")

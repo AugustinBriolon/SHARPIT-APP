@@ -66,7 +66,6 @@ final class MorningWellnessStore {
 
     func pick(_ score: WellnessScore, for dimension: WellnessDimension) {
         picks[dimension] = score
-        SharpitHaptics.play(.soft)
     }
 
     func load() async {
@@ -121,7 +120,6 @@ final class MorningWellnessStore {
         )
 
         alreadyCompleted = true
-        SharpitHaptics.play(.success)
         // Sent behind the closing sheet, retried on a transient failure; the sheet is gone by
         // the time a write fails for good, so that is said in the app's toast.
         write = Task { [client, tokenProvider, trainingDayId, onSaved] in

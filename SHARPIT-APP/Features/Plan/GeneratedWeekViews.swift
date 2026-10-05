@@ -44,7 +44,6 @@ struct GeneratedWeekView: View {
                 isSelected: selection.contains(index),
                 warning: verdicts[index]?.reason,
                 onToggle: {
-                    SharpitHaptics.play(.soft)
                     onToggle(index)
                 }
             )

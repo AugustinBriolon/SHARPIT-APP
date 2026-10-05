@@ -87,7 +87,6 @@ struct SharpitSegmentedChoice<Option: Hashable>: View {
             ForEach(options, id: \.self) { option in
                 let isSelected = selection == option
                 Button {
-                    SharpitHaptics.play(.soft)
                     SharpitMotion.run(SharpitMotion.selection) { selection = option }
                 } label: {
                     Text(label(option))

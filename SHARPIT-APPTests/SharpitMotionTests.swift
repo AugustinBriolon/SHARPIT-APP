@@ -42,7 +42,7 @@ import Testing
 
 @Test func winStoreConsumesOnce() {
     SharpitWinStore.resetForTests()
-    let key = SharpitWinStore.arrivalKey(trainingDayId: "2099-01-01")
+    let key = SharpitWinStore.sessionDoneKey(trainingDayId: "2099-01-01", sessionId: "s1")
     #expect(SharpitWinStore.consume(key) == true)
     #expect(SharpitWinStore.consume(key) == false)
     SharpitWinStore.resetForTests()

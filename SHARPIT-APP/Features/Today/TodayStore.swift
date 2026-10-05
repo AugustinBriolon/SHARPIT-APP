@@ -65,7 +65,6 @@ final class TodayStore {
             return false
         }
         if accept {
-            SharpitHaptics.play(.soft)
             await load(resetToLoading: false)
         }
         return accept
@@ -127,10 +126,6 @@ final class TodayStore {
     }
 
     func handleArrivalWins(fold: TodayFold) {
-        let key = SharpitWinStore.arrivalKey(trainingDayId: fold.trainingDayId)
-        if SharpitWinStore.consume(key) {
-            SharpitHaptics.play(.soft)
-        }
         markNewSessionDones(in: fold)
         if let confidence = fold.plate.confidencePct {
             SharpitWinStore.setLastConfidence(confidence, trainingDayId: fold.trainingDayId)

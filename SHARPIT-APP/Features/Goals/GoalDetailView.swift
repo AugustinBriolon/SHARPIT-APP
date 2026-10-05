@@ -366,7 +366,6 @@ struct GoalDetailView: View {
             Button {
                 Task {
                     isUpdating = true
-                    SharpitHaptics.play(.success)
                     await store.toggleAchieved(goal)
                     isUpdating = false
                 }

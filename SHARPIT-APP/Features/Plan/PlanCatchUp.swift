@@ -59,7 +59,6 @@ struct PlanCatchUpButton: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(.soft)
             action(catchUp)
         } label: {
             Label("Rattraper ma semaine", systemImage: "arrow.triangle.2.circlepath")

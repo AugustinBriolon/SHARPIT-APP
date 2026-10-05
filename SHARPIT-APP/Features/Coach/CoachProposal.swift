@@ -339,7 +339,6 @@ struct CoachProposalCard: View {
                         withAnimation(SharpitMotion.selection) { confirmingDelete = true }
                         return
                     }
-                    SharpitHaptics.play(.success)
                     onAnswer?(true)
                 }
             }
@@ -350,7 +349,6 @@ struct CoachProposalCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
         .sharpitCardSpecularBorder()
-        .onChange(of: confirmingDelete) { _, asking in if asking { SharpitHaptics.play(.soft) } }
     }
 
     /// « Course · 45 min · Seuil · charge 60 » as chips: each figure read on its own.

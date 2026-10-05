@@ -67,6 +67,11 @@ struct FeedbackView: View {
 
     /// The keyboard goes down before the page changes: both at once read as a jolt.
     private static let keyboardDismissal: Duration = .milliseconds(250)
+    /// The keyboard rises once the page has settled — after the push, after the fade back —
+    /// never while something else moves.
+    private static let settling: Duration = .milliseconds(450)
+    /// The confirmation is gone before the form comes back, so the two never cross-fade.
+    private static let handOver: Double = 0.14
 
     init(tokenProvider: @escaping () async throws -> String) {
         _store = State(initialValue: FeedbackStore(tokenProvider: tokenProvider))
@@ -76,13 +81,18 @@ struct FeedbackView: View {
         ZStack {
             if store.isSent {
                 confirmation
+                    .geometryGroup()
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.94).combined(with: .opacity),
-                        removal: .opacity
+                        removal: .opacity.animation(.easeOut(duration: Self.handOver))
                     ))
             } else {
                 form
-                    .transition(.opacity)
+                    .geometryGroup()
+                    .transition(.asymmetric(
+                        insertion: .opacity.animation(SharpitMotion.fade.delay(Self.handOver)),
+                        removal: .opacity
+                    ))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -91,10 +101,9 @@ struct FeedbackView: View {
         .navigationBarTitleDisplayMode(.inline)
         .animation(SharpitMotion.reveal, value: store.isSent)
         .onChange(of: store.isSent) { _, sent in
-            guard sent else { return }
-            SharpitHaptics.play(.success)
-            sealArrival += 1
+            if sent { sealArrival += 1 }
         }
+        .task { await focusOnceSettled() }
     }
 
     private var form: some View {
@@ -124,7 +133,6 @@ struct FeedbackView: View {
             .sharpitListRows()
         }
         .sharpitGroupedList()
-        .onAppear { isWriting = true }
     }
 
     private var confirmation: some View {
@@ -142,12 +150,20 @@ struct FeedbackView: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .multilineTextAlignment(.center)
             }
-            Button("Écrire autre chose") { store.startOver() }
+            Button("Écrire autre chose") {
+                store.startOver()
+                Task { await focusOnceSettled() }
+            }
                 .font(SharpitTypography.bodyEmphasis)
                 .padding(.top, SharpitSpacing.xs)
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
         .accessibilityElement(children: .contain)
+    }
+
+    private func focusOnceSettled() async {
+        try? await Task.sleep(for: Self.settling)
+        isWriting = true
     }
 
     private func send() {

@@ -420,13 +420,11 @@ struct PlannedSessionDrawer: View {
     private func handleWatchPush(force: Bool, context: SessionWatchPushContext) async {
         guard let sessionId = preview.sessionId else { return }
         isPushingToWatch = true
-        SharpitHaptics.play(.soft)
         do {
             let token = try await context.tokenProvider()
             let result = try await context.pusher.pushToWatch(sessionId: sessionId, force: force, token: token)
             localWatchPush = result
             context.onPushed(result)
-            SharpitHaptics.play(.success)
             toastCenter?.show(
                 force ? "Workout renvoyé à la montre" : "Workout envoyé à la montre Garmin",
                 symbol: "applewatch.side.right",
@@ -437,16 +435,13 @@ struct PlannedSessionDrawer: View {
             case .alreadyPushed:
                 showingReplaceConfirmation = true
             case .notConnected(let message):
-                SharpitHaptics.play(.soft)
                 toastCenter?.show(message, symbol: "exclamationmark.triangle", tone: .error)
             case .proRequired:
                 showingPro = true
             case .unsupported(let message), .failed(let message):
-                SharpitHaptics.play(.soft)
                 toastCenter?.show(message, symbol: "exclamationmark.triangle", tone: .error)
             }
         } catch {
-            SharpitHaptics.play(.soft)
             toastCenter?.show(
                 error.localizedDescription,
                 symbol: "exclamationmark.triangle",

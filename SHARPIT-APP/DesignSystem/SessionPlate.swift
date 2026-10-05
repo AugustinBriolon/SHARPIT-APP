@@ -290,7 +290,6 @@ struct SessionPlate: View {
     }
 
     private func playDoneCelebration() {
-        SharpitHaptics.play(.success)
         if SharpitMotion.reduceMotion {
             checkSettled = true
             return

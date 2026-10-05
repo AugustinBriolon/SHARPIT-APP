@@ -135,7 +135,6 @@ final class MyFitnessPalImportStore {
             let result = try await client.importMyFitnessPal(file, token: try await tokenProvider())
             phase = .imported(result)
             if result.importedDays > 0 {
-                SharpitHaptics.play(.success)
                 await onImported()
             }
         } catch {

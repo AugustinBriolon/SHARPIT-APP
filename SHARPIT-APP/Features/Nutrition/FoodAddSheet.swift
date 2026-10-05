@@ -112,7 +112,6 @@ struct FoodAddSheet: View {
     }
 
     private func log(_ draft: FoodLogDraft) {
-        SharpitHaptics.play(.soft)
         Task { await store.add(draft) }
         dismiss()
     }
@@ -637,7 +636,6 @@ private struct FoodScannerPage: View {
         isLookingUp = false
         switch outcome {
         case .found(let product):
-            SharpitHaptics.play(.success)
             onOutcome(.found(product))
         case .unknown:
             isUnknown = true

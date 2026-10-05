@@ -59,7 +59,6 @@ struct SourcePrioritiesView: View {
             }
             Button {
                 guard choosesPrimary else { return }
-                SharpitHaptics.play(.soft)
                 Task { await store.setPrimary(provider.id, in: sourceClass.id) }
             } label: {
                 VStack(alignment: .leading, spacing: 2) {

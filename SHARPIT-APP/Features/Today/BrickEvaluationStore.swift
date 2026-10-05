@@ -127,7 +127,6 @@ final class BrickEvaluationStore: Identifiable {
     }
 
     private func answered() {
-        SharpitHaptics.play(.soft)
         scheduleSave()
     }
 

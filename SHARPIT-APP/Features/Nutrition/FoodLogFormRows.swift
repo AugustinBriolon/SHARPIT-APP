@@ -74,7 +74,6 @@ struct FoodGramsRows: View {
                 HStack(spacing: SharpitSpacing.xs) {
                     ForEach(presets) { preset in
                         Button {
-                            SharpitHaptics.play(.soft)
                             text = FoodPortion.editableFigure(preset.grams)
                         } label: {
                             Text(preset.label)

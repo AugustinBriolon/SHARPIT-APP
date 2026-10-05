@@ -136,7 +136,6 @@ final class PlanGenerationStore {
                 phase = .failed("Le coach n'a proposé aucune séance. Précise ta demande et réessaie.")
                 return
             }
-            if !isReady { SharpitHaptics.play(.success) }
             if case .ready = phase { return }
             phase = .ready(plan: week, selected: week.insertableIndices)
         case "failed":

@@ -119,7 +119,6 @@ struct OwnFoodsPage: View {
     private func delete(_ product: V1FoodProduct) {
         Task {
             if await store.delete(product) {
-                SharpitHaptics.play(.soft)
                 onDeleted(product)
             }
         }
@@ -279,7 +278,6 @@ struct FoodCustomPage: View {
         defer { isSaving = false }
         do {
             let product = try await save(draft)
-            SharpitHaptics.play(.soft)
             onSaved(product)
         } catch {
             failure = FoodLogStore.failureMessage(error, action: isEditing ? "Aliment non modifié" : "Aliment non créé")

@@ -291,7 +291,6 @@ final class JournalStore {
 
     func cycle(factorId: String) {
         entry.factors[factorId] = entry.state(of: factorId).next
-        SharpitHaptics.play(.soft)
         updateCompletionState()
         scheduleSave()
     }
@@ -299,7 +298,6 @@ final class JournalStore {
     func set(factorId: String, to state: JournalFactorState) {
         guard entry.state(of: factorId) != state else { return }
         entry.factors[factorId] = state
-        SharpitHaptics.play(.soft)
         updateCompletionState()
         scheduleSave()
     }
@@ -315,7 +313,6 @@ final class JournalStore {
     /// Steps match the web's: one cup of coffee, one large glass.
     func adjustCaffeine(by delta: Int) {
         entry.caffeineMg = max(0, (entry.caffeineMg ?? 0) + delta)
-        SharpitHaptics.play(.soft)
         updateCompletionState()
         scheduleSave()
     }
@@ -324,14 +321,12 @@ final class JournalStore {
         let clamped = max(0, mg)
         guard (entry.caffeineMg ?? 0) != clamped else { return }
         entry.caffeineMg = clamped
-        SharpitHaptics.play(.soft)
         updateCompletionState()
         scheduleSave()
     }
 
     func adjustHydration(by delta: Int) {
         entry.hydrationMl = max(0, (entry.hydrationMl ?? 0) + delta)
-        SharpitHaptics.play(.soft)
         updateCompletionState()
         scheduleSave()
     }
@@ -340,7 +335,6 @@ final class JournalStore {
         let clamped = max(0, ml)
         guard (entry.hydrationMl ?? 0) != clamped else { return }
         entry.hydrationMl = clamped
-        SharpitHaptics.play(.soft)
         updateCompletionState()
         scheduleSave()
     }

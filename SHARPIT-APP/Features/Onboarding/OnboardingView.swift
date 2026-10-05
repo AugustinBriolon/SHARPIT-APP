@@ -360,8 +360,6 @@ struct OnboardingBootstrapView: View {
         try? await Task.sleep(for: .milliseconds(1200))
         guard !Task.isCancelled else { return }
         SharpitMotion.run { isComplete = true }
-        // The one success of the wizard: felt when the week is set, not when the screen appears.
-        SharpitHaptics.play(.success)
         try? await Task.sleep(for: .milliseconds(700))
         guard !Task.isCancelled else { return }
         onDone()

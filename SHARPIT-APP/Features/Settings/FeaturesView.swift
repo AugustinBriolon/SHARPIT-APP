@@ -102,7 +102,6 @@ struct FeatureDetailView: View {
         Binding(
             get: { store.isOn(feature) },
             set: { on in
-                SharpitHaptics.play(.soft)
                 Task { await store.set(feature, on: on, tokenProvider: tokenProvider) }
             }
         )

@@ -66,7 +66,6 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
                       code != lastCode
                 else { continue }
                 lastCode = code
-                SharpitHaptics.play(.soft)
                 onCode(code)
                 return
             }

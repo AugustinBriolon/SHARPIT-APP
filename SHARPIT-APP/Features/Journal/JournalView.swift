@@ -739,7 +739,6 @@ private struct JournalDatePicker: View {
     }
 
     private func pick(_ day: Date) {
-        SharpitHaptics.play(.soft)
         weekOffset = weeks.offset(forWeekContaining: day)
         Task {
             await store.selectDate(day)

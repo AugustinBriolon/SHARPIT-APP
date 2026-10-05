@@ -113,7 +113,6 @@ struct SessionLinkPicker: View {
                     Button {
                         Task {
                             guard await store.link(candidate) else { return }
-                            SharpitHaptics.play(.soft)
                             onLinked()
                         }
                     } label: {

@@ -93,7 +93,6 @@ struct SportChoiceTile: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(.soft)
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -209,7 +208,6 @@ struct EquipmentChoiceRow: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(.soft)
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {

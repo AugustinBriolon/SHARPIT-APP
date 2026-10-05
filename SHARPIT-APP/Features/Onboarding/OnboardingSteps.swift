@@ -48,8 +48,8 @@ struct OnboardingIdentityStep: View {
 
 // MARK: - Shared controls
 
-/// One choice of a few: picked, it fills. No symbol animation — a choice is seen by its fill and
-/// felt by a light haptic, nothing more.
+/// One choice of a few: picked, it fills. No symbol animation and no haptic — a choice is seen by
+/// its fill, nothing more.
 struct OnboardingChoiceChip: View {
     let title: String
     var symbol: String?
@@ -58,7 +58,6 @@ struct OnboardingChoiceChip: View {
 
     var body: some View {
         Button {
-            SharpitHaptics.play(.soft)
             onSelect()
         } label: {
             HStack(spacing: SharpitSpacing.xs) {
@@ -211,7 +210,7 @@ struct OnboardingWeekStep: View {
         paintValue = value
         lastPainted = index
         if store.availability.availableWeekdays.contains(day) != value {
-            SharpitHaptics.play(.soft)
+            SharpitHaptics.play(.notch(major: false))
             store.setWeekday(day, available: value)
         }
     }
@@ -287,7 +286,6 @@ struct OnboardingGoalStep: View {
     private func kindCard(_ kind: OnboardingIntentionKind, title: String, symbol: String) -> some View {
         let isSelected = draft.kind == kind
         return Button {
-            SharpitHaptics.play(.soft)
             SharpitMotion.run(SharpitMotion.selection) { draft.kind = kind }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
@@ -331,7 +329,6 @@ struct OnboardingInjuriesStep: View {
                         OnboardingInjuryRow(injury: injury) {
                             editing = injury
                         } onRemove: {
-                            SharpitHaptics.play(.soft)
                             store.removeInjury(injury.bodyPart)
                         }
                         if index < store.injuries.count - 1 {
@@ -444,7 +441,6 @@ private struct OnboardingInjurySheet: View {
                 }
                 Spacer(minLength: 0)
                 Button {
-                    SharpitHaptics.play(.soft)
                     onSave(draft)
                     dismiss()
                 } label: {
@@ -497,7 +493,6 @@ struct OnboardingPrivacyStep: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             if !consents.requiredAccepted {
                 Button {
-                    SharpitHaptics.play(.soft)
                     SharpitMotion.run(SharpitMotion.selection) { consents.acceptAll() }
                 } label: {
                     Label("Tout accepter", systemImage: "checkmark.circle")
@@ -744,7 +739,6 @@ struct OnboardingSourcesStep: View {
         )
         garminFailure = outcome.isLinked ? nil : outcome
         if outcome.isLinked {
-            SharpitHaptics.play(.success)
             await loadStatus()
         }
     }

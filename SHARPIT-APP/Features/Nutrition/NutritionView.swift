@@ -410,7 +410,7 @@ private struct NutritionEnergyPlate: View {
 }
 
 /// A day kept on target, sealed. Found by opening a good day, never announced; the first time
-/// a day's seal is seen it arrives with a light haptic, then it simply stays.
+/// a day's seal is seen it arrives, then it simply stays.
 private struct NutritionGoalSeal: View {
     let dayId: String
     @State private var shown = false
@@ -431,7 +431,6 @@ private struct NutritionGoalSeal: View {
                 let key = "nutrition.goalSeal.\(dayId)"
                 guard !UserDefaults.standard.bool(forKey: key) else { return }
                 UserDefaults.standard.set(true, forKey: key)
-                SharpitHaptics.play(.success)
             }
     }
 }
@@ -510,7 +509,6 @@ private struct NutritionCoachPlate: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(SharpitColor.inkSurfaceForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
             Button {
-                SharpitHaptics.play(.soft)
                 router.discussWithCoach(about: CoachDiscuss.describe(.nutrition(trainingDayId: dayId)))
             } label: {
                 Label("Discuter avec le coach", systemImage: "bubble.left.and.text.bubble.right")

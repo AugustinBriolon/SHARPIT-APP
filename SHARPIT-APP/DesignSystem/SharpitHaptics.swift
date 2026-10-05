@@ -1,7 +1,8 @@
 import CoreHaptics
 import Foundation
 
-/// The app's haptics, played through Core Haptics.
+/// The app's haptics, played through Core Haptics — a notch under the finger, and nothing else.
+/// A tap, a choice, a success or a send is seen on screen; felt as well, it was noise.
 ///
 /// Not `UIFeedbackGenerator`, nor SwiftUI's `sensoryFeedback` which rides on it: on the athlete's
 /// iPhone neither played anything, anywhere in the app — the value under the height ruler changed
@@ -9,20 +10,14 @@ import Foundation
 /// One engine, started on demand and restarted when the system stops or resets it.
 enum SharpitHaptics {
     enum Kind {
-        /// A choice picked — the one tap a selection earns.
-        case soft
-        case success
-        /// A notch passed under the finger on a ruler; `major` on the tens.
+        /// A notch passed under the finger — a ruler, painted days, a curve scrubbed; `major` on
+        /// the tens.
         case notch(major: Bool)
     }
 
     static func play(_ kind: Kind) {
         switch kind {
-        case .soft: HapticEngine.shared.transient(intensity: 0.45, sharpness: 0.2)
         case .notch(let major): HapticEngine.shared.transient(intensity: major ? 1 : 0.7, sharpness: major ? 0.8 : 0.6)
-        case .success:
-            HapticEngine.shared.transient(intensity: 0.7, sharpness: 0.5)
-            HapticEngine.shared.transient(intensity: 1, sharpness: 0.6, delay: 0.12)
         }
     }
 
@@ -66,7 +61,7 @@ private final class HapticEngine {
         }
     }
 
-    func transient(intensity: Float, sharpness: Float, delay: TimeInterval = 0) {
+    func transient(intensity: Float, sharpness: Float) {
         guard let engine else { return }
         start()
         let event = CHHapticEvent(
@@ -75,7 +70,7 @@ private final class HapticEngine {
                 CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity),
                 CHHapticEventParameter(parameterID: .hapticSharpness, value: sharpness),
             ],
-            relativeTime: delay
+            relativeTime: 0
         )
         do {
             let pattern = try CHHapticPattern(events: [event], parameters: [])

@@ -143,7 +143,7 @@ services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`
 The page is one page: the header's tick dial (`SharpitTickGauge`, animatable, so it sweeps from step
 to step) and the step's title stay put, and only the content under them slides in from the side the
 athlete is heading. The dial's thumb shows from the first step, at its start, with the position
-(« 1 / 9 ») inside the arc. A choice is seen by its fill and felt by a light haptic — no symbol
+(« 1 / 9 ») inside the arc. A choice is seen by its fill — no haptic, no symbol
 animates (a wiggle on every tile read as unfinished); triathlon is the app's own symbol
 (`triathlon.circles` in the asset catalog), SF Symbols drawing none. Toi uses the design system's
 inputs: `SharpitFormField` (the label above a soft well, a ring while focused — no card),
@@ -585,14 +585,14 @@ What makes a surface feel finished, applied everywhere new work lands:
   and foreground, `ProviderSyncStore`) and says it quietly, never with a blocking state.
 - **Announce news, not work.** After a sync, say what came in (« 3 aliments ajoutés »); say « à jour »
   only when the athlete asked.
-- **Reward, don't nag.** A kept day earns its seal (`NutritionGoalSeal`), found by opening it, with
-  one haptic the first time. No streak counters.
+- **Reward, don't nag.** A kept day earns its seal (`NutritionGoalSeal`), found by opening it. No
+  streak counters.
 - **No dead ends.** An empty day offers the next step (sync, another day, link a source); a
   failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server).
-- **Haptics confirm what the finger does, nothing else.** A notch dialled (a ruler, painted days),
-  a choice picked (one `.soft`), a real success once (a source linked, the wizard's week set).
-  Never navigation: continuing, a step changing, a field or a sheet opening. Everywhere at once
-  read as noise.
+- **Haptics: a notch under the finger, nothing else.** A ruler's units, days painted, a curve
+  scrubbed — the finger dialling. Never a tap, a choice, a toggle, a send, a success or navigation:
+  the screen already shows it, and felt everywhere it read as noise (the athlete's call,
+  2026-10-05). `SharpitHaptics` has no other kind, on purpose.
 - **Haptics through `SharpitHaptics` only** — Core Haptics. On the athlete's iPhone neither
   `UIFeedbackGenerator` nor SwiftUI's `sensoryFeedback` played anything in the app, while a Core
   Haptics transient did; never reach for either.

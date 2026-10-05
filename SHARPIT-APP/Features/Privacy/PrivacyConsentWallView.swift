@@ -199,7 +199,6 @@ struct PrivacyConsentWallView: View {
                 .wall(ai: ai, unofficialProviders: unofficialProviders),
                 token: token
             )
-            SharpitHaptics.play(.success)
             await onAccepted(saved)
         } catch SharpitAPIError.unauthorized {
             self.error = "Session expirée. Reconnecte-toi."
@@ -226,7 +225,6 @@ struct ConsentCheckRow<Content: View>: View {
     var body: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
             Button {
-                SharpitHaptics.play(.soft)
                 SharpitMotion.run(SharpitMotion.selection) { isOn.toggle() }
             } label: {
                 HStack(alignment: .top, spacing: SharpitSpacing.sm) {

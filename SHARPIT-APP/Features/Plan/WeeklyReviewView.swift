@@ -48,7 +48,6 @@ final class WeeklyReviewStore {
         do {
             let review = try await client.generateReview(token: try await tokenProvider())
             phase = .loaded(review)
-            SharpitHaptics.play(.success)
         } catch WeeklyReviewError.proRequired {
             phase = .proRequired
         } catch SharpitAPIError.rateLimited {

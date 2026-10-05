@@ -102,7 +102,6 @@ struct PlanAdapterSheet: View {
                 VStack(spacing: SharpitSpacing.xs) {
                     ForEach(Array(result.changes.enumerated()), id: \.offset) { index, change in
                         AdjustmentRow(change: change, isSelected: selected.contains(index)) {
-                            SharpitHaptics.play(.soft)
                             store.toggle(index)
                         }
                     }
@@ -154,7 +153,6 @@ struct PlanAdapterSheet: View {
 
     private func apply() async {
         guard let count = await store.apply() else {
-            SharpitHaptics.play(.soft)
             return
         }
         toastCenter?.show(
@@ -163,7 +161,6 @@ struct PlanAdapterSheet: View {
             tone: .success,
             autoDismissAfter: 3.0
         )
-        SharpitHaptics.play(.success)
         onPlanChanged()
         dismiss()
     }

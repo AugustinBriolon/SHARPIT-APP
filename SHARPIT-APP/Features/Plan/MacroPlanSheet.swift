@@ -290,10 +290,8 @@ struct MacroPlanSheet: View {
             let newPlan = try await trainingPlanClient.generatePlan(goalId: selectedGoalId, token: token)
             plan = newPlan
             onPlanChanged()
-            SharpitHaptics.play(.success)
         } catch {
             errorMessage = error.localizedDescription
-            SharpitHaptics.play(.soft)
         }
         isGenerating = false
     }
@@ -306,10 +304,8 @@ struct MacroPlanSheet: View {
             try await trainingPlanClient.archivePlan(id: currentPlan.id, token: token)
             plan = nil
             onPlanChanged()
-            SharpitHaptics.play(.success)
         } catch {
             errorMessage = error.localizedDescription
-            SharpitHaptics.play(.soft)
         }
         isArchiving = false
     }

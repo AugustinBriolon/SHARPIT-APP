@@ -152,7 +152,6 @@ struct PlanGeneratorSheet: View {
 
     private func insert() async {
         guard let count = await store.insert() else {
-            SharpitHaptics.play(.soft)
             return
         }
         toastCenter?.show(
@@ -161,7 +160,6 @@ struct PlanGeneratorSheet: View {
             tone: .success,
             autoDismissAfter: 3.0
         )
-        SharpitHaptics.play(.success)
         onPlanChanged()
         dismiss()
     }

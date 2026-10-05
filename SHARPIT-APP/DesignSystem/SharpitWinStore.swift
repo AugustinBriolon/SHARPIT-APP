@@ -10,10 +10,6 @@ enum SharpitWinStore {
         return true
     }
 
-    static func arrivalKey(trainingDayId: String) -> String {
-        "sharpit.win.arrival.\(trainingDayId)"
-    }
-
     static func sessionDoneKey(trainingDayId: String, sessionId: String) -> String {
         "sharpit.win.sessionDone.\(trainingDayId).\(sessionId)"
     }
