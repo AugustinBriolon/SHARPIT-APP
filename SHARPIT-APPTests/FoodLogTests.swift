@@ -136,6 +136,38 @@ private let scoredV2JSON = """
     #expect(older.isEmpty)
 }
 
+@Test func searchResultsListTheFoodsAlreadyEatenAndTheVerifiedOnes() throws {
+    let json = """
+    { "eaten": [{ "product": { "id": "e1", "source": "OFF", "barcode": "5690845000621", "name": "Skyr",
+                               "kcalPer100g": 62, "proteinPer100g": 11, "carbsPer100g": 4, "fatPer100g": 0.2,
+                               "verified": true, "verifiedBy": "producer" },
+                  "timesEaten": 12, "lastGrams": 150 }],
+      "own": [], "generic": [], "products": [], "offUnavailable": false }
+    """
+    let results = try JSONDecoder().decode(V1FoodSearchResults.self, from: Data(json.utf8))
+    let eaten = try #require(results.eaten.first)
+    #expect(eaten.timesEaten == 12)
+    #expect(eaten.lastGrams == 150)
+    #expect(eaten.product.isVerified)
+    #expect(eaten.product.verifiedLabel == "Vérifié, données du fabricant")
+    #expect(!results.isEmpty)
+
+    let older = try JSONDecoder().decode(
+        V1FoodSearchResults.self,
+        from: Data(#"{ "own": [], "products": [], "offUnavailable": false }"#.utf8)
+    )
+    #expect(older.eaten.isEmpty)
+}
+
+@Test func aFoodWithoutTheFieldIsNotVerified() throws {
+    let product = try JSONDecoder().decode(V1FoodProduct.self, from: Data(#"""
+    { "id": "c1", "source": "CUSTOM", "name": "Granola maison",
+      "kcalPer100g": 450, "proteinPer100g": 10, "carbsPer100g": 60, "fatPer100g": 18 }
+    """#.utf8))
+    #expect(!product.isVerified)
+    #expect(product.verifiedLabel == nil)
+}
+
 @Test func theScoreReadsInWords() throws {
     let health = try JSONDecoder().decode(V1FoodHealth.self, from: Data(scoredV2JSON.utf8))
     #expect(FoodHealthPresentation.verdict(health) == "1 point à surveiller\n1 point fort")
@@ -624,6 +656,60 @@ private actor StubFoodLog: FoodLogServing {
         targetsSent.append(targets)
         return targets
     }
+
+    // Saved meals and recipes (SHARPIT ADR-071)
+    var copySource: [V1FoodLogEntry] = []
+    private(set) var copies: [(from: String, meal: FoodLogMeal?, to: String)] = []
+    var saved: [V1SavedMeal] = []
+    private(set) var savedLogs: [(id: String, meal: FoodLogMeal)] = []
+    private(set) var recipesSent: [(id: String?, draft: FoodRecipeDraft)] = []
+
+    func setCopySource(_ entries: [V1FoodLogEntry]) { copySource = entries }
+    func setFailure(_ error: (any Error)?) { failure = error }
+    func setSaved(_ meals: [V1SavedMeal]) { saved = meals }
+
+    func copy(from fromDayId: String, meal: FoodLogMeal?, to toDayId: String, token: String) async throws -> [V1FoodLogEntry] {
+        if let failure { throw failure }
+        copies.append((fromDayId, meal, toDayId))
+        return copySource.filter { meal == nil || $0.meal == meal }
+    }
+
+    func savedMeals(token: String) async throws -> [V1SavedMeal] {
+        if let failure { throw failure }
+        return saved
+    }
+
+    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> V1SavedMeal {
+        if let failure { throw failure }
+        let kept = V1SavedMeal(id: "m\(saved.count + 1)", name: name, items: [], kcal: 0, protein: 0, carbs: 0, fat: 0)
+        saved.append(kept)
+        return kept
+    }
+
+    func deleteSavedMeal(id: String, token: String) async throws {
+        if let failure { throw failure }
+        saved.removeAll { $0.id == id }
+    }
+
+    func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry] {
+        if let failure { throw failure }
+        savedLogs.append((id, meal))
+        let items = saved.first { $0.id == id }?.items ?? []
+        return items.enumerated().map { index, item in
+            V1FoodLogEntry(
+                id: "logged-\(index)", meal: meal, productId: item.productId, name: item.name, brand: item.brand,
+                grams: item.grams, kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat
+            )
+        }
+    }
+
+    func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct {
+        if let failure { throw failure }
+        recipesSent.append((id, draft))
+        var product = rice
+        product.name = draft.name
+        return product
+    }
 }
 
 @MainActor
@@ -907,4 +993,223 @@ private nonisolated func ownFood(_ id: String, _ name: String) -> V1FoodProduct 
     // Another food, or a score in the echo, is the server's word.
     echo.productId = "p2"
     #expect(FoodLogStore.keepingHealth(of: shown, in: echo).health == nil)
+}
+
+// MARK: - Meal and day score (SHARPIT ADR-070)
+
+private let dayHealthJSON = """
+{ "day": { "score": 71, "grade": "good", "coverage": 0.86, "kcal": 692, "protein": 15.6, "fiber": null,
+           "ultraProcessedShare": null,
+           "highlights": [{ "key": "partial_coverage", "tone": "neutral", "label": "Note partielle",
+                            "detail": "86 % de l'énergie vient d'aliments notés" }] },
+  "meals": { "BREAKFAST": null,
+             "LUNCH": { "score": 74, "grade": "good", "coverage": 1, "kcal": 525, "protein": 11.3, "fiber": null,
+                        "ultraProcessedShare": 0,
+                        "highlights": [{ "key": "protein_meal_low", "tone": "negative", "label": "Peu de protéines",
+                                         "detail": "11 g dans le repas" }] },
+             "DINNER": null, "SNACKS": null } }
+"""
+
+@Test func theDayDecodesTheScoreOfEachMealAndOfTheDay() throws {
+    let health = try JSONDecoder().decode(V1FoodLogDayHealth.self, from: Data(dayHealthJSON.utf8))
+    #expect(health.day?.score == 71)
+    #expect(health.meal(.lunch)?.grade == .good)
+    #expect(health.meal(.lunch)?.highlights.first?.key == "protein_meal_low")
+    #expect(health.meal(.dinner) == nil)
+
+    let older = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    #expect(older.health == nil)
+}
+
+@MainActor
+@Test func aMealChangedSinceItWasScoredShowsNoScore() async throws {
+    let read = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    let health = try JSONDecoder().decode(V1FoodLogDayHealth.self, from: Data(dayHealthJSON.utf8))
+    let day = V1FoodLogDay(
+        trainingDayId: read.trainingDayId, entries: read.entries, health: health,
+        targets: read.targets, recent: read.recent
+    )
+    let store = makeStore(StubFoodLog(day: day), recorder: Recorder())
+    await store.load(trainingDayId: "2026-10-01")
+    #expect(store.mealHealth(.lunch)?.score == 74)
+    #expect(store.dayHealth?.score == 71)
+
+    // The stub keeps answering the day as first read: the lunch it scored is not the one shown.
+    await store.delete(try #require(store.entries.first { $0.id == "e2" }))
+    #expect(store.mealHealth(.lunch) == nil)
+    #expect(store.dayHealth == nil)
+    #expect(store.mealHealth(.dinner) == nil)
+}
+
+
+// MARK: - Copy, saved meals and recipes (SHARPIT ADR-071)
+
+private nonisolated let skyrItem = V1SavedMealItem(
+    productId: "skyr", name: "Skyr", brand: nil, grams: 150, kcal: 93, protein: 16, carbs: 6, fat: 0.3,
+    fiber: nil, sugar: nil
+)
+
+@Test func theDayBeforeIsReadOnTheCalendar() {
+    #expect(TrainingDayId.previous("2026-10-05") == "2026-10-04")
+    #expect(TrainingDayId.previous("2026-03-01") == "2026-02-28")
+    #expect(TrainingDayId.previous("2026-01-01") == "2025-12-31")
+    #expect(TrainingDayId.previous("hier") == nil)
+}
+
+@Test func aSavedMealIsNamedByItsFoodsHeaviestFirst() {
+    func entry(_ name: String, _ kcal: Double) -> V1FoodLogEntry {
+        V1FoodLogEntry(id: name, meal: .lunch, productId: nil, name: name, brand: nil, grams: 100, kcal: kcal, protein: 0, carbs: 0, fat: 0)
+    }
+    #expect(SavedMealNaming.defaultName([entry("Banane", 90), entry("Skyr", 120)]) == "Skyr, Banane")
+    #expect(SavedMealNaming.defaultName([entry("A", 4), entry("B", 3), entry("C", 2), entry("D", 1)]) == "A, B, C…")
+}
+
+@MainActor
+@Test func aMealCopiedFromTheDayBeforeJoinsTheDay() async {
+    let client = StubFoodLog()
+    let lunch = V1FoodLogEntry(id: "c1", meal: .lunch, productId: nil, name: "Riz", brand: nil, grams: 150, kcal: 200, protein: 4, carbs: 40, fat: 1)
+    await client.setCopySource([lunch])
+    let recorder = Recorder()
+    let store = makeStore(client, recorder: recorder)
+    await store.load(trainingDayId: "2026-10-01")
+
+    await store.copyFromPreviousDay(.lunch)
+
+    #expect(store.section(.lunch).entries.map(\.id) == ["c1"])
+    let copies = await client.copies
+    #expect(copies.first?.from == "2026-09-30")
+    #expect(copies.first?.meal == .lunch)
+    #expect(copies.first?.to == "2026-10-01")
+    #expect(recorder.reloads == 1)
+}
+
+@MainActor
+@Test func copyingAnEmptyMealSaysThereWasNothing() async {
+    let recorder = Recorder()
+    let store = makeStore(StubFoodLog(), recorder: recorder)
+    await store.load(trainingDayId: "2026-10-01")
+
+    await store.copyFromPreviousDay(.dinner)
+
+    #expect(store.entries.isEmpty)
+    #expect(recorder.failures == ["Ce repas était vide la veille : rien à copier."])
+    #expect(recorder.reloads == 0)
+}
+
+@MainActor
+@Test func aSavedMealLogsWholeIntoTheMealAsked() async {
+    let client = StubFoodLog()
+    let saved = V1SavedMeal(id: "m1", name: "Goûter", items: [skyrItem], kcal: 93, protein: 16, carbs: 6, fat: 0.3)
+    await client.setSaved([saved])
+    let store = makeStore(client, recorder: Recorder())
+    await store.load(trainingDayId: "2026-10-01")
+
+    await store.logSavedMeal(saved, into: .snacks)
+
+    #expect(store.section(.snacks).entries.map(\.id) == ["logged-0"])
+    #expect(store.section(.snacks).kcal == 93)
+    #expect(await client.savedLogs.first?.meal == .snacks)
+}
+
+@MainActor
+@Test func aSavedMealThatFailsLeavesTheDayAsItWas() async {
+    let client = StubFoodLog(failure: SharpitAPIError.unauthorized)
+    let recorder = Recorder()
+    let store = makeStore(client, recorder: recorder)
+    let saved = V1SavedMeal(id: "m1", name: "Goûter", items: [skyrItem], kcal: 93, protein: 16, carbs: 6, fat: 0.3)
+
+    await store.logSavedMeal(saved, into: .snacks)
+
+    #expect(store.entries.isEmpty)
+    #expect(recorder.failures == ["Repas non ajouté : ta session a expiré."])
+}
+
+@MainActor
+@Test func aSavedMealIsDeletedAtOnceAndPutBackIfRefused() async {
+    let client = StubFoodLog()
+    let saved = V1SavedMeal(id: "m1", name: "Goûter", items: [skyrItem], kcal: 93, protein: 16, carbs: 6, fat: 0.3)
+    await client.setSaved([saved])
+    let store = SavedMealsStore(client: client, tokenProvider: { "t" })
+    await store.load()
+    #expect(store.meals.map(\.id) == ["m1"])
+
+    await client.setFailure(SharpitAPIError.badRequest)
+    await store.delete(saved)
+
+    #expect(store.meals.map(\.id) == ["m1"])
+    #expect(store.failure == "Repas non supprimé. Réessaie dans un instant.")
+}
+
+@Test func aRecipeLabelSumsItsIngredientsOverTheCookedWeight() throws {
+    var builder = FoodRecipeBuilder()
+    builder.name = "Riz au poulet"
+    builder.add(rice)
+    builder.add(rice)
+    #expect(builder.lines.count == 1)
+
+    let label = try #require(builder.label)
+    #expect(label.kcalPer100g == rice.kcalPer100g)
+
+    builder.lines[0].gramsText = "100"
+    builder.cookedGramsText = "250"
+    builder.servingsText = "2"
+    let cooked = try #require(builder.label)
+    #expect(cooked.kcalPer100g == (rice.kcalPer100g * 100 / 250 * 10).rounded() / 10)
+    #expect(cooked.servingGrams == 125)
+
+    let draft = try #require(builder.draft)
+    #expect(draft.ingredients == [.init(productId: rice.id, grams: 100)])
+    #expect(draft.cookedGrams == 250)
+    #expect(draft.servings == 2)
+}
+
+@Test func aRecipeSaysWhatItLacks() {
+    var builder = FoodRecipeBuilder()
+    #expect(builder.problem == "Donne un nom à ta recette.")
+    builder.name = "Bol"
+    #expect(builder.problem == "Ajoute au moins un ingrédient.")
+    builder.add(rice)
+    builder.lines[0].gramsText = ""
+    #expect(builder.problem == "Indique les grammes de « \(rice.name) ».")
+    builder.lines[0].gramsText = "80"
+    builder.servingsText = "0"
+    #expect(builder.problem == "Le nombre de parts va de 1 à 50.")
+    #expect(builder.draft == nil)
+}
+
+@Test func aSavedRecipeReopensAsItWasBuilt() {
+    var product = rice
+    product.recipe = V1Recipe(
+        ingredients: [V1RecipeIngredient(product: rice, grams: 120)], cookedGrams: 300, servings: nil, totalGrams: 300
+    )
+    let builder = FoodRecipeBuilder(recipe: product)
+    #expect(builder.lines.map(\.gramsText) == ["120"])
+    #expect(builder.cookedGramsText == "300")
+    #expect(builder.servingsText.isEmpty)
+}
+
+@Test func aRecipeBodyCarriesItsIngredientsAndNullsWhatIsNotGiven() throws {
+    let draft = FoodRecipeDraft(name: "Bol", ingredients: [.init(productId: "rice", grams: 80)], cookedGrams: nil, servings: 2)
+    let body = try FoodLogClient.body(for: draft)
+    let object = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+    #expect(object["name"] as? String == "Bol")
+    #expect(object["cookedGrams"] is NSNull)
+    #expect(object["servings"] as? Int == 2)
+    let ingredients = try #require(object["ingredients"] as? [[String: Any]])
+    #expect(ingredients.first?["productId"] as? String == "rice")
+}
+
+@Test func aSavedMealAndARecipeDecodeAsTheServerSendsThem() throws {
+    let json = """
+    {"meals":[{"id":"m1","name":"Goûter","items":[{"productId":"skyr","name":"Skyr","brand":null,"grams":150,"kcal":93,"protein":16,"carbs":6,"fat":0.3,"fiber":null,"sugar":null}],"kcal":93,"protein":16,"carbs":6,"fat":0.3,"health":null,"updatedAt":"2026-10-05T08:00:00.000Z"}]}
+    """
+    let meals = try JSONDecoder().decode(V1SavedMealList.self, from: Data(json.utf8)).meals
+    #expect(meals.first?.items.first?.grams == 150)
+
+    let product = """
+    {"id":"r1","source":"CUSTOM","barcode":null,"name":"Bol","brand":null,"kcalPer100g":120,"proteinPer100g":8,"carbsPer100g":15,"fatPer100g":3,"fiberPer100g":null,"sugarPer100g":null,"servingGrams":200,"servingLabel":"1 part · 200 g","recipe":{"ingredients":[{"productId":"rice","name":"Riz","brand":null,"grams":80,"kcalPer100g":350,"proteinPer100g":7,"carbsPer100g":78,"fatPer100g":1,"fiberPer100g":null,"sugarPer100g":null,"saltPer100g":null,"saturatedFatPer100g":null}],"cookedGrams":null,"servings":2,"totalGrams":400}}
+    """
+    let decoded = try JSONDecoder().decode(V1FoodProduct.self, from: Data(product.utf8))
+    #expect(decoded.isRecipe)
+    #expect(decoded.recipe?.ingredients.first?.kcalPer100g == 350)
 }

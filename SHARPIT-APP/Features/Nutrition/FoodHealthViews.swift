@@ -105,7 +105,19 @@ nonisolated enum FoodHealthPresentation {
 
 /// Compact Sharpit score for lists: the number when known, a dash when the product has none.
 struct FoodHealthBadge: View {
-    let health: V1FoodHealth?
+    let score: Int?
+    let grade: V1FoodHealth.Grade?
+
+    init(health: V1FoodHealth?) {
+        score = health?.score
+        grade = health?.grade
+    }
+
+    /// A meal's or a day's score (SHARPIT ADR-070), on the food scale.
+    init(meal: V1MealHealth?) {
+        score = meal?.score
+        grade = meal?.grade
+    }
 
     var body: some View {
         Text(label)
@@ -119,17 +131,42 @@ struct FoodHealthBadge: View {
     }
 
     private var label: String {
-        guard let score = health?.score else { return "—" }
+        guard let score else { return "—" }
         return "\(score)"
     }
 
-    private var tone: Color { FoodHealthPresentation.gradeTone(health?.grade) }
+    private var tone: Color { FoodHealthPresentation.gradeTone(grade) }
 
     private var accessibility: String {
-        if let score = health?.score, let grade = health?.grade {
+        if let score, let grade {
             return "Score Sharpit \(score), \(grade.label)"
         }
         return "Score Sharpit indisponible"
+    }
+}
+
+/// What a meal's score rests on, as the server words it: the grade, then each reason.
+struct MealHealthSection: View {
+    let health: V1MealHealth
+
+    var body: some View {
+        Section {
+            HStack(spacing: SharpitSpacing.sm) {
+                FoodHealthBadge(meal: health)
+                Text(health.grade?.label ?? "Non noté")
+                    .font(SharpitTypography.cardTitle)
+                    .tracking(SharpitTypography.cardTitleTracking)
+                    .foregroundStyle(FoodHealthPresentation.gradeTone(health.grade))
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            ForEach(health.highlights) { FoodHighlightRow(highlight: $0) }
+        } header: {
+            SharpitEyebrow("Note du repas")
+        } footer: {
+            SharpitListFooter("Moyenne des scores des aliments, pondérée par leur énergie. \(FoodHealthPresentation.disclaimer)")
+        }
+        .sharpitListRows()
     }
 }
 
@@ -258,7 +295,7 @@ struct FoodHealthScoreHeader: View {
 }
 
 /// One reason: its symbol in the reason's tone, the words, the amount on the right.
-private struct FoodHighlightRow: View {
+struct FoodHighlightRow: View {
     let highlight: V1FoodHealth.Highlight
 
     var body: some View {

@@ -36,6 +36,16 @@ nonisolated protocol FoodLogServing: Sendable {
     /// The athlete's own MyFitnessPal export (the ZIP or its nutrition CSV), sent as it is.
     func importMyFitnessPal(_ file: FoodLogImportFile, token: String) async throws -> V1FoodLogImportResult
     func setTargets(_ targets: V1NutritionTargets, trainingDayId: String, token: String) async throws -> V1NutritionTargets
+    /// A meal (or, without `meal`, a whole day) logged again into another day (SHARPIT ADR-071).
+    /// Answers the entries written — none when the source was empty.
+    func copy(from fromDayId: String, meal: FoodLogMeal?, to toDayId: String, token: String) async throws -> [V1FoodLogEntry]
+    func savedMeals(token: String) async throws -> [V1SavedMeal]
+    /// Keeps a logged meal under a name.
+    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> V1SavedMeal
+    func deleteSavedMeal(id: String, token: String) async throws
+    func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry]
+    /// Creates a recipe, or replaces one's ingredients when `id` is given; entries keep their values.
+    func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct
 }
 
 actor FoodLogClient: FoodLogServing {
@@ -130,7 +140,64 @@ actor FoodLogClient: FoodLogServing {
         return try decode(V1NutritionTargetsEnvelope.self, from: try await send(request)).targets
     }
 
+    // MARK: Saved meals and recipes
+
+    func copy(from fromDayId: String, meal: FoodLogMeal?, to toDayId: String, token: String) async throws -> [V1FoodLogEntry] {
+        var payload: [String: Any] = ["fromTrainingDayId": fromDayId, "toTrainingDayId": toDayId]
+        if let meal { payload["fromMeal"] = meal.rawValue }
+        var request = try request("\(Self.path)/copy", method: "POST", token: token)
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        return try decode(V1FoodLogEntryList.self, from: try await send(request)).entries
+    }
+
+    func savedMeals(token: String) async throws -> [V1SavedMeal] {
+        let request = try request("\(Self.path)/meals", method: "GET", token: token)
+        return try decode(V1SavedMealList.self, from: try await send(request)).meals
+    }
+
+    /// The server refuses an empty meal with its own words (`Ce repas est vide`).
+    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> V1SavedMeal {
+        var request = try request("\(Self.path)/meals", method: "POST", token: token)
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "name": name, "trainingDayId": trainingDayId, "meal": meal.rawValue,
+        ])
+        return try decode(V1SavedMealEnvelope.self, from: try await send(request)).meal
+    }
+
+    func deleteSavedMeal(id: String, token: String) async throws {
+        _ = try await send(try request("\(Self.path)/meals/\(id)", method: "DELETE", token: token))
+    }
+
+    func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry] {
+        var request = try request("\(Self.path)/meals/\(id)/log", method: "POST", token: token)
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "trainingDayId": trainingDayId, "meal": meal.rawValue,
+        ])
+        return try decode(V1FoodLogEntryList.self, from: try await send(request)).entries
+    }
+
+    func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct {
+        var request = try request(
+            id.map { "\(Self.path)/recipes/\($0)" } ?? "\(Self.path)/recipes",
+            method: id == nil ? "POST" : "PUT",
+            token: token
+        )
+        request.httpBody = try Self.body(for: draft)
+        return try decode(V1FoodProductEnvelope.self, from: try await send(request, readsRefusal: true)).product
+    }
+
     // MARK: Bodies
+
+    /// Nil cooked weight and servings go out as JSON null: the dish weighs its raw ingredients.
+    nonisolated static func body(for draft: FoodRecipeDraft) throws -> Data {
+        let payload: [String: Any] = [
+            "name": draft.name,
+            "ingredients": draft.ingredients.map { ["productId": $0.productId, "grams": $0.grams] as [String: Any] },
+            "cookedGrams": draft.cookedGrams ?? NSNull(),
+            "servings": draft.servings ?? NSNull(),
+        ]
+        return try JSONSerialization.data(withJSONObject: payload)
+    }
 
     /// Exactly one of `productId` and `quick`, as the server requires.
     nonisolated static func body(for draft: FoodLogDraft) throws -> Data {

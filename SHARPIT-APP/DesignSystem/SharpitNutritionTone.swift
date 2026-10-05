@@ -27,5 +27,7 @@ enum SharpitNutritionTone {
         static let ownFoods = Color(red: 0.92, green: 0.52, blue: 0.20)
         static let quickAdd = Color(red: 0.55, green: 0.36, blue: 0.86)
         static let create = Color(red: 0.34, green: 0.44, blue: 0.86)
+        static let savedMeals = Color(red: 0.86, green: 0.36, blue: 0.42)
+        static let recipe = Color(red: 0.30, green: 0.62, blue: 0.30)
     }
 }

@@ -84,6 +84,27 @@ nonisolated struct V1FoodProduct: Codable, Sendable, Equatable, Hashable, Identi
     var servingLabel: String?
     /// Sharpit composition score when the server could compute one.
     var health: V1FoodHealth? = nil
+    /// Values measured by ANSES (Ciqual), given by the manufacturer or checked on Open Food Facts
+    /// (SHARPIT ADR-069). Absent from a server older than the badge.
+    var verified: Bool? = nil
+    /// `ciqual`, `producer` or `checked`.
+    var verifiedBy: String? = nil
+    /// Set on an own food made of other foods (SHARPIT ADR-071).
+    var recipe: V1Recipe? = nil
+
+    var isVerified: Bool { verified == true }
+    var isRecipe: Bool { recipe != nil }
+
+    /// Where verified values come from, as the badge says it to VoiceOver.
+    var verifiedLabel: String? {
+        guard isVerified else { return nil }
+        switch verifiedBy {
+        case "ciqual": return "Vérifié, valeurs mesurées par l'Anses"
+        case "producer": return "Vérifié, données du fabricant"
+        case "checked": return "Vérifié, fiche contrôlée par Open Food Facts"
+        default: return "Vérifié"
+        }
+    }
 
     /// Open Food Facts data must carry its attribution wherever it is picked.
     var isOpenFoodFacts: Bool { source == "OFF" }
@@ -340,18 +361,53 @@ nonisolated struct V1FoodLogRecentFood: Codable, Sendable, Equatable, Hashable {
     let lastGrams: Double
 }
 
+/// The score of a meal or a day, from the energy of its foods (SHARPIT ADR-070). Worded and
+/// computed by the server; the app renders it.
+nonisolated struct V1MealHealth: Codable, Sendable, Equatable, Hashable {
+    /// Nil while less than half of the energy comes from scored foods.
+    var score: Int?
+    var grade: V1FoodHealth.Grade?
+    /// Share of the energy whose food carries a score, 0–1.
+    var coverage: Double
+    var kcal: Double
+    var protein: Double
+    var fiber: Double?
+    var ultraProcessedShare: Double?
+    var highlights: [V1FoodHealth.Highlight]
+}
+
+/// Each meal's score and the day's, as `/api/v1/food-log` serves them.
+nonisolated struct V1FoodLogDayHealth: Codable, Sendable, Equatable, Hashable {
+    var day: V1MealHealth?
+    /// Keyed by `FoodLogMeal.rawValue`; an empty meal reads null.
+    var meals: [String: V1MealHealth?]
+
+    func meal(_ meal: FoodLogMeal) -> V1MealHealth? {
+        meals[meal.rawValue] ?? nil
+    }
+}
+
 /// `GET /api/v1/food-log?trainingDayId=`.
 nonisolated struct V1FoodLogDay: Decodable, Sendable, Equatable {
     let trainingDayId: String
     let entries: [V1FoodLogEntry]
+    /// Absent from a server older than SHARPIT ADR-070.
+    let health: V1FoodLogDayHealth?
     let targets: V1NutritionTargets
     let recent: [V1FoodLogRecentFood]
 
-    enum CodingKeys: String, CodingKey { case trainingDayId, entries, targets, recent }
+    enum CodingKeys: String, CodingKey { case trainingDayId, entries, health, targets, recent }
 
-    init(trainingDayId: String, entries: [V1FoodLogEntry], targets: V1NutritionTargets = .none, recent: [V1FoodLogRecentFood] = []) {
+    init(
+        trainingDayId: String,
+        entries: [V1FoodLogEntry],
+        health: V1FoodLogDayHealth? = nil,
+        targets: V1NutritionTargets = .none,
+        recent: [V1FoodLogRecentFood] = []
+    ) {
         self.trainingDayId = trainingDayId
         self.entries = entries
+        self.health = health
         self.targets = targets
         self.recent = recent
     }
@@ -360,13 +416,24 @@ nonisolated struct V1FoodLogDay: Decodable, Sendable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         trainingDayId = try container.decode(String.self, forKey: .trainingDayId)
         entries = try container.decode([V1FoodLogEntry].self, forKey: .entries)
+        health = try container.decodeIfPresent(V1FoodLogDayHealth.self, forKey: .health)
         targets = try container.decodeIfPresent(V1NutritionTargets.self, forKey: .targets) ?? .none
         recent = try container.decodeIfPresent([V1FoodLogRecentFood].self, forKey: .recent) ?? []
     }
 }
 
-/// `GET /api/v1/food-log/foods?q=` — the athlete's own foods first, then Open Food Facts.
+/// A food the athlete logged in the last 90 days that matches the search (SHARPIT ADR-069).
+nonisolated struct V1FoodEatenFood: Codable, Sendable, Equatable, Hashable {
+    let product: V1FoodProduct
+    let timesEaten: Int
+    let lastGrams: Double
+}
+
+/// `GET /api/v1/food-log/foods?q=` — the foods already eaten, the athlete's own foods, generic
+/// foods, then Open Food Facts.
 nonisolated struct V1FoodSearchResults: Decodable, Sendable, Equatable {
+    /// Listed first, and not repeated in the lists below.
+    let eaten: [V1FoodEatenFood]
     let own: [V1FoodProduct]
     /// Generic foods from Ciqual (« Banane, pulpe, crue »), answered even when OFF is down.
     let generic: [V1FoodProduct]
@@ -374,20 +441,28 @@ nonisolated struct V1FoodSearchResults: Decodable, Sendable, Equatable {
     /// Open Food Facts did not answer: only the athlete's own and generic foods are listed.
     let offUnavailable: Bool
 
-    var isEmpty: Bool { own.isEmpty && generic.isEmpty && products.isEmpty }
+    var isEmpty: Bool { eaten.isEmpty && own.isEmpty && generic.isEmpty && products.isEmpty }
 
-    enum CodingKeys: String, CodingKey { case own, generic, products, offUnavailable }
+    enum CodingKeys: String, CodingKey { case eaten, own, generic, products, offUnavailable }
 
-    init(own: [V1FoodProduct], generic: [V1FoodProduct] = [], products: [V1FoodProduct], offUnavailable: Bool) {
+    init(
+        eaten: [V1FoodEatenFood] = [],
+        own: [V1FoodProduct],
+        generic: [V1FoodProduct] = [],
+        products: [V1FoodProduct],
+        offUnavailable: Bool
+    ) {
+        self.eaten = eaten
         self.own = own
         self.generic = generic
         self.products = products
         self.offUnavailable = offUnavailable
     }
 
-    /// A server older than Ciqual sends no `generic`.
+    /// A server older than Ciqual sends no `generic`, one older than ADR-069 no `eaten`.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        eaten = try container.decodeIfPresent([V1FoodEatenFood].self, forKey: .eaten) ?? []
         own = try container.decode([V1FoodProduct].self, forKey: .own)
         generic = try container.decodeIfPresent([V1FoodProduct].self, forKey: .generic) ?? []
         products = try container.decode([V1FoodProduct].self, forKey: .products)
