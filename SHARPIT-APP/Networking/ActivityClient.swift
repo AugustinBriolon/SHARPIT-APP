@@ -138,6 +138,12 @@ actor ActivityClient: ActivityServing, ActivityMutating {
     }
 
     func forgetActivity(id: String) {
+        dropDetail(id: id)
+    }
+
+    /// Named apart from `forgetActivity`: inside the actor that call resolves to the protocol's
+    /// main-actor default instead of this method.
+    private func dropDetail(id: String) {
         detailCache[id] = nil
         disk?.remove(.detail, id: id)
         activitiesCache = nil
@@ -179,13 +185,12 @@ actor ActivityClient: ActivityServing, ActivityMutating {
 
     func updateActivity(id: String, fields: [String: JSONValue], token: String) async throws {
         _ = try await write(path: "/api/v1/activities/\(id)", method: "PATCH", body: JSONEncoder().encode(fields), token: token)
-        forgetActivity(id: id)
-        activitiesCache = nil
+        dropDetail(id: id)
     }
 
     func deleteActivity(id: String, token: String) async throws {
         _ = try await write(path: "/api/v1/activities/\(id)", method: "DELETE", body: nil, token: token)
-        forgetActivity(id: id)
+        dropDetail(id: id)
         disk?.remove(.stream, id: id)
         streamCache[id] = nil
         activitiesCache = nil
