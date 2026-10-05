@@ -286,9 +286,6 @@ struct PlannedSessionDrawer: View {
                                 )
                             }
                         }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Fermer") { dismiss() }
-                        }
                     }
                     .navigationDestination(isPresented: $isEditing) {
                         if let editing {

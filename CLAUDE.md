@@ -255,7 +255,9 @@ A done session's « Conformité au plan » sheet can delink the activity (`link`
 then — further down, only when there are any — the goals reached. Its `GoalStore` is owned by
 `PlanView`, so reopening Objectifs shows the goals at once and refreshes them quietly. A goal
 (`GoalDetailView`) and a new goal (`GoalCreateView`) are pages pushed in the Objectifs stack, never a
-sheet over the Objectifs sheet.
+sheet over the Objectifs sheet. A goal's « … » holds Modifier (`GoalEditView`, pushed, the same
+fields as the creation) and Supprimer; the edit shows on the tap and sends only what changed
+(`GoalDraft.changes(from:)`, a day as its local noon), so a race moved keeps the plan built toward it.
 
 **Feature shape.** A feature is a `@Observable` store plus a view that only composes
 design-system components: `TodayStore` owns a `phase` enum (loading / loaded / empty /
@@ -490,6 +492,15 @@ between the session's own 10th and 90th percentiles, so one sprint does not flat
 path and the samples are both thinned evenly by the server from one recording, so a point takes the
 sample at the same share of the session — no server change. The recentre button shows only once
 the camera has left the route (`RouteFraming`: part of it out of view, or under 35 % of the map).
+
+**History filters.** The server sends the whole history, so Activité filters it in place
+(`ActivityFilter`): the search field on the title and sport, and the bar's filter menu — a sport the
+athlete did (the most frequent first) and a period. Its glyph fills while a filter narrows the list;
+a filter that empties it offers « Tout afficher ».
+
+**Drawers close by a swipe.** A drawer with a drag indicator carries no « Fermer »: its « … » is
+its only bar item (`PlannedSessionDrawer`, `BrickSessionDrawer`, `DoneBrickDrawer`). A form keeps
+its Annuler, a task sheet its Fermer.
 
 **Activity cache.** The list (`ActivityView`) is one scroll view for every phase, holding the
 refresh control: swapping the scroll view with the phase left the control stuck pulled down. An activity's detail and streams are kept on disk as the raw JSON the server

@@ -8,6 +8,7 @@ struct ActivityView: View {
     @State private var selectedActivity: V1ActivityListItem?
     /// An activity opened from outside the list — a widget — by its id alone.
     @State private var openedActivityId: String?
+    @State private var filter = ActivityFilter()
     @Environment(ShellRouter.self) private var router: ShellRouter?
     /// Its completion brings older activities in, so the list reloads when it lands.
     @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
@@ -29,6 +30,14 @@ struct ActivityView: View {
             .navigationTitle("Activité")
             .navigationBarTitleDisplayMode(.large)
             .modifier(LiquidNavChrome())
+            .searchable(text: $filter.query, placement: .navigationBarDrawer, prompt: "Rechercher une séance")
+            .toolbar {
+                if case .loaded(let activities) = phase {
+                    ToolbarItem(placement: .primaryAction) {
+                        ActivityFilterMenu(filter: $filter, sports: ActivityFilter.sports(in: activities))
+                    }
+                }
+            }
             .navigationDestination(item: $selectedActivity) { activity in
                 ActivityDetailView(
                     activity: activity.id,
@@ -61,7 +70,21 @@ struct ActivityView: View {
         case .loading:
             ActivityListLoading()
         case .loaded(let activities):
-            ActivityListContent(activities: activities, selectedActivity: $selectedActivity)
+            let shown = filter.apply(to: activities)
+            if shown.isEmpty {
+                ContentUnavailableView {
+                    Label("Aucune séance", systemImage: "line.3.horizontal.decrease.circle")
+                } description: {
+                    Text("Rien ne correspond à ces filtres.")
+                } actions: {
+                    Button("Tout afficher") {
+                        SharpitMotion.run(SharpitMotion.selection) { filter = ActivityFilter() }
+                    }
+                }
+                .containerRelativeFrame(.vertical)
+            } else {
+                ActivityListContent(activities: shown, isFiltered: filter.isActive, selectedActivity: $selectedActivity)
+            }
         case .empty:
             ContentUnavailableView {
                 Label("Pas encore d’activité", systemImage: "figure.run")
@@ -133,6 +156,7 @@ private enum ActivityPhase {
 
 private struct ActivityListContent: View {
     let activities: [V1ActivityListItem]
+    var isFiltered = false
     @Binding var selectedActivity: V1ActivityListItem?
 
     private var groupedActivities: [(String, [V1ActivityListItem])] {
@@ -146,7 +170,9 @@ private struct ActivityListContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            ActivityIntro()
+            if !isFiltered {
+                ActivityIntro()
+            }
 
             ForEach(groupedActivities, id: \.0) { group in
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -304,5 +330,47 @@ enum ActivityFormat {
         return distanceM >= 10_000
             ? String(format: "%.1f km", distanceM / 1_000)
             : "\(Int(distanceM.rounded() / 10) * 10) m"
+    }
+}
+
+/// The history's filters, in the bar: a sport the athlete did, a period. The glyph fills while
+/// one narrows the list, so a shortened history is never mistaken for the whole one.
+private struct ActivityFilterMenu: View {
+    @Binding var filter: ActivityFilter
+    let sports: [V1ActivityType]
+
+    var body: some View {
+        Menu {
+            Picker("Sport", selection: $filter.sport.animation(SharpitMotion.selection)) {
+                Text("Tous les sports").tag(V1ActivityType?.none)
+                ForEach(sports, id: \.self) { sport in
+                    Label(sport.label, systemImage: sport.symbolName).tag(V1ActivityType?.some(sport))
+                }
+            }
+            .pickerStyle(.menu)
+            Picker("Période", selection: $filter.period.animation(SharpitMotion.selection)) {
+                ForEach(ActivityFilter.Period.allCases) { period in
+                    Text(period.label).tag(period)
+                }
+            }
+            .pickerStyle(.menu)
+            if filter.narrows {
+                Divider()
+                Button("Réinitialiser les filtres", systemImage: "arrow.counterclockwise") {
+                    SharpitMotion.run(SharpitMotion.selection) {
+                        filter.sport = nil
+                        filter.period = .all
+                    }
+                }
+            }
+        } label: {
+            Label(
+                "Filtrer",
+                systemImage: filter.narrows
+                    ? "line.3.horizontal.decrease.circle.fill"
+                    : "line.3.horizontal.decrease.circle"
+            )
+        }
+        .accessibilityValue(filter.narrows ? "Filtres actifs" : "Aucun filtre")
     }
 }

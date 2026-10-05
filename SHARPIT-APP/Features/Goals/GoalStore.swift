@@ -123,6 +123,29 @@ final class GoalStore {
         }
     }
 
+    /// Shown on the tap and sent behind; a refusal puts the goal back and says why.
+    func update(_ goal: V1Goal, with draft: GoalDraft, from original: GoalDraft) {
+        let fields = draft.changes(from: original)
+        guard !fields.isEmpty, let index = goals.firstIndex(where: { $0.id == goal.id }) else { return }
+        let previous = goals[index]
+        goals[index] = previous.applying(draft)
+        Task {
+            do {
+                let updated = try await SharpitRetry.run {
+                    try await client.updateGoal(id: goal.id, fields: fields, token: try await tokenProvider())
+                }
+                if let idx = goals.firstIndex(where: { $0.id == updated.id }) { goals[idx] = updated }
+            } catch {
+                if let idx = goals.firstIndex(where: { $0.id == goal.id }) { goals[idx] = previous }
+                if case SharpitAPIError.message(let reason) = error {
+                    SharpitWriteFailures.shared.report("Objectif non modifié : \(reason)")
+                } else {
+                    SharpitWriteFailures.shared.report("Objectif non modifié.")
+                }
+            }
+        }
+    }
+
     func toggleAchieved(_ goal: V1Goal) async {
         let newAchieved = !goal.achieved
         guard let index = goals.firstIndex(where: { $0.id == goal.id }) else { return }

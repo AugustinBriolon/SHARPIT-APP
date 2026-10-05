@@ -111,11 +111,6 @@ struct BrickSessionDrawer: View {
                     dismiss()
                 }
             }
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fermer") { dismiss() }
-                }
-            }
         }
         .presentationDetents([.large])
         .sharpitSheet()
