@@ -12,6 +12,7 @@ struct SharpitApp: App {
         // First, so a crash anywhere in launch is reported.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
             CrashReporting.start()
+            Task { await AppDistribution.prepare() }
         }
         SharpitFonts.register()
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)

@@ -23,7 +23,11 @@ import Testing
 
 @Test func networkBreadcrumbsLoseTheirQuery() {
     let crumb = Breadcrumb(level: .info, category: "http")
-    crumb.data = ["url": "https://api.sharpit.app/api/v1/planned-sessions/brick/evaluation?groupId=brick-1", "status_code": 200]
+    crumb.setData(
+        value: "https://api.sharpit.app/api/v1/planned-sessions/brick/evaluation?groupId=brick-1",
+        key: "url"
+    )
+    crumb.setData(value: 200, key: "status_code")
 
     let scrubbed = CrashReporting.scrub(crumb)
 

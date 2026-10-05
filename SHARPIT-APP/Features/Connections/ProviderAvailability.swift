@@ -12,7 +12,10 @@ import Foundation
 /// link it at all (docs/adr/0010). The athlete imports their own MyFitnessPal export from
 /// Nutrition instead; days imported or synced on the web still show, read-only.
 enum ProviderAvailability {
-    static let garminInApp = garminInApp(debug: AppDistribution.isDebug, testFlight: AppDistribution.isTestFlight)
+    /// Recomputed when read so a TestFlight flag resolved after launch is picked up.
+    static var garminInApp: Bool {
+        garminInApp(debug: AppDistribution.isDebug, testFlight: AppDistribution.isTestFlight)
+    }
 
     nonisolated static func garminInApp(debug: Bool, testFlight: Bool) -> Bool {
         debug || testFlight

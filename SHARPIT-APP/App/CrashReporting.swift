@@ -28,6 +28,8 @@ enum CrashReporting {
         options.enableCaptureFailedRequests = false
         options.beforeBreadcrumb = { scrub($0) }
         options.beforeSend = { event in
+            // `AppDistribution.prepare()` may finish after `start()`; stamp the current env on each event.
+            event.environment = defaultEnvironment
             event.request = nil
             event.user = event.user.map { user in
                 let anonymous = User()
@@ -40,11 +42,10 @@ enum CrashReporting {
 
     /// Network breadcrumbs keep their path, never a query: `?groupId=…&date=…` says too much.
     static func scrub(_ crumb: Breadcrumb) -> Breadcrumb? {
-        guard var data = crumb.data, let raw = data["url"] as? String,
+        guard let data = crumb.data, let raw = data["url"] as? String,
               var components = URLComponents(string: raw) else { return crumb }
         components.query = nil
-        data["url"] = components.string
-        crumb.data = data
+        crumb.setData(value: components.string, key: "url")
         return crumb
     }
 
