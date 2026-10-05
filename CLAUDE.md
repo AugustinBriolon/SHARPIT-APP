@@ -113,6 +113,13 @@ the Clerk identity, then a local sign-out; the server e-mails a confirmation). A
 still renews is named in the confirmation, with the App Store's subscription sheet one tap away:
 deleting an account cannot cancel it; Compte ends with an immediate sign-out.
 
+Confidentialité › Tes données › « Exporter mes données » reads `/api/v1/privacy/export` (the web's
+GDPR export: profile, consents, activities, plan, measures, never a credential, `PrivacyExportClient`),
+writes it to a temporary `sharpit-export-<day>.json` (`PrivacyExport`, named by the day, never by the
+athlete) and hands it to the system share sheet (`SharpitShareSheet`, `UIActivityViewController`,
+`.sheet(item:)` — `ShareLink` needs its file before the tap). The row turns into its progress while
+the server builds the file.
+
 **Onboarding.** A new account answers the first-login wizard before it sees the tabs: Toi (first
 name, sex, height, birth date) → Sports → Matériel → Ta semaine → Objectif → Blessures →
 Confidentialité (only when owed) → Sources → Première semaine (`OnboardingStep`). The server
@@ -203,6 +210,11 @@ from `/api/v1/coach/weekly-review`, writes the current week's on demand, and sho
 `WeeklyReviewSections`), the week's figures as metric cards with quiet day bars and the average
 dashed, next week, and the full text on its own page. `-SharpitWeeklyReviewDemo` shows it on a
 fixed week in Debug builds.
+
+**Trips in the week.** The coach's trips (Mémoire du coach, `/api/v1/coach-memory`, type `TRAVEL`) that fall in the week
+shown carry a chip after the week's dates (`PlanTravelChip`, the web's `TravelContextBanner`: the
+first trip's name, « +1 » for more); `PlanTravel` compares calendar days — a trip's days are UTC
+midnights on the server, the week's are local — and the chip opens the coach's memory as a sheet.
 
 **Widgets.** `SharpItWidgets` is a WidgetKit extension (« Séance du jour », « Verdict du jour »,
 « Nutrition », « Sommeil », « Poids », « Volume de la semaine », « Régularité », « Prochain objectif »,
@@ -513,6 +525,16 @@ the morning verdict as soon as the night is read and « Séance dans la boîte �
 for a planned session. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
 
+A connected source is disconnected from its row in Sources de données (`DisconnectableSource`:
+Garmin where `ProviderAvailability` shows it, Withings and Google Agenda whenever
+`/api/v1/sync-status` lists them): the tap asks first — a confirmation naming what stops and what
+stays, in the web's words (« Déconnecter Withings ? ») — then `SourceDisconnectClient` posts
+`/api/v1/{garmin,withings,google}/disconnect` through `SharpitRetry` and waits for it, since the
+server revokes the grant at the provider; the list is read again and a toast says it. Withings and
+Google Agenda are still connected on the web only — their OAuth return lands on the web's settings,
+not on an Associated Domains path an authentication session can close on — and the section's footer
+says so (`ConnectionsReadout.webSourcesFooter`).
+
 **Strength sessions.** A strength activity lists its exercises in the order done
 (`ActivityStrengthSection`): each block of sets as « 4 × 8 · 60 kg » (« 3 × 45 s » when timed, no
 load when bodyweight) and the exercise's volume; `StrengthExerciseReadout` words it, tested.
@@ -528,6 +550,21 @@ the camera has left the route (`RouteFraming`: part of it out of view, or under 
 (`ActivityFilter`): the search field on the title and sport, and the bar's filter menu — a sport the
 athlete did (the most frequent first) and a period. Its glyph fills while a filter narrows the list;
 a filter that empties it offers « Tout afficher ».
+
+**Séjours.** Hikes of several days gathered under one name (the web's `/activite/sejours`,
+`/api/v1/hike-trips`, `HikeTripClient`). Activité shows « Séjours » under its title once the history
+holds a hike (`HikeTripsEntry`), which pushes `HikeTripsView`; a séjour (`HikeTripDetailView`) shows
+its days and totals as stat tiles, the places walked through, and its stages in order, each pushing
+the activity. `HikeTripSummary` computes the totals from the stages, as the web's
+`buildHikeTripSummary` does, so the list, the page and an edit shown on the tap read the same
+figures; `HikeTripReadout` words them. A hike's « … » (`ActivityActionsMenu`, `HikeTripMenuState`)
+offers « Voir le séjour » or « Lier à d'autres randonnées », which opens `HikeTripPickerSheet` seeded
+with it. A hike belongs to one séjour at most, so the picker lists only the free ones
+(`HikeTripStore.available`); a creation (it needs the id) and an added stage (its figures come back
+with it) wait for the server and say its refusal in the sheet; a rename, a removed stage (swiped,
+never the last one) and a deletion (its hikes stay, detached) show on the tap and go out behind
+through `SharpitRetry`, put back and toasted through `SharpitWriteFailures` if refused. No elevation
+profile yet: the web draws it from the stages' streams.
 
 **Logging and editing a session.** Activité's « + » opens « Saisir une séance »
 (`ActivityFormSheet`, `ActivityDraft`): sport, start, duration, the sport's measures (distance in
