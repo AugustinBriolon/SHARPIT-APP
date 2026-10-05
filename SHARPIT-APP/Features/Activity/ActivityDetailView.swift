@@ -30,6 +30,10 @@ struct ActivityDetailView: View {
     /// The pains and injuries the athlete follows, read for the questions owed after a session.
     @State private var zones: SensitiveZonesStore?
     @State private var reassessing: PainReassessment?
+    /// A hike's séjours, read once the page shows a hike: « Voir le séjour » or « Lier ».
+    @State private var hikeTrips: HikeTripStore?
+    @State private var openedHikeTripId: String?
+    @State private var isLinkingHikes = false
     /// Ties the expanded map's compass and pitch toggle to the map, so they sit in the safe area
     /// under the map's own buttons rather than where MapKit puts them on a full-bleed map.
     @Namespace private var mapScope
@@ -289,7 +293,10 @@ struct ActivityDetailView: View {
                             canSendToWatch: detail.type == .strength && !detail.strengthSets.isEmpty,
                             onEdit: { editing = ActivityEditing(id: detail.id, draft: ActivityDraft(detail: detail), mutator: mutator) },
                             onSendToWatch: { Task { await sendToWatch(detail) } },
-                            onDelete: { isConfirmingDeletion = true }
+                            onDelete: { isConfirmingDeletion = true },
+                            hikeTrip: hikeTripMenuState(for: detail),
+                            onOpenHikeTrip: { openedHikeTripId = hikeTrips?.trip(containing: detail.id)?.id },
+                            onLinkHikes: { isLinkingHikes = true }
                         )
                     }
                 }
@@ -405,6 +412,34 @@ struct ActivityDetailView: View {
         .task(id: phase.loadedDate) {
             await loadZones()
         }
+        .task(id: phase.loadedDate) {
+            await loadHikeTrips()
+        }
+        .sheet(isPresented: $isLinkingHikes, onDismiss: { Task { await hikeTrips?.load() } }) {
+            if let hikeTrips {
+                HikeTripPickerSheet(store: hikeTrips, mode: .create(seedId: activity)) { trip in
+                    openedHikeTripId = trip.id
+                }
+            }
+        }
+        .navigationDestination(item: $openedHikeTripId) { id in
+            if let hikeTrips {
+                HikeTripDetailView(store: hikeTrips, tripId: id, activityClient: client, tokenProvider: tokenProvider)
+            }
+        }
+    }
+
+    private func hikeTripMenuState(for detail: V1ActivityDetail) -> HikeTripMenuState {
+        guard detail.type == .hike, let hikeTrips, hikeTrips.phase == .loaded else { return .hidden }
+        return hikeTrips.trip(containing: detail.id) == nil ? .linkable : .member
+    }
+
+    /// Read only for a hike: the séjour it belongs to, and the hikes it could join.
+    private func loadHikeTrips() async {
+        guard case .loaded(let detail) = phase, detail.type == .hike else { return }
+        let store = hikeTrips ?? HikeTripStore(activities: client, tokenProvider: tokenProvider)
+        hikeTrips = store
+        await store.load()
     }
 
     private func reassessments(for detail: V1ActivityDetail) -> [PainReassessment] {

@@ -33,6 +33,9 @@ struct PlanView: View {
     /// Plan's, so a change written behind outlives the drawer or the form that made it.
     @State private var editor: PlanEditor
     @State private var showingNewSession = false
+    /// The coach's trips, for the week's « Déplacement » chip (the web's `TravelContextBanner`).
+    @State private var travels: [CoachMemoryEntry] = []
+    @State private var showingTravel = false
 
     init(
         client: any PlannedSessionServing,
@@ -67,8 +70,13 @@ struct PlanView: View {
                 // Fixed above the pager: neither moves when the week does, so neither can
                 // fight the pages' own gestures.
                 VStack(spacing: SharpitSpacing.xs) {
-                    PlanWeekHeader(store: store) { showingCalendar = true }
-                        .padding(.horizontal, SharpitSpacing.pageInset)
+                    PlanWeekHeader(
+                        store: store,
+                        onOpenCalendar: { showingCalendar = true },
+                        travels: travels,
+                        onOpenTravel: { showingTravel = true }
+                    )
+                    .padding(.horizontal, SharpitSpacing.pageInset)
                     PlanWeekStrip(store: store)
                 }
 
@@ -147,6 +155,19 @@ struct PlanView: View {
             .sheet(isPresented: $showingCalendar) {
                 PlanCalendarSheet(store: store)
             }
+            .sheet(isPresented: $showingTravel, onDismiss: { Task { await loadTravels() } }) {
+                NavigationStack {
+                    CoachMemoryView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("OK") { showingTravel = false }
+                            }
+                        }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .sharpitSheet()
+            }
             // Goals moved here from Moi: they are what the plan is built toward.
             .sheet(isPresented: Bindable(router).isShowingGoals) {
                 NavigationStack {
@@ -190,6 +211,7 @@ struct PlanView: View {
                 }
             }
             .task { await store.loadAroundSelection() }
+            .task { await loadTravels() }
             .task(id: isExpertReading) { await loadTrainingLoad() }
             .task { await loadTrajectory() }
             .task { await generation.resume() }
@@ -255,6 +277,13 @@ extension PlanView {
             case .executed: nil
             }
         }.first
+    }
+
+    /// The trips are a quiet extra: a failed read leaves the week without its chip.
+    fileprivate func loadTravels() async {
+        guard let token = try? await tokenProvider(),
+              let snapshot = try? await CoachMemoryClient().snapshot(token: token) else { return }
+        travels = snapshot.entries.filter { $0.type == .travel }
     }
 
     /// Read only in the expert reading: the essential one never shows it, so never asks for it.

@@ -114,7 +114,10 @@ struct ActivityView: View {
                     activities: shown,
                     isFiltered: filter.isActive,
                     selectedActivity: $selectedActivity,
-                    openRecords: openRecords
+                    openRecords: openRecords,
+                    tripsEntry: activities.contains(where: { $0.type == .hike })
+                        ? HikeTripsEntry(activityClient: client, tokenProvider: tokenProvider)
+                        : nil
                 )
             }
         case .empty:
@@ -198,6 +201,8 @@ private struct ActivityListContent: View {
     var isFiltered = false
     @Binding var selectedActivity: V1ActivityListItem?
     var openRecords: (() -> Void)?
+    /// Séjours, under the title, once the history holds a hike.
+    var tripsEntry: HikeTripsEntry?
 
     private var groupedActivities: [(String, [V1ActivityListItem])] {
         let groups = Dictionary(grouping: activities) {
@@ -217,6 +222,9 @@ private struct ActivityListContent: View {
                         RecordsEntryTile()
                     }
                     .buttonStyle(.sharpitPressable)
+                }
+                if let tripsEntry {
+                    tripsEntry
                 }
             }
 
