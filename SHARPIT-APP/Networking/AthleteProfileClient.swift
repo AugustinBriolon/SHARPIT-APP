@@ -25,7 +25,7 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing {
     }
 
     func athleteProfile(token: String) async throws -> V1AthleteProfile {
-        try await decode(
+        try decode(
             V1AthleteProfile.self,
             from: try await send(get("/api/v1/athlete-profile", token: token))
         )
@@ -49,18 +49,18 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing {
         // "clear it", and `encodeIfPresent` cannot tell those apart.
         request.httpBody = try JSONSerialization.data(withJSONObject: patch.body)
 
-        return try await decode(V1AthleteProfile.self, from: try await send(request))
+        return try decode(V1AthleteProfile.self, from: try await send(request))
     }
 
     func thresholdHistory(token: String) async throws -> [V1ThresholdSnapshot] {
-        try await decode(
+        try decode(
             [V1ThresholdSnapshot].self,
             from: try await send(get("/api/v1/athlete-profile/threshold-history", token: token))
         )
     }
 
     func bodyComposition(days: Int, token: String) async throws -> [V1BodyMeasurement] {
-        try await decode(
+        try decode(
             [V1BodyMeasurement].self,
             from: try await send(get(
                 "/api/v1/body-composition",
