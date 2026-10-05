@@ -339,6 +339,18 @@ final class JournalStore {
         scheduleSave()
     }
 
+    func adjustDriving(by delta: Int) {
+        setDriving((entry.drivingMinutes ?? 0) + delta)
+    }
+
+    func setDriving(_ minutes: Int) {
+        let clamped = min(max(0, minutes), 1_440)
+        guard entry.drivingMinutes != clamped else { return }
+        entry.drivingMinutes = clamped
+        updateCompletionState()
+        scheduleSave()
+    }
+
     private func scheduleSave() {
         localRevision += 1
         if saveFailure != nil {

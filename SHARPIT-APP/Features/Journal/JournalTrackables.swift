@@ -120,6 +120,8 @@ nonisolated struct JournalTrackable: Identifiable, Equatable, Sendable {
         case caffeine
         case mood
         case hydration
+        /// Minutes behind the wheel, set by quarter hours.
+        case driving
         /// Derived from the devices, never answered: the athlete turns it on in the drawer
         /// and reads it in the checklist. It carries no state on the day's entry.
         case auto
@@ -227,6 +229,13 @@ nonisolated enum JournalCatalogue {
             category: .bienEtre,
             symbolName: "drop",
             kind: .hydration
+        ),
+        JournalTrackable(
+            id: "metric_driving",
+            label: "Conduite",
+            category: .styleVie,
+            symbolName: "car",
+            kind: .driving
         ),
 
         // État de santé
@@ -398,4 +407,14 @@ nonisolated enum JournalCatalogue {
     }
 
     static let customSymbolName = "sparkles"
+}
+
+/// « 45 min », « 1 h 30 », « — min » — the web's `formatDrivingMinutes`.
+nonisolated enum JournalDrivingFormat {
+    static func minutes(_ value: Int?) -> String {
+        guard let value else { return "— min" }
+        if value < 60 { return "\(value) min" }
+        let rest = value % 60
+        return rest == 0 ? "\(value / 60) h" : "\(value / 60) h \(String(format: "%02d", rest))"
+    }
 }

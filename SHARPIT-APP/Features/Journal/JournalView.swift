@@ -9,6 +9,7 @@ struct JournalView: View {
     @State private var showsWellness = false
     @State private var showsCaffeine = false
     @State private var showsHydration = false
+    @State private var showsDriving = false
     @State private var showsInsights = false
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @Environment(ShellRouter.self) private var router: ShellRouter?
@@ -86,6 +87,9 @@ struct JournalView: View {
             .sheet(isPresented: $showsCaffeine) {
                 CaffeineInputSheet(store: store)
             }
+            .sheet(isPresented: $showsDriving) {
+                DrivingInputSheet(store: store)
+            }
             .sheet(isPresented: $showsHydration) {
                 HydrationInputSheet(store: store)
             }
@@ -142,6 +146,8 @@ struct JournalView: View {
                 // Interactive week navigation strip
                 JournalDatePicker(store: store)
 
+                // Swiped apart from the strip, which pages weeks with its own swipe.
+                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 if store.hasNothingToShow {
                     ContentUnavailableView {
                         Label("Rien à suivre", systemImage: "book.closed")
@@ -161,6 +167,9 @@ struct JournalView: View {
                 checklistSection
                 priorNightSection
                 daySignalsSection
+                }
+                .contentShape(.rect)
+                .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } }
             }
             .padding(SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.section)
@@ -170,7 +179,7 @@ struct JournalView: View {
     /// Caféine, Humeur, Hydratation — values the athlete sets, not answers they give.
     @ViewBuilder
     private var dayMetricsSection: some View {
-        let metrics = store.visibleTrackables.filter { $0.kind == .caffeine || $0.kind == .mood || $0.kind == .hydration }
+        let metrics = store.visibleTrackables.filter { [.caffeine, .mood, .hydration, .driving].contains($0.kind) }
         if !metrics.isEmpty {
             JournalSection(title: "Journée") {
                 ForEach(metrics) { trackable in
@@ -179,7 +188,8 @@ struct JournalView: View {
                         store: store,
                         onOpenWellness: { showsWellness = true },
                         onOpenCaffeine: { showsCaffeine = true },
-                        onOpenHydration: { showsHydration = true }
+                        onOpenHydration: { showsHydration = true },
+                        onOpenDriving: { showsDriving = true }
                     )
                 }
             }
@@ -289,6 +299,7 @@ private struct JournalTrackableRow: View {
     var onOpenWellness: () -> Void = {}
     var onOpenCaffeine: () -> Void = {}
     var onOpenHydration: () -> Void = {}
+    var onOpenDriving: () -> Void = {}
 
     var body: some View {
         switch trackable.kind {
@@ -317,6 +328,14 @@ private struct JournalTrackableRow: View {
                 iconColor: trackable.category.color,
                 value: store.entry.hydrationMl.map { "\($0) ml" } ?? "— ml",
                 onOpen: onOpenHydration
+            )
+        case .driving:
+            JournalMetricRow(
+                label: trackable.label,
+                symbolName: trackable.symbolName,
+                iconColor: trackable.category.color,
+                value: JournalDrivingFormat.minutes(store.entry.drivingMinutes),
+                onOpen: onOpenDriving
             )
         case .mood:
             JournalMetricRow(

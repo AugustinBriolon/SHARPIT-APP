@@ -23,19 +23,23 @@ nonisolated struct V1DayJournalEntry: Equatable, Sendable {
     var moodLabel: String?
     var hydrationMl: Int?
     var caffeineMg: Int?
+    /// Minutes behind the wheel that day.
+    var drivingMinutes: Int?
 
     init(
         trainingDayId: String,
         factors: [String: JournalFactorState] = [:],
         moodLabel: String? = nil,
         hydrationMl: Int? = nil,
-        caffeineMg: Int? = 0
+        caffeineMg: Int? = 0,
+        drivingMinutes: Int? = nil
     ) {
         self.trainingDayId = trainingDayId
         self.factors = factors
         self.moodLabel = moodLabel
         self.hydrationMl = hydrationMl
         self.caffeineMg = caffeineMg
+        self.drivingMinutes = drivingMinutes
     }
 
     func state(of factorId: String) -> JournalFactorState {
@@ -46,7 +50,8 @@ nonisolated struct V1DayJournalEntry: Equatable, Sendable {
         factors.values.contains { $0 != .unset } ||
         moodLabel != nil ||
         (hydrationMl ?? 0) > 0 ||
-        (caffeineMg ?? 0) > 0
+        (caffeineMg ?? 0) > 0 ||
+        (drivingMinutes ?? 0) > 0
     }
 }
 
@@ -57,6 +62,7 @@ nonisolated extension V1DayJournalEntry: Codable {
         case moodLabel
         case hydrationMl
         case caffeineMg
+        case drivingMinutes
     }
 
     init(from decoder: Decoder) throws {
@@ -69,6 +75,7 @@ nonisolated extension V1DayJournalEntry: Codable {
         moodLabel = try container.decodeIfPresent(String.self, forKey: .moodLabel)
         hydrationMl = try container.decodeIfPresent(Int.self, forKey: .hydrationMl)
         caffeineMg = try container.decodeIfPresent(Int.self, forKey: .caffeineMg) ?? 0
+        drivingMinutes = try container.decodeIfPresent(Int.self, forKey: .drivingMinutes)
     }
 }
 
