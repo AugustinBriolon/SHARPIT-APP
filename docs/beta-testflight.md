@@ -4,9 +4,11 @@ The copy to paste into App Store Connect (TestFlight › External testing) and t
 invites the beta's triathletes. Store copy is French, as the app is.
 
 The beta tests the product's bet (positioning 2026-10-02): a plan that repairs itself, measured by
-the share of athletes doing at least 70 % of their planned sessions over their first four weeks
-(`SHARPIT-WEBAPP/scripts/reports/plan-adherence.ts`). What they write through « Donner un avis »
-lands in `AthleteFeedback` (`scripts/reports/feedback.ts`) and in `FEEDBACK_EMAIL` when set.
+the share of athletes doing at least 70 % of their planned sessions over their first four weeks.
+What they write through « Donner un avis » lands in `AthleteFeedback` and in `FEEDBACK_EMAIL`.
+Every Monday at 07:00 UTC the web's `/api/cron/beta-report` mails `FEEDBACK_EMAIL` both: the
+outcome athlete by athlete and the week's notes (`scripts/reports/beta-report.ts` prints the same
+report on demand).
 
 ## Beta App Description
 
@@ -70,7 +72,6 @@ Apple Health — Garmin Connect writes its sessions and nights into Apple Health
 
 - Week 0: install, onboarding, first week generated — check each tester reached Plan with
   sessions (the adherence report lists them once a session is planned).
-- Weekly: run `scripts/reports/plan-adherence.ts` and `scripts/reports/feedback.ts`; answer every
-  note within a day.
+- Weekly: read Monday's report mail; answer every note within a day.
 - Week 4: the 15-minute call — « la dernière fois que tu as lâché un plan, qu'est-ce qui s'est
   passé ? », then what SharpIt changed. Success: ≥ 70 % of planned sessions done for most testers.
