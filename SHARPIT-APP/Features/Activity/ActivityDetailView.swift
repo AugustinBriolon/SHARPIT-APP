@@ -24,6 +24,9 @@ struct ActivityDetailView: View {
     @State private var isMapOffRoute = false
     /// Built once per stream read, not on every render: the path and samples are hundreds long.
     @State private var routeIntensity: RouteIntensity?
+    /// Ties the expanded map's compass and pitch toggle to the map, so they sit in the safe area
+    /// under the map's own buttons rather than where MapKit puts them on a full-bleed map.
+    @Namespace private var mapScope
     @Environment(\.dismiss) private var dismiss
     @Environment(ShellRouter.self) private var router: ShellRouter?
 
@@ -63,6 +66,7 @@ struct ActivityDetailView: View {
                                     route: streamPayload?.route ?? route,
                                     tone: activityTone(detail.type),
                                     isExpanded: isMapExpanded,
+                                    mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
                                     mapStyle: mapStyleSelection.mapStyle,
@@ -73,6 +77,7 @@ struct ActivityDetailView: View {
                                     route: stream.route,
                                     tone: activityTone(detail.type),
                                     isExpanded: isMapExpanded,
+                                    mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
                                     mapStyle: mapStyleSelection.mapStyle
@@ -82,6 +87,7 @@ struct ActivityDetailView: View {
                                     route: route,
                                     tone: activityTone(detail.type),
                                     isExpanded: isMapExpanded,
+                                    mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
                                     mapStyle: mapStyleSelection.mapStyle
@@ -275,6 +281,20 @@ struct ActivityDetailView: View {
                 }
             }
         }
+        .overlay(alignment: .topTrailing) {
+            // The map ignores the safe area, so MapKit would draw these under the status bar
+            // once the map is rotated or pitched; they live in the column under the buttons.
+            if isMapExpanded {
+                VStack(alignment: .trailing, spacing: 8) {
+                    MapCompass(scope: mapScope)
+                    MapPitchToggle(scope: mapScope)
+                    MapScaleView(scope: mapScope)
+                }
+                .padding(.trailing, 18)
+                .padding(.top, 72)
+                .transition(.opacity)
+            }
+        }
         .overlay(alignment: .topLeading) {
             if isMapExpanded, colorsRouteByIntensity, let intensity = routeIntensity {
                 RouteIntensityLegend(metric: intensity.metric)
@@ -301,6 +321,7 @@ struct ActivityDetailView: View {
                 .zIndex(10)
             }
         }
+        .mapScope(mapScope)
         .sheet(isPresented: $showingCompliance) {
             if case .loaded(let detail) = phase, let analysis = detail.plannedSession?.analysis {
                 ComplianceDetailSheet(
@@ -1346,6 +1367,8 @@ private struct ActivityRouteHero: View {
     let route: [V1ActivityCoordinate]
     let tone: Color
     var isExpanded: Bool = false
+    /// The scope the screen's own compass and pitch toggle read; the map draws none itself.
+    let mapScope: Namespace.ID
     @Binding var position: MapCameraPosition
     @Binding var isOffRoute: Bool
     var mapStyle: MapStyle = .standard(elevation: .realistic)
@@ -1362,7 +1385,7 @@ private struct ActivityRouteHero: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            Map(position: $position, interactionModes: isExpanded ? .all : []) {
+            Map(position: $position, interactionModes: isExpanded ? .all : [], scope: mapScope) {
                 if let intensity {
                     ForEach(Array(intensity.segments.enumerated()), id: \.offset) { _, segment in
                         MapPolyline(coordinates: segment.coordinates.map {
@@ -1386,13 +1409,7 @@ private struct ActivityRouteHero: View {
                 }
             }
             .mapStyle(mapStyle)
-            .mapControls {
-                if isExpanded {
-                    MapScaleView()
-                    MapCompass()
-                    MapPitchToggle()
-                }
-            }
+            .mapControls {}
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .allowsHitTesting(isExpanded)
             .onMapCameraChange(frequency: .onEnd) { context in
