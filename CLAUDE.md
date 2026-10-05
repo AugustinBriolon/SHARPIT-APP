@@ -310,6 +310,9 @@ payload omits, so sending back only what the app renders would silently reset th
 catalogue in `JournalTrackables.swift` therefore covers the signals the app can render, never
 all of the web's. The diets (`diet_*`, kind `.diet`) sit in the drawer's Nutrition section and draw
 no row on the day: Nutrition's header names them and the coach reads the food against them.
+« Conduite » (`metric_driving`, Style de vie, off by default) records the minutes driven
+(`drivingMinutes`, a column of the day like caffeine and hydration), set in `DrivingInputSheet` by
+quarter hours.
 
 Humeur reads the morning check-in (`/api/v1/wellness-checkin`) when the journal row carries no mood — the mood lives there, the row only echoes it when answered from the journal; a day with only a check-in counts as noted, here and in the server's journal data days. The day picker marks the journal as the day screens mark their data (`SharpitDataDayMark`): a dot where something was noted, a ring where the day was read and holds nothing, nothing while unknown — from `/api/v1/data-days?domain=journal`. The journal and the day screens read their marks through one `DataDaysMarker`: the 91-day window holding the week in view first (the strip scrolled back, a month opened), then the rest of the history in a task of its own that a screen left mid-way does not cancel; a window that failed is read again when next needed. The journal's skeleton is its own rows redacted, under a date picker that stays put.
 
@@ -346,7 +349,11 @@ nutrition card (`NutritionTodayCard`, below Régularité). All three are a
 day's drill-down is a v1 resource plus a sections view, not a new store. The store keeps every day it
 read for the life of the screen (a day seen again appears at once and refreshes behind), marks the
 picker's history (`SharpitWeeks.history`, three years — Plan, Journal and the day screens share it) from `/api/v1/data-days` through `DataDaysMarker` (so a logged day is marked before it is
-opened), and reads the six most recent days with data ahead of the athlete.
+opened), and reads the six most recent days with data ahead of the athlete. A swipe on the content
+turns the day (`DaySwipe`: right for the day before, left for the day after, never past today) and
+the left edge stays « back » — these screens and Journal turn off iOS 26's pop-from-anywhere
+(`interactiveContentPopGestureRecognizer`) while they show. Journal swipes its rows, not its
+week strip, which pages weeks.
 
 **Nutrition.** The food log is the athlete's own data and open to everyone; only the coach's
 reading is SharpIt Pro (the server sends `{ state: 'pro_required' }` below it and never generates
@@ -393,7 +400,12 @@ entry. A day without a log draws its own empty plate (never the scaffold's gener
 which invites to scan or search a first food.
 
 **Pro gating.** Pro gates what SHARPIT adds — analyses, computed metrics, pushes to the watch —
-never the athlete's own data. `SharpitProTeaser` stands where such a feature would sit below Pro
+never the athlete's own data, with one exception the athlete chose (`docs/adr/0011`): the extra
+widgets (Sommeil, Poids, Volume, Régularité, Prochain objectif) are Pro — `ProStore` writes the tier
+into the snapshot, a locked widget draws `WidgetProLocked`. The plan's copy into the iPhone's
+Calendar is Pro too (`PlanCalendarSync`, Paramètres › Calendrier de l'iPhone: a « SharpIt »
+calendar made equal to the next 21 days of the plan on the reminders' beats, events keyed by
+`sharpit://plan/session/<id>`, the calendar removed when turned off). `SharpitProTeaser` stands where such a feature would sit below Pro
 and opens `ProView`; the server decides, the app only reflects `pro_required`.
 
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation
@@ -448,11 +460,12 @@ for a planned session. Paramètres → Sources de données also offers the impor
 (`ActivityStrengthSection`): each block of sets as « 4 × 8 · 60 kg » (« 3 × 45 s » when timed, no
 load when bodyweight) and the exercise's volume; `StrengthExerciseReadout` words it, tested.
 
-**Route intensity.** The expanded map's layers menu colours the route by heart rate (by speed
+**Route intensity.** The expanded map's layers menu has « Heatmap »: it colours the route by heart rate (by speed
 without it), in the training zones' family (`RouteIntensity`, `RouteIntensityTone`): five levels
 between the session's own 10th and 90th percentiles, so one sprint does not flatten the rest. The
 path and the samples are both thinned evenly by the server from one recording, so a point takes the
-sample at the same share of the session — no server change.
+sample at the same share of the session — no server change. The recentre button shows only once
+the camera has left the route (`RouteFraming`: part of it out of view, or under 35 % of the map).
 
 **Activity cache.** The list (`ActivityView`) is one scroll view for every phase, holding the
 refresh control: swapping the scroll view with the phase left the control stuck pulled down. An activity's detail and streams are kept on disk as the raw JSON the server
@@ -471,7 +484,17 @@ matters most. It opens on `SanteHero`, on the page rather than in a card: the bi
 and a ruler ten years either side of it — or, without the age (below Pro, missing data), how many
 markers sit in their norm with one tick per marker in its tone — then up to three markers that moved.
 Then: « À surveiller » (only when something deserves attention — resting HR up for days, HRV
-under the athlete's range, short nights, a fast weight change, an active sensitive zone), then
+under the athlete's range, short nights, a fast weight change), then « Zones sensibles »
+(`SensitiveZonesCard`: what the open zones do to the plan, the question owed), which pushes their
+own page (`SensitiveZonesView`, `SensitiveZonesStore`, `/api/v1/sensitive-zones`, SHARPIT ADR-068):
+the open zones by the web's strategy (à protéger, en reprise, à corriger), then the resolved ones;
+a zone (`SensitiveZoneDetailView`) shows what the plan does with it, the upcoming sessions that load
+it, its 0–10 curve and timeline (readings and status changes, a relapse named), and moves it along —
+« Faire le point » (`ZoneCheckinSheet`: severity, what the athlete could do, a word), edit and
+declare (`SensitiveZoneFormSheet`, the body part picked from the web's list so the plan can check
+it), under watch, resolved (proposed when two weeks of readings say 0/10, never automatic), « Ça
+revient ». Every change goes out through `SharpitRetry` and reads the zones again: the strategy is
+the web's. Then
 « Signes vitaux » (resting HR, HRV, sleep, VO₂max), « Corps » (weight with its target, body fat,
 visceral fat, muscle) and « Au quotidien » (steps, breathing during sleep). Everything comes from
 `/api/v1/health/overview` (`SanteStore`, kept whole in the response cache so the page paints
