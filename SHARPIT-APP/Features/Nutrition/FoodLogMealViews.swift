@@ -24,7 +24,17 @@ struct FoodLogMealsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Repas")
+            HStack(spacing: SharpitSpacing.xs) {
+                SharpitEyebrow("Repas")
+                Spacer(minLength: 0)
+                if let day = store.dayHealth, day.score != nil {
+                    Text("Note du jour")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                    FoodHealthBadge(meal: day)
+                }
+            }
+            .accessibilityElement(children: .combine)
             VStack(spacing: 0) {
                 let sections = store.sections
                 ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
@@ -46,14 +56,17 @@ struct FoodLogMealsSection: View {
         HStack(spacing: 0) {
             if section.entries.isEmpty {
                 Button { onAdd(section.meal) } label: {
-                    FoodLogMealRow(section: section, flagged: false, opensPage: false)
+                    FoodLogMealRow(section: section, health: nil, flagged: false, opensPage: false)
                 }
                 .buttonStyle(.sharpitPressable)
             } else {
                 NavigationLink {
                     FoodLogMealPage(store: store, meal: section.meal, flags: flags)
                 } label: {
-                    FoodLogMealRow(section: section, flagged: isFlagged(section), opensPage: true)
+                    FoodLogMealRow(
+                        section: section, health: store.mealHealth(section.meal),
+                        flagged: isFlagged(section), opensPage: true
+                    )
                 }
                 .buttonStyle(.sharpitPressable)
             }
@@ -80,6 +93,8 @@ struct FoodLogMealsSection: View {
 
 private struct FoodLogMealRow: View {
     let section: FoodLogStore.MealSection
+    /// The meal's score (SHARPIT ADR-070), shown once the server scored these very entries.
+    let health: V1MealHealth?
     let flagged: Bool
     let opensPage: Bool
 
@@ -109,6 +124,9 @@ private struct FoodLogMealRow: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
             }
             Spacer(minLength: 0)
+            if let health, health.score != nil {
+                FoodHealthBadge(meal: health)
+            }
             if !section.entries.isEmpty {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(NutritionReadout.kcal(section.kcal))
@@ -163,6 +181,10 @@ struct FoodLogMealPage: View {
                 ))
             }
             .sharpitListRows()
+
+            if let health = store.mealHealth(meal), health.score != nil || !health.highlights.isEmpty {
+                MealHealthSection(health: health)
+            }
 
             Section(eyebrow: countLabel(section.entries.count)) {
                 if section.entries.isEmpty {

@@ -35,6 +35,11 @@ final class FoodLogStore {
     private(set) var entries: [V1FoodLogEntry] = []
     private(set) var targets: V1NutritionTargets = .none
     private(set) var recent: [V1FoodLogRecentFood] = []
+    /// The server's score of each meal and of the day (SHARPIT ADR-070), read with the entries.
+    private(set) var health: V1FoodLogDayHealth?
+    /// The entries each meal's score was computed on: a meal changed since shows no score until
+    /// the server scored it again, never a stale one.
+    private var healthBasis: [FoodLogMeal: [String]] = [:]
 
     let client: any FoodLogServing
     let tokenProvider: () async throws -> String
@@ -64,6 +69,18 @@ final class FoodLogStore {
 
     var hasEntries: Bool { !entries.isEmpty }
 
+    /// A meal's score, when its entries are still the ones the server scored.
+    func mealHealth(_ meal: FoodLogMeal) -> V1MealHealth? {
+        guard healthBasis[meal] == Self.basis(of: entries, meal: meal) else { return nil }
+        return health?.meal(meal)
+    }
+
+    /// The day's score, when no meal changed since the server scored it.
+    var dayHealth: V1MealHealth? {
+        let current = FoodLogMeal.allCases.allSatisfy { healthBasis[$0] == Self.basis(of: entries, meal: $0) }
+        return current ? health?.day : nil
+    }
+
     func section(_ meal: FoodLogMeal) -> MealSection {
         MealSection(meal: meal, entries: entries.filter { $0.meal == meal })
     }
@@ -87,6 +104,7 @@ final class FoodLogStore {
             entries = day.entries
             targets = day.targets
             recent = day.recent
+            adoptHealth(day)
             phase = .ready
         } catch is CancellationError {
         } catch {
@@ -109,6 +127,7 @@ final class FoodLogStore {
             replace(pending.id, with: Self.keepingHealth(of: pending, in: stored))
             rememberRecent(draft, stored: stored)
             await onChange()
+            await refreshHealth()
         } catch {
             entries.removeAll { $0.id == pending.id }
             reportFailure(Self.failureMessage(error, action: "Aliment non ajouté"))
@@ -125,6 +144,7 @@ final class FoodLogStore {
             }
             replace(entry.id, with: Self.keepingHealth(of: original, in: stored))
             await onChange()
+            await refreshHealth()
         } catch {
             replace(entry.id, with: original)
             reportFailure(Self.failureMessage(error, action: "Modification non enregistrée"))
@@ -139,9 +159,11 @@ final class FoodLogStore {
                 try await client.delete(entryId: entry.id, token: try await tokenProvider())
             }
             await onChange()
+            await refreshHealth()
         } catch FoodLogError.notFound {
             // Already gone on the server: what the athlete asked for is true.
             await onChange()
+            await refreshHealth()
         } catch {
             entries.insert(entry, at: min(index, entries.count))
             reportFailure(Self.failureMessage(error, action: "Aliment non supprimé"))
@@ -173,6 +195,28 @@ final class FoodLogStore {
     }
 
     // MARK: Helpers
+
+    private func adoptHealth(_ day: V1FoodLogDay) {
+        health = day.health
+        healthBasis = Dictionary(uniqueKeysWithValues: FoodLogMeal.allCases.map {
+            ($0, Self.basis(of: day.entries, meal: $0))
+        })
+    }
+
+    /// Reads the day again for its scores once a write landed. The entries stay as shown: the
+    /// score only shows where they match what the server scored.
+    private func refreshHealth() async {
+        guard !entries.contains(where: \.isPending) else { return }
+        let dayId = trainingDayId
+        guard let day = try? await client.day(trainingDayId: dayId, token: try await tokenProvider()),
+              dayId == trainingDayId
+        else { return }
+        adoptHealth(day)
+    }
+
+    nonisolated static func basis(of entries: [V1FoodLogEntry], meal: FoodLogMeal) -> [String] {
+        entries.filter { $0.meal == meal }.map { "\($0.id):\($0.grams)" }.sorted()
+    }
 
     private func replace(_ id: String, with entry: V1FoodLogEntry) {
         guard let index = entries.firstIndex(where: { $0.id == id }) else { return }

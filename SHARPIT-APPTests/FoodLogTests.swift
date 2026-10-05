@@ -940,3 +940,49 @@ private nonisolated func ownFood(_ id: String, _ name: String) -> V1FoodProduct 
     echo.productId = "p2"
     #expect(FoodLogStore.keepingHealth(of: shown, in: echo).health == nil)
 }
+
+// MARK: - Meal and day score (SHARPIT ADR-070)
+
+private let dayHealthJSON = """
+{ "day": { "score": 71, "grade": "good", "coverage": 0.86, "kcal": 692, "protein": 15.6, "fiber": null,
+           "ultraProcessedShare": null,
+           "highlights": [{ "key": "partial_coverage", "tone": "neutral", "label": "Note partielle",
+                            "detail": "86 % de l'énergie vient d'aliments notés" }] },
+  "meals": { "BREAKFAST": null,
+             "LUNCH": { "score": 74, "grade": "good", "coverage": 1, "kcal": 525, "protein": 11.3, "fiber": null,
+                        "ultraProcessedShare": 0,
+                        "highlights": [{ "key": "protein_meal_low", "tone": "negative", "label": "Peu de protéines",
+                                         "detail": "11 g dans le repas" }] },
+             "DINNER": null, "SNACKS": null } }
+"""
+
+@Test func theDayDecodesTheScoreOfEachMealAndOfTheDay() throws {
+    let health = try JSONDecoder().decode(V1FoodLogDayHealth.self, from: Data(dayHealthJSON.utf8))
+    #expect(health.day?.score == 71)
+    #expect(health.meal(.lunch)?.grade == .good)
+    #expect(health.meal(.lunch)?.highlights.first?.key == "protein_meal_low")
+    #expect(health.meal(.dinner) == nil)
+
+    let older = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    #expect(older.health == nil)
+}
+
+@MainActor
+@Test func aMealChangedSinceItWasScoredShowsNoScore() async throws {
+    let read = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    let health = try JSONDecoder().decode(V1FoodLogDayHealth.self, from: Data(dayHealthJSON.utf8))
+    let day = V1FoodLogDay(
+        trainingDayId: read.trainingDayId, entries: read.entries, health: health,
+        targets: read.targets, recent: read.recent
+    )
+    let store = makeStore(StubFoodLog(day: day), recorder: Recorder())
+    await store.load(trainingDayId: "2026-10-01")
+    #expect(store.mealHealth(.lunch)?.score == 74)
+    #expect(store.dayHealth?.score == 71)
+
+    // The stub keeps answering the day as first read: the lunch it scored is not the one shown.
+    await store.delete(try #require(store.entries.first { $0.id == "e2" }))
+    #expect(store.mealHealth(.lunch) == nil)
+    #expect(store.dayHealth == nil)
+    #expect(store.mealHealth(.dinner) == nil)
+}

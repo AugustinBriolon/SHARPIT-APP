@@ -358,18 +358,53 @@ nonisolated struct V1FoodLogRecentFood: Codable, Sendable, Equatable, Hashable {
     let lastGrams: Double
 }
 
+/// The score of a meal or a day, from the energy of its foods (SHARPIT ADR-070). Worded and
+/// computed by the server; the app renders it.
+nonisolated struct V1MealHealth: Codable, Sendable, Equatable, Hashable {
+    /// Nil while less than half of the energy comes from scored foods.
+    var score: Int?
+    var grade: V1FoodHealth.Grade?
+    /// Share of the energy whose food carries a score, 0–1.
+    var coverage: Double
+    var kcal: Double
+    var protein: Double
+    var fiber: Double?
+    var ultraProcessedShare: Double?
+    var highlights: [V1FoodHealth.Highlight]
+}
+
+/// Each meal's score and the day's, as `/api/v1/food-log` serves them.
+nonisolated struct V1FoodLogDayHealth: Codable, Sendable, Equatable, Hashable {
+    var day: V1MealHealth?
+    /// Keyed by `FoodLogMeal.rawValue`; an empty meal reads null.
+    var meals: [String: V1MealHealth?]
+
+    func meal(_ meal: FoodLogMeal) -> V1MealHealth? {
+        meals[meal.rawValue] ?? nil
+    }
+}
+
 /// `GET /api/v1/food-log?trainingDayId=`.
 nonisolated struct V1FoodLogDay: Decodable, Sendable, Equatable {
     let trainingDayId: String
     let entries: [V1FoodLogEntry]
+    /// Absent from a server older than SHARPIT ADR-070.
+    let health: V1FoodLogDayHealth?
     let targets: V1NutritionTargets
     let recent: [V1FoodLogRecentFood]
 
-    enum CodingKeys: String, CodingKey { case trainingDayId, entries, targets, recent }
+    enum CodingKeys: String, CodingKey { case trainingDayId, entries, health, targets, recent }
 
-    init(trainingDayId: String, entries: [V1FoodLogEntry], targets: V1NutritionTargets = .none, recent: [V1FoodLogRecentFood] = []) {
+    init(
+        trainingDayId: String,
+        entries: [V1FoodLogEntry],
+        health: V1FoodLogDayHealth? = nil,
+        targets: V1NutritionTargets = .none,
+        recent: [V1FoodLogRecentFood] = []
+    ) {
         self.trainingDayId = trainingDayId
         self.entries = entries
+        self.health = health
         self.targets = targets
         self.recent = recent
     }
@@ -378,6 +413,7 @@ nonisolated struct V1FoodLogDay: Decodable, Sendable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         trainingDayId = try container.decode(String.self, forKey: .trainingDayId)
         entries = try container.decode([V1FoodLogEntry].self, forKey: .entries)
+        health = try container.decodeIfPresent(V1FoodLogDayHealth.self, forKey: .health)
         targets = try container.decodeIfPresent(V1NutritionTargets.self, forKey: .targets) ?? .none
         recent = try container.decodeIfPresent([V1FoodLogRecentFood].self, forKey: .recent) ?? []
     }
