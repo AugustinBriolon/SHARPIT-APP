@@ -57,6 +57,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             | tee xcodebuild.log | grep -E "error:|✘|Test run with|TEST (SUCCEEDED|FAILED)"
 
+      # A compiler crash prints no `error:` line, only « Command SwiftCompile failed »: show the
+      # diagnostics, the crash and the end of the log so the cause is readable in the job.
+      - name: Show why the build failed
+        if: failure()
+        run: |
+          grep -nE "error:|fatal error|Stack dump|Please submit a bug report|signal|Assertion|Abort|Segmentation" xcodebuild.log | head -80 || true
+          echo "--- last lines ---"
+          tail -n 150 xcodebuild.log
+
       - name: Upload the build log on failure
         if: failure()
         uses: actions/upload-artifact@v4
