@@ -14,6 +14,7 @@ struct GoalDetailView: View {
 
     @State private var isUpdating = false
     @State private var showsDeleteConfirmation = false
+    @State private var isEditing = false
     @State private var hasAppeared = false
 
     /// Read from the store, so validating the goal updates this page in place.
@@ -57,6 +58,23 @@ struct GoalDetailView: View {
         .navigationTitle(goal.kind == .race ? "Course" : "Objectif")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { hasAppeared = true }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button("Modifier", systemImage: "pencil") { isEditing = true }
+                    Divider()
+                    Button("Supprimer", systemImage: "trash", role: .destructive) {
+                        showsDeleteConfirmation = true
+                    }
+                } label: {
+                    Label("Actions", systemImage: "ellipsis")
+                }
+                .disabled(isUpdating)
+            }
+        }
+        .navigationDestination(isPresented: $isEditing) {
+            GoalEditView(goal: goal, store: store)
+        }
         .confirmationDialog(
             "Supprimer cet objectif ?",
             isPresented: $showsDeleteConfirmation,
@@ -384,25 +402,6 @@ struct GoalDetailView: View {
                 .padding(.vertical, 14)
                 .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
                 .foregroundStyle(SharpitColor.primaryForeground)
-            }
-            .buttonStyle(.plain)
-            .disabled(isUpdating)
-
-            Button(role: .destructive) {
-                showsDeleteConfirmation = true
-            } label: {
-                HStack(spacing: SharpitSpacing.xs) {
-                    Image(systemName: "trash")
-                    Text("Supprimer cet objectif")
-                }
-                .font(SharpitTypography.body)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(
-                    SharpitColor.destructive.opacity(0.12),
-                    in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                )
-                .foregroundStyle(SharpitColor.destructive)
             }
             .buttonStyle(.plain)
             .disabled(isUpdating)

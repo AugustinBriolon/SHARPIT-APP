@@ -147,11 +147,6 @@ struct DoneBrickDrawer: View {
             }
             .navigationTitle("Enchaînement")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fermer") { dismiss() }
-                }
-            }
         }
         .presentationDetents([.large])
         .sharpitSheet()
