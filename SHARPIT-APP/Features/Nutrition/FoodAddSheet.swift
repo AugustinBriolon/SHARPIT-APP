@@ -23,6 +23,7 @@ struct FoodAddSheet: View {
 
     @State private var search: FoodSearchStore
     @State private var ownFoods: OwnFoodsStore
+    @State private var savedMeals: SavedMealsStore
     @State private var path: [FoodAddRoute] = []
     @State private var query = ""
     @Environment(\.dismiss) private var dismiss
@@ -32,6 +33,7 @@ struct FoodAddSheet: View {
         self.request = request
         _search = State(initialValue: FoodSearchStore(client: store.client, tokenProvider: store.tokenProvider))
         _ownFoods = State(initialValue: OwnFoodsStore(client: store.client, tokenProvider: store.tokenProvider))
+        _savedMeals = State(initialValue: SavedMealsStore(client: store.client, tokenProvider: store.tokenProvider))
         _path = State(initialValue: request.start == .scan && BarcodeScannerView.isAvailable ? [.scanner] : [])
     }
 
@@ -45,7 +47,9 @@ struct FoodAddSheet: View {
                 onQuickAdd: { path.append(.quick(name: query)) },
                 onCreate: { path.append(.custom(name: query)) },
                 onScan: { path.append(.scanner) },
-                onOwnFoods: { path.append(.ownFoods) }
+                onOwnFoods: { path.append(.ownFoods) },
+                onSavedMeals: { path.append(.savedMeals) },
+                onRecipe: { path.append(.recipe(nil)) }
             )
             .navigationTitle(request.meal.label)
             .navigationBarTitleDisplayMode(.inline)
@@ -89,7 +93,7 @@ struct FoodAddSheet: View {
             OwnFoodsPage(
                 store: ownFoods,
                 onPick: { path.append(.portion($0)) },
-                onEdit: { path.append(.editFood($0)) },
+                onEdit: { path.append($0.isRecipe ? .recipe($0) : .editFood($0)) },
                 onCreate: { path.append(.custom(name: "")) },
                 onDeleted: { store.productDeleted($0) }
             )
@@ -100,6 +104,27 @@ struct FoodAddSheet: View {
                 store.productChanged(stored)
                 path.removeLast()
             }
+        case .savedMeals:
+            SavedMealsPage(store: savedMeals, meal: request.meal) { saved in
+                Task { await store.logSavedMeal(saved, into: request.meal) }
+                dismiss()
+            }
+        case .recipe(let recipe):
+            FoodRecipePage(
+                recipe: recipe,
+                client: store.client,
+                tokenProvider: store.tokenProvider,
+                onSave: { try await ownFoods.saveRecipe(id: recipe?.id, $0) },
+                onSaved: { product in
+                    store.productChanged(product)
+                    // A new recipe goes on to its portion; an edited one returns to the list.
+                    if recipe == nil {
+                        path.append(.portion(product))
+                    } else {
+                        path.removeLast()
+                    }
+                }
+            )
         case .scanner:
             FoodScannerPage(search: search) { outcome in
                 switch outcome {
@@ -124,6 +149,9 @@ enum FoodAddRoute: Hashable {
     case scanner
     case ownFoods
     case editFood(V1FoodProduct)
+    case savedMeals
+    /// A recipe to build, or one to edit (SHARPIT ADR-071).
+    case recipe(V1FoodProduct?)
 }
 
 // MARK: - Search
@@ -139,6 +167,8 @@ private struct FoodSearchPage: View {
     let onCreate: () -> Void
     let onScan: () -> Void
     let onOwnFoods: () -> Void
+    let onSavedMeals: () -> Void
+    let onRecipe: () -> Void
 
     private var isSearching: Bool { FoodSearchStore.isSearchable(query) }
 
@@ -148,9 +178,11 @@ private struct FoodSearchPage: View {
                 if BarcodeScannerView.isAvailable {
                     actionRow("Scanner un code-barres", symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan, action: onScan)
                 }
+                actionRow("Mes repas", symbol: "bookmark", tone: SharpitNutritionTone.Action.savedMeals, action: onSavedMeals)
                 actionRow("Mes aliments", symbol: "person.crop.square", tone: SharpitNutritionTone.Action.ownFoods, action: onOwnFoods)
                 actionRow("Saisie rapide", symbol: "bolt", tone: SharpitNutritionTone.Action.quickAdd, action: onQuickAdd)
                 actionRow("Créer un aliment", symbol: "plus.square.on.square", tone: SharpitNutritionTone.Action.create, action: onCreate)
+                actionRow("Créer une recette", symbol: "frying.pan", tone: SharpitNutritionTone.Action.recipe, action: onRecipe)
             }
             .sharpitListRows()
 

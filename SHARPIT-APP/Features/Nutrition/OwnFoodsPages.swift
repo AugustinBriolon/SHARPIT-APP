@@ -315,10 +315,20 @@ struct OwnFoodsSettingsView: View {
         }
         // Not values on the settings path: that path is typed to its own routes.
         .navigationDestination(item: $editing) { product in
-            FoodCustomPage(purpose: .edit(product)) { draft in
-                try await store.update(product, with: draft)
-            } onSaved: { _ in
-                editing = nil
+            if product.isRecipe {
+                FoodRecipePage(
+                    recipe: product,
+                    client: client,
+                    tokenProvider: tokenProvider,
+                    onSave: { try await store.saveRecipe(id: product.id, $0) },
+                    onSaved: { _ in editing = nil }
+                )
+            } else {
+                FoodCustomPage(purpose: .edit(product)) { draft in
+                    try await store.update(product, with: draft)
+                } onSaved: { _ in
+                    editing = nil
+                }
             }
         }
         .navigationDestination(isPresented: $isCreating) {

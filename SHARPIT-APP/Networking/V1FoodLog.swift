@@ -89,8 +89,11 @@ nonisolated struct V1FoodProduct: Codable, Sendable, Equatable, Hashable, Identi
     var verified: Bool? = nil
     /// `ciqual`, `producer` or `checked`.
     var verifiedBy: String? = nil
+    /// Set on an own food made of other foods (SHARPIT ADR-071).
+    var recipe: V1Recipe? = nil
 
     var isVerified: Bool { verified == true }
+    var isRecipe: Bool { recipe != nil }
 
     /// Where verified values come from, as the badge says it to VoiceOver.
     var verifiedLabel: String? {

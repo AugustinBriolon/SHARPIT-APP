@@ -170,7 +170,8 @@ struct NutritionSections: View {
                 if foodLog?.hasEntries != true {
                     NutritionEmptyDayPlate(
                         isToday: isToday,
-                        onAdd: { onAdd(FoodAddRequest(meal: suggestedMeal, start: $0)) }
+                        onAdd: { onAdd(FoodAddRequest(meal: suggestedMeal, start: $0)) },
+                        onCopyPreviousDay: copyPreviousDay
                     )
                 }
                 meals(importedMeals: [])
@@ -188,6 +189,12 @@ struct NutritionSections: View {
     }
 
     private var suggestedMeal: FoodLogMeal { isToday ? FoodLogMeal.suggested(at: .now) : .lunch }
+
+    /// The whole day before, logged into this empty one (SHARPIT ADR-071); nil until a log is held.
+    private var copyPreviousDay: (() -> Void)? {
+        guard let foodLog else { return nil }
+        return { Task { await foodLog.copyFromPreviousDay(nil) } }
+    }
 
     /// The day's own log once read; a day imported from MyFitnessPal keeps its meals read-only, so
     /// nothing logged twice is ever shown (ADR-061: SHARPIT wins a day once it holds an entry).
@@ -247,6 +254,8 @@ struct NutritionSections: View {
 private struct NutritionEmptyDayPlate: View {
     let isToday: Bool
     let onAdd: (FoodAddStart) -> Void
+    /// Logs the whole day before into this one (SHARPIT ADR-071); nil while no log is held.
+    var onCopyPreviousDay: (() -> Void)?
 
     var body: some View {
         VStack(spacing: SharpitSpacing.md) {
@@ -287,6 +296,16 @@ private struct NutritionEmptyDayPlate: View {
                     capsule("Scanner", symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan) { onAdd(.scan) }
                 }
                 capsule("Chercher un aliment", symbol: "magnifyingglass", tone: SharpitColor.primary) { onAdd(.search) }
+            }
+
+            if let onCopyPreviousDay {
+                Button(action: onCopyPreviousDay) {
+                    Label("Copier la veille", systemImage: "doc.on.doc")
+                        .font(SharpitTypography.meta.weight(.semibold))
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                }
+                .buttonStyle(.sharpitPressable)
             }
         }
         .padding(SharpitSpacing.lg)

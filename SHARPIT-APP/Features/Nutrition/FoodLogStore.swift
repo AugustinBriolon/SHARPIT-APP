@@ -194,6 +194,76 @@ final class FoodLogStore {
         recent.removeAll { $0.product.id == product.id }
     }
 
+    // MARK: Copy and saved meals (SHARPIT ADR-071)
+
+    /// Logs the same meal of the day before — or, without a meal, the whole day — into this day.
+    /// The day before is not held here, so the rows arrive with the server's answer; an empty
+    /// source is said rather than doing nothing.
+    func copyFromPreviousDay(_ meal: FoodLogMeal?) async {
+        guard let from = TrainingDayId.previous(trainingDayId) else { return }
+        let dayId = trainingDayId
+        do {
+            let copied = try await SharpitRetry.run {
+                try await client.copy(from: from, meal: meal, to: dayId, token: try await tokenProvider())
+            }
+            guard dayId == trainingDayId else { return }
+            guard !copied.isEmpty else {
+                reportFailure(meal == nil ? "Rien de noté la veille : rien à copier." : "Ce repas était vide la veille : rien à copier.")
+                return
+            }
+            entries.append(contentsOf: copied)
+            await onChange()
+            await refreshHealth()
+        } catch {
+            reportFailure(Self.failureMessage(error, action: "Repas non copié"))
+        }
+    }
+
+    /// Shows the saved foods in the meal at once, then swaps them for the server's entries.
+    func logSavedMeal(_ saved: V1SavedMeal, into meal: FoodLogMeal) async {
+        let pending = Self.pendingEntries(for: saved, meal: meal)
+        entries.append(contentsOf: pending)
+        let pendingIds = Set(pending.map(\.id))
+        let dayId = trainingDayId
+        do {
+            let stored = try await SharpitRetry.run {
+                try await client.logSavedMeal(id: saved.id, trainingDayId: dayId, meal: meal, token: try await tokenProvider())
+            }
+            entries.removeAll { pendingIds.contains($0.id) }
+            guard dayId == trainingDayId else { return }
+            entries.append(contentsOf: stored)
+            await onChange()
+            await refreshHealth()
+        } catch {
+            entries.removeAll { pendingIds.contains($0.id) }
+            reportFailure(Self.failureMessage(error, action: "Repas non ajouté"))
+        }
+    }
+
+    /// Keeps a meal of this day under a name. It needs the server's answer to be listed, so the
+    /// caller learns whether it was kept; a failure is said in the toast.
+    func saveMeal(_ meal: FoodLogMeal, name: String) async -> V1SavedMeal? {
+        let dayId = trainingDayId
+        do {
+            return try await SharpitRetry.run {
+                try await client.saveMeal(name: name, trainingDayId: dayId, meal: meal, token: try await tokenProvider())
+            }
+        } catch {
+            reportFailure(Self.failureMessage(error, action: "Repas non enregistré"))
+            return nil
+        }
+    }
+
+    nonisolated static func pendingEntries(for saved: V1SavedMeal, meal: FoodLogMeal) -> [V1FoodLogEntry] {
+        saved.items.map { item in
+            V1FoodLogEntry(
+                id: "pending-\(UUID().uuidString)", meal: meal, productId: item.productId, name: item.name,
+                brand: item.brand, grams: item.grams, kcal: item.kcal, protein: item.protein,
+                carbs: item.carbs, fat: item.fat, fiber: item.fiber, sugar: item.sugar, createdAt: nil
+            )
+        }
+    }
+
     // MARK: Helpers
 
     private func adoptHealth(_ day: V1FoodLogDay) {

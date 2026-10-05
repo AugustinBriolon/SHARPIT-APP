@@ -387,7 +387,16 @@ to edit through the custom-food form or delete after asking — logged entries k
 also Paramètres › Nutrition, `OwnFoodsSettingsView`),
 a quick add, a custom food per 100 g, then the portion (`FoodPortionPage`: grams
 with presets and a live preview, `FoodPortion` mirroring the web's `portionNutrients`). A meal's
-page (`FoodLogMealPage`) shows the meal's score (`MealHealthSection`: the energy-weighted mean of its foods' scores and why, SHARPIT ADR-070 — the server's, shown only while the meal's entries are the ones it scored, `FoodLogStore.mealHealth`; the day's sits beside « Repas ») and edits an entry on tap (`FoodEntryEditSheet`) and deletes it on swipe. Every
+page (`FoodLogMealPage`) shows the meal's score (`MealHealthSection`: the energy-weighted mean of its foods' scores and why, SHARPIT ADR-070 — the server's, shown only while the meal's entries are the ones it scored, `FoodLogStore.mealHealth`; the day's sits beside « Repas ») and edits an entry on tap (`FoodEntryEditSheet`) and deletes it on swipe. What MyFitnessPal athletes
+log with every day is one tap away (SHARPIT ADR-071): the page's « … » (and a long press on a meal's
+row) copies the same meal of the day before (`FoodLogStore.copyFromPreviousDay`, `/api/v1/food-log/copy`;
+the empty day's plate offers « Copier la veille » for the whole day) and keeps the meal under a name
+(`saveMeal`, `/api/v1/food-log/meals`); the add sheet's « Mes repas » (`SavedMealsStore`,
+`SavedMealsPage`) logs one whole into the meal, shown at once (`logSavedMeal`), and « Créer une
+recette » (`FoodRecipePage`, `FoodRecipeBuilder`) builds an own food from other foods — ingredients
+weighed raw, the cooked weight and servings optional, the label per 100 g live (`FoodRecipeLabel`,
+the web's `recipeLabel`) — then goes on to its portion; a recipe opened from « Mes aliments » edits
+its ingredients (`/api/v1/food-log/recipes`). Every
 write shows at once and goes out through `SharpitRetry`, put back and toasted if it fails for good;
 the server rebuilds the day, so the page reads `/api/v1/nutrition` again for the totals. Open Food
 Facts is asked by the server only, and « Données Open Food Facts (ODbL) » stands wherever its

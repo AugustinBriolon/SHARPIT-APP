@@ -84,6 +84,11 @@ struct FoodLogMealsSection: View {
             .padding(.trailing, SharpitSpacing.sm)
             .accessibilityLabel("Ajouter un aliment au \(section.meal.label.lowercased())")
         }
+        .contextMenu {
+            Button { Task { await store.copyFromPreviousDay(section.meal) } } label: {
+                Label("Copier le repas de la veille", systemImage: "doc.on.doc")
+            }
+        }
     }
 
     private func isFlagged(_ section: FoodLogStore.MealSection) -> Bool {
@@ -171,6 +176,10 @@ struct FoodLogMealPage: View {
 
     @State private var addRequest: FoodAddRequest?
     @State private var editing: V1FoodLogEntry?
+    @State private var isNamingMeal = false
+    @State private var mealName = ""
+    /// The name the meal was kept under, said once at the foot of the page.
+    @State private var savedName: String?
 
     var body: some View {
         let section = store.section(meal)
@@ -186,7 +195,7 @@ struct FoodLogMealPage: View {
                 MealHealthSection(health: health)
             }
 
-            Section(eyebrow: countLabel(section.entries.count)) {
+            Section {
                 if section.entries.isEmpty {
                     Button("Ajouter un aliment") { addRequest = FoodAddRequest(meal: meal) }
                         .foregroundStyle(SharpitNutritionTone.mealLabel(meal.storedName))
@@ -207,6 +216,12 @@ struct FoodLogMealPage: View {
                         }
                     }
                 }
+            } header: {
+                SharpitEyebrow(countLabel(section.entries.count))
+            } footer: {
+                if let savedName {
+                    SharpitListFooter("« \(savedName) » est dans Mes repas : tu peux le noter d'un geste depuis « + ».")
+                }
             }
             .sharpitListRows()
         }
@@ -220,9 +235,43 @@ struct FoodLogMealPage: View {
                     Label("Ajouter un aliment", systemImage: "plus")
                 }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button { Task { await store.copyFromPreviousDay(meal) } } label: {
+                        Label("Copier le repas de la veille", systemImage: "doc.on.doc")
+                    }
+                    if !section.entries.isEmpty {
+                        Button {
+                            mealName = SavedMealNaming.defaultName(section.entries)
+                            isNamingMeal = true
+                        } label: {
+                            Label("Enregistrer ce repas", systemImage: "bookmark")
+                        }
+                        .disabled(section.entries.contains(where: \.isPending))
+                    }
+                } label: {
+                    Label("Plus", systemImage: "ellipsis")
+                }
+            }
+        }
+        .alert("Enregistrer ce repas", isPresented: $isNamingMeal) {
+            TextField("Nom du repas", text: $mealName)
+            Button("Annuler", role: .cancel) {}
+            Button("Enregistrer") { saveMeal() }
+                .disabled(mealName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        } message: {
+            Text("Il sera dans « Mes repas », à noter d'un geste un autre jour.")
         }
         .sheet(item: $addRequest) { FoodAddSheet(store: store, request: $0) }
         .sheet(item: $editing) { FoodEntryEditSheet(store: store, entry: $0) }
+    }
+
+    private func saveMeal() {
+        let name = String(mealName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
+        guard !name.isEmpty else { return }
+        Task {
+            if let saved = await store.saveMeal(meal, name: name) { savedName = saved.name }
+        }
     }
 
     private func countLabel(_ count: Int) -> String {

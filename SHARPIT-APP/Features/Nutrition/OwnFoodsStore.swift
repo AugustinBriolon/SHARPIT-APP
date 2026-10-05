@@ -46,6 +46,15 @@ final class OwnFoodsStore {
         return stored
     }
 
+    /// Creates a recipe or replaces one's ingredients, waiting for the server's label (retried).
+    func saveRecipe(id: String?, _ draft: FoodRecipeDraft) async throws -> V1FoodProduct {
+        let stored = try await SharpitRetry.run {
+            try await client.saveRecipe(id: id, draft, token: try await tokenProvider())
+        }
+        foods = Self.sorted(foods.filter { $0.id != stored.id } + [stored])
+        return stored
+    }
+
     /// Takes the food off the list at once, and puts it back if the server refuses.
     func delete(_ product: V1FoodProduct) async -> Bool {
         guard let index = foods.firstIndex(where: { $0.id == product.id }) else { return false }
