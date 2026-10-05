@@ -66,7 +66,7 @@ nonisolated struct V1NutritionResponse: Decodable, Sendable, Equatable {
     }
 }
 
-nonisolated struct V1NutritionDay: Decodable, Sendable, Equatable {
+nonisolated struct V1NutritionDay: Codable, Sendable, Equatable {
     let calories: Double
     let protein: Double
     let carbohydrates: Double
@@ -80,7 +80,7 @@ nonisolated struct V1NutritionDay: Decodable, Sendable, Equatable {
     let meals: [V1NutritionMeal]
 }
 
-nonisolated struct V1NutritionMacro: Decodable, Sendable, Equatable {
+nonisolated struct V1NutritionMacro: Codable, Sendable, Equatable {
     let consumed: Double
     let goal: Double?
     let remaining: Double?
@@ -88,7 +88,7 @@ nonisolated struct V1NutritionMacro: Decodable, Sendable, Equatable {
     let pct: Double?
 }
 
-nonisolated struct V1NutritionGoals: Decodable, Sendable, Equatable {
+nonisolated struct V1NutritionGoals: Codable, Sendable, Equatable {
     let calories: V1NutritionMacro
     let protein: V1NutritionMacro
     let carbohydrates: V1NutritionMacro
@@ -97,13 +97,13 @@ nonisolated struct V1NutritionGoals: Decodable, Sendable, Equatable {
     let calorieBudget: Double
 }
 
-nonisolated struct V1NutritionFuelDensity: Decodable, Sendable, Equatable {
+nonisolated struct V1NutritionFuelDensity: Codable, Sendable, Equatable {
     let proteinGPerKg: Double
     let carbohydratesGPerKg: Double
     let referenceWeightKg: Double
 }
 
-nonisolated struct V1NutritionMeal: Decodable, Sendable, Equatable, Hashable {
+nonisolated struct V1NutritionMeal: Codable, Sendable, Equatable, Hashable {
     let name: String
     let label: String
     let calories: Double
@@ -113,7 +113,7 @@ nonisolated struct V1NutritionMeal: Decodable, Sendable, Equatable, Hashable {
     let entries: [V1NutritionEntry]
 }
 
-nonisolated struct V1NutritionEntry: Decodable, Sendable, Equatable, Hashable {
+nonisolated struct V1NutritionEntry: Codable, Sendable, Equatable, Hashable {
     let name: String
     let calories: Double
     let protein: Double

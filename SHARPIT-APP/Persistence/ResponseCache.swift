@@ -43,6 +43,8 @@ nonisolated enum ResponseCacheKey {
 
     static func sleepDay(_ trainingDayId: String) -> String { "sleep:\(trainingDayId)" }
     static func recoveryDay(_ trainingDayId: String) -> String { "recovery:\(trainingDayId)" }
+    /// The day's food log as Résumé's nutrition card shows it.
+    static func nutritionDay(_ trainingDayId: String) -> String { "nutrition:\(trainingDayId)" }
 }
 
 /// Reads and writes cached responses. Stateless, like the other repositories.
