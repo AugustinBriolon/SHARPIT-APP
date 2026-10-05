@@ -188,6 +188,18 @@ private struct FoodSearchPage: View {
             }
             .sharpitListRows()
         } else if let results = search.results {
+            if !results.eaten.isEmpty {
+                Section {
+                    ForEach(results.eaten, id: \.product.id) { eaten in
+                        productRow(eaten.product, grams: eaten.lastGrams, timesEaten: eaten.timesEaten)
+                    }
+                } header: {
+                    SharpitEyebrow("Déjà mangés")
+                } footer: {
+                    FoodSourcesAttribution(products: results.eaten.map(\.product))
+                }
+                .sharpitListRows()
+            }
             if !results.own.isEmpty {
                 Section(eyebrow: "Mes aliments") {
                     ForEach(results.own) { productRow($0) }
@@ -254,26 +266,26 @@ private struct FoodSearchPage: View {
         .buttonStyle(.plain)
     }
 
-    private func productRow(_ product: V1FoodProduct, grams: Double? = nil) -> some View {
+    private func productRow(_ product: V1FoodProduct, grams: Double? = nil, timesEaten: Int? = nil) -> some View {
         Button { onPick(product) } label: {
-            FoodProductRow(product: product, lastGrams: grams)
+            FoodProductRow(product: product, lastGrams: grams, timesEaten: timesEaten)
         }
         .buttonStyle(.plain)
     }
 }
 
-/// A food in a list: its name and brand, and its energy per 100 g.
+/// A food in a list: its name and brand, and its energy per 100 g. A verified food carries the
+/// seal after its name (SHARPIT ADR-069).
 struct FoodProductRow: View {
     let product: V1FoodProduct
     var lastGrams: Double?
+    /// How often it was logged lately, for « Déjà mangés ».
+    var timesEaten: Int?
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(product.name)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(2)
+                name.lineLimit(2)
                 Text(detail)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
@@ -300,8 +312,21 @@ struct FoodProductRow: View {
         .accessibilityElement(children: .combine)
     }
 
+    private var name: Text {
+        let title = Text(product.name)
+            .font(SharpitTypography.body)
+            .foregroundStyle(SharpitColor.foreground)
+        guard product.isVerified else { return title }
+        let seal = Text(Image(systemName: "checkmark.seal.fill"))
+            .font(SharpitTypography.meta)
+            .foregroundStyle(SharpitColor.primary)
+            .accessibilityLabel(product.verifiedLabel ?? "Vérifié")
+        return Text("\(title) \(seal)")
+    }
+
     private var detail: String {
         var parts: [String] = []
+        if let timesEaten, timesEaten > 0 { parts.append("\(timesEaten) fois") }
         if let brand = product.brand, !brand.isEmpty { parts.append(brand) }
         if let lastGrams { parts.append("Dernière fois \(FoodPortion.gramsLabel(lastGrams))") }
         if product.source == "CUSTOM" { parts.append("Mon aliment") }

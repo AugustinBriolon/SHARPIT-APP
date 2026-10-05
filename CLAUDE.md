@@ -380,7 +380,7 @@ macros' hues (`NutritionMacroSplitBar`).
 page is never a « connect a provider » wall (`connected` is always true). `FoodLogStore`, owned by
 `NutritionView`, holds the day's entries by meal (Petit-déjeuner, Déjeuner, Dîner, Collations), the
 targets and the recent foods. Each meal row has its « + », which opens `FoodAddSheet` — the search
-(`FoodSearchStore`, debounced, own foods then Open Food Facts), the barcode scanner
+(`FoodSearchStore`, debounced: « Déjà mangés » — the athlete's foods of the last 90 days, with how often and the last portion — then own foods, Ciqual's generic foods and Open Food Facts; a verified food, Ciqual or manufacturer-given, carries `checkmark.seal.fill` after its name, SHARPIT ADR-069), the barcode scanner
 (`BarcodeScannerView`, VisionKit's `DataScannerViewController`, offered only where it is supported
 and available), « Mes aliments » (`OwnFoodsStore`, `/api/v1/food-log/foods/mine`: tap to pick, swipe
 to edit through the custom-food form or delete after asking — logged entries keep their snapshot;

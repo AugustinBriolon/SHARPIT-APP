@@ -136,6 +136,38 @@ private let scoredV2JSON = """
     #expect(older.isEmpty)
 }
 
+@Test func searchResultsListTheFoodsAlreadyEatenAndTheVerifiedOnes() throws {
+    let json = """
+    { "eaten": [{ "product": { "id": "e1", "source": "OFF", "barcode": "5690845000621", "name": "Skyr",
+                               "kcalPer100g": 62, "proteinPer100g": 11, "carbsPer100g": 4, "fatPer100g": 0.2,
+                               "verified": true, "verifiedBy": "producer" },
+                  "timesEaten": 12, "lastGrams": 150 }],
+      "own": [], "generic": [], "products": [], "offUnavailable": false }
+    """
+    let results = try JSONDecoder().decode(V1FoodSearchResults.self, from: Data(json.utf8))
+    let eaten = try #require(results.eaten.first)
+    #expect(eaten.timesEaten == 12)
+    #expect(eaten.lastGrams == 150)
+    #expect(eaten.product.isVerified)
+    #expect(eaten.product.verifiedLabel == "Vérifié, données du fabricant")
+    #expect(!results.isEmpty)
+
+    let older = try JSONDecoder().decode(
+        V1FoodSearchResults.self,
+        from: Data(#"{ "own": [], "products": [], "offUnavailable": false }"#.utf8)
+    )
+    #expect(older.eaten.isEmpty)
+}
+
+@Test func aFoodWithoutTheFieldIsNotVerified() throws {
+    let product = try JSONDecoder().decode(V1FoodProduct.self, from: Data(#"""
+    { "id": "c1", "source": "CUSTOM", "name": "Granola maison",
+      "kcalPer100g": 450, "proteinPer100g": 10, "carbsPer100g": 60, "fatPer100g": 18 }
+    """#.utf8))
+    #expect(!product.isVerified)
+    #expect(product.verifiedLabel == nil)
+}
+
 @Test func theScoreReadsInWords() throws {
     let health = try JSONDecoder().decode(V1FoodHealth.self, from: Data(scoredV2JSON.utf8))
     #expect(FoodHealthPresentation.verdict(health) == "1 point à surveiller\n1 point fort")
