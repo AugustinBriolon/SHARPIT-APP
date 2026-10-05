@@ -333,6 +333,7 @@ struct ComplianceDetailSheet: View {
     let analysis: V1PlannedSessionAnalysis
     /// Takes the activity off its planned session — a wrong match; nil where it cannot.
     var onUnlink: (() -> Void)?
+    var onReanalyze: (() -> Void)?
 
     @State private var isConfirmingUnlink = false
 
@@ -402,11 +403,17 @@ struct ComplianceDetailSheet: View {
             .navigationTitle("Conformité au plan")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if onUnlink != nil {
+                if onUnlink != nil || onReanalyze != nil {
                     ToolbarItem(placement: .primaryAction) {
                         Menu {
-                            Button(role: .destructive) { isConfirmingUnlink = true } label: {
-                                Label("Délier de la séance prévue", systemImage: "link.badge.minus")
+                            if let onReanalyze {
+                                Button("Réanalyser", systemImage: "arrow.clockwise", action: onReanalyze)
+                            }
+                            if onUnlink != nil {
+                                Divider()
+                                Button(role: .destructive) { isConfirmingUnlink = true } label: {
+                                    Label("Délier de la séance prévue", systemImage: "link.badge.minus")
+                                }
                             }
                         } label: {
                             Image(systemName: "ellipsis")

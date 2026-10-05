@@ -498,6 +498,21 @@ the camera has left the route (`RouteFraming`: part of it out of view, or under 
 athlete did (the most frequent first) and a period. Its glyph fills while a filter narrows the list;
 a filter that empties it offers « Tout afficher ».
 
+**Logging and editing a session.** Activité's « + » opens « Saisir une séance »
+(`ActivityFormSheet`, `ActivityDraft`): sport, start, duration, the sport's measures (distance in
+km, in metres for a swim; elevation; average heart rate), the strength exercises (the plan's own
+`StrengthExercisesEditor`), effort, feeling and notes — `POST /api/v1/activities`, the web's
+`createActivitySchema`. A done session's « … » (`ActivityActionsMenu`, among the page's floating
+controls) edits it in the same sheet (PATCH, only what moved), sends a strength session to the
+Garmin watch (`/api/v1/garmin/workouts/from-activity`, Pro) and deletes it after a confirmation.
+Both forms wait for the server, whose figures the page shows; every change bumps
+`ShellRouter.activitiesRevision` (and the calendar's), so the list and the plan read again. The
+compliance sheet's « … » adds « Réanalyser » (`/api/v1/planned-sessions/[id]/analyze`): the
+server answers at once and writes the reading behind, and the page looks for it a few times.
+A session of the last week asks about each open pain or injury with no reading since it started
+(`PainReassessment`, the web's `dueReassessments` « after_session » rule), worst first, each row
+opening the zone's own `ZoneCheckinSheet`.
+
 **Drawers close by a swipe.** A drawer with a drag indicator carries no « Fermer »: its « … » is
 its only bar item (`PlannedSessionDrawer`, `BrickSessionDrawer`, `DoneBrickDrawer`). A form keeps
 its Annuler, a task sheet its Fermer.

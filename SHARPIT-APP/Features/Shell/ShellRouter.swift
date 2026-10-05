@@ -63,6 +63,15 @@ final class ShellRouter {
         calendarRevision += 1
     }
 
+    /// Bumped when an activity was logged, edited or deleted by hand, so Activité reads its list
+    /// again — the plan too, since the server links a session to what it counts for.
+    private(set) var activitiesRevision = 0
+
+    func noteActivitiesChanged() {
+        activitiesRevision += 1
+        calendarRevision += 1
+    }
+
     /// Bumped once a morning check-in reached the server, which then read the night against
     /// today's session — Résumé reads the day again to show the proposal it may have made.
     private(set) var checkInRevision = 0

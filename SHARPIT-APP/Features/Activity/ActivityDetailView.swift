@@ -24,6 +24,12 @@ struct ActivityDetailView: View {
     @State private var isMapOffRoute = false
     /// Built once per stream read, not on every render: the path and samples are hundreds long.
     @State private var routeIntensity: RouteIntensity?
+    @State private var editing: ActivityEditing?
+    @State private var isConfirmingDeletion = false
+    @State private var notice: ActivityNotice?
+    /// The pains and injuries the athlete follows, read for the questions owed after a session.
+    @State private var zones: SensitiveZonesStore?
+    @State private var reassessing: PainReassessment?
     /// Ties the expanded map's compass and pitch toggle to the map, so they sit in the safe area
     /// under the map's own buttons rather than where MapKit puts them on a full-bleed map.
     @Namespace private var mapScope
@@ -126,7 +132,9 @@ struct ActivityDetailView: View {
                                         withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
                                             isMapExpanded.toggle()
                                         }
-                                    }
+                                    },
+                                    reassessments: reassessments(for: detail),
+                                    onReassess: { reassessing = $0 }
                                 )
                                 .frame(width: proxy.size.width, alignment: .leading)
                             }
@@ -153,7 +161,9 @@ struct ActivityDetailView: View {
                             onShowSubjective: { openSubjective(for: detail) },
                             clearsBackButton: true,
                             isMapExpanded: false,
-                            onExpandToggle: {}
+                            onExpandToggle: {},
+                            reassessments: reassessments(for: detail),
+                            onReassess: { reassessing = $0 }
                         )
                         .frame(width: proxy.size.width, alignment: .leading)
                     }
@@ -209,8 +219,8 @@ struct ActivityDetailView: View {
                 let route = detail.stream?.route.isEmpty == false
                     ? detail.stream?.route ?? []
                     : streamPayload?.route ?? []
-                if !route.isEmpty {
-                    HStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    if !route.isEmpty {
                         if isMapExpanded && isMapOffRoute {
                             Button {
                                 withAnimation(.easeInOut(duration: 0.35)) {
@@ -274,11 +284,19 @@ struct ActivityDetailView: View {
                         }
                         .accessibilityLabel(isMapExpanded ? "Réduire la carte" : "Agrandir la carte")
                     }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, 16)
-                    .padding(.top, 12)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isMapExpanded)
+                    if !isMapExpanded, let mutator = client as? any ActivityMutating {
+                        ActivityActionsMenu(
+                            canSendToWatch: detail.type == .strength && !detail.strengthSets.isEmpty,
+                            onEdit: { editing = ActivityEditing(id: detail.id, draft: ActivityDraft(detail: detail), mutator: mutator) },
+                            onSendToWatch: { Task { await sendToWatch(detail) } },
+                            onDelete: { isConfirmingDeletion = true }
+                        )
+                    }
                 }
+                .buttonStyle(.plain)
+                .padding(.trailing, 16)
+                .padding(.top, 12)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isMapExpanded)
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -329,12 +347,51 @@ struct ActivityDetailView: View {
                     analysis: analysis,
                     onUnlink: detail.plannedSession?.id.map { sessionId -> () -> Void in
                         { unlink(from: sessionId, detail: detail) }
+                    },
+                    onReanalyze: detail.plannedSession?.id.map { sessionId -> () -> Void in
+                        { reanalyze(sessionId, previous: analysis) }
                     }
                 )
                 .presentationDetents([.medium, .large])
                 .sharpitSheet()
                 .presentationDragIndicator(.visible)
             }
+        }
+        .sheet(item: $reassessing) { item in
+            if let zones {
+                ZoneCheckinSheet(zone: item.zone) { draft in
+                    await zones.checkin(item.zone, draft)
+                }
+            }
+        }
+        .sheet(item: $editing) { editing in
+            ActivityFormSheet(
+                mode: .edit(id: editing.id),
+                draft: editing.draft,
+                client: editing.mutator,
+                tokenProvider: tokenProvider
+            ) { _ in
+                router?.noteActivitiesChanged()
+                Task {
+                    await client.forgetActivity(id: activity)
+                    await load()
+                }
+            }
+        }
+        .confirmationDialog("Supprimer cette séance ?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
+            Button("Supprimer la séance", role: .destructive) { delete() }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Elle disparaît de ton historique, de ta charge et du plan qu’elle validait. Une séance synchronisée depuis une montre peut revenir à la prochaine synchronisation si elle y est encore.")
+        }
+        .alert(
+            notice?.title ?? "",
+            isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } }),
+            presenting: notice
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { notice in
+            Text(notice.message)
         }
         .sheet(item: $subjectiveStore) { store in
             SubjectiveEditorSheet(store: store)
@@ -345,6 +402,22 @@ struct ActivityDetailView: View {
         .task {
             await load()
         }
+        .task(id: phase.loadedDate) {
+            await loadZones()
+        }
+    }
+
+    private func reassessments(for detail: V1ActivityDetail) -> [PainReassessment] {
+        PainReassessment.due(after: detail.date, zones: zones?.zones?.zones ?? [])
+    }
+
+    /// Read only for a session recent enough to ask about.
+    private func loadZones() async {
+        guard zones == nil, let date = phase.loadedDate,
+              Date.now.timeIntervalSince(date) <= PainReassessment.freshness else { return }
+        let store = SensitiveZonesStore(tokenProvider: tokenProvider)
+        zones = store
+        await store.load()
     }
 
     private func openSubjective(for detail: V1ActivityDetail) {
@@ -382,6 +455,68 @@ struct ActivityDetailView: View {
             await client.invalidateActivities()
             router?.noteCalendarChanged()
             await load()
+        }
+    }
+
+    /// Leaves the page on the tap; the list and the plan read again once the server has it.
+    private func delete() {
+        guard let mutator = client as? any ActivityMutating else { return }
+        let id = activity
+        dismiss()
+        Task {
+            do {
+                try await SharpitRetry.run {
+                    try await mutator.deleteActivity(id: id, token: try await tokenProvider())
+                }
+            } catch {
+                SharpitWriteFailures.shared.report("La séance n’a pas pu être supprimée. Réessaie dans un instant.")
+            }
+            router?.noteActivitiesChanged()
+        }
+    }
+
+    /// Sends the session as a workout to the Garmin watch, to do again. The server says why it
+    /// cannot (no Garmin, below Pro) and the alert carries its words.
+    private func sendToWatch(_ detail: V1ActivityDetail) async {
+        do {
+            let message = try await SharpitRetry.run {
+                guard let mutator = client as? any ActivityMutating else { throw SharpitAPIError.server }
+                return try await mutator.pushActivityToWatch(id: detail.id, token: try await tokenProvider())
+            }
+            notice = ActivityNotice(title: "Montre", message: message)
+        } catch let SharpitAPIError.message(reason) {
+            notice = ActivityNotice(title: "Montre", message: reason)
+        } catch {
+            notice = ActivityNotice(title: "Montre", message: "L’entraînement n’a pas pu être envoyé. Réessaie dans un instant.")
+        }
+    }
+
+    /// The coach reads the session again behind; the page looks for the new reading a few
+    /// times, then leaves it to the next open.
+    private func reanalyze(_ sessionId: String, previous: V1PlannedSessionAnalysis) {
+        showingCompliance = false
+        Task {
+            do {
+                try await SharpitRetry.run {
+                    try await linker.reanalyze(sessionId: sessionId, token: try await tokenProvider())
+                }
+                notice = ActivityNotice(title: "Analyse relancée", message: "Le coach relit ta séance, la nouvelle analyse s’affiche ici dans un instant.")
+            } catch SharpitAPIError.rateLimited {
+                notice = ActivityNotice(title: "Analyse", message: "Une analyse vient d’être lancée. Réessaie dans quelques minutes.")
+                return
+            } catch let SharpitAPIError.message(reason) {
+                notice = ActivityNotice(title: "Analyse", message: reason)
+                return
+            } catch {
+                notice = ActivityNotice(title: "Analyse", message: "L’analyse n’a pas pu être relancée. Réessaie dans un instant.")
+                return
+            }
+            for _ in 0..<4 {
+                try? await Task.sleep(for: .seconds(8))
+                await client.forgetActivity(id: activity)
+                await load()
+                if case .loaded(let detail) = phase, detail.plannedSession?.analysis != previous { return }
+            }
         }
     }
 
@@ -446,11 +581,21 @@ struct ActivityDetailView: View {
     }
 }
 
+private struct ActivityNotice: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+}
+
 private enum DetailPhase {
     case loading
     case loaded(V1ActivityDetail)
     case failed(String)
     case unauthorized
+
+    var loadedDate: Date? {
+        if case .loaded(let detail) = self { detail.date } else { nil }
+    }
 }
 
 private struct ActivityDetailContent: View {
@@ -470,6 +615,8 @@ private struct ActivityDetailContent: View {
     let clearsBackButton: Bool
     var isMapExpanded: Bool = false
     var onExpandToggle: () -> Void = {}
+    var reassessments: [PainReassessment] = []
+    var onReassess: (PainReassessment) -> Void = { _ in }
     @State private var selectedChartMetrics: [ActivityChartMetric] = [.heartRate]
 
     var body: some View {
@@ -556,6 +703,12 @@ private struct ActivityDetailContent: View {
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 2)), value: appeared)
+
+            if !reassessments.isEmpty {
+                PainReassessmentSection(items: reassessments, onAnswer: onReassess)
+                    .opacity(appeared ? 1 : 0)
+                    .animation(SharpitMotion.reveal, value: reassessments)
+            }
 
             if detail.type == .strength, !strengthExercises.isEmpty {
                 ActivityStrengthSection(exercises: strengthExercises)

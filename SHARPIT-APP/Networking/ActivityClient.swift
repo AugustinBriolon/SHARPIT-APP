@@ -29,6 +29,18 @@ protocol ActivityServing: Sendable {
     func forgetActivity(id: String) async
 }
 
+/// Logging, editing and deleting a done session (`/api/v1/activities`, SHARPIT ADR-040).
+protocol ActivityMutating: Sendable {
+    /// The new activity's id.
+    func createActivity(_ fields: [String: JSONValue], token: String) async throws -> String
+    /// Only the fields named: an absent key leaves a field, `null` clears it.
+    func updateActivity(id: String, fields: [String: JSONValue], token: String) async throws
+    func deleteActivity(id: String, token: String) async throws
+    /// Sends a strength session to the Garmin watch as a workout to do again, scheduled today;
+    /// returns what to tell the athlete. Refusals (no Garmin, below Pro) carry the server's words.
+    func pushActivityToWatch(id: String, token: String) async throws -> String
+}
+
 extension ActivityServing {
     func activities(forceRefresh: Bool, token: String) async throws -> [V1ActivityListItem] {
         try await activities(token: token)
@@ -38,7 +50,7 @@ extension ActivityServing {
     func forgetActivity(id _: String) async {}
 }
 
-actor ActivityClient: ActivityServing {
+actor ActivityClient: ActivityServing, ActivityMutating {
     private let session: URLSession
     private let baseURL: URL
     private var activitiesCache: [V1ActivityListItem]?
@@ -155,6 +167,65 @@ actor ActivityClient: ActivityServing {
         detailCache[id] = nil
         disk?.remove(.detail, id: id)
         activitiesCache = nil
+    }
+
+    private struct CreatedActivity: Decodable { let id: String }
+
+    func createActivity(_ fields: [String: JSONValue], token: String) async throws -> String {
+        let data = try await write(path: "/api/v1/activities", method: "POST", body: JSONEncoder().encode(fields), token: token)
+        activitiesCache = nil
+        return try JSONDecoder().decode(CreatedActivity.self, from: data).id
+    }
+
+    func updateActivity(id: String, fields: [String: JSONValue], token: String) async throws {
+        _ = try await write(path: "/api/v1/activities/\(id)", method: "PATCH", body: JSONEncoder().encode(fields), token: token)
+        forgetActivity(id: id)
+        activitiesCache = nil
+    }
+
+    func deleteActivity(id: String, token: String) async throws {
+        _ = try await write(path: "/api/v1/activities/\(id)", method: "DELETE", body: nil, token: token)
+        forgetActivity(id: id)
+        disk?.remove(.stream, id: id)
+        streamCache[id] = nil
+        activitiesCache = nil
+    }
+
+    func pushActivityToWatch(id: String, token: String) async throws -> String {
+        let body = try JSONEncoder().encode(["activityId": JSONValue.string(id), "schedule": .bool(true)])
+        _ = try await write(path: "/api/v1/garmin/workouts/from-activity", method: "POST", body: body, token: token)
+        return "La séance est sur ta montre Garmin, prévue aujourd’hui."
+
+    }
+
+    /// A write: a refusal carries the server's own field message, a 5xx is `.server` so
+    /// `SharpitRetry` tries it again.
+    private func write(path: String, method: String, body: Data?, token: String) async throws -> Data {
+        var request = URLRequest(url: baseURL.appending(path: path))
+        request.httpMethod = method
+        request.httpBody = body
+        request.setValue("Bear" + "er " + token, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if body != nil {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw SharpitAPIError.transport
+        }
+        switch (response as? HTTPURLResponse)?.statusCode ?? 0 {
+        case 200...299: return data
+        case 401: throw SharpitAPIError.unauthorized
+        case 403 where PlannedSessionClient.refusal(in: data) == "pro_required":
+            throw SharpitAPIError.message("Envoyer une séance à la montre est réservé à SharpIt Pro.")
+        case 403: throw SharpitAPIError.unauthorized
+        case 429: throw SharpitAPIError.rateLimited
+        case 400...499: throw PlannedSessionClient.refusal(in: data).map(SharpitAPIError.message) ?? SharpitAPIError.badRequest
+        default: throw SharpitAPIError.server
+        }
     }
 
     private func requestData(path: String, body: Data, token: String) async throws {

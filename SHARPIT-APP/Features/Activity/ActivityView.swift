@@ -9,6 +9,7 @@ struct ActivityView: View {
     /// An activity opened from outside the list — a widget — by its id alone.
     @State private var openedActivityId: String?
     @State private var filter = ActivityFilter()
+    @State private var isLogging = false
     @Environment(ShellRouter.self) private var router: ShellRouter?
     /// Its completion brings older activities in, so the list reloads when it lands.
     @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
@@ -37,6 +38,21 @@ struct ActivityView: View {
                         ActivityFilterMenu(filter: $filter, sports: ActivityFilter.sports(in: activities))
                     }
                 }
+                if client is any ActivityMutating {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Saisir une séance", systemImage: "plus") { isLogging = true }
+                    }
+                }
+            }
+            .sheet(isPresented: $isLogging) {
+                if let mutator = client as? any ActivityMutating {
+                    ActivityFormSheet(mode: .create, draft: .new(), client: mutator, tokenProvider: tokenProvider) { id in
+                        router?.noteActivitiesChanged()
+                        filter = ActivityFilter()
+                        selectedActivity = nil
+                        openedActivityId = id
+                    }
+                }
             }
             .navigationDestination(item: $selectedActivity) { activity in
                 ActivityDetailView(
@@ -59,6 +75,9 @@ struct ActivityView: View {
                 openedActivityId = id
             }
             .onChange(of: historyImport?.completedAt) { _, _ in
+                Task { await load(force: true) }
+            }
+            .onChange(of: router?.activitiesRevision) { _, _ in
                 Task { await load(force: true) }
             }
         }
