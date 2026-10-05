@@ -13,7 +13,7 @@ struct SleepWidget: Widget {
                 }
             }
                 .containerBackground(for: .widget) { WidgetCanvas() }
-                .widgetURL(WidgetSnapshot.link("/today"))
+                .widgetURL(entry.extraLink("/sleep"))
         }
         .configurationDisplayName("Sommeil")
         .description("Le score de ta nuit dernière.")

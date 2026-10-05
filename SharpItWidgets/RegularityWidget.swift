@@ -14,7 +14,7 @@ struct RegularityWidget: Widget {
                 }
             }
                 .containerBackground(for: .widget) { WidgetCanvas() }
-                .widgetURL(WidgetSnapshot.link("/plan"))
+                .widgetURL(entry.extraLink("/plan", feature: .regularity))
         }
         .configurationDisplayName("Régularité")
         .description("Les jours où tu t'es entraîné, et tes séances de la semaine.")

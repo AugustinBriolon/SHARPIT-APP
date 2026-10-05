@@ -7,6 +7,7 @@ import SwiftUI
 struct SharpitApp: App {
     @UIApplicationDelegateAdaptor(SharpitAppDelegate.self) private var appDelegate
     private let modelContainer: ModelContainer
+    @State private var linkInbox = IncomingLinkInbox()
 
     init() {
         // First, so a crash anywhere in launch is reported.
@@ -54,10 +55,12 @@ struct SharpitApp: App {
             }
         }
         .environment(Clerk.shared)
+        .environment(linkInbox)
         .environment(\.clerkTheme, .sharpit)
         // Per iPhone, never synced (Paramètres → Apparence).
         .sharpitAppearance()
         .onOpenURL { url in
+            linkInbox.receive(url)
             Task {
                 try? await Clerk.shared.handle(url)
             }

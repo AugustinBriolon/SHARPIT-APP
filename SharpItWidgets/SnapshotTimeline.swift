@@ -21,6 +21,16 @@ struct SnapshotEntry: TimelineEntry {
     var features: V1FeaturePrefs { snapshot?.features ?? V1FeaturePrefs() }
     /// Whether the extra widgets show; true until the app said otherwise.
     var unlocksExtraWidgets: Bool { snapshot?.isPro ?? true }
+
+    /// A free widget's tap: its page, or Pages et widgets when its feature is hidden.
+    func link(_ path: String, feature: SharpitFeature? = nil) -> URL {
+        WidgetSnapshot.link(path, feature: feature, features: features)
+    }
+
+    /// An extra (Pro) widget's tap: its page, else SharpIt Pro while it shows its lock.
+    func extraLink(_ path: String, feature: SharpitFeature? = nil) -> URL {
+        WidgetSnapshot.link(path, unlocked: unlocksExtraWidgets, feature: feature, features: features)
+    }
 }
 
 /// Reads the snapshot the app wrote. The app reloads the timelines when it writes a new one;
