@@ -85,6 +85,8 @@ nonisolated struct UpdatePlannedSessionPayload: Codable, Sendable {
     let durationMin: Double?
     let load: Double?
     let intensity: String?
+    /// Marks or unmarks one of the week's key sessions; nil leaves it.
+    let isKey: Bool?
 
     init(
         type: String? = nil,
@@ -93,7 +95,8 @@ nonisolated struct UpdatePlannedSessionPayload: Codable, Sendable {
         description: String? = nil,
         durationMin: Double? = nil,
         load: Double? = nil,
-        intensity: String? = nil
+        intensity: String? = nil,
+        isKey: Bool? = nil
     ) {
         self.type = type
         self.date = date
@@ -102,6 +105,7 @@ nonisolated struct UpdatePlannedSessionPayload: Codable, Sendable {
         self.durationMin = durationMin
         self.load = load
         self.intensity = intensity
+        self.isKey = isKey
     }
 }
 

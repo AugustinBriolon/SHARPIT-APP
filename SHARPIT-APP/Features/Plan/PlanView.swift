@@ -5,6 +5,7 @@ struct PlanView: View {
     let client: any PlannedSessionServing
     let linker: any PlannedSessionLinking
     let watchPusher: any PlannedSessionWatchPushing
+    let keyMutator: any PlannedSessionMutating
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
 
@@ -37,6 +38,7 @@ struct PlanView: View {
         self.client = client
         self.linker = linker
         self.watchPusher = watchPusher ?? (client as? (any PlannedSessionWatchPushing)) ?? PlannedSessionClient()
+        keyMutator = (client as? (any PlannedSessionMutating)) ?? PlannedSessionClient()
         self.activityClient = activityClient
         self.tokenProvider = tokenProvider
         _generation = State(initialValue: PlanGenerationStore(tokenProvider: tokenProvider))
@@ -102,7 +104,8 @@ struct PlanView: View {
                     PlannedSessionDrawer(
                         preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
                         linking: linkContext(on: session.date),
-                        watchPush: watchPushContext(on: session.date)
+                        watchPush: watchPushContext(on: session.date),
+                        keyToggle: keyContext(on: session.date)
                     ) { context in
                         router.discussWithCoach(about: context)
                     }
@@ -249,6 +252,14 @@ extension PlanView {
                 )
                 Task { await store.reload(around: date) }
             }
+        )
+    }
+
+    fileprivate func keyContext(on date: Date) -> SessionKeyContext {
+        SessionKeyContext(
+            mutator: keyMutator,
+            tokenProvider: tokenProvider,
+            onChanged: { Task { await store.reload(around: date) } }
         )
     }
 
@@ -799,6 +810,7 @@ private struct PlanSessionCard: View {
                     )
                     .lineLimit(2)
                 HStack(spacing: SharpitSpacing.xs) {
+                    if session.isKey { SharpitInlineTag("Clé") }
                     Text(session.displayType)
                     if let durationMin = session.durationMin { Text("\(durationMin) min") }
                     if state == .missed { Text("Non réalisée") }
@@ -851,14 +863,8 @@ private struct PlanBrickCard: View {
                     .foregroundStyle(brick.isMissed ? SharpitColor.mutedForeground : SharpitColor.foreground)
                     .lineLimit(2)
                 HStack(spacing: SharpitSpacing.xs) {
-                    Text("Brick")
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.primary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 1)
-                        .background(SharpitColor.primary.opacity(0.12), in: Capsule())
+                    SharpitInlineTag("Brick")
+                    if brick.isKey { SharpitInlineTag("Clé") }
                     Text(brick.legs.map { leg in leg.durationMin.map { "\($0)" } ?? "–" }.joined(separator: " + ") + " min")
                     if brick.isMissed { Text("Non réalisé") }
                 }
@@ -880,7 +886,10 @@ private struct PlanBrickCard: View {
         .padding(.vertical, SharpitSpacing.xxs)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Brick, \(brick.chain)" + (brick.totalDurationMin.map { ", \($0) minutes" } ?? ""))
+        .accessibilityLabel(
+            "Brick, \(brick.chain)" + (brick.isKey ? ", séance clé" : "")
+                + (brick.totalDurationMin.map { ", \($0) minutes" } ?? "")
+        )
         .accessibilityAddTraits(.isButton)
     }
 }

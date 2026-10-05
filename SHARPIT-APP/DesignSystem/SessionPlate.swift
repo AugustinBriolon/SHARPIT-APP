@@ -78,6 +78,11 @@ struct SessionPlate: View {
                 )
             }
 
+            // A session still to do that carries the week; once done, « Faite » says enough.
+            if session.isKey, session.kind != .done {
+                SharpitInlineTag("Clé")
+            }
+
             // Priority Indicator
             if showPriorityTag {
                 HStack(spacing: 3) {
@@ -306,6 +311,7 @@ struct SessionPlate: View {
         return [
             session.brickLegs == nil ? session.sport : "Brick",
             showPriorityTag ? "Prioritaire" : nil,
+            session.isKey && session.kind != .done ? "Séance clé" : nil,
             session.brickChain ?? session.title,
             objectiveText != nil ? "Objectif: \(objectiveText!)" : nil,
             status,

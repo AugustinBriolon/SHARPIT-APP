@@ -114,6 +114,8 @@ nonisolated struct V1TodaySession: Codable, Sendable, Equatable, Identifiable {
     /// Set on a brick line: the group that addresses the brick as a whole (its evaluation).
     /// `id` cannot: a done brick's `id` is its first activity, for older app builds.
     var brickGroupId: String? = nil
+    /// One of the week's key sessions (SHARPIT F2); absent from older payloads.
+    var isKey: Bool? = nil
 }
 
 /// One leg of a brick line.

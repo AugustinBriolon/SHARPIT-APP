@@ -27,10 +27,13 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     let brickGroupId: String?
     /// The leg's place in its brick, 0 first.
     let brickOrder: Int?
+    /// One of the week's two or three key sessions (SHARPIT F2); false on payloads written
+    /// before the field existed.
+    let isKey: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, date, startTime, title, type, durationMin, intensity, load, notes, breakdown
-        case goalId, completed, activityId, activity, brickGroupId, brickOrder
+        case goalId, completed, activityId, activity, brickGroupId, brickOrder, isKey
         case garminWorkoutId, garminWorkoutScheduledDate, garminWorkoutPushedAt
     }
 
@@ -53,7 +56,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         garminWorkoutScheduledDate: String? = nil,
         garminWorkoutPushedAt: Date? = nil,
         brickGroupId: String? = nil,
-        brickOrder: Int? = nil
+        brickOrder: Int? = nil,
+        isKey: Bool = false
     ) {
         self.id = id
         self.date = date
@@ -74,6 +78,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         self.garminWorkoutPushedAt = garminWorkoutPushedAt
         self.brickGroupId = brickGroupId
         self.brickOrder = brickOrder
+        self.isKey = isKey
     }
 
     init(from decoder: Decoder) throws {
@@ -110,6 +115,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         }
         brickGroupId = try container.decodeIfPresent(String.self, forKey: .brickGroupId)
         brickOrder = try container.decodeIfPresent(Int.self, forKey: .brickOrder)
+        isKey = (try? container.decodeIfPresent(Bool.self, forKey: .isKey)) ?? false
     }
 
     func withGarminPush(
@@ -136,7 +142,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
             garminWorkoutScheduledDate: scheduledDate ?? garminWorkoutScheduledDate,
             garminWorkoutPushedAt: pushedAt ?? garminWorkoutPushedAt,
             brickGroupId: brickGroupId,
-            brickOrder: brickOrder
+            brickOrder: brickOrder,
+            isKey: isKey
         )
     }
 

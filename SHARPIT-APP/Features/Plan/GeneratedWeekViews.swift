@@ -158,11 +158,14 @@ struct GeneratedSessionRow: View {
         HStack(spacing: SharpitSpacing.sm) {
             SharpitSportBadge(type: session.type)
             VStack(alignment: .leading, spacing: 2) {
-                Text(day)
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                HStack(spacing: SharpitSpacing.xs) {
+                    Text(day)
+                        .font(SharpitTypography.label)
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                    if session.isKey { SharpitInlineTag("Clé") }
+                }
                 Text(session.title)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)

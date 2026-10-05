@@ -28,6 +28,9 @@ struct PlannedSessionPreview: Identifiable, Hashable {
     let garminWorkoutScheduledDate: String?
     let garminWorkoutPushedAt: Date?
 
+    /// One of the week's key sessions (SHARPIT F2).
+    let isKey: Bool
+
     var id: String { sessionId ?? title }
 
     init(
@@ -44,8 +47,10 @@ struct PlannedSessionPreview: Identifiable, Hashable {
         stepsAreDerived: Bool,
         garminWorkoutId: String? = nil,
         garminWorkoutScheduledDate: String? = nil,
-        garminWorkoutPushedAt: Date? = nil
+        garminWorkoutPushedAt: Date? = nil,
+        isKey: Bool = false
     ) {
+        self.isKey = isKey
         self.sessionId = sessionId
         self.title = title
         self.sport = sport
@@ -118,7 +123,8 @@ extension PlannedSessionPreview {
             stepsAreDerived: session.breakdown?.derived ?? false,
             garminWorkoutId: session.garminWorkoutId,
             garminWorkoutScheduledDate: session.garminWorkoutScheduledDate,
-            garminWorkoutPushedAt: session.garminWorkoutPushedAt
+            garminWorkoutPushedAt: session.garminWorkoutPushedAt,
+            isKey: session.isKey
         )
     }
 
@@ -200,6 +206,8 @@ struct PlannedSessionDrawer: View {
     var linking: SessionLinkContext?
     /// Nil where the screen cannot push to watch.
     var watchPush: SessionWatchPushContext?
+    /// Lets the athlete mark the session key or not; nil where the plan cannot be changed.
+    var keyToggle: SessionKeyContext?
     /// Fetches the session's breakdown when the preview arrived without one — Today's
     /// payload carries the line, not the prescription behind it.
     var loadBreakdown: (() async -> V1PlannedSessionBreakdown?)?
@@ -286,6 +294,9 @@ struct PlannedSessionDrawer: View {
                             dismiss()
                         }
                     }
+                }
+                if let sessionId = preview.sessionId, let keyToggle {
+                    SessionKeyRow(sessionId: sessionId, isKey: preview.isKey, context: keyToggle)
                 }
                 // Same reason as the coach button: linking needs to know *which* session.
                 if preview.sessionId != nil, linking != nil {

@@ -38,6 +38,8 @@ struct SessionCardModel: Sendable, Equatable, Identifiable {
     var brickTransitionsSec: [Int?]? = nil
     /// A brick's group, which addresses the brick as a whole.
     var brickGroupId: String? = nil
+    /// One of the week's key sessions (SHARPIT F2).
+    var isKey = false
 }
 
 struct OvernightGaugeModel: Sendable, Equatable, Identifiable {
@@ -118,7 +120,8 @@ enum TodayFoldMapper {
                     plannedSessionId: session.plannedSessionId,
                     brickLegs: (session.brickLegs?.count ?? 0) > 1 ? session.brickLegs : nil,
                     brickTransitionsSec: session.brickTransitionsSec,
-                    brickGroupId: session.brickGroupId
+                    brickGroupId: session.brickGroupId,
+                    isKey: session.isKey ?? false
                 )
             },
             gauges: response.signals

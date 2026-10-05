@@ -17,6 +17,9 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
     let decisionId: String?
     /// What to do, in order — resolved server-side like a planned session's.
     let breakdown: V1PlannedSessionBreakdown?
+    /// One of the week's key sessions, as the server marked the proposal (SHARPIT F2). Travels
+    /// back to the plan inside `raw`.
+    let isKey: Bool
     /// The session as the server sent it, prescriptions included: sent back whole to be added
     /// to the plan, so nothing the app does not model is lost on the way.
     let raw: JSONValue?
@@ -24,6 +27,7 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
     enum CodingKeys: String, CodingKey {
         case dayOffset, date, startTime, type, intensity, title, description
         case durationMin, load, rationale, decisionId, breakdown
+        case isKey = "key"
     }
 
     init(from decoder: Decoder) throws {
@@ -41,6 +45,7 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         rationale = try container.decodeIfPresent(String.self, forKey: .rationale)
         decisionId = try container.decodeIfPresent(String.self, forKey: .decisionId)
         breakdown = try? container.decodeIfPresent(V1PlannedSessionBreakdown.self, forKey: .breakdown)
+        isKey = (try? container.decodeIfPresent(Bool.self, forKey: .isKey)) ?? false
         raw = try? JSONValue(from: decoder)
     }
 
@@ -56,7 +61,8 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         load: Double,
         rationale: String? = nil,
         decisionId: String? = nil,
-        breakdown: V1PlannedSessionBreakdown? = nil
+        breakdown: V1PlannedSessionBreakdown? = nil,
+        isKey: Bool = false
     ) {
         self.dayOffset = dayOffset
         self.date = date
@@ -70,6 +76,7 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         self.rationale = rationale
         self.decisionId = decisionId
         self.breakdown = breakdown
+        self.isKey = isKey
         raw = nil
     }
 

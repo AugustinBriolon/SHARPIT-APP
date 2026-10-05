@@ -64,6 +64,8 @@ struct PlanBrick: Hashable, Identifiable {
 
     /// « Vélo → Course »: the chain is what the brick trains.
     var chain: String { legs.map(\.displayType).joined(separator: " → ") }
+    /// A brick is one session: key when any leg is.
+    var isKey: Bool { legs.contains(where: \.isKey) }
 
     var totalDurationMin: Int? {
         let durations = legs.compactMap(\.durationMin)
