@@ -90,7 +90,7 @@ struct VolumeWidget: Widget {
                 }
             }
                 .containerBackground(for: .widget) { WidgetCanvas() }
-                .widgetURL(WidgetSnapshot.link("/activity"))
+                .widgetURL(WidgetSnapshot.link("/activity", unlocked: entry.isUnlocked))
         }
         .configurationDisplayName("Volume de la semaine")
         .description("Tes kilomètres ou ton temps de la semaine, par sport.")

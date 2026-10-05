@@ -213,6 +213,20 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     static func link(_ path: String) -> URL {
         URL(string: "https://sharpit.app\(path)")!
     }
+
+    /// Where a tap on a widget lands: the page it stands for, or — when the widget shows a lock
+    /// or a part of SharpIt the athlete hid — the page of Paramètres that undoes it, since the
+    /// page itself would not be there.
+    static func link(
+        _ path: String,
+        unlocked: Bool = true,
+        feature: SharpitFeature? = nil,
+        features: V1FeaturePrefs = V1FeaturePrefs()
+    ) -> URL {
+        if !unlocked { return link("/settings/pro") }
+        if let feature, !features.isOn(feature) { return link("/settings/features") }
+        return link(path)
+    }
 }
 
 /// The snapshot's file in the App Group container, shared by the app and the widgets.

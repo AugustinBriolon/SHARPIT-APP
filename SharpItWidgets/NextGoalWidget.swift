@@ -14,7 +14,7 @@ struct NextGoalWidget: Widget {
                 }
             }
                 .containerBackground(for: .widget) { WidgetCanvas() }
-                .widgetURL(WidgetSnapshot.link("/goals"))
+                .widgetURL(entry.extraLink("/goals"))
         }
         .configurationDisplayName("Prochain objectif")
         .description("Le compte à rebours jusqu'à ta prochaine course.")

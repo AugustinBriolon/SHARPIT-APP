@@ -15,7 +15,7 @@ struct WeightWidget: Widget {
                 }
             }
                 .containerBackground(for: .widget) { WidgetCanvas() }
-                .widgetURL(WidgetSnapshot.link("/corps"))
+                .widgetURL(entry.extraLink("/corps", feature: .health))
         }
         .configurationDisplayName("Poids")
         .description("Ton poids et l'écart à ton objectif.")

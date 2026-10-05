@@ -216,7 +216,13 @@ next race, `GoalOrdering.nextRace`) from `GoalStore` — each written by the scr
 merged (`WidgetSnapshotStore.update`); the silent push reads them all. The volume widget is an
 `AppIntentConfiguration` (`VolumeSport`): kilometres for one sport, time for strength or all sports,
 Monday first, with last week at the same point as a fact, never a verdict. No streaks. `/goals`
-opens Plan's Objectifs (`ShellRouter.isShowingGoals`). How a section reads (the dial's figure, the target line) is in `WidgetSnapshotReadout`, shared
+opens Plan's Objectifs (`ShellRouter.isShowingGoals`). Every widget opens the page it stands for:
+Sommeil `/sleep` and Nutrition `/nutrition` are pushed on Résumé (`ShellRouter.openToday`,
+`TodayPage`), the verdict `/today` pops Résumé to its top; a locked widget opens SharpIt Pro
+(`/settings/pro`), a hidden one Pages et widgets (`/settings/features`) — `WidgetSnapshot.link`
+decides, tested in `WidgetLinkTests`. The app hears every URL (`IncomingLinkInbox`) and `RootView`
+follows it once it shows, so a widget tapped on a cold launch, while the gates still check the
+session, is not lost; Paramètres is closed first. How a section reads (the dial's figure, the target line) is in `WidgetSnapshotReadout`, shared
 and tested; the energy and sleep dials are the app's `SharpitTickGauge` (`DialReadout`). A widget never calls the API — no Clerk session, a small reload
 budget: the app writes a `WidgetSnapshot` into the App Group `group.app.sharpit.ios`
 (`WidgetSnapshotStore`) from Résumé's fold each time it reads today, and on a silent push the

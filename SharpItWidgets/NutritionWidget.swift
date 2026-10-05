@@ -8,7 +8,7 @@ struct NutritionWidget: Widget {
         StaticConfiguration(kind: "Nutrition", provider: SnapshotProvider()) { entry in
             NutritionWidgetView(entry: entry)
                 .containerBackground(for: .widget) { WidgetCanvas() }
-                .widgetURL(WidgetSnapshot.link("/today"))
+                .widgetURL(entry.link("/nutrition", feature: .nutrition))
         }
         .configurationDisplayName("Nutrition")
         .description("Tes calories restantes et tes macros du jour.")
