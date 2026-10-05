@@ -205,10 +205,29 @@ private struct JournalPrefsToggleRow: View {
     var iconColor: Color = SharpitColor.mutedForeground
     let isOn: Bool
     let isBlocked: Bool
-    let onChange: (Bool) -> Void
+    let onChange: @MainActor (Bool) -> Void
+
+    @State private var toggleValue: Bool
+
+    init(
+        label: String,
+        symbolName: String,
+        iconColor: Color = SharpitColor.mutedForeground,
+        isOn: Bool,
+        isBlocked: Bool,
+        onChange: @escaping @MainActor (Bool) -> Void
+    ) {
+        self.label = label
+        self.symbolName = symbolName
+        self.iconColor = iconColor
+        self.isOn = isOn
+        self.isBlocked = isBlocked
+        self.onChange = onChange
+        _toggleValue = State(initialValue: isOn)
+    }
 
     var body: some View {
-        Toggle(isOn: Binding(get: { isOn }, set: onChange)) {
+        Toggle(isOn: $toggleValue) {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: symbolName)
                     .font(SharpitTypography.bodyEmphasis)
@@ -228,5 +247,12 @@ private struct JournalPrefsToggleRow: View {
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
+        .onChange(of: isOn) { _, newValue in
+            toggleValue = newValue
+        }
+        .onChange(of: toggleValue) { _, newValue in
+            guard newValue != isOn else { return }
+            onChange(newValue)
+        }
     }
 }
