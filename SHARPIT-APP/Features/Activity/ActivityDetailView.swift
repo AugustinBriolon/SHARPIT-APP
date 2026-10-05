@@ -24,9 +24,12 @@ struct ActivityDetailView: View {
     @State private var isMapOffRoute = false
     /// Built once per stream read, not on every render: the path and samples are hundreds long.
     @State private var routeIntensity: RouteIntensity?
-    /// Ties the expanded map's compass and pitch toggle to the map, so they sit in the safe area
+    /// Ties the expanded map's compass and scale to the map, so they sit in the safe area
     /// under the map's own buttons rather than where MapKit puts them on a full-bleed map.
     @Namespace private var mapScope
+    /// The expanded map's camera once it settles: the 2D/3D button reads its pitch and keeps
+    /// its centre, distance and heading when it tilts or flattens the view.
+    @State private var mapCamera: MapCamera?
     @Environment(\.dismiss) private var dismiss
     @Environment(ShellRouter.self) private var router: ShellRouter?
 
@@ -69,6 +72,7 @@ struct ActivityDetailView: View {
                                     mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
+                                    camera: $mapCamera,
                                     mapStyle: mapStyleSelection.mapStyle,
                                     intensity: intensity
                                 )
@@ -80,6 +84,7 @@ struct ActivityDetailView: View {
                                     mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
+                                    camera: $mapCamera,
                                     mapStyle: mapStyleSelection.mapStyle
                                 )
                             } else if !route.isEmpty {
@@ -90,6 +95,7 @@ struct ActivityDetailView: View {
                                     mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
+                                    camera: $mapCamera,
                                     mapStyle: mapStyleSelection.mapStyle
                                 )
                             } else {
@@ -284,10 +290,35 @@ struct ActivityDetailView: View {
         .overlay(alignment: .topTrailing) {
             // The map ignores the safe area, so MapKit would draw these under the status bar
             // once the map is rotated or pitched; they live in the column under the buttons.
+            // The 2D/3D button is always there, so it comes first: the compass, which comes and
+            // goes with the heading, appears under it instead of pushing it down. MapKit's own
+            // pitch toggle shows only once the map is tilted, so the button is the screen's.
             if isMapExpanded {
+                let isPitched = (mapCamera?.pitch ?? 0) > 1
                 VStack(alignment: .trailing, spacing: 8) {
+                    Button {
+                        guard let camera = mapCamera else { return }
+                        withAnimation(.easeInOut(duration: 0.45)) {
+                            mapCameraPosition = .camera(MapCamera(
+                                centerCoordinate: camera.centerCoordinate,
+                                distance: camera.distance,
+                                heading: camera.heading,
+                                pitch: isPitched ? 0 : 60
+                            ))
+                        }
+                    } label: {
+                        Text(isPitched ? "2D" : "3D")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial, in: Circle())
+                            .sharpitShadow(.control)
+                            .contentTransition(.opacity)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(mapCamera == nil)
+                    .accessibilityLabel(isPitched ? "Vue à plat" : "Vue en relief")
                     MapCompass(scope: mapScope)
-                    MapPitchToggle(scope: mapScope)
                     MapScaleView(scope: mapScope)
                 }
                 .padding(.trailing, 18)
@@ -1371,6 +1402,7 @@ private struct ActivityRouteHero: View {
     let mapScope: Namespace.ID
     @Binding var position: MapCameraPosition
     @Binding var isOffRoute: Bool
+    @Binding var camera: MapCamera?
     var mapStyle: MapStyle = .standard(elevation: .realistic)
     /// When set, the route is drawn stretch by stretch in its intensity's tone.
     var intensity: RouteIntensity? = nil
@@ -1413,6 +1445,7 @@ private struct ActivityRouteHero: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .allowsHitTesting(isExpanded)
             .onMapCameraChange(frequency: .onEnd) { context in
+                camera = context.camera
                 let off = isExpanded && RouteFraming.isOffRoute(visible: context.region, route: route)
                 if off != isOffRoute {
                     withAnimation(SharpitMotion.selection) { isOffRoute = off }
