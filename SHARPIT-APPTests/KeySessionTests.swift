@@ -10,14 +10,16 @@ private final class SessionPatcher: PlannedSessionMutating {
 
     init(refusal: SharpitAPIError? = nil) { self.refusal = refusal }
 
-    func createSession(_: CreatePlannedSessionPayload, token _: String) async throws -> V1PlannedSessionItem {
+    func createSession(_: PlannedSessionFields, token _: String) async throws -> V1PlannedSessionItem {
         throw SharpitAPIError.badRequest
     }
 
-    func updateSession(id: String, patch: UpdatePlannedSessionPayload, token _: String) async throws -> V1PlannedSessionItem {
+    func updateSession(id: String, fields: PlannedSessionFields, token _: String) async throws -> V1PlannedSessionItem {
         if let refusal { throw refusal }
-        patches.append((id, patch.isKey))
-        return V1PlannedSessionItem(id: id, date: .now, isKey: patch.isKey ?? false)
+        var isKey: Bool?
+        if case .bool(let value)? = fields["isKey"] { isKey = value }
+        patches.append((id, isKey))
+        return V1PlannedSessionItem(id: id, date: .now, isKey: isKey ?? false)
     }
 
     func deleteSession(id _: String, token _: String) async throws {}

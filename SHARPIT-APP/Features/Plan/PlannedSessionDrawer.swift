@@ -68,6 +68,16 @@ struct PlannedSessionPreview: Identifiable, Hashable {
     }
 }
 
+/// What a screen hands the drawer so the athlete can edit, move or delete the session.
+struct SessionEditingContext {
+    let session: V1PlannedSessionItem
+    let editor: PlanEditor
+    /// The session as it now reads, for the drawer to show.
+    let onSaved: (V1PlannedSessionItem) -> Void
+    /// The session is gone; the drawer closes.
+    let onDeleted: () -> Void
+}
+
 /// What a screen hands the drawer so it can push its prescription to the watch.
 struct SessionWatchPushContext: Sendable {
     let pusher: any PlannedSessionWatchPushing
@@ -118,7 +128,8 @@ extension PlannedSessionPreview {
             date: session.date,
             metrics: metrics,
             durationMin: session.durationMin,
-            notes: session.notes,
+            // The déroulé the athlete wrote is the instruction; `notes` is an older payload's.
+            notes: session.description ?? session.notes,
             steps: session.breakdown?.steps ?? [],
             stepsAreDerived: session.breakdown?.derived ?? false,
             garminWorkoutId: session.garminWorkoutId,
@@ -208,6 +219,8 @@ struct PlannedSessionDrawer: View {
     var watchPush: SessionWatchPushContext?
     /// Lets the athlete mark the session key or not; nil where the plan cannot be changed.
     var keyToggle: SessionKeyContext?
+    /// Lets the athlete edit, move or delete the session; nil where the plan cannot be changed.
+    var editing: SessionEditingContext?
     /// Fetches the session's breakdown when the preview arrived without one — Today's
     /// payload carries the line, not the prescription behind it.
     var loadBreakdown: (() async -> V1PlannedSessionBreakdown?)?
@@ -229,6 +242,8 @@ struct PlannedSessionDrawer: View {
     @State private var localWatchPush: PlannedSessionWatchPushResult?
     @State private var loadedBreakdown: V1PlannedSessionBreakdown?
     @State private var isLoadingBreakdown = false
+    @State private var isEditing = false
+    @State private var isConfirmingDeletion = false
 
     private var steps: [V1PlannedSessionStep] {
         preview.steps.isEmpty ? loadedBreakdown?.steps ?? [] : preview.steps
@@ -261,9 +276,40 @@ struct PlannedSessionDrawer: View {
             NavigationStack {
                 page
                     .toolbar {
+                        if let editing {
+                            ToolbarItem(placement: .primaryAction) {
+                                SessionActionsMenu(
+                                    session: editing.session,
+                                    onEdit: { isEditing = true },
+                                    onMove: { day in editing.onSaved(editing.editor.move(editing.session, to: day)) },
+                                    onDelete: { isConfirmingDeletion = true }
+                                )
+                            }
+                        }
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Fermer") { dismiss() }
                         }
+                    }
+                    .navigationDestination(isPresented: $isEditing) {
+                        if let editing {
+                            PlannedSessionEditPage(session: editing.session, editor: editing.editor, onSaved: editing.onSaved)
+                        }
+                    }
+                    .confirmationDialog(
+                        "Supprimer cette séance ?",
+                        isPresented: $isConfirmingDeletion,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Supprimer la séance", role: .destructive) {
+                            guard let editing else { return }
+                            editing.editor.delete(editing.session)
+                            editing.onDeleted()
+                        }
+                        Button("Annuler", role: .cancel) {}
+                    } message: {
+                        Text(isAlreadyOnWatch
+                            ? "Elle disparaît de ton plan. L’entraînement déjà envoyé reste sur ta montre Garmin."
+                            : "Elle disparaît de ton plan.")
                     }
             }
             .presentationDetents([.medium, .large])

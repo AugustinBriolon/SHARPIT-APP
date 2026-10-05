@@ -40,78 +40,11 @@ protocol PlannedSessionWatchPushing: Sendable {
     func pushToWatch(sessionId: String, force: Bool, token: String) async throws -> PlannedSessionWatchPushResult
 }
 
-nonisolated struct CreatePlannedSessionPayload: Codable, Sendable {
-    let type: String
-    let date: String
-    let startTime: String?
-    let title: String?
-    let description: String?
-    let durationMin: Double?
-    let load: Double?
-    let intensity: String?
-    let goalId: String?
-    let decisionId: String?
-
-    init(
-        type: String,
-        date: String,
-        startTime: String? = nil,
-        title: String? = nil,
-        description: String? = nil,
-        durationMin: Double? = nil,
-        load: Double? = nil,
-        intensity: String? = nil,
-        goalId: String? = nil,
-        decisionId: String? = nil
-    ) {
-        self.type = type
-        self.date = date
-        self.startTime = startTime
-        self.title = title
-        self.description = description
-        self.durationMin = durationMin
-        self.load = load
-        self.intensity = intensity
-        self.goalId = goalId
-        self.decisionId = decisionId
-    }
-}
-
-nonisolated struct UpdatePlannedSessionPayload: Codable, Sendable {
-    let type: String?
-    let date: String?
-    let title: String?
-    let description: String?
-    let durationMin: Double?
-    let load: Double?
-    let intensity: String?
-    /// Marks or unmarks one of the week's key sessions; nil leaves it.
-    let isKey: Bool?
-
-    init(
-        type: String? = nil,
-        date: String? = nil,
-        title: String? = nil,
-        description: String? = nil,
-        durationMin: Double? = nil,
-        load: Double? = nil,
-        intensity: String? = nil,
-        isKey: Bool? = nil
-    ) {
-        self.type = type
-        self.date = date
-        self.title = title
-        self.description = description
-        self.durationMin = durationMin
-        self.load = load
-        self.intensity = intensity
-        self.isKey = isKey
-    }
-}
-
+/// Writes the athlete makes to their own plan. A refusal comes back as
+/// `SharpitAPIError.message` carrying the server's words, so a form can say what to fix.
 protocol PlannedSessionMutating: Sendable {
-    func createSession(_ payload: CreatePlannedSessionPayload, token: String) async throws -> V1PlannedSessionItem
-    func updateSession(id: String, patch: UpdatePlannedSessionPayload, token: String) async throws -> V1PlannedSessionItem
+    func createSession(_ fields: PlannedSessionFields, token: String) async throws -> V1PlannedSessionItem
+    func updateSession(id: String, fields: PlannedSessionFields, token: String) async throws -> V1PlannedSessionItem
     func deleteSession(id: String, token: String) async throws
 }
 
@@ -273,48 +206,71 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
         }
     }
 
-    func createSession(_ payload: CreatePlannedSessionPayload, token: String) async throws -> V1PlannedSessionItem {
-        var request = URLRequest(url: baseURL.appending(path: "/api/v1/planned-sessions"))
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = try JSONEncoder().encode(payload)
-
-        let (data, response) = try await session.data(for: request)
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        if status == 401 { throw SharpitAPIError.unauthorized }
-        guard (200...299).contains(status) else { throw SharpitAPIError.server }
-
-        return try JSONDecoder().decode(V1PlannedSessionItem.self, from: data)
+    func createSession(_ fields: PlannedSessionFields, token: String) async throws -> V1PlannedSessionItem {
+        let data = try await write(path: "/api/v1/planned-sessions", method: "POST", fields: fields, token: token)
+        return try decodeSession(data)
     }
 
-    func updateSession(id: String, patch: UpdatePlannedSessionPayload, token: String) async throws -> V1PlannedSessionItem {
-        var request = URLRequest(url: baseURL.appending(path: "/api/v1/planned-sessions/\(id)"))
-        request.httpMethod = "PATCH"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = try JSONEncoder().encode(patch)
-
-        let (data, response) = try await session.data(for: request)
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        if status == 401 { throw SharpitAPIError.unauthorized }
-        guard (200...299).contains(status) else { throw SharpitAPIError.server }
-
-        return try JSONDecoder().decode(V1PlannedSessionItem.self, from: data)
+    func updateSession(id: String, fields: PlannedSessionFields, token: String) async throws -> V1PlannedSessionItem {
+        let data = try await write(path: "/api/v1/planned-sessions/\(id)", method: "PATCH", fields: fields, token: token)
+        return try decodeSession(data)
     }
 
     func deleteSession(id: String, token: String) async throws {
-        var request = URLRequest(url: baseURL.appending(path: "/api/v1/planned-sessions/\(id)"))
-        request.httpMethod = "DELETE"
+        _ = try await write(path: "/api/v1/planned-sessions/\(id)", method: "DELETE", fields: nil, token: token)
+    }
+
+    private func write(path: String, method: String, fields: PlannedSessionFields?, token: String) async throws -> Data {
+        var request = URLRequest(url: baseURL.appending(path: path))
+        request.httpMethod = method
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let fields {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONEncoder().encode(fields)
+        }
 
-        let (_, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw SharpitAPIError.transport
+        }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        if status == 401 { throw SharpitAPIError.unauthorized }
-        guard (200...299).contains(status) else { throw SharpitAPIError.server }
+        switch status {
+        case 200...299: return data
+        case 401, 403: throw SharpitAPIError.unauthorized
+        case 429: throw SharpitAPIError.rateLimited
+        case 400...499: throw Self.refusal(in: data).map(SharpitAPIError.message) ?? SharpitAPIError.badRequest
+        default: throw SharpitAPIError.server
+        }
+    }
+
+    private func decodeSession(_ data: Data) throws -> V1PlannedSessionItem {
+        do {
+            return try JSONDecoder().decode(V1PlannedSessionItem.self, from: data)
+        } catch {
+            throw PlannedSessionClientError.decoding(String(describing: error))
+        }
+    }
+
+    /// What the server said it refused. A Zod refusal reads « Données invalides » with the
+    /// field's own message in `details` — « Le déroulé de la séance est requis » — and the
+    /// field's message is the one worth showing.
+    nonisolated static func refusal(in data: Data) -> String? {
+        guard let body = try? JSONDecoder().decode(JSONValue.self, from: data) else { return nil }
+        let details = body["details"]
+        let fieldMessages: [String] = {
+            guard case .object(let fields)? = details?["fieldErrors"] else { return [] }
+            return fields.keys.sorted().compactMap { fields[$0]?.array?.first?.string }
+        }()
+        let formMessages = details?["formErrors"]?.array?.compactMap(\.string) ?? []
+        let message = fieldMessages.first ?? formMessages.first ?? body["error"]?.string
+        guard let message = message?.trimmingCharacters(in: .whitespacesAndNewlines), !message.isEmpty else {
+            return nil
+        }
+        return message
     }
 
     private nonisolated static func dayString(_ date: Date) -> String {

@@ -11,6 +11,13 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     let intensity: String?
     let load: Double?
     let notes: String?
+    /// The written déroulé, as the athlete or the coach wrote it.
+    let description: String?
+    /// The strength exercises as the server stores them, kept whole: an edit sends back what
+    /// it does not show (the watch's exercise, the movement's intent) untouched.
+    let strengthPrescription: JSONValue?
+    /// The structured endurance steps, kept only to know they exist — the app does not edit them.
+    let endurancePrescription: JSONValue?
     let goalId: String?
     let completed: Bool?
     let activityId: String?
@@ -33,6 +40,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
 
     enum CodingKeys: String, CodingKey {
         case id, date, startTime, title, type, durationMin, intensity, load, notes, breakdown
+        case description, strengthPrescription, endurancePrescription
         case goalId, completed, activityId, activity, brickGroupId, brickOrder, isKey
         case garminWorkoutId, garminWorkoutScheduledDate, garminWorkoutPushedAt
     }
@@ -47,6 +55,9 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         intensity: String? = nil,
         load: Double? = nil,
         notes: String? = nil,
+        description: String? = nil,
+        strengthPrescription: JSONValue? = nil,
+        endurancePrescription: JSONValue? = nil,
         goalId: String? = nil,
         completed: Bool? = nil,
         activityId: String? = nil,
@@ -68,6 +79,9 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         self.intensity = intensity
         self.load = load
         self.notes = notes
+        self.description = description
+        self.strengthPrescription = strengthPrescription
+        self.endurancePrescription = endurancePrescription
         self.goalId = goalId
         self.completed = completed
         self.activityId = activityId
@@ -92,6 +106,9 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         intensity = try container.decodeIfPresent(String.self, forKey: .intensity)
         load = try container.decodeIfPresent(Double.self, forKey: .load)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        description = try? container.decodeIfPresent(String.self, forKey: .description)
+        strengthPrescription = Self.present(try? container.decodeIfPresent(JSONValue.self, forKey: .strengthPrescription))
+        endurancePrescription = Self.present(try? container.decodeIfPresent(JSONValue.self, forKey: .endurancePrescription))
         goalId = try container.decodeIfPresent(String.self, forKey: .goalId)
         completed = try container.decodeIfPresent(Bool.self, forKey: .completed)
         activityId = try container.decodeIfPresent(String.self, forKey: .activityId)
@@ -133,6 +150,9 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
             intensity: intensity,
             load: load,
             notes: notes,
+            description: description,
+            strengthPrescription: strengthPrescription,
+            endurancePrescription: endurancePrescription,
             goalId: goalId,
             completed: completed,
             activityId: activityId,
@@ -145,6 +165,12 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
             brickOrder: brickOrder,
             isKey: isKey
         )
+    }
+
+    /// A JSON `null` read as absent, so « has a prescription » is one nil check.
+    private static func present(_ value: JSONValue?) -> JSONValue? {
+        guard let value, value != .null else { return nil }
+        return value
     }
 
     var displayType: String {
@@ -171,7 +197,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     }
 }
 
-private extension Date {
+extension Date {
     nonisolated static func fromPlannedAPI(_ value: String) throws -> Date {
         let fractional = ISO8601DateFormatter()
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

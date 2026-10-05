@@ -57,6 +57,17 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             | tee xcodebuild.log | grep -E "error:|✘|Test run with|TEST (SUCCEEDED|FAILED)"
 
+      # A compiler crash prints no `error:` line, only « Command SwiftCompile failed »: show the
+      # diagnostics, the crash and the end of the log so the cause is readable in the job.
+      - name: Show why the build failed
+        if: failure()
+        run: |
+          grep -nE "error:|fatal error|Assertion|Abort|Segmentation" xcodebuild.log | head -80 || true
+          # A crash: what the compiler was doing (the declaration and file it names), not its addresses.
+          # The crash's numbered context lines (« While emitting … », « for 'x' at file:line »),
+          # not the file list nor the addresses.
+          awk '/Stack dump:/{on=1} on' xcodebuild.log | grep -E "^[0-9]+\.|for |While |at /" | grep -vE "0x[0-9a-f]{8,}" | head -60 || true
+
       - name: Upload the build log on failure
         if: failure()
         uses: actions/upload-artifact@v4
