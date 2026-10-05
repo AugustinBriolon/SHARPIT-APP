@@ -331,6 +331,10 @@ struct RatingGrid: View {
 struct ComplianceDetailSheet: View {
     let title: String
     let analysis: V1PlannedSessionAnalysis
+    /// Takes the activity off its planned session — a wrong match; nil where it cannot.
+    var onUnlink: (() -> Void)?
+
+    @State private var isConfirmingUnlink = false
 
     private var verdict: SessionVerdict? { analysis.verdict.flatMap(SessionVerdict.init(rawValue:)) }
     private var tone: Color {
@@ -397,6 +401,30 @@ struct ComplianceDetailSheet: View {
             }
             .navigationTitle("Conformité au plan")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if onUnlink != nil {
+                    ToolbarItem(placement: .primaryAction) {
+                        Menu {
+                            Button(role: .destructive) { isConfirmingUnlink = true } label: {
+                                Label("Délier de la séance prévue", systemImage: "link.badge.minus")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                        }
+                        .accessibilityLabel("Actions de la séance prévue")
+                    }
+                }
+            }
+            .confirmationDialog(
+                "Délier cette activité ?",
+                isPresented: $isConfirmingUnlink,
+                titleVisibility: .visible
+            ) {
+                Button("Délier", role: .destructive) { onUnlink?() }
+                Button("Annuler", role: .cancel) {}
+            } message: {
+                Text("« \(title) » redevient à faire dans ton plan, et cette analyse disparaît.")
+            }
         }
     }
 

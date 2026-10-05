@@ -24,6 +24,9 @@ protocol ActivityServing: Sendable {
     /// Forgets the cached list. Linking a session changes what each activity says about its
     /// plan, and a list read afterwards must not repeat the old answer.
     func invalidateActivities() async
+    /// Forgets one activity's stored detail, once a change made elsewhere — a session delinked —
+    /// rewrote what it says.
+    func forgetActivity(id: String) async
 }
 
 extension ActivityServing {
@@ -32,6 +35,7 @@ extension ActivityServing {
     }
     /// Most conformers hold no cache, so the default is to have nothing to forget.
     func invalidateActivities() async {}
+    func forgetActivity(id _: String) async {}
 }
 
 actor ActivityClient: ActivityServing {
@@ -118,6 +122,12 @@ actor ActivityClient: ActivityServing {
     }
 
     func invalidateActivities() {
+        activitiesCache = nil
+    }
+
+    func forgetActivity(id: String) {
+        detailCache[id] = nil
+        disk?.remove(.detail, id: id)
         activitiesCache = nil
     }
 

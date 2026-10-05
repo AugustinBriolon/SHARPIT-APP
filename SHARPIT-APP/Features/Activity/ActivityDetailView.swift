@@ -6,6 +6,7 @@ struct ActivityDetailView: View {
     let activity: String
     let initialActivity: V1ActivityListItem?
     let client: any ActivityServing
+    let linker: any PlannedSessionLinking
     let tokenProvider: () async throws -> String
 
     @State private var phase: DetailPhase
@@ -24,16 +25,19 @@ struct ActivityDetailView: View {
     /// Built once per stream read, not on every render: the path and samples are hundreds long.
     @State private var routeIntensity: RouteIntensity?
     @Environment(\.dismiss) private var dismiss
+    @Environment(ShellRouter.self) private var router: ShellRouter?
 
     init(
         activity: String,
         initialActivity: V1ActivityListItem? = nil,
         client: any ActivityServing,
+        linker: any PlannedSessionLinking = PlannedSessionClient(),
         tokenProvider: @escaping () async throws -> String
     ) {
         self.activity = activity
         self.initialActivity = initialActivity
         self.client = client
+        self.linker = linker
         self.tokenProvider = tokenProvider
         _phase = State(initialValue: initialActivity.map { .loaded(.preview(from: $0)) } ?? .loading)
         _appeared = State(initialValue: initialActivity != nil)
@@ -301,7 +305,10 @@ struct ActivityDetailView: View {
             if case .loaded(let detail) = phase, let analysis = detail.plannedSession?.analysis {
                 ComplianceDetailSheet(
                     title: detail.plannedSession?.title ?? "Séance planifiée",
-                    analysis: analysis
+                    analysis: analysis,
+                    onUnlink: detail.plannedSession?.id.map { sessionId -> () -> Void in
+                        { unlink(from: sessionId, detail: detail) }
+                    }
                 )
                 .presentationDetents([.medium, .large])
                 .sharpitSheet()
@@ -334,6 +341,30 @@ struct ActivityDetailView: View {
             }
         )
     }
+
+    /// Takes the activity off its planned session: shown on the tap, sent behind. The plan
+    /// reads the session as still to do once the calendar revision moves.
+    private func unlink(from sessionId: String, detail: V1ActivityDetail) {
+        showingCompliance = false
+        withAnimation(SharpitMotion.reveal) {
+            phase = .loaded(detail.withoutPlannedSession())
+        }
+        Task {
+            do {
+                try await SharpitRetry.run {
+                    try await linker.link(sessionId: sessionId, activityId: nil, token: try await tokenProvider())
+                }
+            } catch {
+                SharpitWriteFailures.shared.report(Self.unlinkFailure)
+            }
+            await client.forgetActivity(id: activity)
+            await client.invalidateActivities()
+            router?.noteCalendarChanged()
+            await load()
+        }
+    }
+
+    static let unlinkFailure = "L’activité n’a pas pu être déliée. Réessaie dans un instant."
 
     private func activitySplits(for detail: V1ActivityDetail) -> [ActivitySplit] {
         guard detail.type.supportsSplits else { return [] }
