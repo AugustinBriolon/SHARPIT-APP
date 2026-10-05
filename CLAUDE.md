@@ -259,6 +259,14 @@ sheet over the Objectifs sheet. A goal's « … » holds Modifier (`GoalEditView
 fields as the creation) and Supprimer; the edit shows on the tap and sends only what changed
 (`GoalDraft.changes(from:)`, a day as its local noon), so a race moved keeps the plan built toward it.
 
+**Objectifs** gains, at its foot and only when there are any, « Réalisations récentes »: the last 15
+`/api/v1/goals/achievements` (`V1GoalAchievement`, read by `GoalStore.load` beside the goals and again
+after a goal is marked reached; a failed read keeps what was shown), each the goal, then
+`GoalAchievementReadout.line` — the figure in the goal's unit (a chrono for `unit: chrono` or a
+`performance` metric config), the period (« Semaine 27 · 2026 », « juillet 2026 », « Année 2026 »),
+the day and « marqué manuellement » — as the web's `GoalAchievementsHistory`. One reached by a
+session pushes it (`GoalRoute.activity`) in the Objectifs stack.
+
 **Feature shape.** A feature is a `@Observable` store plus a view that only composes
 design-system components: `TodayStore` owns a `phase` enum (loading / loaded / empty /
 failed / unauthorized) and `TodayView` switches on it. Feature views must not invent
@@ -360,7 +368,7 @@ pick — no explicit save, as on the web. A deadline that has passed is resolved
 the app carries `travelId` back unchanged rather than inventing one.
 
 **Day drill-downs.** Sleep and Recovery open from the Today gauges, Nutrition from Résumé's
-nutrition card (`NutritionTodayCard`, below Régularité). All three are a
+nutrition card (`NutritionTodayCard`, below Régularité), Effort and Adaptation from Plan. All five are a
 `DayResourceStore` inside `DayDetailScaffold`, which pins the day picker
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
 day's drill-down is a v1 resource plus a sections view, not a new store. The store keeps every day it
@@ -371,6 +379,29 @@ turns the day (`DaySwipe`: right for the day before, left for the day after, nev
 the left edge stays « back » — these screens and Journal turn off iOS 26's pop-from-anywhere
 (`interactiveContentPopGestureRecognizer`) while they show. Journal swipes its rows, not its
 week strip, which pages weeks.
+
+**Effort and Adaptation.** The web's block-scale readings (`/plan/charge`, `/plan/adaptation`) live
+under the week, as SHARPIT's IA orders My week — the plan, then the trajectory; overnight recovery
+stays on Résumé. Plan's current week ends on « Trajectoire » (`PlanTrajectoryCards`: two tiles,
+today's strain against its verdict and the adaptation index against its trend, worded by
+`PlanTrajectoryTile`), read by `PlanView` from `/api/v1/effort` and `/api/v1/adaptation` on open and on
+`calendarRevision`; a tile pushes `EffortView` or `AdaptationView` in Plan's stack. Both are day
+drill-downs (`V1EffortResponse`, `V1AdaptationResponse`, data-days domains `effort` and `adaptation`),
+their sections shared in `DayDetailSections` (`DayDetailAlert`, `DayDetailRationale`,
+`DayDetailEvidenceSection`, `DayDetailDimensionRow`, `DayDetailConfidenceFooter`). Effort: the strain
+on `SharpitHeroScore` out of 21 to the tenth (no dial — a radial gauge never dominates a hero), the
+web's one line under it (fresh in N days, else days stacked, else the fatigue type), « Surmenage
+fonctionnel », the verdict with the capacity and the reasons, the load as four tiles named for the
+reading (`EffortReadout`: « Charge du jour / Charge 7 j / Montée / Forme » or « TSS du jour / TSS 7 j /
+ACWR / TSB », the ramp's zone in the web's words), the day outside training (steps, stress, Body
+Battery — no scale, none has a norm), the strain's composition, the five fatigue dimensions (higher
+is worse, missing ones say so, the dominant one tagged), then in the expert reading only — the web's
+`ExpertOnly` — the PMC curves (CTL, ATL dashed, TSB) and eight weeks of load against their average.
+Adaptation: the index and its status, the trend, « Plateau » and « Surcharge sans gain », the verdict,
+the brake's score and the next block's load (`AdaptationReadout.loadMultiplier`: « Neutre » within
+±0,5 %, else « ×0,90 »), the dimensions with the brake first and tagged « Frein » (an unavailable
+neuromuscular efficiency is left out and explained, as the web does), the evidence and the days of
+history. The figures, tones and words are the server's; the readouts only say them.
 
 **Nutrition.** The food log is the athlete's own data and open to everyone; only the coach's
 reading is SharpIt Pro (the server sends `{ state: 'pro_required' }` below it and never generates
@@ -512,6 +543,39 @@ server answers at once and writes the reading behind, and the page looks for it 
 A session of the last week asks about each open pain or injury with no reading since it started
 (`PainReassessment`, the web's `dueReassessments` « after_session » rule), worst first, each row
 opening the zone's own `ZoneCheckinSheet`.
+
+**Records.** Activité's list opens with a « Records » tile (under « Ce que tu as fait », hidden while a
+filter narrows the history) that pushes `RecordsView` in Activité's stack — the web keeps records in
+Progression › Performance, and the app has no Progression tab, so they sit with the sessions they
+come from. `RecordsStore` (owned by `ActivityView`, created on the first open, so a reopen shows at
+once and refreshes quietly; a failed refresh keeps what is shown) reads `/api/v1/records`
+(`RecordsClient`, `V1Records`): per sport (Course / Vélo / Natation, a `SharpitSegmentedControl`) each
+category of the web's `PR_DEFS` as a card — the #1 in `SharpitColor.recordAccent` with its meta, its
+age in the web's words (`RecordsReadout.narrative`: « il y a 3 mois », « record de la saison ») and
+« Nouveau » for two weeks, then #2–#5 — then for running the best time over each reference distance
+(`runBests`, « Meilleurs temps »), and for cycling, in the expert reading only (`docs/adr/0006`, the
+web's `ExpertOnly`), the power curve on Swift Charts (`PowerCurveCard`, categorical durations,
+`chartXSelection` with a notch per duration). Every figure is the server's `displayValue`; a record
+with an `activityId` pushes its session. Arrays decode through `LossyRecordArray`, so one malformed
+record never blanks the page.
+
+**Threshold estimates and Garmin import.** Seuils & repères (`ThresholdsView`) carries the web's
+calibration helpers through `ThresholdSuggestionStore` (built when the profile client is also
+`ThresholdEstimating`, which `AthleteProfileClient` is). « Proposition depuis tes records »
+(`ThresholdSuggestionCard`) shows `GET /api/v1/athlete-profile/apply-estimates`'s `changes` — the
+stored value beside the proposed one, both worded by the server, « Hausse / Baisse / Nouveau », each
+kept or left out with `SharpitKeepToggle` — and « Appliquer » (« Appliquer (n) » when some are left
+out) posts `{ fields: [...] }` (`V1ThresholdField`; the server writes only what it still proposes,
+and answers 400 with `reason` — `no_estimates`, `unchanged`, `nothing_selected`, worded by
+`V1ThresholdApplyRefusal`). It is a write like the others: the kept estimates show in the profile and
+the fields on the tap (`AthleteProfileStore.show`, `V1ThresholdApplyPreview.patch(for:)`), wait for a
+value being typed (`settle`), go out through `SharpitRetry`, and `AthleteProfileStore.refresh` reads
+the profile and its threshold history back; `revision` then resets the form to the stored values.
+« Importer depuis Garmin » (`POST /api/v1/athlete-profile/import-garmin`) waits for Garmin, which is
+asked live: the server writes what Garmin returned, the line under the button says it in the web's
+words (`V1GarminThresholdImport.message`, failed sources named — unknown, not absent) or the
+server's own refusal (« Compte Garmin non connecté » comes as a 500 with its message), and the
+profile is read back.
 
 **Drawers close by a swipe.** A drawer with a drag indicator carries no « Fermer »: its « … » is
 its only bar item (`PlannedSessionDrawer`, `BrickSessionDrawer`, `DoneBrickDrawer`). A form keeps
