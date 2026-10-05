@@ -5,7 +5,13 @@ import WidgetKit
 struct SleepWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Sleep", provider: SnapshotProvider()) { entry in
-            SleepWidgetView(entry: entry)
+            Group {
+                if entry.unlocksExtraWidgets {
+                    SleepWidgetView(entry: entry)
+                } else {
+                    WidgetProLocked(title: "Nuit dernière", symbol: "moon.zzz")
+                }
+            }
                 .containerBackground(for: .widget) { WidgetCanvas() }
                 .widgetURL(WidgetSnapshot.link("/today"))
         }

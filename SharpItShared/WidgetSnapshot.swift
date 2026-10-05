@@ -17,6 +17,9 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     var goal: Goal?
     /// The parts of SharpIt the athlete uses: a widget of a feature turned off says so.
     var features: V1FeaturePrefs?
+    /// SharpIt Pro: the extra widgets (sleep, weight, volume, regularity, goal) are Pro. Nil until
+    /// the app has read the tier — they show meanwhile rather than lock a Pro athlete out.
+    var isPro: Bool?
 
     init(
         day: Day? = nil,

@@ -209,6 +209,30 @@ struct WidgetAwaitingDay: View {
     }
 }
 
+/// An extra widget below SharpIt Pro: what it would show, and where to get it.
+struct WidgetProLocked: View {
+    let title: String
+    let symbol: String
+    @Environment(\.widgetFamily) private var family
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                Image(systemName: "lock").font(.title3)
+            }
+        case .accessoryRectangular, .accessoryInline:
+            Label("\(title) · SharpIt Pro", systemImage: "lock")
+                .font(.headline)
+        default:
+            WidgetFrame(title, symbol: symbol) {
+                WidgetCaption(text: "Widget SharpIt Pro. Passe à Pro dans Paramètres pour l'afficher.", lines: 4)
+            }
+        }
+    }
+}
+
 /// A widget whose feature the athlete turned off in Paramètres: it says so rather than show a
 /// part of SharpIt they chose to hide. The system keeps a placed widget; only they can remove it.
 struct WidgetFeatureOff: View {

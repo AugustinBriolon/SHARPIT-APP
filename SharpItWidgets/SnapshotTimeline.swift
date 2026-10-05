@@ -19,6 +19,8 @@ struct SnapshotEntry: TimelineEntry {
     var goal: WidgetSnapshot.Goal? { snapshot?.goal(on: date) }
     /// The parts of SharpIt the athlete uses — all on until the app said otherwise.
     var features: V1FeaturePrefs { snapshot?.features ?? V1FeaturePrefs() }
+    /// Whether the extra widgets show; true until the app said otherwise.
+    var unlocksExtraWidgets: Bool { snapshot?.isPro ?? true }
 }
 
 /// Reads the snapshot the app wrote. The app reloads the timelines when it writes a new one;

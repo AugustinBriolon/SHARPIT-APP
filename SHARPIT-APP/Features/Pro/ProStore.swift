@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import StoreKit
+import WidgetKit
 
 /// The App Store products of SharpIt Pro. They must exist under these identifiers in App Store
 /// Connect (subscription group « SharpIt Pro ») and in `Config/SharpitPro.storekit`, which the
@@ -61,6 +62,14 @@ final class ProStore {
         return ["active", "grace_period", "billing_retry"].contains(subscription.status)
     }
 
+    /// The widgets read the tier from the snapshot: the extra ones are Pro.
+    private func publishTier() {
+        let isPro = isPro
+        if WidgetSnapshotStore.update({ $0.isPro = isPro }) {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+
     func load() async {
         do {
             let token = try await tokenProvider()
@@ -69,6 +78,7 @@ final class ProStore {
                 pro = fetched
                 phase = .loaded
             }
+            publishTier()
             if appAccountToken == nil {
                 appAccountToken = try? await client.appAccountToken(token: token)
             }
@@ -97,6 +107,7 @@ final class ProStore {
                 pro = verified
                 phase = .loaded
             }
+            publishTier()
             message = nil
         } catch SharpitAPIError.badRequest {
             // Refused by the web (another account's purchase, a forged receipt): finished so

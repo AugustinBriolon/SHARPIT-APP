@@ -7,7 +7,13 @@ import WidgetKit
 struct WeightWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Weight", provider: SnapshotProvider()) { entry in
-            WeightWidgetView(entry: entry)
+            Group {
+                if entry.unlocksExtraWidgets {
+                    WeightWidgetView(entry: entry)
+                } else {
+                    WidgetProLocked(title: "Poids", symbol: "scalemass")
+                }
+            }
                 .containerBackground(for: .widget) { WidgetCanvas() }
                 .widgetURL(WidgetSnapshot.link("/corps"))
         }

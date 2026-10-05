@@ -40,6 +40,8 @@ struct VolumeEntry: TimelineEntry {
     let date: Date
     let training: WidgetSnapshot.Training?
     let sport: VolumeSport
+    /// SharpIt Pro; true until the app read the tier.
+    var isUnlocked = true
 
     var volume: WeekVolume? { training?.week(of: date, sport: sport.activityType) }
 }
@@ -52,18 +54,23 @@ struct VolumeProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: VolumeConfiguration, in context: Context) async -> VolumeEntry {
-        let training = context.isPreview ? WidgetSnapshot.preview.training : WidgetSnapshotStore.read()?.training
-        return VolumeEntry(date: .now, training: training, sport: configuration.sport)
+        let snapshot = context.isPreview ? WidgetSnapshot.preview : WidgetSnapshotStore.read()
+        return VolumeEntry(
+            date: .now, training: snapshot?.training, sport: configuration.sport,
+            isUnlocked: snapshot?.isPro ?? true
+        )
     }
 
     func timeline(for configuration: VolumeConfiguration, in _: Context) async -> Timeline<VolumeEntry> {
         let now = Date.now
-        let training = WidgetSnapshotStore.read()?.training
+        let snapshot = WidgetSnapshotStore.read()
+        let training = snapshot?.training
+        let isUnlocked = snapshot?.isPro ?? true
         let midnight = Calendar.current.startOfDay(for: now).addingTimeInterval(86_400)
         return Timeline(
             entries: [
-                VolumeEntry(date: now, training: training, sport: configuration.sport),
-                VolumeEntry(date: midnight, training: training, sport: configuration.sport),
+                VolumeEntry(date: now, training: training, sport: configuration.sport, isUnlocked: isUnlocked),
+                VolumeEntry(date: midnight, training: training, sport: configuration.sport, isUnlocked: isUnlocked),
             ],
             policy: .after(midnight)
         )
@@ -75,7 +82,13 @@ struct VolumeProvider: AppIntentTimelineProvider {
 struct VolumeWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: "WeekVolume", intent: VolumeConfiguration.self, provider: VolumeProvider()) { entry in
-            VolumeWidgetView(entry: entry)
+            Group {
+                if entry.isUnlocked {
+                    VolumeWidgetView(entry: entry)
+                } else {
+                    WidgetProLocked(title: "Volume de la semaine", symbol: "chart.bar")
+                }
+            }
                 .containerBackground(for: .widget) { WidgetCanvas() }
                 .widgetURL(WidgetSnapshot.link("/activity"))
         }

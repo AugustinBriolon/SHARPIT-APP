@@ -207,6 +207,12 @@ struct RootView: View {
             plan: plannedSessionClient,
             tokenProvider: liveToken
         )
+        // The calendar copy (Pro) follows the plan on the same beats as the reminders.
+        await PlanCalendarSync.shared.refresh(
+            isPro: pro?.isPro ?? false,
+            plan: plannedSessionClient,
+            tokenProvider: liveToken
+        )
     }
 
     private func runHistoryImport() async {

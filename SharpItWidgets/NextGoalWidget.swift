@@ -6,7 +6,13 @@ import WidgetKit
 struct NextGoalWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "NextGoal", provider: SnapshotProvider()) { entry in
-            NextGoalWidgetView(entry: entry)
+            Group {
+                if entry.unlocksExtraWidgets {
+                    NextGoalWidgetView(entry: entry)
+                } else {
+                    WidgetProLocked(title: "Prochain objectif", symbol: "flag.checkered")
+                }
+            }
                 .containerBackground(for: .widget) { WidgetCanvas() }
                 .widgetURL(WidgetSnapshot.link("/goals"))
         }

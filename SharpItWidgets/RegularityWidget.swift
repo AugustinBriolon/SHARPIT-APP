@@ -6,7 +6,13 @@ import WidgetKit
 struct RegularityWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Regularity", provider: SnapshotProvider()) { entry in
-            RegularityWidgetView(entry: entry)
+            Group {
+                if entry.unlocksExtraWidgets {
+                    RegularityWidgetView(entry: entry)
+                } else {
+                    WidgetProLocked(title: "Régularité", symbol: "calendar")
+                }
+            }
                 .containerBackground(for: .widget) { WidgetCanvas() }
                 .widgetURL(WidgetSnapshot.link("/plan"))
         }
