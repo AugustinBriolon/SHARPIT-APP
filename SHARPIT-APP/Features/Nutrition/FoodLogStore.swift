@@ -106,7 +106,7 @@ final class FoodLogStore {
             let stored = try await SharpitRetry.run {
                 try await client.add(draft, token: try await tokenProvider())
             }
-            replace(pending.id, with: stored)
+            replace(pending.id, with: Self.keepingHealth(of: pending, in: stored))
             rememberRecent(draft, stored: stored)
             await onChange()
         } catch {
@@ -123,7 +123,7 @@ final class FoodLogStore {
             let stored = try await SharpitRetry.run {
                 try await client.update(entryId: entry.id, change, token: try await tokenProvider())
             }
-            replace(entry.id, with: stored)
+            replace(entry.id, with: Self.keepingHealth(of: original, in: stored))
             await onChange()
         } catch {
             replace(entry.id, with: original)
@@ -201,6 +201,15 @@ final class FoodLogStore {
                 kcal: quick.kcal, protein: quick.protein ?? 0, carbs: quick.carbs ?? 0, fat: quick.fat ?? 0
             )
         }
+    }
+
+    /// The server's echo, with the score the row already showed when the echo carries none: a
+    /// portion changes the grams, never the food's quality.
+    nonisolated static func keepingHealth(of shown: V1FoodLogEntry, in stored: V1FoodLogEntry) -> V1FoodLogEntry {
+        guard stored.health == nil, stored.productId == shown.productId else { return stored }
+        var kept = stored
+        kept.health = shown.health
+        return kept
     }
 
     nonisolated static func applying(_ change: FoodLogEntryChange, to entry: V1FoodLogEntry) -> V1FoodLogEntry {

@@ -890,3 +890,21 @@ private nonisolated func ownFood(_ id: String, _ name: String) -> V1FoodProduct 
     #expect(store.phase == .failed("Aucune ligne de nutrition dans ce fichier."))
     #expect(reloads == 0)
 }
+
+@Test func aNewPortionKeepsTheScoreTheRowShowed() throws {
+    let health = try JSONDecoder().decode(V1FoodHealth.self, from: Data(scoredV2JSON.utf8))
+    var shown = V1FoodLogEntry(
+        id: "e", meal: .lunch, productId: "p1", name: "Riz", brand: nil, grams: 150,
+        kcal: 525, protein: 11, carbs: 115, fat: 1.5
+    )
+    shown.health = health
+    var echo = shown
+    echo.grams = 200
+    echo.health = nil
+    // An echo without a score (a server before the fix) keeps the one shown.
+    #expect(FoodLogStore.keepingHealth(of: shown, in: echo).health == health)
+    #expect(FoodLogStore.keepingHealth(of: shown, in: echo).grams == 200)
+    // Another food, or a score in the echo, is the server's word.
+    echo.productId = "p2"
+    #expect(FoodLogStore.keepingHealth(of: shown, in: echo).health == nil)
+}
