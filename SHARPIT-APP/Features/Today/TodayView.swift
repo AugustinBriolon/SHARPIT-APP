@@ -49,7 +49,7 @@ struct TodayView: View {
         self.signalClient = tokenProvider == nil ? nil : signalClient
         self.nutritionClient = tokenProvider == nil ? nil : nutritionClient
         _nutrition = State(initialValue: nutritionClient.flatMap { client in
-            tokenProvider.map { NutritionTodayStore(client: client, tokenProvider: $0) }
+            tokenProvider.map { NutritionTodayStore(client: client, tokenProvider: $0, modelContext: modelContext) }
         })
         self.tokenProvider = tokenProvider
         self.journalClient = tokenProvider == nil ? nil : journalClient
@@ -159,9 +159,13 @@ struct TodayView: View {
             }
             .task {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
+                // The food log is read alongside today rather than once the fold is drawn, so
+                // the nutrition card no longer waits on the whole day before asking for its own.
+                async let nutritionRead: Void? = nutrition?.load(trainingDayId: TrainingDayId.today(now: .now))
                 await store.load(resetToLoading: shouldReset)
                 Task { await pullProviders(force: false) }
                 weather.start()
+                _ = await nutritionRead
             }
         }
     }
@@ -363,7 +367,7 @@ private struct TodayFoldView: View {
             nutritionDetail(for: destination)
         }
         .task(id: fold.trainingDayId) {
-            await nutrition?.load(trainingDayId: fold.trainingDayId)
+            await nutrition?.loadIfNeeded(trainingDayId: fold.trainingDayId)
         }
         // Meals are logged on the Nutrition page: the card (and the widget) read the day again
         // when the athlete comes back from it.

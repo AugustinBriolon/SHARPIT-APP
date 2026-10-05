@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 import SwiftUI
 @testable import Sharpit
@@ -150,6 +151,38 @@ private struct StubNutrition: NutritionServing {
     #expect(store.phase == .failed)
 }
 
+@MainActor
+@Test func theCardPaintsTheLastAnswerWhileTheServerAnswers() async throws {
+    let context = ModelContext(try SharpitPersistence.makeContainer(inMemory: true))
+    let decoded = try JSONDecoder().decode(V1NutritionResponse.self, from: Data(nutritionJSON.utf8))
+    let first = NutritionTodayStore(
+        client: StubNutrition(result: .success(decoded)),
+        tokenProvider: { "t" },
+        modelContext: context
+    )
+    await first.load(trainingDayId: "2026-09-27")
+
+    // Next launch, offline: the card shows the day it last read instead of a redacted card.
+    let next = NutritionTodayStore(
+        client: StubNutrition(result: .failure(.transport)),
+        tokenProvider: { "t" },
+        modelContext: context
+    )
+    await next.load(trainingDayId: "2026-09-27")
+    #expect(next.phase == .loaded(try #require(decoded.day)))
+}
+
+@MainActor
+@Test func theFoldDoesNotReadADayResumeAlreadyRead() async {
+    let counter = CountingNutrition()
+    let store = NutritionTodayStore(client: CountingNutritionClient(counter: counter), tokenProvider: { "t" })
+    await store.load(trainingDayId: "2026-09-27")
+    await store.loadIfNeeded(trainingDayId: "2026-09-27")
+    #expect(await counter.reads == ["2026-09-27"])
+    await store.loadIfNeeded(trainingDayId: "2026-09-28")
+    #expect(await counter.reads == ["2026-09-27", "2026-09-28"])
+}
+
 // MARK: - Day store
 
 private actor CountingNutrition {
@@ -161,6 +194,14 @@ private actor CountingNutrition {
             day: nil,
             history: [V1NutritionHistoryDay(date: dayId, calories: 1500, goalCalories: nil)]
         )
+    }
+}
+
+private struct CountingNutritionClient: NutritionServing {
+    let counter: CountingNutrition
+
+    func nutrition(trainingDayId: String, token: String) async throws -> V1NutritionResponse {
+        await counter.read(trainingDayId)
     }
 }
 
