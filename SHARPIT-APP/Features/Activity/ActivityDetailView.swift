@@ -19,6 +19,8 @@ struct ActivityDetailView: View {
     @State private var mapCameraPosition: MapCameraPosition = .automatic
     @State private var mapStyleSelection: MapStyleOption = .standard
     @State private var colorsRouteByIntensity = false
+    /// The expanded map moved away from the route: only then is recentring worth a button.
+    @State private var isMapOffRoute = false
     /// Built once per stream read, not on every render: the path and samples are hundreds long.
     @State private var routeIntensity: RouteIntensity?
     @Environment(\.dismiss) private var dismiss
@@ -58,6 +60,7 @@ struct ActivityDetailView: View {
                                     tone: activityTone(detail.type),
                                     isExpanded: isMapExpanded,
                                     position: $mapCameraPosition,
+                                    isOffRoute: $isMapOffRoute,
                                     mapStyle: mapStyleSelection.mapStyle,
                                     intensity: intensity
                                 )
@@ -67,6 +70,7 @@ struct ActivityDetailView: View {
                                     tone: activityTone(detail.type),
                                     isExpanded: isMapExpanded,
                                     position: $mapCameraPosition,
+                                    isOffRoute: $isMapOffRoute,
                                     mapStyle: mapStyleSelection.mapStyle
                                 )
                             } else if !route.isEmpty {
@@ -75,6 +79,7 @@ struct ActivityDetailView: View {
                                     tone: activityTone(detail.type),
                                     isExpanded: isMapExpanded,
                                     position: $mapCameraPosition,
+                                    isOffRoute: $isMapOffRoute,
                                     mapStyle: mapStyleSelection.mapStyle
                                 )
                             } else {
@@ -196,7 +201,7 @@ struct ActivityDetailView: View {
                     : streamPayload?.route ?? []
                 if !route.isEmpty {
                     HStack(spacing: 8) {
-                        if isMapExpanded {
+                        if isMapExpanded && isMapOffRoute {
                             Button {
                                 withAnimation(.easeInOut(duration: 0.35)) {
                                     mapCameraPosition = .region(computeRouteRegion(for: route))
@@ -214,17 +219,19 @@ struct ActivityDetailView: View {
                                 insertion: .scale.combined(with: .opacity),
                                 removal: .scale.combined(with: .opacity)
                             ))
+                        }
 
+                        if isMapExpanded {
                             Menu {
                                 Picker("Style de carte", selection: $mapStyleSelection) {
                                     ForEach(MapStyleOption.allCases) { option in
                                         Text(option.rawValue).tag(option)
                                     }
                                 }
-                                if let intensity = routeIntensity {
+                                if routeIntensity != nil {
                                     Divider()
                                     Toggle(isOn: $colorsRouteByIntensity) {
-                                        Label("Couleur selon \(intensity.metric.label.lowercased())", systemImage: "flame")
+                                        Label("Heatmap", systemImage: "flame")
                                     }
                                 }
                             } label: {
@@ -1309,6 +1316,7 @@ private struct ActivityRouteHero: View {
     let tone: Color
     var isExpanded: Bool = false
     @Binding var position: MapCameraPosition
+    @Binding var isOffRoute: Bool
     var mapStyle: MapStyle = .standard(elevation: .realistic)
     /// When set, the route is drawn stretch by stretch in its intensity's tone.
     var intensity: RouteIntensity? = nil
@@ -1356,6 +1364,12 @@ private struct ActivityRouteHero: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .allowsHitTesting(isExpanded)
+            .onMapCameraChange(frequency: .onEnd) { context in
+                let off = isExpanded && RouteFraming.isOffRoute(visible: context.region, route: route)
+                if off != isOffRoute {
+                    withAnimation(SharpitMotion.selection) { isOffRoute = off }
+                }
+            }
 
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
