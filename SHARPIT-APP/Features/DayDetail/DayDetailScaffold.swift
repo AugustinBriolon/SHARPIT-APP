@@ -29,6 +29,7 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
             }
             phaseView
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .daySwipe(day: store.selectedDay) { day in Task { await store.select(day) } }
                 .opacity(store.isSwitchingDay ? 0.45 : 1)
                 .animation(SharpitMotion.fade, value: store.isSwitchingDay)
                 // A new day's figures move to their values rather than jumping.
