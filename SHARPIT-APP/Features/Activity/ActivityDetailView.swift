@@ -284,10 +284,17 @@ struct ActivityDetailView: View {
         .overlay(alignment: .topTrailing) {
             // The map ignores the safe area, so MapKit would draw these under the status bar
             // once the map is rotated or pitched; they live in the column under the buttons.
+            // The 2D/3D toggle is always there, so it comes first: the compass, which comes and
+            // goes with the heading, appears under it instead of pushing it down.
             if isMapExpanded {
                 VStack(alignment: .trailing, spacing: 8) {
-                    MapCompass(scope: mapScope)
                     MapPitchToggle(scope: mapScope)
+                        .tint(SharpitColor.foreground)
+                        .frame(width: 44, height: 44)
+                        .background(.ultraThinMaterial, in: Circle())
+                        .clipShape(Circle())
+                        .sharpitShadow(.control)
+                    MapCompass(scope: mapScope)
                     MapScaleView(scope: mapScope)
                 }
                 .padding(.trailing, 18)
