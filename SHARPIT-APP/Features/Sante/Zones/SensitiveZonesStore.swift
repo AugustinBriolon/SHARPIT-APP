@@ -66,9 +66,8 @@ final class SensitiveZonesStore {
 
     @discardableResult
     func declare(_ draft: SensitiveZoneDraft) async -> Bool {
-        let input = draft.createInput
-        return await perform("La zone n'a pas pu être enregistrée.") { client, token in
-            try await client.createNote(input, token: token)
+        await perform("La zone n'a pas pu être enregistrée.") { token in
+            try await client.createNote(draft.createInput, token: token)
         }
     }
 
@@ -76,54 +75,40 @@ final class SensitiveZonesStore {
     func update(_ zone: V1SensitiveZone, with draft: SensitiveZoneDraft) async -> Bool {
         let patch = draft.patch(from: zone)
         guard patch != PhysicalNotePatch() else { return true }
-        let id = zone.id
-        return await perform("La modification n'a pas pu être enregistrée.") { client, token in
-            try await client.updateNote(id: id, patch: patch, token: token)
+        return await perform("La modification n'a pas pu être enregistrée.") { token in
+            try await client.updateNote(id: zone.id, patch: patch, token: token)
         }
     }
 
     @discardableResult
     func setStatus(_ zone: V1SensitiveZone, to status: String) async -> Bool {
-        let id = zone.id
-        return await perform("Le statut n'a pas pu être changé.") { client, token in
-            try await client.updateNote(id: id, patch: PhysicalNotePatch(status: status), token: token)
+        await perform("Le statut n'a pas pu être changé.") { token in
+            try await client.updateNote(id: zone.id, patch: PhysicalNotePatch(status: status), token: token)
         }
     }
 
     @discardableResult
     func checkin(_ zone: V1SensitiveZone, _ draft: ZoneCheckinDraft) async -> Bool {
         guard let input = draft.input else { return false }
-        let id = zone.id
-        return await perform("Le point n'a pas pu être enregistré.") { client, token in
-            try await client.addCheckin(noteId: id, input: input, token: token)
+        return await perform("Le point n'a pas pu être enregistré.") { token in
+            try await client.addCheckin(noteId: zone.id, input: input, token: token)
         }
     }
 
-    /// The change takes the client and a token as parameters rather than capturing them, and
-    /// `isSaving` is reset on each path: Xcode 26.6's compiler crashed on the earlier shape (a
-    /// non-escaping async closure called inside the retry's closure, under a `defer`).
-    private func perform(
-        _ failure: String,
-        _ change: @escaping @Sendable (any SensitiveZoneServing, String) async throws -> Void
-    ) async -> Bool {
+    private func perform(_ failure: String, _ change: (String) async throws -> Void) async -> Bool {
         isSaving = true
-        let client = client
+        defer { isSaving = false }
         do {
             // A dropped connection or a 5xx is tried again; a refusal is not.
-            try await SharpitRetry.run {
-                try await change(client, try await tokenProvider())
-            }
+            try await SharpitRetry.run { try await change(try await tokenProvider()) }
             saveError = nil
             await load()
-            isSaving = false
             return true
         } catch SharpitAPIError.unauthorized {
             phase = .unauthorized
-            isSaving = false
             return false
         } catch {
             saveError = failure
-            isSaving = false
             return false
         }
     }
