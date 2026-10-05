@@ -107,6 +107,24 @@ final class AthleteProfileStore {
         }
     }
 
+    /// Shows a change the server makes through another route — estimates applied from the
+    /// records — before its echo. Nothing is sent: that route's caller writes it, then `refresh`.
+    func show(_ patch: AthleteProfilePatch) {
+        guard !patch.isEmpty else { return }
+        profile = profile.applying(patch)
+        persistCache()
+    }
+
+    /// Reads the profile back after a write made elsewhere (an estimate applied, a Garmin
+    /// import), and drops the threshold history it made stale. Waits for this store's own
+    /// writes first, so their echo cannot land over the fresher read.
+    func refresh() async {
+        await settle()
+        history = []
+        await load()
+        await loadHistory()
+    }
+
     /// Waits for every write made so far — for a test, or a caller that must read the echo.
     func settle() async {
         await writeChain?.value

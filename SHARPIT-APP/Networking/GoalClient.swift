@@ -7,11 +7,17 @@ nonisolated protocol GoalServing: Sendable {
     func deleteGoal(id: String, token: String) async throws
     /// Only the fields named (`GoalDraft.changes(from:)`): an absent key leaves a field, `null` clears it.
     func updateGoal(id: String, fields: [String: JSONValue], token: String) async throws -> V1Goal
+    /// Each time a goal was reached, newest first (`/api/v1/goals/achievements`).
+    func achievements(limit: Int, token: String) async throws -> [V1GoalAchievement]
 }
 
 extension GoalServing {
     func updateGoal(id _: String, fields _: [String: JSONValue], token _: String) async throws -> V1Goal {
         throw SharpitAPIError.server
+    }
+
+    func achievements(limit _: Int, token _: String) async throws -> [V1GoalAchievement] {
+        []
     }
 }
 
@@ -54,6 +60,14 @@ actor GoalClient: GoalServing {
         let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(V1Goal.self, from: data)
+    }
+
+    func achievements(limit: Int, token: String) async throws -> [V1GoalAchievement] {
+        var request = makeRequest(path: "/api/v1/goals/achievements", method: "GET", token: token)
+        request.url = request.url?.appending(queryItems: [URLQueryItem(name: "limit", value: String(limit))])
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response)
+        return (try JSONDecoder().decode(LossyRecordArray<V1GoalAchievement>.self, from: data)).items
     }
 
     func deleteGoal(id: String, token: String) async throws {

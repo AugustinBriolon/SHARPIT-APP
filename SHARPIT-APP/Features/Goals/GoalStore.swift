@@ -11,6 +11,8 @@ final class GoalStore {
     private(set) var sessions: [V1PlannedSessionItem] = []
     private(set) var activities: [V1ActivityListItem] = []
     private(set) var profile: V1AthleteProfile?
+    /// Each time a goal was reached, newest first — « Réalisations récentes », at the foot of Objectifs.
+    private(set) var achievements: [V1GoalAchievement] = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -18,7 +20,13 @@ final class GoalStore {
     private let plannedSessionClient: (any PlannedSessionServing)?
     private let profileClient: (any AthleteProfileServing)?
     private let activityClient: (any ActivityServing)?
-    private let tokenProvider: () async throws -> String
+    let tokenProvider: () async throws -> String
+
+    /// What an achievement's session opens with, pushed in the Objectifs stack.
+    var sessionReader: (any ActivityServing)? { activityClient }
+
+    /// How many achievements the page lists, as the web's history does.
+    static let achievementsLimit = 15
 
     init(
         client: any GoalServing,
@@ -71,11 +79,14 @@ final class GoalStore {
             async let fetchedSessions = fetchSessions(token: token)
             async let fetchedProfile = fetchProfile(token: token)
             async let fetchedActivities = fetchActivities(token: token)
+            async let fetchedAchievements = fetchAchievements(token: token)
 
             let (s, p, a) = await (fetchedSessions, fetchedProfile, fetchedActivities)
             self.sessions = s
             self.profile = p
             self.activities = a
+            // A history that failed to read keeps what was shown: it is never the page's error.
+            if let reached = await fetchedAchievements { self.achievements = reached }
         } catch SharpitAPIError.unauthorized {
             errorMessage = "Session expirée"
         } catch {
@@ -89,6 +100,15 @@ final class GoalStore {
         let from = Calendar.current.date(byAdding: .year, value: -1, to: now) ?? now
         let to = Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now
         return (try? await client.plannedSessions(from: from, to: to, token: token)) ?? []
+    }
+
+    func refreshAchievements() async {
+        guard let token = try? await tokenProvider() else { return }
+        if let reached = await fetchAchievements(token: token) { achievements = reached }
+    }
+
+    private func fetchAchievements(token: String) async -> [V1GoalAchievement]? {
+        try? await client.achievements(limit: Self.achievementsLimit, token: token)
     }
 
     private func fetchProfile(token: String) async -> V1AthleteProfile? {
@@ -157,6 +177,8 @@ final class GoalStore {
             if let idx = goals.firstIndex(where: { $0.id == updated.id }) {
                 goals[idx] = updated
             }
+            // Marking a goal reached writes an achievement server-side.
+            await refreshAchievements()
         } catch {
             // Revert on error
             if let idx = goals.firstIndex(where: { $0.id == goal.id }) {

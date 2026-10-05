@@ -9,6 +9,8 @@ struct ThresholdsView: View {
     @State private var form = ProfileFormState()
     @State private var autoSaveTask: Task<Void, Never>?
     @State private var hasLoaded = false
+    /// The records' estimates and the Garmin import; nil for a client that offers neither.
+    @State private var suggestions: ThresholdSuggestionStore?
 
     init(
         client: any AthleteProfileServing,
@@ -20,6 +22,9 @@ struct ThresholdsView: View {
             tokenProvider: tokenProvider,
             modelContext: modelContext
         ))
+        _suggestions = State(initialValue: (client as? any ThresholdEstimating).map {
+            ThresholdSuggestionStore(client: $0, tokenProvider: tokenProvider)
+        })
     }
 
     private static let ownedFields: [ProfileFormField] = [
@@ -30,6 +35,14 @@ struct ThresholdsView: View {
         ScrollView {
             VStack(spacing: SharpitSpacing.lg) {
                 confidenceCard
+
+                if let suggestions, suggestions.preview?.hasChanges == true {
+                    ThresholdSuggestionCard(
+                        store: suggestions,
+                        onApply: applyEstimates
+                    )
+                    .transition(.opacity)
+                }
 
                 cardioSection
 
@@ -56,7 +69,14 @@ struct ThresholdsView: View {
             form = ProfileFormState(profile: store.profile)
             hasLoaded = true
             await store.loadHistory()
+            await suggestions?.loadPreview()
         }
+        // The server's profile after an apply or an import: the form takes the stored values,
+        // even where the server wrote them differently from what was shown.
+        .onChange(of: suggestions?.revision) { _, _ in
+            form = ProfileFormState(profile: store.profile)
+        }
+        .animation(SharpitMotion.reveal, value: suggestions?.preview)
         .onChange(of: store.profile) { _, newProfile in
             if !hasLoaded || form.patch(against: newProfile).isEmpty {
                 form = ProfileFormState(profile: newProfile)
@@ -69,6 +89,15 @@ struct ThresholdsView: View {
     // MARK: - Confidence & Source Card
 
     private var confidenceCard: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            confidenceHeader
+            garminImport
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .sharpitSurface(.panel)
+    }
+
+    private var confidenceHeader: some View {
         HStack(spacing: SharpitSpacing.md) {
             ZStack {
                 Circle()
@@ -91,8 +120,47 @@ struct ThresholdsView: View {
 
             Spacer()
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// « Importer depuis Garmin », as the web's calibration editor offers it: Garmin's FTP, FC
+    /// max, LTHR, threshold pace and VO₂max, written by the server where Garmin has them.
+    @ViewBuilder
+    private var garminImport: some View {
+        if let suggestions {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                Button {
+                    Task { await importFromGarmin(suggestions) }
+                } label: {
+                    HStack(spacing: SharpitSpacing.xs) {
+                        if suggestions.isImporting {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "arrow.down.circle")
+                        }
+                        Text(suggestions.isImporting ? "Import…" : "Importer depuis Garmin")
+                            .font(SharpitTypography.bodyEmphasis)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(SharpitColor.primary)
+                .disabled(suggestions.isImporting)
+
+                switch suggestions.importState {
+                case .done(let message):
+                    Text(message)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                case .failed(let message):
+                    Text(message)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.signalRisk)
+                case .idle, .importing:
+                    EmptyView()
+                }
+            }
+        }
     }
 
     private var confidenceSubtitle: String {
@@ -469,6 +537,31 @@ struct ThresholdsView: View {
         let patch = form.patch(against: store.profile)
         guard !patch.isEmpty else { return }
         store.save(patch)
+        // A threshold typed by hand may settle or reopen a proposal.
+        if let suggestions {
+            Task {
+                await store.settle()
+                await suggestions.loadPreview()
+            }
+        }
+    }
+
+    // MARK: - Estimates & Garmin
+
+    /// The kept proposals show in the fields on the tap; a value being typed is saved first,
+    /// so the estimate is written after it rather than raced by it.
+    private func applyEstimates() {
+        guard let suggestions else { return }
+        autoSaveTask?.cancel()
+        performAutoSave()
+        suggestions.apply(to: store)
+        form = ProfileFormState(profile: store.profile)
+    }
+
+    private func importFromGarmin(_ suggestions: ThresholdSuggestionStore) async {
+        autoSaveTask?.cancel()
+        performAutoSave()
+        await suggestions.importFromGarmin(into: store)
     }
 }
 
