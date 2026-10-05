@@ -64,7 +64,9 @@ jobs:
         run: |
           grep -nE "error:|fatal error|Assertion|Abort|Segmentation" xcodebuild.log | head -80 || true
           # A crash: what the compiler was doing (the declaration and file it names), not its addresses.
-          grep -n -B 40 -A 60 "Please submit a bug report" xcodebuild.log | grep -vE "0x[0-9a-f]{8,}" | head -200 || true
+          # The crash's numbered context lines (« While emitting … », « for 'x' at file:line »),
+          # not the file list nor the addresses.
+          awk '/Stack dump:/{on=1} on' xcodebuild.log | grep -E "^[0-9]+\.|for |While |at /" | grep -vE "0x[0-9a-f]{8,}" | head -60 || true
 
       - name: Upload the build log on failure
         if: failure()
