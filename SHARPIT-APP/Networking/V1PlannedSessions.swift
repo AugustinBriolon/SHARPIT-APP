@@ -197,7 +197,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     }
 }
 
-private extension Date {
+extension Date {
     nonisolated static func fromPlannedAPI(_ value: String) throws -> Date {
         let fractional = ISO8601DateFormatter()
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
