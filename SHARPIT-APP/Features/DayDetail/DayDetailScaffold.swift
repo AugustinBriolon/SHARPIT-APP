@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The frame every day drill-down shares: the day picker fixed on top, then the day's
-/// content, or its loading, empty, failed or signed-out state. The content dims while
-/// another day loads over it.
+/// content, or its loading, empty, failed or signed-out state. A new day slides in from its
+/// side of time (`daySwipe`); one still loading shows redacted until it arrives.
 struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     let title: String
     let emptySymbol: String
@@ -29,9 +29,11 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
             }
             phaseView
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .daySwipe(day: store.selectedDay) { day in Task { await store.select(day) } }
-                .opacity(store.isSwitchingDay ? 0.45 : 1)
+                // A day not read yet slides in in the shape of the one before, its figures
+                // hidden until they arrive — never the old day's numbers under the new date.
+                .redacted(reason: store.isSwitchingDay ? .placeholder : [])
                 .animation(SharpitMotion.fade, value: store.isSwitchingDay)
+                .daySwipe(day: store.selectedDay) { day in Task { await store.select(day) } }
                 // A new day's figures move to their values rather than jumping.
                 .animation(SharpitMotion.reveal, value: store.phase)
         }
