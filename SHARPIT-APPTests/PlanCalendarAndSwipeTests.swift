@@ -78,6 +78,12 @@ import Testing
         #expect(DaySwipe.axis(startX: 180, translation: CGSize(width: 80, height: 10)) == .horizontal)
     }
 
+    @Test func aHorizontalTurnMutesChildHits() {
+        #expect(DaySwipe.blocksChildHits(axis: nil) == false)
+        #expect(DaySwipe.blocksChildHits(axis: .vertical) == false)
+        #expect(DaySwipe.blocksChildHits(axis: .horizontal) == true)
+    }
+
     @Test func aPickedDayComesInFromItsSideOfTime() {
         let today = Date(timeIntervalSince1970: 1_790_000_000)
         let lastWeek = Calendar.current.date(byAdding: .day, value: -7, to: today)!

@@ -1,16 +1,14 @@
 import SwiftUI
 
-/// Picks the day a drill-down reads: the day's name, a way back to today, and the Plan's
-/// week strip. Nights and readiness exist only for days that have happened, so the strip
-/// stops at the current week and future days cannot be picked. Under each day, a mark
-/// says whether it holds data, so an empty day is visible before it is opened.
+/// Picks the day a drill-down reads: the day's name and the Plan's week strip. Nights and
+/// readiness exist only for days that have happened, so the strip stops at the current week
+/// and future days cannot be picked. Under each day, a mark says whether it holds data, so
+/// an empty day is visible before it is opened. Back to today lives only in the calendar sheet.
 struct DayDetailDatePicker: View {
     let selectedDay: Date
     var hasData: (Date) -> Bool? = { _ in nil }
     /// Asks for the marks of a week about to be seen — the strip scrolled back, a month opened.
     var onShowWeek: (Date) -> Void = { _ in }
-    /// Back to today, offered beside the date only while another day is open.
-    var onToday: (() -> Void)?
     let onSelect: (Date) -> Void
 
     private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
@@ -23,13 +21,11 @@ struct DayDetailDatePicker: View {
         selectedDay: Date,
         hasData: @escaping (Date) -> Bool? = { _ in nil },
         onShowWeek: @escaping (Date) -> Void = { _ in },
-        onToday: (() -> Void)? = nil,
         onSelect: @escaping (Date) -> Void
     ) {
         self.selectedDay = selectedDay
         self.hasData = hasData
         self.onShowWeek = onShowWeek
-        self.onToday = onToday
         self.onSelect = onSelect
         _weekOffset = State(initialValue: weeks.offset(forWeekContaining: selectedDay))
         _shownDay = State(initialValue: selectedDay)
@@ -37,34 +33,26 @@ struct DayDetailDatePicker: View {
 
     var body: some View {
         VStack(spacing: SharpitSpacing.xs) {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-                Button { showingCalendar = true } label: {
-                    HStack(spacing: SharpitSpacing.xxs) {
-                        Text(selectedDay.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst)
-                            .font(SharpitTypography.verdict)
-                            .tracking(SharpitTypography.verdictTracking)
-                            .foregroundStyle(SharpitColor.foreground)
-                            // The date rolls the way the day went, as the page slides.
-                            .contentTransition(.numericText(countsDown: selectedDay < shownDay))
-                            .animation(SharpitMotion.selection, value: selectedDay)
-                        Image(systemName: "chevron.down")
-                            .font(SharpitTypography.label)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .accessibilityHidden(true)
-                    }
+            Button { showingCalendar = true } label: {
+                HStack(spacing: SharpitSpacing.xxs) {
+                    Text(selectedDay.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst)
+                        .font(SharpitTypography.verdict)
+                        .tracking(SharpitTypography.verdictTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        // The date rolls the way the day went, as the page slides.
+                        .contentTransition(.numericText(countsDown: selectedDay < shownDay))
+                        .animation(SharpitMotion.selection, value: selectedDay)
+                    Image(systemName: "chevron.down")
+                        .font(SharpitTypography.label)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .accessibilityHidden(true)
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint("Ouvre le calendrier")
-
-                // Beside the date it moves, not in the bar: there it merged into one glass pill
-                // with each screen's own actions.
-                Spacer(minLength: 0)
-                if let onToday, !Calendar.current.isDateInToday(selectedDay) {
-                    SharpitTodayChip(action: onToday)
-                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .animation(SharpitMotion.selection, value: Calendar.current.isDateInToday(selectedDay))
+            .buttonStyle(.plain)
+            .accessibilityHint("Ouvre le calendrier")
             .padding(.horizontal, SharpitSpacing.pageInset)
 
             SharpitWeekStrip(weekOffset: $weekOffset, weeks: weeks) { day in
@@ -93,8 +81,6 @@ struct DayDetailDatePicker: View {
             )
         }
         .onChange(of: weekOffset) { _, offset in onShowWeek(weeks.weekStart(forOffset: offset)) }
-        // The day can change from outside — the navigation bar's "Aujourd'hui" — and the
-        // strip follows it to that day's week.
         .onChange(of: selectedDay) { _, day in
             shownDay = day
             let target = weeks.offset(forWeekContaining: day)

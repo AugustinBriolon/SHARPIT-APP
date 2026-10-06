@@ -27,7 +27,7 @@ struct PlanWeekHeader: View {
             .accessibilityLabel("Semaine du \(weekRange)")
             .accessibilityHint("Ouvre le calendrier")
 
-            // "Aujourd'hui" lives in the navigation bar now (`SharpitTodayButton`).
+            // Back to today lives in the calendar sheet, not beside the week title.
             Spacer(minLength: 0)
 
             PlanTravelChip(

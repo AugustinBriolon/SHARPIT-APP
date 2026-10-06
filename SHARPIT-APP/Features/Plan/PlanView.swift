@@ -98,12 +98,6 @@ struct PlanView: View {
                 trajectoryDetail(for: destination)
             }
             .toolbar {
-                // Opposite the actions menu, so the two glass controls frame the title.
-                if !store.isCurrentWeek {
-                    ToolbarItem(placement: .topBarLeading) {
-                        SharpitTodayButton { store.goToToday() }
-                    }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showingNewSession = true } label: {
                         Image(systemName: "plus")

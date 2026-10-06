@@ -134,15 +134,15 @@ struct JournalView: View {
         }
     }
 
-    /// One scroll view for the loading and the loaded day, so the picker stays put and a new
-    /// day — its rows, or their redacted shape while it loads — slides in from its side.
+    /// Picker pinned above the scroll — as the day screens do — so a day swipe moves the
+    /// journal's rows without fighting the scroll, and without sliding the week strip.
     private var entries: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                // Interactive week navigation strip
-                JournalDatePicker(store: store)
+        VStack(spacing: 0) {
+            JournalDatePicker(store: store)
+                .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.top, SharpitSpacing.pageInset)
 
-                // Swiped apart from the strip, which pages weeks with its own swipe.
+            ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                     if store.phase == .loading {
                         JournalLoadingRows()
@@ -168,14 +168,15 @@ struct JournalView: View {
                         daySignalsSection
                     }
                 }
+                .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.top, SharpitSpacing.section)
+                .padding(.bottom, SharpitSpacing.section)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(.rect)
-                .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } }
             }
-            .padding(SharpitSpacing.pageInset)
-            .padding(.bottom, SharpitSpacing.section)
+            .scrollDisabled(store.phase == .loading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } }
         }
-        .scrollDisabled(store.phase == .loading)
     }
 
     /// Caféine, Humeur, Hydratation — values the athlete sets, not answers they give.

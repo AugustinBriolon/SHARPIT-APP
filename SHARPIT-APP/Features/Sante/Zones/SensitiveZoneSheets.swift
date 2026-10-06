@@ -140,9 +140,12 @@ struct SensitiveZoneFormSheet: View {
     }
 }
 
-/// A follow-up: how much it hurts today, what the athlete could do, a word if they want.
+/// A follow-up after a session (or from Santé): how much it hurts, what still works, a word.
+/// Opens as a medium drawer — one question, one reading — not a full-page form.
 struct ZoneCheckinSheet: View {
     let zone: V1SensitiveZone
+    /// Asked above the scales when the check-in follows a session.
+    var prompt: String? = nil
     let onSave: (ZoneCheckinDraft) async -> Bool
 
     @State private var draft = ZoneCheckinDraft()
@@ -150,32 +153,28 @@ struct ZoneCheckinSheet: View {
     @State private var failed = false
     @Environment(\.dismiss) private var dismiss
 
+    private var isCorrective: Bool { SensitiveZoneOptions.isCorrective(zone.category) }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        SharpitFieldLabel("Douleur aujourd'hui")
-                        ZoneSeverityScale(severity: $draft.severity)
-                    }
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        SharpitFieldLabel("Ce que tu as pu faire")
-                        ZoneImpactPicker(selection: $draft.functionalImpact)
-                    }
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        SharpitFieldLabel("Un mot (facultatif)")
-                        TextField("Après la sortie longue, au réveil…", text: $draft.comment, axis: .vertical)
-                            .font(SharpitTypography.body)
-                            .lineLimit(2...4)
-                            .sharpitFieldWell()
-                    }
+                    header
+                    severityBlock
+                    impactBlock
+                    commentBlock
                     if failed {
                         Text("L'enregistrement a échoué. Réessaie.")
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.signalRisk)
                     }
                 }
-                .padding(SharpitSpacing.pageInset)
+                .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.top, SharpitSpacing.md)
+                .padding(.bottom, SharpitSpacing.xl)
+            }
+            .safeAreaInset(edge: .bottom) {
+                saveBar
             }
             .navigationTitle(zone.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -183,53 +182,105 @@ struct ZoneCheckinSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") {
-                        isSaving = true
-                        Task {
-                            let saved = await onSave(draft)
-                            isSaving = false
-                            if saved { dismiss() } else { failed = true }
-                        }
-                    }
-                    .disabled(!draft.isComplete || isSaving)
-                }
             }
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+            SharpitEyebrow(zone.place)
+            Text(prompt ?? (isCorrective ? "Comment ça va aujourd'hui ?" : "Comment va la douleur ?"))
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var severityBlock: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            HStack(alignment: .lastTextBaseline) {
+                SharpitEyebrow(isCorrective ? "Gêne" : "Douleur")
+                Spacer()
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(draft.severity.map(String.init) ?? "—")
+                        .font(SharpitTypography.gaugeScore)
+                        .foregroundStyle(draft.severity.map(ZoneSeverityTint.color) ?? SharpitColor.mutedForeground)
+                        .contentTransition(.numericText())
+                    Text("/10")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+            }
+            ZoneSeverityScale(severity: $draft.severity)
+            Text(draft.severity.map(ZoneSeverityTint.caption) ?? "Touche une valeur")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .contentTransition(.opacity)
+        }
+        .animation(SharpitMotion.selection, value: draft.severity)
+    }
+
+    private var impactBlock: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("Ce que tu as pu faire")
+            ZoneImpactPicker(selection: $draft.functionalImpact)
+        }
+    }
+
+    private var commentBlock: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitEyebrow("Un mot (facultatif)")
+            TextField("Après la séance, au réveil…", text: $draft.comment, axis: .vertical)
+                .font(SharpitTypography.body)
+                .lineLimit(2...4)
+                .sharpitFieldWell()
+        }
+    }
+
+    private var saveBar: some View {
+        Button {
+            guard !isSaving else { return }
+            isSaving = true
+            Task {
+                let saved = await onSave(draft)
+                isSaving = false
+                if saved { dismiss() } else { failed = true }
+            }
+        } label: {
+            HStack {
+                if isSaving { ProgressView().tint(.white) }
+                Text(isSaving ? "Enregistrement…" : "Enregistrer")
+            }
+            .font(SharpitTypography.bodyEmphasis)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .foregroundStyle(.white)
+            .background(
+                draft.isComplete ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35),
+                in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+            )
+        }
+        .buttonStyle(.sharpitPressable)
+        .disabled(!draft.isComplete || isSaving)
+        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.vertical, SharpitSpacing.sm)
+        .background(.ultraThinMaterial)
+    }
 }
 
-/// 0 to 10 as eleven stops — a pain is reported, not measured. Unanswered until touched.
+/// 0 to 10 in two comfortable rows — a pain is reported, not measured. Unanswered until touched.
 private struct ZoneSeverityScale: View {
     @Binding var severity: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(spacing: 4) {
-                ForEach(0...10, id: \.self) { value in
-                    let isSelected = severity == value
-                    Button {
-                        SharpitMotion.run(SharpitMotion.selection) { severity = value }
-                    } label: {
-                        Text("\(value)")
-                            .font(SharpitTypography.meta.weight(.semibold))
-                            .monospacedDigit()
-                            .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                            .frame(maxWidth: .infinity, minHeight: SharpitSpacing.minimumTouchTarget)
-                            .background(
-                                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                                    .fill(isSelected ? ZoneSeverityTint.color(value).opacity(value == 0 ? 1 : 0.9) : SharpitColor.analysisSurfaceAlt)
-                            )
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(value) sur 10")
-                    .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-                }
-            }
+            severityRow(0...5)
+            severityRow(6...10)
             HStack {
                 Text("Aucune")
                 Spacer()
@@ -237,6 +288,34 @@ private struct ZoneSeverityScale: View {
             }
             .font(SharpitTypography.meta)
             .foregroundStyle(SharpitColor.mutedForeground)
+        }
+    }
+
+    private func severityRow(_ values: ClosedRange<Int>) -> some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            ForEach(Array(values), id: \.self) { value in
+                let isSelected = severity == value
+                Button {
+                    SharpitMotion.run(SharpitMotion.selection) { severity = value }
+                } label: {
+                    Text("\(value)")
+                        .font(SharpitTypography.data)
+                        .monospacedDigit()
+                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                                .fill(isSelected ? ZoneSeverityTint.color(value) : SharpitElevatedColor.panelOnSheet)
+                                .sharpitShadow(.control)
+                        )
+                        .scaleEffect(isSelected ? 1.04 : 1)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityLabel("\(value) sur 10")
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            }
         }
     }
 }
@@ -247,10 +326,38 @@ private struct ZoneImpactPicker: View {
     var body: some View {
         VStack(spacing: SharpitSpacing.xs) {
             ForEach(SensitiveZoneOptions.impacts) { option in
-                OnboardingChoiceChip(title: option.label, isSelected: selection == option.value) {
-                    selection = selection == option.value ? nil : option.value
+                let isSelected = selection == option.value
+                Button {
+                    SharpitMotion.run(SharpitMotion.selection) {
+                        selection = isSelected ? nil : option.value
+                    }
+                } label: {
+                    HStack {
+                        Text(option.label)
+                            .font(SharpitTypography.bodyEmphasis)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
+                    }
+                    .padding(.horizontal, SharpitSpacing.cardPadding)
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                            .fill(isSelected ? SharpitColor.primary.opacity(0.10) : SharpitElevatedColor.panelOnSheet)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                            .strokeBorder(isSelected ? SharpitColor.primary.opacity(0.35) : .clear, lineWidth: 1)
+                    }
                 }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             }
         }
     }
 }
+

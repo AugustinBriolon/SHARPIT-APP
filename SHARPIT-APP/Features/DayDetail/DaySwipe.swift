@@ -10,6 +10,9 @@ import UIKit
 /// day lies (after today), and leaves on the side it was pushed to while the next day comes in
 /// from the other. A day picked in the strip or the calendar comes in from its side of time —
 /// later from the right, earlier from the left. With Reduce Motion, the day only fades in.
+///
+/// Once the drag is a day turn, child controls (rows, toggles, sheets) must not fire: a finger
+/// that started on a button and slid sideways is turning the day, not opening what it touched.
 nonisolated enum DaySwipe {
     enum Step: Equatable { case previous, next }
     enum Axis: Equatable { case horizontal, vertical }
@@ -26,6 +29,8 @@ nonisolated enum DaySwipe {
     static let pickTravel: CGFloat = 56
     /// How far past nothing the page gives before it resists, as a scroll view's edge does.
     static let rubberBand: CGFloat = 0.55
+    /// After a horizontal turn, keep buttons mute this long so a lift cannot also open them.
+    static let hitSuppression: Duration = .milliseconds(120)
 
     static func step(startX: CGFloat, translation: CGSize, predictedEnd: CGSize? = nil) -> Step? {
         guard axis(startX: startX, translation: translation) == .horizontal else { return nil }
@@ -44,6 +49,11 @@ nonisolated enum DaySwipe {
               abs(translation.width) >= abs(translation.height) * dominance
         else { return .vertical }
         return .horizontal
+    }
+
+    /// Child hits stay live while scrolling; once the drag is a day turn, they must not.
+    static func blocksChildHits(axis: Axis?) -> Bool {
+        axis == .horizontal
     }
 
     /// Where the page sits under the finger: with it when a day lies that way, held back
@@ -101,29 +111,43 @@ private struct DaySwipeModifier: ViewModifier {
     @State private var pendingStep: DaySwipe.Step?
     @State private var arrival = DayArrival()
     @State private var arrivals = 0
+    /// Sticky mute for child controls: GestureState clears on lift before Button may still fire.
+    @State private var blocksHits = false
 
     func body(content: Content) -> some View {
         let arrival = arrival
-        return content
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-            .keyframeAnimator(initialValue: DayArrival(), trigger: arrivals) { page, value in
-                page
-                    .offset(x: value.offset)
-                    .opacity(value.opacity)
-            } keyframes: { _ in
-                KeyframeTrack(\.offset) {
-                    MoveKeyframe(arrival.offset)
-                    SpringKeyframe(0, duration: 0.42, spring: .snappy)
-                }
-                KeyframeTrack(\.opacity) {
-                    MoveKeyframe(arrival.opacity)
-                    LinearKeyframe(1, duration: 0.22)
-                }
+        // Gesture and offset live on the wrapper; child hit-testing turns off once the drag is
+        // a day turn, so a finger that started on a button cannot also open it on lift.
+        return ZStack {
+            content
+                .allowsHitTesting(!blocksHits && !DaySwipe.blocksChildHits(axis: drag.axis))
+        }
+        .contentShape(.rect)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .keyframeAnimator(initialValue: DayArrival(), trigger: arrivals) { page, value in
+            page
+                .offset(x: value.offset)
+                .opacity(value.opacity)
+        } keyframes: { _ in
+            KeyframeTrack(\.offset) {
+                MoveKeyframe(arrival.offset)
+                SpringKeyframe(0, duration: 0.42, spring: .snappy)
             }
-            .offset(x: restingOffset + drag.offset)
-            .simultaneousGesture(gesture)
-            .onChange(of: day) { old, new in arrive(from: old, to: new) }
-            .background(EdgeOnlyPopGesture())
+            KeyframeTrack(\.opacity) {
+                MoveKeyframe(arrival.opacity)
+                LinearKeyframe(1, duration: 0.22)
+            }
+        }
+        .offset(x: restingOffset + drag.offset)
+        .simultaneousGesture(gesture)
+        .onChange(of: day) { old, new in arrive(from: old, to: new) }
+        .onChange(of: drag.axis) { _, axis in
+            // A cancelled drag never reaches onEnded — release the mute when GestureState clears.
+            if axis == nil, pendingStep == nil, blocksHits {
+                releaseHitsAfterSuppression()
+            }
+        }
+        .background(EdgeOnlyPopGesture())
     }
 
     private var gesture: some Gesture {
@@ -140,6 +164,13 @@ private struct DaySwipeModifier: ViewModifier {
                 let dx = value.translation.width
                 state.offset = DaySwipe.offset(for: dx, canTurn: dx > 0 || canTurnNext, width: width)
             }
+            .onChanged { value in
+                guard follows else { return }
+                let axis = DaySwipe.axis(startX: value.startLocation.x, translation: value.translation)
+                if DaySwipe.blocksChildHits(axis: axis) {
+                    blocksHits = true
+                }
+            }
             .onEnded { value in end(value, canTurnNext: canTurnNext) }
     }
 
@@ -147,8 +178,9 @@ private struct DaySwipeModifier: ViewModifier {
         guard pendingStep == nil else { return }
         let startX = value.startLocation.x
         let dx = value.translation.width
+        let axis = DaySwipe.axis(startX: startX, translation: value.translation)
         // Pick the page up where the finger left it.
-        let released = reduceMotion || DaySwipe.axis(startX: startX, translation: value.translation) == .vertical
+        let released = reduceMotion || axis == .vertical
             ? 0
             : DaySwipe.offset(for: dx, canTurn: dx > 0 || canTurnNext, width: width)
         restingOffset = released
@@ -157,10 +189,14 @@ private struct DaySwipeModifier: ViewModifier {
               let target = DaySwipe.day(after: step, from: day)
         else {
             withAnimation(SharpitMotion.selection) { restingOffset = 0 }
+            releaseHitsAfterSuppression()
             return
         }
+        // A committed turn keeps hits muted until the new day lands (or the timeout below).
+        blocksHits = true
         guard !reduceMotion else {
             onSelect(target)
+            releaseHitsAfterSuppression()
             return
         }
 
@@ -178,6 +214,7 @@ private struct DaySwipeModifier: ViewModifier {
                 try? await Task.sleep(for: .milliseconds(800))
                 guard pendingStep == step else { return }
                 pendingStep = nil
+                blocksHits = false
                 withAnimation(SharpitMotion.reveal) { restingOffset = 0 }
             }
         }
@@ -186,6 +223,7 @@ private struct DaySwipeModifier: ViewModifier {
     private func arrive(from old: Date, to new: Date) {
         let swiped = pendingStep
         pendingStep = nil
+        blocksHits = false
         guard let step = swiped ?? DaySwipe.step(from: old, to: new) else { return }
         var still = Transaction()
         still.disablesAnimations = true
@@ -199,6 +237,15 @@ private struct DaySwipeModifier: ViewModifier {
             arrival = DayArrival(offset: DaySwipe.entrySign(step) * DaySwipe.pickTravel, opacity: 0)
         }
         arrivals += 1
+    }
+
+    /// GestureState resets before a Button may still fire on lift — hold the mute briefly.
+    private func releaseHitsAfterSuppression() {
+        Task { @MainActor in
+            try? await Task.sleep(for: DaySwipe.hitSuppression)
+            guard pendingStep == nil else { return }
+            blocksHits = false
+        }
     }
 }
 

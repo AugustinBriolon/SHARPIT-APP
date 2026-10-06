@@ -33,6 +33,16 @@ enum ZoneSeverityTint {
         if severity >= 7 { return SharpitColor.signalRisk }
         return severity >= 4 ? SharpitColor.signalCaution : SharpitColor.foreground
     }
+
+    static func caption(_ severity: Int) -> String {
+        switch severity {
+        case 0: "Aucune douleur"
+        case 1...3: "Légère"
+        case 4...6: "Modérée"
+        case 7...9: "Forte"
+        default: "Insupportable"
+        }
+    }
 }
 
 // MARK: - Santé entry

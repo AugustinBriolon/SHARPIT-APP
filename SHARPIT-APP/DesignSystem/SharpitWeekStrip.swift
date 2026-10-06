@@ -322,49 +322,6 @@ private struct SharpitCalendarView: UIViewRepresentable {
     }
 }
 
-/// The way back to today, for any screen that moves through days or weeks.
-///
-/// It lives in the navigation bar, where the system draws it in Liquid Glass beside the
-/// screen's other controls, and only while the screen is away from today: on today it would
-/// be a button that does nothing, and the design law asks for silence over decoration.
-struct SharpitTodayButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button {
-            SharpitMotion.run(SharpitMotion.selection, action)
-        } label: {
-            Text("Aujourd'hui")
-                .fixedSize()
-        }
-        .accessibilityHint("Revient à aujourd'hui")
-    }
-}
-
-/// « Aujourd'hui » set in the content, beside the date it brings back: a small tinted capsule.
-struct SharpitTodayChip: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button {
-            SharpitMotion.run(SharpitMotion.selection, action)
-        } label: {
-            Label("Aujourd'hui", systemImage: "arrow.uturn.backward")
-                .font(SharpitTypography.meta.weight(.semibold))
-                .foregroundStyle(SharpitColor.primary)
-                .labelStyle(.titleAndIcon)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(SharpitColor.primary.opacity(0.10), in: Capsule())
-                .fixedSize()
-                .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityHint("Revient à aujourd'hui")
-    }
-}
-
 /// Under a day of a strip: a filled dot when the day holds data, a ring when it was read and
 /// holds none — shape as well as colour, as on the Plan strip. Nothing while the day is unknown.
 /// Shared by the day screens and the journal, so every picker marks its days the same way.
