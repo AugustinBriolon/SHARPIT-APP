@@ -572,21 +572,6 @@ included). The points are evenly spaced in time, so the line runs faster where t
 athlete did (the most frequent first) and a period. Its glyph fills while a filter narrows the list;
 a filter that empties it offers « Tout afficher ».
 
-**Séjours.** Hikes of several days gathered under one name (the web's `/activite/sejours`,
-`/api/v1/hike-trips`, `HikeTripClient`). Activité shows « Séjours » under its title once the history
-holds a hike (`HikeTripsEntry`), which pushes `HikeTripsView`; a séjour (`HikeTripDetailView`) shows
-its days and totals as stat tiles, the places walked through, and its stages in order, each pushing
-the activity. `HikeTripSummary` computes the totals from the stages, as the web's
-`buildHikeTripSummary` does, so the list, the page and an edit shown on the tap read the same
-figures; `HikeTripReadout` words them. A hike's « … » (`ActivityActionsMenu`, `HikeTripMenuState`)
-offers « Voir le séjour » or « Lier à d'autres randonnées », which opens `HikeTripPickerSheet` seeded
-with it. A hike belongs to one séjour at most, so the picker lists only the free ones
-(`HikeTripStore.available`); a creation (it needs the id) and an added stage (its figures come back
-with it) wait for the server and say its refusal in the sheet; a rename, a removed stage (swiped,
-never the last one) and a deletion (its hikes stay, detached) show on the tap and go out behind
-through `SharpitRetry`, put back and toasted through `SharpitWriteFailures` if refused. No elevation
-profile yet: the web draws it from the stages' streams.
-
 **Logging and editing a session.** Activité's « + » opens « Saisir une séance »
 (`ActivityFormSheet`, `ActivityDraft`): sport, start, duration, the sport's measures (distance in
 km, in metres for a swim; elevation; average heart rate), the strength exercises (the plan's own

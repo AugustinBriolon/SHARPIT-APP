@@ -110,25 +110,6 @@ struct SourcesNetworkTests {
             try await client.exportData(token: "tok")
         }
     }
-
-    @Test func aHikeTripConflictCarriesTheServersReason() async {
-        let client = HikeTripClient(
-            session: session(status: 409, response: #"{"error":"Une activité appartient déjà à un autre séjour","tripId":"t2"}"#),
-            baseURL: base
-        )
-        await #expect(throws: SharpitAPIError.message("Une activité appartient déjà à un autre séjour")) {
-            _ = try await client.createHikeTrip(name: "Queyras", activityIds: ["a", "b"], token: "tok")
-        }
-        #expect(SourcesStubURLProtocol.lastRequest?.httpMethod == "POST")
-        #expect(SourcesStubURLProtocol.lastRequest?.url?.absoluteString == "https://api.example.test/api/v1/hike-trips")
-    }
-
-    @Test func deletingAHikeTripAcceptsAnEmpty204() async throws {
-        let client = HikeTripClient(session: session(status: 204, response: ""), baseURL: base)
-        try await client.deleteHikeTrip(id: "t1", token: "tok")
-        #expect(SourcesStubURLProtocol.lastRequest?.httpMethod == "DELETE")
-        #expect(SourcesStubURLProtocol.lastRequest?.url?.absoluteString == "https://api.example.test/api/v1/hike-trips/t1")
-    }
 }
 
 // MARK: - Data export
@@ -171,90 +152,4 @@ struct SourcesNetworkTests {
     #expect(trips.map(\.displayTitle) == ["Nantes", "Lisbonne"])
     #expect(PlanTravel.chipTitle(trips) == "Nantes +1")
     #expect(PlanTravel.chipTitle([]) == nil)
-}
-
-// MARK: - Séjours de randonnée
-
-private let tripJSON = """
-[{
-  "id": "t1",
-  "name": "Queyras · août",
-  "createdAt": "2026-08-20T10:00:00.000Z",
-  "updatedAt": "2026-08-21T10:00:00.000Z",
-  "activities": [
-    {"id": "a2", "type": "HIKE", "date": "2026-08-13T07:00:00.000Z", "title": "Étape 2", "duration": 18000,
-     "load": 120, "observedLocationLabel": "Saint-Véran",
-     "hikeMetrics": {"distanceM": 16000, "elevationM": 900, "elevationLossM": 700}},
-    {"id": "a1", "type": "HIKE", "date": "2026-08-12T07:00:00.000Z", "title": null, "duration": 14400,
-     "load": null, "observedLocationLabel": "Ceillac",
-     "hikeMetrics": {"distanceM": 12500, "elevationM": 750, "elevationLossM": null}},
-    {"id": "a3", "type": "HIKE", "date": "2026-08-14T07:00:00.000Z", "title": "Retour", "duration": null,
-     "load": 80, "observedLocationLabel": "Saint-Véran", "hikeMetrics": null}
-  ],
-  "summary": {"memberCount": 3}
-}]
-"""
-
-@Test func aHikeTripDecodesItsStagesInWalkingOrder() throws {
-    let trips = try JSONDecoder().decode([V1HikeTrip].self, from: Data(tripJSON.utf8))
-    let trip = try #require(trips.first)
-    #expect(trip.name == "Queyras · août")
-    #expect(trip.activities.map(\.id) == ["a1", "a2", "a3"])
-    #expect(trip.activities[0].displayTitle == "Randonnée")
-    #expect(trip.activities[1].elevationLossM == 700)
-    #expect(trip.activities[2].distanceM == nil)
-}
-
-@Test func theTripSummarySumsOnlyWhatTheStagesCarry() throws {
-    let trip = try #require(try JSONDecoder().decode([V1HikeTrip].self, from: Data(tripJSON.utf8)).first)
-    let summary = trip.summary
-    #expect(summary.memberCount == 3)
-    #expect(summary.distanceM == 28_500)
-    #expect(summary.elevationM == 1_650)
-    #expect(summary.elevationLossM == 700)
-    #expect(summary.durationSec == 32_400)
-    #expect(summary.load == 200)
-    #expect(summary.locationLabels == ["Ceillac", "Saint-Véran"])
-    #expect(summary.startAt == utcDate("2026-08-12T07:00:00Z"))
-    #expect(summary.endAt == utcDate("2026-08-14T07:00:00Z"))
-    #expect(HikeTripSummary(members: []).distanceM == nil)
-}
-
-@Test func aTripReadsAsItsDaysStagesAndDistance() throws {
-    let trip = try #require(try JSONDecoder().decode([V1HikeTrip].self, from: Data(tripJSON.utf8)).first)
-    let utc = TimeZone(identifier: "UTC")!
-    #expect(HikeTripReadout.listMeta(trip.summary, timeZone: utc) == ["12 – 14 août 2026", "3 étapes", "28,5 km"])
-    #expect(HikeTripReadout.stepCount(1) == "1 étape")
-    #expect(HikeTripReadout.stepCount(0) == nil)
-    #expect(HikeTripReadout.distance(850) == "850 m")
-    #expect(HikeTripReadout.waypoints(trip.summary.locationLabels) == "Ceillac → Saint-Véran")
-    #expect(HikeTripReadout.dayRange(
-        from: utcDate("2026-09-28T08:00:00Z"), to: utcDate("2026-10-02T08:00:00Z"), timeZone: utc
-    ) == "28 sept. – 2 oct. 2026")
-    let stage = trip.activities[1]
-    #expect(HikeTripReadout.memberMeta(stage, timeZone: utc).dropFirst() == ["16,0 km", "D+ 900 m", "5 h"])
-}
-
-@Test func aTripPatchSendsOnlyWhatChanged() {
-    let rename = HikeTripPatch(name: "  Queyras  ")
-    #expect(rename.body["name"] as? String == "Queyras")
-    #expect(rename.body["addActivityIds"] == nil)
-    let add = HikeTripPatch(addActivityIds: ["a4"])
-    #expect(add.body["addActivityIds"] as? [String] == ["a4"])
-    #expect(add.body["name"] == nil)
-    #expect(HikeTripPatch().isEmpty)
-    #expect(HikeTripPatch(name: "   ").isEmpty)
-}
-
-@Test func onlyHikesOutsideASejourCanJoinOne() throws {
-    let trip = try #require(try JSONDecoder().decode([V1HikeTrip].self, from: Data(tripJSON.utf8)).first)
-    let history = [
-        V1ActivityListItem(id: "a1", type: .hike, date: utcDate("2026-08-12T07:00:00Z")),
-        V1ActivityListItem(id: "a9", type: .hike, date: utcDate("2026-09-01T07:00:00Z")),
-        V1ActivityListItem(id: "r1", type: .run, date: utcDate("2026-09-02T07:00:00Z")),
-        V1ActivityListItem(id: "a8", type: .hike, date: utcDate("2026-09-05T07:00:00Z")),
-    ]
-    let hikes = HikeTripStore.hikes(in: history)
-    #expect(hikes.map(\.id) == ["a8", "a9", "a1"])
-    #expect(HikeTripStore.available(hikes: hikes, trips: [trip]).map(\.id) == ["a8", "a9"])
 }

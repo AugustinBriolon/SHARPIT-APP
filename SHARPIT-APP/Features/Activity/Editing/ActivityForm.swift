@@ -262,14 +262,6 @@ private struct ActivityFormContent: View {
     }
 }
 
-/// What a done session's « … » offers about séjours: nothing (not a hike, or not read yet), a
-/// hike free to gather with others, or one already in a séjour.
-enum HikeTripMenuState: Equatable {
-    case hidden
-    case linkable
-    case member
-}
-
 /// What the edit sheet opens on: the activity as the page shows it.
 struct ActivityEditing: Identifiable {
     let id: String
@@ -284,24 +276,12 @@ struct ActivityActionsMenu: View {
     let onEdit: () -> Void
     let onSendToWatch: () -> Void
     let onDelete: () -> Void
-    /// A hike's séjour: « Voir le séjour » when it is in one, else « Lier à d'autres randonnées ».
-    var hikeTrip: HikeTripMenuState = .hidden
-    var onOpenHikeTrip: () -> Void = {}
-    var onLinkHikes: () -> Void = {}
 
     var body: some View {
         Menu {
             Button("Modifier", systemImage: "pencil", action: onEdit)
             if canSendToWatch {
                 Button("Envoyer à la montre", systemImage: "applewatch.radiowaves.left.and.right", action: onSendToWatch)
-            }
-            switch hikeTrip {
-            case .hidden:
-                EmptyView()
-            case .linkable:
-                Button("Lier à d'autres randonnées", systemImage: "link", action: onLinkHikes)
-            case .member:
-                Button("Voir le séjour", systemImage: "figure.hiking", action: onOpenHikeTrip)
             }
             Divider()
             Button("Supprimer", systemImage: "trash", role: .destructive, action: onDelete)
