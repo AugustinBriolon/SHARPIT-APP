@@ -18,6 +18,9 @@ struct PlanView: View {
     @State private var selection: PlanSelection?
     /// The expert reading's load layer, shown above this week (ADR 0006); nil otherwise.
     @State private var trainingLoad: V1TrainingLoad?
+    /// Effort and Adaptation for today, under the current week.
+    @State private var trajectory = PlanTrajectory()
+    @State private var openedTrajectory: PlanTrajectoryDestination?
     @State private var showingCalendar = false
     @State private var showingMacroPlan = false
     /// Owned here, not by the sheet: closing it mid-generation keeps the week coming.
@@ -30,6 +33,9 @@ struct PlanView: View {
     /// Plan's, so a change written behind outlives the drawer or the form that made it.
     @State private var editor: PlanEditor
     @State private var showingNewSession = false
+    /// The coach's trips, for the week's « Déplacement » chip (the web's `TravelContextBanner`).
+    @State private var travels: [CoachMemoryEntry] = []
+    @State private var showingTravel = false
 
     init(
         client: any PlannedSessionServing,
@@ -64,8 +70,13 @@ struct PlanView: View {
                 // Fixed above the pager: neither moves when the week does, so neither can
                 // fight the pages' own gestures.
                 VStack(spacing: SharpitSpacing.xs) {
-                    PlanWeekHeader(store: store) { showingCalendar = true }
-                        .padding(.horizontal, SharpitSpacing.pageInset)
+                    PlanWeekHeader(
+                        store: store,
+                        onOpenCalendar: { showingCalendar = true },
+                        travels: travels,
+                        onOpenTravel: { showingTravel = true }
+                    )
+                    .padding(.horizontal, SharpitSpacing.pageInset)
                     PlanWeekStrip(store: store)
                 }
 
@@ -74,13 +85,18 @@ struct PlanView: View {
                     activityClient: activityClient,
                     tokenProvider: tokenProvider,
                     trainingLoad: isExpertReading ? trainingLoad : nil,
-                    onSelect: { selection = $0 }
+                    trajectory: trajectory,
+                    onSelect: { selection = $0 },
+                    onOpenTrajectory: { openedTrajectory = $0 }
                 )
             }
             .background(SharpitCanvasBackground())
             .navigationTitle("Plan")
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
+            .navigationDestination(item: $openedTrajectory) { destination in
+                trajectoryDetail(for: destination)
+            }
             .toolbar {
                 // Opposite the actions menu, so the two glass controls frame the title.
                 if !store.isCurrentWeek {
@@ -139,6 +155,19 @@ struct PlanView: View {
             .sheet(isPresented: $showingCalendar) {
                 PlanCalendarSheet(store: store)
             }
+            .sheet(isPresented: $showingTravel, onDismiss: { Task { await loadTravels() } }) {
+                NavigationStack {
+                    CoachMemoryView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("OK") { showingTravel = false }
+                            }
+                        }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .sharpitSheet()
+            }
             // Goals moved here from Moi: they are what the plan is built toward.
             .sheet(isPresented: Bindable(router).isShowingGoals) {
                 NavigationStack {
@@ -182,7 +211,9 @@ struct PlanView: View {
                 }
             }
             .task { await store.loadAroundSelection() }
+            .task { await loadTravels() }
             .task(id: isExpertReading) { await loadTrainingLoad() }
+            .task { await loadTrajectory() }
             .task { await generation.resume() }
             .onAppear {
                 let router = router
@@ -216,6 +247,7 @@ struct PlanView: View {
                 Task {
                     await store.reload()
                     await loadTrainingLoad()
+                    await loadTrajectory()
                 }
             }
         }
@@ -247,11 +279,42 @@ extension PlanView {
         }.first
     }
 
+    /// The trips are a quiet extra: a failed read leaves the week without its chip.
+    fileprivate func loadTravels() async {
+        guard let token = try? await tokenProvider(),
+              let snapshot = try? await CoachMemoryClient().snapshot(token: token) else { return }
+        travels = snapshot.entries.filter { $0.type == .travel }
+    }
+
     /// Read only in the expert reading: the essential one never shows it, so never asks for it.
     fileprivate func loadTrainingLoad() async {
         guard isExpertReading, let token = try? await tokenProvider() else { return }
         if let load = try? await SharpitClient().trainingLoad(trainingDayId: TrainingDayId.today(), token: token) {
             trainingLoad = load
+        }
+    }
+
+    /// Today's Effort and Adaptation for the tiles under the week. A reading that fails keeps
+    /// the last one; the tile still opens its screen, which says why.
+    fileprivate func loadTrajectory() async {
+        guard let token = try? await tokenProvider() else { return }
+        let client = SharpitClient()
+        let day = TrainingDayId.today()
+        let effort = try? await client.effort(trainingDayId: day, token: token)
+        let adaptation = try? await client.adaptation(trainingDayId: day, token: token)
+        trajectory = PlanTrajectory(
+            effort: effort ?? trajectory.effort,
+            adaptation: adaptation ?? trajectory.adaptation
+        )
+    }
+
+    @ViewBuilder
+    fileprivate func trajectoryDetail(for destination: PlanTrajectoryDestination) -> some View {
+        switch destination {
+        case .effort:
+            EffortView(client: SharpitClient(), tokenProvider: tokenProvider)
+        case .adaptation:
+            AdaptationView(client: SharpitClient(), tokenProvider: tokenProvider)
         }
     }
 
@@ -361,7 +424,9 @@ private struct PlanWeekPager: View {
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let trainingLoad: V1TrainingLoad?
+    let trajectory: PlanTrajectory
     let onSelect: (PlanSelection) -> Void
+    let onOpenTrajectory: (PlanTrajectoryDestination) -> Void
 
     @State private var position: Int?
 
@@ -375,7 +440,9 @@ private struct PlanWeekPager: View {
                         activityClient: activityClient,
                         tokenProvider: tokenProvider,
                         trainingLoad: offset == 0 ? trainingLoad : nil,
-                        onSelect: onSelect
+                        trajectory: offset == 0 ? trajectory : nil,
+                        onSelect: onSelect,
+                        onOpenTrajectory: onOpenTrajectory
                     )
                     .containerRelativeFrame(.horizontal)
                     .id(offset)
@@ -408,7 +475,10 @@ private struct PlanWeekPage: View {
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let trainingLoad: V1TrainingLoad?
+    /// The current week's only: the readings are today's.
+    let trajectory: PlanTrajectory?
     let onSelect: (PlanSelection) -> Void
+    let onOpenTrajectory: (PlanTrajectoryDestination) -> Void
 
     var body: some View {
         switch store.phase(forOffset: offset) {
@@ -422,7 +492,9 @@ private struct PlanWeekPage: View {
                 activityClient: activityClient,
                 tokenProvider: tokenProvider,
                 trainingLoad: trainingLoad,
-                onSelect: onSelect
+                trajectory: trajectory,
+                onSelect: onSelect,
+                onOpenTrajectory: onOpenTrajectory
             )
         case .error(let message):
             ContentUnavailableView {
@@ -449,7 +521,9 @@ private struct PlanWeekContent: View {
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let trainingLoad: V1TrainingLoad?
+    let trajectory: PlanTrajectory?
     let onSelect: (PlanSelection) -> Void
+    let onOpenTrajectory: (PlanTrajectoryDestination) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -478,6 +552,10 @@ private struct PlanWeekContent: View {
                             )
                             .id(day)
                         }
+                    }
+                    // After the week, as the IA orders My week: the plan, then the trajectory.
+                    if let trajectory {
+                        PlanTrajectoryCards(trajectory: trajectory, onOpen: onOpenTrajectory)
                     }
                 }
                 .padding(.horizontal, SharpitSpacing.pageInset)

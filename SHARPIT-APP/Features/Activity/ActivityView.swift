@@ -9,6 +9,10 @@ struct ActivityView: View {
     /// An activity opened from outside the list — a widget — by its id alone.
     @State private var openedActivityId: String?
     @State private var filter = ActivityFilter()
+    @State private var isLogging = false
+    /// Created on the first open and kept, so Records shows at once when reopened.
+    @State private var records: RecordsStore?
+    @State private var isShowingRecords = false
     @Environment(ShellRouter.self) private var router: ShellRouter?
     /// Its completion brings older activities in, so the list reloads when it lands.
     @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
@@ -37,6 +41,21 @@ struct ActivityView: View {
                         ActivityFilterMenu(filter: $filter, sports: ActivityFilter.sports(in: activities))
                     }
                 }
+                if client is any ActivityMutating {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Saisir une séance", systemImage: "plus") { isLogging = true }
+                    }
+                }
+            }
+            .sheet(isPresented: $isLogging) {
+                if let mutator = client as? any ActivityMutating {
+                    ActivityFormSheet(mode: .create, draft: .new(), client: mutator, tokenProvider: tokenProvider) { id in
+                        router?.noteActivitiesChanged()
+                        filter = ActivityFilter()
+                        selectedActivity = nil
+                        openedActivityId = id
+                    }
+                }
             }
             .navigationDestination(item: $selectedActivity) { activity in
                 ActivityDetailView(
@@ -49,6 +68,11 @@ struct ActivityView: View {
             .navigationDestination(item: $openedActivityId) { id in
                 ActivityDetailView(activity: id, client: client, tokenProvider: tokenProvider)
             }
+            .navigationDestination(isPresented: $isShowingRecords) {
+                if let records {
+                    RecordsView(store: records, activityClient: client, tokenProvider: tokenProvider)
+                }
+            }
             .task {
                 await load()
             }
@@ -59,6 +83,9 @@ struct ActivityView: View {
                 openedActivityId = id
             }
             .onChange(of: historyImport?.completedAt) { _, _ in
+                Task { await load(force: true) }
+            }
+            .onChange(of: router?.activitiesRevision) { _, _ in
                 Task { await load(force: true) }
             }
         }
@@ -83,7 +110,15 @@ struct ActivityView: View {
                 }
                 .containerRelativeFrame(.vertical)
             } else {
-                ActivityListContent(activities: shown, isFiltered: filter.isActive, selectedActivity: $selectedActivity)
+                ActivityListContent(
+                    activities: shown,
+                    isFiltered: filter.isActive,
+                    selectedActivity: $selectedActivity,
+                    openRecords: openRecords,
+                    tripsEntry: activities.contains(where: { $0.type == .hike })
+                        ? HikeTripsEntry(activityClient: client, tokenProvider: tokenProvider)
+                        : nil
+                )
             }
         case .empty:
             ContentUnavailableView {
@@ -111,6 +146,13 @@ struct ActivityView: View {
             }
             .containerRelativeFrame(.vertical)
         }
+    }
+
+    private func openRecords() {
+        if records == nil {
+            records = RecordsStore(tokenProvider: tokenProvider)
+        }
+        isShowingRecords = true
     }
 
     @MainActor
@@ -158,6 +200,9 @@ private struct ActivityListContent: View {
     let activities: [V1ActivityListItem]
     var isFiltered = false
     @Binding var selectedActivity: V1ActivityListItem?
+    var openRecords: (() -> Void)?
+    /// Séjours, under the title, once the history holds a hike.
+    var tripsEntry: HikeTripsEntry?
 
     private var groupedActivities: [(String, [V1ActivityListItem])] {
         let groups = Dictionary(grouping: activities) {
@@ -172,6 +217,15 @@ private struct ActivityListContent: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             if !isFiltered {
                 ActivityIntro()
+                if let openRecords {
+                    Button(action: openRecords) {
+                        RecordsEntryTile()
+                    }
+                    .buttonStyle(.sharpitPressable)
+                }
+                if let tripsEntry {
+                    tripsEntry
+                }
             }
 
             ForEach(groupedActivities, id: \.0) { group in
@@ -211,6 +265,34 @@ private struct ActivityIntro: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, SharpitSpacing.xs)
+    }
+}
+
+/// The way into Records from the history: what the sessions add up to, one tap away.
+private struct RecordsEntryTile: View {
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            SharpitRowIcon(symbol: "trophy", tone: SharpitColor.recordAccent)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Records")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                Text("Tes meilleures performances par sport")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(SharpitColor.mutedForeground)
+        }
+        .padding(.horizontal, SharpitSpacing.cardPadding)
+        .padding(.vertical, SharpitSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .contentShape(RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Ouvrir les records")
     }
 }
 

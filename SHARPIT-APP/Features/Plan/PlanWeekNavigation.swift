@@ -5,6 +5,9 @@ import SwiftUI
 struct PlanWeekHeader: View {
     let store: PlanStore
     let onOpenCalendar: () -> Void
+    /// The coach's known trips; the ones in this week show as a chip after the dates.
+    var travels: [CoachMemoryEntry] = []
+    var onOpenTravel: () -> Void = {}
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
@@ -26,6 +29,11 @@ struct PlanWeekHeader: View {
 
             // "Aujourd'hui" lives in the navigation bar now (`SharpitTodayButton`).
             Spacer(minLength: 0)
+
+            PlanTravelChip(
+                trips: PlanTravel.trips(travels, overlapping: store.weekDays),
+                onOpen: onOpenTravel
+            )
         }
     }
 

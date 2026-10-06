@@ -15,7 +15,7 @@ nonisolated protocol BodyCompositionServing: Sendable {
 
 /// `/api/athlete-profile` and `/api/body-composition` are web-internal, not `/api/v1`.
 /// Known debt, as with `ActivityClient` and `JournalClient` — not a pattern to copy.
-actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing {
+actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing, ThresholdEstimating {
     private let session: URLSession
     private let baseURL: URL
 
@@ -57,6 +57,76 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing {
             [V1ThresholdSnapshot].self,
             from: try await send(get("/api/v1/athlete-profile/threshold-history", token: token))
         )
+    }
+
+    func thresholdPreview(token: String) async throws -> V1ThresholdApplyPreview {
+        try decode(
+            V1ThresholdApplyPreview.self,
+            from: try await send(get("/api/v1/athlete-profile/apply-estimates", token: token))
+        )
+    }
+
+    /// `{ fields }` names the proposals kept; the server writes only those it still offers. A
+    /// 400 carries why nothing was written (`no_estimates`, `unchanged`, `nothing_selected`).
+    func applyThresholdEstimates(fields: [V1ThresholdField], token: String) async throws {
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/athlete-profile/apply-estimates"))
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["fields": fields.map(\.rawValue)])
+
+        let (data, status) = try await exchange(request)
+        switch status {
+        case 200...299: return
+        case 401, 403: throw SharpitAPIError.unauthorized
+        case 429: throw SharpitAPIError.rateLimited
+        case 400...499: throw SharpitAPIError.message(Self.applyRefusal(in: data))
+        default: throw SharpitAPIError.server
+        }
+    }
+
+    /// Garmin is asked live, so the call is given more than the default minute. The server
+    /// answers a disconnected account with a 500 and its words (« Compte Garmin non connecté »):
+    /// that message is what the athlete reads.
+    func importGarminThresholds(token: String) async throws -> V1GarminThresholdImport {
+        var request = URLRequest(
+            url: baseURL.appending(path: "/api/v1/athlete-profile/import-garmin"),
+            timeoutInterval: 120
+        )
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let (data, status) = try await exchange(request)
+        switch status {
+        case 200...299:
+            return try decode(V1GarminThresholdImport.self, from: data)
+        case 401, 403:
+            throw SharpitAPIError.unauthorized
+        default:
+            if let message = PlannedSessionClient.refusal(in: data) {
+                throw SharpitAPIError.message(message)
+            }
+            throw SharpitAPIError.server
+        }
+    }
+
+    nonisolated static func applyRefusal(in data: Data) -> String {
+        let reason = (try? JSONDecoder().decode(JSONValue.self, from: data))?["reason"]?.string
+        if let reason, let refusal = V1ThresholdApplyRefusal(rawValue: reason) {
+            return refusal.message
+        }
+        return PlannedSessionClient.refusal(in: data) ?? "Seuils non appliqués."
+    }
+
+    private func exchange(_ request: URLRequest) async throws -> (Data, Int) {
+        do {
+            let (data, response) = try await session.data(for: request)
+            return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
+        } catch {
+            throw SharpitAPIError.transport
+        }
     }
 
     func bodyComposition(days: Int, token: String) async throws -> [V1BodyMeasurement] {

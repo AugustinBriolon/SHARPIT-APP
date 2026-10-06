@@ -12,6 +12,15 @@ protocol PlannedSessionServing: Sendable {
 protocol PlannedSessionLinking: Sendable {
     /// `activityId: nil` removes the link.
     func link(sessionId: String, activityId: String?, token: String) async throws
+    /// Asks the coach to read the session against its activity again. The server answers at
+    /// once and writes the analysis behind (ADR-036); the page reads it back.
+    func reanalyze(sessionId: String, token: String) async throws
+}
+
+extension PlannedSessionLinking {
+    func reanalyze(sessionId _: String, token _: String) async throws {
+        throw SharpitAPIError.server
+    }
 }
 
 nonisolated struct PlannedSessionWatchPushResult: Sendable, Equatable {
@@ -218,6 +227,10 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
 
     func deleteSession(id: String, token: String) async throws {
         _ = try await write(path: "/api/v1/planned-sessions/\(id)", method: "DELETE", fields: nil, token: token)
+    }
+
+    func reanalyze(sessionId: String, token: String) async throws {
+        _ = try await write(path: "/api/v1/planned-sessions/\(sessionId)/analyze", method: "POST", fields: nil, token: token)
     }
 
     private func write(path: String, method: String, fields: PlannedSessionFields?, token: String) async throws -> Data {

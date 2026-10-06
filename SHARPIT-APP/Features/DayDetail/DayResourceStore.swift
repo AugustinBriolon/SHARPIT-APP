@@ -20,6 +20,16 @@ nonisolated extension V1RecoveryResponse: V1DayResource {
     }
 }
 
+/// Effort and Adaptation carry no per-day history of their own: the picker's marks come
+/// from `/api/v1/data-days` alone.
+nonisolated extension V1EffortResponse: V1DayResource {
+    var dataByDay: [String: Bool] { [:] }
+}
+
+nonisolated extension V1AdaptationResponse: V1DayResource {
+    var dataByDay: [String: Bool] { [:] }
+}
+
 /// Loads one day of a drill-down resource — the night behind the sleep score, the signals
 /// behind readiness, the day's food log. The screens differ; how they load and fail does not.
 ///

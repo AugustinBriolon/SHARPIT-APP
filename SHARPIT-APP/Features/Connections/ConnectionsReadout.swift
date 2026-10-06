@@ -62,4 +62,33 @@ enum ConnectionsReadout {
         return Line(text: "Séances, sommeil et cœur de ta montre", isProblem: false)
     }
 
+    /// A source linked on the web, read as connected: what it brings, in the positive tone.
+    static func connected(_ source: DisconnectableSource) -> Badge {
+        Badge(text: source.purpose, tone: .positive)
+    }
+
+    /// Withings and Google Agenda are linked on the web only: the footer says where, and once
+    /// one is here, that a tap disconnects it — never a dead end.
+    static func webSourcesFooter(connected: [DisconnectableSource]) -> String {
+        let webOnly = connected.filter { $0 != .garmin }
+        if webOnly.isEmpty {
+            return "Withings et Google Agenda se connectent depuis sharpit.app ; une fois reliés, ils apparaissent ici."
+        }
+        return "Touche une source reliée pour la déconnecter. Withings et Google Agenda se connectent depuis sharpit.app."
+    }
+
+    /// A disconnection that failed for good: the cause when the server gave one, else the fix.
+    static func disconnectFailure(_ source: DisconnectableSource, error: any Error) -> String {
+        switch error as? SharpitAPIError {
+        case .transport?:
+            "Pas de connexion internet : \(source.name) est toujours relié. Réessaie."
+        case .unauthorized?:
+            "Ta session a expiré. Reconnecte-toi, puis réessaie."
+        case .message(let text)?:
+            text
+        default:
+            "Déconnexion de \(source.name) impossible pour le moment. Réessaie dans un instant."
+        }
+    }
+
 }

@@ -4,7 +4,10 @@ import SwiftUI
 
 /// Paramètres → Sources de données: every source the iPhone app links — Apple Health, and Garmin
 /// when `ProviderAvailability` offers it; until then a Garmin watch reaches SHARPIT through Apple
-/// Health. MyFitnessPal is not linked here: its days come in once from the athlete's own export,
+/// Health. Withings and Google Agenda are linked on the web (their OAuth return has no native
+/// handoff yet) and show here once connected, so they can be disconnected from the phone: a
+/// connected row asks first (`DisconnectableSource`), then `/api/v1/<source>/disconnect`.
+/// MyFitnessPal is not linked here: its days come in once from the athlete's own export,
 /// imported from Nutrition (docs/adr/0010).
 ///
 /// Apple Health is switched on here, because only the phone can read it.
@@ -17,6 +20,7 @@ struct ConnectionsView: View {
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
     var garminClient: any GarminHandoffServing = SharpitClient()
+    var disconnectClient: any SourceDisconnecting = SourceDisconnectClient()
 
     @Environment(SharpitToastCenter.self) private var toastCenter
     @Environment(Clerk.self) private var clerk
@@ -26,14 +30,19 @@ struct ConnectionsView: View {
     @State private var appleHealthToastToken: UUID?
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var isConnectingGarmin = false
+    @State private var confirmingDisconnect: DisconnectableSource?
+    @State private var disconnecting: DisconnectableSource?
 
     var body: some View {
         List {
-            Section(eyebrow: "Sources") {
+            Section(eyebrow: "Sources", footer: ConnectionsReadout.webSourcesFooter(connected: webSources)) {
                 if ProviderAvailability.garminInApp {
                     garminRow
                 }
                 appleHealthRow
+                ForEach(webSources) { source in
+                    connectedSourceRow(source)
+                }
             }
             .sharpitListRows()
 
@@ -68,6 +77,22 @@ struct ConnectionsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadStatus() }
         .refreshable { await loadStatus() }
+        .confirmationDialog(
+            confirmingDisconnect?.confirmationTitle ?? "",
+            isPresented: Binding(
+                get: { confirmingDisconnect != nil },
+                set: { if !$0 { confirmingDisconnect = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: confirmingDisconnect
+        ) { source in
+            Button(source.confirmLabel, role: .destructive) {
+                Task { await disconnect(source) }
+            }
+            Button("Annuler", role: .cancel) {}
+        } message: { source in
+            Text(source.confirmationMessage)
+        }
         .onChange(of: appleHealth.state) { _, state in
             switch state {
             case .sending:
@@ -93,13 +118,19 @@ struct ConnectionsView: View {
     private var garminRow: some View {
         let badge = ConnectionsReadout.garmin(status: status)
         return Button {
-            Task { await connectGarmin() }
+            if isGarminConnected {
+                confirmingDisconnect = .garmin
+            } else {
+                Task { await connectGarmin() }
+            }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
                 ProviderLogo(provider: .garmin)
                 sourceTitle("Garmin", status: badge.text, tone: badge.tone.color)
                 Spacer(minLength: SharpitSpacing.xs)
-                if isGarminConnected {
+                if disconnecting == .garmin {
+                    ProgressView()
+                } else if isGarminConnected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(SharpitColor.primary)
@@ -113,7 +144,42 @@ struct ConnectionsView: View {
             .contentShape(.rect)
         }
         .foregroundStyle(SharpitColor.foreground)
-        .accessibilityHint("Connecter Garmin directement dans l'application")
+        .disabled(disconnecting == .garmin)
+        .accessibilityHint(
+            isGarminConnected
+                ? "Propose de déconnecter Garmin"
+                : "Connecter Garmin directement dans l'application"
+        )
+    }
+
+    /// The sources linked on the web that the phone can only disconnect.
+    private var webSources: [DisconnectableSource] {
+        DisconnectableSource.connected(in: status).filter { $0 != .garmin }
+    }
+
+    /// A source linked on the web: its mark, its name, what it brings; a tap asks to disconnect it.
+    private func connectedSourceRow(_ source: DisconnectableSource) -> some View {
+        let badge = ConnectionsReadout.connected(source)
+        return Button {
+            confirmingDisconnect = source
+        } label: {
+            HStack(spacing: SharpitSpacing.sm) {
+                ProviderLogo(provider: source == .withings ? .withings : .google)
+                sourceTitle(source.name, status: badge.text, tone: badge.tone.color)
+                Spacer(minLength: SharpitSpacing.xs)
+                if disconnecting == source {
+                    ProgressView()
+                } else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(SharpitColor.primary)
+                }
+            }
+            .contentShape(.rect)
+        }
+        .foregroundStyle(SharpitColor.foreground)
+        .disabled(disconnecting == source)
+        .accessibilityHint("Propose de déconnecter \(source.name)")
     }
 
     private var isGarminConnected: Bool {
@@ -213,6 +279,33 @@ struct ConnectionsView: View {
         guard outcome == .connected, let token = try? await tokenProvider() else { return }
         status = try? await syncClient.sync(token: token)
         await historyImport?.runIfNeeded(userId: clerk.user?.id, tokenProvider: tokenProvider)
+    }
+
+    /// Waits for the server — a disconnection revokes access at the provider, so the row only
+    /// changes once it is done — retried through `SharpitRetry`, then the list is read again.
+    private func disconnect(_ source: DisconnectableSource) async {
+        guard disconnecting == nil else { return }
+        disconnecting = source
+        defer { disconnecting = nil }
+        do {
+            try await SharpitRetry.run {
+                try await disconnectClient.disconnect(source, token: try await tokenProvider())
+            }
+            await loadStatus()
+            toastCenter.show(
+                source.disconnectedMessage,
+                symbol: "checkmark.circle.fill",
+                tone: .success,
+                autoDismissAfter: 3
+            )
+        } catch {
+            toastCenter.show(
+                ConnectionsReadout.disconnectFailure(source, error: error),
+                symbol: "exclamationmark.triangle",
+                tone: .error,
+                autoDismissAfter: 4
+            )
+        }
     }
 
     private func loadStatus() async {

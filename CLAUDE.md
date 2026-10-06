@@ -113,6 +113,13 @@ the Clerk identity, then a local sign-out; the server e-mails a confirmation). A
 still renews is named in the confirmation, with the App Store's subscription sheet one tap away:
 deleting an account cannot cancel it; Compte ends with an immediate sign-out.
 
+Confidentialité › Tes données › « Exporter mes données » reads `/api/v1/privacy/export` (the web's
+GDPR export: profile, consents, activities, plan, measures, never a credential, `PrivacyExportClient`),
+writes it to a temporary `sharpit-export-<day>.json` (`PrivacyExport`, named by the day, never by the
+athlete) and hands it to the system share sheet (`SharpitShareSheet`, `UIActivityViewController`,
+`.sheet(item:)` — `ShareLink` needs its file before the tap). The row turns into its progress while
+the server builds the file.
+
 **Onboarding.** A new account answers the first-login wizard before it sees the tabs: Toi (first
 name, sex, height, birth date) → Sports → Matériel → Ta semaine → Objectif → Blessures →
 Confidentialité (only when owed) → Sources → Première semaine (`OnboardingStep`). The server
@@ -204,6 +211,11 @@ from `/api/v1/coach/weekly-review`, writes the current week's on demand, and sho
 dashed, next week, and the full text on its own page. `-SharpitWeeklyReviewDemo` shows it on a
 fixed week in Debug builds.
 
+**Trips in the week.** The coach's trips (Mémoire du coach, `/api/v1/coach-memory`, type `TRAVEL`) that fall in the week
+shown carry a chip after the week's dates (`PlanTravelChip`, the web's `TravelContextBanner`: the
+first trip's name, « +1 » for more); `PlanTravel` compares calendar days — a trip's days are UTC
+midnights on the server, the week's are local — and the chip opens the coach's memory as a sheet.
+
 **Widgets.** `SharpItWidgets` is a WidgetKit extension (« Séance du jour », « Verdict du jour »,
 « Nutrition », « Sommeil », « Poids », « Volume de la semaine », « Régularité », « Prochain objectif »,
 « Demander au coach » and its Control Center button, « Scanner un produit » and its control —
@@ -264,6 +276,14 @@ then — further down, only when there are any — the goals reached. Its `GoalS
 sheet over the Objectifs sheet. A goal's « … » holds Modifier (`GoalEditView`, pushed, the same
 fields as the creation) and Supprimer; the edit shows on the tap and sends only what changed
 (`GoalDraft.changes(from:)`, a day as its local noon), so a race moved keeps the plan built toward it.
+
+**Objectifs** gains, at its foot and only when there are any, « Réalisations récentes »: the last 15
+`/api/v1/goals/achievements` (`V1GoalAchievement`, read by `GoalStore.load` beside the goals and again
+after a goal is marked reached; a failed read keeps what was shown), each the goal, then
+`GoalAchievementReadout.line` — the figure in the goal's unit (a chrono for `unit: chrono` or a
+`performance` metric config), the period (« Semaine 27 · 2026 », « juillet 2026 », « Année 2026 »),
+the day and « marqué manuellement » — as the web's `GoalAchievementsHistory`. One reached by a
+session pushes it (`GoalRoute.activity`) in the Objectifs stack.
 
 **Feature shape.** A feature is a `@Observable` store plus a view that only composes
 design-system components: `TodayStore` owns a `phase` enum (loading / loaded / empty /
@@ -366,7 +386,7 @@ pick — no explicit save, as on the web. A deadline that has passed is resolved
 the app carries `travelId` back unchanged rather than inventing one.
 
 **Day drill-downs.** Sleep and Recovery open from the Today gauges, Nutrition from Résumé's
-nutrition card (`NutritionTodayCard`, below Régularité). All three are a
+nutrition card (`NutritionTodayCard`, below Régularité), Effort and Adaptation from Plan. All five are a
 `DayResourceStore` inside `DayDetailScaffold`, which pins the day picker
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
 day's drill-down is a v1 resource plus a sections view, not a new store. The store keeps every day it
@@ -377,6 +397,29 @@ turns the day (`DaySwipe`: right for the day before, left for the day after, nev
 the left edge stays « back » — these screens and Journal turn off iOS 26's pop-from-anywhere
 (`interactiveContentPopGestureRecognizer`) while they show. Journal swipes its rows, not its
 week strip, which pages weeks.
+
+**Effort and Adaptation.** The web's block-scale readings (`/plan/charge`, `/plan/adaptation`) live
+under the week, as SHARPIT's IA orders My week — the plan, then the trajectory; overnight recovery
+stays on Résumé. Plan's current week ends on « Trajectoire » (`PlanTrajectoryCards`: two tiles,
+today's strain against its verdict and the adaptation index against its trend, worded by
+`PlanTrajectoryTile`), read by `PlanView` from `/api/v1/effort` and `/api/v1/adaptation` on open and on
+`calendarRevision`; a tile pushes `EffortView` or `AdaptationView` in Plan's stack. Both are day
+drill-downs (`V1EffortResponse`, `V1AdaptationResponse`, data-days domains `effort` and `adaptation`),
+their sections shared in `DayDetailSections` (`DayDetailAlert`, `DayDetailRationale`,
+`DayDetailEvidenceSection`, `DayDetailDimensionRow`, `DayDetailConfidenceFooter`). Effort: the strain
+on `SharpitHeroScore` out of 21 to the tenth (no dial — a radial gauge never dominates a hero), the
+web's one line under it (fresh in N days, else days stacked, else the fatigue type), « Surmenage
+fonctionnel », the verdict with the capacity and the reasons, the load as four tiles named for the
+reading (`EffortReadout`: « Charge du jour / Charge 7 j / Montée / Forme » or « TSS du jour / TSS 7 j /
+ACWR / TSB », the ramp's zone in the web's words), the day outside training (steps, stress, Body
+Battery — no scale, none has a norm), the strain's composition, the five fatigue dimensions (higher
+is worse, missing ones say so, the dominant one tagged), then in the expert reading only — the web's
+`ExpertOnly` — the PMC curves (CTL, ATL dashed, TSB) and eight weeks of load against their average.
+Adaptation: the index and its status, the trend, « Plateau » and « Surcharge sans gain », the verdict,
+the brake's score and the next block's load (`AdaptationReadout.loadMultiplier`: « Neutre » within
+±0,5 %, else « ×0,90 »), the dimensions with the brake first and tagged « Frein » (an unavailable
+neuromuscular efficiency is left out and explained, as the web does), the evidence and the days of
+history. The figures, tones and words are the server's; the readouts only say them.
 
 **Nutrition.** The food log is the athlete's own data and open to everyone; only the coach's
 reading is SharpIt Pro (the server sends `{ state: 'pro_required' }` below it and never generates
@@ -488,6 +531,16 @@ the morning verdict as soon as the night is read and « Séance dans la boîte �
 for a planned session. Paramètres → Sources de données also offers the import on demand
 (`GarminHistoryImport.importAll`), whether or not a run already finished.
 
+A connected source is disconnected from its row in Sources de données (`DisconnectableSource`:
+Garmin where `ProviderAvailability` shows it, Withings and Google Agenda whenever
+`/api/v1/sync-status` lists them): the tap asks first — a confirmation naming what stops and what
+stays, in the web's words (« Déconnecter Withings ? ») — then `SourceDisconnectClient` posts
+`/api/v1/{garmin,withings,google}/disconnect` through `SharpitRetry` and waits for it, since the
+server revokes the grant at the provider; the list is read again and a toast says it. Withings and
+Google Agenda are still connected on the web only — their OAuth return lands on the web's settings,
+not on an Associated Domains path an authentication session can close on — and the section's footer
+says so (`ConnectionsReadout.webSourcesFooter`).
+
 **Strength sessions.** A strength activity lists its exercises in the order done
 (`ActivityStrengthSection`): each block of sets as « 4 × 8 · 60 kg » (« 3 × 45 s » when timed, no
 load when bodyweight) and the exercise's volume; `StrengthExerciseReadout` words it, tested.
@@ -507,6 +560,69 @@ included). The points are evenly spaced in time, so the line runs faster where t
 (`ActivityFilter`): the search field on the title and sport, and the bar's filter menu — a sport the
 athlete did (the most frequent first) and a period. Its glyph fills while a filter narrows the list;
 a filter that empties it offers « Tout afficher ».
+
+**Séjours.** Hikes of several days gathered under one name (the web's `/activite/sejours`,
+`/api/v1/hike-trips`, `HikeTripClient`). Activité shows « Séjours » under its title once the history
+holds a hike (`HikeTripsEntry`), which pushes `HikeTripsView`; a séjour (`HikeTripDetailView`) shows
+its days and totals as stat tiles, the places walked through, and its stages in order, each pushing
+the activity. `HikeTripSummary` computes the totals from the stages, as the web's
+`buildHikeTripSummary` does, so the list, the page and an edit shown on the tap read the same
+figures; `HikeTripReadout` words them. A hike's « … » (`ActivityActionsMenu`, `HikeTripMenuState`)
+offers « Voir le séjour » or « Lier à d'autres randonnées », which opens `HikeTripPickerSheet` seeded
+with it. A hike belongs to one séjour at most, so the picker lists only the free ones
+(`HikeTripStore.available`); a creation (it needs the id) and an added stage (its figures come back
+with it) wait for the server and say its refusal in the sheet; a rename, a removed stage (swiped,
+never the last one) and a deletion (its hikes stay, detached) show on the tap and go out behind
+through `SharpitRetry`, put back and toasted through `SharpitWriteFailures` if refused. No elevation
+profile yet: the web draws it from the stages' streams.
+
+**Logging and editing a session.** Activité's « + » opens « Saisir une séance »
+(`ActivityFormSheet`, `ActivityDraft`): sport, start, duration, the sport's measures (distance in
+km, in metres for a swim; elevation; average heart rate), the strength exercises (the plan's own
+`StrengthExercisesEditor`), effort, feeling and notes — `POST /api/v1/activities`, the web's
+`createActivitySchema`. A done session's « … » (`ActivityActionsMenu`, among the page's floating
+controls) edits it in the same sheet (PATCH, only what moved), sends a strength session to the
+Garmin watch (`/api/v1/garmin/workouts/from-activity`, Pro) and deletes it after a confirmation.
+Both forms wait for the server, whose figures the page shows; every change bumps
+`ShellRouter.activitiesRevision` (and the calendar's), so the list and the plan read again. The
+compliance sheet's « … » adds « Réanalyser » (`/api/v1/planned-sessions/[id]/analyze`): the
+server answers at once and writes the reading behind, and the page looks for it a few times.
+A session of the last week asks about each open pain or injury with no reading since it started
+(`PainReassessment`, the web's `dueReassessments` « after_session » rule), worst first, each row
+opening the zone's own `ZoneCheckinSheet`.
+
+**Records.** Activité's list opens with a « Records » tile (under « Ce que tu as fait », hidden while a
+filter narrows the history) that pushes `RecordsView` in Activité's stack — the web keeps records in
+Progression › Performance, and the app has no Progression tab, so they sit with the sessions they
+come from. `RecordsStore` (owned by `ActivityView`, created on the first open, so a reopen shows at
+once and refreshes quietly; a failed refresh keeps what is shown) reads `/api/v1/records`
+(`RecordsClient`, `V1Records`): per sport (Course / Vélo / Natation, a `SharpitSegmentedControl`) each
+category of the web's `PR_DEFS` as a card — the #1 in `SharpitColor.recordAccent` with its meta, its
+age in the web's words (`RecordsReadout.narrative`: « il y a 3 mois », « record de la saison ») and
+« Nouveau » for two weeks, then #2–#5 — then for running the best time over each reference distance
+(`runBests`, « Meilleurs temps »), and for cycling, in the expert reading only (`docs/adr/0006`, the
+web's `ExpertOnly`), the power curve on Swift Charts (`PowerCurveCard`, categorical durations,
+`chartXSelection` with a notch per duration). Every figure is the server's `displayValue`; a record
+with an `activityId` pushes its session. Arrays decode through `LossyRecordArray`, so one malformed
+record never blanks the page.
+
+**Threshold estimates and Garmin import.** Seuils & repères (`ThresholdsView`) carries the web's
+calibration helpers through `ThresholdSuggestionStore` (built when the profile client is also
+`ThresholdEstimating`, which `AthleteProfileClient` is). « Proposition depuis tes records »
+(`ThresholdSuggestionCard`) shows `GET /api/v1/athlete-profile/apply-estimates`'s `changes` — the
+stored value beside the proposed one, both worded by the server, « Hausse / Baisse / Nouveau », each
+kept or left out with `SharpitKeepToggle` — and « Appliquer » (« Appliquer (n) » when some are left
+out) posts `{ fields: [...] }` (`V1ThresholdField`; the server writes only what it still proposes,
+and answers 400 with `reason` — `no_estimates`, `unchanged`, `nothing_selected`, worded by
+`V1ThresholdApplyRefusal`). It is a write like the others: the kept estimates show in the profile and
+the fields on the tap (`AthleteProfileStore.show`, `V1ThresholdApplyPreview.patch(for:)`), wait for a
+value being typed (`settle`), go out through `SharpitRetry`, and `AthleteProfileStore.refresh` reads
+the profile and its threshold history back; `revision` then resets the form to the stored values.
+« Importer depuis Garmin » (`POST /api/v1/athlete-profile/import-garmin`) waits for Garmin, which is
+asked live: the server writes what Garmin returned, the line under the button says it in the web's
+words (`V1GarminThresholdImport.message`, failed sources named — unknown, not absent) or the
+server's own refusal (« Compte Garmin non connecté » comes as a 500 with its message), and the
+profile is read back.
 
 **Drawers close by a swipe.** A drawer with a drag indicator carries no « Fermer »: its « … » is
 its only bar item (`PlannedSessionDrawer`, `BrickSessionDrawer`, `DoneBrickDrawer`). A form keeps

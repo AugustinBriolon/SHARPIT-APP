@@ -48,6 +48,11 @@ struct GoalsView: View {
                     goalList(title: "Atteints", goals: store.completedGoals, startIndex: inProgress.count + 2)
                         .opacity(0.8)
                 }
+
+                if !store.achievements.isEmpty {
+                    achievementList
+                        .revealed(hasAppeared, index: inProgress.count + store.completedGoals.count + 3)
+                }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.top, SharpitSpacing.xs)
@@ -72,6 +77,10 @@ struct GoalsView: View {
                 GoalDetailView(goalId: goal.id, fallback: goal, store: store)
             case .create:
                 GoalCreateView(store: store)
+            case .activity(let id):
+                if let reader = store.sessionReader {
+                    ActivityDetailView(activity: id, client: reader, tokenProvider: store.tokenProvider)
+                }
             }
         }
         .task { await store.load() }
@@ -102,6 +111,27 @@ struct GoalsView: View {
                         }
                     }
                     .revealed(hasAppeared, index: startIndex + index)
+                }
+            }
+        }
+    }
+
+    /// « Réalisations récentes »: each time a goal was reached, as the web lists them under its
+    /// goals — the figure, the period, the day, and the session that did it when there is one.
+    private var achievementList: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("Réalisations récentes")
+            LazyVStack(spacing: SharpitSpacing.sm) {
+                ForEach(store.achievements) { achievement in
+                    if let activity = achievement.activity, store.sessionReader != nil {
+                        NavigationLink(value: GoalRoute.activity(activity.id)) {
+                            GoalAchievementRow(achievement: achievement, opensSession: true)
+                        }
+                        .buttonStyle(.sharpitPressable)
+                        .accessibilityHint("Voir la séance")
+                    } else {
+                        GoalAchievementRow(achievement: achievement, opensSession: false)
+                    }
                 }
             }
         }
@@ -141,11 +171,14 @@ struct GoalsView: View {
 enum GoalRoute: Hashable {
     case detail(V1Goal)
     case create
+    /// The session that reached a goal, from « Réalisations récentes ».
+    case activity(String)
 
     static func == (lhs: GoalRoute, rhs: GoalRoute) -> Bool {
         switch (lhs, rhs) {
         case let (.detail(l), .detail(r)): l.id == r.id
         case (.create, .create): true
+        case let (.activity(l), .activity(r)): l == r
         default: false
         }
     }
@@ -154,6 +187,9 @@ enum GoalRoute: Hashable {
         switch self {
         case .detail(let goal): hasher.combine(goal.id)
         case .create: hasher.combine("create")
+        case .activity(let id):
+            hasher.combine("activity")
+            hasher.combine(id)
         }
     }
 }
@@ -258,6 +294,46 @@ private struct GoalCard: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
         }
+    }
+}
+
+/// One time a goal was reached: the goal, then what, when and how, in the web's words.
+private struct GoalAchievementRow: View {
+    let achievement: V1GoalAchievement
+    let opensSession: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            Image(systemName: "trophy")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(SharpitColor.signalRecovery)
+                .frame(width: 38, height: 38)
+                .background(SharpitColor.signalRecovery.opacity(0.13), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(achievement.goal.title)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Text(GoalAchievementReadout.line(achievement))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .monospacedDigit()
+            }
+            Spacer(minLength: SharpitSpacing.xs)
+            if opensSession {
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .accessibilityElement(children: .combine)
     }
 }
 

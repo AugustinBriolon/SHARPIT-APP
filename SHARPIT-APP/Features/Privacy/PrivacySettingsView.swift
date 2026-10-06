@@ -80,16 +80,22 @@ struct PrivacySettingsView: View {
     @Environment(ProStore.self) private var pro: ProStore?
     @State private var isDeleting = false
     @State private var deletionError: String?
+    @State private var isExporting = false
+    @State private var exportError: String?
+    @State private var exportedFile: SharpitSharedFile?
     private let accountDeletion: any AccountDeletionServing
+    private let exporter: any PrivacyExporting
     private let tokenProvider: () async throws -> String
 
     init(
         client: any PrivacyConsentServing,
         accountDeletion: any AccountDeletionServing = PrivacyConsentClient(),
+        exporter: any PrivacyExporting = PrivacyExportClient(),
         tokenProvider: @escaping () async throws -> String
     ) {
         _store = State(initialValue: PrivacySettingsStore(client: client, tokenProvider: tokenProvider))
         self.accountDeletion = accountDeletion
+        self.exporter = exporter
         self.tokenProvider = tokenProvider
     }
 
@@ -140,6 +146,61 @@ struct PrivacySettingsView: View {
             Text(deletionMessage)
         }
         .manageSubscriptionsSheet(isPresented: $managesSubscriptions)
+        .sheet(item: $exportedFile) { file in
+            SharpitShareSheet(file: file)
+                .presentationDetents([.medium, .large])
+                .ignoresSafeArea()
+        }
+    }
+
+    /// Fetches the whole export, writes it to a temporary file, then hands it to the share
+    /// sheet. A transient failure is tried again (`SharpitRetry`); a refusal is said under the row.
+    private func exportData() async {
+        guard !isExporting else { return }
+        isExporting = true
+        exportError = nil
+        defer { isExporting = false }
+        do {
+            let data = try await SharpitRetry.run {
+                try await exporter.exportData(token: try await tokenProvider())
+            }
+            let url = try PrivacyExport.write(data)
+            exportedFile = SharpitSharedFile(url: url)
+        } catch {
+            exportError = SharpitErrorGuidance.message(for: error, subject: "L'export de tes données")
+        }
+    }
+
+    private var exportSection: some View {
+        Section(
+            eyebrow: "Tes données",
+            footer: "Un fichier JSON avec ton profil, tes consentements, tes activités, ton plan et tes mesures. Tu choisis où l'envoyer : Fichiers, AirDrop, e-mail."
+        ) {
+            Button {
+                Task { await exportData() }
+            } label: {
+                HStack {
+                    Label {
+                        Text(isExporting ? "Préparation de l'export…" : "Exporter mes données")
+                            .font(SharpitTypography.bodyEmphasis)
+                            .foregroundStyle(SharpitColor.foreground)
+                    } icon: {
+                        SharpitRowIcon(symbol: "square.and.arrow.up")
+                    }
+                    Spacer(minLength: 0)
+                    if isExporting { ProgressView().controlSize(.small) }
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .disabled(isExporting)
+            if let exportError {
+                Label(exportError, systemImage: "exclamationmark.triangle")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.signalRisk)
+            }
+        }
+        .sharpitListRows()
     }
 
     private var renewsSubscription: Bool { pro?.hasRenewingSubscription ?? false }
@@ -167,7 +228,7 @@ struct PrivacySettingsView: View {
     private var deletionSection: some View {
         Section(
             eyebrow: "Compte",
-            footer: "Efface ton compte et toutes tes données, tout de suite. Pour les garder, exporte-les d'abord depuis le web."
+            footer: "Efface ton compte et toutes tes données, tout de suite. Pour les garder, exporte-les d'abord, juste au-dessus."
         ) {
             Button(role: .destructive) {
                 confirmsDeletion = true
@@ -249,6 +310,8 @@ struct PrivacySettingsView: View {
                 }
             }
             .sharpitListRows()
+
+            exportSection
 
             deletionSection
 
