@@ -101,17 +101,6 @@ struct JournalView: View {
     @ViewBuilder
     private var content: some View {
         switch store.phase {
-        case .loading:
-            // The picker stays put while the day loads, so the screen does not jump when it
-            // arrives; the rows below are the journal's own, redacted.
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    JournalDatePicker(store: store)
-                    JournalLoadingRows()
-                }
-                .padding(SharpitSpacing.pageInset)
-            }
-            .scrollDisabled(true)
         case .failed(let message):
             ContentUnavailableView {
                 Label("Journal indisponible", systemImage: "wifi.slash")
@@ -120,11 +109,13 @@ struct JournalView: View {
             } actions: {
                 Button("Réessayer") { Task { await store.load() } }
             }
-        case .ready:
+        case .loading, .ready:
             entries
         }
     }
 
+    /// One scroll view for the loading and the loaded day, so the picker stays put and a new
+    /// day — its rows, or their redacted shape while it loads — slides in from its side.
     private var entries: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
@@ -133,32 +124,38 @@ struct JournalView: View {
 
                 // Swiped apart from the strip, which pages weeks with its own swipe.
                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                if store.hasNothingToShow {
-                    ContentUnavailableView {
-                        Label("Rien à suivre", systemImage: "book.closed")
-                    } description: {
-                        Text("Choisis ce que tu veux noter chaque jour.")
-                    } actions: {
-                        Button("Personnaliser") { showsPrefs = true }
-                    }
-                    .padding(.top, SharpitSpacing.xl)
-                }
+                    if store.phase == .loading {
+                        JournalLoadingRows()
+                    } else {
+                        if store.hasNothingToShow {
+                            ContentUnavailableView {
+                                Label("Rien à suivre", systemImage: "book.closed")
+                            } description: {
+                                Text("Choisis ce que tu veux noter chaque jour.")
+                            } actions: {
+                                Button("Personnaliser") { showsPrefs = true }
+                            }
+                            .padding(.top, SharpitSpacing.xl)
+                        }
 
-                // The web's order, top to bottom: the day's values, then the night that
-                // ended this morning, then the day's own signals. Grouped by when a signal
-                // happened rather than by what kind of thing it is — an athlete answers a
-                // journal in the order they lived it.
-                dayMetricsSection
-                checklistSection
-                priorNightSection
-                daySignalsSection
+                        // The web's order, top to bottom: the day's values, then the night that
+                        // ended this morning, then the day's own signals. Grouped by when a signal
+                        // happened rather than by what kind of thing it is — an athlete answers a
+                        // journal in the order they lived it.
+                        dayMetricsSection
+                        checklistSection
+                        priorNightSection
+                        daySignalsSection
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(.rect)
                 .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } }
             }
             .padding(SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.section)
         }
+        .scrollDisabled(store.phase == .loading)
     }
 
     /// Caféine, Humeur, Hydratation — values the athlete sets, not answers they give.
@@ -625,10 +622,13 @@ private struct JournalDatePicker: View {
     private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
     @State private var weekOffset: Int
     @State private var showingCalendar = false
+    /// The day the title showed last, so a change knows which way it went.
+    @State private var shownDate: Date
 
     init(store: JournalStore) {
         self.store = store
         _weekOffset = State(initialValue: weeks.offset(forWeekContaining: store.selectedDate))
+        _shownDate = State(initialValue: store.selectedDate)
     }
 
     private var isToday: Bool {
@@ -646,7 +646,9 @@ private struct JournalDatePicker: View {
                             .font(SharpitTypography.verdict)
                             .tracking(SharpitTypography.verdictTracking)
                             .foregroundStyle(SharpitColor.foreground)
-                            .contentTransition(.opacity)
+                            // The date rolls the way the day went, as the rows slide.
+                            .contentTransition(.numericText(countsDown: store.selectedDate < shownDate))
+                            .animation(SharpitMotion.selection, value: store.selectedDate)
                         Image(systemName: "chevron.down")
                             .font(SharpitTypography.label)
                             .foregroundStyle(SharpitColor.mutedForeground)
@@ -699,6 +701,7 @@ private struct JournalDatePicker: View {
             Task { await store.markAnsweredDays(around: weeks.weekStart(forOffset: offset)) }
         }
         .onChange(of: store.selectedDate) { _, newDate in
+            shownDate = newDate
             let targetOffset = weeks.offset(forWeekContaining: newDate)
             if weekOffset != targetOffset {
                 weekOffset = targetOffset
