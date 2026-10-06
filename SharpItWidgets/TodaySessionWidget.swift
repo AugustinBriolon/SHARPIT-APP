@@ -221,7 +221,7 @@ struct VerdictPanel: View {
         .padding(10)
         .frame(width: 124, alignment: .topLeading)
         .frame(maxHeight: .infinity, alignment: .topLeading)
-        .background(verdict.posture.tone.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(verdict.posture.tone.opacity(0.12), in: RoundedRectangle(cornerRadius: WidgetMetrics.panelRadius, style: .continuous))
     }
 }
 

@@ -4,6 +4,9 @@ import WidgetKit
 /// The app's canvas behind a widget: Snow White or Forest Night, the dot grid and the two brand
 /// halos — `SharpitCanvasTexture`, the very one the app draws. A verdict adds a halo in its
 /// posture's tone: color is state, never decoration.
+///
+/// Clipped to `ContainerRelativeShape` so the fill follows Apple's continuous widget corner —
+/// the same radius Weather and Calendar use — instead of reading as a tighter card inside it.
 struct WidgetCanvas: View {
     var stateTone: Color?
 
@@ -15,6 +18,8 @@ struct WidgetCanvas: View {
                 RadialGradient(colors: [stateTone.opacity(0.22), .clear], center: .topTrailing, startRadius: 0, endRadius: 170)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(ContainerRelativeShape())
     }
 }
 
@@ -128,6 +133,8 @@ enum WidgetMetrics {
     static let headerGap: CGFloat = 8
     /// Between the hero figure and the lines under it.
     static let lineGap: CGFloat = 4
+    /// Nested panels — same continuous corner as the app ink verdict (`SharpitRadius.panel`).
+    static let panelRadius: CGFloat = 18
 }
 
 /// The widget's main number, the same face and size on every widget, its unit beside it.

@@ -1,13 +1,17 @@
 import SwiftUI
 
-/// Corner radii derived from the exported brand radius, mirroring the `--radius-analysis*`
-/// scale in `globals.css`.
+/// Corner radii derived from the exported brand radius.
+///
+/// On the web, `--radius-analysis` (0.875×) is tighter than `--radius-analysis-lg`
+/// (1.125×). On iOS the ink verdict already used the larger continuous corner, and
+/// the tighter panels read as cards inside cards next to it (ADR-0008: HIG outranks
+/// the web scale here). Default panels share the verdict's radius.
 enum SharpitRadius {
     /// `--radius-analysis-sm`
     static let small = SharpitTokens.radius * 0.5
-    /// `--radius-analysis` — the default panel.
-    static let panel = SharpitTokens.radius * 0.875
-    /// `--radius-analysis-lg` — alt panels and the ink band.
+    /// Default panel — same continuous corner as the ink verdict.
+    static let panel = SharpitTokens.radius * 1.125
+    /// Alt panels and the ink band — kept as an alias of `panel`.
     static let panelLarge = SharpitTokens.radius * 1.125
 }
 

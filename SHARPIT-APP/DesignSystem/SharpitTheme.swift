@@ -50,8 +50,8 @@ enum SharpitSpacing {
     /// The Human Interface Guidelines' smallest tappable size, in points (`docs/adr/0008`).
     static let minimumTouchTarget: CGFloat = 44
 
-    /// `BRAND.radius` — the web card radius, exported to Swift.
-    static let cardRadius: CGFloat = SharpitTokens.radius
+    /// Card / panel corner — matches the ink verdict continuous radius.
+    static let cardRadius: CGFloat = SharpitRadius.panel
     /// Radius for chips and other controls nested inside a card.
     static let chipRadius: CGFloat = SharpitTokens.radius * 0.75
 }

@@ -97,14 +97,14 @@ private func hex(_ color: Color, style: UIUserInterfaceStyle = .light) -> String
     #expect(SharpitSpacing.pageInset == 16)
 }
 
-@Test func cardRadiusComesFromTheExportedBrandRadius() {
-    #expect(SharpitSpacing.cardRadius == SharpitTokens.radius)
+@Test func cardRadiusMatchesThePanelRadius() {
+    #expect(SharpitSpacing.cardRadius == SharpitRadius.panel)
     #expect(SharpitTokens.radius == 16)
 }
 
-@Test func analysisRadiiMirrorTheWebScale() {
-    #expect(SharpitRadius.panel == SharpitTokens.radius * 0.875)
-    #expect(SharpitRadius.panelLarge == SharpitTokens.radius * 1.125)
+@Test func panelRadiiMatchTheInkVerdictCorner() {
+    #expect(SharpitRadius.panel == SharpitTokens.radius * 1.125)
+    #expect(SharpitRadius.panelLarge == SharpitRadius.panel)
     #expect(SharpitRadius.small < SharpitRadius.panel)
 }
 
