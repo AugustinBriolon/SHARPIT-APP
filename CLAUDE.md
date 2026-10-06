@@ -359,6 +359,14 @@ quarter hours.
 
 Humeur reads the morning check-in (`/api/v1/wellness-checkin`) when the journal row carries no mood — the mood lives there, the row only echoes it when answered from the journal; a day with only a check-in counts as noted, here and in the server's journal data days. The day picker marks the journal as the day screens mark their data (`SharpitDataDayMark`): a dot where something was noted, a ring where the day was read and holds nothing, nothing while unknown — from `/api/v1/data-days?domain=journal`. The journal and the day screens read their marks through one `DataDaysMarker`: the 91-day window holding the week in view first (the strip scrolled back, a month opened), then the rest of the history in a task of its own that a screen left mid-way does not cancel; a window that failed is read again when next needed. The journal's skeleton is its own rows redacted, under a date picker that stays put.
 
+The journal's toolbar opens « Analyses » (`JournalAnalysesView`, `JournalAnalysesStore` owned by
+`JournalView`): what the habits go with, from `/api/v1/journal/analyses` (the web's own reading,
+never computed here). Closed with its progress until seven days carry a signal; then the verdict
+on the ink plate, « Ce qui t'aide », « Ce qui te freine » and « Pistes à confirmer », one card per
+outcome (Sommeil, Récupération, Body Battery), each habit a dumbbell on the domain's shared axis
+(`SharpitDumbbellTrack`: the median without, the median with, the days behind them, dashed when
+weak), and the footer says an association is not a cause. No 7-day habit test: left out on purpose (2026-10-06).
+
 Sections follow *when* a signal happened, not what kind of thing it is: Journée (the three
 metrics), Checklist auto, Nuit dernière, Signaux du jour. `JournalDayWindow` is its own axis
 beside `JournalCategory`, which still drives the drawer's filters — the web separates them

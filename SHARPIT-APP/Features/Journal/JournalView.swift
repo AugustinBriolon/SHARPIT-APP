@@ -5,6 +5,8 @@ import SwiftUI
 /// devices report on their own.
 struct JournalView: View {
     @State private var store: JournalStore
+    /// Nil when the client cannot read the analyses (a test stub): the toolbar then omits them.
+    @State private var analysesStore: JournalAnalysesStore?
     @State private var showsPrefs = false
     @State private var showsWellness = false
     @State private var showsCaffeine = false
@@ -25,6 +27,11 @@ struct JournalView: View {
     ) {
         self.wellness = wellness
         self.tokenProvider = tokenProvider
+        _analysesStore = State(
+            initialValue: (client as? any JournalAnalysesServing).map {
+                JournalAnalysesStore(client: $0, tokenProvider: tokenProvider)
+            }
+        )
         _store = State(
             initialValue: JournalStore(
                 client: client,
@@ -47,6 +54,19 @@ struct JournalView: View {
             .navigationTitle("Journal")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if let analysesStore {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            JournalAnalysesView(store: analysesStore)
+                        } label: {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(SharpitColor.foreground)
+                        }
+                        .accessibilityLabel("Analyses du journal")
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showsPrefs = true
@@ -255,7 +275,7 @@ private struct JournalLoadingRows: View {
     }
 }
 
-private struct JournalSection<Content: View>: View {
+struct JournalSection<Content: View>: View {
     let title: String
     var hint: String?
     @ViewBuilder let content: Content
