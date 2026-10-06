@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 /// What an opened URL asks the app to do.
 ///
@@ -16,8 +17,9 @@ enum IncomingLink: Equatable {
     case plannedSession(id: String)
     /// Plan's Objectifs — the next race tapped in a widget.
     case goals
-    /// Nutrition opened on the barcode scanner — the « Scanner un produit » widget or control.
-    case foodScan
+    /// Résumé on one of its pages — the day itself (the verdict widget), Sommeil, Nutrition, or
+    /// Nutrition on the barcode scanner (the « Scanner un produit » widget or control).
+    case today(TodayPage)
 
     nonisolated static let trustedHost = "sharpit.app"
 
@@ -37,11 +39,18 @@ enum IncomingLink: Equatable {
         if components.path == "/settings/sources" {
             return .settings(.sources)
         }
+        // A locked widget's tap: the offer it names. A hidden one's: the switch that hid it.
+        if components.path == "/settings/pro" {
+            return .settings(.pro)
+        }
+        if components.path == "/settings/features" {
+            return .settings(.features)
+        }
         if components.path == "/goals" {
             return .goals
         }
-        if components.path == "/nutrition/scan" {
-            return .foodScan
+        if let page = todayPage(forPath: components.path) {
+            return .today(page)
         }
         if let id = identifier(in: components.path, after: "/activity/") {
             return .activity(id: id)
@@ -50,6 +59,18 @@ enum IncomingLink: Equatable {
             return .plannedSession(id: id)
         }
         return tab(forPath: components.path).map(IncomingLink.tab)
+    }
+
+    /// The Résumé pages a widget opens. Sommeil and Nutrition are pushed from Résumé, so they
+    /// are asked of it rather than being tabs of their own.
+    nonisolated static func todayPage(forPath path: String) -> TodayPage? {
+        switch path {
+        case "/today": .overview
+        case "/sleep", "/today/sleep": .sleep
+        case "/nutrition": .nutrition
+        case "/nutrition/scan": .foodScan
+        default: nil
+        }
     }
 
     /// The id a path ends with after `prefix`, when there is exactly one.
@@ -70,5 +91,24 @@ enum IncomingLink: Equatable {
         case "/body", "/corps", "/me", "/profile": .body
         default: nil
         }
+    }
+}
+
+/// Links opened before the tabs exist wait here. A widget tapped on a cold launch delivers its
+/// URL while the gates still check the session and the account, before `RootView` is on screen
+/// to hear it — so the app takes every URL and `RootView` empties the inbox once it shows.
+@Observable
+@MainActor
+final class IncomingLinkInbox {
+    private(set) var pending: URL?
+
+    func receive(_ url: URL) {
+        guard IncomingLink.parse(url) != nil else { return }
+        pending = url
+    }
+
+    func take() -> URL? {
+        defer { pending = nil }
+        return pending
     }
 }

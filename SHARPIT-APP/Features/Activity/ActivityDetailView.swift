@@ -34,11 +34,33 @@ struct ActivityDetailView: View {
     @State private var hikeTrips: HikeTripStore?
     @State private var openedHikeTripId: String?
     @State private var isLinkingHikes = false
-    /// Ties the expanded map's compass and pitch toggle to the map, so they sit in the safe area
+    /// Ties the expanded map's compass and scale to the map, so they sit in the safe area
     /// under the map's own buttons rather than where MapKit puts them on a full-bleed map.
     @Namespace private var mapScope
+    /// The expanded map's camera once it settles: the 2D/3D button reads its pitch and keeps
+    /// its centre, distance and heading when it tilts or flattens the view.
+    @State private var mapCamera: MapCamera?
+    /// The route drawn again from start to finish, played and paused from the map's buttons.
+    @State private var routeReplay = RouteReplay()
     @Environment(\.dismiss) private var dismiss
     @Environment(ShellRouter.self) private var router: ShellRouter?
+
+    private var replaySymbol: String {
+        switch routeReplay.state {
+        case .playing: "pause.fill"
+        case .finished: "arrow.counterclockwise"
+        case .idle, .paused: "play.fill"
+        }
+    }
+
+    private var replayLabel: String {
+        switch routeReplay.state {
+        case .playing: "Mettre en pause le tracé"
+        case .paused: "Reprendre le tracé"
+        case .finished: "Rejouer le tracé"
+        case .idle: "Animer le tracé"
+        }
+    }
 
     init(
         activity: String,
@@ -79,8 +101,10 @@ struct ActivityDetailView: View {
                                     mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
+                                    camera: $mapCamera,
                                     mapStyle: mapStyleSelection.mapStyle,
-                                    intensity: intensity
+                                    intensity: intensity,
+                                    replay: routeReplay
                                 )
                             } else if let stream = detail.stream, stream.available, !stream.route.isEmpty {
                                 ActivityRouteHero(
@@ -90,7 +114,9 @@ struct ActivityDetailView: View {
                                     mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
-                                    mapStyle: mapStyleSelection.mapStyle
+                                    camera: $mapCamera,
+                                    mapStyle: mapStyleSelection.mapStyle,
+                                    replay: routeReplay
                                 )
                             } else if !route.isEmpty {
                                 ActivityRouteHero(
@@ -100,7 +126,9 @@ struct ActivityDetailView: View {
                                     mapScope: mapScope,
                                     position: $mapCameraPosition,
                                     isOffRoute: $isMapOffRoute,
-                                    mapStyle: mapStyleSelection.mapStyle
+                                    camera: $mapCamera,
+                                    mapStyle: mapStyleSelection.mapStyle,
+                                    replay: routeReplay
                                 )
                             } else {
                                 ActivityRouteLoadingSurface()
@@ -193,6 +221,10 @@ struct ActivityDetailView: View {
         .modifier(ScrollUnderGlass())
         .toolbar(.hidden, for: .navigationBar)
         .enableInteractivePopGesture()
+        .onChange(of: isMapExpanded) { _, expanded in
+            if !expanded { routeReplay.stop() }
+        }
+        .onDisappear { routeReplay.stop() }
         .onChange(of: streamPayload, initial: true) { _, payload in
             routeIntensity = payload.flatMap { RouteIntensity.make(route: $0.route, samples: $0.samples) }
         }
@@ -254,9 +286,7 @@ struct ActivityDetailView: View {
                                 }
                                 if routeIntensity != nil {
                                     Divider()
-                                    Toggle(isOn: $colorsRouteByIntensity) {
-                                        Label("Heatmap", systemImage: "flame")
-                                    }
+                                    Toggle("Heatmap", isOn: $colorsRouteByIntensity)
                                 }
                             } label: {
                                 Image(systemName: "square.2.layers.3d")
@@ -309,10 +339,48 @@ struct ActivityDetailView: View {
         .overlay(alignment: .topTrailing) {
             // The map ignores the safe area, so MapKit would draw these under the status bar
             // once the map is rotated or pitched; they live in the column under the buttons.
+            // The 2D/3D button is always there, so it comes first: the compass, which comes and
+            // goes with the heading, appears under it instead of pushing it down. MapKit's own
+            // pitch toggle shows only once the map is tilted, so the button is the screen's.
             if isMapExpanded {
+                let isPitched = (mapCamera?.pitch ?? 0) > 1
                 VStack(alignment: .trailing, spacing: 8) {
+                    Button {
+                        guard let camera = mapCamera else { return }
+                        withAnimation(.easeInOut(duration: 0.45)) {
+                            mapCameraPosition = .camera(MapCamera(
+                                centerCoordinate: camera.centerCoordinate,
+                                distance: camera.distance,
+                                heading: camera.heading,
+                                pitch: isPitched ? 0 : 60
+                            ))
+                        }
+                    } label: {
+                        Text(isPitched ? "2D" : "3D")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial, in: Circle())
+                            .sharpitShadow(.control)
+                            .contentTransition(.opacity)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(mapCamera == nil)
+                    .accessibilityLabel(isPitched ? "Vue à plat" : "Vue en relief")
+                    Button {
+                        routeReplay.toggle()
+                    } label: {
+                        Image(systemName: replaySymbol)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial, in: Circle())
+                            .sharpitShadow(.control)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(replayLabel)
                     MapCompass(scope: mapScope)
-                    MapPitchToggle(scope: mapScope)
                     MapScaleView(scope: mapScope)
                 }
                 .padding(.trailing, 18)
@@ -1559,12 +1627,31 @@ private struct ActivityRouteHero: View {
     let mapScope: Namespace.ID
     @Binding var position: MapCameraPosition
     @Binding var isOffRoute: Bool
+    @Binding var camera: MapCamera?
     var mapStyle: MapStyle = .standard(elevation: .realistic)
     /// When set, the route is drawn stretch by stretch in its intensity's tone.
     var intensity: RouteIntensity? = nil
+    /// While it plays or pauses, only the part already travelled is drawn, over a faint route.
+    var replay: RouteReplay? = nil
 
     private var coordinates: [CLLocationCoordinate2D] {
         route.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+    }
+
+    private var replayProgress: Double? { replay?.progress }
+
+    private var drawnRoute: [V1ActivityCoordinate] {
+        replayProgress.map { RouteReplayPath.prefix(route, progress: $0) } ?? route
+    }
+
+    private var drawnSegments: [RouteIntensity.Segment] {
+        guard let intensity else { return [] }
+        return replayProgress.map { RouteReplayPath.prefix(intensity.segments, progress: $0) } ?? intensity.segments
+    }
+
+    private var replayHead: CLLocationCoordinate2D? {
+        guard replayProgress != nil, let head = drawnRoute.last else { return nil }
+        return CLLocationCoordinate2D(latitude: head.latitude, longitude: head.longitude)
     }
 
     private var region: MKCoordinateRegion {
@@ -1574,16 +1661,22 @@ private struct ActivityRouteHero: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             Map(position: $position, interactionModes: isExpanded ? .all : [], scope: mapScope) {
-                if let intensity {
-                    ForEach(Array(intensity.segments.enumerated()), id: \.offset) { _, segment in
+                if replayProgress != nil {
+                    MapPolyline(coordinates: coordinates)
+                        .stroke(SharpitColor.mutedForeground.opacity(0.35), lineWidth: 5)
+                }
+                if intensity != nil {
+                    ForEach(Array(drawnSegments.enumerated()), id: \.offset) { _, segment in
                         MapPolyline(coordinates: segment.coordinates.map {
                             CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
                         })
                         .stroke(RouteIntensityTone.color(level: segment.level), lineWidth: 5)
                     }
                 } else {
-                    MapPolyline(coordinates: coordinates)
-                        .stroke(tone, lineWidth: 5)
+                    MapPolyline(coordinates: drawnRoute.map {
+                        CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+                    })
+                    .stroke(tone, lineWidth: 5)
                 }
                 if let start = coordinates.first {
                     Annotation("Départ", coordinate: start) {
@@ -1595,12 +1688,22 @@ private struct ActivityRouteHero: View {
                         RoutePointMarker(color: tone, stroke: .white)
                     }
                 }
+                if let head = replayHead {
+                    Annotation("", coordinate: head) {
+                        Circle()
+                            .fill(tone)
+                            .frame(width: 18, height: 18)
+                            .overlay(Circle().stroke(.white, lineWidth: 3))
+                            .shadow(color: .black.opacity(0.25), radius: 3)
+                    }
+                }
             }
             .mapStyle(mapStyle)
             .mapControls {}
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .allowsHitTesting(isExpanded)
             .onMapCameraChange(frequency: .onEnd) { context in
+                camera = context.camera
                 let off = isExpanded && RouteFraming.isOffRoute(visible: context.region, route: route)
                 if off != isOffRoute {
                     withAnimation(SharpitMotion.selection) { isOffRoute = off }

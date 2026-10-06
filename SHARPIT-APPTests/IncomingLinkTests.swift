@@ -39,7 +39,7 @@ struct IncomingLinkTests {
     }
 
     @Test func webPathsOpenTheirTab() {
-        #expect(link("https://sharpit.app/today") == .tab(.today))
+        #expect(link("https://sharpit.app/today") == .today(.overview))
         #expect(link("https://sharpit.app/activities") == .tab(.activity))
         #expect(link("https://sharpit.app/me") == .tab(.body))
         #expect(link("https://sharpit.app/settings") == .settings(nil))
@@ -49,8 +49,54 @@ struct IncomingLinkTests {
     }
 
     @Test func theScanWidgetOpensTheScannerOnlyOnOurHost() {
-        #expect(link("https://sharpit.app/nutrition/scan") == .foodScan)
+        #expect(link("https://sharpit.app/nutrition/scan") == .today(.foodScan))
         #expect(link("https://api.sharpit.app/nutrition/scan") == nil)
+    }
+
+    /// Sommeil and Nutrition are pages of Résumé: their widgets open them, not Résumé's top.
+    @Test func theSleepAndNutritionWidgetsOpenTheirPage() {
+        #expect(link("https://sharpit.app/sleep") == .today(.sleep))
+        #expect(link("https://sharpit.app/nutrition") == .today(.nutrition))
+    }
+
+    @Test func aLockedOrHiddenWidgetOpensTheSettingThatUndoesIt() {
+        #expect(link("https://sharpit.app/settings/pro") == .settings(.pro))
+        #expect(link("https://sharpit.app/settings/features") == .settings(.features))
+    }
+}
+
+/// Every widget's tap, as the widget builds it, lands on the page it stands for.
+struct WidgetLinkTests {
+    private func destination(
+        _ path: String,
+        unlocked: Bool = true,
+        feature: SharpitFeature? = nil,
+        features: V1FeaturePrefs = V1FeaturePrefs()
+    ) -> IncomingLink? {
+        IncomingLink.parse(WidgetSnapshot.link(path, unlocked: unlocked, feature: feature, features: features))
+    }
+
+    @Test func eachWidgetOpensItsPage() {
+        #expect(destination("/today") == .today(.overview))
+        #expect(destination("/sleep") == .today(.sleep))
+        #expect(destination("/nutrition", feature: .nutrition) == .today(.nutrition))
+        #expect(destination("/nutrition/scan", feature: .nutrition) == .today(.foodScan))
+        #expect(destination("/corps", feature: .health) == .tab(.body))
+        #expect(destination("/plan", feature: .regularity) == .tab(.plan))
+        #expect(destination("/activity") == .tab(.activity))
+        #expect(destination("/coach") == .tab(.coach))
+        #expect(destination("/goals") == .goals)
+    }
+
+    @Test func aLockedWidgetOpensSharpItPro() {
+        #expect(destination("/sleep", unlocked: false) == .settings(.pro))
+        #expect(destination("/corps", unlocked: false, feature: .health) == .settings(.pro))
+    }
+
+    @Test func aHiddenWidgetOpensPagesEtWidgets() {
+        let features = V1FeaturePrefs(nutrition: false)
+        #expect(destination("/nutrition", feature: .nutrition, features: features) == .settings(.features))
+        #expect(destination("/nutrition/scan", feature: .nutrition, features: features) == .settings(.features))
     }
 }
 
@@ -59,8 +105,32 @@ struct IncomingLinkTests {
     let router = ShellRouter()
     router.select(.coach)
 
-    router.openFoodScan()
+    router.openToday(.foodScan)
 
     #expect(router.selectedTab == .today)
-    #expect(router.pendingFoodScan)
+    #expect(router.pendingTodayPage == .foodScan)
+}
+
+@MainActor
+@Test func aWidgetTappedUnderParamètresClosesIt() {
+    let router = ShellRouter()
+    router.openSettings()
+
+    router.openToday(.sleep)
+
+    #expect(!router.isShowingSettings)
+    #expect(router.pendingTodayPage == .sleep)
+}
+
+/// A link heard before the tabs exist — a cold launch from a widget — waits to be taken once.
+@MainActor
+@Test func theInboxKeepsALinkUntilItIsTaken() {
+    let inbox = IncomingLinkInbox()
+    inbox.receive(URL(string: "https://evil.example/today")!)
+    #expect(inbox.pending == nil)
+
+    let url = URL(string: "https://sharpit.app/sleep")!
+    inbox.receive(url)
+    #expect(inbox.take() == url)
+    #expect(inbox.take() == nil)
 }

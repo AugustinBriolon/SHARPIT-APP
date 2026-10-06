@@ -375,11 +375,11 @@ private struct TodayFoldView: View {
             guard destination == nil else { return }
             Task { await nutrition?.load(trainingDayId: fold.trainingDayId) }
         }
-        .onChange(of: router.pendingFoodScan, initial: true) { _, pending in
-            guard pending else { return }
-            router.pendingFoodScan = false
-            guard features.isOn(.nutrition) else { return }
-            openedNutrition = .scan
+        // A widget tapped: Résumé shows the page it stands for, over nothing else it had open.
+        .onChange(of: router.pendingTodayPage, initial: true) { _, page in
+            guard let page else { return }
+            router.pendingTodayPage = nil
+            show(page)
         }
 
         .sheet(item: $selectedPreview) { preview in
@@ -492,6 +492,27 @@ private struct TodayFoldView: View {
         return foundAny ? totalMinutes : nil
     }
 
+
+    private func show(_ page: TodayPage) {
+        selectedPreview = nil
+        selectedBrick = nil
+        selectedDoneBrick = nil
+        switch page {
+        case .overview:
+            openedSignal = nil
+            openedNutrition = nil
+        case .sleep:
+            openedNutrition = nil
+            openedSignal = signalClient == nil ? nil : .sleep
+        case .nutrition, .foodScan:
+            openedSignal = nil
+            guard features.isOn(.nutrition) else {
+                openedNutrition = nil
+                return
+            }
+            openedNutrition = page == .foodScan ? .scan : .day
+        }
+    }
 
     private func openNutrition(_ phase: NutritionTodayStore.Phase) {
         switch phase {

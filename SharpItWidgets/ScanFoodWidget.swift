@@ -10,7 +10,7 @@ struct ScanFoodWidget: Widget {
         StaticConfiguration(kind: "ScanFood", provider: SnapshotProvider()) { entry in
             ScanFoodWidgetView(entry: entry)
                 .containerBackground(for: .widget) { WidgetCanvas() }
-                .widgetURL(WidgetSnapshot.link(entry.features.isOn(.nutrition) ? "/nutrition/scan" : "/today"))
+                .widgetURL(entry.link("/nutrition/scan", feature: .nutrition))
         }
         .configurationDisplayName("Scanner un produit")
         .description("Ouvre le scanner de code-barres pour noter un aliment.")

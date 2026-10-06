@@ -37,20 +37,26 @@ final class ShellRouter {
     var pendingPlannedSessionId: String?
     /// A missed session to catch up on in Plan, once — « Dommage pour hier » tapped.
     var pendingCatchUp: PlanCatchUp?
-    /// Nutrition to open on the barcode scanner, once — the « Scanner un produit » widget.
-    var pendingFoodScan = false
+    /// A page of Résumé to show, once — a widget tapped: the day itself, Sommeil, Nutrition or
+    /// its barcode scanner.
+    var pendingTodayPage: TodayPage?
 
-    func openFoodScan() {
-        pendingFoodScan = true
+    /// Résumé on one of its pages. Paramètres is closed first: a widget tapped while it was up
+    /// would otherwise open its page behind the sheet.
+    func openToday(_ page: TodayPage) {
+        isShowingSettings = false
+        pendingTodayPage = page
         selectedTab = .today
     }
 
     func openActivity(id: String) {
+        isShowingSettings = false
         pendingActivityId = id
         selectedTab = .activity
     }
 
     func openPlannedSession(id: String) {
+        isShowingSettings = false
         pendingPlannedSessionId = id
         selectedTab = .plan
     }
@@ -91,26 +97,41 @@ final class ShellRouter {
 
     /// Opens what a notification points at.
     func open(_ destination: NotificationDestination) {
+        // Paramètres sits over every tab: left up, it would hide the page asked for.
+        let settingsWasUp = isShowingSettings
+        if case .settings = destination {} else { isShowingSettings = false }
         switch destination {
         case .tab(let tab):
             select(tab)
         case .planGenerator:
             select(.plan)
-            isShowingPlanGenerator = true
+            present(after: settingsWasUp) { $0.isShowingPlanGenerator = true }
         case .weeklyReview:
             select(.plan)
-            isShowingWeeklyReview = true
+            present(after: settingsWasUp) { $0.isShowingWeeklyReview = true }
         case .goals:
             select(.plan)
-            isShowingGoals = true
+            present(after: settingsWasUp) { $0.isShowingGoals = true }
         case .settings(let route):
             openSettings(on: route)
         case .activity(let id):
             openActivity(id: id)
         case .catchUp(let label, let day):
             let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now
-            pendingCatchUp = PlanCatchUp(label: label, date: TrainingDayId.date(day) ?? yesterday)
+            let catchUp = PlanCatchUp(label: label, date: TrainingDayId.date(day) ?? yesterday)
             select(.plan)
+            present(after: settingsWasUp) { $0.pendingCatchUp = catchUp }
+        }
+    }
+
+    /// A sheet asked for while Paramètres was going down is shown once it is gone: UIKit refuses
+    /// a presentation while another sheet is still leaving.
+    private func present(after settingsWasUp: Bool, _ show: @escaping @MainActor (ShellRouter) -> Void) {
+        guard settingsWasUp else { return show(self) }
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(450))
+            guard let self else { return }
+            show(self)
         }
     }
 
@@ -138,6 +159,16 @@ enum NotificationDestination: Equatable {
     case activity(id: String)
     /// A missed session, by the label the coach is told and its training day.
     case catchUp(label: String, day: String)
+}
+
+/// What a link asks Résumé to show.
+nonisolated enum TodayPage: Equatable, Sendable {
+    /// The day itself, with nothing pushed over it.
+    case overview
+    case sleep
+    case nutrition
+    /// Nutrition with the barcode scanner up.
+    case foodScan
 }
 
 enum ShellTab: Hashable, CaseIterable {

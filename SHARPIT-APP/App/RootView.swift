@@ -35,6 +35,8 @@ struct RootView: View {
     /// the web to verify — listened to for as long as the app runs.
     @State private var pro: ProStore?
     @Environment(\.scenePhase) private var scenePhase
+    /// Nil in previews and demo hosts, which open no links.
+    @Environment(IncomingLinkInbox.self) private var linkInbox: IncomingLinkInbox?
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -181,8 +183,9 @@ struct RootView: View {
         .onChange(of: pushManager.pendingDestination) { _, _ in
             if let destination = pushManager.consumePendingDestination() { router.open(destination) }
         }
-        .onOpenURL { url in
-            handleIncomingURL(url)
+        // Heard by the app, so a link that arrived before the tabs did is still followed.
+        .onChange(of: linkInbox?.pending, initial: true) { _, _ in
+            if let url = linkInbox?.take() { handleIncomingURL(url) }
         }
         // Every string in this app is French, and so is the web's. Left to the device
         // locale the date strips rendered "M T W T F S S" under French copy.
@@ -255,7 +258,7 @@ struct RootView: View {
         case .garminCallback(let status):
             handleGarminCallback(status: status)
         case .tab(let tab):
-            router.select(tab)
+            router.open(.tab(tab))
         case .settings(let route):
             router.openSettings(on: route)
         case .activity(let id):
@@ -264,8 +267,8 @@ struct RootView: View {
             router.openPlannedSession(id: id)
         case .goals:
             router.open(.goals)
-        case .foodScan:
-            router.openFoodScan()
+        case .today(let page):
+            router.openToday(page)
         case nil:
             break
         }

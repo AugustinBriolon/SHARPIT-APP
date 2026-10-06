@@ -228,7 +228,13 @@ next race, `GoalOrdering.nextRace`) from `GoalStore` — each written by the scr
 merged (`WidgetSnapshotStore.update`); the silent push reads them all. The volume widget is an
 `AppIntentConfiguration` (`VolumeSport`): kilometres for one sport, time for strength or all sports,
 Monday first, with last week at the same point as a fact, never a verdict. No streaks. `/goals`
-opens Plan's Objectifs (`ShellRouter.isShowingGoals`). How a section reads (the dial's figure, the target line) is in `WidgetSnapshotReadout`, shared
+opens Plan's Objectifs (`ShellRouter.isShowingGoals`). Every widget opens the page it stands for:
+Sommeil `/sleep` and Nutrition `/nutrition` are pushed on Résumé (`ShellRouter.openToday`,
+`TodayPage`), the verdict `/today` pops Résumé to its top; a locked widget opens SharpIt Pro
+(`/settings/pro`), a hidden one Pages et widgets (`/settings/features`) — `WidgetSnapshot.link`
+decides, tested in `WidgetLinkTests`. The app hears every URL (`IncomingLinkInbox`) and `RootView`
+follows it once it shows, so a widget tapped on a cold launch, while the gates still check the
+session, is not lost; Paramètres is closed first. How a section reads (the dial's figure, the target line) is in `WidgetSnapshotReadout`, shared
 and tested; the energy and sleep dials are the app's `SharpitTickGauge` (`DialReadout`). A widget never calls the API — no Clerk session, a small reload
 budget: the app writes a `WidgetSnapshot` into the App Group `group.app.sharpit.ios`
 (`WidgetSnapshotStore`) from Résumé's fold each time it reads today, and on a silent push the
@@ -545,6 +551,10 @@ between the session's own 10th and 90th percentiles, so one sprint does not flat
 path and the samples are both thinned evenly by the server from one recording, so a point takes the
 sample at the same share of the session — no server change. The recentre button shows only once
 the camera has left the route (`RouteFraming`: part of it out of view, or under 35 % of the map).
+Under the 2D/3D button (always shown: « 3D » on a flat map, « 2D » on a tilted one), a play button
+redraws the route from start to finish over a faint copy of it, a dot at its head (`RouteReplay`,
+twelve seconds, paused and resumed at will; `RouteReplayPath` cuts the line, heatmap stretches
+included). The points are evenly spaced in time, so the line runs faster where the athlete did.
 
 **History filters.** The server sends the whole history, so Activité filters it in place
 (`ActivityFilter`): the search field on the title and sport, and the bar's filter menu — a sport the
