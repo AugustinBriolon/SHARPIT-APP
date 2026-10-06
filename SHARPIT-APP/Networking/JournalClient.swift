@@ -165,3 +165,13 @@ enum JournalClientError: Error, Equatable, LocalizedError {
         }
     }
 }
+
+extension JournalClient: JournalAnalysesServing {
+    func journalAnalyses(token: String) async throws -> V1JournalAnalyses {
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/journal/analyses"))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        return try decode(V1JournalAnalyses.self, from: try await send(request))
+    }
+}
