@@ -316,3 +316,22 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
     #expect(CoachDictation.merged(typed: "Salut", heard: "comment était ma nuit") == "Salut comment était ma nuit")
     #expect(CoachDictation.merged(typed: "Salut", heard: "  ") == "Salut")
 }
+
+// MARK: - Copy
+
+@Test func copyingACoachTurnUsesTheAssembledProse() {
+    let message = CoachMessage(role: .assistant, text: "Paragraphe un.\n\nParagraphe deux.")
+    #expect(CoachMessageCopy.plainText(of: message) == "Paragraphe un.\n\nParagraphe deux.")
+}
+
+@Test func copyingFallsBackToTextPartsWhenTheAssembledLineIsEmpty() {
+    let message = CoachMessage(
+        role: .assistant,
+        text: "",
+        parts: [
+            .object(["type": .string("text"), "text": .string("Premier")]),
+            .object(["type": .string("text"), "text": .string("Second")]),
+        ]
+    )
+    #expect(CoachMessageCopy.plainText(of: message) == "Premier\n\nSecond")
+}

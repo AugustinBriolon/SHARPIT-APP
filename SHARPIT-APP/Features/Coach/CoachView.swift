@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// The coach conversation.
 ///
@@ -392,6 +393,10 @@ struct CoachView: View {
 ///
 /// Only one side gets a bubble on purpose: the coach's answers are the content of this
 /// screen, and wrapping them in a container would make them look like remarks.
+///
+/// Copy: selection works inside a bubble or a markdown block; long-press « Copier » puts the
+/// whole turn on the pasteboard — markdown is rendered as many `Text`s, so system selection
+/// alone cannot take the answer in one gesture.
 private struct CoachMessageRow: View {
     let message: CoachMessage
     let isStreaming: Bool
@@ -409,6 +414,7 @@ private struct CoachMessageRow: View {
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground)
                     .multilineTextAlignment(.leading)
+                    .textSelection(.enabled)
                     .padding(.horizontal, SharpitSpacing.md)
                     .padding(.vertical, SharpitSpacing.sm)
                     .background(
@@ -417,6 +423,7 @@ private struct CoachMessageRow: View {
                     )
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
+            .coachCopyMenu(message.text)
 
         case .assistant:
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -427,7 +434,6 @@ private struct CoachMessageRow: View {
                         // The coach writes markdown; rendering it as literal asterisks would be
                         // the app failing to read its own answer.
                         SharpitMarkdownText(markdown: text)
-                            .textSelection(.enabled)
                     case .proposal(let proposal):
                         CoachProposalCard(proposal: proposal, onAnswer: answer(for: proposal))
                     }
@@ -437,6 +443,40 @@ private struct CoachMessageRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .coachCopyMenu(CoachMessageCopy.plainText(of: message))
+        }
+    }
+}
+
+/// Text put on the pasteboard for a coach turn — the assembled prose, not one markdown block.
+enum CoachMessageCopy {
+    static func plainText(of message: CoachMessage) -> String {
+        let assembled = message.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !assembled.isEmpty { return message.text }
+        return CoachSegment.segments(of: message).compactMap { segment -> String? in
+            if case .text(_, let text) = segment {
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                return trimmed.isEmpty ? nil : text
+            }
+            return nil
+        }.joined(separator: "\n\n")
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func coachCopyMenu(_ text: String) -> some View {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            self
+        } else {
+            contextMenu {
+                Button {
+                    UIPasteboard.general.string = text
+                } label: {
+                    Label("Copier", systemImage: "doc.on.doc")
+                }
+            }
         }
     }
 }

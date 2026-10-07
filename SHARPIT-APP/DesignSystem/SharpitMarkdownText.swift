@@ -21,6 +21,8 @@ struct SharpitMarkdownText: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        // Select inside a block; a whole coach turn is copied from the row's context menu.
+        .textSelection(.enabled)
         // One element for VoiceOver: an answer is read as prose, not as a stack of
         // unrelated fragments.
         .accessibilityElement(children: .combine)
@@ -84,7 +86,6 @@ struct SharpitMarkdownText: View {
                     SharpitColor.analysisSurfaceAlt,
                     in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
                 )
-                .textSelection(.enabled)
 
         case .rule:
             Rectangle()
