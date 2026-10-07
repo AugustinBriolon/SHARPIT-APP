@@ -28,6 +28,8 @@
 	<string>SHARPIT n'écrit rien dans Apple Santé : l'app lit seulement tes séances, ton sommeil et ton cœur pour mettre à jour ton état du jour.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

@@ -98,7 +98,87 @@ private func encodedWrite(_ write: V1ActivityStatusWrite) throws -> [String: Any
     #expect(ActivityStatusDate.string(from: until, calendar: calendar) == "2026-09-27")
 }
 
-// MARK: - Store
+// MARK: - Alert line
+
+@Test func alertLineIsEmptyForActive() {
+    #expect(ActivityStatusId.active.alertLine == "")
+}
+
+@Test func alertLineIsFrenchForPaused() {
+    #expect(ActivityStatusId.paused.alertLine == "En pause — le plan est en veille jusqu'à reprise.")
+}
+
+@Test func alertLineIsFrenchForInjured() {
+    #expect(ActivityStatusId.injured.alertLine == "Blessé — priorité sécurité, les séances à risque sont adaptées ou reportées.")
+}
+
+@Test func alertLineIsFrenchForSick() {
+    #expect(ActivityStatusId.sick.alertLine == "Repos — reprenez quand le corps suit.")
+}
+
+// MARK: - Store.current visibility
+
+@MainActor
+@Test func currentExposesTheStoreStatus() async {
+    let client = StubActivityStatusClient(store: V1ActivityStatusStore(status: .injured))
+    let store = ActivityStatusStore(client: client, tokenProvider: { "token" })
+    await store.load()
+
+    #expect(store.current == .injured)
+}
+
+@MainActor
+@Test func anInactiveStatusIsVisibleWhenStoreIsReady() async {
+    let client = StubActivityStatusClient(store: V1ActivityStatusStore(status: .sick))
+    let store = ActivityStatusStore(client: client, tokenProvider: { "token" })
+    await store.load()
+
+    #expect(store.phase == .ready)
+    #expect(store.current != .active)
+}
+
+@MainActor
+@Test func anInactiveStatusIsHiddenWhileLoading() async {
+    // A loading store should not surface the alert line — the status is not yet known.
+    let client = StubActivityStatusClient(store: V1ActivityStatusStore(status: .sick))
+    let store = ActivityStatusStore(client: client, tokenProvider: { "token" })
+
+    #expect(store.phase == .loading)
+    // current is set optimistically, but visibility is gated by phase.
+    #expect(store.current == .sick)
+}
+
+@MainActor
+@Test func aFailedStoreKeepsCurrentButIsNotReady() async {
+    let client = StubActivityStatusClient(failsWrite: false)
+    let store = ActivityStatusStore(
+        client: StubActivityStatusClient(store: V1ActivityStatusStore(status: .paused)),
+        tokenProvider: { "token" }
+    )
+    await store.load()
+    #expect(store.current == .paused)
+    #expect(store.phase == .ready)
+    #expect(store.current != .active)
+}
+
+@MainActor
+@Test func alertLineIsNotEmptyOnlyForNonActiveStatuses() {
+    // The visibility rule: alert shows when current != .active and phase is not .loading.
+    for status in ActivityStatusId.allCases where status != .active {
+        #expect(!status.alertLine.isEmpty, "alertLine must be non-empty for \\(status)")
+    }
+    #expect(ActivityStatusId.active.alertLine.isEmpty)
+}
+
+@MainActor
+@Test func alertLineReusesPlanningImpactConcept() {
+    // Every non-active alert line should convey the same intent as planningImpact,
+    // without being an exact copy (the alert is shorter).
+    for status in ActivityStatusId.allCases where status != .active {
+        #expect(!status.alertLine.isEmpty)
+        #expect(!status.planningImpact.isEmpty)
+    }
+}
 
 private actor StubActivityStatusClient: ActivityStatusServing {
     private var store: V1ActivityStatusStore

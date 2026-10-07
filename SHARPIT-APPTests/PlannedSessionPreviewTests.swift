@@ -1,5 +1,7 @@
 import Foundation
+import SwiftUI
 import Testing
+import UIKit
 @testable import Sharpit
 
 // Plan and Today show the same object from two screens, so both map into one preview
@@ -167,6 +169,30 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
     ])
 
     #expect(sets.count == 2)
+}
+
+/// Long mobility exercise names used to widen the drawer past the phone and allow
+/// horizontal scroll — the rail must wrap inside a phone-width column.
+@MainActor
+@Test func aLongStrengthStepFitsInsideAPhoneWidth() {
+    let steps = [
+        V1PlannedSessionStep(
+            key: "strength-0",
+            label: "Étirements dynamiques hanches et ischio-jambiers unilatéraux",
+            detail: "3 × 45 s",
+            target: "Bande légère",
+            notes: "Garder le bassin neutre"
+        ),
+    ]
+    let host = UIHostingController(
+        rootView: PlannedSessionBreakdownList(steps: steps, derived: false)
+            .padding(SharpitSpacing.pageInset)
+            .frame(width: 375, alignment: .leading)
+    )
+    host.view.bounds = CGRect(x: 0, y: 0, width: 375, height: 2_000)
+    host.view.layoutIfNeeded()
+    let fitted = host.sizeThatFits(in: CGSize(width: 375, height: UIView.layoutFittingExpandedSize.height))
+    #expect(fitted.width <= 375.5)
 }
 
 @Test func aGroupSentByTheServerIsDecoded() throws {

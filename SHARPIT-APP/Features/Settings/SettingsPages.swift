@@ -350,6 +350,23 @@ struct NotificationPrefsView: View {
             toggle("Séance faite", detail: "Après une séance synchronisée : sa part du plan et la suivante.", symbol: "checkmark.seal", key: "sessionDone", value: prefs.sessionDone)
             toggle("Séance manquée", detail: "Le lendemain, pour réorganiser ta semaine en un geste.", symbol: "arrow.uturn.forward", key: "missedSession", value: prefs.missedSession)
             toggle("Alertes de synchronisation", detail: "Quand une source doit être reconnectée.", symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
+            Toggle(isOn: Binding(
+                get: { CoachReplyLiveActivityPreference.isEnabled },
+                set: { CoachReplyLiveActivityPreference.setEnabled($0) }
+            )) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Live Activity coach")
+                            .font(SharpitTypography.bodyEmphasis)
+                        Text("Sur l'écran verrouillé pendant que le coach répond.")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                } icon: {
+                    SharpitRowIcon(symbol: "lock.iphone")
+                }
+            }
+            .tint(SharpitColor.primary)
         }
         .sharpitListRows()
         // Placeholders only while the very first read is under way; a failure says so below

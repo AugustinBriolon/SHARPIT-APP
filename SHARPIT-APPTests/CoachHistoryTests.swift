@@ -88,11 +88,29 @@ private actor Saved {
     func recordDelete(_ id: String) { deleted.append(id) }
 }
 
-private struct StubConversations: CoachConversationServing {
+/// Mutable so a cut stream can be followed by a fuller server thread in the same test.
+private final class StubConversations: CoachConversationServing, @unchecked Sendable {
     var list: [CoachConversationSummary] = []
     var opened: CoachConversation?
     var failing = false
+    /// Lets create succeed while the first GET after a cut stream still fails.
+    var fetchFailuresRemaining = 0
     let saved: Saved
+    private(set) var fetchCount = 0
+
+    init(
+        list: [CoachConversationSummary] = [],
+        opened: CoachConversation? = nil,
+        failing: Bool = false,
+        fetchFailuresRemaining: Int = 0,
+        saved: Saved = Saved()
+    ) {
+        self.list = list
+        self.opened = opened
+        self.failing = failing
+        self.fetchFailuresRemaining = fetchFailuresRemaining
+        self.saved = saved
+    }
 
     func conversations(token: String) async throws -> [CoachConversationSummary] {
         if failing { throw SharpitAPIError.transport }
@@ -100,6 +118,11 @@ private struct StubConversations: CoachConversationServing {
     }
 
     func conversation(id: String, token: String) async throws -> CoachConversation {
+        fetchCount += 1
+        if fetchFailuresRemaining > 0 {
+            fetchFailuresRemaining -= 1
+            throw SharpitAPIError.server
+        }
         guard let opened, !failing else { throw SharpitAPIError.server }
         return opened
     }
@@ -138,13 +161,26 @@ private func coachStore(
     opened: CoachConversation? = nil,
     failing: Bool = false,
     saved: Saved = Saved(),
-    client: RecordingCoachClient = RecordingCoachClient()
+    client: any CoachChatServing = RecordingCoachClient(),
+    conversations: StubConversations? = nil,
+    resyncDelay: Duration = .milliseconds(10)
 ) -> CoachStore {
     CoachStore(
         client: client,
-        conversations: StubConversations(opened: opened, failing: failing, saved: saved),
-        tokenProvider: { "token" }
+        conversations: conversations ?? StubConversations(opened: opened, failing: failing, saved: saved),
+        tokenProvider: { "token" },
+        resyncDelay: resyncDelay
     )
+}
+
+/// Yields a partial answer, then cancels — the phone left mid-stream.
+private struct CancellingCoachClient: CoachChatServing {
+    func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error> {
+        AsyncThrowingStream { continuation in
+            StubCoachClient.textChunks(["Cou"]).forEach { continuation.yield($0) }
+            continuation.finish(throwing: CancellationError())
+        }
+    }
 }
 
 @MainActor
@@ -222,10 +258,57 @@ private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
     #expect(opened)
     #expect(store.messages.map(\.id) == ["a", "b"])
     #expect(store.conversationId == "past-1")
+    #expect(store.endAnchorRevision == 1)
 
     await ask(store, "Suite")
     #expect(client.stored(1)?.id == "past-1")
     #expect(client.stored(1)?.text == "Suite")
+}
+
+@MainActor
+@Test func aCutStreamPullsTheSavedAnswerAndAnchorsTheEnd() async {
+    let conversations = StubConversations(
+        opened: CoachConversation(
+            id: "conversation-1",
+            messages: [
+                CoachMessage(id: "q", role: .user, text: "Je doute"),
+                CoachMessage(id: "a", role: .assistant, text: "Réponse complète du serveur."),
+            ]
+        )
+    )
+    let store = coachStore(client: CancellingCoachClient(), conversations: conversations)
+
+    await ask(store, "Je doute")
+    // Partial text stayed until the delayed pull; wait for it.
+    try? await Task.sleep(for: .milliseconds(40))
+
+    #expect(store.messages.last?.text == "Réponse complète du serveur.")
+    #expect(store.endAnchorRevision >= 1)
+    #expect(conversations.fetchCount >= 1)
+    #expect(store.failure == nil)
+}
+
+@MainActor
+@Test func resumeAfterInterruptionRetriesAFailedPull() async {
+    let conversations = StubConversations(
+        opened: CoachConversation(
+            id: "conversation-1",
+            messages: [
+                CoachMessage(id: "q", role: .user, text: "Coupe"),
+                CoachMessage(id: "a", role: .assistant, text: "Reprise."),
+            ]
+        ),
+        fetchFailuresRemaining: 1
+    )
+    let store = coachStore(client: CancellingCoachClient(), conversations: conversations)
+
+    await ask(store, "Coupe")
+    try? await Task.sleep(for: .milliseconds(40))
+    #expect(store.messages.last?.text == "Cou")
+
+    await store.resumeAfterInterruption()
+
+    #expect(store.messages.last?.text == "Reprise.")
 }
 
 @MainActor

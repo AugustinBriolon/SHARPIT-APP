@@ -87,6 +87,7 @@ private struct RailRow<Content: View>: View {
             }
             .frame(width: 13)
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) { content }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, isLast ? 0 : SharpitSpacing.md)
         }
     }
@@ -139,26 +140,33 @@ private struct RepeatedSet: View {
 }
 
 /// One step's words: what, how long, at what, and the note beside it.
+///
+/// Strength labels are often long French movement names; they must wrap beside the
+/// detail rather than widen the drawer past the screen (horizontal scroll).
 private struct PlannedStepContent: View {
     let step: V1PlannedSessionStep
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            HStack(spacing: SharpitSpacing.xs) {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                 Text(step.label)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
-                Spacer(minLength: 0)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 if let detail = step.detail {
                     Text(detail)
                         .font(SharpitTypography.instrument)
                         .foregroundStyle(SharpitColor.foreground)
+                        .layoutPriority(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
             }
             if let target = step.target {
                 Text(target)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.primary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if let notes = step.notes, !notes.isEmpty {
                 Text(notes)
@@ -167,6 +175,7 @@ private struct PlannedStepContent: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(step.spokenLabel)
     }
@@ -178,7 +187,7 @@ private extension V1PlannedSessionStep {
     }
 }
 
-#Preview {
+#Preview("Endurance") {
     PlannedSessionBreakdownList(
         steps: [
             V1PlannedSessionStep(key: "0-0", label: "Échauffement", detail: "15 min", group: "0"),
@@ -195,6 +204,28 @@ private extension V1PlannedSessionStep {
         ],
         derived: false
     )
+    .padding()
+    .background(SharpitCanvasBackground())
+}
+
+#Preview("Force / mobilité") {
+    PlannedSessionBreakdownList(
+        steps: [
+            V1PlannedSessionStep(
+                key: "strength-0",
+                label: "Étirements dynamiques hanches et ischio-jambiers unilatéraux",
+                detail: "3 × 45 s"
+            ),
+            V1PlannedSessionStep(
+                key: "strength-1",
+                label: "Rotation externe d'épaule à la bande élastique",
+                detail: "3 × 12",
+                target: "Bande légère"
+            ),
+        ],
+        derived: false
+    )
+    .frame(width: 375)
     .padding()
     .background(SharpitCanvasBackground())
 }

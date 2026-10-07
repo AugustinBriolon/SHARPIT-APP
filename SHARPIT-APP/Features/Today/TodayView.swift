@@ -95,7 +95,8 @@ struct TodayView: View {
                             }
                         },
                         onCheckIn: (wellnessClient != nil && tokenProvider != nil) ? { showsCheckIn = true } : nil,
-                        controls: AnyView(controlsRow)
+                        controls: AnyView(controlsRow),
+                        activityStatusStore: activityStatusStore
                     )
                 case .empty(let empty):
                     TodayEmptyView(empty: empty)
@@ -245,6 +246,10 @@ private struct TodayFoldView: View {
     /// Mode, Journal and weather — the fold's first row, scrolling away with the rest.
     var controls: AnyView?
 
+    /// The athlete's training-mode store. When `current != .active`, an alert line is
+    /// shown under the verdict plate. Not passed when there is no token.
+    var activityStatusStore: ActivityStatusStore?
+
     @State private var selectedPreview: PlannedSessionPreview?
     @State private var selectedBrick: PlannedBrickPreview?
     @State private var selectedDoneBrick: DoneBrickPreview?
@@ -271,7 +276,8 @@ private struct TodayFoldView: View {
         onSessionLinked: @escaping () -> Void = {},
         onAnswerProposal: @escaping (Bool) -> Void = { _ in },
         onCheckIn: (() -> Void)? = nil,
-        controls: AnyView? = nil
+        controls: AnyView? = nil,
+        activityStatusStore: ActivityStatusStore? = nil
     ) {
         self.fold = fold
         self.hasCompletedArrival = hasCompletedArrival
@@ -287,6 +293,7 @@ private struct TodayFoldView: View {
         self.onAnswerProposal = onAnswerProposal
         self.onCheckIn = onCheckIn
         self.controls = controls
+        self.activityStatusStore = activityStatusStore
         _phase = State(initialValue: hasCompletedArrival ? .idle : .hidden)
     }
 
@@ -297,6 +304,17 @@ private struct TodayFoldView: View {
                     controls
                 }
                 InkVerdictPlate(plate: fold.plate, revealed: phase.showsPlate)
+
+                if let store = activityStatusStore, store.current != .active, store.phase != .loading {
+                    ActivityStatusAlertLine(status: store.current)
+                        .opacity(phase.showsPlate ? 1 : 0)
+                        .offset(y: phase.showsPlate ? 0 : 18)
+                        .animation(
+                            reduceMotion ? .easeOut(duration: 0.01)
+                                : .spring(response: 0.40, dampingFraction: 0.80).delay(0.07),
+                            value: phase.showsPlate
+                        )
+                }
 
                 if let proposal = fold.morningProposal {
                     MorningProposalCard(proposal: proposal, onCheckIn: onCheckIn, onAnswer: onAnswerProposal)

@@ -48,6 +48,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(1)
                 if preview.isKey {
                     SharpitInlineTag("Clé")
                 }
@@ -56,12 +57,16 @@ struct PlannedSessionSummary<Actions: View>: View {
                     Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .multilineTextAlignment(.trailing)
                 }
             }
             Text(preview.title)
                 .font(SharpitTypography.pageTitle)
                 .tracking(SharpitTypography.pageTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -87,10 +92,14 @@ struct PlannedSessionSummary<Actions: View>: View {
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
                         .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
                     Text(metric.value)
                         .font(SharpitTypography.data)
                         .tracking(SharpitTypography.dataTracking)
                         .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

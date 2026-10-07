@@ -9,6 +9,7 @@ import UIKit
 /// in prose, and the design law keeps chatbot decoration off product surfaces.
 struct CoachView: View {
     @Environment(ShellRouter.self) private var router
+    @Environment(\.scenePhase) private var scenePhase
     @State private var store: CoachStore
     @State private var showingHistory = false
     /// What the coach keeps about the athlete — free context, trips, constraints — moved here
@@ -131,6 +132,19 @@ struct CoachView: View {
         .onAppear {
             store.onCalendarChanged = { [router] in router.noteCalendarChanged() }
         }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background:
+                CoachReplyLiveActivityController.shared.startIfNeeded(
+                    conversationId: store.conversationId ?? "",
+                    isReplying: store.isReplying
+                )
+            case .active:
+                Task { await store.resumeAfterInterruption() }
+            default:
+                break
+            }
+        }
         .task(id: router.pendingCoachContext) {
             if let context = router.consumeCoachContext() {
                 store.attach(context)
@@ -214,6 +228,17 @@ struct CoachView: View {
                 try? await Task.sleep(for: .milliseconds(60))
                 withAnimation(SharpitMotion.reveal) {
                     scrollPosition.scrollTo(id: CoachThreadLayout.turnId(id), anchor: .top)
+                }
+            }
+        }
+        // History open and post-interrupt resync: jump to the latest turn. `initialOffset`
+        // alone never fires again once the ScrollView has already laid out empty.
+        .onChange(of: store.endAnchorRevision) { _, _ in
+            guard !store.isEmpty else { return }
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(60))
+                withAnimation(SharpitMotion.reveal) {
+                    scrollPosition.scrollTo(id: CoachThreadLayout.endId, anchor: .bottom)
                 }
             }
         }

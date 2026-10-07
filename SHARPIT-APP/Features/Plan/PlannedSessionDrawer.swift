@@ -318,7 +318,7 @@ struct PlannedSessionDrawer: View {
     }
 
     private var page: some View {
-        ScrollView {
+        ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                 PlannedSessionSummary(
                     preview: preview,

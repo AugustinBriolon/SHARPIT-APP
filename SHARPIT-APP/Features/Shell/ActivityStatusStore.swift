@@ -18,6 +18,11 @@ final class ActivityStatusStore {
     private(set) var phase: Phase = .loading
     private(set) var store = V1ActivityStatusStore()
 
+    /// The athlete's current training mode — the live read of what the chip carries.
+    /// Used by screens that need to warn the athlete about the mode's effect without
+    /// offering a second control to change it.
+    var current: ActivityStatusId { store.status }
+
     private let client: any ActivityStatusServing
     private let tokenProvider: () async throws -> String
 

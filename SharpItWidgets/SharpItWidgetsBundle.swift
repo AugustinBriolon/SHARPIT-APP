@@ -21,5 +21,6 @@ struct SharpItWidgetsBundle: WidgetBundle {
         CoachControl()
         ScanFoodWidget()
         ScanFoodControl()
+        CoachReplyLiveActivity()
     }
 }

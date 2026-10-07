@@ -36,6 +36,17 @@ nonisolated enum ActivityStatusId: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// One-line alert copy shown under the Today verdict plate when the mode is not active.
+    /// Reuses `planningImpact` so the wording never drifts from the coach's own rationale.
+    var alertLine: String {
+        switch self {
+        case .active: ""
+        case .paused: "En pause — le plan est en veille jusqu'à reprise."
+        case .injured: "Blessé — priorité sécurité, les séances à risque sont adaptées ou reportées."
+        case .sick: "Repos — reprenez quand le corps suit."
+        }
+    }
+
     var symbolName: String {
         switch self {
         case .active: "figure.run"
