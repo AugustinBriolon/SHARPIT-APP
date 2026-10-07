@@ -200,8 +200,8 @@ environment action): it opens the adapter with the miss already said and starts 
 the coach's proposal for the rest of the week. Two or three sessions a week are key (SHARPIT
 F2, `isKey`: a race, the hard sessions, the long outing, a brick — chosen by the web's rule, marked
 on the proposal in `GeneratedWeekView` and stored on « Ajouter »): « Clé » (`SharpitInlineTag`,
-shared with « Brick ») in Plan, Résumé and the proposal, and « Séance clé » in a session's drawer
-(`SessionKeyRow`, PATCH `isKey`, shown on the tap). The rest is optional: « Dommage pour hier » speaks
+shared with « Brick ») in Plan, Résumé, the proposal, and the session drawer's header — the coach
+marks it; the athlete does not toggle it. The rest is optional: « Dommage pour hier » speaks
 of a missed key session only, and a week with none marked counts every session as key.
 « Bilan de la semaine » (Plan's « … ») is SharpIt Pro: `WeeklyReviewView` reads the latest review
 from `/api/v1/coach/weekly-review`, writes the current week's on demand, and shows a

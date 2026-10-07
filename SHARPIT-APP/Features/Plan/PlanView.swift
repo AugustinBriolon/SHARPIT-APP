@@ -126,7 +126,6 @@ struct PlanView: View {
                         preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
                         linking: linkContext(on: session.date),
                         watchPush: watchPushContext(on: session.date),
-                        keyToggle: keyContext(on: session.date),
                         editing: editingContext(for: session)
                     ) { context in
                         router.discussWithCoach(about: context)
@@ -328,14 +327,6 @@ extension PlanView {
                 )
                 Task { await store.reload(around: date) }
             }
-        )
-    }
-
-    fileprivate func keyContext(on date: Date) -> SessionKeyContext {
-        SessionKeyContext(
-            mutator: keyMutator,
-            tokenProvider: tokenProvider,
-            onChanged: { Task { await store.reload(around: date) } }
         )
     }
 

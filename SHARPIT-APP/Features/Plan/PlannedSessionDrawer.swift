@@ -181,7 +181,8 @@ extension PlannedSessionPreview {
             notes: nil,
             rationale: session.rationale,
             steps: session.breakdown?.steps ?? [],
-            stepsAreDerived: session.breakdown?.derived ?? false
+            stepsAreDerived: session.breakdown?.derived ?? false,
+            isKey: session.isKey
         )
     }
 
@@ -203,7 +204,8 @@ extension PlannedSessionPreview {
             // Today's payload carries the line, not the prescription behind it. The
             // breakdown arrives with the plan, so it is shown there.
             steps: [],
-            stepsAreDerived: false
+            stepsAreDerived: false,
+            isKey: card.isKey
         )
     }
 }
@@ -219,8 +221,6 @@ struct PlannedSessionDrawer: View {
     var linking: SessionLinkContext?
     /// Nil where the screen cannot push to watch.
     var watchPush: SessionWatchPushContext?
-    /// Lets the athlete mark the session key or not; nil where the plan cannot be changed.
-    var keyToggle: SessionKeyContext?
     /// Lets the athlete edit, move or delete the session; nil where the plan cannot be changed.
     var editing: SessionEditingContext?
     /// Fetches the session's breakdown when the preview arrived without one — Today's
@@ -339,9 +339,6 @@ struct PlannedSessionDrawer: View {
                             dismiss()
                         }
                     }
-                }
-                if let sessionId = preview.sessionId, let keyToggle {
-                    SessionKeyRow(sessionId: sessionId, isKey: preview.isKey, context: keyToggle)
                 }
                 // Same reason as the coach button: linking needs to know *which* session.
                 if preview.sessionId != nil, linking != nil {

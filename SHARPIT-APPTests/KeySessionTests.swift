@@ -2,29 +2,6 @@ import Foundation
 import Testing
 @testable import Sharpit
 
-/// Keeps the patches it was sent, or refuses as told.
-@MainActor
-private final class SessionPatcher: PlannedSessionMutating {
-    private(set) var patches: [(id: String, isKey: Bool?)] = []
-    let refusal: SharpitAPIError?
-
-    init(refusal: SharpitAPIError? = nil) { self.refusal = refusal }
-
-    func createSession(_: PlannedSessionFields, token _: String) async throws -> V1PlannedSessionItem {
-        throw SharpitAPIError.badRequest
-    }
-
-    func updateSession(id: String, fields: PlannedSessionFields, token _: String) async throws -> V1PlannedSessionItem {
-        if let refusal { throw refusal }
-        var isKey: Bool?
-        if case .bool(let value)? = fields["isKey"] { isKey = value }
-        patches.append((id, isKey))
-        return V1PlannedSessionItem(id: id, date: .now, isKey: isKey ?? false)
-    }
-
-    func deleteSession(id _: String, token _: String) async throws {}
-}
-
 @Test func aPlannedSessionReadsWhetherItIsKey() throws {
     let key = try JSONDecoder().decode(
         V1PlannedSessionItem.self,
@@ -55,33 +32,17 @@ private final class SessionPatcher: PlannedSessionMutating {
     })
 }
 
-@MainActor
-@Test func markingASessionKeyWritesItAndTellsThePlan() async {
-    let patcher = SessionPatcher()
-    var changed = 0
-    let store = SessionKeyStore(
-        sessionId: "s1",
-        isKey: false,
-        context: SessionKeyContext(mutator: patcher, tokenProvider: { "t" }, onChanged: { changed += 1 })
+@Test func aTodayCardCarriesTheKeyFlagIntoTheDrawerPreview() {
+    let card = SessionCardModel(
+        id: "c1",
+        kind: .planned,
+        title: "Seuil",
+        subtitle: nil,
+        metrics: [],
+        sport: "Course",
+        priority: false,
+        plannedSessionId: "s1",
+        isKey: true
     )
-
-    await store.set(true)
-
-    #expect(store.isKey)
-    #expect(patcher.patches.map(\.isKey) == [true])
-    #expect(changed == 1)
-}
-
-@MainActor
-@Test func aRefusedMarkComesBackAndSaysSo() async {
-    let store = SessionKeyStore(
-        sessionId: "s1",
-        isKey: true,
-        context: SessionKeyContext(mutator: SessionPatcher(refusal: .badRequest), tokenProvider: { "t" }, onChanged: {})
-    )
-
-    await store.set(false)
-
-    #expect(store.isKey)
-    #expect(SharpitWriteFailures.shared.latest?.message == SessionKeyStore.failureMessage)
+    #expect(PlannedSessionPreview(card: card).isKey)
 }

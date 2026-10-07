@@ -48,6 +48,9 @@ struct PlannedSessionSummary<Actions: View>: View {
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
+                if preview.isKey {
+                    SharpitInlineTag("Clé")
+                }
                 Spacer(minLength: 0)
                 if let date = preview.date {
                     Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))

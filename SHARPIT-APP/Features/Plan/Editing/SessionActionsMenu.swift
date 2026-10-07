@@ -21,8 +21,15 @@ struct SessionActionsMenu: View {
                 Label("Déplacer", systemImage: "calendar")
             }
             Divider()
+            // RootView's .tint(primary) otherwise paints the trash green while the
+            // role paints the title red — force both through the destructive token.
             Button(role: .destructive, action: onDelete) {
-                Label("Supprimer", systemImage: "trash")
+                Label {
+                    Text("Supprimer")
+                } icon: {
+                    Image(systemName: "trash")
+                }
+                .foregroundStyle(SharpitColor.destructive)
             }
         } label: {
             Image(systemName: "ellipsis")
