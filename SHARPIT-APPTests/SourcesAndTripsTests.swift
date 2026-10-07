@@ -18,6 +18,7 @@ private var utcCalendar: Calendar {
 
 @Test func eachDisconnectableSourcePostsToItsOwnV1Route() {
     #expect(DisconnectableSource.garmin.path == "/api/v1/garmin/disconnect")
+    #expect(DisconnectableSource.strava.path == "/api/v1/strava/disconnect")
     #expect(DisconnectableSource.withings.path == "/api/v1/withings/disconnect")
     #expect(DisconnectableSource.google.path == "/api/v1/google/disconnect")
     #expect(DisconnectableSource.google.confirmationTitle == "Déconnecter Google Agenda ?")
@@ -32,7 +33,7 @@ private var utcCalendar: Calendar {
             V1SyncProvider(key: "withings", label: "Withings", lastSyncAt: nil),
         ]
     )
-    #expect(DisconnectableSource.connected(in: status) == [.withings, .google])
+    #expect(DisconnectableSource.connected(in: status) == [.strava, .withings, .google])
     #expect(DisconnectableSource.connected(in: nil).isEmpty)
 }
 

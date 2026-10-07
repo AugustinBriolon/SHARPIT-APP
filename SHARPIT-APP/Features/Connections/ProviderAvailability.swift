@@ -8,9 +8,7 @@ import Foundation
 /// an account linked on the web keeps syncing server-side. Builds from Xcode and TestFlight keep
 /// all of it, for the athlete's own phone and the beta. Turn on everywhere once access is official.
 ///
-/// MyFitnessPal's access is unofficial too, and it has no switch here: the app has no way to
-/// link it at all (docs/adr/0010). The athlete imports their own MyFitnessPal export from
-/// Nutrition instead; days imported or synced on the web still show, read-only.
+/// Nutrition is logged in SharpIt; there is no third-party nutrition link here (SHARPIT ADR-073).
 enum ProviderAvailability {
     /// Recomputed when read so a TestFlight flag resolved after launch is picked up.
     static var garminInApp: Bool {

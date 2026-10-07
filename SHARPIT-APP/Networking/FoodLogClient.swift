@@ -6,14 +6,10 @@ nonisolated enum FoodLogError: Error, Equatable, LocalizedError {
     case notFound
     /// Open Food Facts did not answer the server.
     case openFoodFactsUnavailable
-    /// The file sent for an import is over the server's limit.
-    case fileTooLarge
-
     var errorDescription: String? {
         switch self {
         case .notFound: "Cet aliment n'existe plus."
         case .openFoodFactsUnavailable: "Open Food Facts ne répond pas. Réessaie dans un instant."
-        case .fileTooLarge: "Ce fichier dépasse 4 Mo. Exporte une période plus courte."
         }
     }
 }
@@ -33,8 +29,6 @@ nonisolated protocol FoodLogServing: Sendable {
     /// Entries already logged keep the nutrients they were logged with.
     func updateCustomFood(id: String, _ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct
     func deleteCustomFood(id: String, token: String) async throws
-    /// The athlete's own MyFitnessPal export (the ZIP or its nutrition CSV), sent as it is.
-    func importMyFitnessPal(_ file: FoodLogImportFile, token: String) async throws -> V1FoodLogImportResult
     func setTargets(_ targets: V1NutritionTargets, trainingDayId: String, token: String) async throws -> V1NutritionTargets
     /// A meal (or, without `meal`, a whole day) logged again into another day (SHARPIT ADR-071).
     /// Answers the entries written — none when the source was empty.
@@ -118,19 +112,6 @@ actor FoodLogClient: FoodLogServing {
     func deleteCustomFood(id: String, token: String) async throws {
         _ = try await send(try request("\(Self.path)/foods/\(id)", method: "DELETE", token: token))
     }
-
-    /// The server unpacks and reads a whole export, so the wait can pass the default minute. A
-    /// refusal carries the server's own French words, shown as they are.
-    func importMyFitnessPal(_ file: FoodLogImportFile, token: String) async throws -> V1FoodLogImportResult {
-        let boundary = "sharpit-\(UUID().uuidString)"
-        var request = try request("\(Self.path)/import/myfitnesspal", method: "POST", token: token)
-        request.timeoutInterval = Self.importTimeout
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.httpBody = MultipartFormData.body(boundary: boundary, fieldName: "file", file: file)
-        return try decode(V1FoodLogImportResult.self, from: try await send(request, readsRefusal: true))
-    }
-
-    nonisolated static let importTimeout: TimeInterval = 90
 
     func setTargets(_ targets: V1NutritionTargets, trainingDayId: String, token: String) async throws -> V1NutritionTargets {
         var request = try request(
@@ -311,7 +292,6 @@ actor FoodLogClient: FoodLogServing {
     nonisolated static func check(status: Int) throws {
         switch status {
         case 200...299: return
-        case 413: throw FoodLogError.fileTooLarge
         case 400: throw SharpitAPIError.badRequest
         case 401, 403: throw SharpitAPIError.unauthorized
         case 404: throw FoodLogError.notFound

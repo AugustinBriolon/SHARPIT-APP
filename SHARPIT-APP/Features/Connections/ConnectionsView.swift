@@ -7,9 +7,6 @@ import SwiftUI
 /// Health. Withings and Google Agenda are linked on the web (their OAuth return has no native
 /// handoff yet) and show here once connected, so they can be disconnected from the phone: a
 /// connected row asks first (`DisconnectableSource`), then `/api/v1/<source>/disconnect`.
-/// MyFitnessPal is not linked here: its days come in once from the athlete's own export,
-/// imported from Nutrition (docs/adr/0010).
-///
 /// Apple Health is switched on here, because only the phone can read it.
 ///
 /// Each source is one two-line row — its own mark, its name, one short status — so the rows
@@ -164,7 +161,7 @@ struct ConnectionsView: View {
             confirmingDisconnect = source
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
-                ProviderLogo(provider: source == .withings ? .withings : .google)
+                ProviderLogo(provider: source.logo)
                 sourceTitle(source.name, status: badge.text, tone: badge.tone.color)
                 Spacer(minLength: SharpitSpacing.xs)
                 if disconnecting == source {

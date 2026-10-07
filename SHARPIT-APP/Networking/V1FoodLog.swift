@@ -487,34 +487,6 @@ nonisolated struct V1FoodProductList: Decodable, Sendable, Equatable {
     let foods: [V1FoodProduct]
 }
 
-/// `POST /api/v1/food-log/import/myfitnesspal` — what the athlete's MyFitnessPal export brought:
-/// one day per date with meals in it, each meal as its total.
-nonisolated struct V1FoodLogImportResult: Decodable, Sendable, Equatable {
-    let importedDays: Int
-    /// `YYYY-MM-DD`; nil when nothing was imported.
-    let firstDay: String?
-    let lastDay: String?
-    /// Lines of the file the server could not read.
-    let skippedRows: Int
-
-    enum CodingKeys: String, CodingKey { case importedDays, firstDay, lastDay, skippedRows }
-
-    init(importedDays: Int, firstDay: String?, lastDay: String?, skippedRows: Int = 0) {
-        self.importedDays = importedDays
-        self.firstDay = firstDay
-        self.lastDay = lastDay
-        self.skippedRows = skippedRows
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        importedDays = try container.decode(Int.self, forKey: .importedDays)
-        firstDay = try container.decodeIfPresent(String.self, forKey: .firstDay)
-        lastDay = try container.decodeIfPresent(String.self, forKey: .lastDay)
-        skippedRows = try container.decodeIfPresent(Int.self, forKey: .skippedRows) ?? 0
-    }
-}
-
 /// Typed in by hand: a name and its energy, macros optional.
 nonisolated struct FoodQuickAdd: Sendable, Equatable, Hashable {
     var name: String

@@ -45,19 +45,23 @@ final class FoodLogStore {
     let tokenProvider: () async throws -> String
     private let onChange: @MainActor () async -> Void
     private let reportFailure: @MainActor (String) -> Void
+    /// When Apple Santé is linked and nutrition write is allowed, mirror day totals.
+    private let healthWriter: (any HealthWriting)?
 
     init(
         trainingDayId: String = TrainingDayId.today(now: .now),
         client: any FoodLogServing,
         tokenProvider: @escaping () async throws -> String,
         onChange: @escaping @MainActor () async -> Void = {},
-        reportFailure: @escaping @MainActor (String) -> Void = { SharpitWriteFailures.shared.report($0) }
+        reportFailure: @escaping @MainActor (String) -> Void = { SharpitWriteFailures.shared.report($0) },
+        healthWriter: (any HealthWriting)? = nil
     ) {
         self.trainingDayId = trainingDayId
         self.client = client
         self.tokenProvider = tokenProvider
         self.onChange = onChange
         self.reportFailure = reportFailure
+        self.healthWriter = healthWriter
     }
 
     /// The four meals, always in the order a day is read, empty ones included.
@@ -128,6 +132,7 @@ final class FoodLogStore {
             rememberRecent(draft, stored: stored)
             await onChange()
             await refreshHealth()
+            await mirrorNutritionToAppleHealth()
         } catch {
             entries.removeAll { $0.id == pending.id }
             reportFailure(Self.failureMessage(error, action: "Aliment non ajouté"))
@@ -145,6 +150,7 @@ final class FoodLogStore {
             replace(entry.id, with: Self.keepingHealth(of: original, in: stored))
             await onChange()
             await refreshHealth()
+            await mirrorNutritionToAppleHealth()
         } catch {
             replace(entry.id, with: original)
             reportFailure(Self.failureMessage(error, action: "Modification non enregistrée"))
@@ -160,10 +166,12 @@ final class FoodLogStore {
             }
             await onChange()
             await refreshHealth()
+            await mirrorNutritionToAppleHealth()
         } catch FoodLogError.notFound {
             // Already gone on the server: what the athlete asked for is true.
             await onChange()
             await refreshHealth()
+            await mirrorNutritionToAppleHealth()
         } catch {
             entries.insert(entry, at: min(index, entries.count))
             reportFailure(Self.failureMessage(error, action: "Aliment non supprimé"))
@@ -214,6 +222,7 @@ final class FoodLogStore {
             entries.append(contentsOf: copied)
             await onChange()
             await refreshHealth()
+            await mirrorNutritionToAppleHealth()
         } catch {
             reportFailure(Self.failureMessage(error, action: "Repas non copié"))
         }
@@ -234,6 +243,7 @@ final class FoodLogStore {
             entries.append(contentsOf: stored)
             await onChange()
             await refreshHealth()
+            await mirrorNutritionToAppleHealth()
         } catch {
             entries.removeAll { pendingIds.contains($0.id) }
             reportFailure(Self.failureMessage(error, action: "Repas non ajouté"))
@@ -265,6 +275,23 @@ final class FoodLogStore {
     }
 
     // MARK: Helpers
+
+    /// Mirrors the day's totals into Apple Santé when write access was granted. Failures stay quiet.
+    private func mirrorNutritionToAppleHealth() async {
+        guard let healthWriter else { return }
+        let day = trainingDayId
+        let kcal = entries.reduce(0.0) { $0 + $1.kcal }
+        let protein = entries.reduce(0.0) { $0 + $1.protein }
+        let carbs = entries.reduce(0.0) { $0 + $1.carbs }
+        let fat = entries.reduce(0.0) { $0 + $1.fat }
+        try? await healthWriter.saveNutritionDay(
+            day: day,
+            kcal: kcal,
+            proteinG: protein,
+            carbsG: carbs,
+            fatG: fat
+        )
+    }
 
     private func adoptHealth(_ day: V1FoodLogDay) {
         health = day.health

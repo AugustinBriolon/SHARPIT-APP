@@ -39,19 +39,22 @@ final class CorpsStore {
     private let bodyClient: any BodyCompositionServing
     private let recoveryClient: any RecoveryServing
     private let tokenProvider: () async throws -> String
+    private let healthWriter: (any HealthWriting)?
 
     init(
         overviewClient: any BodyServing = BodyClient(),
         profileClient: any AthleteProfileServing,
         bodyClient: any BodyCompositionServing,
         recoveryClient: any RecoveryServing,
-        tokenProvider: @escaping () async throws -> String
+        tokenProvider: @escaping () async throws -> String,
+        healthWriter: (any HealthWriting)? = HealthKitWriter()
     ) {
         self.overviewClient = overviewClient
         self.profileClient = profileClient
         self.bodyClient = bodyClient
         self.recoveryClient = recoveryClient
         self.tokenProvider = tokenProvider
+        self.healthWriter = healthWriter
     }
 
     func metrics(in section: CorpsSection) -> [CorpsMetric] {
@@ -123,6 +126,22 @@ final class CorpsStore {
             metrics = assembled
             phase = assembled.isEmpty ? .empty : .loaded
         }
+        await mirrorLatestWeightToAppleHealth(results.1.value ?? [])
+    }
+
+    /// Pushes the latest weigh-in that did not come from Apple Santé into Santé, so Withings /
+    /// manual stay visible there too. Failures stay quiet.
+    private func mirrorLatestWeightToAppleHealth(_ measurements: [V1BodyMeasurement]) async {
+        guard let healthWriter else { return }
+        let fromElsewhere = measurements.filter { measurement in
+            guard measurement.weightKg != nil else { return false }
+            let source = (measurement.source ?? "").lowercased()
+            return source != "apple-health" && source != "apple_health"
+        }
+        guard let latest = fromElsewhere.max(by: { $0.measuredAt < $1.measuredAt }),
+              let kg = latest.weightKg
+        else { return }
+        try? await healthWriter.saveBodyMass(kg: kg, at: latest.measuredAt)
     }
 
     /// One metric over a range, from the web; the series already on the tile when the web

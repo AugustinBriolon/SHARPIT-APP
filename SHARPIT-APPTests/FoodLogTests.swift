@@ -250,78 +250,9 @@ private let scoredV2JSON = """
     #expect(try JSONDecoder().decode(V1FoodProductList.self, from: Data(#"{ "foods": [] }"#.utf8)).foods.isEmpty)
 }
 
-@Test func anImportResultDecodesAndReadsInFrench() throws {
-    let result = try JSONDecoder().decode(V1FoodLogImportResult.self, from: Data("""
-    { "importedDays": 412, "firstDay": "2024-01-03", "lastDay": "2026-09-30", "skippedRows": 3 }
-    """.utf8))
-    #expect(result == V1FoodLogImportResult(importedDays: 412, firstDay: "2024-01-03", lastDay: "2026-09-30", skippedRows: 3))
-    #expect(MyFitnessPalImport.summary(of: result) == "412 jours importés, du 3 janv. 2024 au 30 sept. 2026")
-    #expect(MyFitnessPalImport.skippedNote(of: result) == "3 lignes illisibles ont été ignorées.")
-
-    let one = V1FoodLogImportResult(importedDays: 1, firstDay: "2026-05-01", lastDay: "2026-05-01")
-    #expect(MyFitnessPalImport.summary(of: one) == "1 jour importé, le 1 mai 2026")
-    #expect(MyFitnessPalImport.skippedNote(of: one) == nil)
-    #expect(MyFitnessPalImport.skippedNote(of: V1FoodLogImportResult(importedDays: 2, firstDay: nil, lastDay: nil, skippedRows: 1))
-        == "1 ligne illisible a été ignorée.")
-
-    let empty = try JSONDecoder().decode(V1FoodLogImportResult.self, from: Data("""
-    { "importedDays": 0, "firstDay": null, "lastDay": null, "skippedRows": 0 }
-    """.utf8))
-    #expect(MyFitnessPalImport.summary(of: empty) == "Aucun jour à importer dans ce fichier.")
-    #expect(MyFitnessPalImport.dayLabel("2026-02-30") == nil)
-}
-
-@Test func anImportFailureSaysTheServersWords() {
-    #expect(MyFitnessPalImport.message(for: SharpitAPIError.message("Ce fichier n'est pas un export MyFitnessPal."))
-        == "Ce fichier n'est pas un export MyFitnessPal.")
-    #expect(MyFitnessPalImport.message(for: FoodLogError.fileTooLarge) == "Ce fichier dépasse 4 Mo. Exporte une période plus courte.")
-    #expect(MyFitnessPalImport.message(for: SharpitAPIError.rateLimited).hasPrefix("Un import vient d'être lancé."))
-    #expect(throws: FoodLogError.fileTooLarge) { try FoodLogClient.check(status: 413) }
+@Test func aFoodLogRefusalReadsTheServersMessage() {
     #expect(FoodLogClient.refusal(in: Data(#"{ "error": " Fichier illisible. " }"#.utf8)) == "Fichier illisible.")
     #expect(FoodLogClient.refusal(in: Data("<html>".utf8)) == nil)
-}
-
-@Test func anExportIsTypedByItsExtensionAndRefusedOverFourMegabytes() throws {
-    #expect(MyFitnessPalImport.contentType(forExtension: "ZIP") == "application/zip")
-    #expect(MyFitnessPalImport.contentType(forExtension: "csv") == "text/csv")
-    #expect(MyFitnessPalImport.contentType(forExtension: "txt") == "text/plain")
-
-    let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: directory) }
-
-    let csv = directory.appending(path: "Nutrition-Summary.csv")
-    try Data("Date,Meal,Calories\n".utf8).write(to: csv)
-    let file = try MyFitnessPalImport.file(at: csv)
-    #expect(file == FoodLogImportFile(filename: "Nutrition-Summary.csv", contentType: "text/csv", data: Data("Date,Meal,Calories\n".utf8)))
-
-    let large = directory.appending(path: "export.zip")
-    try Data(count: MyFitnessPalImport.maximumBytes + 1).write(to: large)
-    #expect(throws: FoodLogError.fileTooLarge) { try MyFitnessPalImport.file(at: large) }
-}
-
-// MARK: - Multipart
-
-@Test func theMultipartBodyCarriesOneFileField() {
-    let file = FoodLogImportFile(filename: "File-Export.zip", contentType: "application/zip", data: Data([0x50, 0x4B, 0x03, 0x04]))
-    let body = MultipartFormData.body(boundary: "XYZ", fieldName: "file", file: file)
-
-    var expected = Data("""
-    --XYZ\r
-    Content-Disposition: form-data; name="file"; filename="File-Export.zip"\r
-    Content-Type: application/zip\r
-    \r
-
-    """.utf8)
-    expected.append(Data([0x50, 0x4B, 0x03, 0x04]))
-    expected.append(Data("\r\n--XYZ--\r\n".utf8))
-    #expect(body == expected)
-}
-
-@Test func aFilenameCannotBreakTheMultipartHeader() throws {
-    let file = FoodLogImportFile(filename: "my \"export\"\r\n.csv", contentType: "text/csv", data: Data())
-    let text = try #require(String(data: MultipartFormData.body(boundary: "B", fieldName: "file", file: file), encoding: .utf8))
-    #expect(text.contains(#"filename="my %22export%22.csv""#))
 }
 
 // MARK: - Request bodies
@@ -581,8 +512,6 @@ private actor StubFoodLog: FoodLogServing {
     private(set) var targetsSent: [V1NutritionTargets] = []
     var ownFoods: [V1FoodProduct] = []
     private(set) var deletedFoods: [String] = []
-    private(set) var imported: [FoodLogImportFile] = []
-    var importResult = V1FoodLogImportResult(importedDays: 3, firstDay: "2026-09-28", lastDay: "2026-09-30")
     var barcodeProducts: [String: V1FoodProduct] = [:]
     private(set) var barcodesRead: [String] = []
 
@@ -610,12 +539,6 @@ private actor StubFoodLog: FoodLogServing {
     func deleteCustomFood(id: String, token: String) async throws {
         if let failure { throw failure }
         deletedFoods.append(id)
-    }
-
-    func importMyFitnessPal(_ file: FoodLogImportFile, token: String) async throws -> V1FoodLogImportResult {
-        if let failure { throw failure }
-        imported.append(file)
-        return importResult
     }
 
     func day(trainingDayId: String, token: String) async throws -> V1FoodLogDay { day }
@@ -947,34 +870,6 @@ private nonisolated func ownFood(_ id: String, _ name: String) -> V1FoodProduct 
     #expect(log.recent.first?.lastGrams == 150)
     log.productDeleted(renamed)
     #expect(log.recent.isEmpty)
-}
-
-// MARK: - Import
-
-@MainActor
-@Test func anImportUploadsTheFileAndRefreshesTheDays() async {
-    let client = StubFoodLog()
-    var reloads = 0
-    let store = MyFitnessPalImportStore(client: client, tokenProvider: { "t" }, onImported: { reloads += 1 })
-    let file = FoodLogImportFile(filename: "export.zip", contentType: "application/zip", data: Data([1, 2, 3]))
-
-    await store.upload(file)
-    #expect(store.phase == .imported(V1FoodLogImportResult(importedDays: 3, firstDay: "2026-09-28", lastDay: "2026-09-30")))
-    #expect(await client.imported == [file])
-    #expect(reloads == 1)
-}
-
-@MainActor
-@Test func aRefusedImportShowsTheServersMessageAndReloadsNothing() async {
-    var reloads = 0
-    let store = MyFitnessPalImportStore(
-        client: StubFoodLog(failure: SharpitAPIError.message("Aucune ligne de nutrition dans ce fichier.")),
-        tokenProvider: { "t" },
-        onImported: { reloads += 1 }
-    )
-    await store.upload(FoodLogImportFile(filename: "a.csv", contentType: "text/csv", data: Data()))
-    #expect(store.phase == .failed("Aucune ligne de nutrition dans ce fichier."))
-    #expect(reloads == 0)
 }
 
 @Test func aNewPortionKeepsTheScoreTheRowShowed() throws {

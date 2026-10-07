@@ -83,6 +83,16 @@ private func sample(
     #expect(days.first?.weightKg == 71.3)
 }
 
+// MARK: - HealthKit writer
+
+@Test func nutritionDayIntervalSpansTheLocalCalendarDay() throws {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "Europe/Paris")!
+    let interval = try #require(HealthKitWriter.dayInterval("2026-10-07", calendar: calendar))
+    #expect(calendar.component(.day, from: interval.start) == 7)
+    #expect(calendar.component(.day, from: interval.end) == 8)
+}
+
 // MARK: - Sending
 
 private final class StubReader: HealthReading, @unchecked Sendable {

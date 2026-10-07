@@ -38,7 +38,7 @@ final class HealthKitReader: HealthReading, @unchecked Sendable {
     }()
 
     func requestAuthorization() async throws {
-        try await store.requestAuthorization(toShare: [], read: Self.readTypes)
+        try await store.requestAuthorization(toShare: HealthKitWriter.shareTypes, read: Self.readTypes)
     }
 
     // MARK: - Daily summaries for upload

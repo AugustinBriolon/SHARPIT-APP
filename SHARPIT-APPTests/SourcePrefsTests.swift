@@ -20,7 +20,7 @@ nonisolated private let answerJSON = """
     { "id": "body", "label": "Corps", "description": "Poids.", "providers": [
       { "id": "withings", "name": "Withings" }, { "id": "apple-health", "name": "Apple Santé" } ] },
     { "id": "nutrition", "label": "Nutrition", "description": "Calories.", "providers": [
-      { "id": "myfitnesspal", "name": "MyFitnessPal" } ] }
+      { "id": "sharpit", "name": "Journal SharpIt" } ] }
   ]
 }
 """
@@ -86,5 +86,6 @@ private actor StubSourcePrefs: SourcePrefsServing {
 @Test func unknownProvidersShowWithoutALogo() {
     #expect(ProviderLogo.Provider(integrationId: "apple-health") == .appleHealth)
     #expect(ProviderLogo.Provider(integrationId: "withings") == .withings)
+    #expect(ProviderLogo.Provider(integrationId: "sharpit") == .sharpit)
     #expect(ProviderLogo.Provider(integrationId: "polar") == nil)
 }

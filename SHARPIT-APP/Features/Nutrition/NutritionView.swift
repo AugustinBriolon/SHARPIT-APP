@@ -5,14 +5,12 @@ import SwiftUI
 /// the energy dial, the coach's reading on the ink plate, the macros and where the energy came
 /// from, the meals — each with its « + », each opening its own page where a food is edited or
 /// taken out — and the week. The log is written here (SHARPIT ADR-061): searched, scanned or
-/// typed in. Past days kept in MyFitnessPal come in once, from the athlete's own export file
-/// (« Importer depuis MyFitnessPal », docs/adr/0010): the app never signs in to MyFitnessPal.
+/// typed in. Days imported in the past stay read-only until the athlete logs a food there.
 struct NutritionView: View {
     @State private var store: DayResourceStore<V1NutritionResponse>
     @State private var foodLog: FoodLogStore
     @State private var addRequest: FoodAddRequest?
     @State private var isEditingTargets = false
-    @State private var isImporting = false
     @State private var isEditingWeightTarget = false
     @State private var targetWeightKg: Double?
     @State private var scannerOpened = false
@@ -48,7 +46,8 @@ struct NutritionView: View {
             trainingDayId: TrainingDayId.today(now: day),
             client: foodLogClient,
             tokenProvider: tokenProvider,
-            onChange: { [weak dayStore] in await dayStore?.load() }
+            onChange: { [weak dayStore] in await dayStore?.load() },
+            healthWriter: HealthKitWriter()
         ))
     }
 
@@ -96,10 +95,6 @@ struct NutritionView: View {
                             Label("Créer un objectif de poids", systemImage: "plus.circle")
                         }
                     }
-                    Divider()
-                    Button { isImporting = true } label: {
-                        Label("Importer depuis MyFitnessPal", systemImage: "square.and.arrow.down")
-                    }
                 } label: {
                     Label("Actions", systemImage: "ellipsis")
                 }
@@ -117,20 +112,6 @@ struct NutritionView: View {
         .task(id: selectedDayId) { await foodLog.load(trainingDayId: selectedDayId) }
         .sheet(item: $addRequest) { FoodAddSheet(store: foodLog, request: $0) }
         .sheet(isPresented: $isEditingTargets) { NutritionTargetsSheet(store: foodLog) }
-        .sheet(isPresented: $isImporting) {
-            MyFitnessPalImportSheet(store: MyFitnessPalImportStore(
-                client: foodLogClient,
-                tokenProvider: tokenProvider,
-                onImported: { await reloadAfterImport() }
-            ))
-        }
-    }
-
-    /// Imported days rebuild on the server: every day read so far, and the day's own log, are
-    /// read again.
-    private func reloadAfterImport() async {
-        await store.reloadAll()
-        await foodLog.load(trainingDayId: selectedDayId)
     }
 
     /// The meal a food added from the menu goes in: the one the hour suggests today, lunch on

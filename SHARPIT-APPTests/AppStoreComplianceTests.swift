@@ -40,8 +40,7 @@ import Testing
     #expect(ProviderAvailability.garminInApp(debug: false, testFlight: true))
 }
 
-/// MyFitnessPal's access is unofficial (5.2.2): the app never signs in to it, it only reads the
-/// athlete's own export file. Nothing in the app target may call the link or sync routes.
+/// MyFitnessPal was withdrawn (SHARPIT ADR-073): nothing in the app target may call link, sync or import routes.
 @Test func theAppNeverLinksMyFitnessPal() throws {
     let sources = URL(filePath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
@@ -50,6 +49,7 @@ import Testing
     for case let file as URL in files where file.pathExtension == "swift" {
         let text = try String(contentsOf: file, encoding: .utf8)
         #expect(!text.contains("/api/v1/myfitnesspal"), "\(file.lastPathComponent) calls a MyFitnessPal link route")
+        #expect(!text.contains("import/myfitnesspal"), "\(file.lastPathComponent) calls a MyFitnessPal import route")
         #expect(!text.contains("myfitnesspal.com"), "\(file.lastPathComponent) opens MyFitnessPal's site")
     }
 }

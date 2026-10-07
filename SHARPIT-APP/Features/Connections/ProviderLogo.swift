@@ -5,13 +5,12 @@ import UIKit
 ///
 /// The artwork comes from the asset catalog (`Provider/Garmin`, `Provider/AppleHealth`), as
 /// each provider ships it — SHARPIT never redraws a brand. Until an asset is added the row
-/// shows a neutral tile with a system symbol, so the screen never has a hole in it. MyFitnessPal
-/// keeps its case: the web still lists it in Priorités par catégorie for accounts it imported.
+/// shows a neutral tile with a system symbol, so the screen never has a hole in it.
 struct ProviderLogo: View {
     enum Provider {
         case garmin
         case appleHealth
-        case myFitnessPal
+        case sharpit
         case strava
         case withings
         case renpho
@@ -22,7 +21,7 @@ struct ProviderLogo: View {
             switch integrationId {
             case "garmin": self = .garmin
             case "apple-health": self = .appleHealth
-            case "myfitnesspal": self = .myFitnessPal
+            case "sharpit": self = .sharpit
             case "strava": self = .strava
             case "withings": self = .withings
             case "renpho": self = .renpho
@@ -35,7 +34,7 @@ struct ProviderLogo: View {
             switch self {
             case .garmin: "Provider/Garmin"
             case .appleHealth: "Provider/AppleHealth"
-            case .myFitnessPal: "Provider/MyFitnessPal"
+            case .sharpit: "Provider/Sharpit"
             case .strava: "Provider/Strava"
             case .withings: "Provider/Withings"
             case .renpho: "Provider/Renpho"
@@ -47,7 +46,7 @@ struct ProviderLogo: View {
             switch self {
             case .garmin: "applewatch.side.right"
             case .appleHealth: "heart.fill"
-            case .myFitnessPal: "fork.knife"
+            case .sharpit: "fork.knife"
             case .strava: "figure.run"
             case .withings, .renpho: "scalemass"
             case .google: "calendar"

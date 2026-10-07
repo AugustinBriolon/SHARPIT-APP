@@ -25,7 +25,7 @@
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Avec SharpIt Pro, tes séances planifiées s'écrivent dans un calendrier « SharpIt » et suivent les changements de ton plan. SharpIt ne touche à aucun autre calendrier.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>SHARPIT n'écrit rien dans Apple Santé : l'app lit seulement tes séances, ton sommeil et ton cœur pour mettre à jour ton état du jour.</string>
+	<string>SHARPIT peut écrire dans Apple Santé le total de ta journée alimentaire (énergie et macros) et le poids que tu notes dans l'app, pour les garder alignés avec Santé.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSSupportsLiveActivities</key>
