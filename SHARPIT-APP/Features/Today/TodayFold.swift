@@ -40,6 +40,8 @@ struct SessionCardModel: Sendable, Equatable, Identifiable {
     var brickGroupId: String? = nil
     /// One of the week's key sessions (SHARPIT F2).
     var isKey = false
+    /// Why the coach wrote this session — Decision Memory rationale.
+    var rationale: String? = nil
 }
 
 struct OvernightGaugeModel: Sendable, Equatable, Identifiable {
@@ -121,7 +123,8 @@ enum TodayFoldMapper {
                     brickLegs: (session.brickLegs?.count ?? 0) > 1 ? session.brickLegs : nil,
                     brickTransitionsSec: session.brickTransitionsSec,
                     brickGroupId: session.brickGroupId,
-                    isKey: session.isKey ?? false
+                    isKey: session.isKey ?? false,
+                    rationale: session.rationale
                 )
             },
             gauges: response.signals

@@ -116,6 +116,8 @@ nonisolated struct V1TodaySession: Codable, Sendable, Equatable, Identifiable {
     var brickGroupId: String? = nil
     /// One of the week's key sessions (SHARPIT F2); absent from older payloads.
     var isKey: Bool? = nil
+    /// Why the coach wrote this session — Decision Memory rationale; absent on older payloads.
+    var rationale: String? = nil
 }
 
 /// One leg of a brick line.

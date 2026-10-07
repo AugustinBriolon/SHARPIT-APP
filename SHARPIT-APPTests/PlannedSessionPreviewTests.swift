@@ -13,7 +13,8 @@ import Testing
         type: "RUN",
         durationMin: 40,
         intensity: "seuil",
-        notes: "3 x 10 min"
+        notes: "3 x 10 min",
+        rationale: "Construire la base aérobie."
     )
 
     let preview = PlannedSessionPreview(session: session)
@@ -21,6 +22,7 @@ import Testing
     #expect(preview.sessionId == "ps-1")
     #expect(preview.title == "Seuil 40 min")
     #expect(preview.notes == "3 x 10 min")
+    #expect(preview.rationale == "Construire la base aérobie.")
     #expect(preview.date == session.date)
     #expect(preview.metrics.contains { $0.label == "Durée" && $0.value == "40 min" })
     #expect(preview.metrics.contains { $0.label == "Intensité" && $0.value == "Seuil" })
@@ -37,13 +39,15 @@ import Testing
         metrics: [V1TodayMetric(label: "Durée", value: "90", unit: "min")],
         sport: "Triathlon",
         priority: true,
-        plannedSessionId: "ps-leg-1"
+        plannedSessionId: "ps-leg-1",
+        rationale: "Enchaînement clé de la semaine."
     )
 
     let preview = PlannedSessionPreview(card: card)
 
     #expect(preview.sessionId == "ps-leg-1")
     #expect(preview.title == "Brick · Vélo → Course")
+    #expect(preview.rationale == "Enchaînement clé de la semaine.")
     #expect(preview.metrics == [PlannedSessionMetric(label: "Durée", value: "90 min")])
 }
 

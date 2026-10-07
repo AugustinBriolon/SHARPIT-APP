@@ -17,7 +17,7 @@ struct PlannedSessionPreview: Identifiable, Hashable {
     /// The prescribed length, kept as a number beside its metric: a brick adds its legs up.
     let durationMin: Int?
     let notes: String?
-    /// Why the coach proposes it — only a proposal carries one.
+    /// Why the coach wrote it — Decision Memory rationale when the session was accepted.
     let rationale: String?
     /// What to actually do. Empty when the surface has no structure to show.
     let steps: [V1PlannedSessionStep]
@@ -130,6 +130,7 @@ extension PlannedSessionPreview {
             durationMin: session.durationMin,
             // The déroulé the athlete wrote is the instruction; `notes` is an older payload's.
             notes: session.description ?? session.notes,
+            rationale: session.rationale,
             steps: session.breakdown?.steps ?? [],
             stepsAreDerived: session.breakdown?.derived ?? false,
             garminWorkoutId: session.garminWorkoutId,
@@ -198,6 +199,7 @@ extension PlannedSessionPreview {
                 )
             },
             notes: card.subtitle,
+            rationale: card.rationale,
             // Today's payload carries the line, not the prescription behind it. The
             // breakdown arrives with the plan, so it is shown there.
             steps: [],

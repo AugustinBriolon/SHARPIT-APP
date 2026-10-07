@@ -37,11 +37,13 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     /// One of the week's two or three key sessions (SHARPIT F2); false on payloads written
     /// before the field existed.
     let isKey: Bool
+    /// Why the coach wrote this session — Decision Memory rationale; absent on older payloads.
+    let rationale: String?
 
     enum CodingKeys: String, CodingKey {
         case id, date, startTime, title, type, durationMin, intensity, load, notes, breakdown
         case description, strengthPrescription, endurancePrescription
-        case goalId, completed, activityId, activity, brickGroupId, brickOrder, isKey
+        case goalId, completed, activityId, activity, brickGroupId, brickOrder, isKey, rationale
         case garminWorkoutId, garminWorkoutScheduledDate, garminWorkoutPushedAt
     }
 
@@ -68,7 +70,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         garminWorkoutPushedAt: Date? = nil,
         brickGroupId: String? = nil,
         brickOrder: Int? = nil,
-        isKey: Bool = false
+        isKey: Bool = false,
+        rationale: String? = nil
     ) {
         self.id = id
         self.date = date
@@ -93,6 +96,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         self.brickGroupId = brickGroupId
         self.brickOrder = brickOrder
         self.isKey = isKey
+        self.rationale = rationale
     }
 
     init(from decoder: Decoder) throws {
@@ -133,6 +137,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         brickGroupId = try container.decodeIfPresent(String.self, forKey: .brickGroupId)
         brickOrder = try container.decodeIfPresent(Int.self, forKey: .brickOrder)
         isKey = (try? container.decodeIfPresent(Bool.self, forKey: .isKey)) ?? false
+        rationale = try container.decodeIfPresent(String.self, forKey: .rationale)
     }
 
     func withGarminPush(
@@ -163,7 +168,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
             garminWorkoutPushedAt: pushedAt ?? garminWorkoutPushedAt,
             brickGroupId: brickGroupId,
             brickOrder: brickOrder,
-            isKey: isKey
+            isKey: isKey,
+            rationale: rationale
         )
     }
 
