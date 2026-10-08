@@ -62,6 +62,11 @@ enum ConnectionsReadout {
         return Line(text: "Séances, sommeil et cœur de ta montre", isProblem: false)
     }
 
+    static func appleCalendarSubtitle(state: AppleCalendarSource.State) -> Line {
+        if case .failed(let message) = state { return Line(text: message, isProblem: true) }
+        return Line(text: "Séances planifiées et créneaux occupés", isProblem: false)
+    }
+
     /// A source linked on the web, read as connected: what it brings, in the positive tone.
     static func connected(_ source: DisconnectableSource) -> Badge {
         Badge(text: source.purpose, tone: .positive)

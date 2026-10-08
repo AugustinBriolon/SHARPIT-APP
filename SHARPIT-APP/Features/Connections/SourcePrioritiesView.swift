@@ -9,6 +9,7 @@ struct SourcePrioritiesView: View {
     private let tokenProvider: () async throws -> String
     @State private var googleWriteTargetName: String?
     @State private var googleWriteTargetHint: String?
+    @State private var appleWriteCalendarName: String?
 
     init(
         client: any SourcePrefsServing = SharpitClient(),
@@ -34,6 +35,7 @@ struct SourcePrioritiesView: View {
         .task {
             await store.load()
             await refreshGoogleWriteTarget()
+            refreshAppleWriteCalendarName()
         }
     }
 
@@ -73,6 +75,7 @@ struct SourcePrioritiesView: View {
         let isPrimary = store.isPrimary(provider.id, in: sourceClass.id)
         let choosesPrimary = store.canChoosePrimary(in: sourceClass.id) && isEnabled
         let showsGooglePicker = showsGoogleWriteCalendarPicker(in: sourceClass, provider: provider)
+        let showsApplePicker = showsAppleWriteCalendarPicker(in: sourceClass, provider: provider)
         return HStack(spacing: SharpitSpacing.sm) {
             if let logo = ProviderLogo.Provider(integrationId: provider.id) {
                 ProviderLogo(provider: logo)
@@ -133,6 +136,20 @@ struct SourcePrioritiesView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Calendrier Google, \(googleWriteCalendarSubtitle)")
                 }
+
+                if showsApplePicker {
+                    NavigationLink {
+                        AppleCalendarPickerView {
+                            refreshAppleWriteCalendarName()
+                        }
+                    } label: {
+                        Text(appleWriteCalendarSubtitle)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Calendrier Apple, \(appleWriteCalendarSubtitle)")
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -156,8 +173,29 @@ struct SourcePrioritiesView: View {
         sourceClass.id == "calendar" && provider.id == "google" && store.isConnected("google")
     }
 
+    private func showsAppleWriteCalendarPicker(
+        in sourceClass: V1SourceClass,
+        provider: V1SourceClass.Provider
+    ) -> Bool {
+        sourceClass.id == "calendar"
+            && provider.id == AppleCalendarSync.providerId
+            && store.isConnected(AppleCalendarSync.providerId)
+    }
+
     private var googleWriteCalendarSubtitle: String {
         googleWriteTargetHint ?? googleWriteTargetName ?? "Choisir un calendrier"
+    }
+
+    private var appleWriteCalendarSubtitle: String {
+        appleWriteCalendarName ?? "Choisir un calendrier"
+    }
+
+    private func refreshAppleWriteCalendarName() {
+        guard store.isConnected(AppleCalendarSync.providerId) else {
+            appleWriteCalendarName = nil
+            return
+        }
+        appleWriteCalendarName = AppleCalendarSync.shared.selectedWriteCalendarTitle()
     }
 
     private func refreshGoogleWriteTarget() async {

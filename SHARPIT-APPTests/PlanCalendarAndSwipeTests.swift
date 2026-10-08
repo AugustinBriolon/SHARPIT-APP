@@ -28,6 +28,29 @@ import Testing
         #expect(AppleCalendarPull.resolveStart(plan: planStart, event: nil) == planStart)
     }
 
+    @Test @MainActor func legacyPlanCalendarSyncMigratesToLink() async throws {
+        let suite = "legacy-calendar-migrate"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        defaults.set(true, forKey: AppleCalendarSync.enabledKey)
+        defaults.set("legacy-cal-id", forKey: "planCalendarSync.calendarId")
+
+        final class LinkSpy: AppleCalendarLinking, @unchecked Sendable {
+            private(set) var linked: [Bool] = []
+            func linkAppleCalendar(_ linked: Bool, token: String) async throws {
+                self.linked.append(linked)
+            }
+        }
+        let spy = LinkSpy()
+        let sync = AppleCalendarSync(defaults: defaults)
+        let migrated = await sync.migrateLegacyPlanCalendarSync(calendarLinker: spy, token: "t")
+        #expect(migrated)
+        #expect(spy.linked == [true])
+        #expect(defaults.string(forKey: "appleCalendar.writeCalendarId") == "legacy-cal-id")
+        #expect(!defaults.bool(forKey: AppleCalendarSync.enabledKey))
+        #expect(await sync.migrateLegacyPlanCalendarSync(calendarLinker: spy, token: "t") == false)
+    }
+
     @Test func writeRunsOnlyWhenAppleCalendarIsPrimary() {
         let connected = ["google", "apple-calendar"]
         let primaryApple = V1SourcePrefs(classes: [

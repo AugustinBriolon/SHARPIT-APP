@@ -95,9 +95,43 @@ final class AppleCalendarSync {
         }
     }
 
+    static let legacyMigrationDoneKey = "appleCalendar.legacyMigrationDone"
+
+    /// EventKit full access — does not touch legacy `planCalendarSync.enabled`.
+    func requestAccess() async -> Bool {
+        if EKEventStore.authorizationStatus(for: .event) == .fullAccess { return true }
+        return (try? await store.requestFullAccessToEvents()) ?? false
+    }
+
+    /// Writable calendars on this iPhone (after EventKit access).
+    func writableCalendars() -> [EKCalendar] {
+        guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else { return [] }
+        return store.calendars(for: .event).filter(\.allowsContentModifications)
+    }
+
+    func selectedWriteCalendarTitle() -> String? {
+        guard let id = writeCalendarIdentifier else { return nil }
+        return writableCalendars().first(where: { $0.calendarIdentifier == id })?.title
+    }
+
+    /// Athletes who used Paramètres › Calendrier de l'iPhone: link on the web, keep the SharpIt calendar id.
+    @discardableResult
+    func migrateLegacyPlanCalendarSync(calendarLinker: any AppleCalendarLinking, token: String) async -> Bool {
+        guard !defaults.bool(forKey: Self.legacyMigrationDoneKey) else { return false }
+        defaults.set(true, forKey: Self.legacyMigrationDoneKey)
+        guard defaults.bool(forKey: Self.enabledKey) else { return false }
+        migrateWriteCalendarIdIfNeeded()
+        _ = await requestAccess()
+        _ = try? await SharpitRetry.run {
+            try await calendarLinker.linkAppleCalendar(true, token: token)
+        }
+        defaults.set(false, forKey: Self.enabledKey)
+        return true
+    }
+
     /// Asks iOS for the calendar, then turns the copy on. False when the athlete refused.
     func enable() async -> Bool {
-        let granted = (try? await store.requestFullAccessToEvents()) ?? false
+        let granted = await requestAccess()
         defaults.set(granted, forKey: Self.enabledKey)
         return granted
     }

@@ -85,6 +85,7 @@ private actor StubSourcePrefs: SourcePrefsServing {
 
 @Test func unknownProvidersShowWithoutALogo() {
     #expect(ProviderLogo.Provider(integrationId: "apple-health") == .appleHealth)
+    #expect(ProviderLogo.Provider(integrationId: "apple-calendar") == .appleCalendar)
     #expect(ProviderLogo.Provider(integrationId: "withings") == .withings)
     #expect(ProviderLogo.Provider(integrationId: "sharpit") == .sharpit)
     #expect(ProviderLogo.Provider(integrationId: "polar") == nil)

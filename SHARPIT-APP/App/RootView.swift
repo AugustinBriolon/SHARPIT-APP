@@ -20,6 +20,7 @@ struct RootView: View {
     private let profileClient = AthleteProfileClient()
     /// Shared by Today, which sends on each sync, and Moi, where it is switched on.
     @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
+    @State private var appleCalendar = AppleCalendarSource(client: SharpitClient())
     /// The reading density, read once and handed to every surface through the environment.
     @State private var displayMode = DisplayModeStore(client: AthleteProfileClient())
     /// The parts of SharpIt the athlete uses: a feature off has no tab, card or widget.
@@ -114,6 +115,7 @@ struct RootView: View {
         .sheet(isPresented: $router.isShowingSettings) {
             SettingsView(
                 appleHealth: appleHealth,
+                appleCalendar: appleCalendar,
                 syncClient: sharpitClient,
                 profileClient: profileClient,
                 displayMode: displayMode,
@@ -147,6 +149,14 @@ struct RootView: View {
         // Once per athlete; a run cut off is picked up again on the next foreground.
         .task(id: clerk.user?.id) {
             appleHealth.bind(userId: clerk.user?.id)
+            appleCalendar.bind(userId: clerk.user?.id)
+            if let token = try? await liveToken(),
+               await AppleCalendarSync.shared.migrateLegacyPlanCalendarSync(
+                   calendarLinker: sharpitClient,
+                   token: token
+               ) {
+                appleCalendar.adoptLegacyMigration()
+            }
             await runHistoryImport()
         }
         .onChange(of: scenePhase) { _, phase in
