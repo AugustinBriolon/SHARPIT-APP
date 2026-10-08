@@ -67,6 +67,16 @@ import Testing
             preserveSessionIds: preserve
         ))
     }
+
+    @Test func clearedUnlinkTombstoneBlocksAllDayRecreateUntilReschedule() {
+        #expect(!AppleCalendarPull.shouldWriteSessionToCalendar(sessionId: "s1", clearedAfterUnlinkIds: ["s1"]))
+        #expect(AppleCalendarPull.shouldWriteSessionToCalendar(sessionId: "s2", clearedAfterUnlinkIds: ["s1"]))
+        let untimed = V1PlannedSessionItem(id: "s1", date: Date(), title: "Run", type: "RUN")
+        let timed = V1PlannedSessionItem(id: "s1", date: Date(), startTime: "09:00", title: "Run", type: "RUN")
+        let active = AppleCalendarPull.clearedAfterUnlinkIds(stored: ["s1"], sessions: [untimed])
+        #expect(active == ["s1"])
+        #expect(AppleCalendarPull.clearedAfterUnlinkIds(stored: ["s1"], sessions: [timed]).isEmpty)
+    }
 }
 
 @Suite struct PlanCalendarPlannerTests {

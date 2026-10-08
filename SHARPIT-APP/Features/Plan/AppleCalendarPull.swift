@@ -24,6 +24,19 @@ nonisolated enum AppleCalendarPull {
         return preserveSessionIds.contains(id)
     }
 
+    /// After a successful unlink PATCH, omit calendar writes until the athlete sets `startTime` again.
+    static func shouldWriteSessionToCalendar(sessionId: String, clearedAfterUnlinkIds: Set<String>) -> Bool {
+        !clearedAfterUnlinkIds.contains(sessionId)
+    }
+
+    static func clearedAfterUnlinkIds(
+        stored: Set<String>,
+        sessions: [V1PlannedSessionItem]
+    ) -> Set<String> {
+        let rescheduled = Set(sessions.compactMap { session in session.startTime == nil ? nil : session.id })
+        return stored.subtracting(rescheduled)
+    }
+
     static func clearScheduleFields() -> PlannedSessionFields {
         var fields = PlannedSessionFields()
         fields.setStartTime(nil)

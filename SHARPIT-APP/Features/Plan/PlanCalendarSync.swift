@@ -66,6 +66,7 @@ final class AppleCalendarSync {
     static let enabledKey = "planCalendarSync.enabled"
     static let writeCalendarIdKey = "appleCalendar.writeCalendarId"
     static let syncedSessionIdsKey = "appleCalendar.syncedSessionIds"
+    static let clearedSessionIdsKey = "appleCalendar.clearedSessionIds"
     static let skipApplyUntilKey = "appleCalendar.skipApplySessionUntil"
     private static let skipApplyTTL: TimeInterval = 5 * 60
     private static let legacyCalendarIdKey = "planCalendarSync.calendarId"
@@ -110,6 +111,7 @@ final class AppleCalendarSync {
         writeCalendarIdentifier = nil
         defaults.removeObject(forKey: Self.legacyCalendarIdKey)
         defaults.removeObject(forKey: Self.syncedSessionIdsKey)
+        defaults.removeObject(forKey: Self.clearedSessionIdsKey)
         defaults.removeObject(forKey: Self.skipApplyUntilKey)
     }
 
@@ -146,10 +148,19 @@ final class AppleCalendarSync {
                 token: token
             )
             sessions = pull.sessions
+            let clearedAfterUnlinkIds = AppleCalendarPull.clearedAfterUnlinkIds(
+                stored: pull.clearedSessionIds,
+                sessions: sessions
+            )
+            persistClearedSessionIds(clearedAfterUnlinkIds)
             let wanted = PlanCalendarPlanner.events(for: sessions, calendar: calendar)
                 .filter { event in
                     guard let id = AppleCalendarPull.sessionId(fromSharpitURL: event.url) else { return true }
-                    return !pull.skipApplySessionIds.contains(id)
+                    if pull.skipApplySessionIds.contains(id) { return false }
+                    return AppleCalendarPull.shouldWriteSessionToCalendar(
+                        sessionId: id,
+                        clearedAfterUnlinkIds: clearedAfterUnlinkIds
+                    )
                 }
             apply(wanted, to: writeCalendar, from: start, to: end, preserveSessionIds: pull.skipApplySessionIds)
             persistSyncedSessionIds(pull.syncedSessionIds, afterWriting: wanted)
@@ -173,6 +184,7 @@ final class AppleCalendarSync {
         var sessions: [V1PlannedSessionItem]
         var skipApplySessionIds: Set<String>
         var syncedSessionIds: Set<String>
+        var clearedSessionIds: Set<String>
     }
 
     private func pullBack(
@@ -194,6 +206,7 @@ final class AppleCalendarSync {
             store.events(matching: writePredicate).compactMap { event in event.url.flatMap(AppleCalendarPull.sessionId(fromSharpitURL:)) }
         )
         var syncedSessionIds = Set(defaults.stringArray(forKey: Self.syncedSessionIdsKey) ?? [])
+        var clearedSessionIds = Set(defaults.stringArray(forKey: Self.clearedSessionIdsKey) ?? [])
         var skipApplySessionIds = loadSkipApplySessionIds()
         var updated = sessions
         for (index, session) in sessions.enumerated() {
@@ -211,6 +224,7 @@ final class AppleCalendarSync {
                             token: token
                         )
                         syncedSessionIds.remove(session.id)
+                        clearedSessionIds.insert(session.id)
                         clearSkipApply(sessionId: session.id)
                     } catch {
                         markSkipApply(sessionId: session.id)
@@ -238,7 +252,8 @@ final class AppleCalendarSync {
         return PullBackResult(
             sessions: updated,
             skipApplySessionIds: skipApplySessionIds,
-            syncedSessionIds: syncedSessionIds
+            syncedSessionIds: syncedSessionIds,
+            clearedSessionIds: clearedSessionIds
         )
     }
 
@@ -281,6 +296,14 @@ final class AppleCalendarSync {
             }
         }
         defaults.set(Array(ids), forKey: Self.syncedSessionIdsKey)
+    }
+
+    private func persistClearedSessionIds(_ ids: Set<String>) {
+        if ids.isEmpty {
+            defaults.removeObject(forKey: Self.clearedSessionIdsKey)
+        } else {
+            defaults.set(Array(ids), forKey: Self.clearedSessionIdsKey)
+        }
     }
 
     private func uploadBusy(
