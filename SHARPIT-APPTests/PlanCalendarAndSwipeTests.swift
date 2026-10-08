@@ -39,6 +39,23 @@ import Testing
         #expect(AppleCalendarSync.shouldWrite(prefs: primaryApple, connected: connected))
         #expect(!AppleCalendarSync.shouldWrite(prefs: primaryGoogle, connected: connected))
     }
+
+    @Test func sharpitSessionURLParsesSessionId() {
+        let url = PlanCalendarPlanner.url(for: "abc-42")
+        #expect(AppleCalendarPull.sessionId(fromSharpitURL: url) == "abc-42")
+        #expect(AppleCalendarPull.sessionId(fromSharpitURL: URL(string: "https://sharpit.app")!) == nil)
+    }
+
+    @Test func calendarDeleteClearsWhenPreviouslyWritten() {
+        #expect(AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(wasOnWriteCalendar: true, wasSyncedBefore: false))
+        #expect(AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(wasOnWriteCalendar: false, wasSyncedBefore: true))
+        #expect(!AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(wasOnWriteCalendar: false, wasSyncedBefore: false))
+    }
+
+    @Test func calendarDeletePatchClearsStartTime() {
+        let fields = AppleCalendarPull.clearScheduleFields()
+        #expect(fields["startTime"] == .null)
+    }
 }
 
 @Suite struct PlanCalendarPlannerTests {

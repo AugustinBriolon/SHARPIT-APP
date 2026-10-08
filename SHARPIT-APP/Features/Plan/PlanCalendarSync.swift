@@ -65,6 +65,7 @@ final class AppleCalendarSync {
     static let calendarClassId = "calendar"
     static let enabledKey = "planCalendarSync.enabled"
     static let writeCalendarIdKey = "appleCalendar.writeCalendarId"
+    static let syncedSessionIdsKey = "appleCalendar.syncedSessionIds"
     private static let legacyCalendarIdKey = "planCalendarSync.calendarId"
     static let calendarTitle = "SharpIt"
 
@@ -127,21 +128,27 @@ final class AppleCalendarSync {
             if Self.shouldUploadBusy(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) {
                 await uploadBusy(from: start, to: end, client: busyClient, token: token)
             }
-            guard isEnabled, Self.shouldWrite(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) else { return }
+            guard Self.shouldWrite(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) else { return }
+            guard let sessionWriter else { return }
             _ = try? await calendarLinker?.linkAppleCalendar(true, token: token)
             var sessions = try await plan.plannedSessions(from: start, to: end, token: token)
             guard let writeCalendar = writeCalendar() else { return }
-            if let sessionWriter {
-                sessions = await pullBack(
-                    sessions: sessions,
-                    writeCalendar: writeCalendar,
-                    from: start,
-                    to: end,
-                    writer: sessionWriter,
-                    token: token
-                )
-            }
-            apply(PlanCalendarPlanner.events(for: sessions, calendar: calendar), to: writeCalendar, from: start, to: end)
+            let pull = await pullBack(
+                sessions: sessions,
+                writeCalendar: writeCalendar,
+                from: start,
+                to: end,
+                writer: sessionWriter,
+                token: token
+            )
+            sessions = pull.sessions
+            let wanted = PlanCalendarPlanner.events(for: sessions, calendar: calendar)
+                .filter { event in
+                    guard let id = AppleCalendarPull.sessionId(fromSharpitURL: event.url) else { return true }
+                    return !pull.skipApplySessionIds.contains(id)
+                }
+            apply(wanted, to: writeCalendar, from: start, to: end)
+            persistSyncedSessionIds(pull.syncedSessionIds, afterWriting: wanted)
         } catch {
             // Offline or signed out: the calendar keeps what it holds.
         }
@@ -158,6 +165,12 @@ final class AppleCalendarSync {
         connected.contains(providerId) && prefs.sources(for: calendarClassId).enabled.contains(providerId)
     }
 
+    private struct PullBackResult {
+        var sessions: [V1PlannedSessionItem]
+        var skipApplySessionIds: Set<String>
+        var syncedSessionIds: Set<String>
+    }
+
     private func pullBack(
         sessions: [V1PlannedSessionItem],
         writeCalendar: EKCalendar,
@@ -165,17 +178,40 @@ final class AppleCalendarSync {
         to end: Date,
         writer: any PlannedSessionMutating,
         token: String
-    ) async -> [V1PlannedSessionItem] {
-        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: [writeCalendar])
-        let existing = Dictionary(
-            store.events(matching: predicate).compactMap { event in event.url.map { ($0, event) } },
+    ) async -> PullBackResult {
+        let allCalendars = store.calendars(for: .event)
+        let allPredicate = store.predicateForEvents(withStart: start, end: end, calendars: allCalendars)
+        let eventsEverywhere = Dictionary(
+            store.events(matching: allPredicate).compactMap { event in event.url.map { ($0, event) } },
             uniquingKeysWith: { first, _ in first }
         )
+        let writePredicate = store.predicateForEvents(withStart: start, end: end, calendars: [writeCalendar])
+        let onWriteCalendar = Set(
+            store.events(matching: writePredicate).compactMap { event in event.url.flatMap(AppleCalendarPull.sessionId(fromSharpitURL:)) }
+        )
+        var syncedSessionIds = Set(defaults.stringArray(forKey: Self.syncedSessionIdsKey) ?? [])
+        var skipApplySessionIds = Set<String>()
         var updated = sessions
         for (index, session) in sessions.enumerated() {
-            guard let planStart = AppleCalendarPull.planStart(for: session, calendar: calendar) else { continue }
             let url = PlanCalendarPlanner.url(for: session.id)
-            guard let ekEvent = existing[url] else { continue }
+            guard let ekEvent = eventsEverywhere[url] else {
+                if AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(
+                    wasOnWriteCalendar: onWriteCalendar.contains(session.id),
+                    wasSyncedBefore: syncedSessionIds.contains(session.id)
+                ) {
+                    skipApplySessionIds.insert(session.id)
+                    syncedSessionIds.remove(session.id)
+                    if let patched = try? await writer.updateSession(
+                        id: session.id,
+                        fields: AppleCalendarPull.clearScheduleFields(),
+                        token: token
+                    ) {
+                        updated[index] = patched
+                    }
+                }
+                continue
+            }
+            guard let planStart = AppleCalendarPull.planStart(for: session, calendar: calendar) else { continue }
             let resolved = AppleCalendarPull.resolveStart(plan: planStart, event: ekEvent.startDate)
             guard AppleCalendarPull.scheduleDiffers(plan: planStart, resolved: resolved) else { continue }
             let fields = AppleCalendarPull.patchFields(
@@ -184,11 +220,27 @@ final class AppleCalendarSync {
                 calendar: calendar
             )
             guard !fields.isEmpty else { continue }
-            if let patched = try? await writer.updateSession(id: session.id, fields: fields, token: token) {
-                updated[index] = patched
+            do {
+                updated[index] = try await writer.updateSession(id: session.id, fields: fields, token: token)
+            } catch {
+                skipApplySessionIds.insert(session.id)
             }
         }
-        return updated
+        return PullBackResult(
+            sessions: updated,
+            skipApplySessionIds: skipApplySessionIds,
+            syncedSessionIds: syncedSessionIds
+        )
+    }
+
+    private func persistSyncedSessionIds(_ baseline: Set<String>, afterWriting wanted: [PlanCalendarEvent]) {
+        var ids = baseline
+        for event in wanted {
+            if let id = AppleCalendarPull.sessionId(fromSharpitURL: event.url) {
+                ids.insert(id)
+            }
+        }
+        defaults.set(Array(ids), forKey: Self.syncedSessionIdsKey)
     }
 
     private func uploadBusy(
@@ -200,7 +252,11 @@ final class AppleCalendarSync {
         guard let client else { return }
         let intervals = busyIntervals(from: start, to: end)
         guard !intervals.isEmpty else { return }
-        _ = try? await client.uploadAppleCalendarBusy(intervals, token: token)
+        do {
+            try await client.uploadAppleCalendarBusy(intervals, token: token)
+        } catch {
+            SharpitWriteFailures.shared.report("Créneaux occupés : envoi impossible. Réessaie plus tard.")
+        }
     }
 
     private func busyIntervals(from start: Date, to end: Date) -> [V1CalendarBusyInterval] {

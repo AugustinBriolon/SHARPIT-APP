@@ -2,6 +2,30 @@ import Foundation
 
 /// Pull-back rules: when an EventKit event exists for a planned session, its schedule wins over the plan.
 nonisolated enum AppleCalendarPull {
+    static let sharpitSessionURLPrefix = "sharpit://plan/session/"
+
+    /// Session id embedded in a Sharpit calendar event URL, if any.
+    static func sessionId(fromSharpitURL url: URL) -> String? {
+        guard url.scheme == "sharpit", url.host == "plan" else { return nil }
+        let parts = url.path.split(separator: "/").map(String.init)
+        guard parts.count == 2, parts[0] == "session", !parts[1].isEmpty else { return nil }
+        return parts[1]
+    }
+
+    /// Event deleted in EventKit after we had written it — clear schedule on the server (no apple event id in v1).
+    static func shouldClearScheduleAfterCalendarDelete(
+        wasOnWriteCalendar: Bool,
+        wasSyncedBefore: Bool
+    ) -> Bool {
+        wasOnWriteCalendar || wasSyncedBefore
+    }
+
+    static func clearScheduleFields() -> PlannedSessionFields {
+        var fields = PlannedSessionFields()
+        fields.setStartTime(nil)
+        return fields
+    }
+
     /// The start to use when reconciling plan vs calendar; `event` wins when present.
     static func resolveStart(plan: Date, event: Date?) -> Date {
         event ?? plan
