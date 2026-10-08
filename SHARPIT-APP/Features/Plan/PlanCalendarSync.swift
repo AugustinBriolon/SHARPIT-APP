@@ -66,6 +66,8 @@ final class AppleCalendarSync {
     static let enabledKey = "planCalendarSync.enabled"
     static let writeCalendarIdKey = "appleCalendar.writeCalendarId"
     static let syncedSessionIdsKey = "appleCalendar.syncedSessionIds"
+    static let skipApplyUntilKey = "appleCalendar.skipApplySessionUntil"
+    private static let skipApplyTTL: TimeInterval = 5 * 60
     private static let legacyCalendarIdKey = "planCalendarSync.calendarId"
     static let calendarTitle = "SharpIt"
 
@@ -107,6 +109,8 @@ final class AppleCalendarSync {
         }
         writeCalendarIdentifier = nil
         defaults.removeObject(forKey: Self.legacyCalendarIdKey)
+        defaults.removeObject(forKey: Self.syncedSessionIdsKey)
+        defaults.removeObject(forKey: Self.skipApplyUntilKey)
     }
 
     func refresh(
@@ -190,7 +194,7 @@ final class AppleCalendarSync {
             store.events(matching: writePredicate).compactMap { event in event.url.flatMap(AppleCalendarPull.sessionId(fromSharpitURL:)) }
         )
         var syncedSessionIds = Set(defaults.stringArray(forKey: Self.syncedSessionIdsKey) ?? [])
-        var skipApplySessionIds = Set<String>()
+        var skipApplySessionIds = loadSkipApplySessionIds()
         var updated = sessions
         for (index, session) in sessions.enumerated() {
             let url = PlanCalendarPlanner.url(for: session.id)
@@ -200,13 +204,16 @@ final class AppleCalendarSync {
                     wasSyncedBefore: syncedSessionIds.contains(session.id)
                 ) {
                     skipApplySessionIds.insert(session.id)
-                    syncedSessionIds.remove(session.id)
-                    if let patched = try? await writer.updateSession(
-                        id: session.id,
-                        fields: AppleCalendarPull.clearScheduleFields(),
-                        token: token
-                    ) {
-                        updated[index] = patched
+                    do {
+                        updated[index] = try await writer.updateSession(
+                            id: session.id,
+                            fields: AppleCalendarPull.clearScheduleFields(),
+                            token: token
+                        )
+                        syncedSessionIds.remove(session.id)
+                        clearSkipApply(sessionId: session.id)
+                    } catch {
+                        markSkipApply(sessionId: session.id)
                     }
                 }
                 continue
@@ -222,8 +229,10 @@ final class AppleCalendarSync {
             guard !fields.isEmpty else { continue }
             do {
                 updated[index] = try await writer.updateSession(id: session.id, fields: fields, token: token)
+                clearSkipApply(sessionId: session.id)
             } catch {
                 skipApplySessionIds.insert(session.id)
+                markSkipApply(sessionId: session.id)
             }
         }
         return PullBackResult(
@@ -231,6 +240,37 @@ final class AppleCalendarSync {
             skipApplySessionIds: skipApplySessionIds,
             syncedSessionIds: syncedSessionIds
         )
+    }
+
+    private func loadSkipApplySessionIds(now: Date = .now) -> Set<String> {
+        guard let raw = defaults.dictionary(forKey: Self.skipApplyUntilKey) as? [String: Double] else { return [] }
+        let nowTs = now.timeIntervalSince1970
+        var active = Set<String>()
+        var pruned: [String: Double] = [:]
+        for (sessionId, expiry) in raw where expiry > nowTs {
+            active.insert(sessionId)
+            pruned[sessionId] = expiry
+        }
+        if pruned.count != raw.count {
+            defaults.set(pruned, forKey: Self.skipApplyUntilKey)
+        }
+        return active
+    }
+
+    private func markSkipApply(sessionId: String, now: Date = .now) {
+        var raw = (defaults.dictionary(forKey: Self.skipApplyUntilKey) as? [String: Double]) ?? [:]
+        raw[sessionId] = now.addingTimeInterval(Self.skipApplyTTL).timeIntervalSince1970
+        defaults.set(raw, forKey: Self.skipApplyUntilKey)
+    }
+
+    private func clearSkipApply(sessionId: String) {
+        guard var raw = defaults.dictionary(forKey: Self.skipApplyUntilKey) as? [String: Double] else { return }
+        raw.removeValue(forKey: sessionId)
+        if raw.isEmpty {
+            defaults.removeObject(forKey: Self.skipApplyUntilKey)
+        } else {
+            defaults.set(raw, forKey: Self.skipApplyUntilKey)
+        }
     }
 
     private func persistSyncedSessionIds(_ baseline: Set<String>, afterWriting wanted: [PlanCalendarEvent]) {
