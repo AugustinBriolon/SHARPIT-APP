@@ -2,8 +2,6 @@ import Foundation
 
 /// Pull-back rules: when an EventKit event exists for a planned session, its schedule wins over the plan.
 nonisolated enum AppleCalendarPull {
-    static let sharpitSessionURLPrefix = "sharpit://plan/session/"
-
     /// Session id embedded in a Sharpit calendar event URL, if any.
     static func sessionId(fromSharpitURL url: URL) -> String? {
         guard url.scheme == "sharpit", url.host == "plan" else { return nil }
