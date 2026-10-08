@@ -140,12 +140,13 @@ private func encodedWrite(_ write: V1ActivityStatusWrite) throws -> [String: Any
 @MainActor
 @Test func anInactiveStatusIsHiddenWhileLoading() async {
     // A loading store should not surface the alert line — the status is not yet known.
+    // Until `load()` returns, `current` stays at the default `.active`; the chip is gated by
+    // phase, not by a speculative status from the client.
     let client = StubActivityStatusClient(store: V1ActivityStatusStore(status: .sick))
     let store = ActivityStatusStore(client: client, tokenProvider: { "token" })
 
     #expect(store.phase == .loading)
-    // current is set optimistically, but visibility is gated by phase.
-    #expect(store.current == .sick)
+    #expect(store.current == .active)
 }
 
 @MainActor
