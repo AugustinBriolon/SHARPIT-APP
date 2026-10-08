@@ -51,6 +51,23 @@ import Testing
         #expect(await sync.migrateLegacyPlanCalendarSync(calendarLinker: spy, token: "t") == false)
     }
 
+    @Test @MainActor func legacyMigrationRetriesWhenLinkFails() async throws {
+        let suite = "legacy-calendar-link-fail"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        defaults.set(true, forKey: AppleCalendarSync.enabledKey)
+
+        final class FailingLink: AppleCalendarLinking, @unchecked Sendable {
+            func linkAppleCalendar(_ linked: Bool, token: String) async throws {
+                throw URLError(.notConnectedToInternet)
+            }
+        }
+        let sync = AppleCalendarSync(defaults: defaults)
+        #expect(await sync.migrateLegacyPlanCalendarSync(calendarLinker: FailingLink(), token: "t") == false)
+        #expect(defaults.bool(forKey: AppleCalendarSync.enabledKey))
+        #expect(!defaults.bool(forKey: AppleCalendarSync.legacyMigrationDoneKey))
+    }
+
     @Test func writeRunsOnlyWhenAppleCalendarIsPrimary() {
         let connected = ["google", "apple-calendar"]
         let primaryApple = V1SourcePrefs(classes: [

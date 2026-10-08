@@ -46,15 +46,30 @@ final class AppleCalendarSource {
             state = .failed("Accès refusé : autorise SharpIt dans Réglages › Confidentialité › Calendriers.")
             return
         }
-        setLinked(true)
-        state = .idle
-        await link(true, token: token)
+        do {
+            try await link(true, token: token)
+            setLinked(true)
+            state = .idle
+        } catch {
+            state = .failed("Connexion Calendrier Apple impossible.")
+        }
     }
 
     func disable(token: @escaping () async throws -> String) async {
-        setLinked(false)
-        state = .idle
-        await link(false, token: token)
+        do {
+            try await link(false, token: token)
+            sync.disable()
+            setLinked(false)
+            state = .idle
+        } catch {
+            state = .failed("Déconnexion Calendrier Apple impossible.")
+        }
+    }
+
+    /// Aligns the Connections toggle with `connected` from the last source-prefs GET.
+    func syncLinkedFromServer(_ linked: Bool) {
+        setLinked(linked)
+        if linked, case .failed = state { state = .idle }
     }
 
     private func setLinked(_ linked: Bool) {
@@ -63,8 +78,8 @@ final class AppleCalendarSource {
         defaults.set(linked, forKey: Self.linkedKey(userId: userId))
     }
 
-    private func link(_ linked: Bool, token: @escaping () async throws -> String) async {
-        _ = try? await SharpitRetry.run {
+    private func link(_ linked: Bool, token: @escaping () async throws -> String) async throws {
+        try await SharpitRetry.run {
             try await client.linkAppleCalendar(linked, token: try await token())
         }
     }

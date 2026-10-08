@@ -118,13 +118,20 @@ final class AppleCalendarSync {
     @discardableResult
     func migrateLegacyPlanCalendarSync(calendarLinker: any AppleCalendarLinking, token: String) async -> Bool {
         guard !defaults.bool(forKey: Self.legacyMigrationDoneKey) else { return false }
-        defaults.set(true, forKey: Self.legacyMigrationDoneKey)
-        guard defaults.bool(forKey: Self.enabledKey) else { return false }
+        guard defaults.bool(forKey: Self.enabledKey) else {
+            defaults.set(true, forKey: Self.legacyMigrationDoneKey)
+            return false
+        }
         migrateWriteCalendarIdIfNeeded()
         _ = await requestAccess()
-        _ = try? await SharpitRetry.run {
-            try await calendarLinker.linkAppleCalendar(true, token: token)
+        do {
+            try await SharpitRetry.run {
+                try await calendarLinker.linkAppleCalendar(true, token: token)
+            }
+        } catch {
+            return false
         }
+        defaults.set(true, forKey: Self.legacyMigrationDoneKey)
         defaults.set(false, forKey: Self.enabledKey)
         return true
     }

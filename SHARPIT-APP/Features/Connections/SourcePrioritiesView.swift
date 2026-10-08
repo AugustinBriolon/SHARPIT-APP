@@ -10,15 +10,18 @@ struct SourcePrioritiesView: View {
     @State private var googleWriteTargetName: String?
     @State private var googleWriteTargetHint: String?
     @State private var appleWriteCalendarName: String?
+    private let appleCalendar: AppleCalendarSource?
 
     init(
         client: any SourcePrefsServing = SharpitClient(),
         googleClient: any GoogleCalendarsServing = GoogleCalendarsClient(),
-        tokenProvider: @escaping () async throws -> String
+        tokenProvider: @escaping () async throws -> String,
+        appleCalendar: AppleCalendarSource? = nil
     ) {
         _store = State(initialValue: SourcePrefsStore(client: client, tokenProvider: tokenProvider))
         self.googleClient = googleClient
         self.tokenProvider = tokenProvider
+        self.appleCalendar = appleCalendar
     }
 
     var body: some View {
@@ -34,8 +37,9 @@ struct SourcePrioritiesView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await store.load()
+            resyncAppleCalendarLink()
             await refreshGoogleWriteTarget()
-            refreshAppleWriteCalendarName()
+            await refreshAppleWriteCalendarName()
         }
     }
 
@@ -140,7 +144,7 @@ struct SourcePrioritiesView: View {
                 if showsApplePicker {
                     NavigationLink {
                         AppleCalendarPickerView {
-                            refreshAppleWriteCalendarName()
+                            Task { await refreshAppleWriteCalendarName() }
                         }
                     } label: {
                         Text(appleWriteCalendarSubtitle)
@@ -157,7 +161,11 @@ struct SourcePrioritiesView: View {
                 "Utiliser \(provider.name)",
                 isOn: Binding(
                     get: { isEnabled },
-                    set: { on in Task { await store.setEnabled(provider.id, in: sourceClass.id, on) } }
+                    set: { on in
+                        Task {
+                            await setProviderEnabled(on, provider: provider, in: sourceClass.id)
+                        }
+                    }
                 )
             )
             .labelsHidden()
@@ -190,12 +198,35 @@ struct SourcePrioritiesView: View {
         appleWriteCalendarName ?? "Choisir un calendrier"
     }
 
-    private func refreshAppleWriteCalendarName() {
+    private func resyncAppleCalendarLink() {
+        appleCalendar?.syncLinkedFromServer(store.isConnected(AppleCalendarSync.providerId))
+    }
+
+    private func setProviderEnabled(_ on: Bool, provider: V1SourceClass.Provider, in classId: String) async {
+        if provider.id == AppleCalendarSync.providerId, classId == "calendar", !on {
+            if let appleCalendar {
+                await appleCalendar.disable(token: tokenProvider)
+            } else {
+                AppleCalendarSync.shared.disable()
+            }
+        }
+        await store.setEnabled(provider.id, in: classId, on)
+        resyncAppleCalendarLink()
+    }
+
+    private func refreshAppleWriteCalendarName() async {
         guard store.isConnected(AppleCalendarSync.providerId) else {
             appleWriteCalendarName = nil
             return
         }
-        appleWriteCalendarName = AppleCalendarSync.shared.selectedWriteCalendarTitle()
+        let sync = AppleCalendarSync.shared
+        if await sync.requestAccess() {
+            appleWriteCalendarName = sync.selectedWriteCalendarTitle()
+        } else if let id = sync.writeCalendarIdentifier {
+            appleWriteCalendarName = id
+        } else {
+            appleWriteCalendarName = nil
+        }
     }
 
     private func refreshGoogleWriteTarget() async {

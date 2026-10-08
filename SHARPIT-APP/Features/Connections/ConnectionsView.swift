@@ -47,7 +47,7 @@ struct ConnectionsView: View {
 
             Section {
                 NavigationLink {
-                    SourcePrioritiesView(tokenProvider: tokenProvider)
+                    SourcePrioritiesView(tokenProvider: tokenProvider, appleCalendar: appleCalendar)
                 } label: {
                     Label {
                         Text("Priorités par catégorie")

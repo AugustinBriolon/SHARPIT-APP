@@ -9,6 +9,7 @@ struct AppleCalendarPickerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var calendars: [WritableCalendarRow] = []
     @State private var refused = false
+    @State private var loading = true
 
     init(
         sync: AppleCalendarSync = .shared,
@@ -20,7 +21,10 @@ struct AppleCalendarPickerView: View {
 
     var body: some View {
         Group {
-            if refused {
+            if loading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if refused {
                 ContentUnavailableView {
                     Label("Accès Calendrier requis", systemImage: "calendar.badge.exclamationmark")
                 } description: {
@@ -84,6 +88,7 @@ struct AppleCalendarPickerView: View {
     }
 
     private func load() async {
+        defer { loading = false }
         guard await sync.requestAccess() else {
             refused = true
             return
