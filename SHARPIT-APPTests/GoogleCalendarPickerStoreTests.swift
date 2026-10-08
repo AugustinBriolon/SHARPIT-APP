@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Testing
 @testable import Sharpit
 
@@ -23,18 +24,21 @@ private struct GoogleCalendarsLoadStub: GoogleCalendarsServing {
     }
 }
 
+private let googleCalendarPickerSample = V1GoogleCalendar(
+    id: "cal-1", summary: "Sport", primary: false, isTarget: true
+)
+
 @Suite
 struct GoogleCalendarPickerStoreTests {
-    private let sample = V1GoogleCalendar(id: "cal-1", summary: "Sport", primary: false, isTarget: true)
-
     @Test @MainActor func cancelledReloadKeepsReadyWithCachedCalendars() async {
-        final class CallCounter: @unchecked Sendable {
-            var value = 0
-        }
-        let counter = CallCounter()
+        let sample = googleCalendarPickerSample
+        let counter = OSAllocatedUnfairLock(initialState: 0)
         let stub = GoogleCalendarsLoadStub {
-            counter.value += 1
-            if counter.value == 1 { return [sample] }
+            let n = counter.withLock { value -> Int in
+                value += 1
+                return value
+            }
+            if n == 1 { return [sample] }
             throw CancellationError()
         }
         let store = GoogleCalendarPickerStore(client: stub, tokenProvider: { "tok" })
@@ -54,13 +58,14 @@ struct GoogleCalendarPickerStoreTests {
     }
 
     @Test @MainActor func urlCancelledReloadKeepsReadyWithCachedCalendars() async {
-        final class CallCounter: @unchecked Sendable {
-            var value = 0
-        }
-        let counter = CallCounter()
+        let sample = googleCalendarPickerSample
+        let counter = OSAllocatedUnfairLock(initialState: 0)
         let stub = GoogleCalendarsLoadStub {
-            counter.value += 1
-            if counter.value == 1 { return [sample] }
+            let n = counter.withLock { value -> Int in
+                value += 1
+                return value
+            }
+            if n == 1 { return [sample] }
             throw URLError(.cancelled)
         }
         let store = GoogleCalendarPickerStore(client: stub, tokenProvider: { "tok" })
@@ -72,8 +77,9 @@ struct GoogleCalendarPickerStoreTests {
     }
 
     @Test @MainActor func cancelledSelectRestoresReadyAndReturnsFalse() async {
+        let sample = googleCalendarPickerSample
         let stub = GoogleCalendarsLoadStub(
-            handler: { [sample] in [sample] },
+            handler: { [sample] },
             selectHandler: { throw CancellationError() }
         )
         let store = GoogleCalendarPickerStore(client: stub, tokenProvider: { "tok" })

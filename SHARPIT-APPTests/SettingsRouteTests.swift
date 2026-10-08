@@ -1,5 +1,5 @@
 import Testing
-@testable import SHARPIT_APP
+@testable import Sharpit
 
 /// Calendar sync lives under Sources › Priorités; Paramètres no longer has a dedicated route.
 @Test func settingsRoutesOmitDedicatedCalendarEntry() {

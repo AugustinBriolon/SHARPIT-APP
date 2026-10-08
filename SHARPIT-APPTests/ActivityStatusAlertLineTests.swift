@@ -3,7 +3,7 @@ import Testing
 
 // MARK: - Alert copy mapping
 
-@Test func alertLineIsEmptyForActive() {
+@Test func alertLineCopyIsEmptyForActiveStatus() {
     #expect(ActivityStatusId.active.alertLine.isEmpty)
 }
 
