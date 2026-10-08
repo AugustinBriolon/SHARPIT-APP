@@ -32,12 +32,20 @@ final class GoogleCalendarPickerStore {
     }
 
     func load() async {
+        let phaseBeforeLoad = phase
         phase = .loading
         do {
             let token = try await tokenProvider()
             calendars = try await client.googleCalendars(token: token)
             phase = .ready
         } catch is CancellationError {
+            if !calendars.isEmpty {
+                phase = .ready
+            } else if phaseBeforeLoad != .loading {
+                phase = phaseBeforeLoad
+            } else {
+                phase = .ready
+            }
         } catch {
             phase = .failed(Self.failure(for: error))
         }

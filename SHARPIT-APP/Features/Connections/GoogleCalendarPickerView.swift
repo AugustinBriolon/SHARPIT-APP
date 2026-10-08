@@ -55,7 +55,7 @@ struct GoogleCalendarPickerView: View {
                 }
             } footer: {
                 SharpitListFooter(
-                    "Les créneaux occupés lus par SHARPIT viennent de ce calendrier. Tu peux le changer à tout moment."
+                    "SHARPIT écrit tes créneaux planifiés dans ce calendrier Google. Tu peux le changer à tout moment."
                 )
             }
             .sharpitListRows()

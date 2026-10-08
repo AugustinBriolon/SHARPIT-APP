@@ -72,63 +72,70 @@ struct SourcePrioritiesView: View {
         let isEnabled = store.isEnabled(provider.id, in: sourceClass.id)
         let isPrimary = store.isPrimary(provider.id, in: sourceClass.id)
         let choosesPrimary = store.canChoosePrimary(in: sourceClass.id) && isEnabled
+        let showsGooglePicker = showsGoogleWriteCalendarPicker(in: sourceClass, provider: provider)
         return HStack(spacing: SharpitSpacing.sm) {
             if let logo = ProviderLogo.Provider(integrationId: provider.id) {
                 ProviderLogo(provider: logo)
             }
-            Button {
-                guard choosesPrimary else { return }
-                Task { await store.setPrimary(provider.id, in: sourceClass.id) }
-            } label: {
-                HStack(spacing: SharpitSpacing.xs) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(provider.name)
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.foreground)
-                        if choosesPrimary {
-                            Text(isPrimary ? "Principale" : "Choisir comme principale")
-                                .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
-                                .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
-                        }
-                        if showsGoogleWriteCalendarPicker(in: sourceClass, provider: provider) {
-                            NavigationLink {
-                                GoogleCalendarPickerView(tokenProvider: tokenProvider, client: googleClient) {
-                                    Task { await refreshGoogleWriteTarget() }
-                                }
-                            } label: {
-                                Text(googleWriteCalendarSubtitle)
-                                    .font(SharpitTypography.meta)
-                                    .foregroundStyle(
-                                        googleWriteTargetHint != nil
-                                            ? SharpitColor.signalRisk
-                                            : SharpitColor.mutedForeground
-                                    )
+            VStack(alignment: .leading, spacing: 2) {
+                Button {
+                    guard choosesPrimary else { return }
+                    Task { await store.setPrimary(provider.id, in: sourceClass.id) }
+                } label: {
+                    HStack(spacing: SharpitSpacing.xs) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(provider.name)
+                                .font(SharpitTypography.bodyEmphasis)
+                                .foregroundStyle(SharpitColor.foreground)
+                            if choosesPrimary {
+                                Text(isPrimary ? "Principale" : "Choisir comme principale")
+                                    .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
+                                    .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
                             }
-                            .buttonStyle(.plain)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if choosesPrimary {
+                            // Keep the mark beside the copy — a `Label` in a stretched row
+                            // pushes the glyph and the title to opposite edges.
+                            Image(systemName: isPrimary ? "checkmark.circle.fill" : "circle")
+                                .font(.body)
+                                .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
+                                .accessibilityHidden(true)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    if choosesPrimary {
-                        // Keep the mark beside the copy — a `Label` in a stretched row
-                        // pushes the glyph and the title to opposite edges.
-                        Image(systemName: isPrimary ? "checkmark.circle.fill" : "circle")
-                            .font(.body)
-                            .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
-                            .accessibilityHidden(true)
-                    }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .disabled(!choosesPrimary)
+                .accessibilityAddTraits(isPrimary ? [.isSelected] : [])
+                .accessibilityHint(choosesPrimary && !isPrimary ? "En fait la source principale" : "")
+                .accessibilityLabel(
+                    choosesPrimary
+                        ? "\(provider.name), \(isPrimary ? "principale" : "pas principale")"
+                        : provider.name
+                )
+
+                if showsGooglePicker {
+                    NavigationLink {
+                        GoogleCalendarPickerView(tokenProvider: tokenProvider, client: googleClient) {
+                            Task { await refreshGoogleWriteTarget() }
+                        }
+                    } label: {
+                        Text(googleWriteCalendarSubtitle)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(
+                                googleWriteTargetHint != nil
+                                    ? SharpitColor.signalRisk
+                                    : SharpitColor.mutedForeground
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Calendrier Google, \(googleWriteCalendarSubtitle)")
+                }
             }
-            .buttonStyle(.plain)
-            .disabled(!choosesPrimary)
-            .accessibilityAddTraits(isPrimary ? [.isSelected] : [])
-            .accessibilityHint(choosesPrimary && !isPrimary ? "En fait la source principale" : "")
-            .accessibilityLabel(
-                choosesPrimary
-                    ? "\(provider.name), \(isPrimary ? "principale" : "pas principale")"
-                    : provider.name
-            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+
             Toggle(
                 "Utiliser \(provider.name)",
                 isOn: Binding(
@@ -168,8 +175,9 @@ struct SourcePrioritiesView: View {
             googleWriteTargetName = nil
             googleWriteTargetHint = message
         } catch {
-            googleWriteTargetName = nil
-            googleWriteTargetHint = nil
+            if googleWriteTargetName == nil {
+                googleWriteTargetHint = "Impossible de charger le calendrier"
+            }
         }
     }
 }
