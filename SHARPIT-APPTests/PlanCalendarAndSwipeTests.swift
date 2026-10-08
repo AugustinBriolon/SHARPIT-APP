@@ -80,6 +80,21 @@ import Testing
         #expect(!AppleCalendarSync.shouldWrite(prefs: primaryGoogle, connected: connected))
     }
 
+    @Test func busyUploadRunsWhenAppleCalendarEnabledNotOnlyWhenPrimary() {
+        let connected = ["google", "apple-calendar"]
+        let primaryGoogle = V1SourcePrefs(classes: [
+            "calendar": V1ClassSources(primary: "google", enabled: ["google", "apple-calendar"]),
+        ])
+        #expect(!AppleCalendarSync.shouldWrite(prefs: primaryGoogle, connected: connected))
+        #expect(AppleCalendarSync.shouldUploadBusy(prefs: primaryGoogle, connected: connected))
+        #expect(!AppleCalendarSync.shouldUploadBusy(
+            prefs: V1SourcePrefs(classes: [
+                "calendar": V1ClassSources(primary: "google", enabled: ["google"]),
+            ]),
+            connected: connected
+        ))
+    }
+
     @Test func sharpitSessionURLParsesSessionId() {
         let url = PlanCalendarPlanner.url(for: "abc-42")
         #expect(AppleCalendarPull.sessionId(fromSharpitURL: url) == "abc-42")

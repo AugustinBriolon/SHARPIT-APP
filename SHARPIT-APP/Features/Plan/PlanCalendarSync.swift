@@ -56,7 +56,7 @@ nonisolated enum PlanCalendarPlanner {
     }
 }
 
-/// Apple Calendar write + pull-back when `apple-calendar` is the calendar primary (SharpIt Pro).
+/// Apple Calendar: busy upload when enabled; EventKit write when Pro and apple-calendar is primary.
 @MainActor
 final class AppleCalendarSync {
     static let shared = AppleCalendarSync()
@@ -164,7 +164,7 @@ final class AppleCalendarSync {
         calendarLinker: (any AppleCalendarLinking)? = nil,
         now: Date = .now
     ) async {
-        guard isPro, EKEventStore.authorizationStatus(for: .event) == .fullAccess else { return }
+        guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else { return }
         let start = calendar.startOfDay(for: now)
         let end = calendar.date(byAdding: .day, value: PlanCalendarPlanner.horizonDays, to: start) ?? now
         do {
@@ -173,6 +173,7 @@ final class AppleCalendarSync {
             if Self.shouldUploadBusy(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) {
                 await uploadBusy(from: start, to: end, client: busyClient, token: token)
             }
+            guard isPro else { return }
             guard Self.shouldWrite(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) else { return }
             guard let sessionWriter else { return }
             _ = try? await calendarLinker?.linkAppleCalendar(true, token: token)

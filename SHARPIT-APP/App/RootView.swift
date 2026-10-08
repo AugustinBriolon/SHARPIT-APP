@@ -220,7 +220,7 @@ struct RootView: View {
             plan: plannedSessionClient,
             tokenProvider: liveToken
         )
-        // Apple Calendar write + busy upload (Pro) when apple-calendar is primary.
+        // Apple Calendar: busy when enabled; EventKit write when Pro and primary.
         await AppleCalendarSync.shared.refresh(
             isPro: pro?.isPro ?? false,
             plan: plannedSessionClient,
