@@ -173,6 +173,8 @@ struct SourcePrioritiesView: View {
             googleWriteTargetHint = nil
         } catch is CancellationError {
             return
+        } catch let error as URLError where error.code == .cancelled {
+            return
         } catch SharpitAPIError.googleNeedsReconnect(let message) {
             googleWriteTargetName = nil
             googleWriteTargetHint = message

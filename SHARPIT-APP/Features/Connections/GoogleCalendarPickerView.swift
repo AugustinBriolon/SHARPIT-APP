@@ -28,7 +28,9 @@ struct GoogleCalendarPickerView: View {
                 reconnectState(message)
             case .failed(.load(let message)) where store.calendars.isEmpty:
                 SharpitStateMessage.failed(message) { Task { await store.load() } }
-            case .ready, .selecting, .failed:
+            case .failed(.load(let message)):
+                calendarList(store.calendars, loadFailure: message)
+            case .ready, .selecting:
                 calendarList(store.calendars)
             }
         }
@@ -37,8 +39,16 @@ struct GoogleCalendarPickerView: View {
         .task { await store.load() }
     }
 
-    private func calendarList(_ items: [V1GoogleCalendar]) -> some View {
+    private func calendarList(_ items: [V1GoogleCalendar], loadFailure: String? = nil) -> some View {
         List {
+            if let loadFailure {
+                Section {
+                    Label(loadFailure, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(SharpitColor.signalCaution)
+                    Button("Réessayer") { Task { await store.load() } }
+                }
+                .sharpitListRows()
+            }
             Section {
                 ForEach(items) { calendar in
                     Button {

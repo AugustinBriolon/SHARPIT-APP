@@ -38,16 +38,18 @@ final class GoogleCalendarPickerStore {
             let token = try await tokenProvider()
             calendars = try await client.googleCalendars(token: token)
             phase = .ready
-        } catch is CancellationError {
-            if !calendars.isEmpty {
-                phase = .ready
-            } else if phaseBeforeLoad != .loading {
-                phase = phaseBeforeLoad
-            } else {
-                phase = .failed(.load("Chargement interrompu. Réessaie."))
-            }
         } catch {
-            phase = .failed(Self.failure(for: error))
+            if Self.isCancellation(error) {
+                if !calendars.isEmpty {
+                    phase = .ready
+                } else if phaseBeforeLoad != .loading {
+                    phase = phaseBeforeLoad
+                } else {
+                    phase = .failed(.load("Chargement interrompu. Réessaie."))
+                }
+            } else {
+                phase = .failed(Self.failure(for: error))
+            }
         }
     }
 
@@ -74,13 +76,20 @@ final class GoogleCalendarPickerStore {
             }
             phase = .ready
             return true
-        } catch is CancellationError {
-            phase = phaseBeforeSelect
-            return false
         } catch {
+            if Self.isCancellation(error) {
+                phase = phaseBeforeSelect
+                return false
+            }
             phase = .failed(Self.failure(for: error))
             return false
         }
+    }
+
+    private static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        return false
     }
 
     private static func failure(for error: Error) -> Failure {

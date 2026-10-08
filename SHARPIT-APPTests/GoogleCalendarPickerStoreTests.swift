@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import Sharpit
 
@@ -50,6 +51,24 @@ struct GoogleCalendarPickerStoreTests {
         await store.load()
         #expect(store.phase == .failed(.load("Chargement interrompu. Réessaie.")))
         #expect(store.calendars.isEmpty)
+    }
+
+    @Test @MainActor func urlCancelledReloadKeepsReadyWithCachedCalendars() async {
+        final class CallCounter: @unchecked Sendable {
+            var value = 0
+        }
+        let counter = CallCounter()
+        let stub = GoogleCalendarsLoadStub {
+            counter.value += 1
+            if counter.value == 1 { return [sample] }
+            throw URLError(.cancelled)
+        }
+        let store = GoogleCalendarPickerStore(client: stub, tokenProvider: { "tok" })
+        await store.load()
+        #expect(store.phase == .ready)
+        await store.load()
+        #expect(store.phase == .ready)
+        #expect(store.calendars == [sample])
     }
 
     @Test @MainActor func cancelledSelectRestoresReadyAndReturnsFalse() async {

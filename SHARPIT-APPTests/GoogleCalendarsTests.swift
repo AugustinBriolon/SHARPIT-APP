@@ -53,12 +53,17 @@ private nonisolated final class GoogleCalendarsStubURLProtocol: URLProtocol, @un
     nonisolated(unsafe) static var status = 200
     nonisolated(unsafe) static var responseData = Data()
     nonisolated(unsafe) static var lastRequest: URLRequest?
+    nonisolated(unsafe) static var transportError: Error?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
         Self.lastRequest = request
+        if let transportError = Self.transportError {
+            client?.urlProtocol(self, didFailWithError: transportError)
+            return
+        }
         let response = HTTPURLResponse(url: request.url!, statusCode: Self.status, httpVersion: nil, headerFields: nil)!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Self.responseData)
@@ -70,10 +75,11 @@ private nonisolated final class GoogleCalendarsStubURLProtocol: URLProtocol, @un
 
 @Suite(.serialized)
 struct GoogleCalendarsNetworkTests {
-    private func session(status: Int, response: String) -> URLSession {
+    private func session(status: Int, response: String, transportError: Error? = nil) -> URLSession {
         GoogleCalendarsStubURLProtocol.status = status
         GoogleCalendarsStubURLProtocol.responseData = Data(response.utf8)
         GoogleCalendarsStubURLProtocol.lastRequest = nil
+        GoogleCalendarsStubURLProtocol.transportError = transportError
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [GoogleCalendarsStubURLProtocol.self]
         return URLSession(configuration: configuration)
@@ -113,6 +119,16 @@ struct GoogleCalendarsNetworkTests {
     @Test func listingCalendarsStillUsesUnauthorizedWhen401HasNoReconnectFlag() async {
         let client = GoogleCalendarsClient(session: session(status: 401, response: #"{"error":"Unauthorized"}"#), baseURL: base)
         await #expect(throws: SharpitAPIError.unauthorized) {
+            _ = try await client.googleCalendars(token: "tok")
+        }
+    }
+
+    @Test func listingCalendarsMapsURLCancellationToCancellationError() async {
+        let client = GoogleCalendarsClient(
+            session: session(status: 200, response: "[]", transportError: URLError(.cancelled)),
+            baseURL: base
+        )
+        await #expect(throws: CancellationError.self) {
             _ = try await client.googleCalendars(token: "tok")
         }
     }
