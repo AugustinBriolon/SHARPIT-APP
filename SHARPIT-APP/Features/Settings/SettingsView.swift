@@ -91,15 +91,6 @@ struct SettingsView: View {
                         NavigationLink(value: SettingsRoute.sources) {
                             SettingsRow(symbol: "link", tint: SettingsTone.sources, title: "Sources de données", detail: sourcesDetail)
                         }
-                        SettingsDivider()
-                        NavigationLink(value: SettingsRoute.calendar) {
-                            SettingsRow(
-                                symbol: "calendar",
-                                tint: SettingsTone.calendar,
-                                title: "Calendrier de l'iPhone",
-                                detail: "Gérer dans Sources › Priorités"
-                            )
-                        }
                     }
                     .buttonStyle(.plain)
 
@@ -281,8 +272,6 @@ struct SettingsView: View {
             OwnFoodsSettingsView(tokenProvider: tokenProvider)
         case .feedback:
             FeedbackView(tokenProvider: tokenProvider)
-        case .calendar:
-            SourcePrioritiesView(tokenProvider: tokenProvider, appleCalendar: appleCalendar)
         case .density:
             DisplayModeView(
                 client: profileClient,
@@ -306,7 +295,6 @@ enum SettingsRoute: Hashable {
     case features
     case ownFoods
     case feedback
-    case calendar
 }
 
 private extension String {
@@ -475,5 +463,4 @@ private enum SettingsTone {
     static let privacy = Color(red: 0.44, green: 0.50, blue: 0.58)
     static let nutrition = Color(red: 0.92, green: 0.52, blue: 0.20)
     static let feedback = Color(red: 0.20, green: 0.56, blue: 0.86)
-    static let calendar = Color(red: 0.90, green: 0.30, blue: 0.24)
 }

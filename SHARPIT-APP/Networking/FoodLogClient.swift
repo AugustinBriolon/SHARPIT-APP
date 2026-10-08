@@ -40,6 +40,8 @@ nonisolated protocol FoodLogServing: Sendable {
     func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry]
     /// Creates a recipe, or replaces one's ingredients when `id` is given; entries keep their values.
     func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct
+    /// Pro: free-text meal description → estimated foods (name, grams, per-100 g macros).
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood]
 }
 
 actor FoodLogClient: FoodLogServing {
@@ -167,6 +169,12 @@ actor FoodLogClient: FoodLogServing {
         return try decode(V1FoodProductEnvelope.self, from: try await send(request, readsRefusal: true)).product
     }
 
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] {
+        var request = try request("\(Self.path)/describe", method: "POST", token: token)
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["description": description])
+        return try decode(V1DescribedFoodList.self, from: try await sendDescribe(request)).items
+    }
+
     // MARK: Bodies
 
     /// Nil cooked weight and servings go out as JSON null: the dish weighs its raw ingredients.
@@ -275,6 +283,23 @@ actor FoodLogClient: FoodLogServing {
         }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if readsRefusal, status == 400, let refusal = Self.refusal(in: data) {
+            throw SharpitAPIError.message(refusal)
+        }
+        try Self.check(status: status)
+        return data
+    }
+
+    /// Describe surfaces Pro / consent / validation errors as French `{ error }` bodies.
+    private func sendDescribe(_ request: URLRequest) async throws -> Data {
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw SharpitAPIError.transport
+        }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if [400, 403, 422, 503].contains(status), let refusal = Self.refusal(in: data) {
             throw SharpitAPIError.message(refusal)
         }
         try Self.check(status: status)

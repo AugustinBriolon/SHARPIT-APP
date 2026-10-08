@@ -633,6 +633,13 @@ private actor StubFoodLog: FoodLogServing {
         product.name = draft.name
         return product
     }
+
+    var described: [V1DescribedFood] = []
+
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] {
+        if let failure { throw failure }
+        return described
+    }
 }
 
 @MainActor

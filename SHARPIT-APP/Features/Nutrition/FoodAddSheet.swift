@@ -47,6 +47,7 @@ struct FoodAddSheet: View {
                 onQuickAdd: { path.append(.quick(name: query)) },
                 onCreate: { path.append(.custom(name: query)) },
                 onScan: { path.append(.scanner) },
+                onDescribe: { path.append(.describe) },
                 onOwnFoods: { path.append(.ownFoods) },
                 onSavedMeals: { path.append(.savedMeals) },
                 onRecipe: { path.append(.recipe(nil)) }
@@ -133,11 +134,29 @@ struct FoodAddSheet: View {
                 case .create: path = [.custom(name: "")]
                 }
             }
+        case .describe:
+            FoodDescribePage(
+                trainingDayId: store.trainingDayId,
+                meal: request.meal,
+                client: store.client,
+                tokenProvider: store.tokenProvider
+            ) { drafts in
+                logMany(drafts)
+            }
         }
     }
 
     private func log(_ draft: FoodLogDraft) {
         Task { await store.add(draft) }
+        dismiss()
+    }
+
+    private func logMany(_ drafts: [FoodLogDraft]) {
+        Task {
+            for draft in drafts {
+                await store.add(draft)
+            }
+        }
         dismiss()
     }
 }
@@ -147,6 +166,7 @@ enum FoodAddRoute: Hashable {
     case quick(name: String)
     case custom(name: String)
     case scanner
+    case describe
     case ownFoods
     case editFood(V1FoodProduct)
     case savedMeals
@@ -166,6 +186,7 @@ private struct FoodSearchPage: View {
     let onQuickAdd: () -> Void
     let onCreate: () -> Void
     let onScan: () -> Void
+    let onDescribe: () -> Void
     let onOwnFoods: () -> Void
     let onSavedMeals: () -> Void
     let onRecipe: () -> Void
@@ -174,17 +195,21 @@ private struct FoodSearchPage: View {
 
     var body: some View {
         List {
-            Section {
-                if BarcodeScannerView.isAvailable {
-                    actionRow("Scanner un code-barres", symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan, action: onScan)
+            // Shortcuts leave the stage once the athlete is searching — results own the list.
+            if !isSearching {
+                Section {
+                    if BarcodeScannerView.isAvailable {
+                        actionRow("Scanner un code-barres", symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan, action: onScan)
+                    }
+                    actionRow("Décrire un repas", symbol: "text.bubble", tone: SharpitNutritionTone.Action.describe, action: onDescribe)
+                    actionRow("Mes repas", symbol: "bookmark", tone: SharpitNutritionTone.Action.savedMeals, action: onSavedMeals)
+                    actionRow("Mes aliments", symbol: "person.crop.square", tone: SharpitNutritionTone.Action.ownFoods, action: onOwnFoods)
+                    actionRow("Saisie rapide", symbol: "bolt", tone: SharpitNutritionTone.Action.quickAdd, action: onQuickAdd)
+                    actionRow("Créer un aliment", symbol: "plus.square.on.square", tone: SharpitNutritionTone.Action.create, action: onCreate)
+                    actionRow("Créer une recette", symbol: "frying.pan", tone: SharpitNutritionTone.Action.recipe, action: onRecipe)
                 }
-                actionRow("Mes repas", symbol: "bookmark", tone: SharpitNutritionTone.Action.savedMeals, action: onSavedMeals)
-                actionRow("Mes aliments", symbol: "person.crop.square", tone: SharpitNutritionTone.Action.ownFoods, action: onOwnFoods)
-                actionRow("Saisie rapide", symbol: "bolt", tone: SharpitNutritionTone.Action.quickAdd, action: onQuickAdd)
-                actionRow("Créer un aliment", symbol: "plus.square.on.square", tone: SharpitNutritionTone.Action.create, action: onCreate)
-                actionRow("Créer une recette", symbol: "frying.pan", tone: SharpitNutritionTone.Action.recipe, action: onRecipe)
+                .sharpitListRows()
             }
-            .sharpitListRows()
 
             if isSearching {
                 searchResults

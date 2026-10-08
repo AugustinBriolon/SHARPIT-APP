@@ -24,6 +24,7 @@ enum SharpitNutritionTone {
     /// The add sheet's ways in, each on its own tile.
     enum Action {
         static let scan = Color(red: 0.12, green: 0.62, blue: 0.56)
+        static let describe = Color(red: 0.45, green: 0.38, blue: 0.88)
         static let ownFoods = Color(red: 0.92, green: 0.52, blue: 0.20)
         static let quickAdd = Color(red: 0.55, green: 0.36, blue: 0.86)
         static let create = Color(red: 0.34, green: 0.44, blue: 0.86)

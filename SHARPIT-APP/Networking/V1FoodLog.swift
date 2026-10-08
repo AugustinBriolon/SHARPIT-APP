@@ -496,6 +496,29 @@ nonisolated struct FoodQuickAdd: Sendable, Equatable, Hashable {
     var fat: Double?
 }
 
+/// One food line from `POST /api/v1/food-log/describe` (portion macros + per-100 g for edits).
+nonisolated struct V1DescribedFood: Decodable, Sendable, Equatable, Identifiable {
+    var id: String { "\(name)-\(grams)" }
+    let name: String
+    let grams: Double
+    let kcal: Double
+    let protein: Double
+    let carbs: Double
+    let fat: Double
+    let per100g: V1DescribedFoodPer100g
+}
+
+nonisolated struct V1DescribedFoodPer100g: Decodable, Sendable, Equatable {
+    let kcal: Double
+    let protein: Double
+    let carbs: Double
+    let fat: Double
+}
+
+nonisolated struct V1DescribedFoodList: Decodable, Sendable, Equatable {
+    let items: [V1DescribedFood]
+}
+
 /// What a new entry is made of: a known food (scanned, searched, own) or a quick add.
 nonisolated enum FoodLogEntrySource: Sendable, Equatable, Hashable {
     case product(V1FoodProduct)
