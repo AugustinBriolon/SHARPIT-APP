@@ -19,4 +19,22 @@ import Testing
         source.syncLinkedFromServer(false)
         #expect(!source.isLinked)
     }
+
+    @Test @MainActor func disableFailureKeepsLinked() async throws {
+        let suite = "apple-calendar-disable-fail"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+
+        final class FailingUnlink: AppleCalendarLinking, @unchecked Sendable {
+            func linkAppleCalendar(_ linked: Bool, token: String) async throws {
+                if !linked { throw URLError(.notConnectedToInternet) }
+            }
+        }
+
+        let source = AppleCalendarSource(client: FailingUnlink(), defaults: defaults)
+        source.bind(userId: "u1")
+        source.syncLinkedFromServer(true)
+        await source.disable(token: { "tok" })
+        #expect(source.isLinked)
+    }
 }

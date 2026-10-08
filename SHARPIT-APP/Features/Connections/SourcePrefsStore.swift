@@ -53,6 +53,15 @@ final class SourcePrefsStore {
 
     func isConnected(_ provider: String) -> Bool { connected.contains(provider) }
 
+    /// After a local link/unlink before the next GET, keep `connected` aligned so resync does not read stale prefs.
+    func patchConnected(_ provider: String, linked: Bool) {
+        if linked {
+            if !connected.contains(provider) { connected.append(provider) }
+        } else {
+            connected.removeAll { $0 == provider }
+        }
+    }
+
     func isEnabled(_ provider: String, in classId: String) -> Bool {
         prefs.sources(for: classId).enabled.contains(provider)
     }

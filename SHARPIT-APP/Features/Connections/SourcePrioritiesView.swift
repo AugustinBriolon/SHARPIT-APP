@@ -203,7 +203,8 @@ struct SourcePrioritiesView: View {
     }
 
     private func setProviderEnabled(_ on: Bool, provider: V1SourceClass.Provider, in classId: String) async {
-        if provider.id == AppleCalendarSync.providerId, classId == "calendar" {
+        let isAppleCalendar = provider.id == AppleCalendarSync.providerId && classId == "calendar"
+        if isAppleCalendar {
             if on {
                 if let appleCalendar {
                     await appleCalendar.enable(token: tokenProvider)
@@ -211,15 +212,19 @@ struct SourcePrioritiesView: View {
                 } else {
                     _ = await AppleCalendarSync.shared.enable()
                 }
+                store.patchConnected(AppleCalendarSync.providerId, linked: true)
             } else {
                 if let appleCalendar {
                     await appleCalendar.disable(token: tokenProvider)
+                    guard !appleCalendar.isLinked else { return }
                 } else {
                     AppleCalendarSync.shared.disable()
                 }
+                store.patchConnected(AppleCalendarSync.providerId, linked: false)
             }
         }
         await store.setEnabled(provider.id, in: classId, on)
+        if isAppleCalendar { return }
         resyncAppleCalendarLink()
     }
 

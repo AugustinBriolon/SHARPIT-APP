@@ -123,7 +123,7 @@ final class AppleCalendarSync {
             return false
         }
         migrateWriteCalendarIdIfNeeded()
-        _ = await requestAccess()
+        guard await requestAccess() else { return false }
         do {
             try await SharpitRetry.run {
                 try await calendarLinker.linkAppleCalendar(true, token: token)

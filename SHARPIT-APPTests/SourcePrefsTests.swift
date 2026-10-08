@@ -68,6 +68,19 @@ private actor StubSourcePrefs: SourcePrefsServing {
 }
 
 @MainActor
+@Test func patchConnectedUpdatesStaleConnectedList() async {
+    let store = SourcePrefsStore(client: StubSourcePrefs(), tokenProvider: { "t" })
+    await store.load()
+    #expect(!store.isConnected("apple-calendar"))
+
+    store.patchConnected("apple-calendar", linked: true)
+    #expect(store.isConnected("apple-calendar"))
+
+    store.patchConnected("apple-calendar", linked: false)
+    #expect(!store.isConnected("apple-calendar"))
+}
+
+@MainActor
 @Test func turningThePrimaryOffHandsItToTheNextSource() async {
     let client = StubSourcePrefs()
     await client.refuse()
