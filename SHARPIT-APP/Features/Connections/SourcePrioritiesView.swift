@@ -5,9 +5,19 @@ import SwiftUI
 /// fill what it lacks. A class only one source can feed shows it, with nothing to choose.
 struct SourcePrioritiesView: View {
     @State private var store: SourcePrefsStore
+    private let googleClient: any GoogleCalendarsServing
+    private let tokenProvider: () async throws -> String
+    @State private var googleWriteTargetName: String?
+    @State private var googleWriteTargetHint: String?
 
-    init(client: any SourcePrefsServing = SharpitClient(), tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any SourcePrefsServing = SharpitClient(),
+        googleClient: any GoogleCalendarsServing = GoogleCalendarsClient(),
+        tokenProvider: @escaping () async throws -> String
+    ) {
         _store = State(initialValue: SourcePrefsStore(client: client, tokenProvider: tokenProvider))
+        self.googleClient = googleClient
+        self.tokenProvider = tokenProvider
     }
 
     var body: some View {
@@ -21,7 +31,10 @@ struct SourcePrioritiesView: View {
         }
         .navigationTitle("Priorités")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
+        .task {
+            await store.load()
+            await refreshGoogleWriteTarget()
+        }
     }
 
     private var list: some View {
@@ -77,6 +90,22 @@ struct SourcePrioritiesView: View {
                                 .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
                                 .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
                         }
+                        if showsGoogleWriteCalendarPicker(in: sourceClass, provider: provider) {
+                            NavigationLink {
+                                GoogleCalendarPickerView(tokenProvider: tokenProvider, client: googleClient) {
+                                    Task { await refreshGoogleWriteTarget() }
+                                }
+                            } label: {
+                                Text(googleWriteCalendarSubtitle)
+                                    .font(SharpitTypography.meta)
+                                    .foregroundStyle(
+                                        googleWriteTargetHint != nil
+                                            ? SharpitColor.signalRisk
+                                            : SharpitColor.mutedForeground
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -111,5 +140,36 @@ struct SourcePrioritiesView: View {
             .tint(SharpitColor.primary)
         }
         .padding(.vertical, SharpitSpacing.xxs)
+    }
+
+    private func showsGoogleWriteCalendarPicker(
+        in sourceClass: V1SourceClass,
+        provider: V1SourceClass.Provider
+    ) -> Bool {
+        sourceClass.id == "calendar" && provider.id == "google" && store.isConnected("google")
+    }
+
+    private var googleWriteCalendarSubtitle: String {
+        googleWriteTargetHint ?? googleWriteTargetName ?? "Choisir un calendrier"
+    }
+
+    private func refreshGoogleWriteTarget() async {
+        guard store.isConnected("google") else {
+            googleWriteTargetName = nil
+            googleWriteTargetHint = nil
+            return
+        }
+        do {
+            let token = try await tokenProvider()
+            let calendars = try await googleClient.googleCalendars(token: token)
+            googleWriteTargetName = calendars.first(where: \.isTarget)?.summary
+            googleWriteTargetHint = nil
+        } catch SharpitAPIError.googleNeedsReconnect(let message) {
+            googleWriteTargetName = nil
+            googleWriteTargetHint = message
+        } catch {
+            googleWriteTargetName = nil
+            googleWriteTargetHint = nil
+        }
     }
 }
