@@ -284,6 +284,44 @@ nonisolated enum CoachUIParts {
         return ids.isEmpty ? nil : ids.joined(separator: "|")
     }
 
+    /// Puts a failed tool call back to `approval-requested` so `respond` can send it again.
+    static func reopening(_ parts: [JSONValue], approvalId: String) -> [JSONValue] {
+        parts.map { part in
+            guard case .object(var object) = part,
+                  case .object(let approval) = object["approval"],
+                  approval["id"]?.string == approvalId,
+                  let state = object["state"]?.string,
+                  isFailedApproval(state: state, output: object["output"])
+            else { return part }
+
+            var nextApproval: [String: JSONValue] = ["id": .string(approvalId)]
+            if let signature = approval["signature"] { nextApproval["signature"] = signature }
+            object["state"] = .string("approval-requested")
+            object["approval"] = .object(nextApproval)
+            object.removeValue(forKey: "output")
+            object.removeValue(forKey: "errorText")
+            return .object(object)
+        }
+    }
+
+    /// Turns approvals left mid-flight into a visible failure after a cut stream.
+    static func markingFailedApprovals(_ parts: [JSONValue], message: String) -> [JSONValue] {
+        parts.map { part in
+            guard case .object(var object) = part,
+                  object["state"]?.string == "approval-responded",
+                  object["approval"]?["approved"] != .bool(false)
+            else { return part }
+            object["state"] = .string("output-error")
+            object["errorText"] = .string(message)
+            return .object(object)
+        }
+    }
+
+    private static func isFailedApproval(state: String, output: JSONValue?) -> Bool {
+        state == "output-error"
+            || (state == "output-available" && output?["ok"] == .bool(false))
+    }
+
     /// How many calendar changes the server carried out in this turn.
     static func appliedChanges(_ parts: [JSONValue]) -> Int {
         parts.filter { part in
