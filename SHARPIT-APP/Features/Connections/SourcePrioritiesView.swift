@@ -45,14 +45,20 @@ struct SourcePrioritiesView: View {
     }
 
     private func footer(for sourceClass: V1SourceClass) -> String {
-        guard store.offersPrimary(in: sourceClass.id) else { return sourceClass.description }
-        return "\(sourceClass.description) La source principale fait foi ; les autres complètent ce qui lui manque."
+        let base = sourceClass.description
+        if store.canChoosePrimary(in: sourceClass.id) {
+            return "\(base) Touche le nom pour choisir la source principale ; le commutateur active ou coupe la source."
+        }
+        if store.connectedCount(in: sourceClass.id) > 1 {
+            return "\(base) Active au moins deux sources pour en choisir une principale."
+        }
+        return base
     }
 
     private func row(_ provider: V1SourceClass.Provider, in sourceClass: V1SourceClass) -> some View {
         let isEnabled = store.isEnabled(provider.id, in: sourceClass.id)
         let isPrimary = store.isPrimary(provider.id, in: sourceClass.id)
-        let choosesPrimary = store.offersPrimary(in: sourceClass.id) && isEnabled
+        let choosesPrimary = store.canChoosePrimary(in: sourceClass.id) && isEnabled
         return HStack(spacing: SharpitSpacing.sm) {
             if let logo = ProviderLogo.Provider(integrationId: provider.id) {
                 ProviderLogo(provider: logo)
@@ -61,23 +67,39 @@ struct SourcePrioritiesView: View {
                 guard choosesPrimary else { return }
                 Task { await store.setPrimary(provider.id, in: sourceClass.id) }
             } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(provider.name)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
+                HStack(spacing: SharpitSpacing.xs) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(provider.name)
+                            .font(SharpitTypography.bodyEmphasis)
+                            .foregroundStyle(SharpitColor.foreground)
+                        if choosesPrimary {
+                            Text(isPrimary ? "Principale" : "Choisir comme principale")
+                                .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
+                                .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
                     if choosesPrimary {
-                        Label(isPrimary ? "Principale" : "Choisir comme principale", systemImage: isPrimary ? "checkmark.circle.fill" : "circle")
-                            .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
+                        // Keep the mark beside the copy — a `Label` in a stretched row
+                        // pushes the glyph and the title to opposite edges.
+                        Image(systemName: isPrimary ? "checkmark.circle.fill" : "circle")
+                            .font(.body)
                             .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
+                            .accessibilityHidden(true)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!choosesPrimary)
             .accessibilityAddTraits(isPrimary ? [.isSelected] : [])
             .accessibilityHint(choosesPrimary && !isPrimary ? "En fait la source principale" : "")
+            .accessibilityLabel(
+                choosesPrimary
+                    ? "\(provider.name), \(isPrimary ? "principale" : "pas principale")"
+                    : provider.name
+            )
             Toggle(
                 "Utiliser \(provider.name)",
                 isOn: Binding(

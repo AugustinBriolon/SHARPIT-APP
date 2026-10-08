@@ -55,7 +55,9 @@ struct ConnectionsView: View {
                     }
                 }
             } footer: {
-                SharpitListFooter("Quand deux sources mesurent la même chose, choisis celle qui fait foi.")
+                SharpitListFooter(
+                    "Quand deux sources mesurent la même chose, choisis celle qui fait foi. L’Agenda Google (créneaux) n’est pas le calendrier des séances Sharpit dans Plan."
+                )
             }
             .sharpitListRows()
 

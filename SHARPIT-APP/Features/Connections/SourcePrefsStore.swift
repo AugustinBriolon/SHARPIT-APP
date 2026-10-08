@@ -61,9 +61,19 @@ final class SourcePrefsStore {
         prefs.sources(for: classId).primary == provider
     }
 
-    /// Whether choosing a primary means anything: two sources or more feed the class.
+    /// Connected providers listed for this class (from the last GET).
+    func connectedCount(in classId: String) -> Int {
+        classes.first(where: { $0.id == classId })?.providers.filter { connected.contains($0.id) }.count ?? 0
+    }
+
+    /// Whether choosing a primary means anything: two **enabled** sources feed the class.
     func offersPrimary(in classId: String) -> Bool {
         prefs.sources(for: classId).enabled.count > 1
+    }
+
+    /// Alias kept for call sites that mean “primary UI is available”.
+    func canChoosePrimary(in classId: String) -> Bool {
+        offersPrimary(in: classId)
     }
 
     func setEnabled(_ provider: String, in classId: String, _ on: Bool) async {
