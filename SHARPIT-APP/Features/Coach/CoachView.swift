@@ -254,11 +254,11 @@ struct CoachView: View {
     }
 
     /// Answers a proposal card; nil while a reply streams, so the buttons wait with it.
-    private var answerHandler: ((String, Bool) -> Void)? {
+    private var answerHandler: ((String, Bool, JSONValue?) -> Void)? {
         guard !store.isReplying else { return nil }
         let store = store
-        return { approvalId, approved in
-            Task { await store.respond(to: approvalId, approved: approved) }
+        return { approvalId, approved, input in
+            Task { await store.respond(to: approvalId, approved: approved, replacingInput: input) }
         }
     }
 
@@ -426,7 +426,7 @@ private struct CoachMessageRow: View {
     let message: CoachMessage
     let isStreaming: Bool
     /// Nil while an answer streams: a proposal cannot be answered mid-turn.
-    let onAnswer: ((String, Bool) -> Void)?
+    let onAnswer: ((String, Bool, JSONValue?) -> Void)?
 
     var body: some View {
         switch message.role {
@@ -461,6 +461,8 @@ private struct CoachMessageRow: View {
                         SharpitMarkdownText(markdown: text)
                     case .proposal(let proposal):
                         CoachProposalCard(proposal: proposal, onAnswer: answer(for: proposal))
+                    case .foodLog(let proposal):
+                        CoachFoodLogCard(proposal: proposal, onAnswer: answer(for: proposal))
                     }
                 }
                 if isStreaming {
@@ -509,7 +511,12 @@ private extension View {
 extension CoachMessageRow {
     private func answer(for proposal: CoachProposal) -> ((Bool) -> Void)? {
         guard case .awaiting(let approvalId) = proposal.status, let onAnswer else { return nil }
-        return { approved in onAnswer(approvalId, approved) }
+        return { approved in onAnswer(approvalId, approved, nil) }
+    }
+
+    private func answer(for proposal: CoachFoodLogProposal) -> ((Bool, JSONValue?) -> Void)? {
+        guard case .awaiting(let approvalId) = proposal.status, let onAnswer else { return nil }
+        return { approved, input in onAnswer(approvalId, approved, input) }
     }
 }
 
@@ -518,11 +525,13 @@ extension CoachMessageRow {
 nonisolated enum CoachSegment: Identifiable, Equatable {
     case text(id: String, String)
     case proposal(CoachProposal)
+    case foodLog(CoachFoodLogProposal)
 
     var id: String {
         switch self {
         case .text(let id, _): id
         case .proposal(let proposal): "proposal-\(proposal.id)"
+        case .foodLog(let proposal): "food-\(proposal.id)"
         }
     }
 
@@ -540,6 +549,9 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
         for part in parts {
             if part["type"]?.string == "text", let text = part["text"]?.string, !text.isEmpty {
                 pending.append(text)
+            } else if let food = CoachFoodLogProposal(part: part) {
+                flush()
+                segments.append(.foodLog(food))
             } else if let proposal = CoachProposal(part: part) {
                 flush()
                 segments.append(.proposal(proposal))

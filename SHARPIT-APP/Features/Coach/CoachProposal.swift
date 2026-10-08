@@ -88,9 +88,12 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
 
     private static let maxSteps = 6
 
-    /// Nil for a part that is not a calendar proposal.
+    /// Nil for a part that is not a calendar / context proposal (`logFoods` has its own card).
     init?(part: JSONValue) {
-        guard let type = part["type"]?.string, CoachUIParts.calendarToolTypes.contains(type) else { return nil }
+        guard let type = part["type"]?.string,
+              CoachUIParts.calendarToolTypes.contains(type),
+              type != "tool-logFoods"
+        else { return nil }
         let input = part["input"] ?? .object([:])
         let output = part["output"]
 

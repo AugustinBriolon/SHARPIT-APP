@@ -101,12 +101,18 @@ final class CoachStore {
     /// The athlete's answer to a proposal card. Once every proposal of the step has one, the
     /// turn goes back to the server, which carries out the approved ones and goes on writing in
     /// the same message — the web's `addToolApprovalResponse` and `sendAutomaticallyWhen`.
-    func respond(to approvalId: String, approved: Bool) async {
+    /// `replacingInput` updates the tool input before approval (edited meal / grams on logFoods).
+    func respond(to approvalId: String, approved: Bool, replacingInput: JSONValue? = nil) async {
         guard !isReplying, let index = messages.indices.last,
               messages[index].role == .assistant, let parts = messages[index].parts
         else { return }
 
-        let answered = CoachUIParts.responding(parts, approvalId: approvalId, approved: approved)
+        let answered = CoachUIParts.responding(
+            parts,
+            approvalId: approvalId,
+            approved: approved,
+            replacingInput: replacingInput
+        )
         messages[index].parts = answered
         failure = nil
 

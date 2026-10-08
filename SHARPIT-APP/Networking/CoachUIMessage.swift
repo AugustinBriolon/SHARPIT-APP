@@ -182,7 +182,7 @@ nonisolated struct CoachUIMessageAssembler {
 /// Reading and answering a turn's parts: the web's `coach-tool-parts.ts` and the SDK's
 /// `lastAssistantMessageIsCompleteWithApprovalResponses`.
 nonisolated enum CoachUIParts {
-    /// The tools that change the athlete's calendar or context, and so wait for their approval.
+    /// The tools that change the athlete's calendar, context or food log, and so wait for approval.
     static let calendarToolTypes: Set<String> = [
         "tool-createPlannedSession",
         "tool-createBrickSession",
@@ -190,6 +190,7 @@ nonisolated enum CoachUIParts {
         "tool-deletePlannedSession",
         "tool-setTravelContext",
         "tool-setTrainingConstraint",
+        "tool-logFoods",
     ]
 
     /// The reasons the web attaches to an answer (`coach-approval-reason.ts`) — the model reads them.
@@ -215,10 +216,12 @@ nonisolated enum CoachUIParts {
     }
 
     /// Records the athlete's answer on the part awaiting it.
+    /// `replacingInput` swaps the tool input before approval (e.g. edited meal / grams on logFoods).
     static func responding(
         _ parts: [JSONValue],
         approvalId: String,
-        approved: Bool
+        approved: Bool,
+        replacingInput: JSONValue? = nil
     ) -> [JSONValue] {
         parts.map { part in
             guard case .object(var object) = part,
@@ -230,6 +233,9 @@ nonisolated enum CoachUIParts {
             approval["approved"] = .bool(approved)
             approval["reason"] = .string(approved ? approvedReason : deniedReason)
             object["approval"] = .object(approval)
+            if approved, let replacingInput {
+                object["input"] = replacingInput
+            }
             return .object(object)
         }
     }

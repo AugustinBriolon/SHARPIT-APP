@@ -46,6 +46,10 @@ nonisolated enum JSONValue: Codable, Hashable, Sendable {
         if case .string(let value) = self { value } else { nil }
     }
 
+    var number: Double? {
+        if case .number(let value) = self { value } else { nil }
+    }
+
     var array: [JSONValue]? {
         if case .array(let value) = self { value } else { nil }
     }
