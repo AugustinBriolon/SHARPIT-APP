@@ -497,8 +497,9 @@ nonisolated struct FoodQuickAdd: Sendable, Equatable, Hashable {
 }
 
 /// One food line from `POST /api/v1/food-log/describe` (portion macros + per-100 g for edits).
+/// `product` is set when the server linked the name to eaten / own / Ciqual / OFF.
 nonisolated struct V1DescribedFood: Decodable, Sendable, Equatable, Identifiable {
-    var id: String { "\(name)-\(grams)" }
+    var id: String { product?.id ?? "\(name)-\(grams)" }
     let name: String
     let grams: Double
     let kcal: Double
@@ -506,6 +507,31 @@ nonisolated struct V1DescribedFood: Decodable, Sendable, Equatable, Identifiable
     let carbs: Double
     let fat: Double
     let per100g: V1DescribedFoodPer100g
+    let product: V1FoodProduct?
+    /// `eaten`, `own`, `generic`, or `product` (Open Food Facts) when matched.
+    let match: String?
+
+    init(
+        name: String,
+        grams: Double,
+        kcal: Double,
+        protein: Double,
+        carbs: Double,
+        fat: Double,
+        per100g: V1DescribedFoodPer100g,
+        product: V1FoodProduct? = nil,
+        match: String? = nil
+    ) {
+        self.name = name
+        self.grams = grams
+        self.kcal = kcal
+        self.protein = protein
+        self.carbs = carbs
+        self.fat = fat
+        self.per100g = per100g
+        self.product = product
+        self.match = match
+    }
 }
 
 nonisolated struct V1DescribedFoodPer100g: Decodable, Sendable, Equatable {

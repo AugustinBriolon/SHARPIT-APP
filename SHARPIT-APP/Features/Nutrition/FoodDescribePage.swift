@@ -140,12 +140,23 @@ struct FoodDescribePage: View {
 
             Section(
                 eyebrow: "Aliments",
-                footer: "Ajuste les grammes ; les macros suivent. Glisse pour retirer une ligne."
+                footer: "Ajuste les grammes ; les macros suivent. Un aliment connu garde sa note. Glisse pour retirer une ligne."
             ) {
                 ForEach($items) { $line in
                     VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        Text(line.name)
-                            .font(SharpitTypography.body.weight(.semibold))
+                        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+                            Text(line.name)
+                                .font(SharpitTypography.body.weight(.semibold))
+                            Spacer(minLength: 0)
+                            if let health = line.product?.health, health.coverage != .none {
+                                FoodHealthBadge(health: health)
+                            }
+                        }
+                        if let caption = line.matchCaption {
+                            Text(caption)
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.mutedForeground)
+                        }
                         FoodNumberRow(title: "Portion", unit: "g", text: $line.gramsText)
                         Text(line.macrosCaption)
                             .font(SharpitTypography.meta)
@@ -187,22 +198,36 @@ struct FoodDescribePage: View {
     }
 }
 
-/// Editable review row: name + grams; macros from per-100 g.
+/// Editable review row: name + grams; macros from per-100 g. Logs a product when matched.
 struct DescribedFoodLine: Identifiable, Equatable {
     let id: UUID
     var name: String
     var gramsText: String
     var per100g: V1DescribedFoodPer100g
+    var product: V1FoodProduct?
+    var match: String?
 
     init(from food: V1DescribedFood) {
         id = UUID()
         name = food.name
         gramsText = String(Int(food.grams.rounded()))
         per100g = food.per100g
+        product = food.product
+        match = food.match
     }
 
     var gramsValue: Double? {
         FoodLogForm.grams(gramsText)
+    }
+
+    var matchCaption: String? {
+        switch match {
+        case "eaten": return "Déjà mangé"
+        case "own": return "Tes aliments"
+        case "generic": return "Table Ciqual"
+        case "product": return "Open Food Facts"
+        default: return product == nil ? "Estimation (sans note)" : nil
+        }
     }
 
     var macrosCaption: String {
@@ -217,6 +242,14 @@ struct DescribedFoodLine: Identifiable, Equatable {
 
     func draft(trainingDayId: String, meal: FoodLogMeal) -> FoodLogDraft? {
         guard let grams = gramsValue, grams > 0 else { return nil }
+        if let product {
+            return FoodLogDraft(
+                trainingDayId: trainingDayId,
+                meal: meal,
+                grams: grams,
+                source: .product(product)
+            )
+        }
         let factor = grams / 100
         return FoodLogDraft(
             trainingDayId: trainingDayId,
