@@ -44,7 +44,7 @@ final class GoogleCalendarPickerStore {
             } else if phaseBeforeLoad != .loading {
                 phase = phaseBeforeLoad
             } else {
-                phase = .ready
+                phase = .failed(.load("Chargement interrompu. Réessaie."))
             }
         } catch {
             phase = .failed(Self.failure(for: error))
@@ -54,6 +54,7 @@ final class GoogleCalendarPickerStore {
     /// True when the choice is saved and the sheet can close.
     func select(_ calendar: V1GoogleCalendar) async -> Bool {
         guard phase != .selecting, phase != .loading else { return false }
+        let phaseBeforeSelect = phase
         phase = .selecting
         do {
             try await SharpitRetry.run {
@@ -73,6 +74,9 @@ final class GoogleCalendarPickerStore {
             }
             phase = .ready
             return true
+        } catch is CancellationError {
+            phase = phaseBeforeSelect
+            return false
         } catch {
             phase = .failed(Self.failure(for: error))
             return false

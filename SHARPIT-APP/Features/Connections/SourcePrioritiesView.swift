@@ -171,6 +171,8 @@ struct SourcePrioritiesView: View {
             let calendars = try await googleClient.googleCalendars(token: token)
             googleWriteTargetName = calendars.first(where: \.isTarget)?.summary
             googleWriteTargetHint = nil
+        } catch is CancellationError {
+            return
         } catch SharpitAPIError.googleNeedsReconnect(let message) {
             googleWriteTargetName = nil
             googleWriteTargetHint = message
