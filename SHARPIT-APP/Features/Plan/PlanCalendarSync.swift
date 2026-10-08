@@ -151,7 +151,7 @@ final class AppleCalendarSync {
                     guard let id = AppleCalendarPull.sessionId(fromSharpitURL: event.url) else { return true }
                     return !pull.skipApplySessionIds.contains(id)
                 }
-            apply(wanted, to: writeCalendar, from: start, to: end)
+            apply(wanted, to: writeCalendar, from: start, to: end, preserveSessionIds: pull.skipApplySessionIds)
             persistSyncedSessionIds(pull.syncedSessionIds, afterWriting: wanted)
         } catch {
             // Offline or signed out: the calendar keeps what it holds.
@@ -313,7 +313,13 @@ final class AppleCalendarSync {
         }
     }
 
-    private func apply(_ wanted: [PlanCalendarEvent], to calendar: EKCalendar, from start: Date, to end: Date) {
+    private func apply(
+        _ wanted: [PlanCalendarEvent],
+        to calendar: EKCalendar,
+        from start: Date,
+        to end: Date,
+        preserveSessionIds: Set<String>
+    ) {
         let predicate = store.predicateForEvents(withStart: start, end: end, calendars: [calendar])
         var existing = Dictionary(
             store.events(matching: predicate).compactMap { event in event.url.map { ($0, event) } },
@@ -331,6 +337,9 @@ final class AppleCalendarSync {
             try? store.save(target, span: .thisEvent, commit: false)
         }
         for stale in existing.values {
+            if let url = stale.url, AppleCalendarPull.retainEventDuringSkipApply(url: url, preserveSessionIds: preserveSessionIds) {
+                continue
+            }
             try? store.remove(stale, span: .thisEvent, commit: false)
         }
         try? store.commit()

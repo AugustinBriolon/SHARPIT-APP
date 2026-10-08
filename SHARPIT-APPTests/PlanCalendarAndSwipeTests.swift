@@ -56,6 +56,17 @@ import Testing
         let fields = AppleCalendarPull.clearScheduleFields()
         #expect(fields["startTime"] == .null)
     }
+
+    @Test func skipApplyPreservesEventKitRowFromStaleDeletion() {
+        let url = PlanCalendarPlanner.url(for: "sess-1")
+        let preserve: Set<String> = ["sess-1"]
+        #expect(AppleCalendarPull.retainEventDuringSkipApply(url: url, preserveSessionIds: preserve))
+        #expect(!AppleCalendarPull.retainEventDuringSkipApply(url: url, preserveSessionIds: []))
+        #expect(!AppleCalendarPull.retainEventDuringSkipApply(
+            url: URL(string: "https://example.com")!,
+            preserveSessionIds: preserve
+        ))
+    }
 }
 
 @Suite struct PlanCalendarPlannerTests {

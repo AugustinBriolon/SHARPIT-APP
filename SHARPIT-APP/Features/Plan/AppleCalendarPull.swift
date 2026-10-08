@@ -18,6 +18,12 @@ nonisolated enum AppleCalendarPull {
         wasOnWriteCalendar || wasSyncedBefore
     }
 
+    /// Skip-apply after a failed pull-back PATCH: do not delete the EventKit row until retry succeeds or TTL expires.
+    static func retainEventDuringSkipApply(url: URL, preserveSessionIds: Set<String>) -> Bool {
+        guard let id = sessionId(fromSharpitURL: url) else { return false }
+        return preserveSessionIds.contains(id)
+    }
+
     static func clearScheduleFields() -> PlannedSessionFields {
         var fields = PlannedSessionFields()
         fields.setStartTime(nil)
