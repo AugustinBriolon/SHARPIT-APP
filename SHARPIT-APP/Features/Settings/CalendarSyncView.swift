@@ -5,7 +5,7 @@ struct CalendarSyncView: View {
     let tokenProvider: () async throws -> String
 
     @Environment(ProStore.self) private var pro: ProStore?
-    @State private var isOn = PlanCalendarSync.shared.isEnabled
+    @State private var isOn = AppleCalendarSync.shared.isEnabled
     @State private var refused = false
 
     var body: some View {
@@ -45,18 +45,23 @@ struct CalendarSyncView: View {
         refused = false
         Task {
             if on {
-                guard await PlanCalendarSync.shared.enable() else {
+                guard await AppleCalendarSync.shared.enable() else {
                     isOn = false
                     refused = true
                     return
                 }
-                await PlanCalendarSync.shared.refresh(
+                let client = SharpitClient()
+                await AppleCalendarSync.shared.refresh(
                     isPro: pro?.isPro ?? false,
                     plan: PlannedSessionClient(),
-                    tokenProvider: tokenProvider
+                    tokenProvider: tokenProvider,
+                    sourcePrefsClient: client,
+                    sessionWriter: PlannedSessionClient(),
+                    busyClient: client,
+                    calendarLinker: client
                 )
             } else {
-                PlanCalendarSync.shared.disable()
+                AppleCalendarSync.shared.disable()
             }
         }
     }

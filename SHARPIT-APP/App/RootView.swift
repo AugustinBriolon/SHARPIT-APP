@@ -210,11 +210,15 @@ struct RootView: View {
             plan: plannedSessionClient,
             tokenProvider: liveToken
         )
-        // The calendar copy (Pro) follows the plan on the same beats as the reminders.
-        await PlanCalendarSync.shared.refresh(
+        // Apple Calendar write + busy upload (Pro) when apple-calendar is primary.
+        await AppleCalendarSync.shared.refresh(
             isPro: pro?.isPro ?? false,
             plan: plannedSessionClient,
-            tokenProvider: liveToken
+            tokenProvider: liveToken,
+            sourcePrefsClient: sharpitClient,
+            sessionWriter: plannedSessionClient,
+            busyClient: sharpitClient,
+            calendarLinker: sharpitClient
         )
     }
 

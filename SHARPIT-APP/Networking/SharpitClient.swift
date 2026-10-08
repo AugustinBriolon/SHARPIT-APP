@@ -51,7 +51,7 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, RecoveryServing, EffortServing, AdaptationServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing, SourcePrefsServing, AppleHealthLinking {
+actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, RecoveryServing, EffortServing, AdaptationServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing, SourcePrefsServing, AppleHealthLinking, AppleCalendarLinking, AppleCalendarBusyServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -174,6 +174,22 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
     func linkAppleHealth(_ linked: Bool, token: String) async throws {
         let body = try JSONEncoder().encode(["linked": linked])
         _ = try await send(AppleHealthLinkResult.self, path: "/api/v1/apple-health/link", method: "POST", token: token, body: body)
+    }
+
+    func linkAppleCalendar(_ linked: Bool, token: String) async throws {
+        let body = try JSONEncoder().encode(["linked": linked])
+        _ = try await send(AppleCalendarLinkResult.self, path: "/api/v1/apple-calendar/link", method: "POST", token: token, body: body)
+    }
+
+    func uploadAppleCalendarBusy(_ intervals: [V1CalendarBusyInterval], token: String) async throws {
+        let body = try JSONEncoder().encode(V1AppleCalendarBusyUpload(intervals: intervals))
+        _ = try await send(
+            V1AppleCalendarBusyResult.self,
+            path: "/api/v1/calendar/busy",
+            method: "POST",
+            token: token,
+            body: body
+        )
     }
 
     func uploadWorkouts(_ workouts: [HealthWorkout], token: String) async throws -> HealthWorkoutUploadResult {
@@ -342,6 +358,10 @@ private nonisolated struct SourcePrefsPatchResult: Decodable {
 }
 
 private nonisolated struct AppleHealthLinkResult: Decodable {
+    let linked: Bool
+}
+
+private nonisolated struct AppleCalendarLinkResult: Decodable {
     let linked: Bool
 }
 

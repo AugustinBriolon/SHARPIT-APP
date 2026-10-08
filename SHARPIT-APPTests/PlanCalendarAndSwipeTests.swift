@@ -2,6 +2,45 @@ import Foundation
 import Testing
 @testable import Sharpit
 
+@Suite struct AppleCalendarPullTests {
+    private let calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Paris")!
+        return calendar
+    }()
+
+    private func date(_ text: String) -> Date {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        formatter.timeZone = calendar.timeZone
+        return formatter.date(from: text)!
+    }
+
+    @Test func calendarMoveWinsOverPlanStart() {
+        let planStart = date("2026-10-10T07:00:00+0200")
+        let eventStart = date("2026-10-10T18:00:00+0200")
+        let resolved = AppleCalendarPull.resolveStart(plan: planStart, event: eventStart)
+        #expect(resolved == eventStart)
+    }
+
+    @Test func planStartStaysWhenNoEvent() {
+        let planStart = date("2026-10-10T07:00:00+0200")
+        #expect(AppleCalendarPull.resolveStart(plan: planStart, event: nil) == planStart)
+    }
+
+    @Test func writeRunsOnlyWhenAppleCalendarIsPrimary() {
+        let connected = ["google", "apple-calendar"]
+        let primaryApple = V1SourcePrefs(classes: [
+            "calendar": V1ClassSources(primary: "apple-calendar", enabled: ["google", "apple-calendar"]),
+        ])
+        let primaryGoogle = V1SourcePrefs(classes: [
+            "calendar": V1ClassSources(primary: "google", enabled: ["google", "apple-calendar"]),
+        ])
+        #expect(AppleCalendarSync.shouldWrite(prefs: primaryApple, connected: connected))
+        #expect(!AppleCalendarSync.shouldWrite(prefs: primaryGoogle, connected: connected))
+    }
+}
+
 @Suite struct PlanCalendarPlannerTests {
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)

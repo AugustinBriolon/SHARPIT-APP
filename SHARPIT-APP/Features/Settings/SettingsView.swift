@@ -243,7 +243,7 @@ struct SettingsView: View {
 
     private var calendarDetail: String {
         guard pro?.isPro == true else { return "SharpIt Pro" }
-        return PlanCalendarSync.shared.isEnabled ? "Plan copié" : "Désactivé"
+        return AppleCalendarSync.shared.isEnabled ? "Plan copié" : "Désactivé"
     }
 
     // MARK: - Destinations
