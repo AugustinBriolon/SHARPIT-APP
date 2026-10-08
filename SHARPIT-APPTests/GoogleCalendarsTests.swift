@@ -40,6 +40,15 @@ private nonisolated let calendarsFixtureJSON = """
     #expect(calendars.isEmpty)
 }
 
+@Test func googleReconnectErrorBodyDecodesNeedsReconnectFlag() throws {
+    let body = try JSONDecoder().decode(
+        V1GoogleAPIError.self,
+        from: Data(#"{"error":"Relie Google Agenda.","needsReconnect":true}"#.utf8)
+    )
+    #expect(body.needsReconnect == true)
+    #expect(body.error == "Relie Google Agenda.")
+}
+
 private nonisolated final class GoogleCalendarsStubURLProtocol: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var status = 200
     nonisolated(unsafe) static var responseData = Data()
@@ -91,5 +100,20 @@ struct GoogleCalendarsNetworkTests {
         let body = try JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: Any]
         #expect(body?["calendarId"] as? String == "cal-1")
         #expect(body?["calendarName"] as? String == "Sport")
+    }
+
+    @Test func listingCalendarsSurfacesGoogleNeedsReconnectOn401() async {
+        let reconnectJSON = #"{"error":"Session Google expirée.","needsReconnect":true}"#
+        let client = GoogleCalendarsClient(session: session(status: 401, response: reconnectJSON), baseURL: base)
+        await #expect(throws: SharpitAPIError.googleNeedsReconnect("Session Google expirée.")) {
+            _ = try await client.googleCalendars(token: "tok")
+        }
+    }
+
+    @Test func listingCalendarsStillUsesUnauthorizedWhen401HasNoReconnectFlag() async {
+        let client = GoogleCalendarsClient(session: session(status: 401, response: #"{"error":"Unauthorized"}"#), baseURL: base)
+        await #expect(throws: SharpitAPIError.unauthorized) {
+            _ = try await client.googleCalendars(token: "tok")
+        }
     }
 }

@@ -9,6 +9,12 @@ nonisolated struct V1GoogleCalendar: Decodable, Identifiable, Sendable, Equatabl
     let isTarget: Bool
 }
 
+/// Error JSON from `/api/v1/google/*` when Google OAuth must be renewed (`needsReconnect: true`, 401).
+nonisolated struct V1GoogleAPIError: Decodable, Sendable, Equatable {
+    let error: String?
+    let needsReconnect: Bool?
+}
+
 nonisolated protocol GoogleCalendarsServing: Sendable {
     func googleCalendars(token: String) async throws -> [V1GoogleCalendar]
     func selectGoogleCalendar(calendarId: String, calendarName: String?, token: String) async throws
@@ -64,11 +70,16 @@ actor GoogleCalendarsClient: GoogleCalendarsServing {
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
+            let googleError = try? JSONDecoder().decode(V1GoogleAPIError.self, from: data)
+            if status == 401, googleError?.needsReconnect == true {
+                let message = googleError?.error
+                    ?? "Session Google expirée ou révoquée. Reconnecte Google Calendar dans les paramètres."
+                throw SharpitAPIError.googleNeedsReconnect(message)
+            }
             if status == 401 || status == 403 { throw SharpitAPIError.unauthorized }
             if status == 429 { throw SharpitAPIError.rateLimited }
             if status >= 500 { throw SharpitAPIError.server }
-            if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let message = object["error"] as? String {
+            if let message = googleError?.error {
                 throw SharpitAPIError.message(message)
             }
             throw SharpitAPIError.badRequest

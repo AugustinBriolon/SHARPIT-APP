@@ -11,6 +11,8 @@ nonisolated enum SharpitErrorGuidance {
             "Trop de demandes d'affilée. Réessaie dans une minute."
         case .unauthorized?:
             "Ta session a expiré. Reconnecte-toi depuis Paramètres › Compte."
+        case .googleNeedsReconnect(let text):
+            text
         default:
             "\(subject) n'a pas pu être chargé. Le serveur n'a pas répondu, réessaie dans un instant."
         }
