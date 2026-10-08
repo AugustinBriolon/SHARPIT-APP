@@ -19,6 +19,7 @@ struct ConnectionsView: View {
     let tokenProvider: () async throws -> String
     var garminClient: any GarminHandoffServing = SharpitClient()
     var disconnectClient: any SourceDisconnecting = SourceDisconnectClient()
+    var sourcePrefsClient: any SourcePrefsServing = SharpitClient()
 
     @Environment(SharpitToastCenter.self) private var toastCenter
     @Environment(Clerk.self) private var clerk
@@ -346,5 +347,8 @@ struct ConnectionsView: View {
         defer { toastCenter.dismiss(token) }
         guard let tok = try? await tokenProvider() else { return }
         status = try? await syncClient.syncStatus(token: tok)
+        if let answer = try? await sourcePrefsClient.sourcePrefs(token: tok) {
+            appleCalendar.syncLinkedFromServer(answer.connected.contains(AppleCalendarSync.providerId))
+        }
     }
 }

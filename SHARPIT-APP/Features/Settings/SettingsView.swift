@@ -282,7 +282,7 @@ struct SettingsView: View {
         case .feedback:
             FeedbackView(tokenProvider: tokenProvider)
         case .calendar:
-            SourcePrioritiesView(tokenProvider: tokenProvider)
+            SourcePrioritiesView(tokenProvider: tokenProvider, appleCalendar: appleCalendar)
         case .density:
             DisplayModeView(
                 client: profileClient,
