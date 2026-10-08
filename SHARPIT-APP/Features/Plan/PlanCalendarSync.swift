@@ -108,7 +108,6 @@ final class AppleCalendarSync {
         if let calendar = existingWriteCalendar(), calendar.title == Self.calendarTitle {
             try? store.removeCalendar(calendar, commit: true)
         }
-        writeCalendarIdentifier = nil
         defaults.removeObject(forKey: Self.legacyCalendarIdKey)
         defaults.removeObject(forKey: Self.syncedSessionIdsKey)
         defaults.removeObject(forKey: Self.skipApplyUntilKey)
