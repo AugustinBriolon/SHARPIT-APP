@@ -111,7 +111,6 @@ final class AppleCalendarSync {
         writeCalendarIdentifier = nil
         defaults.removeObject(forKey: Self.legacyCalendarIdKey)
         defaults.removeObject(forKey: Self.syncedSessionIdsKey)
-        defaults.removeObject(forKey: Self.clearedSessionIdsKey)
         defaults.removeObject(forKey: Self.skipApplyUntilKey)
     }
 
@@ -197,9 +196,14 @@ final class AppleCalendarSync {
     ) async -> PullBackResult {
         let allCalendars = store.calendars(for: .event)
         let allPredicate = store.predicateForEvents(withStart: start, end: end, calendars: allCalendars)
+        let writeCalendarId = writeCalendar.calendarIdentifier
         let eventsEverywhere = Dictionary(
             store.events(matching: allPredicate).compactMap { event in event.url.map { ($0, event) } },
-            uniquingKeysWith: { first, _ in first }
+            uniquingKeysWith: { a, b in
+                if a.calendar.calendarIdentifier == writeCalendarId { return a }
+                if b.calendar.calendarIdentifier == writeCalendarId { return b }
+                return a
+            }
         )
         let writePredicate = store.predicateForEvents(withStart: start, end: end, calendars: [writeCalendar])
         let onWriteCalendar = Set(
