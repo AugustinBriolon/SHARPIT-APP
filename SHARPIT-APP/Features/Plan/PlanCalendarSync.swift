@@ -56,30 +56,89 @@ nonisolated enum PlanCalendarPlanner {
     }
 }
 
-/// Copies the plan into a « SharpIt » calendar on the iPhone (SharpIt Pro). Each refresh makes
-/// the calendar equal to the plan over the next three weeks: a session moved moves its event, a
-/// session removed removes it. Only events SharpIt wrote are ever touched — they live in their
-/// own calendar, keyed by their link.
+/// Apple Calendar: busy upload when enabled; EventKit write when Pro and apple-calendar is primary.
 @MainActor
-final class PlanCalendarSync {
-    static let shared = PlanCalendarSync()
+final class AppleCalendarSync {
+    static let shared = AppleCalendarSync()
 
+    static let providerId = "apple-calendar"
+    static let calendarClassId = "calendar"
     static let enabledKey = "planCalendarSync.enabled"
-    private static let calendarIdKey = "planCalendarSync.calendarId"
+    static let writeCalendarIdKey = "appleCalendar.writeCalendarId"
+    static let syncedSessionIdsKey = "appleCalendar.syncedSessionIds"
+    static let clearedSessionIdsKey = "appleCalendar.clearedSessionIds"
+    static let skipApplyUntilKey = "appleCalendar.skipApplySessionUntil"
+    private static let skipApplyTTL: TimeInterval = 5 * 60
+    private static let legacyCalendarIdKey = "planCalendarSync.calendarId"
     static let calendarTitle = "SharpIt"
 
     private let store = EKEventStore()
     private let defaults: UserDefaults
+    private let calendar: Calendar
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, calendar: Calendar = .current) {
         self.defaults = defaults
+        self.calendar = calendar
+        migrateWriteCalendarIdIfNeeded()
     }
 
     var isEnabled: Bool { defaults.bool(forKey: Self.enabledKey) }
 
+    var writeCalendarIdentifier: String? {
+        get { defaults.string(forKey: Self.writeCalendarIdKey) }
+        set {
+            if let newValue {
+                defaults.set(newValue, forKey: Self.writeCalendarIdKey)
+            } else {
+                defaults.removeObject(forKey: Self.writeCalendarIdKey)
+            }
+        }
+    }
+
+    static let legacyMigrationDoneKey = "appleCalendar.legacyMigrationDone"
+
+    /// EventKit full access — does not touch legacy `planCalendarSync.enabled`.
+    func requestAccess() async -> Bool {
+        if EKEventStore.authorizationStatus(for: .event) == .fullAccess { return true }
+        return (try? await store.requestFullAccessToEvents()) ?? false
+    }
+
+    /// Writable calendars on this iPhone (after EventKit access).
+    func writableCalendars() -> [EKCalendar] {
+        guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else { return [] }
+        return store.calendars(for: .event).filter(\.allowsContentModifications)
+    }
+
+    func selectedWriteCalendarTitle() -> String? {
+        guard let id = writeCalendarIdentifier else { return nil }
+        return writableCalendars().first(where: { $0.calendarIdentifier == id })?.title
+    }
+
+    /// Athletes who used Paramètres › Calendrier de l'iPhone: link on the web, keep the SharpIt calendar id.
+    @discardableResult
+    func migrateLegacyPlanCalendarSync(calendarLinker: any AppleCalendarLinking, token: String) async -> Bool {
+        guard !defaults.bool(forKey: Self.legacyMigrationDoneKey) else { return false }
+        guard defaults.bool(forKey: Self.enabledKey) else {
+            defaults.set(true, forKey: Self.legacyMigrationDoneKey)
+            return false
+        }
+        migrateWriteCalendarIdIfNeeded()
+        guard await requestAccess() else { return false }
+        do {
+            try await SharpitRetry.run {
+                try await calendarLinker.linkAppleCalendar(true, token: token)
+            }
+        } catch {
+            return false
+        }
+        defaults.set(true, forKey: Self.legacyMigrationDoneKey)
+        defaults.set(false, forKey: Self.enabledKey)
+        return true
+    }
+
     /// Asks iOS for the calendar, then turns the copy on. False when the athlete refused.
     func enable() async -> Bool {
-        let granted = (try? await store.requestFullAccessToEvents()) ?? false
+        let granted = await requestAccess()
         defaults.set(granted, forKey: Self.enabledKey)
         return granted
     }
@@ -87,31 +146,248 @@ final class PlanCalendarSync {
     /// Turns the copy off and removes the SharpIt calendar with every event it held.
     func disable() {
         defaults.set(false, forKey: Self.enabledKey)
-        if let calendar = existingCalendar() {
+        if let calendar = existingWriteCalendar(), calendar.title == Self.calendarTitle {
             try? store.removeCalendar(calendar, commit: true)
         }
-        defaults.removeObject(forKey: Self.calendarIdKey)
+        defaults.removeObject(forKey: Self.legacyCalendarIdKey)
+        defaults.removeObject(forKey: Self.syncedSessionIdsKey)
+        defaults.removeObject(forKey: Self.skipApplyUntilKey)
     }
 
     func refresh(
         isPro: Bool,
         plan: any PlannedSessionServing,
         tokenProvider: () async throws -> String,
+        sourcePrefsClient: any SourcePrefsServing = SharpitClient(),
+        sessionWriter: (any PlannedSessionMutating)? = nil,
+        busyClient: (any AppleCalendarBusyServing)? = nil,
+        calendarLinker: (any AppleCalendarLinking)? = nil,
         now: Date = .now
     ) async {
-        guard isEnabled, isPro, EKEventStore.authorizationStatus(for: .event) == .fullAccess else { return }
-        let start = Calendar.current.startOfDay(for: now)
-        let end = Calendar.current.date(byAdding: .day, value: PlanCalendarPlanner.horizonDays, to: start) ?? now
+        guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else { return }
+        let start = calendar.startOfDay(for: now)
+        let end = calendar.date(byAdding: .day, value: PlanCalendarPlanner.horizonDays, to: start) ?? now
         do {
-            let sessions = try await plan.plannedSessions(from: start, to: end, token: try await tokenProvider())
-            guard let calendar = sharpitCalendar() else { return }
-            apply(PlanCalendarPlanner.events(for: sessions), to: calendar, from: start, to: end)
+            let token = try await tokenProvider()
+            let prefsAnswer = try await sourcePrefsClient.sourcePrefs(token: token)
+            if Self.shouldUploadBusy(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) {
+                await uploadBusy(from: start, to: end, client: busyClient, token: token)
+            }
+            guard isPro else { return }
+            guard Self.shouldWrite(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) else { return }
+            guard let sessionWriter else { return }
+            _ = try? await calendarLinker?.linkAppleCalendar(true, token: token)
+            var sessions = try await plan.plannedSessions(from: start, to: end, token: token)
+            guard let writeCalendar = writeCalendar() else { return }
+            let pull = await pullBack(
+                sessions: sessions,
+                writeCalendar: writeCalendar,
+                from: start,
+                to: end,
+                writer: sessionWriter,
+                token: token
+            )
+            sessions = pull.sessions
+            let clearedAfterUnlinkIds = AppleCalendarPull.clearedAfterUnlinkIds(
+                stored: pull.clearedSessionIds,
+                sessions: sessions
+            )
+            persistClearedSessionIds(clearedAfterUnlinkIds)
+            let wanted = PlanCalendarPlanner.events(for: sessions, calendar: calendar)
+                .filter { event in
+                    guard let id = AppleCalendarPull.sessionId(fromSharpitURL: event.url) else { return true }
+                    if pull.skipApplySessionIds.contains(id) { return false }
+                    return AppleCalendarPull.shouldWriteSessionToCalendar(
+                        sessionId: id,
+                        clearedAfterUnlinkIds: clearedAfterUnlinkIds
+                    )
+                }
+            apply(wanted, to: writeCalendar, from: start, to: end, preserveSessionIds: pull.skipApplySessionIds)
+            persistSyncedSessionIds(pull.syncedSessionIds, afterWriting: wanted)
         } catch {
             // Offline or signed out: the calendar keeps what it holds.
         }
     }
 
-    private func apply(_ wanted: [PlanCalendarEvent], to calendar: EKCalendar, from start: Date, to end: Date) {
+    static func shouldWrite(prefs: V1SourcePrefs, connected: [String]) -> Bool {
+        guard connected.contains(providerId) else { return false }
+        let slot = prefs.sources(for: calendarClassId)
+        guard slot.enabled.contains(providerId) else { return false }
+        return slot.primary == providerId
+    }
+
+    static func shouldUploadBusy(prefs: V1SourcePrefs, connected: [String]) -> Bool {
+        connected.contains(providerId) && prefs.sources(for: calendarClassId).enabled.contains(providerId)
+    }
+
+    private struct PullBackResult {
+        var sessions: [V1PlannedSessionItem]
+        var skipApplySessionIds: Set<String>
+        var syncedSessionIds: Set<String>
+        var clearedSessionIds: Set<String>
+    }
+
+    private func pullBack(
+        sessions: [V1PlannedSessionItem],
+        writeCalendar: EKCalendar,
+        from start: Date,
+        to end: Date,
+        writer: any PlannedSessionMutating,
+        token: String
+    ) async -> PullBackResult {
+        let allCalendars = store.calendars(for: .event)
+        let allPredicate = store.predicateForEvents(withStart: start, end: end, calendars: allCalendars)
+        let writeCalendarId = writeCalendar.calendarIdentifier
+        let eventsEverywhere = Dictionary(
+            store.events(matching: allPredicate).compactMap { event in event.url.map { ($0, event) } },
+            uniquingKeysWith: { a, b in
+                if a.calendar.calendarIdentifier == writeCalendarId { return a }
+                if b.calendar.calendarIdentifier == writeCalendarId { return b }
+                return a
+            }
+        )
+        let writePredicate = store.predicateForEvents(withStart: start, end: end, calendars: [writeCalendar])
+        let onWriteCalendar = Set(
+            store.events(matching: writePredicate).compactMap { event in event.url.flatMap(AppleCalendarPull.sessionId(fromSharpitURL:)) }
+        )
+        var syncedSessionIds = Set(defaults.stringArray(forKey: Self.syncedSessionIdsKey) ?? [])
+        var clearedSessionIds = Set(defaults.stringArray(forKey: Self.clearedSessionIdsKey) ?? [])
+        var skipApplySessionIds = loadSkipApplySessionIds()
+        var updated = sessions
+        for (index, session) in sessions.enumerated() {
+            let url = PlanCalendarPlanner.url(for: session.id)
+            guard let ekEvent = eventsEverywhere[url] else {
+                if AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(
+                    wasOnWriteCalendar: onWriteCalendar.contains(session.id),
+                    wasSyncedBefore: syncedSessionIds.contains(session.id)
+                ) {
+                    skipApplySessionIds.insert(session.id)
+                    do {
+                        updated[index] = try await writer.updateSession(
+                            id: session.id,
+                            fields: AppleCalendarPull.clearScheduleFields(),
+                            token: token
+                        )
+                        syncedSessionIds.remove(session.id)
+                        clearedSessionIds.insert(session.id)
+                        clearSkipApply(sessionId: session.id)
+                    } catch {
+                        markSkipApply(sessionId: session.id)
+                    }
+                }
+                continue
+            }
+            guard let planStart = AppleCalendarPull.planStart(for: session, calendar: calendar) else { continue }
+            let resolved = AppleCalendarPull.resolveStart(plan: planStart, event: ekEvent.startDate)
+            guard AppleCalendarPull.scheduleDiffers(plan: planStart, resolved: resolved) else { continue }
+            let fields = AppleCalendarPull.patchFields(
+                matching: resolved,
+                isAllDay: ekEvent.isAllDay,
+                calendar: calendar
+            )
+            guard !fields.isEmpty else { continue }
+            do {
+                updated[index] = try await writer.updateSession(id: session.id, fields: fields, token: token)
+                clearSkipApply(sessionId: session.id)
+            } catch {
+                skipApplySessionIds.insert(session.id)
+                markSkipApply(sessionId: session.id)
+            }
+        }
+        return PullBackResult(
+            sessions: updated,
+            skipApplySessionIds: skipApplySessionIds,
+            syncedSessionIds: syncedSessionIds,
+            clearedSessionIds: clearedSessionIds
+        )
+    }
+
+    private func loadSkipApplySessionIds(now: Date = .now) -> Set<String> {
+        guard let raw = defaults.dictionary(forKey: Self.skipApplyUntilKey) as? [String: Double] else { return [] }
+        let nowTs = now.timeIntervalSince1970
+        var active = Set<String>()
+        var pruned: [String: Double] = [:]
+        for (sessionId, expiry) in raw where expiry > nowTs {
+            active.insert(sessionId)
+            pruned[sessionId] = expiry
+        }
+        if pruned.count != raw.count {
+            defaults.set(pruned, forKey: Self.skipApplyUntilKey)
+        }
+        return active
+    }
+
+    private func markSkipApply(sessionId: String, now: Date = .now) {
+        var raw = (defaults.dictionary(forKey: Self.skipApplyUntilKey) as? [String: Double]) ?? [:]
+        raw[sessionId] = now.addingTimeInterval(Self.skipApplyTTL).timeIntervalSince1970
+        defaults.set(raw, forKey: Self.skipApplyUntilKey)
+    }
+
+    private func clearSkipApply(sessionId: String) {
+        guard var raw = defaults.dictionary(forKey: Self.skipApplyUntilKey) as? [String: Double] else { return }
+        raw.removeValue(forKey: sessionId)
+        if raw.isEmpty {
+            defaults.removeObject(forKey: Self.skipApplyUntilKey)
+        } else {
+            defaults.set(raw, forKey: Self.skipApplyUntilKey)
+        }
+    }
+
+    private func persistSyncedSessionIds(_ baseline: Set<String>, afterWriting wanted: [PlanCalendarEvent]) {
+        var ids = baseline
+        for event in wanted {
+            if let id = AppleCalendarPull.sessionId(fromSharpitURL: event.url) {
+                ids.insert(id)
+            }
+        }
+        defaults.set(Array(ids), forKey: Self.syncedSessionIdsKey)
+    }
+
+    private func persistClearedSessionIds(_ ids: Set<String>) {
+        if ids.isEmpty {
+            defaults.removeObject(forKey: Self.clearedSessionIdsKey)
+        } else {
+            defaults.set(Array(ids), forKey: Self.clearedSessionIdsKey)
+        }
+    }
+
+    private func uploadBusy(
+        from start: Date,
+        to end: Date,
+        client: (any AppleCalendarBusyServing)?,
+        token: String
+    ) async {
+        guard let client else { return }
+        let intervals = busyIntervals(from: start, to: end)
+        guard !intervals.isEmpty else { return }
+        do {
+            try await client.uploadAppleCalendarBusy(intervals, token: token)
+        } catch {
+            SharpitWriteFailures.shared.report("Créneaux occupés : envoi impossible. Réessaie plus tard.")
+        }
+    }
+
+    private func busyIntervals(from start: Date, to end: Date) -> [V1CalendarBusyInterval] {
+        let calendars = store.calendars(for: .event)
+        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: calendars)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let capped = store.events(matching: predicate).prefix(2_000)
+        return capped.map {
+            V1CalendarBusyInterval(
+                start: formatter.string(from: $0.startDate),
+                end: formatter.string(from: $0.endDate)
+            )
+        }
+    }
+
+    private func apply(
+        _ wanted: [PlanCalendarEvent],
+        to calendar: EKCalendar,
+        from start: Date,
+        to end: Date,
+        preserveSessionIds: Set<String>
+    ) {
         let predicate = store.predicateForEvents(withStart: start, end: end, calendars: [calendar])
         var existing = Dictionary(
             store.events(matching: predicate).compactMap { event in event.url.map { ($0, event) } },
@@ -129,17 +405,27 @@ final class PlanCalendarSync {
             try? store.save(target, span: .thisEvent, commit: false)
         }
         for stale in existing.values {
+            if let url = stale.url, AppleCalendarPull.retainEventDuringSkipApply(url: url, preserveSessionIds: preserveSessionIds) {
+                continue
+            }
             try? store.remove(stale, span: .thisEvent, commit: false)
         }
         try? store.commit()
     }
 
-    private func existingCalendar() -> EKCalendar? {
-        defaults.string(forKey: Self.calendarIdKey).flatMap { store.calendar(withIdentifier: $0) }
+    private func migrateWriteCalendarIdIfNeeded() {
+        guard writeCalendarIdentifier == nil,
+              let legacy = defaults.string(forKey: Self.legacyCalendarIdKey)
+        else { return }
+        writeCalendarIdentifier = legacy
     }
 
-    private func sharpitCalendar() -> EKCalendar? {
-        if let calendar = existingCalendar() { return calendar }
+    private func existingWriteCalendar() -> EKCalendar? {
+        writeCalendarIdentifier.flatMap { store.calendar(withIdentifier: $0) }
+    }
+
+    private func writeCalendar() -> EKCalendar? {
+        if let calendar = existingWriteCalendar() { return calendar }
         let calendar = EKCalendar(for: .event, eventStore: store)
         calendar.title = Self.calendarTitle
         guard let source = store.defaultCalendarForNewEvents?.source ?? store.sources.first(where: { $0.sourceType == .local })
@@ -147,10 +433,13 @@ final class PlanCalendarSync {
         calendar.source = source
         do {
             try store.saveCalendar(calendar, commit: true)
-            defaults.set(calendar.calendarIdentifier, forKey: Self.calendarIdKey)
+            writeCalendarIdentifier = calendar.calendarIdentifier
+            defaults.removeObject(forKey: Self.legacyCalendarIdKey)
             return calendar
         } catch {
             return nil
         }
     }
 }
+
+typealias PlanCalendarSync = AppleCalendarSync

@@ -13,6 +13,7 @@ import UserNotifications
 /// Plan, the coach's memory to Coach.
 struct SettingsView: View {
     let appleHealth: AppleHealthSource
+    let appleCalendar: AppleCalendarSource
     let syncClient: any SyncServing
     let profileClient: any AthleteProfileServing & BodyCompositionServing
     let displayMode: DisplayModeStore
@@ -32,6 +33,7 @@ struct SettingsView: View {
 
     init(
         appleHealth: AppleHealthSource,
+        appleCalendar: AppleCalendarSource,
         syncClient: any SyncServing,
         profileClient: any AthleteProfileServing & BodyCompositionServing,
         displayMode: DisplayModeStore,
@@ -43,6 +45,7 @@ struct SettingsView: View {
     ) {
         _path = State(initialValue: route.map { [$0] } ?? [])
         self.appleHealth = appleHealth
+        self.appleCalendar = appleCalendar
         self.syncClient = syncClient
         self.profileClient = profileClient
         self.displayMode = displayMode
@@ -90,7 +93,12 @@ struct SettingsView: View {
                         }
                         SettingsDivider()
                         NavigationLink(value: SettingsRoute.calendar) {
-                            SettingsRow(symbol: "calendar", tint: SettingsTone.calendar, title: "Calendrier de l'iPhone", detail: calendarDetail)
+                            SettingsRow(
+                                symbol: "calendar",
+                                tint: SettingsTone.calendar,
+                                title: "Calendrier de l'iPhone",
+                                detail: "Gérer dans Sources › Priorités"
+                            )
                         }
                     }
                     .buttonStyle(.plain)
@@ -241,11 +249,6 @@ struct SettingsView: View {
         .padding(.top, SharpitSpacing.sm)
     }
 
-    private var calendarDetail: String {
-        guard pro?.isPro == true else { return "SharpIt Pro" }
-        return PlanCalendarSync.shared.isEnabled ? "Plan copié" : "Désactivé"
-    }
-
     // MARK: - Destinations
 
     @ViewBuilder
@@ -258,7 +261,12 @@ struct SettingsView: View {
                 ProView(store: pro)
             }
         case .sources:
-            ConnectionsView(appleHealth: appleHealth, syncClient: syncClient, tokenProvider: tokenProvider)
+            ConnectionsView(
+                appleHealth: appleHealth,
+                appleCalendar: appleCalendar,
+                syncClient: syncClient,
+                tokenProvider: tokenProvider
+            )
         case .equipment:
             EquipmentView(client: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
         case .thresholds:
@@ -274,7 +282,7 @@ struct SettingsView: View {
         case .feedback:
             FeedbackView(tokenProvider: tokenProvider)
         case .calendar:
-            CalendarSyncView(tokenProvider: tokenProvider)
+            SourcePrioritiesView(tokenProvider: tokenProvider, appleCalendar: appleCalendar)
         case .density:
             DisplayModeView(
                 client: profileClient,

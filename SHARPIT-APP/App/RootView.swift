@@ -20,6 +20,7 @@ struct RootView: View {
     private let profileClient = AthleteProfileClient()
     /// Shared by Today, which sends on each sync, and Moi, where it is switched on.
     @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
+    @State private var appleCalendar = AppleCalendarSource(client: SharpitClient())
     /// The reading density, read once and handed to every surface through the environment.
     @State private var displayMode = DisplayModeStore(client: AthleteProfileClient())
     /// The parts of SharpIt the athlete uses: a feature off has no tab, card or widget.
@@ -114,6 +115,7 @@ struct RootView: View {
         .sheet(isPresented: $router.isShowingSettings) {
             SettingsView(
                 appleHealth: appleHealth,
+                appleCalendar: appleCalendar,
                 syncClient: sharpitClient,
                 profileClient: profileClient,
                 displayMode: displayMode,
@@ -147,6 +149,14 @@ struct RootView: View {
         // Once per athlete; a run cut off is picked up again on the next foreground.
         .task(id: clerk.user?.id) {
             appleHealth.bind(userId: clerk.user?.id)
+            appleCalendar.bind(userId: clerk.user?.id)
+            if let token = try? await liveToken(),
+               await AppleCalendarSync.shared.migrateLegacyPlanCalendarSync(
+                   calendarLinker: sharpitClient,
+                   token: token
+               ) {
+                appleCalendar.adoptLegacyMigration()
+            }
             await runHistoryImport()
         }
         .onChange(of: scenePhase) { _, phase in
@@ -210,11 +220,15 @@ struct RootView: View {
             plan: plannedSessionClient,
             tokenProvider: liveToken
         )
-        // The calendar copy (Pro) follows the plan on the same beats as the reminders.
-        await PlanCalendarSync.shared.refresh(
+        // Apple Calendar: busy when enabled; EventKit write when Pro and primary.
+        await AppleCalendarSync.shared.refresh(
             isPro: pro?.isPro ?? false,
             plan: plannedSessionClient,
-            tokenProvider: liveToken
+            tokenProvider: liveToken,
+            sourcePrefsClient: sharpitClient,
+            sessionWriter: plannedSessionClient,
+            busyClient: sharpitClient,
+            calendarLinker: sharpitClient
         )
     }
 

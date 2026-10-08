@@ -5,9 +5,23 @@ import SwiftUI
 /// fill what it lacks. A class only one source can feed shows it, with nothing to choose.
 struct SourcePrioritiesView: View {
     @State private var store: SourcePrefsStore
+    private let googleClient: any GoogleCalendarsServing
+    private let tokenProvider: () async throws -> String
+    @State private var googleWriteTargetName: String?
+    @State private var googleWriteTargetHint: String?
+    @State private var appleWriteCalendarName: String?
+    private let appleCalendar: AppleCalendarSource?
 
-    init(client: any SourcePrefsServing = SharpitClient(), tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any SourcePrefsServing = SharpitClient(),
+        googleClient: any GoogleCalendarsServing = GoogleCalendarsClient(),
+        tokenProvider: @escaping () async throws -> String,
+        appleCalendar: AppleCalendarSource? = nil
+    ) {
         _store = State(initialValue: SourcePrefsStore(client: client, tokenProvider: tokenProvider))
+        self.googleClient = googleClient
+        self.tokenProvider = tokenProvider
+        self.appleCalendar = appleCalendar
     }
 
     var body: some View {
@@ -21,7 +35,12 @@ struct SourcePrioritiesView: View {
         }
         .navigationTitle("Priorités")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await store.load() }
+        .task {
+            await store.load()
+            resyncAppleCalendarLink()
+            await refreshGoogleWriteTarget()
+            await refreshAppleWriteCalendarName()
+        }
     }
 
     private var list: some View {
@@ -45,49 +64,207 @@ struct SourcePrioritiesView: View {
     }
 
     private func footer(for sourceClass: V1SourceClass) -> String {
-        guard store.offersPrimary(in: sourceClass.id) else { return sourceClass.description }
-        return "\(sourceClass.description) La source principale fait foi ; les autres complètent ce qui lui manque."
+        let base = sourceClass.description
+        if store.canChoosePrimary(in: sourceClass.id) {
+            return "\(base) Touche le nom pour choisir la source principale ; le commutateur active ou coupe la source."
+        }
+        if store.connectedCount(in: sourceClass.id) > 1 {
+            return "\(base) Active au moins deux sources pour en choisir une principale."
+        }
+        return base
     }
 
     private func row(_ provider: V1SourceClass.Provider, in sourceClass: V1SourceClass) -> some View {
         let isEnabled = store.isEnabled(provider.id, in: sourceClass.id)
         let isPrimary = store.isPrimary(provider.id, in: sourceClass.id)
-        let choosesPrimary = store.offersPrimary(in: sourceClass.id) && isEnabled
+        let choosesPrimary = store.canChoosePrimary(in: sourceClass.id) && isEnabled
+        let showsGooglePicker = showsGoogleWriteCalendarPicker(in: sourceClass, provider: provider)
+        let showsApplePicker = showsAppleWriteCalendarPicker(in: sourceClass, provider: provider)
         return HStack(spacing: SharpitSpacing.sm) {
             if let logo = ProviderLogo.Provider(integrationId: provider.id) {
                 ProviderLogo(provider: logo)
             }
-            Button {
-                guard choosesPrimary else { return }
-                Task { await store.setPrimary(provider.id, in: sourceClass.id) }
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(provider.name)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                    if choosesPrimary {
-                        Label(isPrimary ? "Principale" : "Choisir comme principale", systemImage: isPrimary ? "checkmark.circle.fill" : "circle")
-                            .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
-                            .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
+            VStack(alignment: .leading, spacing: 2) {
+                Button {
+                    guard choosesPrimary else { return }
+                    Task { await store.setPrimary(provider.id, in: sourceClass.id) }
+                } label: {
+                    HStack(spacing: SharpitSpacing.xs) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(provider.name)
+                                .font(SharpitTypography.bodyEmphasis)
+                                .foregroundStyle(SharpitColor.foreground)
+                            if choosesPrimary {
+                                Text(isPrimary ? "Principale" : "Choisir comme principale")
+                                    .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
+                                    .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if choosesPrimary {
+                            // Keep the mark beside the copy — a `Label` in a stretched row
+                            // pushes the glyph and the title to opposite edges.
+                            Image(systemName: isPrimary ? "checkmark.circle.fill" : "circle")
+                                .font(.body)
+                                .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
+                                .accessibilityHidden(true)
+                        }
                     }
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .disabled(!choosesPrimary)
+                .accessibilityAddTraits(isPrimary ? [.isSelected] : [])
+                .accessibilityHint(choosesPrimary && !isPrimary ? "En fait la source principale" : "")
+                .accessibilityLabel(
+                    choosesPrimary
+                        ? "\(provider.name), \(isPrimary ? "principale" : "pas principale")"
+                        : provider.name
+                )
+
+                if showsGooglePicker {
+                    NavigationLink {
+                        GoogleCalendarPickerView(tokenProvider: tokenProvider, client: googleClient) {
+                            Task { await refreshGoogleWriteTarget() }
+                        }
+                    } label: {
+                        Text(googleWriteCalendarSubtitle)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(
+                                googleWriteTargetHint != nil
+                                    ? SharpitColor.signalRisk
+                                    : SharpitColor.mutedForeground
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Calendrier Google, \(googleWriteCalendarSubtitle)")
+                }
+
+                if showsApplePicker {
+                    NavigationLink {
+                        AppleCalendarPickerView {
+                            Task { await refreshAppleWriteCalendarName() }
+                        }
+                    } label: {
+                        Text(appleWriteCalendarSubtitle)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Calendrier Apple, \(appleWriteCalendarSubtitle)")
+                }
             }
-            .buttonStyle(.plain)
-            .disabled(!choosesPrimary)
-            .accessibilityAddTraits(isPrimary ? [.isSelected] : [])
-            .accessibilityHint(choosesPrimary && !isPrimary ? "En fait la source principale" : "")
+            .frame(maxWidth: .infinity, alignment: .leading)
+
             Toggle(
                 "Utiliser \(provider.name)",
                 isOn: Binding(
                     get: { isEnabled },
-                    set: { on in Task { await store.setEnabled(provider.id, in: sourceClass.id, on) } }
+                    set: { on in
+                        Task {
+                            await setProviderEnabled(on, provider: provider, in: sourceClass.id)
+                        }
+                    }
                 )
             )
             .labelsHidden()
             .tint(SharpitColor.primary)
         }
         .padding(.vertical, SharpitSpacing.xxs)
+    }
+
+    private func showsGoogleWriteCalendarPicker(
+        in sourceClass: V1SourceClass,
+        provider: V1SourceClass.Provider
+    ) -> Bool {
+        sourceClass.id == "calendar" && provider.id == "google" && store.isConnected("google")
+    }
+
+    private func showsAppleWriteCalendarPicker(
+        in sourceClass: V1SourceClass,
+        provider: V1SourceClass.Provider
+    ) -> Bool {
+        sourceClass.id == "calendar"
+            && provider.id == AppleCalendarSync.providerId
+            && store.isConnected(AppleCalendarSync.providerId)
+    }
+
+    private var googleWriteCalendarSubtitle: String {
+        googleWriteTargetHint ?? googleWriteTargetName ?? "Choisir un calendrier"
+    }
+
+    private var appleWriteCalendarSubtitle: String {
+        appleWriteCalendarName ?? "Choisir un calendrier"
+    }
+
+    private func resyncAppleCalendarLink() {
+        appleCalendar?.syncLinkedFromServer(store.isConnected(AppleCalendarSync.providerId))
+    }
+
+    private func setProviderEnabled(_ on: Bool, provider: V1SourceClass.Provider, in classId: String) async {
+        let isAppleCalendar = provider.id == AppleCalendarSync.providerId && classId == "calendar"
+        if isAppleCalendar {
+            if on {
+                if let appleCalendar {
+                    await appleCalendar.enable(token: tokenProvider)
+                    guard appleCalendar.isLinked else { return }
+                } else {
+                    _ = await AppleCalendarSync.shared.enable()
+                }
+                store.patchConnected(AppleCalendarSync.providerId, linked: true)
+            } else {
+                if let appleCalendar {
+                    await appleCalendar.disable(token: tokenProvider)
+                    guard !appleCalendar.isLinked else { return }
+                } else {
+                    AppleCalendarSync.shared.disable()
+                }
+                store.patchConnected(AppleCalendarSync.providerId, linked: false)
+            }
+        }
+        await store.setEnabled(provider.id, in: classId, on)
+        if isAppleCalendar { return }
+        resyncAppleCalendarLink()
+    }
+
+    private func refreshAppleWriteCalendarName() async {
+        guard store.isConnected(AppleCalendarSync.providerId) else {
+            appleWriteCalendarName = nil
+            return
+        }
+        let sync = AppleCalendarSync.shared
+        if await sync.requestAccess() {
+            appleWriteCalendarName = sync.selectedWriteCalendarTitle()
+        } else if let id = sync.writeCalendarIdentifier {
+            appleWriteCalendarName = id
+        } else {
+            appleWriteCalendarName = nil
+        }
+    }
+
+    private func refreshGoogleWriteTarget() async {
+        guard store.isConnected("google") else {
+            googleWriteTargetName = nil
+            googleWriteTargetHint = nil
+            return
+        }
+        do {
+            let token = try await tokenProvider()
+            let calendars = try await googleClient.googleCalendars(token: token)
+            googleWriteTargetName = calendars.first(where: \.isTarget)?.summary
+            googleWriteTargetHint = nil
+        } catch is CancellationError {
+            return
+        } catch let error as URLError where error.code == .cancelled {
+            return
+        } catch SharpitAPIError.googleNeedsReconnect(let message) {
+            googleWriteTargetName = nil
+            googleWriteTargetHint = message
+        } catch {
+            if googleWriteTargetName == nil {
+                googleWriteTargetHint = "Impossible de charger le calendrier"
+            }
+        }
     }
 }

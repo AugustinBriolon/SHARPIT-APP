@@ -2,6 +2,138 @@ import Foundation
 import Testing
 @testable import Sharpit
 
+@Suite struct AppleCalendarPullTests {
+    private let calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Paris")!
+        return calendar
+    }()
+
+    private func date(_ text: String) -> Date {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        formatter.timeZone = calendar.timeZone
+        return formatter.date(from: text)!
+    }
+
+    @Test func calendarMoveWinsOverPlanStart() {
+        let planStart = date("2026-10-10T07:00:00+0200")
+        let eventStart = date("2026-10-10T18:00:00+0200")
+        let resolved = AppleCalendarPull.resolveStart(plan: planStart, event: eventStart)
+        #expect(resolved == eventStart)
+    }
+
+    @Test func planStartStaysWhenNoEvent() {
+        let planStart = date("2026-10-10T07:00:00+0200")
+        #expect(AppleCalendarPull.resolveStart(plan: planStart, event: nil) == planStart)
+    }
+
+    @Test @MainActor func legacyPlanCalendarSyncMigratesToLink() async throws {
+        let suite = "legacy-calendar-migrate"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        defaults.set(true, forKey: AppleCalendarSync.enabledKey)
+        defaults.set("legacy-cal-id", forKey: "planCalendarSync.calendarId")
+
+        final class LinkSpy: AppleCalendarLinking, @unchecked Sendable {
+            private(set) var linked: [Bool] = []
+            func linkAppleCalendar(_ linked: Bool, token: String) async throws {
+                self.linked.append(linked)
+            }
+        }
+        let spy = LinkSpy()
+        let sync = AppleCalendarSync(defaults: defaults)
+        let migrated = await sync.migrateLegacyPlanCalendarSync(calendarLinker: spy, token: "t")
+        #expect(migrated)
+        #expect(spy.linked == [true])
+        #expect(defaults.string(forKey: "appleCalendar.writeCalendarId") == "legacy-cal-id")
+        #expect(!defaults.bool(forKey: AppleCalendarSync.enabledKey))
+        #expect(await sync.migrateLegacyPlanCalendarSync(calendarLinker: spy, token: "t") == false)
+    }
+
+    @Test @MainActor func legacyMigrationRetriesWhenLinkFails() async throws {
+        let suite = "legacy-calendar-link-fail"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        defaults.set(true, forKey: AppleCalendarSync.enabledKey)
+
+        final class FailingLink: AppleCalendarLinking, @unchecked Sendable {
+            func linkAppleCalendar(_ linked: Bool, token: String) async throws {
+                throw URLError(.notConnectedToInternet)
+            }
+        }
+        let sync = AppleCalendarSync(defaults: defaults)
+        #expect(await sync.migrateLegacyPlanCalendarSync(calendarLinker: FailingLink(), token: "t") == false)
+        #expect(defaults.bool(forKey: AppleCalendarSync.enabledKey))
+        #expect(!defaults.bool(forKey: AppleCalendarSync.legacyMigrationDoneKey))
+    }
+
+    @Test func writeRunsOnlyWhenAppleCalendarIsPrimary() {
+        let connected = ["google", "apple-calendar"]
+        let primaryApple = V1SourcePrefs(classes: [
+            "calendar": V1ClassSources(primary: "apple-calendar", enabled: ["google", "apple-calendar"]),
+        ])
+        let primaryGoogle = V1SourcePrefs(classes: [
+            "calendar": V1ClassSources(primary: "google", enabled: ["google", "apple-calendar"]),
+        ])
+        #expect(AppleCalendarSync.shouldWrite(prefs: primaryApple, connected: connected))
+        #expect(!AppleCalendarSync.shouldWrite(prefs: primaryGoogle, connected: connected))
+    }
+
+    @Test func busyUploadRunsWhenAppleCalendarEnabledNotOnlyWhenPrimary() {
+        let connected = ["google", "apple-calendar"]
+        let primaryGoogle = V1SourcePrefs(classes: [
+            "calendar": V1ClassSources(primary: "google", enabled: ["google", "apple-calendar"]),
+        ])
+        #expect(!AppleCalendarSync.shouldWrite(prefs: primaryGoogle, connected: connected))
+        #expect(AppleCalendarSync.shouldUploadBusy(prefs: primaryGoogle, connected: connected))
+        #expect(!AppleCalendarSync.shouldUploadBusy(
+            prefs: V1SourcePrefs(classes: [
+                "calendar": V1ClassSources(primary: "google", enabled: ["google"]),
+            ]),
+            connected: connected
+        ))
+    }
+
+    @Test func sharpitSessionURLParsesSessionId() {
+        let url = PlanCalendarPlanner.url(for: "abc-42")
+        #expect(AppleCalendarPull.sessionId(fromSharpitURL: url) == "abc-42")
+        #expect(AppleCalendarPull.sessionId(fromSharpitURL: URL(string: "https://sharpit.app")!) == nil)
+    }
+
+    @Test func calendarDeleteClearsWhenPreviouslyWritten() {
+        #expect(AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(wasOnWriteCalendar: true, wasSyncedBefore: false))
+        #expect(AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(wasOnWriteCalendar: false, wasSyncedBefore: true))
+        #expect(!AppleCalendarPull.shouldClearScheduleAfterCalendarDelete(wasOnWriteCalendar: false, wasSyncedBefore: false))
+    }
+
+    @Test func calendarDeletePatchClearsStartTime() {
+        let fields = AppleCalendarPull.clearScheduleFields()
+        #expect(fields["startTime"] == .null)
+    }
+
+    @Test func skipApplyPreservesEventKitRowFromStaleDeletion() {
+        let url = PlanCalendarPlanner.url(for: "sess-1")
+        let preserve: Set<String> = ["sess-1"]
+        #expect(AppleCalendarPull.retainEventDuringSkipApply(url: url, preserveSessionIds: preserve))
+        #expect(!AppleCalendarPull.retainEventDuringSkipApply(url: url, preserveSessionIds: []))
+        #expect(!AppleCalendarPull.retainEventDuringSkipApply(
+            url: URL(string: "https://example.com")!,
+            preserveSessionIds: preserve
+        ))
+    }
+
+    @Test func clearedUnlinkTombstoneBlocksAllDayRecreateUntilReschedule() {
+        #expect(!AppleCalendarPull.shouldWriteSessionToCalendar(sessionId: "s1", clearedAfterUnlinkIds: ["s1"]))
+        #expect(AppleCalendarPull.shouldWriteSessionToCalendar(sessionId: "s2", clearedAfterUnlinkIds: ["s1"]))
+        let untimed = V1PlannedSessionItem(id: "s1", date: Date(), title: "Run", type: "RUN")
+        let timed = V1PlannedSessionItem(id: "s1", date: Date(), startTime: "09:00", title: "Run", type: "RUN")
+        let active = AppleCalendarPull.clearedAfterUnlinkIds(stored: ["s1"], sessions: [untimed])
+        #expect(active == ["s1"])
+        #expect(AppleCalendarPull.clearedAfterUnlinkIds(stored: ["s1"], sessions: [timed]).isEmpty)
+    }
+}
+
 @Suite struct PlanCalendarPlannerTests {
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)

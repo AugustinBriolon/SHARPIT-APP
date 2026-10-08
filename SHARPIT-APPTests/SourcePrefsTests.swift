@@ -68,6 +68,19 @@ private actor StubSourcePrefs: SourcePrefsServing {
 }
 
 @MainActor
+@Test func patchConnectedUpdatesStaleConnectedList() async {
+    let store = SourcePrefsStore(client: StubSourcePrefs(), tokenProvider: { "t" })
+    await store.load()
+    #expect(!store.isConnected("apple-calendar"))
+
+    store.patchConnected("apple-calendar", linked: true)
+    #expect(store.isConnected("apple-calendar"))
+
+    store.patchConnected("apple-calendar", linked: false)
+    #expect(!store.isConnected("apple-calendar"))
+}
+
+@MainActor
 @Test func turningThePrimaryOffHandsItToTheNextSource() async {
     let client = StubSourcePrefs()
     await client.refuse()
@@ -85,6 +98,7 @@ private actor StubSourcePrefs: SourcePrefsServing {
 
 @Test func unknownProvidersShowWithoutALogo() {
     #expect(ProviderLogo.Provider(integrationId: "apple-health") == .appleHealth)
+    #expect(ProviderLogo.Provider(integrationId: "apple-calendar") == .appleCalendar)
     #expect(ProviderLogo.Provider(integrationId: "withings") == .withings)
     #expect(ProviderLogo.Provider(integrationId: "sharpit") == .sharpit)
     #expect(ProviderLogo.Provider(integrationId: "polar") == nil)

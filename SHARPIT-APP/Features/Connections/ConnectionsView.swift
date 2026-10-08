@@ -14,10 +14,12 @@ import SwiftUI
 /// check is under way, not on a row read at rest (`docs/adr/0008`).
 struct ConnectionsView: View {
     let appleHealth: AppleHealthSource
+    let appleCalendar: AppleCalendarSource
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
     var garminClient: any GarminHandoffServing = SharpitClient()
     var disconnectClient: any SourceDisconnecting = SourceDisconnectClient()
+    var sourcePrefsClient: any SourcePrefsServing = SharpitClient()
 
     @Environment(SharpitToastCenter.self) private var toastCenter
     @Environment(Clerk.self) private var clerk
@@ -37,6 +39,7 @@ struct ConnectionsView: View {
                     garminRow
                 }
                 appleHealthRow
+                appleCalendarRow
                 ForEach(webSources) { source in
                     connectedSourceRow(source)
                 }
@@ -45,7 +48,7 @@ struct ConnectionsView: View {
 
             Section {
                 NavigationLink {
-                    SourcePrioritiesView(tokenProvider: tokenProvider)
+                    SourcePrioritiesView(tokenProvider: tokenProvider, appleCalendar: appleCalendar)
                 } label: {
                     Label {
                         Text("Priorités par catégorie")
@@ -55,7 +58,9 @@ struct ConnectionsView: View {
                     }
                 }
             } footer: {
-                SharpitListFooter("Quand deux sources mesurent la même chose, choisis celle qui fait foi.")
+                SharpitListFooter(
+                    "Quand deux sources mesurent la même chose, choisis celle qui fait foi. L’Agenda Google (créneaux) n’est pas le calendrier des séances Sharpit dans Plan."
+                )
             }
             .sharpitListRows()
 
@@ -253,6 +258,34 @@ struct ConnectionsView: View {
         )
     }
 
+    private var appleCalendarRow: some View {
+        let line = ConnectionsReadout.appleCalendarSubtitle(state: appleCalendar.state)
+        return Toggle(isOn: appleCalendarBinding) {
+            HStack(spacing: SharpitSpacing.sm) {
+                ProviderLogo(provider: .appleCalendar)
+                sourceTitle(
+                    "Calendrier Apple",
+                    status: line.text,
+                    tone: line.isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground
+                )
+            }
+        }
+        .tint(SharpitColor.primary)
+    }
+
+    private var appleCalendarBinding: Binding<Bool> {
+        Binding(
+            get: { appleCalendar.isLinked },
+            set: { on in
+                if on {
+                    Task { await appleCalendar.enable(token: tokenProvider) }
+                } else {
+                    Task { await appleCalendar.disable(token: tokenProvider) }
+                }
+            }
+        )
+    }
+
     /// Garmin opens in an in-app sheet (SHARPIT ADR-047); a new link is synced and its whole
     /// history imported, as the universal-link return does.
     private func connectGarmin() async {
@@ -314,5 +347,8 @@ struct ConnectionsView: View {
         defer { toastCenter.dismiss(token) }
         guard let tok = try? await tokenProvider() else { return }
         status = try? await syncClient.syncStatus(token: tok)
+        if let answer = try? await sourcePrefsClient.sourcePrefs(token: tok) {
+            appleCalendar.syncLinkedFromServer(answer.connected.contains(AppleCalendarSync.providerId))
+        }
     }
 }

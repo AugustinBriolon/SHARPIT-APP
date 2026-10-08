@@ -210,6 +210,7 @@ final class TodayStore {
     /// The server's own refusal when it said why (« Cette proposition n’est plus en attente »).
     static func proposalFailureMessage(for error: Error) -> String {
         if case .message(let text)? = error as? SharpitAPIError { return text }
+        if case .googleNeedsReconnect(let text)? = error as? SharpitAPIError { return text }
         return "Réponse non enregistrée. Réessaie dans un instant."
     }
 
@@ -228,7 +229,7 @@ final class TodayStore {
             return "Session expirée"
         case .rateLimited:
             return "Trop de requêtes — réessaie dans un instant"
-        case .message(let text):
+        case .message(let text), .googleNeedsReconnect(let text):
             return text
         }
     }

@@ -21,10 +21,12 @@ enum SharpitAPIError: Error, Equatable, LocalizedError {
     /// The server refused because the same request ran moments ago.
     case rateLimited
     case message(String)
+    /// Google OAuth token expired or revoked — relink Google Agenda, not the SharpIt session.
+    case googleNeedsReconnect(String)
 
     var errorDescription: String? {
         switch self {
-        case .message(let text):
+        case .message(let text), .googleNeedsReconnect(let text):
             return text
         case .unauthorized:
             return "Session expirée ou non autorisée"
