@@ -20,7 +20,8 @@ concurrency:
 jobs:
   test:
     runs-on: macos-26
-    timeout-minutes: 45
+    # Serial testing (below) is slower but stable; 45 min cut the suite mid-run.
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
