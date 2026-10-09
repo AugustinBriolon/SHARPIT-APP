@@ -124,6 +124,25 @@ final class CoachStore {
         await stream(into: messages[index].id, turn: messages[index], history: messages)
     }
 
+    /// Re-sends a failed approval. `sentApprovals` would otherwise ignore the same fingerprint.
+    /// Pair with the web's toolCallId idempotency — merge this after that SHARPIT-WEBAPP PR.
+    func retry(approvalId: String, replacingInput: JSONValue? = nil) async {
+        guard !isReplying, let index = messages.indices.last,
+              messages[index].role == .assistant, let parts = messages[index].parts
+        else { return }
+
+        messages[index].parts = CoachUIParts.reopening(parts, approvalId: approvalId)
+        clearSentApproval(containing: approvalId)
+        await respond(to: approvalId, approved: true, replacingInput: replacingInput)
+    }
+
+    /// Drops fingerprints that include `approvalId`, so a failed send can go out once more.
+    private func clearSentApproval(containing approvalId: String) {
+        sentApprovals = Set(sentApprovals.filter { fingerprint in
+            !fingerprint.split(separator: "|").map(String.init).contains(approvalId)
+        })
+    }
+
     /// Streams the server's answer to `turn` into the coach turn `id`, building its parts chunk
     /// by chunk. The coach turn takes the id the server gives it, which is the one it saves.
     private func stream(into id: String, turn: CoachMessage, history: [CoachMessage]) async {
@@ -176,14 +195,18 @@ final class CoachStore {
             // Keep the partial bubble. The server finishes the turn and saves; we pull later.
             interrupted = true
         } catch let error as SharpitAPIError where error == .unauthorized {
+            markContinuationFailed(id: id, message: "Session expirée. Reconnecte-toi.")
             dropEmptyAnswer()
             failure = "Session expirée. Reconnecte-toi."
             CoachReplyLiveActivityController.shared.markFailed()
         } catch let error as CoachChatError {
+            let message = error.errorDescription ?? "La réponse n'a pas abouti. Réessaie."
+            markContinuationFailed(id: id, message: message)
             dropEmptyAnswer()
             failure = error.errorDescription
             CoachReplyLiveActivityController.shared.markFailed()
         } catch {
+            markContinuationFailed(id: id, message: "La réponse n'a pas abouti. Réessaie.")
             dropEmptyAnswer()
             failure = "La réponse n'a pas abouti. Réessaie."
             CoachReplyLiveActivityController.shared.markFailed()
@@ -192,6 +215,18 @@ final class CoachStore {
         if interrupted {
             scheduleResyncAfterInterruption()
         }
+    }
+
+    /// An approval left as `approval-responded` after a cut stream would stick on « Envoi… ».
+    /// Mark it failed and clear its fingerprint so « Réessayer » can fire once.
+    private func markContinuationFailed(id: String, message: String) {
+        guard let index = messages.firstIndex(where: { $0.id == id }),
+              let parts = messages[index].parts
+        else { return }
+        if let fingerprint = CoachUIParts.approvalFingerprint(parts) {
+            sentApprovals.remove(fingerprint)
+        }
+        messages[index].parts = CoachUIParts.markingFailedApprovals(parts, message: message)
     }
 
     /// Starts again from an empty thread. Refused while an answer is arriving, which would

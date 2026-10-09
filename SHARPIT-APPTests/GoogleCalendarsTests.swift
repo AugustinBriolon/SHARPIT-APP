@@ -53,6 +53,8 @@ private nonisolated final class GoogleCalendarsStubURLProtocol: URLProtocol, @un
     nonisolated(unsafe) static var status = 200
     nonisolated(unsafe) static var responseData = Data()
     nonisolated(unsafe) static var lastRequest: URLRequest?
+    /// Captured up front: `URLSession` may turn `httpBody` into a stream before we read it.
+    nonisolated(unsafe) static var lastBody: Data?
     nonisolated(unsafe) static var transportError: Error?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -60,6 +62,18 @@ private nonisolated final class GoogleCalendarsStubURLProtocol: URLProtocol, @un
 
     override func startLoading() {
         Self.lastRequest = request
+        Self.lastBody = request.httpBody ?? request.httpBodyStream.map { stream in
+            stream.open()
+            defer { stream.close() }
+            var data = Data()
+            var buffer = [UInt8](repeating: 0, count: 1024)
+            while stream.hasBytesAvailable {
+                let count = stream.read(&buffer, maxLength: buffer.count)
+                if count <= 0 { break }
+                data.append(buffer, count: count)
+            }
+            return data
+        }
         if let transportError = Self.transportError {
             client?.urlProtocol(self, didFailWithError: transportError)
             return
@@ -79,6 +93,7 @@ struct GoogleCalendarsNetworkTests {
         GoogleCalendarsStubURLProtocol.status = status
         GoogleCalendarsStubURLProtocol.responseData = Data(response.utf8)
         GoogleCalendarsStubURLProtocol.lastRequest = nil
+        GoogleCalendarsStubURLProtocol.lastBody = nil
         GoogleCalendarsStubURLProtocol.transportError = transportError
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [GoogleCalendarsStubURLProtocol.self]
@@ -103,7 +118,7 @@ struct GoogleCalendarsNetworkTests {
         let request = try #require(GoogleCalendarsStubURLProtocol.lastRequest)
         #expect(request.httpMethod == "POST")
         #expect(request.url?.absoluteString == "https://api.example.test/api/v1/google/select-calendar")
-        let body = try JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: Any]
+        let body = try JSONSerialization.jsonObject(with: try #require(GoogleCalendarsStubURLProtocol.lastBody)) as? [String: Any]
         #expect(body?["calendarId"] as? String == "cal-1")
         #expect(body?["calendarName"] as? String == "Sport")
     }

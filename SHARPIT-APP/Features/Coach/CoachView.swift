@@ -248,7 +248,10 @@ struct CoachView: View {
         CoachMessageRow(
             message: message,
             isStreaming: isStreaming(message),
-            onAnswer: answerHandler
+            isReplying: store.isReplying,
+            onAnswer: answerHandler,
+            onRetry: retryHandler,
+            onOpenNutrition: { router.openToday(.nutrition) }
         )
         .id(message.id)
     }
@@ -259,6 +262,15 @@ struct CoachView: View {
         let store = store
         return { approvalId, approved, input in
             Task { await store.respond(to: approvalId, approved: approved, replacingInput: input) }
+        }
+    }
+
+    /// Re-sends a failed food-log (or other) approval after clearing its fingerprint.
+    private var retryHandler: ((String, JSONValue?) -> Void)? {
+        guard !store.isReplying else { return nil }
+        let store = store
+        return { approvalId, input in
+            Task { await store.retry(approvalId: approvalId, replacingInput: input) }
         }
     }
 
@@ -419,14 +431,18 @@ struct CoachView: View {
 /// Only one side gets a bubble on purpose: the coach's answers are the content of this
 /// screen, and wrapping them in a container would make them look like remarks.
 ///
-/// Copy: selection works inside a bubble or a markdown block; long-press « Copier » puts the
-/// whole turn on the pasteboard — markdown is rendered as many `Text`s, so system selection
-/// alone cannot take the answer in one gesture.
+/// Copy: selection works inside a bubble or a markdown block; long-press « Copier » sits on
+/// the prose only (not on proposal cards — a context menu over the food-log card ate field
+/// taps). Markdown is rendered as many `Text`s, so system selection alone cannot take the
+/// answer in one gesture.
 private struct CoachMessageRow: View {
     let message: CoachMessage
     let isStreaming: Bool
+    let isReplying: Bool
     /// Nil while an answer streams: a proposal cannot be answered mid-turn.
     let onAnswer: ((String, Bool, JSONValue?) -> Void)?
+    let onRetry: ((String, JSONValue?) -> Void)?
+    let onOpenNutrition: (() -> Void)?
 
     var body: some View {
         switch message.role {
@@ -458,11 +474,19 @@ private struct CoachMessageRow: View {
                     case .text(_, let text):
                         // The coach writes markdown; rendering it as literal asterisks would be
                         // the app failing to read its own answer.
+                        // Copy menu on prose only — wrapping the food-log card stole field taps.
                         SharpitMarkdownText(markdown: text)
+                            .coachCopyMenu(text)
                     case .proposal(let proposal):
                         CoachProposalCard(proposal: proposal, onAnswer: answer(for: proposal))
                     case .foodLog(let proposal):
-                        CoachFoodLogCard(proposal: proposal, onAnswer: answer(for: proposal))
+                        CoachFoodLogCard(
+                            proposal: proposal,
+                            onAnswer: answer(for: proposal),
+                            onRetry: retry(for: proposal),
+                            onOpenNutrition: onOpenNutrition,
+                            isReplying: isReplying
+                        )
                     }
                 }
                 if isStreaming {
@@ -470,7 +494,6 @@ private struct CoachMessageRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .coachCopyMenu(CoachMessageCopy.plainText(of: message))
         }
     }
 }
@@ -515,8 +538,15 @@ extension CoachMessageRow {
     }
 
     private func answer(for proposal: CoachFoodLogProposal) -> ((Bool, JSONValue?) -> Void)? {
-        guard case .awaiting(let approvalId) = proposal.status, let onAnswer else { return nil }
+        guard case .awaiting = proposal.status, let onAnswer else { return nil }
+        let approvalId = proposal.approvalId
         return { approved, input in onAnswer(approvalId, approved, input) }
+    }
+
+    private func retry(for proposal: CoachFoodLogProposal) -> ((JSONValue?) -> Void)? {
+        guard case .failed = proposal.status, let onRetry else { return nil }
+        let approvalId = proposal.approvalId
+        return { input in onRetry(approvalId, input) }
     }
 }
 

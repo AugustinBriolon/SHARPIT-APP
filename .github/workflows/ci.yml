@@ -20,7 +20,8 @@ concurrency:
 jobs:
   test:
     runs-on: macos-26
-    timeout-minutes: 45
+    # Serial testing (below) is slower but stable; 45 min cut the suite mid-run.
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,11 +50,14 @@ jobs:
       - name: Test
         run: |
           set -o pipefail
+          # One simulator worker: parallel clones were dying mid-suite (hundreds of
+          # 0.000 s "failures") on macos-26 after the calendar-providers merge.
           xcodebuild test \
             -project SHARPIT-APP.xcodeproj \
             -scheme SHARPIT-APP \
             -destination "id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
+            -parallel-testing-enabled NO \
             CODE_SIGNING_ALLOWED=NO \
             | tee xcodebuild.log | grep -E "error:|✘|Test run with|TEST (SUCCEEDED|FAILED)"
 
