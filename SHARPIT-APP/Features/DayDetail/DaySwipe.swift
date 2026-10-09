@@ -166,6 +166,11 @@ private struct DaySwipeModifier: ViewModifier {
                 releaseHitsAfterSuppression()
             }
         }
+        // UIKit cancels the touch on buttons under a horizontal pan (UIScrollView-like).
+        // SwiftUI `allowsHitTesting` alone cannot un-arm a Button that already saw touchDown.
+        .background(DaySwipeButtonCancel(onHorizontalPanBegan: {
+            blocksHits = true
+        }))
         .background(EdgeOnlyPopGesture())
     }
 
@@ -313,6 +318,116 @@ private struct EdgeOnlyPopGesture: UIViewControllerRepresentable {
             if #available(iOS 26.0, *) {
                 navigationController?.interactiveContentPopGestureRecognizer?.isEnabled = enabled
             }
+        }
+    }
+}
+
+/// A horizontal pan on the day page cancels touches in controls underneath — the same contract
+/// as `UIScrollView.canCancelContentTouches`, so a finger that started on a meal row or coach
+/// chip and slid sideways turns the day without opening what it touched. Vertical pans never
+/// begin, so ScrollView keeps the scroll.
+private struct DaySwipeButtonCancel: UIViewRepresentable {
+    var onHorizontalPanBegan: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onHorizontalPanBegan: onHorizontalPanBegan)
+    }
+
+    func makeUIView(context: Context) -> BridgeView {
+        let view = BridgeView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        context.coordinator.attach(to: view)
+        return view
+    }
+
+    func updateUIView(_ uiView: BridgeView, context: Context) {
+        context.coordinator.onHorizontalPanBegan = onHorizontalPanBegan
+        context.coordinator.attach(to: uiView)
+    }
+
+    final class BridgeView: UIView {
+        var onDidMoveToWindow: (() -> Void)?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            onDidMoveToWindow?()
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var onHorizontalPanBegan: () -> Void
+        private let pan = UIPanGestureRecognizer()
+        private weak var bridge: UIView?
+        private weak var host: UIView?
+
+        init(onHorizontalPanBegan: @escaping () -> Void) {
+            self.onHorizontalPanBegan = onHorizontalPanBegan
+            super.init()
+            pan.cancelsTouchesInView = true
+            pan.delegate = self
+            pan.addTarget(self, action: #selector(handlePan(_:)))
+            // Match SwiftUI day-swipe slop so a tiny nudge is still a tap.
+            pan.minimumNumberOfTouches = 1
+            pan.maximumNumberOfTouches = 1
+        }
+
+        func attach(to bridge: BridgeView) {
+            self.bridge = bridge
+            bridge.onDidMoveToWindow = { [weak self] in
+                self?.installOnHost()
+            }
+            installOnHost()
+        }
+
+        private func installOnHost() {
+            guard let bridge else { return }
+            // Prefer the enclosing scroll view (buttons live in its content); else the
+            // nearest full-size ancestor in the hosting tree.
+            var nextHost: UIView?
+            var cursor: UIView? = bridge.superview
+            while let current = cursor {
+                if current is UIScrollView {
+                    nextHost = current
+                    break
+                }
+                if nextHost == nil,
+                   current.bounds.width >= bridge.bounds.width,
+                   current.bounds.height > bridge.bounds.height + 1
+                {
+                    nextHost = current
+                }
+                cursor = current.superview
+            }
+            nextHost = nextHost ?? bridge.superview
+            guard let nextHost, host !== nextHost else { return }
+            host?.removeGestureRecognizer(pan)
+            nextHost.addGestureRecognizer(pan)
+            host = nextHost
+        }
+
+        @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+            if gesture.state == .began {
+                onHorizontalPanBegan()
+            }
+        }
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = gestureRecognizer as? UIPanGestureRecognizer,
+                  let view = pan.view
+            else { return false }
+            let point = pan.translation(in: view)
+            let translation = CGSize(width: point.x, height: point.y)
+            let startX = pan.location(in: view).x - point.x
+            // Same early mute as SwiftUI day-swipe — not the stricter day-turn axis lock.
+            return DaySwipe.suppressesChildActivation(startX: startX, translation: translation)
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
         }
     }
 }
