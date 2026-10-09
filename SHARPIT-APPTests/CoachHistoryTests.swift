@@ -183,6 +183,22 @@ private struct CancellingCoachClient: CoachChatServing {
     }
 }
 
+/// Yields a first word, then hangs until the consumer cancels (composer stop).
+private struct HangingCoachClient: CoachChatServing {
+    func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                for chunk in StubCoachClient.textChunks(["Partiel"]) {
+                    continuation.yield(chunk)
+                }
+                try? await Task.sleep(for: .seconds(30))
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+}
+
 @MainActor
 private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
     store.draft = text
@@ -263,6 +279,20 @@ private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
     await ask(store, "Suite")
     #expect(client.stored(1)?.id == "past-1")
     #expect(client.stored(1)?.text == "Suite")
+}
+
+@MainActor
+@Test func stoppingAReplyCancelsTheStreamAndClearsIsReplying() async {
+    let store = coachStore(client: HangingCoachClient())
+    store.draft = "Stoppe-moi"
+    let send = Task { await store.send() }
+    try? await Task.sleep(for: .milliseconds(30))
+    #expect(store.isReplying)
+    store.stopReply()
+    await send.value
+    #expect(!store.isReplying)
+    #expect(store.messages.last?.role == .assistant)
+    #expect(store.messages.last?.text.contains("Partiel") == true)
 }
 
 @MainActor

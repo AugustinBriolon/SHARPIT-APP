@@ -5,10 +5,14 @@ import Foundation
 nonisolated enum SharpitFigureFormat {
     private static let french = Locale(identifier: "fr_FR")
 
-    /// `2 140` — whole kilocalories.
+    /// `2140` — whole kilocalories. A four-digit figure stays whole, as French typography
+    /// allows: in the monospaced readout face the thin space took a full digit's width
+    /// (« 1  328 »). Grouped from five digits on.
     static func kcal(_ value: Double?) -> String {
         guard let value else { return "—" }
-        return Int(value.rounded()).formatted(.number.locale(french))
+        let whole = Int(value.rounded())
+        guard abs(whole) >= 10_000 else { return "\(whole)" }
+        return whole.formatted(.number.locale(french))
     }
 
     /// What the remaining calories say: left to eat, or past the goal.

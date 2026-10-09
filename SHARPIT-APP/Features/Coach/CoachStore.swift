@@ -42,6 +42,8 @@ final class CoachStore {
     /// How long to wait before the first pull after a cut stream — the server finishes and
     /// saves through `after`, so an immediate GET would still miss the answer.
     private let resyncDelay: Duration
+    /// The in-flight SSE consume task — cancelled by the stop control on the composer.
+    private var replyTask: Task<Void, Never>?
 
     init(
         client: any CoachChatServing,
@@ -53,6 +55,11 @@ final class CoachStore {
         self.conversations = conversations
         self.tokenProvider = tokenProvider
         self.resyncDelay = resyncDelay
+    }
+
+    /// Cuts the live coach stream. Keeps the partial bubble; the server finishes and we resync.
+    func stopReply() {
+        replyTask?.cancel()
     }
 
     var canSend: Bool {
@@ -95,7 +102,7 @@ final class CoachStore {
         let answer = CoachMessage(role: .assistant, text: "", parts: [])
         let history = messages
         messages.append(answer)
-        await stream(into: answer.id, turn: question, history: history)
+        await runStream(into: answer.id, turn: question, history: history)
     }
 
     /// The athlete's answer to a proposal card. Once every proposal of the step has one, the
@@ -103,6 +110,7 @@ final class CoachStore {
     /// the same message — the web's `addToolApprovalResponse` and `sendAutomaticallyWhen`.
     /// `replacingInput` updates the tool input before approval (edited meal / grams on logFoods).
     func respond(to approvalId: String, approved: Bool, replacingInput: JSONValue? = nil) async {
+        await waitForReplyStop()
         guard !isReplying, let index = messages.indices.last,
               messages[index].role == .assistant, let parts = messages[index].parts
         else { return }
@@ -121,12 +129,13 @@ final class CoachStore {
               !sentApprovals.contains(fingerprint)
         else { return }
         sentApprovals.insert(fingerprint)
-        await stream(into: messages[index].id, turn: messages[index], history: messages)
+        await runStream(into: messages[index].id, turn: messages[index], history: messages)
     }
 
     /// Re-sends a failed approval. `sentApprovals` would otherwise ignore the same fingerprint.
     /// Pair with the web's toolCallId idempotency — merge this after that SHARPIT-WEBAPP PR.
     func retry(approvalId: String, replacingInput: JSONValue? = nil) async {
+        await waitForReplyStop()
         guard !isReplying, let index = messages.indices.last,
               messages[index].role == .assistant, let parts = messages[index].parts
         else { return }
@@ -134,6 +143,23 @@ final class CoachStore {
         messages[index].parts = CoachUIParts.reopening(parts, approvalId: approvalId)
         clearSentApproval(containing: approvalId)
         await respond(to: approvalId, approved: true, replacingInput: replacingInput)
+    }
+
+    /// Owns the stream task so the composer stop control can cancel it.
+    private func runStream(into id: String, turn: CoachMessage, history: [CoachMessage]) async {
+        let task = Task { await stream(into: id, turn: turn, history: history) }
+        replyTask = task
+        await task.value
+        if replyTask == task { replyTask = nil }
+    }
+
+    /// Cancels an in-flight reply and waits until `isReplying` clears — so Approve on a food
+    /// card is not blocked while the SSE is still winding down.
+    private func waitForReplyStop() async {
+        guard let replyTask else { return }
+        replyTask.cancel()
+        await replyTask.value
+        if self.replyTask == replyTask { self.replyTask = nil }
     }
 
     /// Drops fingerprints that include `approvalId`, so a failed send can go out once more.
@@ -167,6 +193,7 @@ final class CoachStore {
             var answerId = id
 
             for try await chunk in client.reply(to: request, token: token) {
+                try Task.checkCancellation()
                 assembler.apply(chunk)
                 guard let index = messages.firstIndex(where: { $0.id == answerId }) else { break }
                 if let serverId = assembler.messageId, serverId != answerId {

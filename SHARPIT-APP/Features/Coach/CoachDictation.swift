@@ -38,12 +38,22 @@ enum CoachComposerAction: Equatable {
         case .dictate: "Dicter un message"
         case .stopDictation: "Arrêter la dictée"
         case .send: "Envoyer"
-        case .waiting: "Le coach répond"
+        case .waiting: "Arrêter la réponse"
         }
     }
 
-    /// Filled with the brand colour when it is the way forward: sending, or listening.
-    var isProminent: Bool { self == .send || self == .stopDictation }
+    /// Filled with the brand colour when it is the way forward: sending, listening, or stopping.
+    var isProminent: Bool { self == .send || self == .stopDictation || self == .waiting }
+}
+
+/// Return sends; a paste that brings newlines stays in the field for editing.
+enum CoachComposerDraft {
+    /// True only when the athlete pressed Return at the end of a line with no prior newlines
+    /// (not when a paste or edit inserted `\n` inside the draft).
+    static func shouldSendOnNewline(old: String, new: String) -> Bool {
+        guard new.hasSuffix("\n"), !old.contains("\n") else { return false }
+        return String(new.dropLast()) == old
+    }
 }
 
 /// Dictation into the coach's composer, in French, on the device when it can.

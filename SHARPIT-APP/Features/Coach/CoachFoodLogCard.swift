@@ -248,7 +248,8 @@ struct CoachFoodLogCard: View {
 
     private var disabledReason: String? {
         guard phase == .proposed else { return nil }
-        if isReplying || onAnswer == nil { return "Le coach répond encore" }
+        // `onAnswer` stays set while a stream winds down; only missing handler blocks Add.
+        if onAnswer == nil { return "Le coach répond encore" }
         if readyItems == nil { return "Grammage invalide" }
         return nil
     }

@@ -92,11 +92,14 @@ struct ScrollUnderGlass: ViewModifier {
 struct LiquidNavChrome: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
+        // iOS 26 keeps the system's Liquid Glass bar: a forced material there covers the large
+        // title (Résumé's date read blurred at rest). Before it, a visible fill — regular, since
+        // ultraThin let coach prose bleed through toolbar icons on scroll.
         if #available(iOS 26.0, *) {
             content
         } else {
             content
-                .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+                .toolbarBackground(.regularMaterial, for: .navigationBar)
                 .toolbarBackground(.visible, for: .navigationBar)
         }
     }

@@ -309,6 +309,15 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
     #expect(CoachComposerAction(isReplying: false, isDictating: false, draft: "Ma nuit ?") == .send)
     #expect(CoachComposerAction(isReplying: false, isDictating: true, draft: "Ma nuit") == .stopDictation)
     #expect(CoachComposerAction(isReplying: true, isDictating: false, draft: "") == .waiting)
+    #expect(CoachComposerAction(isReplying: true, isDictating: false, draft: "").accessibilityLabel == "Arrêter la réponse")
+    #expect(CoachComposerAction(isReplying: true, isDictating: false, draft: "").isProminent)
+}
+
+@Test func returnAtEndOfACleanLineSendsButPasteWithNewlinesDoesNot() {
+    #expect(CoachComposerDraft.shouldSendOnNewline(old: "Bonjour", new: "Bonjour\n"))
+    #expect(!CoachComposerDraft.shouldSendOnNewline(old: "", new: "ligne1\nligne2\n"))
+    #expect(!CoachComposerDraft.shouldSendOnNewline(old: "déjà\nlà", new: "déjà\nlà\n"))
+    #expect(!CoachComposerDraft.shouldSendOnNewline(old: "x", new: "x"))
 }
 
 @Test func dictatedWordsFollowWhatWasTyped() {
@@ -322,6 +331,18 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
 @Test func copyingACoachTurnUsesTheAssembledProse() {
     let message = CoachMessage(role: .assistant, text: "Paragraphe un.\n\nParagraphe deux.")
     #expect(CoachMessageCopy.plainText(of: message) == "Paragraphe un.\n\nParagraphe deux.")
+    #expect(CoachMessageCopy.labeledTurn(message) == "Coach\nParagraphe un.\n\nParagraphe deux.")
+}
+
+@Test func labeledTranscriptPrefixesEachTurn() {
+    let messages = [
+        CoachMessage(role: .user, text: "Salut"),
+        CoachMessage(role: .assistant, text: "Coucou"),
+    ]
+    #expect(
+        CoachMessageCopy.labeledTranscript(messages: messages)
+            == "Moi\nSalut\n\nCoach\nCoucou"
+    )
 }
 
 @Test func copyingFallsBackToTextPartsWhenTheAssembledLineIsEmpty() {

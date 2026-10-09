@@ -199,6 +199,8 @@ struct CoachView: View {
             .scrollTargetLayout()
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
+            // One selection surface for the thread — drag can cross Moi/Coach turns.
+            .textSelection(.enabled)
         }
         .scrollPosition($scrollPosition)
         // A thumb moving on the thread puts the keyboard away at once — even on an empty
@@ -256,9 +258,9 @@ struct CoachView: View {
         .id(message.id)
     }
 
-    /// Answers a proposal card; nil while a reply streams, so the buttons wait with it.
+    /// Answers a proposal card. Always available — `respond` stops an in-flight stream first,
+    /// so Ajouter stays tappable while the SSE is still closing.
     private var answerHandler: ((String, Bool, JSONValue?) -> Void)? {
-        guard !store.isReplying else { return nil }
         let store = store
         return { approvalId, approved, input in
             Task { await store.respond(to: approvalId, approved: approved, replacingInput: input) }
@@ -267,7 +269,6 @@ struct CoachView: View {
 
     /// Re-sends a failed food-log (or other) approval after clearing its fingerprint.
     private var retryHandler: ((String, JSONValue?) -> Void)? {
-        guard !store.isReplying else { return nil }
         let store = store
         return { approvalId, input in
             Task { await store.retry(approvalId: approvalId, replacingInput: input) }
@@ -296,40 +297,39 @@ struct CoachView: View {
             }
 
             SharpitGlassGroup {
-                HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
-                    TextField(
-                        store.hasPendingApproval ? "Réponds à la proposition, ou écris pour l'ignorer" : "Pose ta question",
-                        text: $store.draft,
-                        axis: .vertical
-                    )
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.foreground)
-                        // Grows with the text up to six lines, then scrolls inside itself.
-                        .lineLimit(1...6)
-                        .focused($composerIsFocused)
-                        // A vertical-axis field treats Return as a newline, so `onSubmit`
-                        // never fires. Catching the newline is what makes Return behave the
-                        // way the keyboard's own key promises.
-                        .onChange(of: store.draft) { _, new in
-                            guard new.contains("\n") else { return }
-                            store.draft = new.replacingOccurrences(of: "\n", with: "")
-                            submit()
-                        }
-                        .padding(.horizontal, SharpitSpacing.md)
-                        .padding(.vertical, SharpitSpacing.xs + 2)
-                        // One line is exactly as tall as the circles beside it, so the three
-                        // controls share a centre; more lines grow upward from that base.
-                        .frame(minHeight: Self.controlHeight)
-                        // A fixed corner, not a capsule: on one line it reads as a capsule, and
-                        // as it grows it becomes a rounded field whose corners never eat the text.
-                        .sharpitGlassControl(
-                            in: RoundedRectangle(cornerRadius: Self.controlHeight / 2, style: .continuous),
-                            fallback: SharpitColor.analysisSurfaceAlt
+                if dictation.isListening {
+                    dictationBar
+                } else {
+                    HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
+                        TextField(
+                            store.hasPendingApproval ? "Réponds à la proposition, ou écris pour l'ignorer" : "Pose ta question",
+                            text: $store.draft,
+                            axis: .vertical
                         )
-                        .animation(SharpitMotion.selection, value: store.draft.count / 40)
-                        .submitLabel(.send)
+                            .font(SharpitTypography.body)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .lineLimit(1...6)
+                            .focused($composerIsFocused)
+                            // Return at end of a clean line = send. Paste with newlines stays editable.
+                            .onChange(of: store.draft) { old, new in
+                                guard new.contains("\n") else { return }
+                                if CoachComposerDraft.shouldSendOnNewline(old: old, new: new) {
+                                    store.draft = String(new.dropLast())
+                                    submit()
+                                }
+                            }
+                            .padding(.horizontal, SharpitSpacing.md)
+                            .padding(.vertical, SharpitSpacing.xs + 2)
+                            .frame(minHeight: Self.controlHeight)
+                            .sharpitGlassControl(
+                                in: RoundedRectangle(cornerRadius: Self.controlHeight / 2, style: .continuous),
+                                fallback: SharpitColor.analysisSurfaceAlt
+                            )
+                            .animation(SharpitMotion.selection, value: store.draft.count / 40)
+                            .submitLabel(.send)
 
-                    composerButton
+                        composerButton
+                    }
                 }
             }
         }
@@ -337,6 +337,36 @@ struct CoachView: View {
         .padding(.top, SharpitSpacing.xs)
         .padding(.bottom, SharpitSpacing.sm)
         .animation(SharpitMotion.reveal, value: composerIsFocused)
+        .animation(SharpitMotion.reveal, value: dictation.isListening)
+    }
+
+    /// Full-width listening bar (field morphs away) — stop sits on the trailing edge.
+    private var dictationBar: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.xs) {
+            HStack(spacing: SharpitSpacing.sm) {
+                Image(systemName: "waveform")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.primary)
+                    .symbolEffect(.variableColor.iterative, isActive: true)
+                Text(store.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                     ? "Écoute…"
+                     : store.draft)
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, SharpitSpacing.md)
+            .frame(maxWidth: .infinity, minHeight: Self.controlHeight, alignment: .leading)
+            .sharpitGlassControl(
+                in: RoundedRectangle(cornerRadius: Self.controlHeight / 2, style: .continuous),
+                fallback: SharpitColor.analysisSurfaceAlt
+            )
+
+            composerButton
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Dictée en cours")
     }
 
     /// Small, and glass as the composer under it. Plain glass: interactive glass, on the label
@@ -393,7 +423,6 @@ struct CoachView: View {
                 )
         }
         .buttonStyle(.plain)
-        .disabled(action == .waiting)
         .accessibilityLabel(action.accessibilityLabel)
         .animation(SharpitMotion.selection, value: action)
     }
@@ -410,7 +439,7 @@ struct CoachView: View {
         case .send:
             submit()
         case .waiting:
-            break
+            store.stopReply()
         }
     }
 
@@ -431,15 +460,13 @@ struct CoachView: View {
 /// Only one side gets a bubble on purpose: the coach's answers are the content of this
 /// screen, and wrapping them in a container would make them look like remarks.
 ///
-/// Copy: selection works inside a bubble or a markdown block; long-press « Copier » sits on
-/// the prose only (not on proposal cards — a context menu over the food-log card ate field
-/// taps). Markdown is rendered as many `Text`s, so system selection alone cannot take the
-/// answer in one gesture.
+/// Copy: each turn is one selectable block prefixed with « Moi » / « Coach » so a drag can
+/// cross messages as one text. Long-press copies the labeled turn (not one markdown fragment).
+/// Proposal / food cards stay outside the selection path — a menu over them stole field taps.
 private struct CoachMessageRow: View {
     let message: CoachMessage
     let isStreaming: Bool
     let isReplying: Bool
-    /// Nil while an answer streams: a proposal cannot be answered mid-turn.
     let onAnswer: ((String, Bool, JSONValue?) -> Void)?
     let onRetry: ((String, JSONValue?) -> Void)?
     let onOpenNutrition: (() -> Void)?
@@ -451,7 +478,7 @@ private struct CoachMessageRow: View {
                 if let context = message.context {
                     CoachContextTag(context: context)
                 }
-                Text(message.text)
+                Text(CoachMessageCopy.selectableBody(roleLabel: "Moi", body: message.text))
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground)
                     .multilineTextAlignment(.leading)
@@ -464,19 +491,16 @@ private struct CoachMessageRow: View {
                     )
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
-            .coachCopyMenu(message.text)
+            .coachCopyMenu(CoachMessageCopy.labeledTurn(message))
 
         case .assistant:
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitEyebrow("Coach")
                 ForEach(CoachSegment.segments(of: message)) { segment in
                     switch segment {
                     case .text(_, let text):
-                        // The coach writes markdown; rendering it as literal asterisks would be
-                        // the app failing to read its own answer.
-                        // Copy menu on prose only — wrapping the food-log card stole field taps.
-                        SharpitMarkdownText(markdown: text)
-                            .coachCopyMenu(text)
+                        // One Text (AttributedString) so selection spans the whole prose block.
+                        coachProse(text)
+                            .coachCopyMenu(CoachMessageCopy.labeledTurn(message))
                     case .proposal(let proposal):
                         CoachProposalCard(proposal: proposal, onAnswer: answer(for: proposal))
                     case .foodLog(let proposal):
@@ -496,9 +520,30 @@ private struct CoachMessageRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
+
+    @ViewBuilder
+    private func coachProse(_ markdown: String) -> some View {
+        let labeled = CoachMessageCopy.selectableBody(roleLabel: "Coach", body: markdown)
+        if let attributed = try? AttributedString(
+            markdown: labeled,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        ) {
+            Text(attributed)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Text(labeled)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
 }
 
-/// Text put on the pasteboard for a coach turn — the assembled prose, not one markdown block.
+/// Text put on the pasteboard — labeled turns so a paste reads as a conversation.
 enum CoachMessageCopy {
     static func plainText(of message: CoachMessage) -> String {
         let assembled = message.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -510,6 +555,28 @@ enum CoachMessageCopy {
             }
             return nil
         }.joined(separator: "\n\n")
+    }
+
+    static func roleLabel(for message: CoachMessage) -> String {
+        message.role == .user ? "Moi" : "Coach"
+    }
+
+    /// « Coach\n… » / « Moi\n… » — what selection and long-press put on the pasteboard.
+    static func labeledTurn(_ message: CoachMessage) -> String {
+        let body = plainText(of: message).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !body.isEmpty else { return "" }
+        return "\(roleLabel(for: message))\n\(body)"
+    }
+
+    static func labeledTranscript(messages: [CoachMessage]) -> String {
+        messages.compactMap { turn -> String? in
+            let labeled = labeledTurn(turn)
+            return labeled.isEmpty ? nil : labeled
+        }.joined(separator: "\n\n")
+    }
+
+    static func selectableBody(roleLabel: String, body: String) -> String {
+        "\(roleLabel)\n\(body)"
     }
 }
 

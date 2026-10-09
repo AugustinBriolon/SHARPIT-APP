@@ -91,7 +91,8 @@ private let nutritionJSON = """
 // MARK: - Readout
 
 @Test func caloriesReadTheFrenchWay() {
-    #expect(NutritionReadout.kcal(2140.5) == "2\u{202F}141")
+    #expect(NutritionReadout.kcal(2140.5) == "2141")
+    #expect(NutritionReadout.kcal(12_480) == "12\u{202F}480")
     #expect(NutritionReadout.kcal(nil) == "—")
     #expect(NutritionReadout.grams(71.2) == "71 g")
     #expect(NutritionReadout.perKg(1.84) == "1,8 g/kg")

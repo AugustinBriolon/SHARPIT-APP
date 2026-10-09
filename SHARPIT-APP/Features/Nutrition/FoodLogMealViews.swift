@@ -133,7 +133,9 @@ private struct FoodLogMealRow: View {
                 FoodHealthBadge(meal: health)
             }
             if !section.entries.isEmpty {
-                VStack(alignment: .trailing, spacing: 2) {
+                // One line, in a column of fixed width, so the scores and figures of every meal
+                // stand under one another.
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text(NutritionReadout.kcal(section.kcal))
                         .font(SharpitTypography.instrument)
                         .foregroundStyle(SharpitColor.foreground)
@@ -142,6 +144,8 @@ private struct FoodLogMealRow: View {
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
+                .lineLimit(1)
+                .frame(minWidth: 78, alignment: .trailing)
             }
             if opensPage {
                 Image(systemName: "chevron.right")

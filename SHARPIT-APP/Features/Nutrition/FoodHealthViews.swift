@@ -119,15 +119,28 @@ struct FoodHealthBadge: View {
         grade = meal?.grade
     }
 
+    /// A tinted capsule read as a disabled control; a ring filled to the score reads as a measure.
+    /// Static on purpose: rows scroll in and out, and a ring sweeping each time is noise.
     var body: some View {
-        Text(label)
-            .font(SharpitTypography.instrument)
-            .monospacedDigit()
-            .foregroundStyle(tone)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(tone.opacity(0.12), in: Capsule())
-            .accessibilityLabel(accessibility)
+        HStack(spacing: 5) {
+            if let score {
+                ZStack {
+                    Circle()
+                        .stroke(SharpitColor.analysisGrid, lineWidth: 2.5)
+                    Circle()
+                        .trim(from: 0, to: min(max(Double(score) / 100, 0), 1))
+                        .stroke(tone, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                }
+                .frame(width: 15, height: 15)
+            }
+            Text(label)
+                .font(SharpitTypography.instrument)
+                .monospacedDigit()
+                .foregroundStyle(tone)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibility)
     }
 
     private var label: String {
