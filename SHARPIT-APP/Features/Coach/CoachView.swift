@@ -133,16 +133,11 @@ struct CoachView: View {
             store.onCalendarChanged = { [router] in router.noteCalendarChanged() }
         }
         .onChange(of: scenePhase) { _, phase in
-            switch phase {
-            case .background:
+            if phase == .background {
                 CoachReplyLiveActivityController.shared.startIfNeeded(
                     conversationId: store.conversationId ?? "",
                     isReplying: store.isReplying
                 )
-            case .active:
-                Task { await store.resumeAfterInterruption() }
-            default:
-                break
             }
         }
         .task(id: router.pendingCoachContext) {
@@ -475,10 +470,11 @@ private struct CoachMessageRow: View {
         switch message.role {
         case .user:
             VStack(alignment: .trailing, spacing: SharpitSpacing.xxs) {
+                SharpitEyebrow("Moi")
                 if let context = message.context {
                     CoachContextTag(context: context)
                 }
-                Text(CoachMessageCopy.selectableBody(roleLabel: "Moi", body: message.text))
+                Text(message.text)
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground)
                     .multilineTextAlignment(.leading)
@@ -495,6 +491,7 @@ private struct CoachMessageRow: View {
 
         case .assistant:
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                SharpitEyebrow("Coach")
                 ForEach(CoachSegment.segments(of: message)) { segment in
                     switch segment {
                     case .text(_, let text):
@@ -523,9 +520,8 @@ private struct CoachMessageRow: View {
 
     @ViewBuilder
     private func coachProse(_ markdown: String) -> some View {
-        let labeled = CoachMessageCopy.selectableBody(roleLabel: "Coach", body: markdown)
         if let attributed = try? AttributedString(
-            markdown: labeled,
+            markdown: markdown,
             options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         ) {
             Text(attributed)
@@ -534,7 +530,7 @@ private struct CoachMessageRow: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            Text(labeled)
+            Text(markdown)
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.foreground)
                 .textSelection(.enabled)
@@ -575,9 +571,6 @@ enum CoachMessageCopy {
         }.joined(separator: "\n\n")
     }
 
-    static func selectableBody(roleLabel: String, body: String) -> String {
-        "\(roleLabel)\n\(body)"
-    }
 }
 
 private extension View {

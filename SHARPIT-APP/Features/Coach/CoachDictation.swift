@@ -71,6 +71,7 @@ final class CoachDictation {
     private let audioEngine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
+    private var hasTap = false
 
     /// The draft once dictation has added `heard` after what was typed before it.
     nonisolated static func merged(typed: String, heard: String) -> String {
@@ -78,6 +79,11 @@ final class CoachDictation {
         let words = heard.trimmingCharacters(in: .whitespaces)
         guard !words.isEmpty else { return typed }
         return base.isEmpty ? words : "\(base) \(words)"
+    }
+
+    /// Hardware that can feed a tap (simulator without a mic reports a zero rate).
+    nonisolated static func canTap(_ format: AVAudioFormat) -> Bool {
+        format.sampleRate > 0 && format.channelCount > 0
     }
 
     /// Starts listening; `onText` receives the draft rewritten with what has been heard so far.
@@ -102,14 +108,22 @@ final class CoachDictation {
     }
 
     func stop() {
+        resetEngine()
+        isListening = false
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    /// Drops tap/engine/task without touching the shared audio session (begin reactivates it).
+    private func resetEngine() {
         audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        if hasTap {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            hasTap = false
+        }
         request?.endAudio()
         task?.finish()
         request = nil
         task = nil
-        isListening = false
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     private func begin(
@@ -117,6 +131,9 @@ final class CoachDictation {
         typed: String,
         onText: @escaping @MainActor (String) -> Void
     ) throws {
+        // A previous attempt may have left a tap or a running engine; clear before reinstalling.
+        resetEngine()
+
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.record, mode: .measurement, options: .duckOthers)
         try session.setActive(true, options: .notifyOthersOnDeactivation)
@@ -127,19 +144,26 @@ final class CoachDictation {
         self.request = request
 
         let input = audioEngine.inputNode
-        let format = input.outputFormat(forBus: 0)
-        // No microphone (a simulator without one) reports a zero rate, and tapping it crashes.
-        guard format.sampleRate > 0 else { throw DictationUnavailable() }
-        Self.feed(request, from: input, format: format)
+        // inputFormat matches the hardware graph; outputFormat can still report 44.1 kHz Float32
+        // while the node is 48 kHz, and installTap then raises (APPLE-IOS-3).
+        let format = input.inputFormat(forBus: 0)
+        guard Self.canTap(format) else { throw DictationUnavailable() }
+        Self.feed(request, from: input)
+        hasTap = true
         audioEngine.prepare()
         try audioEngine.start()
 
-        task = Self.recognize(request, with: recognizer) { [weak self] heard, finished in
-            Task { @MainActor in
-                if let heard { onText(Self.merged(typed: typed, heard: heard)) }
-                if finished { self?.stop() }
-            }
-        }
+        // Build the speech callback off the main actor — default isolation is MainActor, so a
+        // closure formed here would trap on the speech queue (APPLE-IOS-2 / APPLE-IOS-4).
+        task = Self.recognize(
+            request,
+            with: recognizer,
+            onResult: Self.bindResults(
+                typed: typed,
+                onText: onText,
+                onFinished: { [weak self] in self?.stop() }
+            )
+        )
     }
 
     private struct DictationUnavailable: Error {}
@@ -150,11 +174,24 @@ final class CoachDictation {
 
     nonisolated private static func feed(
         _ request: SFSpeechAudioBufferRecognitionRequest,
-        from input: AVAudioInputNode,
-        format: AVAudioFormat
+        from input: AVAudioInputNode
     ) {
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+        // nil → node's bus format; never pass a guessed AVAudioFormat across a session change.
+        input.installTap(onBus: 0, bufferSize: 1024, format: nil) { buffer, _ in
             request.append(buffer)
+        }
+    }
+
+    nonisolated private static func bindResults(
+        typed: String,
+        onText: @escaping @MainActor (String) -> Void,
+        onFinished: @escaping @MainActor () -> Void
+    ) -> @Sendable (_ heard: String?, _ finished: Bool) -> Void {
+        { heard, finished in
+            Task { @MainActor in
+                if let heard { onText(merged(typed: typed, heard: heard)) }
+                if finished { onFinished() }
+            }
         }
     }
 

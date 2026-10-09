@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 import Testing
 @testable import Sharpit
 
@@ -324,6 +325,15 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
     #expect(CoachDictation.merged(typed: "", heard: "comment était ma nuit") == "comment était ma nuit")
     #expect(CoachDictation.merged(typed: "Salut", heard: "comment était ma nuit") == "Salut comment était ma nuit")
     #expect(CoachDictation.merged(typed: "Salut", heard: "  ") == "Salut")
+}
+
+@Test func tapNeedsALiveMicrophoneFormat() {
+    let live = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
+    #expect(CoachDictation.canTap(live))
+    let noRate = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 0, channels: 1, interleaved: false)!
+    #expect(!CoachDictation.canTap(noRate))
+    let noChannel = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44_100, channels: 0, interleaved: false)!
+    #expect(!CoachDictation.canTap(noChannel))
 }
 
 // MARK: - Copy

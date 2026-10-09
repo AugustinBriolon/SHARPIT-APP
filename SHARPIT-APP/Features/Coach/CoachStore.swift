@@ -14,8 +14,8 @@ final class CoachStore {
     private(set) var failure: String?
     /// The server's id for this conversation, once it has been saved. Nil for a new one.
     private(set) var conversationId: String?
-    /// Bumped when the thread should jump to its end — opening history, or a resync after a
-    /// cut stream. The view scrolls; the store only signals.
+    /// Bumped when the thread should jump to its end — opening history. The view scrolls; the
+    /// store only signals.
     private(set) var endAnchorRevision = 0
 
     /// What the next message will carry. Set when the athlete arrives from another screen,
@@ -30,35 +30,29 @@ final class CoachStore {
     /// The answers already sent back, so a continuation that fails is not re-sent in a loop
     /// (the web's `lastStepApprovalResponseFingerprint`).
     private var sentApprovals: Set<String> = []
-    /// The client left mid-stream; the server still writes and saves. Pull once that finishes.
-    private var resyncPending = false
-    /// Invalidates a delayed resync when a newer turn starts.
-    private var resyncGeneration = 0
 
     private let client: any CoachChatServing
     /// Nil where nothing is kept, in previews: the conversation then lives only on screen.
     private let conversations: (any CoachConversationServing)?
     private let tokenProvider: (() async throws -> String)?
-    /// How long to wait before the first pull after a cut stream — the server finishes and
-    /// saves through `after`, so an immediate GET would still miss the answer.
-    private let resyncDelay: Duration
     /// The in-flight SSE consume task — cancelled by the stop control on the composer.
     private var replyTask: Task<Void, Never>?
+    /// True only when the athlete pressed stop — not when Approve cancels a winding-down stream.
+    private var userStoppedReply = false
 
     init(
         client: any CoachChatServing,
         conversations: (any CoachConversationServing)? = nil,
-        tokenProvider: (() async throws -> String)?,
-        resyncDelay: Duration = .seconds(2)
+        tokenProvider: (() async throws -> String)?
     ) {
         self.client = client
         self.conversations = conversations
         self.tokenProvider = tokenProvider
-        self.resyncDelay = resyncDelay
     }
 
-    /// Cuts the live coach stream. Keeps the partial bubble; the server finishes and we resync.
+    /// Cuts the live coach stream and the server request. Keeps any partial bubble already shown.
     func stopReply() {
+        userStoppedReply = true
         replyTask?.cancel()
     }
 
@@ -96,6 +90,7 @@ final class CoachStore {
         draft = ""
         pendingContext = nil
         failure = nil
+        userStoppedReply = false
 
         // The placeholder is appended before the first chunk so the thread shows the coach has
         // started, rather than staying still until the first word lands.
@@ -173,10 +168,6 @@ final class CoachStore {
     /// by chunk. The coach turn takes the id the server gives it, which is the one it saves.
     private func stream(into id: String, turn: CoachMessage, history: [CoachMessage]) async {
         isReplying = true
-        // A newer turn owns the thread; drop any delayed pull from a cut one.
-        resyncGeneration += 1
-        resyncPending = false
-        var interrupted = false
         defer { isReplying = false }
 
         guard let tokenProvider else {
@@ -219,8 +210,13 @@ final class CoachStore {
                 onCalendarChanged?()
             }
         } catch is CancellationError {
-            // Keep the partial bubble. The server finishes the turn and saves; we pull later.
-            interrupted = true
+            // Keep any words already shown; do not pull a fuller answer the athlete cancelled.
+            dropEmptyAnswer()
+            if userStoppedReply {
+                failure = "Réponse arrêtée."
+            }
+            userStoppedReply = false
+            CoachReplyLiveActivityController.shared.end()
         } catch let error as SharpitAPIError where error == .unauthorized {
             markContinuationFailed(id: id, message: "Session expirée. Reconnecte-toi.")
             dropEmptyAnswer()
@@ -237,10 +233,6 @@ final class CoachStore {
             dropEmptyAnswer()
             failure = "La réponse n'a pas abouti. Réessaie."
             CoachReplyLiveActivityController.shared.markFailed()
-        }
-
-        if interrupted {
-            scheduleResyncAfterInterruption()
         }
     }
 
@@ -260,8 +252,6 @@ final class CoachStore {
     /// otherwise land in a conversation the athlete has already left.
     func startNewConversation() {
         guard !isReplying else { return }
-        resyncGeneration += 1
-        resyncPending = false
         messages = []
         sentApprovals = []
         conversationId = nil
@@ -277,8 +267,6 @@ final class CoachStore {
         guard !isReplying, let conversations, let tokenProvider else { return false }
         do {
             let conversation = try await conversations.conversation(id: id, token: try await tokenProvider())
-            resyncGeneration += 1
-            resyncPending = false
             messages = conversation.messages
             sentApprovals = []
             conversationId = conversation.id
@@ -290,45 +278,6 @@ final class CoachStore {
         } catch {
             failure = "Cette conversation n'a pas pu être ouverte."
             return false
-        }
-    }
-
-    /// Foreground / return to Coach after a cut stream: pull the conversation the server saved.
-    func resumeAfterInterruption() async {
-        guard resyncPending, !isReplying else { return }
-        await resyncFromServer()
-    }
-
-    /// The client dropped the SSE; wait for the server save, then replace the thread.
-    private func scheduleResyncAfterInterruption() {
-        guard conversationId != nil else { return }
-        resyncPending = true
-        let generation = resyncGeneration
-        Task { @MainActor in
-            try? await Task.sleep(for: resyncDelay)
-            guard resyncPending, generation == resyncGeneration, !isReplying else { return }
-            await resyncFromServer()
-        }
-    }
-
-    private func resyncFromServer() async {
-        guard let conversationId, let conversations, let tokenProvider else { return }
-        do {
-            let conversation = try await conversations.conversation(
-                id: conversationId,
-                token: try await tokenProvider()
-            )
-            messages = conversation.messages
-            failure = nil
-            resyncPending = false
-            endAnchorRevision += 1
-            let preview = conversation.messages.last(where: { $0.role == .assistant }).map(\.text) ?? ""
-            CoachReplyLiveActivityController.shared.markReady(
-                preview: CoachReplyPreview.line(from: preview)
-            )
-        } catch {
-            // Keep the partial thread; `resumeAfterInterruption` retries on the next active.
-            resyncPending = true
         }
     }
 

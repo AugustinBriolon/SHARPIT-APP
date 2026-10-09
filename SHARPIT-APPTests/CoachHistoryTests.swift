@@ -162,14 +162,12 @@ private func coachStore(
     failing: Bool = false,
     saved: Saved = Saved(),
     client: any CoachChatServing = RecordingCoachClient(),
-    conversations: StubConversations? = nil,
-    resyncDelay: Duration = .milliseconds(10)
+    conversations: StubConversations? = nil
 ) -> CoachStore {
     CoachStore(
         client: client,
         conversations: conversations ?? StubConversations(opened: opened, failing: failing, saved: saved),
-        tokenProvider: { "token" },
-        resyncDelay: resyncDelay
+        tokenProvider: { "token" }
     )
 }
 
@@ -293,10 +291,11 @@ private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
     #expect(!store.isReplying)
     #expect(store.messages.last?.role == .assistant)
     #expect(store.messages.last?.text.contains("Partiel") == true)
+    #expect(store.failure == "Réponse arrêtée.")
 }
 
 @MainActor
-@Test func aCutStreamPullsTheSavedAnswerAndAnchorsTheEnd() async {
+@Test func aStoppedReplyKeepsThePartialAndDoesNotPullTheServer() async {
     let conversations = StubConversations(
         opened: CoachConversation(
             id: "conversation-1",
@@ -309,36 +308,12 @@ private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
     let store = coachStore(client: CancellingCoachClient(), conversations: conversations)
 
     await ask(store, "Je doute")
-    // Partial text stayed until the delayed pull; wait for it.
     try? await Task.sleep(for: .milliseconds(40))
 
-    #expect(store.messages.last?.text == "Réponse complète du serveur.")
-    #expect(store.endAnchorRevision >= 1)
-    #expect(conversations.fetchCount >= 1)
-    #expect(store.failure == nil)
-}
-
-@MainActor
-@Test func resumeAfterInterruptionRetriesAFailedPull() async {
-    let conversations = StubConversations(
-        opened: CoachConversation(
-            id: "conversation-1",
-            messages: [
-                CoachMessage(id: "q", role: .user, text: "Coupe"),
-                CoachMessage(id: "a", role: .assistant, text: "Reprise."),
-            ]
-        ),
-        fetchFailuresRemaining: 1
-    )
-    let store = coachStore(client: CancellingCoachClient(), conversations: conversations)
-
-    await ask(store, "Coupe")
-    try? await Task.sleep(for: .milliseconds(40))
     #expect(store.messages.last?.text == "Cou")
-
-    await store.resumeAfterInterruption()
-
-    #expect(store.messages.last?.text == "Reprise.")
+    #expect(conversations.fetchCount == 0)
+    // Stream cut without the stop button — keep partial, no fuller pull.
+    #expect(store.failure == nil)
 }
 
 @MainActor
