@@ -11,16 +11,18 @@ private func foodPart(
     outputJSON: String? = nil,
     errorText: String? = nil
 ) -> JSONValue {
-    var extras = ""
+    // Single-line body: a missing final `}` makes JSONDecoder return .null.
+    var body =
+        "{\"type\":\"tool-logFoods\",\"toolCallId\":\"f1\",\"state\":\"\(state)\",\"approval\":{\"id\":\"af1\"},\"input\":{\"date\":\"2026-10-08\",\"meal\":\"\(meal)\",\"items\":[{\"name\":\"Frites\",\"grams\":\(grams),\"kcalPer100g\":300,\"proteinPer100g\":4,\"carbsPer100g\":40,\"fatPer100g\":15}]}}"
     if let outputJSON {
-        extras += ",\"output\":\(outputJSON)"
+        body.removeLast()
+        body += ",\"output\":\(outputJSON)}"
     }
     if let errorText {
-        extras += ",\"errorText\":\"\(errorText)\""
+        body.removeLast()
+        body += ",\"errorText\":\"\(errorText)\"}"
     }
-    return chunk("""
-    {"type":"tool-logFoods","toolCallId":"f1","state":"\(state)","approval":{"id":"af1"},"input":{"date":"2026-10-08","meal":"\(meal)","items":[{"name":"Frites","grams":\(grams),"kcalPer100g":300,"proteinPer100g":4,"carbsPer100g":40,"fatPer100g":15}]}\(extras)}
-    """)
+    return chunk(body)
 }
 
 private func foodProposal(in message: CoachMessage) -> CoachFoodLogProposal? {
