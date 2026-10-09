@@ -1,22 +1,5 @@
 import SwiftUI
 
-/// Whether a control should treat the current touch as a press, or as a pan that started on it.
-/// Used by day-swipe mute tests; pressables themselves stay system `ButtonStyle` so ScrollView
-/// can cancel touches (a global `DragGesture(minimumDistance: 0)` steals vertical scrolls).
-nonisolated enum SharpitPress {
-    /// Finger travel below this stays a tap.
-    static let activationSlop: CGFloat = 12
-
-    static func shouldActivate(translation: CGSize) -> Bool {
-        hypot(translation.width, translation.height) < activationSlop
-    }
-}
-
-extension EnvironmentValues {
-    /// Set by day-swipe: child hit-testing is off while a horizontal turn is under way.
-    @Entry var sharpitSuppressesControlActivation: Bool = false
-}
-
 /// A tappable surface answers the finger: it sinks slightly while pressed and springs back
 /// on release. `.plain` gave no feedback at all, so cards that open something looked
 /// exactly like cards that do not.

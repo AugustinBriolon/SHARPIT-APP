@@ -11,8 +11,10 @@ import UIKit
 /// from the other. A day picked in the strip or the calendar comes in from its side of time —
 /// later from the right, earlier from the left. With Reduce Motion, the day only fades in.
 ///
-/// Once the drag is a day turn, child controls (rows, toggles, sheets) must not fire: a finger
-/// that started on a button and slid sideways is turning the day, not opening what it touched.
+/// A finger that starts on a row or a button and slides sideways turns the day without opening
+/// what it touched: the turn is a UIKit pan that refuses vertical drags (the scroll keeps them)
+/// and, once it begins, is exclusive, so UIKit fails the control's pending tap — the contract
+/// `UIScrollView` keeps with its content.
 nonisolated enum DaySwipe {
     enum Step: Equatable { case previous, next }
     enum Axis: Equatable { case horizontal, vertical }
@@ -29,11 +31,10 @@ nonisolated enum DaySwipe {
     static let pickTravel: CGFloat = 56
     /// How far past nothing the page gives before it resists, as a scroll view's edge does.
     static let rubberBand: CGFloat = 0.55
-    /// After a horizontal turn, keep buttons mute this long so a lift cannot also open them.
-    static let hitSuppression: Duration = .milliseconds(200)
-    /// Sideways travel that mutes child controls before the drag qualifies as a full day turn.
-    /// UIScrollView cancels content touches on a similar slop; without this, a Button still fires.
-    static let childMuteTravel: CGFloat = 10
+    /// Travel under which a touch is still undecided between a tap, a scroll and a turn.
+    static let decisionTravel: CGFloat = 10
+    /// UIScrollView's normal deceleration, per millisecond: how far a released drag coasts.
+    static let deceleration: CGFloat = 0.998
 
     static func step(startX: CGFloat, translation: CGSize, predictedEnd: CGSize? = nil) -> Step? {
         guard axis(startX: startX, translation: translation) == .horizontal else { return nil }
@@ -54,19 +55,20 @@ nonisolated enum DaySwipe {
         return .horizontal
     }
 
-    /// Child hits stay live while scrolling; once the drag is a day turn, they must not.
-    static func blocksChildHits(axis: Axis?) -> Bool {
-        axis == .horizontal
+    /// Nil while the finger has barely moved; then whether the drag is a day turn rather than
+    /// a scroll, a tap or the edge's back gesture.
+    static func isTurn(startX: CGFloat, translation: CGSize) -> Bool? {
+        guard hypot(translation.width, translation.height) >= decisionTravel else { return nil }
+        return axis(startX: startX, translation: translation) == .horizontal
     }
 
-    /// Mute child activation as soon as the finger has clearly moved sideways — earlier than
-    /// ``axis`` / ``minimumTravel``, so a meal row or coach chip under the finger cannot open.
-    static func suppressesChildActivation(startX: CGFloat, translation: CGSize) -> Bool {
-        guard startX > edgeWidth else { return false }
-        let dx = abs(translation.width)
-        let dy = abs(translation.height)
-        guard dx >= childMuteTravel else { return false }
-        return dx >= dy
+    /// Where a released drag would come to rest, coasting as a scroll view does.
+    static func projected(_ translation: CGSize, velocity: CGSize) -> CGSize {
+        let coast = deceleration / (1 - deceleration) / 1000
+        return CGSize(
+            width: translation.width + velocity.width * coast,
+            height: translation.height + velocity.height * coast
+        )
     }
 
     /// Where the page sits under the finger: with it when a day lies that way, held back
@@ -98,15 +100,6 @@ nonisolated enum DaySwipe {
     static func entrySign(_ step: Step) -> CGFloat { step == .next ? 1 : -1 }
 }
 
-/// The drag under way, reset by the system when the finger lifts or the gesture is cancelled,
-/// so a page can never stay stuck aside.
-nonisolated private struct DaySwipeDrag: Equatable {
-    var axis: DaySwipe.Axis?
-    var offset: CGFloat = 0
-    /// Sticky for the gesture lifetime: sideways travel (or a locked horizontal axis).
-    var suppressesChildren = false
-}
-
 /// Where a new day's page starts before it settles.
 nonisolated private struct DayArrival: Equatable {
     var offset: CGFloat = 0
@@ -118,7 +111,8 @@ private struct DaySwipeModifier: ViewModifier {
     let onSelect: (Date) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @GestureState private var drag = DaySwipeDrag()
+    /// Where the finger holds the page while it drags.
+    @State private var dragOffset: CGFloat = 0
     /// Where the page rests once the finger is gone: home, or aside while it leaves.
     @State private var restingOffset: CGFloat = 0
     @State private var width: CGFloat = 390
@@ -126,118 +120,70 @@ private struct DaySwipeModifier: ViewModifier {
     @State private var pendingStep: DaySwipe.Step?
     @State private var arrival = DayArrival()
     @State private var arrivals = 0
-    /// Sticky mute for child controls: GestureState clears on lift before Button may still fire.
-    @State private var blocksHits = false
 
     func body(content: Content) -> some View {
         let arrival = arrival
-        let muted = blocksHits || drag.suppressesChildren
-        // Gesture and offset live on the wrapper; child hit-testing + environment mute once the
-        // finger has slid sideways, so a control under the touch cannot also open on lift.
-        return ZStack {
-            content
-                .allowsHitTesting(!muted)
-                .environment(\.sharpitSuppressesControlActivation, muted)
-        }
-        .contentShape(.rect)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-        .keyframeAnimator(initialValue: DayArrival(), trigger: arrivals) { page, value in
-            page
-                .offset(x: value.offset)
-                .opacity(value.opacity)
-        } keyframes: { _ in
-            KeyframeTrack(\.offset) {
-                MoveKeyframe(arrival.offset)
-                SpringKeyframe(0, duration: 0.42, spring: .snappy)
+        return content
+            .contentShape(.rect)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+            .keyframeAnimator(initialValue: DayArrival(), trigger: arrivals) { page, value in
+                page
+                    .offset(x: value.offset)
+                    .opacity(value.opacity)
+            } keyframes: { _ in
+                KeyframeTrack(\.offset) {
+                    MoveKeyframe(arrival.offset)
+                    SpringKeyframe(0, duration: 0.42, spring: .snappy)
+                }
+                KeyframeTrack(\.opacity) {
+                    MoveKeyframe(arrival.opacity)
+                    LinearKeyframe(1, duration: 0.22)
+                }
             }
-            KeyframeTrack(\.opacity) {
-                MoveKeyframe(arrival.opacity)
-                LinearKeyframe(1, duration: 0.22)
-            }
-        }
-        .offset(x: restingOffset + drag.offset)
-        .simultaneousGesture(gesture)
-        .onChange(of: day) { old, new in arrive(from: old, to: new) }
-        .onChange(of: drag.suppressesChildren) { _, suppresses in
-            if suppresses {
-                blocksHits = true
-            } else if pendingStep == nil, blocksHits {
-                // GestureState cleared on lift before a Button may still fire — hold the mute.
-                releaseHitsAfterSuppression()
-            }
-        }
-        // UIKit cancels the touch on buttons under a horizontal pan (UIScrollView-like).
-        // SwiftUI `allowsHitTesting` alone cannot un-arm a Button that already saw touchDown.
-        .background(DaySwipeButtonCancel(onHorizontalPanBegan: {
-            blocksHits = true
-        }))
-        .background(EdgeOnlyPopGesture())
+            .offset(x: restingOffset + dragOffset)
+            .gesture(DayTurnGesture(onChange: follow, onEnd: end, onCancel: settle))
+            .onChange(of: day) { old, new in arrive(from: old, to: new) }
+            .background(EdgeOnlyPopGesture())
     }
 
-    private var gesture: some Gesture {
-        let follows = !reduceMotion && pendingStep == nil
-        let canTurnNext = DaySwipe.day(after: .next, from: day) != nil
-        let width = width
-        return DragGesture(minimumDistance: 12, coordinateSpace: .global)
-            .updating($drag) { value, state, _ in
-                let startX = value.startLocation.x
-                let translation = value.translation
-                // Mute children even when Reduce Motion skips the page-follow animation.
-                if DaySwipe.suppressesChildActivation(startX: startX, translation: translation) {
-                    state.suppressesChildren = true
-                }
-                guard follows else { return }
-                if state.axis == nil {
-                    state.axis = DaySwipe.axis(startX: startX, translation: translation)
-                }
-                guard state.axis == .horizontal else { return }
-                state.suppressesChildren = true
-                let dx = translation.width
-                state.offset = DaySwipe.offset(for: dx, canTurn: dx > 0 || canTurnNext, width: width)
-            }
-            .onChanged { value in
-                let startX = value.startLocation.x
-                let translation = value.translation
-                let axis = DaySwipe.axis(startX: startX, translation: translation)
-                if DaySwipe.suppressesChildActivation(startX: startX, translation: translation)
-                    || DaySwipe.blocksChildHits(axis: axis)
-                {
-                    blocksHits = true
-                }
-            }
-            .onEnded { value in end(value, canTurnNext: canTurnNext) }
+    private var canTurnNext: Bool { DaySwipe.day(after: .next, from: day) != nil }
+
+    private func follow(_ translation: CGSize) {
+        guard !reduceMotion, pendingStep == nil else { return }
+        let dx = translation.width
+        dragOffset = DaySwipe.offset(for: dx, canTurn: dx > 0 || canTurnNext, width: width)
     }
 
-    private func end(_ value: DragGesture.Value, canTurnNext: Bool) {
-        guard pendingStep == nil else { return }
-        let startX = value.startLocation.x
-        let dx = value.translation.width
-        let axis = DaySwipe.axis(startX: startX, translation: value.translation)
+    /// A turn the system took back: the page goes home.
+    private func settle() {
+        restingOffset += dragOffset
+        dragOffset = 0
+        withAnimation(SharpitMotion.selection) { restingOffset = 0 }
+    }
+
+    private func end(_ release: DayTurnRelease) {
         // Pick the page up where the finger left it.
-        let released = reduceMotion || axis == .vertical
-            ? 0
-            : DaySwipe.offset(for: dx, canTurn: dx > 0 || canTurnNext, width: width)
+        let released = dragOffset
+        dragOffset = 0
+        guard pendingStep == nil else { return }
         restingOffset = released
 
-        guard let step = DaySwipe.step(startX: startX, translation: value.translation, predictedEnd: value.predictedEndTranslation),
+        let predictedEnd = DaySwipe.projected(release.translation, velocity: release.velocity)
+        guard let step = DaySwipe.step(startX: release.startX, translation: release.translation, predictedEnd: predictedEnd),
               let target = DaySwipe.day(after: step, from: day)
         else {
             withAnimation(SharpitMotion.selection) { restingOffset = 0 }
-            releaseHitsAfterSuppression()
             return
         }
-        // A committed turn keeps hits muted until the new day lands (or the timeout below).
-        blocksHits = true
         guard !reduceMotion else {
             onSelect(target)
-            releaseHitsAfterSuppression()
             return
         }
 
         pendingStep = step
         // The page keeps the finger's speed on its way out.
         let exit = -DaySwipe.entrySign(step) * width
-        let speed = max(abs(value.velocity.width), 900)
+        let speed = max(abs(release.velocity.width), 900)
         let duration = min(max(abs(exit - released) / speed, 0.12), 0.24)
         withAnimation(.easeOut(duration: duration)) {
             restingOffset = exit
@@ -248,7 +194,6 @@ private struct DaySwipeModifier: ViewModifier {
                 try? await Task.sleep(for: .milliseconds(800))
                 guard pendingStep == step else { return }
                 pendingStep = nil
-                blocksHits = false
                 withAnimation(SharpitMotion.reveal) { restingOffset = 0 }
             }
         }
@@ -257,7 +202,6 @@ private struct DaySwipeModifier: ViewModifier {
     private func arrive(from old: Date, to new: Date) {
         let swiped = pendingStep
         pendingStep = nil
-        blocksHits = false
         guard let step = swiped ?? DaySwipe.step(from: old, to: new) else { return }
         var still = Transaction()
         still.disablesAnimations = true
@@ -271,15 +215,6 @@ private struct DaySwipeModifier: ViewModifier {
             arrival = DayArrival(offset: DaySwipe.entrySign(step) * DaySwipe.pickTravel, opacity: 0)
         }
         arrivals += 1
-    }
-
-    /// GestureState resets before a Button may still fire on lift — hold the mute briefly.
-    private func releaseHitsAfterSuppression() {
-        Task { @MainActor in
-            try? await Task.sleep(for: DaySwipe.hitSuppression)
-            guard pendingStep == nil else { return }
-            blocksHits = false
-        }
     }
 }
 
@@ -322,112 +257,92 @@ private struct EdgeOnlyPopGesture: UIViewControllerRepresentable {
     }
 }
 
-/// A horizontal pan on the day page cancels touches in controls underneath — the same contract
-/// as `UIScrollView.canCancelContentTouches`, so a finger that started on a meal row or coach
-/// chip and slid sideways turns the day without opening what it touched. Vertical pans never
-/// begin, so ScrollView keeps the scroll.
-private struct DaySwipeButtonCancel: UIViewRepresentable {
-    var onHorizontalPanBegan: () -> Void
+/// A day turn as it was let go, in window coordinates.
+nonisolated struct DayTurnRelease: Equatable {
+    var startX: CGFloat
+    var translation: CGSize
+    var velocity: CGSize
+}
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onHorizontalPanBegan: onHorizontalPanBegan)
+/// A pan that fails as soon as the finger moves more vertically than sideways, or starts on the
+/// back-gesture edge, so the scroll view and the navigation pop keep those touches. It never
+/// recognizes alongside other gestures: once it begins, UIKit fails the tap of the control under
+/// the finger instead of letting it fire on lift.
+private final class DayTurnRecognizer: UIPanGestureRecognizer {
+    private var start: CGPoint = .zero
+    /// The finger, read from the touches themselves: the pan's own location only follows the
+    /// moves handed to `super`, which an undecided turn holds back.
+    private var current: CGPoint = .zero
+
+    /// Travel since touch-down, unlike `translation(in:)`, which starts after the pan's own slop.
+    var travel: CGSize {
+        CGSize(width: current.x - start.x, height: current.y - start.y)
     }
 
-    func makeUIView(context: Context) -> BridgeView {
-        let view = BridgeView()
-        view.backgroundColor = .clear
-        view.isUserInteractionEnabled = false
-        context.coordinator.attach(to: view)
-        return view
+    override init(target: Any?, action: Selector?) {
+        super.init(target: target, action: action)
+        maximumNumberOfTouches = 1
     }
 
-    func updateUIView(_ uiView: BridgeView, context: Context) {
-        context.coordinator.onHorizontalPanBegan = onHorizontalPanBegan
-        context.coordinator.attach(to: uiView)
+    /// A scroll view's pan never stops a turn: on a real finger it can begin first, on a few
+    /// points of travel, and would otherwise fail the turn before it is decided.
+    override func canBePrevented(by preventingGestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard !(preventingGestureRecognizer.view is UIScrollView) else { return false }
+        return super.canBePrevented(by: preventingGestureRecognizer)
     }
 
-    final class BridgeView: UIView {
-        var onDidMoveToWindow: (() -> Void)?
-
-        override func didMoveToWindow() {
-            super.didMoveToWindow()
-            onDidMoveToWindow?()
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        if state == .possible, let touch = touches.first {
+            start = touch.location(in: nil)
+            current = start
         }
+        super.touchesBegan(touches, with: event)
     }
 
-    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        var onHorizontalPanBegan: () -> Void
-        private let pan = UIPanGestureRecognizer()
-        private weak var bridge: UIView?
-        private weak var host: UIView?
-
-        init(onHorizontalPanBegan: @escaping () -> Void) {
-            self.onHorizontalPanBegan = onHorizontalPanBegan
-            super.init()
-            pan.cancelsTouchesInView = true
-            pan.delegate = self
-            pan.addTarget(self, action: #selector(handlePan(_:)))
-            // Match SwiftUI day-swipe slop so a tiny nudge is still a tap.
-            pan.minimumNumberOfTouches = 1
-            pan.maximumNumberOfTouches = 1
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+        if let touch = touches.first {
+            current = touch.location(in: nil)
         }
-
-        func attach(to bridge: BridgeView) {
-            self.bridge = bridge
-            bridge.onDidMoveToWindow = { [weak self] in
-                self?.installOnHost()
-            }
-            installOnHost()
-        }
-
-        private func installOnHost() {
-            guard let bridge else { return }
-            // Prefer the enclosing scroll view (buttons live in its content); else the
-            // nearest full-size ancestor in the hosting tree.
-            var nextHost: UIView?
-            var cursor: UIView? = bridge.superview
-            while let current = cursor {
-                if current is UIScrollView {
-                    nextHost = current
-                    break
-                }
-                if nextHost == nil,
-                   current.bounds.width >= bridge.bounds.width,
-                   current.bounds.height > bridge.bounds.height + 1
-                {
-                    nextHost = current
-                }
-                cursor = current.superview
-            }
-            nextHost = nextHost ?? bridge.superview
-            guard let nextHost, host !== nextHost else { return }
-            host?.removeGestureRecognizer(pan)
-            nextHost.addGestureRecognizer(pan)
-            host = nextHost
-        }
-
-        @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-            if gesture.state == .began {
-                onHorizontalPanBegan()
+        if state == .possible {
+            switch DaySwipe.isTurn(startX: start.x, translation: travel) {
+            case nil:
+                return
+            case false?:
+                state = .failed
+                return
+            case true?:
+                break
             }
         }
+        super.touchesMoved(touches, with: event)
+    }
+}
 
-        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-            guard let pan = gestureRecognizer as? UIPanGestureRecognizer,
-                  let view = pan.view
-            else { return false }
-            let point = pan.translation(in: view)
-            let translation = CGSize(width: point.x, height: point.y)
-            let startX = pan.location(in: view).x - point.x
-            // Same early mute as SwiftUI day-swipe — not the stricter day-turn axis lock.
-            return DaySwipe.suppressesChildActivation(startX: startX, translation: translation)
-        }
+private struct DayTurnGesture: UIGestureRecognizerRepresentable {
+    let onChange: (CGSize) -> Void
+    let onEnd: (DayTurnRelease) -> Void
+    let onCancel: () -> Void
 
-        func gestureRecognizer(
-            _ gestureRecognizer: UIGestureRecognizer,
-            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-        ) -> Bool {
-            true
+    func makeUIGestureRecognizer(context: Context) -> DayTurnRecognizer {
+        DayTurnRecognizer()
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: DayTurnRecognizer, context: Context) {
+        switch recognizer.state {
+        case .began, .changed:
+            onChange(recognizer.travel)
+        case .ended:
+            let travel = recognizer.travel
+            let velocity = recognizer.velocity(in: nil)
+            onEnd(DayTurnRelease(
+                startX: recognizer.location(in: nil).x - travel.width,
+                translation: travel,
+                velocity: CGSize(width: velocity.x, height: velocity.y)
+            ))
+        case .cancelled, .failed:
+            onCancel()
+        default:
+            break
         }
     }
 }

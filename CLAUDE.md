@@ -404,7 +404,9 @@ opened), and reads the six most recent days with data ahead of the athlete. A sw
 turns the day (`DaySwipe`: right for the day before, left for the day after, never past today — the
 page follows the finger, resists where no day lies, and the new day slides in from its side; a day
 picked in the strip or the calendar comes in from its side of time, the title's date rolls the same
-way, a day not read yet shows redacted in its shape, Reduce Motion only fades) and
+way, a day not read yet shows redacted in its shape, Reduce Motion only fades; a swipe that
+starts on a row or a button never opens it — the turn is an exclusive UIKit pan that fails on
+vertical drags, so the scroll keeps those) and
 the left edge stays « back » — these screens and Journal turn off iOS 26's pop-from-anywhere
 (`interactiveContentPopGestureRecognizer`) while they show. Journal swipes its rows, not its
 week strip, which pages weeks.

@@ -210,25 +210,18 @@ import Testing
         #expect(DaySwipe.axis(startX: 180, translation: CGSize(width: 80, height: 10)) == .horizontal)
     }
 
-    @Test func aHorizontalTurnMutesChildHits() {
-        #expect(DaySwipe.blocksChildHits(axis: nil) == false)
-        #expect(DaySwipe.blocksChildHits(axis: .vertical) == false)
-        #expect(DaySwipe.blocksChildHits(axis: .horizontal) == true)
+    @Test func aTurnIsDecidedOnceTheFingerHasTravelled() {
+        #expect(DaySwipe.isTurn(startX: 180, translation: CGSize(width: 6, height: 0)) == nil)
+        #expect(DaySwipe.isTurn(startX: 180, translation: CGSize(width: 12, height: 4)) == true)
+        #expect(DaySwipe.isTurn(startX: 180, translation: CGSize(width: 12, height: 20)) == false)
+        #expect(DaySwipe.isTurn(startX: 10, translation: CGSize(width: 40, height: 0)) == false)
     }
 
-    @Test func sidewaysTravelMutesChildActivationBeforeAFullTurn() {
-        #expect(DaySwipe.suppressesChildActivation(
-            startX: 180, translation: CGSize(width: 8, height: 0)
-        ) == false)
-        #expect(DaySwipe.suppressesChildActivation(
-            startX: 180, translation: CGSize(width: 12, height: 4)
-        ) == true)
-        #expect(DaySwipe.suppressesChildActivation(
-            startX: 180, translation: CGSize(width: 12, height: 20)
-        ) == false)
-        #expect(DaySwipe.suppressesChildActivation(
-            startX: 10, translation: CGSize(width: 40, height: 0)
-        ) == false)
+    @Test func aReleasedDragCoastsTheWayItWasThrown() {
+        let still = DaySwipe.projected(CGSize(width: -30, height: 2), velocity: CGSize(width: 0, height: 0))
+        #expect(still == CGSize(width: -30, height: 2))
+        let thrown = DaySwipe.projected(CGSize(width: -30, height: 0), velocity: CGSize(width: -1000, height: 0))
+        #expect(thrown.width < -400 && thrown.width > -600)
     }
 
     @Test func aPickedDayComesInFromItsSideOfTime() {
@@ -239,18 +232,6 @@ import Testing
         #expect(DaySwipe.step(from: today, to: today) == nil)
         #expect(DaySwipe.entrySign(.next) > 0)
         #expect(DaySwipe.entrySign(.previous) < 0)
-    }
-}
-
-@Suite struct SharpitPressTests {
-    @Test func aShortTouchStaysATap() {
-        #expect(SharpitPress.shouldActivate(translation: CGSize(width: 0, height: 0)))
-        #expect(SharpitPress.shouldActivate(translation: CGSize(width: 4, height: 3)))
-    }
-
-    @Test func aSlideIsNotATap() {
-        #expect(SharpitPress.shouldActivate(translation: CGSize(width: 20, height: 0)) == false)
-        #expect(SharpitPress.shouldActivate(translation: CGSize(width: 0, height: 20)) == false)
     }
 }
 
