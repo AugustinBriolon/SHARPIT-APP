@@ -2,6 +2,8 @@ import Foundation
 import Testing
 @testable import Sharpit
 
+/// Sample `tool-logFoods` part. The root object must always close — a missing `}`
+/// makes `chunk` return `.null` and used to crash the suite via force-unwrap.
 private func foodPart(
     state: String = "approval-requested",
     meal: String = "LUNCH",
