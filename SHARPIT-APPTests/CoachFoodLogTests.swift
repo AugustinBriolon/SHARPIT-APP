@@ -9,8 +9,10 @@ private func foodPart(
     outputJSON: String? = nil,
     errorText: String? = nil
 ) -> JSONValue {
+    // Root object must close after `input` — a missing final `}` makes JSONDecoder
+    // return .null and every food-log proposal parse fails (then force-unwraps crash CI).
     var body =
-        "{\"type\":\"tool-logFoods\",\"toolCallId\":\"f1\",\"state\":\"\(state)\",\"approval\":{\"id\":\"af1\"},\"input\":{\"date\":\"2026-10-08\",\"meal\":\"\(meal)\",\"items\":[{\"name\":\"Frites\",\"grams\":\(grams),\"kcalPer100g\":300,\"proteinPer100g\":4,\"carbsPer100g\":40,\"fatPer100g\":15}]}"
+        "{\"type\":\"tool-logFoods\",\"toolCallId\":\"f1\",\"state\":\"\(state)\",\"approval\":{\"id\":\"af1\"},\"input\":{\"date\":\"2026-10-08\",\"meal\":\"\(meal)\",\"items\":[{\"name\":\"Frites\",\"grams\":\(grams),\"kcalPer100g\":300,\"proteinPer100g\":4,\"carbsPer100g\":40,\"fatPer100g\":15}]}}"
     if let outputJSON {
         body.removeLast()
         body += ",\"output\":\(outputJSON)}"
@@ -92,11 +94,12 @@ private func foodProposal(in message: CoachMessage) -> CoachFoodLogProposal? {
     #expect(plain.map(\.grams) == [100, 200])
 }
 
-@Test func respondingReplacesInputWhenApprovingFoodLog() {
+@Test func respondingReplacesInputWhenApprovingFoodLog() throws {
     let parts = [foodPart()]
-    var item = CoachFoodLogProposal(part: parts[0])!.items[0]
+    let proposal = try #require(CoachFoodLogProposal(part: parts[0]))
+    var item = proposal.items[0]
     item.grams = 120
-    let input = CoachFoodLogProposal(part: parts[0])!.patchedInput(meal: .snacks, items: [item])
+    let input = proposal.patchedInput(meal: .snacks, items: [item])
     let answered = CoachUIParts.responding(parts, approvalId: "af1", approved: true, replacingInput: input)
     #expect(answered[0]["state"]?.string == "approval-responded")
     #expect(answered[0]["input"]?["meal"]?.string == "SNACKS")
