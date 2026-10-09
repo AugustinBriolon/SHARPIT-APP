@@ -159,14 +159,18 @@ struct CoachFoodLogCard: View {
         self.onOpenNutrition = onOpenNutrition
         self.isReplying = isReplying
         _meal = State(initialValue: proposal.meal)
-        _lines = State(initialValue: proposal.items.map {
+        _lines = State(initialValue: Self.editableLines(proposal.items))
+    }
+
+    private static func editableLines(_ items: [CoachFoodLogProposal.Item]) -> [EditableLine] {
+        items.map {
             EditableLine(
                 id: $0.id,
                 name: $0.name,
                 gramsText: FoodPortion.editableFigure($0.grams),
                 source: $0
             )
-        })
+        }
     }
 
     private struct EditableLine: Identifiable, Equatable {
@@ -218,6 +222,11 @@ struct CoachFoodLogCard: View {
             }
         }
         .animation(SharpitMotion.reveal, value: phase)
+        // The card is born while the coach still streams the tool input: the foods and the meal
+        // arrive after it, and @State would keep the empty draft. The athlete edits only once
+        // the input is final, so following it never overwrites their changes.
+        .onChange(of: proposal.items) { _, items in lines = Self.editableLines(items) }
+        .onChange(of: proposal.meal) { _, new in meal = new }
         .onChange(of: proposal.status) { _, new in
             if case .awaiting = new {
                 isSending = false

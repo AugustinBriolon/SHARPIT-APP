@@ -41,6 +41,21 @@ private func foodProposal(in message: CoachMessage) -> CoachFoodLogProposal? {
     }
 }
 
+/// The card is created on the first streamed chunk, before the foods arrive; it follows the
+/// proposal's items and meal, so the streamed draft must differ from the final one.
+@Test func coachFoodLogDraftGainsItsFoodsAndMealOnceStreamed() throws {
+    let draft = try #require(CoachFoodLogProposal(part: chunk("""
+    {"type":"tool-logFoods","toolCallId":"f1","state":"input-streaming","input":{"date":"2026-10-08"}}
+    """)))
+    let final = try #require(CoachFoodLogProposal(part: foodPart(meal: "DINNER")))
+    #expect(draft.status == .drafting)
+    #expect(draft.items.isEmpty)
+    #expect(final.items.count == 1)
+    #expect(draft.items != final.items)
+    #expect(final.meal == .dinner)
+    #expect(draft.meal != final.meal)
+}
+
 @Test func coachFoodLogKeepsApprovalIdAfterFailure() throws {
     let proposal = try #require(CoachFoodLogProposal(part: foodPart(
         state: "output-error",
