@@ -14,3 +14,6 @@ skills-lock.json
 
 # Per-machine build override (see Config/Debug.xcconfig)
 Config/Local.xcconfig
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/

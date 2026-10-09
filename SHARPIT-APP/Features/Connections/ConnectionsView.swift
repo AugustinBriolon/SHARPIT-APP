@@ -306,9 +306,19 @@ struct ConnectionsView: View {
             tone: outcome.tone,
             autoDismissAfter: outcome.toastDuration
         )
-        guard outcome == .connected, let token = try? await tokenProvider() else { return }
-        status = try? await syncClient.sync(token: token)
-        await historyImport?.runIfNeeded(userId: clerk.user?.id, tokenProvider: tokenProvider)
+        guard outcome == .connected else { return }
+        do {
+            let token = try await tokenProvider()
+            status = try await syncClient.sync(token: token)
+            await historyImport?.runIfNeeded(userId: clerk.user?.id, tokenProvider: tokenProvider)
+        } catch {
+            toastCenter.show(
+                SharpitErrorGuidance.message(for: error, subject: "La synchronisation"),
+                symbol: "exclamationmark.triangle",
+                tone: .error,
+                autoDismissAfter: 4
+            )
+        }
     }
 
     /// Waits for the server — a disconnection revokes access at the provider, so the row only
@@ -345,10 +355,18 @@ struct ConnectionsView: View {
             autoDismissAfter: nil
         )
         defer { toastCenter.dismiss(token) }
-        guard let tok = try? await tokenProvider() else { return }
-        status = try? await syncClient.syncStatus(token: tok)
-        if let answer = try? await sourcePrefsClient.sourcePrefs(token: tok) {
+        do {
+            let tok = try await tokenProvider()
+            status = try await syncClient.syncStatus(token: tok)
+            let answer = try await sourcePrefsClient.sourcePrefs(token: tok)
             appleCalendar.syncLinkedFromServer(answer.connected.contains(AppleCalendarSync.providerId))
+        } catch {
+            toastCenter.show(
+                SharpitErrorGuidance.message(for: error, subject: "L’état des connexions"),
+                symbol: "exclamationmark.triangle",
+                tone: .error,
+                autoDismissAfter: 4
+            )
         }
     }
 }

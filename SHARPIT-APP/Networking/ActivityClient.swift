@@ -244,9 +244,9 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let (_, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard (200..<300).contains(status) else {
-            throw ActivityClientError.invalidResponse(status: status, body: "Mise à jour impossible")
-        }
+        if (200..<300).contains(status) { return }
+        try SharpitHTTPStatus.throwIfUnauthorized(status)
+        throw ActivityClientError.invalidResponse(status: status, body: "Mise à jour impossible")
     }
 
     private func request<T: Decodable>(
@@ -305,15 +305,20 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         }
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        try Self.mapReadStatus(status, body: data)
+        return data
+    }
+
+    /// Exposed for tests: GET/PATCH status mapping shared with `fetch` / `requestData`.
+    nonisolated static func mapReadStatus(_ status: Int, body: Data = Data()) throws {
         switch status {
-        case 200:
-            break
-        case 401:
+        case 200, 201, 204:
+            return
+        case 401, 403:
             throw SharpitAPIError.unauthorized
         default:
-            let body = String(data: data, encoding: .utf8) ?? "Réponse illisible"
-            throw ActivityClientError.invalidResponse(status: status, body: String(body.prefix(180)))
+            let text = String(data: body, encoding: .utf8) ?? "Réponse illisible"
+            throw ActivityClientError.invalidResponse(status: status, body: String(text.prefix(180)))
         }
-        return data
     }
 }

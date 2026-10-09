@@ -14,7 +14,7 @@ struct SharpitEyebrow: View {
     }
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.xxs + 2) {
+        HStack(spacing: SharpitSpacing.xs) {
             if let systemImage {
                 Image(systemName: systemImage)
                     .font(SharpitTypography.label)

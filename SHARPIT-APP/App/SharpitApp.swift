@@ -6,7 +6,9 @@ import SwiftUI
 @main
 struct SharpitApp: App {
     @UIApplicationDelegateAdaptor(SharpitAppDelegate.self) private var appDelegate
-    private let modelContainer: ModelContainer
+    /// Nil only when both on-disk and in-memory containers failed — the app then shows a
+    /// cannot-start screen instead of crashing via `try!`.
+    private let modelContainer: ModelContainer?
     @State private var linkInbox = IncomingLinkInbox()
 
     init() {
@@ -17,34 +19,51 @@ struct SharpitApp: App {
         }
         SharpitFonts.register()
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
+        modelContainer = Self.makeModelContainer()
+    }
+
+    private static func makeModelContainer() -> ModelContainer? {
         do {
-            modelContainer = try SharpitPersistence.makeContainer()
+            return try SharpitPersistence.makeContainer()
         } catch {
-            // Last-resort in-memory store so a disk failure still launches.
-            modelContainer = try! SharpitPersistence.makeContainer(inMemory: true)
+            // Disk failure: fall back to an in-memory store so the athlete can still open the app.
+            do {
+                return try SharpitPersistence.makeContainer(inMemory: true)
+            } catch {
+                return nil
+            }
         }
     }
 
     var body: some Scene {
         WindowGroup {
-            #if DEBUG
-            if OnboardingDemo.isRequested {
-                OnboardingDemoHost()
-                    .sharpitAppearance()
-            } else if WeeklyReviewDemo.isRequested {
-                WeeklyReviewDemoHost()
-                    .sharpitAppearance()
-            } else if CoachDemo.isRequested {
-                CoachDemoHost()
-                    .sharpitAppearance()
+            if let modelContainer {
+                launchedApp
+                    .modelContainer(modelContainer)
             } else {
-                app
+                PersistenceCannotStartView()
             }
-            #else
-            app
-            #endif
         }
-        .modelContainer(modelContainer)
+    }
+
+    @ViewBuilder
+    private var launchedApp: some View {
+        #if DEBUG
+        if OnboardingDemo.isRequested {
+            OnboardingDemoHost()
+                .sharpitAppearance()
+        } else if WeeklyReviewDemo.isRequested {
+            WeeklyReviewDemoHost()
+                .sharpitAppearance()
+        } else if CoachDemo.isRequested {
+            CoachDemoHost()
+                .sharpitAppearance()
+        } else {
+            app
+        }
+        #else
+        app
+        #endif
     }
 
     private var app: some View {
@@ -65,5 +84,27 @@ struct SharpitApp: App {
                 try? await Clerk.shared.handle(url)
             }
         }
+    }
+}
+
+/// Shown when SwiftData cannot open any store — prefer a clear stop over a launch crash.
+private struct PersistenceCannotStartView: View {
+    var body: some View {
+        VStack(spacing: SharpitSpacing.md) {
+            Image(systemName: "externaldrive.badge.exclamationmark")
+                .font(.system(size: 40, weight: .semibold))
+                .foregroundStyle(SharpitColor.signalRisk)
+            Text("SharpIt ne peut pas démarrer")
+                .font(SharpitTypography.pageTitle)
+                .foregroundStyle(SharpitColor.foreground)
+            Text("Le stockage local est indisponible. Relance l’app, ou libère de l’espace sur cet iPhone.")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .multilineTextAlignment(.center)
+        }
+        .padding(SharpitSpacing.pageInset)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(SharpitCanvasBackground())
+        .sharpitAppearance()
     }
 }

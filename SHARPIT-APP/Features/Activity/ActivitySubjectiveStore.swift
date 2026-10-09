@@ -32,6 +32,8 @@ final class ActivitySubjectiveStore: Identifiable {
     /// unchanged until the athlete picks a step, so opening the drawer never erases it.
     private let unmappedFeeling: String?
     private var pendingSave: Task<Void, Never>?
+    /// One write at a time — a tap during an in-flight save must not race the previous PATCH.
+    @ObservationIgnored private var saveChain: Task<Void, Never>?
     /// True from a tap until its write starts, so closing the drawer right after a save
     /// does not send the same values twice.
     private var hasUnsentChange = false
@@ -94,6 +96,16 @@ final class ActivitySubjectiveStore: Identifiable {
     }
 
     private func save() async {
+        let previous = saveChain
+        let next = Task { [weak self] in
+            await previous?.value
+            await self?.sendSave()
+        }
+        saveChain = next
+        await next.value
+    }
+
+    private func sendSave() async {
         hasUnsentChange = false
         let sentRPE = rpe.map(Double.init)
         let sentFeeling = storedFeeling

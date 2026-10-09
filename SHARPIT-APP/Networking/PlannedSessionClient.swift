@@ -95,7 +95,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
-            if status == 401 { throw SharpitAPIError.unauthorized }
+            try SharpitHTTPStatus.throwIfUnauthorized(status)
             throw SharpitAPIError.server
         }
         do {
@@ -123,8 +123,16 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch status {
         case 200: return
-        case 401: throw SharpitAPIError.unauthorized
+        case 401, 403: throw SharpitAPIError.unauthorized
         default: throw SharpitAPIError.server
+        }
+    }
+
+    /// Exposed for tests: GET list status mapping.
+    nonisolated static func mapListStatus(_ status: Int) throws {
+        guard status == 200 else {
+            try SharpitHTTPStatus.throwIfUnauthorized(status)
+            throw SharpitAPIError.server
         }
     }
 

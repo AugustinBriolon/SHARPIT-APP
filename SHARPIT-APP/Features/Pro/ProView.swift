@@ -20,7 +20,7 @@ struct ProView: View {
                     .revealed(hasAppeared, index: 0)
 
                 if !store.isPro {
-                    paywall
+                    purchaseSection
                         .revealed(hasAppeared, index: 1)
                 }
 
@@ -48,7 +48,38 @@ struct ProView: View {
             // Back from the App Store's sheet: the web has heard any change by now, or will.
             if !isShowing { Task { await store.load() } }
         }
-        .onAppear { hasAppeared = true }
+        .onAppear {
+            hasAppeared = true
+            // Token may have failed on first load — retry so the paywall can appear.
+            if !store.isPro, !store.canPurchase {
+                Task { await store.ensureAppAccountToken() }
+            }
+        }
+    }
+
+    /// Never shows `SubscriptionStoreView` until `appAccountToken` is known — a purchase
+    /// without it would omit the account binding StoreKit requires.
+    @ViewBuilder
+    private var purchaseSection: some View {
+        if let token = store.appAccountToken {
+            paywall(appAccountToken: token)
+        } else if store.isFetchingAccountToken || store.phase == .loading {
+            ProgressView("Préparation de l'abonnement…")
+                .frame(maxWidth: .infinity, minHeight: 120)
+        } else {
+            VStack(spacing: SharpitSpacing.sm) {
+                Text("Impossible de préparer l'achat pour le moment.")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .multilineTextAlignment(.center)
+                Button("Réessayer") {
+                    Task { await store.ensureAppAccountToken() }
+                }
+                .font(SharpitTypography.meta.weight(.semibold))
+                .foregroundStyle(SharpitColor.primary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 120)
+        }
     }
 
     private var statusCard: some View {
@@ -77,15 +108,15 @@ struct ProView: View {
     }
 
     /// The App Store's paywall for the SharpIt Pro products, carrying the account token so the
-    /// purchase is tied to this athlete.
-    private var paywall: some View {
+    /// purchase is tied to this athlete. Token is required — never an empty options set.
+    private func paywall(appAccountToken: UUID) -> some View {
         SubscriptionStoreView(productIDs: SharpitProProduct.all)
             .subscriptionStoreControlStyle(.prominentPicker)
             .subscriptionStoreButtonLabel(.multiline)
             .storeButton(.hidden, for: .cancellation)
             .storeButton(.visible, for: .restorePurchases)
             .inAppPurchaseOptions { _ in
-                store.appAccountToken.map { [.appAccountToken($0)] } ?? []
+                [.appAccountToken(appAccountToken)]
             }
             .onInAppPurchaseCompletion { _, result in
                 if case .success(.success(let verification)) = result {

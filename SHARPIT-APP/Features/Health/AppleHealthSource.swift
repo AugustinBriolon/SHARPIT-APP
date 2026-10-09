@@ -166,9 +166,8 @@ final class AppleHealthSource {
                     try await client.uploadWorkouts(batch, token: try await token())
                 }
                 guard result.acceptsWorkouts else {
-                    // Garmin or Strava brings the sessions: what was read is not offered again,
-                    // and the next workout asks once more, since the server may take it by then.
-                    setMarker(.workouts, end)
+                    // Garmin or Strava owns sessions: do not advance the marker — when the
+                    // server starts accepting again (unlink), these workouts are offered once more.
                     return changed
                 }
                 changed = changed || result.imported > 0

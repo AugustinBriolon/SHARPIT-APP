@@ -61,7 +61,7 @@ struct SessionPlate: View {
             if let legs = session.brickLegs {
                 BrickChainCapsule(sports: legs.map { V1ActivityType(rawValue: $0.type) ?? .other })
             } else if let sport = session.sport, !sport.isEmpty {
-                HStack(spacing: 5) {
+                HStack(spacing: SharpitSpacing.xxs) {
                     Image(systemName: SharpitSportTone.symbolName(for: sport))
                         .font(.system(size: 11, weight: .semibold))
 
@@ -70,8 +70,8 @@ struct SessionPlate: View {
                         .tracking(SharpitTypography.labelTracking)
                 }
                 .foregroundStyle(SharpitSportTone.label(for: sport))
-                .padding(.horizontal, 9)
-                .padding(.vertical, 4.5)
+                .padding(.horizontal, SharpitSpacing.xs)
+                .padding(.vertical, SharpitSpacing.xxs)
                 .background(SharpitSportTone.background(for: sport), in: Capsule())
                 .overlay(
                     Capsule().strokeBorder(SharpitSportTone.border(for: sport), lineWidth: SharpitStroke.hairline)
@@ -143,27 +143,27 @@ struct SessionPlate: View {
     // MARK: – Zone 2: Title & Objective
 
     private var titleAndObjectiveBlock: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xxs + 2) {
             Text(session.brickChain ?? session.title)
-                .font(.custom(SharpitFontFamily.heading.resolvedName(for: .semibold) ?? "System", size: 18, relativeTo: .title3))
-                .tracking(-0.3)
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
 
             // Extracted Objective context pill (No longer squished in 3-column grid)
             if let objective = objectiveText {
-                HStack(spacing: 5) {
+                HStack(spacing: SharpitSpacing.xxs) {
                     Image(systemName: "target")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(SharpitColor.primary)
 
                     Text(objective)
-                        .font(.custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 12.5))
+                        .font(SharpitTypography.meta.weight(.medium))
                         .foregroundStyle(SharpitColor.foreground.opacity(0.85))
                 }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 4)
+                .padding(.horizontal, SharpitSpacing.xs)
+                .padding(.vertical, SharpitSpacing.xxs)
                 .background(
                     RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
                         .fill(SharpitColor.secondary.opacity(0.45))

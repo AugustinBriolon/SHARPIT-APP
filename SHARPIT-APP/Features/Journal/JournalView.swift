@@ -676,7 +676,7 @@ private struct JournalDatePicker: View {
                             .accessibilityHidden(true)
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.sharpitPressable)
                 .accessibilityHint("Ouvre le calendrier")
 
                 Spacer(minLength: 0)

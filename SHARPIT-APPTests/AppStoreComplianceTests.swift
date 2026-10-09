@@ -32,12 +32,15 @@ import Testing
     #expect(plist["com.apple.developer.healthkit.access"] == nil)
 }
 
-/// Garmin's access is unofficial: the App Store build offers no way to connect it (5.2.2);
-/// Xcode and TestFlight builds keep it.
-@Test func theAppStoreBuildDoesNotOfferGarmin() {
-    #expect(ProviderAvailability.garminInApp(debug: false, testFlight: false) == false)
-    #expect(ProviderAvailability.garminInApp(debug: true, testFlight: false))
-    #expect(ProviderAvailability.garminInApp(debug: false, testFlight: true))
+/// Garmin's access is unofficial: only DEBUG builds offer it (5.2.2). TestFlight and App Store
+/// stay off so external beta and Review never see an in-app Garmin connect.
+@Suite struct GarminAvailabilityTests {
+    @Test func theAppStoreBuildDoesNotOfferGarmin() {
+        #expect(ProviderAvailability.garminInApp(debug: false, testFlight: false) == false)
+        #expect(ProviderAvailability.garminInApp(debug: true, testFlight: false))
+        #expect(ProviderAvailability.garminInApp(debug: false, testFlight: true) == false)
+        #expect(ProviderAvailability.garminInApp(debug: true, testFlight: true))
+    }
 }
 
 /// MyFitnessPal was withdrawn (SHARPIT ADR-073): nothing in the app target may call link, sync or import routes.

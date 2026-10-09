@@ -124,6 +124,7 @@ private actor UploadRecorder: HealthUploadServing, AppleHealthLinking {
     }
 
     func refuseWorkouts() { acceptsWorkouts = false }
+    func acceptWorkouts() { acceptsWorkouts = true }
     func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int {
         uploads += 1
         if let error { throw error }
@@ -233,21 +234,25 @@ private func workout(_ id: String, endingDaysAgo days: Double) -> HealthWorkout 
     #expect(await recorder.workoutBatches.flatMap { $0 } == sent)
 }
 
-/// The server decides — a Garmin unlinked later means workouts are taken again — so a new
-/// workout is still offered, but one refused is never read again.
-@MainActor
-@Test func aRefusedWorkoutIsNotSentAgain() async {
-    let reader = StubReader()
-    reader.workouts = [workout("a", endingDaysAgo: 3), workout("b", endingDaysAgo: 2)]
-    let recorder = UploadRecorder()
-    await recorder.refuseWorkouts()
-    let apple = source(reader, recorder)
+/// When the server refuses workouts, the marker must not advance — unlinking Garmin later
+/// must offer the same window again, not skip it.
+@Suite struct HealthWorkoutMarkerTests {
+    @MainActor
+    @Test func refusedWorkoutsDoNotAdvanceTheMarker() async {
+        let reader = StubReader()
+        reader.workouts = [workout("a", endingDaysAgo: 3), workout("b", endingDaysAgo: 2)]
+        let recorder = UploadRecorder()
+        await recorder.refuseWorkouts()
+        let apple = source(reader, recorder)
 
-    await apple.enable(token: { "t" })
-    reader.workouts.append(workout("c", endingDaysAgo: 0))
-    _ = await apple.send(token: { "t" })
+        await apple.enable(token: { "t" })
+        #expect(await recorder.workoutBatches == [["a", "b"]])
 
-    #expect(await recorder.workoutBatches == [["a", "b"], ["c"]])
+        await recorder.acceptWorkouts()
+        _ = await apple.send(token: { "t" })
+
+        #expect(await recorder.workoutBatches == [["a", "b"], ["a", "b"]])
+    }
 }
 
 @Test func appleSportsMapOntoSharpItsOwn() {

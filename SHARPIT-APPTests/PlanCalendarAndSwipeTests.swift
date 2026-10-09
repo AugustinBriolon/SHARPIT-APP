@@ -216,6 +216,21 @@ import Testing
         #expect(DaySwipe.blocksChildHits(axis: .horizontal) == true)
     }
 
+    @Test func sidewaysTravelMutesChildActivationBeforeAFullTurn() {
+        #expect(DaySwipe.suppressesChildActivation(
+            startX: 180, translation: CGSize(width: 8, height: 0)
+        ) == false)
+        #expect(DaySwipe.suppressesChildActivation(
+            startX: 180, translation: CGSize(width: 12, height: 4)
+        ) == true)
+        #expect(DaySwipe.suppressesChildActivation(
+            startX: 180, translation: CGSize(width: 12, height: 20)
+        ) == false)
+        #expect(DaySwipe.suppressesChildActivation(
+            startX: 10, translation: CGSize(width: 40, height: 0)
+        ) == false)
+    }
+
     @Test func aPickedDayComesInFromItsSideOfTime() {
         let today = Date(timeIntervalSince1970: 1_790_000_000)
         let lastWeek = Calendar.current.date(byAdding: .day, value: -7, to: today)!
@@ -224,6 +239,18 @@ import Testing
         #expect(DaySwipe.step(from: today, to: today) == nil)
         #expect(DaySwipe.entrySign(.next) > 0)
         #expect(DaySwipe.entrySign(.previous) < 0)
+    }
+}
+
+@Suite struct SharpitPressTests {
+    @Test func aShortTouchStaysATap() {
+        #expect(SharpitPress.shouldActivate(translation: CGSize(width: 0, height: 0)))
+        #expect(SharpitPress.shouldActivate(translation: CGSize(width: 4, height: 3)))
+    }
+
+    @Test func aSlideIsNotATap() {
+        #expect(SharpitPress.shouldActivate(translation: CGSize(width: 20, height: 0)) == false)
+        #expect(SharpitPress.shouldActivate(translation: CGSize(width: 0, height: 20)) == false)
     }
 }
 

@@ -194,7 +194,7 @@ private struct JournalFilterChip: View {
                     }
                 }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.sharpitPressable)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

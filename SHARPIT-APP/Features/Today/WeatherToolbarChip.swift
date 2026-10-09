@@ -14,7 +14,7 @@ struct WeatherChip: View {
     var body: some View {
         if let reading = service.reading {
             Button { isShowingDetail = true } label: {
-                HStack(spacing: SharpitSpacing.xxs + 2) {
+                HStack(spacing: SharpitSpacing.xs) {
                     Image(systemName: reading.symbolName)
                         .symbolVariant(.fill)
                         .symbolRenderingMode(.hierarchical)
@@ -29,7 +29,7 @@ struct WeatherChip: View {
                 .fixedSize()
                 .sharpitGlassChip()
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.sharpitPressable)
             .animation(SharpitMotion.reveal, value: reading)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(

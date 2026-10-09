@@ -46,6 +46,7 @@ final class TodayStore {
     @discardableResult
     func respondToMorningProposal(accept: Bool) async -> Bool {
         guard case .loaded(var fold) = phase, let proposal = fold.morningProposal else { return false }
+        guard let tokenProvider else { return false }
         fold.morningProposal = nil
         phase = .loaded(fold)
         do {
@@ -53,7 +54,7 @@ final class TodayStore {
                 try await self.proposals.respondToMorningProposal(
                     decisionId: proposal.decisionId,
                     accept: accept,
-                    token: try await self.tokenProvider?() ?? ""
+                    token: try await tokenProvider()
                 )
             }
         } catch {
@@ -92,11 +93,16 @@ final class TodayStore {
         let hadCache = hydrateFromSnapshotIfNeeded(dayId: dayId, resetToLoading: resetToLoading)
 
         do {
+            // Never send `Authorization: Bearer ` with an empty token. Without a provider the
+            // store stays fixture-only (previews / offline demos).
             let token: String
             if let tokenProvider {
                 token = try await tokenProvider()
             } else {
-                token = ""
+                let payload = try await client.today(trainingDayId: dayId, token: "fixture")
+                apply(payload)
+                persistSnapshot(payload)
+                return
             }
             let payload = try await client.today(trainingDayId: dayId, token: token)
             apply(payload)

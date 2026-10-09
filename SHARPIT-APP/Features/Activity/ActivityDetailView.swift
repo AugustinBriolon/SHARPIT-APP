@@ -526,20 +526,23 @@ struct ActivityDetailView: View {
         }
     }
 
-    /// Leaves the page on the tap; the list and the plan read again once the server has it.
+    /// Deletes on the server first; only then leaves the page and refreshes the list — a failed
+    /// DELETE must not dismiss as if the session were gone.
     private func delete() {
         guard let mutator = client as? any ActivityMutating else { return }
         let id = activity
-        dismiss()
         Task {
             do {
                 try await SharpitRetry.run {
                     try await mutator.deleteActivity(id: id, token: try await tokenProvider())
                 }
+                await client.forgetActivity(id: id)
+                await client.invalidateActivities()
+                router?.noteActivitiesChanged()
+                dismiss()
             } catch {
                 SharpitWriteFailures.shared.report("La séance n’a pas pu être supprimée. Réessaie dans un instant.")
             }
-            router?.noteActivitiesChanged()
         }
     }
 
@@ -616,6 +619,7 @@ struct ActivityDetailView: View {
             }
         } catch is CancellationError {
         } catch {
+            SharpitWriteFailures.shared.report("Le récit n’a pas pu être généré. Réessaie dans un instant.")
         }
     }
 
@@ -722,7 +726,7 @@ private struct ActivityDetailContent: View {
                         .foregroundStyle(tone)
                     Spacer()
                     Text(dateLabel)
-                        .font(.subheadline)
+                        .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
 
@@ -845,7 +849,7 @@ private struct ActivityDetailContent: View {
                 if clearsBackButton {
                     Color.clear
                 } else {
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
                         .fill(SharpitElevatedColor.sheet)
                         .sharpitShadow(.panel)
                 }
@@ -856,20 +860,20 @@ private struct ActivityDetailContent: View {
     }
 
     private var metricGrid: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             Text("Résumé de séance")
-                .font(.subheadline.weight(.semibold))
+                .font(SharpitTypography.bodyEmphasis.weight(.semibold))
                 .foregroundStyle(SharpitColor.mutedForeground)
-            LazyVGrid(columns: [GridItem(.flexible(minimum: 0)), GridItem(.flexible(minimum: 0))], spacing: 22) {
+            LazyVGrid(columns: [GridItem(.flexible(minimum: 0)), GridItem(.flexible(minimum: 0))], spacing: SharpitSpacing.md) {
                 ForEach(primaryMetrics) { metric in
                     ActivityHeroMetric(metric: metric)
                 }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 22)
+        .padding(.horizontal, SharpitSpacing.md)
+        .padding(.vertical, SharpitSpacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
     }
 
     private var primaryMetrics: [ActivityHeroMetricData] {
@@ -940,10 +944,10 @@ private struct ActivityDetailContent: View {
                         Spacer()
                         Image(systemName: "arrow.up.right")
                     }
-                    .font(.subheadline.weight(.semibold))
+                    .font(SharpitTypography.bodyEmphasis.weight(.semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, SharpitSpacing.cardPadding)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, SharpitSpacing.sm)
                     .background(tone, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .buttonStyle(.sharpitPressable)
@@ -993,7 +997,7 @@ private struct ActivityDetailContent: View {
                 }
             }
             if let notes = detail.notes, !notes.isEmpty {
-                Text(notes).font(.subheadline).foregroundStyle(SharpitColor.mutedForeground)
+                Text(notes).font(SharpitTypography.body).foregroundStyle(SharpitColor.mutedForeground)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1063,9 +1067,9 @@ private struct ActivityDetailContent: View {
                         .frame(width: 24)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(leg.label)
-                            .font(.subheadline.weight(.semibold))
+                            .font(SharpitTypography.bodyEmphasis.weight(.semibold))
                         Text(ActivityFormat.duration(leg.durationSec))
-                            .font(.caption)
+                            .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
                     Spacer()
@@ -1073,7 +1077,7 @@ private struct ActivityDetailContent: View {
                         Text(distance >= 1_000
                              ? String(format: "%.1f km", distance / 1_000)
                              : "\(Int(distance.rounded())) m")
-                            .font(.subheadline.monospacedDigit())
+                            .font(SharpitTypography.instrument)
                     }
                 }
                 .padding(.vertical, 4)
@@ -1212,11 +1216,11 @@ private struct ActivitySplitsSection: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitEyebrow(segmentDistance == 5_000 ? "Splits tous les 5 km" : "Splits au kilomètre")
             Text("Rythme relatif · les barres les plus longues indiquent une allure plus vive")
-                .font(.subheadline)
+                .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.mutedForeground)
             ForEach(splits) { split in
                 HStack(alignment: .center, spacing: SharpitSpacing.xs) {
-                    Text(split.distanceLabel).font(.subheadline.monospacedDigit()).foregroundStyle(SharpitColor.mutedForeground).frame(width: 52, alignment: .leading)
+                    Text(split.distanceLabel).font(SharpitTypography.instrument).foregroundStyle(SharpitColor.mutedForeground).frame(width: 52, alignment: .leading)
                     VStack(alignment: .leading, spacing: 7) {
                         HStack(alignment: .firstTextBaseline, spacing: 7) {
                             Text(ActivityFormat.pace(split.paceSeconds)).font(.headline.monospacedDigit().weight(.semibold))
@@ -1439,7 +1443,7 @@ private struct ActivityChartsSection: View {
                 .clipped()
             } else {
                 Text("Pas assez de données pour afficher cette courbe.")
-                    .font(.subheadline)
+                    .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .frame(maxWidth: .infinity, minHeight: 150, alignment: .center)
             }
@@ -1476,10 +1480,10 @@ private struct ActivityMetricToggleLabel: View {
 
     var body: some View {
         Text(metric.label)
-            .font(.subheadline.weight(.semibold))
+            .font(SharpitTypography.bodyEmphasis.weight(.semibold))
             .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
-            .padding(.horizontal, 14)
-            .frame(height: 36)
+            .padding(.horizontal, SharpitSpacing.sm)
+            .frame(height: SharpitSpacing.minimumTouchTarget)
             .background(isSelected ? metric.color : Color(uiColor: .tertiarySystemFill), in: Capsule())
     }
 }
@@ -1544,10 +1548,10 @@ private struct SummarySignal: View {
             Image(systemName: symbol)
                 .foregroundStyle(SharpitColor.mutedForeground)
             Text(value)
-                .font(.subheadline.weight(.semibold))
+                .font(SharpitTypography.bodyEmphasis.weight(.semibold))
                 .lineLimit(1)
             Text(label)
-                .font(.caption)
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1792,7 +1796,7 @@ private struct ActivityDetailLoadingSheet: View {
         .padding(.bottom, SharpitSpacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
                 .fill(SharpitElevatedColor.sheet)
                 .sharpitShadow(.panel)
         )
@@ -1850,7 +1854,7 @@ struct CollapsedActivityBottomBar: View {
 
                 HStack(spacing: 4) {
                     Text("Détails")
-                        .font(.subheadline.weight(.medium))
+                        .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.foreground)
                     Image(systemName: "chevron.up")
                         .font(.system(size: 12, weight: .semibold))

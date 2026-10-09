@@ -31,7 +31,7 @@ nonisolated enum AppDistribution {
     /// Cached answer after `prepare()`; false until StoreKit answers (App Store-safe default).
     private static let cachedTestFlight = OSAllocatedUnfairLock(initialState: false)
 
-    /// Kick off StoreKit and wait so TestFlight-only UI (Garmin, …) is correct before first paint.
+    /// Kick off StoreKit and wait so distribution-aware UI is correct before first paint.
     static func prepare() async {
         let value = await testFlightTask.value
         cachedTestFlight.withLock { $0 = value }

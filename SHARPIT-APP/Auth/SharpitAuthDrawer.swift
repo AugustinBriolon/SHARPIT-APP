@@ -31,7 +31,7 @@ struct SharpitAuthDrawer: View {
                 SharpitColor.background.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 20) {
+                    VStack(spacing: SharpitSpacing.md) {
                         switch step {
                         case .identifier:
                             identifierView
@@ -42,8 +42,8 @@ struct SharpitAuthDrawer: View {
                         }
                     }
                     .padding(.horizontal, SharpitSpacing.pageInset)
-                    .padding(.top, 24)
-                    .padding(.bottom, 36)
+                    .padding(.top, SharpitSpacing.lg)
+                    .padding(.bottom, SharpitSpacing.xl)
                 }
             }
             .toolbar {
@@ -59,7 +59,7 @@ struct SharpitAuthDrawer: View {
                 }
             }
         }
-        .presentationBackground(SharpitColor.background)
+        .sharpitSheet()
         .presentationDetents([.fraction(0.68), .large])
         .presentationDragIndicator(.visible)
     }
@@ -67,27 +67,27 @@ struct SharpitAuthDrawer: View {
     // MARK: – Step 1: Identifier View (Direct Email Input, Zero Content Above)
 
     private var identifierView: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: SharpitSpacing.md) {
             // Error banner if any
             if let errorMessage {
                 errorBanner(message: errorMessage)
             }
 
             // 1. Direct Email Input (Immediate top focus)
-            HStack(spacing: 12) {
+            HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: "envelope")
                     .font(.system(size: 16))
                     .foregroundStyle(SharpitColor.mutedForeground)
 
                 TextField("Adresse e-mail", text: $email)
-                    .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 16))
+                    .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.horizontal, SharpitSpacing.md)
+            .padding(.vertical, SharpitSpacing.md)
             .background {
                 RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
                     .fill(SharpitColor.card)
@@ -102,13 +102,13 @@ struct SharpitAuthDrawer: View {
             Button {
                 Task { await handleEmailSubmit() }
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: SharpitSpacing.xs) {
                     if isLoading {
                         ProgressView()
                             .tint(SharpitColor.primaryForeground)
                     } else {
                         Text("Continuer")
-                            .font(.custom(SharpitFontFamily.body.resolvedName(for: .semibold) ?? "System", size: 16))
+                            .font(SharpitTypography.bodyEmphasis.weight(.semibold))
                             .foregroundStyle(SharpitColor.primaryForeground)
 
                         Image(systemName: "arrow.right")
@@ -126,21 +126,21 @@ struct SharpitAuthDrawer: View {
             .opacity(email.trimmingCharacters(in: .whitespaces).isEmpty ? 0.6 : 1.0)
 
             // 3. Elegant "ou" Separator
-            HStack(spacing: 14) {
+            HStack(spacing: SharpitSpacing.sm) {
                 Rectangle()
                     .fill(SharpitColor.border)
                     .frame(height: 1)
                 Text("ou")
-                    .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 13))
+                    .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                 Rectangle()
                     .fill(SharpitColor.border)
                     .frame(height: 1)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, SharpitSpacing.xxs)
 
             // 4. Social Auth: Apple first, as App Review asks, Google beside it in the same shape
-            VStack(spacing: 12) {
+            VStack(spacing: SharpitSpacing.sm) {
                 SharpitAppleSignInButton { Task { await handleAppleSignIn() } }
                     .disabled(isLoading)
                 SharpitGoogleSignInButton { Task { await handleGoogleSignIn() } }
@@ -148,29 +148,30 @@ struct SharpitAuthDrawer: View {
             }
 
             // 5. Trust Footnote
-            HStack(spacing: 6) {
+            HStack(spacing: SharpitSpacing.xxs + 2) {
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 11))
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.8))
                 Text("Sécurisé par Clerk")
-                    .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 12))
+                    .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.8))
             }
-            .padding(.top, 10)
+            .padding(.top, SharpitSpacing.xs)
         }
     }
 
     // MARK: – Step 2: Code Verification View
 
     private func codeVerificationView(email: String) -> some View {
-        VStack(spacing: 20) {
-            VStack(spacing: 6) {
+        VStack(spacing: SharpitSpacing.md) {
+            VStack(spacing: SharpitSpacing.xxs + 2) {
                 Text("Code de vérification")
-                    .font(.custom(SharpitFontFamily.heading.resolvedName(for: .bold) ?? "System", size: 22))
+                    .font(SharpitTypography.pageTitle)
+                    .tracking(SharpitTypography.pageTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
 
                 Text("Saisis le code reçu à l'adresse\n\(email)")
-                    .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 14))
+                    .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .multilineTextAlignment(.center)
             }
@@ -182,13 +183,14 @@ struct SharpitAuthDrawer: View {
             // OTP Input
             HStack {
                 TextField("Code à 6 chiffres", text: $verificationCode)
-                    .font(.custom(SharpitFontFamily.data.resolvedName(for: .medium) ?? "Menlo", size: 22))
+                    .font(SharpitTypography.data)
+                    .tracking(SharpitTypography.dataTracking)
                     .multilineTextAlignment(.center)
                     .keyboardType(.numberPad)
                     .textContentType(.oneTimeCode)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.horizontal, SharpitSpacing.md)
+            .padding(.vertical, SharpitSpacing.md)
             .background {
                 RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
                     .fill(SharpitColor.card)
@@ -207,7 +209,7 @@ struct SharpitAuthDrawer: View {
                             .tint(SharpitColor.primaryForeground)
                     } else {
                         Text("Valider")
-                            .font(.custom(SharpitFontFamily.body.resolvedName(for: .semibold) ?? "System", size: 16))
+                            .font(SharpitTypography.bodyEmphasis.weight(.semibold))
                             .foregroundStyle(SharpitColor.primaryForeground)
                     }
                 }
@@ -218,12 +220,12 @@ struct SharpitAuthDrawer: View {
             .buttonStyle(.sharpitPressable)
             .disabled(verificationCode.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
 
-            HStack(spacing: 16) {
+            HStack(spacing: SharpitSpacing.md) {
                 Button {
                     Task { await handleResendCode() }
                 } label: {
                     Text("Renvoyer le code")
-                        .font(.custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 14))
+                        .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.foreground)
                 }
                 .disabled(isLoading)
@@ -237,25 +239,26 @@ struct SharpitAuthDrawer: View {
                     errorMessage = nil
                 } label: {
                     Text("Changer d'e-mail")
-                        .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 14))
+                        .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.primary)
                 }
             }
-            .padding(.top, 4)
+            .padding(.top, SharpitSpacing.xxs)
         }
     }
 
     // MARK: – Step 3: Password View
 
     private func passwordView(email: String) -> some View {
-        VStack(spacing: 20) {
-            VStack(spacing: 6) {
+        VStack(spacing: SharpitSpacing.md) {
+            VStack(spacing: SharpitSpacing.xxs + 2) {
                 Text("Mot de passe")
-                    .font(.custom(SharpitFontFamily.heading.resolvedName(for: .bold) ?? "System", size: 22))
+                    .font(SharpitTypography.pageTitle)
+                    .tracking(SharpitTypography.pageTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
 
                 Text("Saisis ton mot de passe pour \(email)")
-                    .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 14))
+                    .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
 
@@ -264,9 +267,9 @@ struct SharpitAuthDrawer: View {
             }
 
             SecureField("Mot de passe", text: $verificationCode)
-                .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 16))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
+                .font(SharpitTypography.body)
+                .padding(.horizontal, SharpitSpacing.md)
+                .padding(.vertical, SharpitSpacing.md)
                 .background {
                     RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
                         .fill(SharpitColor.card)
@@ -285,7 +288,7 @@ struct SharpitAuthDrawer: View {
                             .tint(SharpitColor.primaryForeground)
                     } else {
                         Text("Se connecter")
-                            .font(.custom(SharpitFontFamily.body.resolvedName(for: .semibold) ?? "System", size: 16))
+                            .font(SharpitTypography.bodyEmphasis.weight(.semibold))
                             .foregroundStyle(SharpitColor.primaryForeground)
                     }
                 }
@@ -296,15 +299,15 @@ struct SharpitAuthDrawer: View {
             .buttonStyle(.sharpitPressable)
             .disabled(verificationCode.isEmpty || isLoading)
 
-            VStack(spacing: 14) {
+            VStack(spacing: SharpitSpacing.sm) {
                 Button {
                     Task { await handleSwitchToEmailCode(email: email) }
                 } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: SharpitSpacing.xxs + 2) {
                         Image(systemName: "envelope.badge")
                             .font(.system(size: 13))
                         Text("M'envoyer un code par e-mail à la place")
-                            .font(.custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 14))
+                            .font(SharpitTypography.bodyEmphasis)
                     }
                     .foregroundStyle(SharpitColor.primary)
                 }
@@ -316,30 +319,30 @@ struct SharpitAuthDrawer: View {
                     errorMessage = nil
                 } label: {
                     Text("Modifier l'adresse e-mail")
-                        .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 14))
+                        .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
             }
-            .padding(.top, 4)
+            .padding(.top, SharpitSpacing.xxs)
         }
     }
 
     // MARK: – Helpers & Icons
 
     private func errorBanner(message: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SharpitSpacing.xs) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 13))
                 .foregroundStyle(SharpitColor.destructive)
 
             Text(message)
-                .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 13))
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.destructive)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, SharpitSpacing.sm)
+        .padding(.vertical, SharpitSpacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SharpitColor.destructive.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(SharpitColor.destructive.opacity(0.1), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
     }
 
     // MARK: – Authentication Actions

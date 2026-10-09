@@ -13,6 +13,7 @@ import UserNotifications
 /// the photo live in Clerk's own account sheet — the one row that opens it.
 struct AccountView: View {
     @Environment(Clerk.self) private var clerk
+    @Environment(\.modelContext) private var modelContext
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var store: AthleteProfileStore
     @State private var form = ProfileFormState()
@@ -108,8 +109,9 @@ struct AccountView: View {
 
             Section {
                 Button(role: .destructive) {
-                    // Signed out, the home screen shows no one's day.
-                    WidgetSnapshotPublisher.erase()
+                    // Same wipe as account delete: health cache, SwiftData and disk stay tied
+                    // to the account that wrote them — never paint the next sign-in from them.
+                    LocalAccountData.erase(context: modelContext)
                     Task { try? await clerk.auth.signOut() }
                 } label: {
                     Text("Se déconnecter").frame(maxWidth: .infinity)

@@ -48,9 +48,22 @@ final class HealthKitWriter: HealthWriting, @unchecked Sendable {
 
     func saveBodyMass(kg: Double, at date: Date) async throws {
         let type = HKQuantityType(.bodyMass)
+        let unit = HKUnit.gramUnit(with: .kilo)
+        let own = try await ownBodyMassSamples(around: date)
+        if BodyMassMirror.alreadyMirrored(
+            kg: kg,
+            at: date,
+            existingOwn: own.map { ($0.quantity.doubleValue(for: unit), $0.startDate) }
+        ) {
+            return
+        }
+        // Replace our samples at that timestamp so a changed kg does not stack duplicates.
+        for sample in own where abs(sample.startDate.timeIntervalSince(date)) < BodyMassMirror.dateTolerance {
+            try await store.delete(sample)
+        }
         let sample = HKQuantitySample(
             type: type,
-            quantity: HKQuantity(unit: .gramUnit(with: .kilo), doubleValue: kg),
+            quantity: HKQuantity(unit: unit, doubleValue: kg),
             start: date,
             end: date,
             metadata: [HKMetadataKeyWasUserEntered: true]
@@ -58,7 +71,8 @@ final class HealthKitWriter: HealthWriting, @unchecked Sendable {
         try await store.save(sample)
     }
 
-    /// Drop prior Sharpit samples for that type on the day, then write one cumulative sample.
+    /// Save the new day total first, then delete prior samples excluding it — a failed save
+    /// must not empty the nutrition day.
     private func replaceQuantity(
         _ identifier: HKQuantityTypeIdentifier,
         value: Double,
@@ -66,13 +80,15 @@ final class HealthKitWriter: HealthWriting, @unchecked Sendable {
         in interval: DateInterval
     ) async throws {
         let type = HKQuantityType(identifier)
-        let predicate = HKQuery.predicateForSamples(
-            withStart: interval.start,
-            end: interval.end,
-            options: .strictStartDate
-        )
-        try await store.deleteObjects(of: type, predicate: predicate)
-        guard value > 0 else { return }
+        guard value > 0 else {
+            let predicate = HKQuery.predicateForSamples(
+                withStart: interval.start,
+                end: interval.end,
+                options: .strictStartDate
+            )
+            try await store.deleteObjects(of: type, predicate: predicate)
+            return
+        }
         let sample = HKQuantitySample(
             type: type,
             quantity: HKQuantity(unit: unit, doubleValue: value),
@@ -81,6 +97,40 @@ final class HealthKitWriter: HealthWriting, @unchecked Sendable {
             metadata: [HKMetadataKeyWasUserEntered: true]
         )
         try await store.save(sample)
+        let dayPredicate = HKQuery.predicateForSamples(
+            withStart: interval.start,
+            end: interval.end,
+            options: .strictStartDate
+        )
+        let excludeNew = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            dayPredicate,
+            NSCompoundPredicate(notPredicateWithSubpredicate: HKQuery.predicateForObject(with: sample.uuid)),
+        ])
+        try await store.deleteObjects(of: type, predicate: excludeNew)
+    }
+
+    private func ownBodyMassSamples(around date: Date) async throws -> [HKQuantitySample] {
+        let type = HKQuantityType(.bodyMass)
+        let start = date.addingTimeInterval(-BodyMassMirror.dateTolerance)
+        let end = date.addingTimeInterval(BodyMassMirror.dateTolerance)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        let samples: [HKQuantitySample] = try await withCheckedThrowingContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: type,
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: nil
+            ) { _, results, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                continuation.resume(returning: (results as? [HKQuantitySample]) ?? [])
+            }
+            store.execute(query)
+        }
+        let bundleId = Bundle.main.bundleIdentifier
+        return samples.filter { $0.sourceRevision.source.bundleIdentifier == bundleId }
     }
 
     /// `yyyy-MM-dd` in the athlete's current calendar → that local day.

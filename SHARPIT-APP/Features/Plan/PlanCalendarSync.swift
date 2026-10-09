@@ -202,8 +202,12 @@ final class AppleCalendarSync {
                         clearedAfterUnlinkIds: clearedAfterUnlinkIds
                     )
                 }
-            apply(wanted, to: writeCalendar, from: start, to: end, preserveSessionIds: pull.skipApplySessionIds)
-            persistSyncedSessionIds(pull.syncedSessionIds, afterWriting: wanted)
+            do {
+                try apply(wanted, to: writeCalendar, from: start, to: end, preserveSessionIds: pull.skipApplySessionIds)
+                persistSyncedSessionIds(pull.syncedSessionIds, afterWriting: wanted)
+            } catch {
+                SharpitWriteFailures.shared.report("Calendrier : mise à jour impossible. Réessaie plus tard.")
+            }
         } catch {
             // Offline or signed out: the calendar keeps what it holds.
         }
@@ -387,7 +391,7 @@ final class AppleCalendarSync {
         from start: Date,
         to end: Date,
         preserveSessionIds: Set<String>
-    ) {
+    ) throws {
         let predicate = store.predicateForEvents(withStart: start, end: end, calendars: [calendar])
         var existing = Dictionary(
             store.events(matching: predicate).compactMap { event in event.url.map { ($0, event) } },
@@ -402,15 +406,15 @@ final class AppleCalendarSync {
             target.endDate = event.end
             target.isAllDay = event.isAllDay
             target.notes = event.notes
-            try? store.save(target, span: .thisEvent, commit: false)
+            try store.save(target, span: .thisEvent, commit: false)
         }
         for stale in existing.values {
             if let url = stale.url, AppleCalendarPull.retainEventDuringSkipApply(url: url, preserveSessionIds: preserveSessionIds) {
                 continue
             }
-            try? store.remove(stale, span: .thisEvent, commit: false)
+            try store.remove(stale, span: .thisEvent, commit: false)
         }
-        try? store.commit()
+        try store.commit()
     }
 
     private func migrateWriteCalendarIdIfNeeded() {

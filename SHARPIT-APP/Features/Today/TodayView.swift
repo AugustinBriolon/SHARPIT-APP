@@ -195,7 +195,7 @@ extension TodayView {
                             .foregroundStyle(SharpitColor.foreground)
                             .sharpitGlassChip()
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.sharpitPressable)
                 }
                 Spacer(minLength: 0)
                 WeatherChip(service: weather)

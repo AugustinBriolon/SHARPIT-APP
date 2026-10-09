@@ -1058,7 +1058,7 @@ private struct PlanLoadingView: View {
                     .fill(SharpitColor.analysisSurfaceAlt)
                     .frame(height: 86)
                 ForEach(0..<7, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius)
                         .fill(SharpitColor.analysisSurfaceAlt)
                         .frame(height: 56)
                 }

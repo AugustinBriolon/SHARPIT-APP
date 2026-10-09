@@ -40,6 +40,8 @@ final class CorpsStore {
     private let recoveryClient: any RecoveryServing
     private let tokenProvider: () async throws -> String
     private let healthWriter: (any HealthWriting)?
+    /// Last weigh-in pushed to Santé this session — skips a duplicate write on every Corps load.
+    private var lastMirroredWeight: (measuredAt: Date, kg: Double)?
 
     init(
         overviewClient: any BodyServing = BodyClient(),
@@ -130,7 +132,8 @@ final class CorpsStore {
     }
 
     /// Pushes the latest weigh-in that did not come from Apple Santé into Santé, so Withings /
-    /// manual stay visible there too. Failures stay quiet.
+    /// manual stay visible there too. Failures stay quiet. Idempotent: the same measuredAt+kg
+    /// is not written again on every Corps load.
     private func mirrorLatestWeightToAppleHealth(_ measurements: [V1BodyMeasurement]) async {
         guard let healthWriter else { return }
         let fromElsewhere = measurements.filter { measurement in
@@ -141,7 +144,20 @@ final class CorpsStore {
         guard let latest = fromElsewhere.max(by: { $0.measuredAt < $1.measuredAt }),
               let kg = latest.weightKg
         else { return }
-        try? await healthWriter.saveBodyMass(kg: kg, at: latest.measuredAt)
+        if let last = lastMirroredWeight,
+           BodyMassMirror.alreadyMirrored(
+               kg: kg,
+               at: latest.measuredAt,
+               existingOwn: [(last.kg, last.measuredAt)]
+           ) {
+            return
+        }
+        do {
+            try await healthWriter.saveBodyMass(kg: kg, at: latest.measuredAt)
+            lastMirroredWeight = (latest.measuredAt, kg)
+        } catch {
+            // Santé write is best-effort; Corps still shows the web's weigh-in.
+        }
     }
 
     /// One metric over a range, from the web; the series already on the tile when the web

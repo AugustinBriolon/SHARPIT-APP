@@ -47,6 +47,8 @@ final class FoodLogStore {
     private let reportFailure: @MainActor (String) -> Void
     /// When Apple Santé is linked and nutrition write is allowed, mirror day totals.
     private let healthWriter: (any HealthWriting)?
+    /// One Santé mirror at a time — overlapping replaceQuantity calls would race deletes.
+    @ObservationIgnored private var mirrorChain: Task<Void, Never>?
 
     init(
         trainingDayId: String = TrainingDayId.today(now: .now),
@@ -277,7 +279,19 @@ final class FoodLogStore {
     // MARK: Helpers
 
     /// Mirrors the day's totals into Apple Santé when write access was granted. Failures stay quiet.
+    /// Serialized so two quick edits never interleave delete/save on the same day.
     private func mirrorNutritionToAppleHealth() async {
+        guard healthWriter != nil else { return }
+        let previous = mirrorChain
+        let next = Task { [weak self] in
+            await previous?.value
+            await self?.performNutritionMirror()
+        }
+        mirrorChain = next
+        await next.value
+    }
+
+    private func performNutritionMirror() async {
         guard let healthWriter else { return }
         let day = trainingDayId
         let kcal = entries.reduce(0.0) { $0 + $1.kcal }

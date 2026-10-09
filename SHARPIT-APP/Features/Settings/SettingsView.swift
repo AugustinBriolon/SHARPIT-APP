@@ -85,14 +85,14 @@ struct SettingsView: View {
                             SettingsRow(symbol: "bell.badge.fill", tint: SettingsTone.notifications, title: "Notifications", detail: notificationsDetail)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.sharpitPressable)
 
                     SettingsGroup(title: "Données") {
                         NavigationLink(value: SettingsRoute.sources) {
                             SettingsRow(symbol: "link", tint: SettingsTone.sources, title: "Sources de données", detail: sourcesDetail)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.sharpitPressable)
 
                     SettingsGroup(title: "Entraînement") {
                         NavigationLink(value: SettingsRoute.equipment) {
@@ -122,7 +122,7 @@ struct SettingsView: View {
                             )
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.sharpitPressable)
 
                     // Hidden with the Nutrition page: switched off, it shows nowhere.
                     if features.isOn(.nutrition) {
@@ -131,7 +131,7 @@ struct SettingsView: View {
                                 SettingsRow(symbol: "fork.knife", tint: SettingsTone.nutrition, title: "Mes aliments", detail: "Créer, modifier, supprimer")
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.sharpitPressable)
                     }
 
                     SettingsGroup(title: "Aide") {
@@ -139,14 +139,14 @@ struct SettingsView: View {
                             SettingsRow(symbol: "bubble.left.and.text.bubble.right.fill", tint: SettingsTone.feedback, title: "Donner un avis", detail: "Un bug, une idée : je lis tout")
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.sharpitPressable)
 
                     SettingsGroup(title: "Confidentialité") {
                         NavigationLink(value: SettingsRoute.privacy) {
                             SettingsRow(symbol: "hand.raised.fill", tint: SettingsTone.privacy, title: "Confidentialité & conditions", detail: "Consentements, CGU, politique")
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.sharpitPressable)
 
                     footer
                 }

@@ -53,6 +53,7 @@ private struct SignInAwardWinning: View {
     @State private var dialIsLive = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -180,7 +181,7 @@ private struct SignInAwardWinning: View {
                 .frame(width: radarPulse ? 250 : 86, height: radarPulse ? 250 : 86)
 
             // 2. Precision 64-tick chronograph scale with live kinetic ripple
-            ChronographDial(progress: dialProgress, isLive: dialIsLive)
+            ChronographDial(progress: dialProgress, isLive: dialIsLive && scenePhase == .active)
                 .frame(width: 250, height: 250)
 
             // 3. Counter-rotating dashed orbit track
@@ -500,9 +501,9 @@ private struct ChronographDial: View {
     private let vernierCount = 96
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || !isLive)) { timeline in
             Canvas { context, size in
-                let t = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+                let t = reduceMotion || !isLive ? 0 : timeline.date.timeIntervalSinceReferenceDate
                 let center = CGPoint(x: size.width / 2, y: size.height / 2)
                 let radiusOuter = min(size.width, size.height) / 2
                 let radiusInner = radiusOuter - 11

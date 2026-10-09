@@ -30,7 +30,10 @@ nonisolated enum DaySwipe {
     /// How far past nothing the page gives before it resists, as a scroll view's edge does.
     static let rubberBand: CGFloat = 0.55
     /// After a horizontal turn, keep buttons mute this long so a lift cannot also open them.
-    static let hitSuppression: Duration = .milliseconds(120)
+    static let hitSuppression: Duration = .milliseconds(200)
+    /// Sideways travel that mutes child controls before the drag qualifies as a full day turn.
+    /// UIScrollView cancels content touches on a similar slop; without this, a Button still fires.
+    static let childMuteTravel: CGFloat = 10
 
     static func step(startX: CGFloat, translation: CGSize, predictedEnd: CGSize? = nil) -> Step? {
         guard axis(startX: startX, translation: translation) == .horizontal else { return nil }
@@ -54,6 +57,16 @@ nonisolated enum DaySwipe {
     /// Child hits stay live while scrolling; once the drag is a day turn, they must not.
     static func blocksChildHits(axis: Axis?) -> Bool {
         axis == .horizontal
+    }
+
+    /// Mute child activation as soon as the finger has clearly moved sideways — earlier than
+    /// ``axis`` / ``minimumTravel``, so a meal row or coach chip under the finger cannot open.
+    static func suppressesChildActivation(startX: CGFloat, translation: CGSize) -> Bool {
+        guard startX > edgeWidth else { return false }
+        let dx = abs(translation.width)
+        let dy = abs(translation.height)
+        guard dx >= childMuteTravel else { return false }
+        return dx >= dy
     }
 
     /// Where the page sits under the finger: with it when a day lies that way, held back
@@ -90,6 +103,8 @@ nonisolated enum DaySwipe {
 nonisolated private struct DaySwipeDrag: Equatable {
     var axis: DaySwipe.Axis?
     var offset: CGFloat = 0
+    /// Sticky for the gesture lifetime: sideways travel (or a locked horizontal axis).
+    var suppressesChildren = false
 }
 
 /// Where a new day's page starts before it settles.
@@ -116,11 +131,13 @@ private struct DaySwipeModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         let arrival = arrival
-        // Gesture and offset live on the wrapper; child hit-testing turns off once the drag is
-        // a day turn, so a finger that started on a button cannot also open it on lift.
+        let muted = blocksHits || drag.suppressesChildren
+        // Gesture and offset live on the wrapper; child hit-testing + environment mute once the
+        // finger has slid sideways, so a control under the touch cannot also open on lift.
         return ZStack {
             content
-                .allowsHitTesting(!blocksHits && !DaySwipe.blocksChildHits(axis: drag.axis))
+                .allowsHitTesting(!muted)
+                .environment(\.sharpitSuppressesControlActivation, muted)
         }
         .contentShape(.rect)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
@@ -141,9 +158,11 @@ private struct DaySwipeModifier: ViewModifier {
         .offset(x: restingOffset + drag.offset)
         .simultaneousGesture(gesture)
         .onChange(of: day) { old, new in arrive(from: old, to: new) }
-        .onChange(of: drag.axis) { _, axis in
-            // A cancelled drag never reaches onEnded — release the mute when GestureState clears.
-            if axis == nil, pendingStep == nil, blocksHits {
+        .onChange(of: drag.suppressesChildren) { _, suppresses in
+            if suppresses {
+                blocksHits = true
+            } else if pendingStep == nil, blocksHits {
+                // GestureState cleared on lift before a Button may still fire — hold the mute.
                 releaseHitsAfterSuppression()
             }
         }
@@ -156,18 +175,28 @@ private struct DaySwipeModifier: ViewModifier {
         let width = width
         return DragGesture(minimumDistance: 12, coordinateSpace: .global)
             .updating($drag) { value, state, _ in
+                let startX = value.startLocation.x
+                let translation = value.translation
+                // Mute children even when Reduce Motion skips the page-follow animation.
+                if DaySwipe.suppressesChildActivation(startX: startX, translation: translation) {
+                    state.suppressesChildren = true
+                }
                 guard follows else { return }
                 if state.axis == nil {
-                    state.axis = DaySwipe.axis(startX: value.startLocation.x, translation: value.translation)
+                    state.axis = DaySwipe.axis(startX: startX, translation: translation)
                 }
                 guard state.axis == .horizontal else { return }
-                let dx = value.translation.width
+                state.suppressesChildren = true
+                let dx = translation.width
                 state.offset = DaySwipe.offset(for: dx, canTurn: dx > 0 || canTurnNext, width: width)
             }
             .onChanged { value in
-                guard follows else { return }
-                let axis = DaySwipe.axis(startX: value.startLocation.x, translation: value.translation)
-                if DaySwipe.blocksChildHits(axis: axis) {
+                let startX = value.startLocation.x
+                let translation = value.translation
+                let axis = DaySwipe.axis(startX: startX, translation: translation)
+                if DaySwipe.suppressesChildActivation(startX: startX, translation: translation)
+                    || DaySwipe.blocksChildHits(axis: axis)
+                {
                     blocksHits = true
                 }
             }

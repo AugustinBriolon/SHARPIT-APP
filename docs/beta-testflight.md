@@ -13,7 +13,7 @@ report on demand).
 ## Beta App Description
 
 > SharpIt est un coach d'endurance qui prépare ta course avec toi. Il lit ta nuit, ta récupération
-> et tes séances (Apple Santé, Garmin) et ajuste ton plan au fil des jours : il te propose d'alléger
+> et tes séances via Apple Santé et ajuste ton plan au fil des jours : il te propose d'alléger
 > quand ta nuit a été courte, te dit quand une séance est dans la boîte et t'aide à réorganiser ta
 > semaine quand tu en rates une.
 >
@@ -25,7 +25,8 @@ report on demand).
 > Merci de tester SharpIt ! Pendant 4 semaines, utilise-le pour préparer ta course :
 >
 > 1. À l'arrivée : renseigne ta course (format, date) et laisse le coach préparer ta première
->    semaine. Branche Apple Santé (et Garmin si tu en as un).
+>    semaine. Branche Apple Santé (si tu as une Garmin, active le partage Garmin → Apple Santé :
+>    c'est le chemin de la bêta, pas de connexion Garmin dans l'app).
 > 2. Le matin : regarde la proposition du jour. Si ta nuit a été courte, SharpIt peut te proposer
 >    d'alléger — accepte ou garde ton plan.
 > 3. Après une séance : tu dois recevoir « Séance dans la boîte » dans l'heure qui suit la
@@ -43,15 +44,15 @@ report on demand).
 >
 > Apple Santé est en lecture seule et optionnel : il sert à lire le sommeil, la variabilité
 > cardiaque et les séances. Les données de santé restent sur nos serveurs en Europe et ne sont
-> jamais synchronisées sur iCloud.
+> jamais synchronisées sur iCloud. Une montre Garmin n'est pas branchée dans l'app : l'athlète
+> partage Garmin Connect → Apple Santé, et SharpIt lit Santé uniquement.
 >
 > Les notifications (verdict du matin, séance faite, séance manquée, rappels) se règlent dans
 > Paramètres › Notifications.
 
-Risk to weigh before submitting: the in-app Garmin connection is on in TestFlight builds
-(`ProviderAvailability.garminInApp`) and relies on an unofficial access. Beta App Review applies
-the App Review Guidelines (5.2.2): if it is flagged, ship the external beta with Garmin off and keep
-Apple Health — Garmin Connect writes its sessions and nights into Apple Health anyway.
+In-app Garmin is DEBUG-only (`ProviderAvailability.garminInApp`). External TestFlight and App
+Store builds never show a Garmin connect row, history import, or workout push (App Review 5.2.2).
+Garmin watches still reach SHARPIT when the athlete enables Garmin → Apple Health.
 
 ## Invitation message
 

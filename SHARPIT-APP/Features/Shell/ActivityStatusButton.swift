@@ -26,7 +26,7 @@ struct ActivityStatusButton: View {
             isPresented = true
         } label: {
             if showsLabel {
-                HStack(spacing: SharpitSpacing.xxs + 2) {
+                HStack(spacing: SharpitSpacing.xs) {
                     Image(systemName: store.store.status.symbolName)
                         .foregroundStyle(store.store.status.tone)
                         .contentTransition(.symbolEffect(.replace))
@@ -40,7 +40,7 @@ struct ActivityStatusButton: View {
                     .foregroundStyle(store.store.status.tone)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.sharpitPressable)
         .accessibilityLabel("Statut d'activité — \(store.store.status.label)")
         .accessibilityHint("Changer ton statut d'activité")
         .sheet(isPresented: $isPresented) {

@@ -34,6 +34,8 @@ final class ProStore {
     private(set) var appAccountToken: UUID?
     private(set) var isRestoring = false
     private(set) var message: String?
+    /// True while a token fetch is in flight after a miss — the paywall stays hidden until set.
+    private(set) var isFetchingAccountToken = false
 
     private let client: any ProServing
     private let tokenProvider: () async throws -> String
@@ -43,6 +45,9 @@ final class ProStore {
         self.client = client
         self.tokenProvider = tokenProvider
     }
+
+    /// StoreKit must never purchase without this — Apple's notifications would not name the account.
+    var canPurchase: Bool { appAccountToken != nil }
 
     var isPro: Bool { pro?.isPro ?? false }
 
@@ -79,11 +84,30 @@ final class ProStore {
                 phase = .loaded
             }
             publishTier()
-            if appAccountToken == nil {
-                appAccountToken = try? await client.appAccountToken(token: token)
-            }
+            await ensureAppAccountToken(using: token)
         } catch {
             if pro == nil { phase = .failed("SharpIt Pro est indisponible pour le moment.") }
+            await ensureAppAccountToken()
+        }
+    }
+
+    /// Retries until the account token is known so the paywall never offers a purchase without it.
+    func ensureAppAccountToken(using knownToken: String? = nil) async {
+        guard appAccountToken == nil else { return }
+        isFetchingAccountToken = true
+        defer { isFetchingAccountToken = false }
+        do {
+            let token: String
+            if let knownToken {
+                token = knownToken
+            } else {
+                token = try await tokenProvider()
+            }
+            appAccountToken = try await SharpitRetry.run {
+                try await client.appAccountToken(token: token)
+            }
+        } catch {
+            // Paywall stays hidden; the athlete can pull to refresh or reopen the page.
         }
     }
 
@@ -97,11 +121,13 @@ final class ProStore {
         let renewal = await renewalInfo(for: transaction)
         do {
             let token = try await tokenProvider()
-            let verified = try await client.verify(
-                signedTransaction: result.jwsRepresentation,
-                signedRenewalInfo: renewal,
-                token: token
-            )
+            let verified = try await SharpitRetry.run {
+                try await client.verify(
+                    signedTransaction: result.jwsRepresentation,
+                    signedRenewalInfo: renewal,
+                    token: token
+                )
+            }
             await transaction.finish()
             SharpitMotion.run {
                 pro = verified
@@ -116,6 +142,13 @@ final class ProStore {
             message = "Cet achat est rattaché à un autre compte."
         } catch {
             message = "L'abonnement sera confirmé dès que le serveur répondra."
+        }
+    }
+
+    /// Unfinished StoreKit transactions left from a cut-off verify — drained on foreground too.
+    func drainUnfinished() async {
+        for await unfinished in Transaction.unfinished {
+            await handle(unfinished)
         }
     }
 

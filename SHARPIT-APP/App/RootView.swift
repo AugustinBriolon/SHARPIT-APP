@@ -163,6 +163,7 @@ struct RootView: View {
             guard phase == .active else { return }
             Task { await runHistoryImport() }
             Task { await refreshSessionReminders() }
+            Task { await pro?.drainUnfinished() }
         }
         .onChange(of: historyImport.state) { _, state in showHistoryToast(for: state) }
         .task {
@@ -298,8 +299,16 @@ struct RootView: View {
         )
         guard outcome == .connected else { return }
         Task {
-            if let token = try? await liveToken() {
-                _ = try? await sharpitClient.sync(token: token)
+            do {
+                let token = try await liveToken()
+                _ = try await sharpitClient.sync(token: token)
+            } catch {
+                toastCenter.show(
+                    SharpitErrorGuidance.message(for: error, subject: "La synchronisation"),
+                    symbol: "exclamationmark.triangle",
+                    tone: .error,
+                    autoDismissAfter: 4
+                )
             }
             // A new connection brings its whole history, not just recent weeks.
             await runHistoryImport()
