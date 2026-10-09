@@ -2,6 +2,8 @@ import Foundation
 import Testing
 @testable import Sharpit
 
+/// Sample `tool-logFoods` part. The root object must always close — a missing `}`
+/// makes `chunk` return `.null` and used to crash the suite via force-unwrap.
 private func foodPart(
     state: String = "approval-requested",
     meal: String = "LUNCH",
@@ -9,8 +11,7 @@ private func foodPart(
     outputJSON: String? = nil,
     errorText: String? = nil
 ) -> JSONValue {
-    // Root object must close after `input` — a missing final `}` makes JSONDecoder
-    // return .null and every food-log proposal parse fails (then force-unwraps crash CI).
+    // Single-line body: a missing final `}` makes JSONDecoder return .null.
     var body =
         "{\"type\":\"tool-logFoods\",\"toolCallId\":\"f1\",\"state\":\"\(state)\",\"approval\":{\"id\":\"af1\"},\"input\":{\"date\":\"2026-10-08\",\"meal\":\"\(meal)\",\"items\":[{\"name\":\"Frites\",\"grams\":\(grams),\"kcalPer100g\":300,\"proteinPer100g\":4,\"carbsPer100g\":40,\"fatPer100g\":15}]}}"
     if let outputJSON {
@@ -25,7 +26,7 @@ private func foodPart(
 }
 
 private func foodProposal(in message: CoachMessage) -> CoachFoodLogProposal? {
-    message.parts?.compactMap(CoachFoodLogProposal.init(part:)).first
+    message.parts?.compactMap { CoachFoodLogProposal(part: $0) }.first
 }
 
 @Test func coachFoodLogProposalParsesMealAndItems() throws {
@@ -97,7 +98,7 @@ private func foodProposal(in message: CoachMessage) -> CoachFoodLogProposal? {
 @Test func respondingReplacesInputWhenApprovingFoodLog() throws {
     let parts = [foodPart()]
     let proposal = try #require(CoachFoodLogProposal(part: parts[0]))
-    var item = proposal.items[0]
+    var item = try #require(proposal.items.first)
     item.grams = 120
     let input = proposal.patchedInput(meal: .snacks, items: [item])
     let answered = CoachUIParts.responding(parts, approvalId: "af1", approved: true, replacingInput: input)
@@ -183,7 +184,7 @@ private let foodLogApplied: [JSONValue] = [
 ]
 
 @MainActor
-@Test func foodLogRetryAfterStreamFailureSendsOnceMore() async {
+@Test func foodLogRetryAfterStreamFailureSendsOnceMore() async throws {
     let client = FoodLogCoachClient([foodLogStream, nil, foodLogApplied])
     let coach = CoachStore(client: client, tokenProvider: { "t" })
     coach.draft = "Ajoute les frites"
@@ -194,26 +195,26 @@ private let foodLogApplied: [JSONValue] = [
 
     await coach.respond(to: "af1", approved: true)
     #expect(client.requestCount == 2)
-    let afterFail = foodProposal(in: coach.messages[1])
-    if case .failed = afterFail?.status {
+    let afterFail = try #require(foodProposal(in: coach.messages[1]))
+    if case .failed = afterFail.status {
         // expected
     } else {
-        Issue.record("expected failed food-log after stream error, got \(String(describing: afterFail?.status))")
+        Issue.record("expected failed food-log after stream error, got \(String(describing: afterFail.status))")
     }
 
     await coach.retry(approvalId: "af1")
     #expect(client.requestCount == 3)
-    let afterRetry = foodProposal(in: coach.messages[1])
-    if case .applied = afterRetry?.status {
+    let afterRetry = try #require(foodProposal(in: coach.messages[1]))
+    if case .applied = afterRetry.status {
         // expected
     } else {
-        Issue.record("expected applied after retry, got \(String(describing: afterRetry?.status))")
+        Issue.record("expected applied after retry, got \(String(describing: afterRetry.status))")
     }
     #expect(coach.messages[1].text.contains("C'est noté."))
 }
 
 @MainActor
-@Test func foodLogRespondIsDedupedWithoutRetry() async {
+@Test func foodLogRespondIsDedupedWithoutRetry() async throws {
     let client = FoodLogCoachClient([
         foodLogStream,
         [
@@ -236,10 +237,10 @@ private let foodLogApplied: [JSONValue] = [
     // Explicit retry reopens and sends again.
     await coach.retry(approvalId: "af1")
     #expect(client.requestCount == 3)
-    let afterRetry = foodProposal(in: coach.messages[1])
-    if case .applied = afterRetry?.status {
+    let afterRetry = try #require(foodProposal(in: coach.messages[1]))
+    if case .applied = afterRetry.status {
         // expected
     } else {
-        Issue.record("expected applied after retry, got \(String(describing: afterRetry?.status))")
+        Issue.record("expected applied after retry, got \(String(describing: afterRetry.status))")
     }
 }
