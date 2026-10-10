@@ -42,7 +42,7 @@ import Testing
             }
         }
         let spy = LinkSpy()
-        let sync = AppleCalendarSync(defaults: defaults)
+        let sync = AppleCalendarSync(defaults: defaults, accessRequest: { true })
         let migrated = await sync.migrateLegacyPlanCalendarSync(calendarLinker: spy, token: "t")
         #expect(migrated)
         #expect(spy.linked == [true])
@@ -62,7 +62,7 @@ import Testing
                 throw URLError(.notConnectedToInternet)
             }
         }
-        let sync = AppleCalendarSync(defaults: defaults)
+        let sync = AppleCalendarSync(defaults: defaults, accessRequest: { true })
         #expect(await sync.migrateLegacyPlanCalendarSync(calendarLinker: FailingLink(), token: "t") == false)
         #expect(defaults.bool(forKey: AppleCalendarSync.enabledKey))
         #expect(!defaults.bool(forKey: AppleCalendarSync.legacyMigrationDoneKey))

@@ -75,10 +75,17 @@ final class AppleCalendarSync {
     private let store = EKEventStore()
     private let defaults: UserDefaults
     private let calendar: Calendar
+    /// Replaces the EventKit prompt in tests, where the simulator never grants it.
+    private let accessRequest: (() async -> Bool)?
 
-    init(defaults: UserDefaults = .standard, calendar: Calendar = .current) {
+    init(
+        defaults: UserDefaults = .standard,
+        calendar: Calendar = .current,
+        accessRequest: (() async -> Bool)? = nil
+    ) {
         self.defaults = defaults
         self.calendar = calendar
+        self.accessRequest = accessRequest
         migrateWriteCalendarIdIfNeeded()
     }
 
@@ -99,6 +106,7 @@ final class AppleCalendarSync {
 
     /// EventKit full access — does not touch legacy `planCalendarSync.enabled`.
     func requestAccess() async -> Bool {
+        if let accessRequest { return await accessRequest() }
         if EKEventStore.authorizationStatus(for: .event) == .fullAccess { return true }
         return (try? await store.requestFullAccessToEvents()) ?? false
     }
