@@ -165,6 +165,12 @@ nonisolated struct V1ActivityStreamPayload: Decodable, Sendable, Equatable {
     /// reading only (ADR 0006).
     var analysis: V1ActivityAnalysis? = nil
 
+    /// A route or a distance: the provider's own recording. Without either it may be an Apple
+    /// Health copy (heart rate alone) the server later replaces with Garmin's or Strava's.
+    var isComplete: Bool {
+        !(path ?? []).isEmpty || (stats?.totalDistance ?? 0) > 0
+    }
+
     var route: [V1ActivityCoordinate] {
         (path ?? []).compactMap { pair in
             guard pair.count >= 2 else { return nil }

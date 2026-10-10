@@ -88,3 +88,13 @@ private let streamsJSON = #"""
     #expect(!TrainingLoadReadout.isInFormBand(-24))
     #expect(!TrainingLoadReadout.isInFormBand(12))
 }
+
+@Test func aHeartRateOnlyStreamIsNotTakenForTheFullRecording() throws {
+    let heartRateOnly = #"{"available":true,"path":[],"samples":[],"stats":{"totalDistance":null,"avgSpeed":null,"totalAscent":null}}"#
+    let withRoute = #"{"available":true,"path":[[48.9,2.25],[48.91,2.26]],"samples":[],"stats":null}"#
+    let withDistance = #"{"available":true,"path":null,"samples":[],"stats":{"totalDistance":1200,"avgSpeed":1.1,"totalAscent":null}}"#
+    let decode = { (json: String) in try JSONDecoder().decode(V1ActivityStreamPayload.self, from: Data(json.utf8)) }
+    #expect(try !decode(heartRateOnly).isComplete)
+    #expect(try decode(withRoute).isComplete)
+    #expect(try decode(withDistance).isComplete)
+}

@@ -126,8 +126,9 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         let data = try await fetch(path: "/api/v1/activities/\(id)/streams", queryItems: [], token: token)
         let stream: V1ActivityStreamPayload = try decode(data)
         streamCache[id] = stream
-        // Not yet backfilled: kept out of the disk so the next opening asks again.
-        if stream.available {
+        // Not yet backfilled, or heart rate alone while a fuller recording may still come:
+        // kept out of the disk so the next opening asks again.
+        if stream.available && stream.isComplete {
             disk?.write(data, .stream, id: id)
         }
         return stream
