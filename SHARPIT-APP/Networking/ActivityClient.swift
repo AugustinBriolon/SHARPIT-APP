@@ -118,8 +118,10 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         if let cached = streamCache[id] {
             return cached
         }
+        // A heart-rate-only copy kept by an earlier build is asked again too.
         if let stored = disk?.read(.stream, id: id),
-           let stream = try? JSONDecoder().decode(V1ActivityStreamPayload.self, from: stored.data) {
+           let stream = try? JSONDecoder().decode(V1ActivityStreamPayload.self, from: stored.data),
+           stream.isComplete {
             streamCache[id] = stream
             return stream
         }
