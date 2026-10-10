@@ -24,6 +24,10 @@ final class CoachStore {
 
     var draft = ""
 
+    /// What is left of the coach budget, read on open and after each answer. Nil until read,
+    /// and kept as it was when a read fails.
+    private(set) var quota: V1CoachQuota?
+
     /// Called when the server carried out an approved change, so Plan and Résumé reload.
     var onCalendarChanged: (() -> Void)?
 
@@ -35,6 +39,7 @@ final class CoachStore {
     /// Nil where nothing is kept, in previews: the conversation then lives only on screen.
     private let conversations: (any CoachConversationServing)?
     private let tokenProvider: (() async throws -> String)?
+    private let quotaClient: (any CoachQuotaServing)?
     /// The in-flight SSE consume task — cancelled by the stop control on the composer.
     private var replyTask: Task<Void, Never>?
     /// True only when the athlete pressed stop — not when Approve cancels a winding-down stream.
@@ -43,11 +48,20 @@ final class CoachStore {
     init(
         client: any CoachChatServing,
         conversations: (any CoachConversationServing)? = nil,
+        quota: (any CoachQuotaServing)? = nil,
         tokenProvider: (() async throws -> String)?
     ) {
         self.client = client
         self.conversations = conversations
+        self.quotaClient = quota
         self.tokenProvider = tokenProvider
+    }
+
+    func refreshQuota() async {
+        guard let quotaClient, let tokenProvider else { return }
+        if let fresh = try? await quotaClient.quota(token: try await tokenProvider()) {
+            quota = fresh
+        }
     }
 
     /// Cuts the live coach stream and the server request. Keeps any partial bubble already shown.
@@ -146,6 +160,7 @@ final class CoachStore {
         replyTask = task
         await task.value
         if replyTask == task { replyTask = nil }
+        await refreshQuota()
     }
 
     /// Cancels an in-flight reply and waits until `isReplying` clears — so Approve on a food

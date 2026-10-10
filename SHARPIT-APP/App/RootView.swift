@@ -75,6 +75,7 @@ struct RootView: View {
                 CoachView(
                     client: CoachChatClient(),
                     conversations: CoachConversationClient(),
+                    quota: CoachQuotaClient(),
                     tokenProvider: liveToken
                 )
             }

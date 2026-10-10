@@ -32,6 +32,7 @@ struct CoachView: View {
     init(
         client: any CoachChatServing,
         conversations: any CoachConversationServing,
+        quota: (any CoachQuotaServing)? = nil,
         tokenProvider: (() async throws -> String)?
     ) {
         self.conversations = conversations
@@ -40,6 +41,7 @@ struct CoachView: View {
             initialValue: CoachStore(
                 client: client,
                 conversations: conversations,
+                quota: quota,
                 tokenProvider: tokenProvider
             )
         )
@@ -140,6 +142,7 @@ struct CoachView: View {
                 )
             }
         }
+        .task { await store.refreshQuota() }
         .task(id: router.pendingCoachContext) {
             if let context = router.consumeCoachContext() {
                 store.attach(context)
@@ -275,6 +278,28 @@ struct CoachView: View {
         store.isReplying && message.role == .assistant && message.id == store.messages.last?.id
     }
 
+    /// What is left of the coach budget, once half of it is spent: a thin bar of what remains
+    /// and the line that counts it; a Free athlete is shown where more comes from.
+    private func quotaGauge(_ quota: V1CoachQuota, line: String) -> some View {
+        let spent = quota.retryAfterSeconds != nil
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Text(line)
+                    .foregroundStyle(spent ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
+                Spacer(minLength: 0)
+                if CoachQuotaReadout.offersPro(quota) {
+                    Button("Passer Pro") { router.openSettings(on: .pro) }
+                        .fontWeight(.semibold)
+                        .foregroundStyle(SharpitColor.primary)
+                }
+            }
+            .font(SharpitTypography.meta)
+            ProgressView(value: 1 - quota.usedRatio)
+                .tint(spent ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
+                .accessibilityHidden(true)
+        }
+    }
+
     /// The composer's one height — the smallest tappable size, for the field and both circles.
     private static let controlHeight = SharpitSpacing.minimumTouchTarget
 
@@ -285,6 +310,9 @@ struct CoachView: View {
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.signalCaution)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
+                quotaGauge(quota, line: line)
             }
             if let context = store.pendingContext {
                 CoachContextTag(context: context) { store.dropContext() }
