@@ -209,6 +209,9 @@ final class CoachStore {
                 messages[index].parts = assembler.parts
                 messages[index].text = assembler.text
             }
+            // A stop that lands before the first chunk ends the loop quietly rather than
+            // throwing: it is still a stop, not a coach that did not answer.
+            try Task.checkCancellation()
 
             // An answer that never arrived is not an answer; leaving the empty bubble would
             // read as the coach having nothing to say.

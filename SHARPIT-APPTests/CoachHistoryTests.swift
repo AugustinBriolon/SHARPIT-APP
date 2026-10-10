@@ -197,6 +197,19 @@ private struct HangingCoachClient: CoachChatServing {
     }
 }
 
+/// Says nothing until the consumer cancels.
+private struct SilentCoachClient: CoachChatServing {
+    func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                try? await Task.sleep(for: .seconds(30))
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+}
+
 @MainActor
 private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
     store.draft = text
@@ -284,13 +297,31 @@ private func ask(_ store: CoachStore, _ text: String = "Bonjour") async {
     let store = coachStore(client: HangingCoachClient())
     store.draft = "Stoppe-moi"
     let send = Task { await store.send() }
-    try? await Task.sleep(for: .milliseconds(30))
+    // Stop once the first word is on screen, however long the stream takes to start.
+    for _ in 0..<200 where store.messages.last?.text.contains("Partiel") != true {
+        try? await Task.sleep(for: .milliseconds(10))
+    }
     #expect(store.isReplying)
     store.stopReply()
     await send.value
     #expect(!store.isReplying)
     #expect(store.messages.last?.role == .assistant)
     #expect(store.messages.last?.text.contains("Partiel") == true)
+    #expect(store.failure == "Réponse arrêtée.")
+}
+
+@MainActor
+@Test func aStopBeforeTheFirstWordSaysTheReplyWasStopped() async {
+    let store = coachStore(client: SilentCoachClient())
+    store.draft = "Stoppe-moi"
+    let send = Task { await store.send() }
+    for _ in 0..<200 where !store.isReplying {
+        try? await Task.sleep(for: .milliseconds(10))
+    }
+    store.stopReply()
+    await send.value
+    #expect(!store.isReplying)
+    #expect(store.messages.last?.role == .user)
     #expect(store.failure == "Réponse arrêtée.")
 }
 
