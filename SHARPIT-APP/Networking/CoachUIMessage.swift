@@ -258,12 +258,17 @@ nonisolated enum CoachUIParts {
         }
     }
 
+    /// The tools of the last step that has any. A continuation opens a step of its own but
+    /// fills the tool's output back in the step that called it, so the newest step can hold no
+    /// tool — and a failed call reopened for « Réessayer » would then never be sent.
     private static func lastStepTools(_ parts: [JSONValue]) -> [JSONValue] {
-        let lastStep = parts.lastIndex { $0["type"]?.string == "step-start" } ?? -1
-        return parts[(lastStep + 1)...].filter {
+        let isTool: (JSONValue) -> Bool = {
             let type = $0["type"]?.string ?? ""
             return type.hasPrefix("tool-") || type == "dynamic-tool"
         }
+        guard let lastTool = parts.lastIndex(where: isTool) else { return [] }
+        let stepStart = parts[..<lastTool].lastIndex { $0["type"]?.string == "step-start" } ?? -1
+        return parts[(stepStart + 1)...].filter(isTool)
     }
 
     /// Every proposal of the last step answered, at least one of them just now: the turn can
