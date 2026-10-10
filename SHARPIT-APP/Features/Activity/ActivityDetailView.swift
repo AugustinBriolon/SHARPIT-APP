@@ -469,6 +469,7 @@ struct ActivityDetailView: View {
         }
         .task {
             await load()
+            await waitForCompliance()
         }
         .task(id: phase.loadedDate) {
             await loadZones()
@@ -588,6 +589,17 @@ struct ActivityDetailView: View {
                 await load()
                 if case .loaded(let detail) = phase, detail.plannedSession?.analysis != previous { return }
             }
+        }
+    }
+
+    /// The compliance reading lands a few seconds after the session: while the page says
+    /// « Calcul en cours », it looks again a few times, then leaves it to the next open.
+    private func waitForCompliance() async {
+        for _ in 0..<6 {
+            guard case .loaded(let detail) = phase, detail.plannedSession?.awaitsAnalysis == true else { return }
+            try? await Task.sleep(for: .seconds(10))
+            if Task.isCancelled { return }
+            await load()
         }
     }
 

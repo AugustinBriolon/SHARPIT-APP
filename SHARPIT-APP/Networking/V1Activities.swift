@@ -99,6 +99,10 @@ nonisolated struct V1ActivityPlannedSession: Decodable, Sendable, Hashable {
     let id: String?
     let title: String?
     let analysis: V1PlannedSessionAnalysis?
+
+    /// Linked, but the server's compliance reading has not landed yet: it is written a few
+    /// seconds after the session arrives, so a copy read before then must not be kept.
+    var awaitsAnalysis: Bool { analysis == nil }
 }
 
 nonisolated struct V1PlannedSessionAnalysis: Decodable, Sendable, Hashable {

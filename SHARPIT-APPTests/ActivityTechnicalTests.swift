@@ -98,3 +98,11 @@ private let streamsJSON = #"""
     #expect(try decode(withRoute).isComplete)
     #expect(try decode(withDistance).isComplete)
 }
+
+@Test func aLinkedSessionWithoutItsReadingAwaitsTheAnalysis() throws {
+    let pending = #"{"id":"p1","title":"Réveil musculaire","analysis":null}"#
+    let read = #"{"id":"p1","title":"Réveil musculaire","analysis":{"verdict":"AS_PLANNED","complianceScore":100,"summary":"Parfait.","remarks":[],"recommendation":"Dors bien."}}"#
+    let decode = { (json: String) in try JSONDecoder().decode(V1ActivityPlannedSession.self, from: Data(json.utf8)) }
+    #expect(try decode(pending).awaitsAnalysis)
+    #expect(try !decode(read).awaitsAnalysis)
+}

@@ -89,12 +89,15 @@ actor ActivityClient: ActivityServing, ActivityMutating {
     /// Memory, then disk while the copy is fresh, then the server — and the disk copy of any age
     /// when the server cannot answer, so a session opens offline.
     func activity(id: String, token: String) async throws -> V1ActivityDetail {
-        if let cached = detailCache[id] {
+        // A copy still waiting for its compliance reading is asked again, or the page would
+        // say « Calcul en cours » until the copy expired.
+        if let cached = detailCache[id], cached.plannedSession?.awaitsAnalysis != true {
             return cached
         }
         let stored = disk?.read(.detail, id: id)
         if let stored, ActivityCachePolicy.isFresh(.detail, savedAt: stored.savedAt),
-           let detail = try? JSONDecoder().decode(V1ActivityDetail.self, from: stored.data) {
+           let detail = try? JSONDecoder().decode(V1ActivityDetail.self, from: stored.data),
+           detail.plannedSession?.awaitsAnalysis != true {
             detailCache[id] = detail
             return detail
         }
