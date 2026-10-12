@@ -36,7 +36,7 @@ struct TodaySessionView: View {
     private var rectangular: some View {
         if let session = day?.leadSession {
             VStack(alignment: .leading, spacing: 1) {
-                Label(session.isDone ? "Faite" : "Aujourd'hui", systemImage: session.isDone ? "checkmark.circle.fill" : session.sport.symbolName)
+                Label { Text(session.isDone ? "Faite" : "Aujourd'hui") } icon: { Image(sharpitSymbol: session.isDone ? "checkmark.circle.fill" : session.sport.symbolName) }
                     .font(.caption2.weight(.semibold))
                     .widgetAccentable()
                 Text(session.title).font(.headline).lineLimit(1)
@@ -55,10 +55,11 @@ struct TodaySessionView: View {
     @ViewBuilder
     private var inline: some View {
         if let session = day?.leadSession {
-            Label(
-                [session.title, session.figures.first.map { "\($0.value) \($0.unit)" }].compactMap { $0 }.joined(separator: " · "),
-                systemImage: session.isDone ? "checkmark.circle.fill" : session.sport.symbolName
-            )
+            Label {
+                Text([session.title, session.figures.first.map { "\($0.value) \($0.unit)" }].compactMap { $0 }.joined(separator: " · "))
+            } icon: {
+                Image(sharpitSymbol: session.isDone ? "checkmark.circle.fill" : session.sport.symbolName)
+            }
             .widgetURL(session.link)
         } else {
             Label(day == nil ? "SharpIt" : "Repos aujourd'hui", systemImage: "figure.cooldown")

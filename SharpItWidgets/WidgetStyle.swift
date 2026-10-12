@@ -120,7 +120,7 @@ struct WidgetGlyph: View {
     var tint: Color = SharpitColor.mutedForeground
 
     var body: some View {
-        Image(systemName: symbol)
+        Image(sharpitSymbol: symbol)
             .foregroundStyle(tint)
             .widgetAccentable()
     }

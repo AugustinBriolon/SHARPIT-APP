@@ -356,26 +356,13 @@ private struct TodayFoldView: View {
                         value: phase.showsGauges
                     )
                 }
-                // ADR-079. Callers: TodayFoldView. API: V1 today day scores. User: Bevel gaps plan.
-                TodayDayScoresStrip(
-                    energyBank: fold.energyBank,
-                    stress: fold.stress,
-                    targetBand: fold.targetBand
-                )
-                .opacity(phase.showsGauges ? 1 : 0)
-                .offset(y: phase.showsGauges ? 0 : 18)
-                .animation(
-                    reduceMotion ? .easeOut(duration: 0.01)
-                        : .spring(response: 0.40, dampingFraction: 0.80).delay(0.10),
-                    value: phase.showsGauges
-                )
                 // Callers: TodayFoldView. API: timeline. User: fix all — P2 day timeline.
                 TodayTimelineStrip(events: fold.timeline)
                 .opacity(phase.showsGauges ? 1 : 0)
                 .offset(y: phase.showsGauges ? 0 : 18)
                 .animation(
                     reduceMotion ? .easeOut(duration: 0.01)
-                        : .spring(response: 0.40, dampingFraction: 0.80).delay(0.12),
+                        : .spring(response: 0.40, dampingFraction: 0.80).delay(0.10),
                     value: phase.showsGauges
                 )
                 if features.isOn(.regularity), let consistency = fold.consistency, !consistency.days.isEmpty {
@@ -389,7 +376,7 @@ private struct TodayFoldView: View {
                     .offset(y: phase.showsGauges ? 0 : 18)
                     .animation(
                         reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.14),
+                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.12),
                         value: phase.showsGauges
                     )
                 }
@@ -399,7 +386,7 @@ private struct TodayFoldView: View {
                         .offset(y: phase.showsGauges ? 0 : 18)
                         .animation(
                             reduceMotion ? .easeOut(duration: 0.01)
-                                : .spring(response: 0.40, dampingFraction: 0.80).delay(0.18),
+                                : .spring(response: 0.40, dampingFraction: 0.80).delay(0.16),
                             value: phase.showsGauges
                         )
                 }

@@ -134,7 +134,7 @@ private struct SessionLinkCandidateRow: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: candidate.symbolName)
+            Image(sharpitSymbol: candidate.symbolName)
                 .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(SharpitSportTone.label(for: candidate.sport))
                 .frame(width: 28, height: 28)

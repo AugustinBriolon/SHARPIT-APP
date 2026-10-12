@@ -29,7 +29,7 @@ nonisolated enum V1ActivityType: String, Codable, Sendable {
         case .swim: "figure.pool.swim"
         case .strength: "figure.strengthtraining.traditional"
         case .hike: "figure.hiking"
-        case .triathlon: "figure.mixed.cardio"
+        case .triathlon: SharpitCustomSymbol.triathlon
         case .other: "figure.mind.and.body"
         }
     }

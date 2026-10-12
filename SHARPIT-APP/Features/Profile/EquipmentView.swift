@@ -6,12 +6,8 @@ struct PracticedSportItem: Identifiable, Sendable {
     let label: String
     let subtitle: String
     let symbolName: String
-    /// SF Symbols draws no triathlon: that one is the app's own symbol, in the asset catalog.
-    var isCustomSymbol = false
 
-    var image: Image {
-        isCustomSymbol ? Image(symbolName) : Image(systemName: symbolName)
-    }
+    var image: Image { Image(sharpitSymbol: symbolName) }
 }
 
 enum PracticedSportCatalog {
@@ -19,7 +15,7 @@ enum PracticedSportCatalog {
         PracticedSportItem(id: "run", label: "Course à pied", subtitle: "Route, trail et piste", symbolName: "figure.run"),
         PracticedSportItem(id: "bike", label: "Cyclisme / Vélo", subtitle: "Route, gravel et home-trainer", symbolName: "bicycle"),
         PracticedSportItem(id: "swim", label: "Natation", subtitle: "Bassin et eau libre", symbolName: "figure.pool.swim"),
-        PracticedSportItem(id: "triathlon", label: "Triathlon", subtitle: "Enchaînements multi-disciplines", symbolName: "triathlon.circles", isCustomSymbol: true)
+        PracticedSportItem(id: "triathlon", label: "Triathlon", subtitle: "Enchaînements multi-disciplines", symbolName: SharpitCustomSymbol.triathlon)
     ]
 
     static let complementary: [PracticedSportItem] = [

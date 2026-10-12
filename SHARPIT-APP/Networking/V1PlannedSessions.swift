@@ -192,14 +192,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     }
 
     var symbolName: String {
-        switch type?.uppercased() {
-        case "RUN": "figure.run"
-        case "BIKE": "bicycle"
-        case "SWIM": "figure.pool.swim"
-        case "STRENGTH": "figure.strengthtraining.traditional"
-        case "HIKE": "figure.hiking"
-        default: "figure.mind.and.body"
-        }
+        (V1ActivityType(rawValue: type?.uppercased() ?? "") ?? .other).symbolName
     }
 }
 

@@ -40,7 +40,7 @@ struct PlannedSessionSummary<Actions: View>: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             HStack(spacing: SharpitSpacing.xs) {
-                Image(systemName: preview.symbolName)
+                Image(sharpitSymbol: preview.symbolName)
                     .font(SharpitTypography.label)
                     .foregroundStyle(SharpitSportTone.label(for: preview.sport))
                 Text(preview.sport)

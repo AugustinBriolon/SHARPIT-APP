@@ -62,7 +62,7 @@ struct OnboardingChoiceChip: View {
         } label: {
             HStack(spacing: SharpitSpacing.xs) {
                 if let symbol {
-                    Image(systemName: symbol)
+                    Image(sharpitSymbol: symbol)
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)

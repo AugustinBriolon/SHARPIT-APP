@@ -90,7 +90,8 @@ struct SanteView: View {
         async let overview: Void = store.load()
         async let corps: Void = history.load()
         async let declared: Void = zones.load()
-        _ = await (overview, corps, declared)
+        async let day: Void = store.loadDay()
+        _ = await (overview, corps, declared, day)
     }
 
     private var readout: some View {
@@ -104,6 +105,10 @@ struct SanteView: View {
                         watchCount: overview.watch.count
                     )
                     VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                        if let day = store.dayState {
+                            SanteTodaySection(state: day)
+                                .revealed(hasAppeared, index: 0)
+                        }
                         biologicalAgeAccess(overview.synthesis)
                         if !overview.watch.isEmpty {
                             SanteWatchCard(items: overview.watch)

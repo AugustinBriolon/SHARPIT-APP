@@ -448,7 +448,7 @@ private struct GoalLinkedActivityRow: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: activity.type.symbolName)
+            Image(sharpitSymbol: activity.type.symbolName)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(SharpitSportTone.label(for: activity.type))
                 .frame(width: 38, height: 38)

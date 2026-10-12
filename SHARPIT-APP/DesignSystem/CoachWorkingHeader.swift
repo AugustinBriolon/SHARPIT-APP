@@ -116,7 +116,7 @@ struct SharpitSportBadge: View {
     var body: some View {
         ZStack {
             Circle().fill(SharpitSportTone.label(for: type).opacity(0.14)).frame(width: 38, height: 38)
-            Image(systemName: type.symbolName)
+            Image(sharpitSymbol: type.symbolName)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(SharpitSportTone.label(for: type))
         }

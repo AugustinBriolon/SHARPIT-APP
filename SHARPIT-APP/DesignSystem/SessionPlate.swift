@@ -62,7 +62,7 @@ struct SessionPlate: View {
                 BrickChainCapsule(sports: legs.map { V1ActivityType(rawValue: $0.type) ?? .other })
             } else if let sport = session.sport, !sport.isEmpty {
                 HStack(spacing: SharpitSpacing.xxs) {
-                    Image(systemName: SharpitSportTone.symbolName(for: sport))
+                    Image(sharpitSymbol: SharpitSportTone.symbolName(for: sport))
                         .font(.system(size: 11, weight: .semibold))
 
                     Text(sport.uppercased())
@@ -360,7 +360,7 @@ private struct BrickChainCapsule: View {
                         .font(.system(size: 8, weight: .bold))
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
-                Image(systemName: sport.symbolName)
+                Image(sharpitSymbol: sport.symbolName)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(SharpitSportTone.label(for: sport))
             }

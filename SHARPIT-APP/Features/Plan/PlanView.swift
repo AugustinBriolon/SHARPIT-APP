@@ -803,7 +803,7 @@ private struct PlanExecutedCard: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: entry.activity.type.symbolName)
+            Image(sharpitSymbol: entry.activity.type.symbolName)
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(SharpitSportTone.label(for: entry.activity.type))
                 .frame(width: 28, height: 28)
@@ -893,7 +893,7 @@ private struct PlanSessionCard: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: session.symbolName)
+            Image(sharpitSymbol: session.symbolName)
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(
                     state == .missed ? SharpitColor.mutedForeground : SharpitColor.primary
@@ -948,7 +948,7 @@ private struct PlanBrickCard: View {
                             .fill(brick.isMissed ? SharpitColor.mutedForeground.opacity(0.4) : SharpitColor.primary.opacity(0.5))
                             .frame(width: 1.5, height: 6)
                     }
-                    Image(systemName: leg.symbolName)
+                    Image(sharpitSymbol: leg.symbolName)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(brick.isMissed ? SharpitColor.mutedForeground : SharpitColor.primary)
                 }
@@ -1005,7 +1005,7 @@ private struct PlanDoneBrickCard: View {
                             .fill(SharpitColor.primary.opacity(0.5))
                             .frame(width: 1.5, height: 6)
                     }
-                    Image(systemName: symbol)
+                    Image(sharpitSymbol: symbol)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(SharpitColor.primary)
                 }

@@ -297,7 +297,7 @@ private struct ActivityRow: View {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .fill(tone.opacity(0.16))
                     .frame(width: 46, height: 46)
-                Image(systemName: activity.type.symbolName)
+                Image(sharpitSymbol: activity.type.symbolName)
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(tone)
             }
@@ -418,7 +418,7 @@ private struct ActivityFilterMenu: View {
             Picker("Sport", selection: $filter.sport.animation(SharpitMotion.selection)) {
                 Text("Tous les sports").tag(V1ActivityType?.none)
                 ForEach(sports, id: \.self) { sport in
-                    Label(sport.label, systemImage: sport.symbolName).tag(V1ActivityType?.some(sport))
+                    Label { Text(sport.label) } icon: { Image(sharpitSymbol: sport.symbolName) }.tag(V1ActivityType?.some(sport))
                 }
             }
             .pickerStyle(.menu)
