@@ -31,6 +31,8 @@ nonisolated struct V1EffortResponse: Decodable, Sendable, Equatable {
     let weeklyTss: [V1EffortWeek]
     let confidencePct: Double?
     let completenessLabel: String
+    /// ADR-079 target band. Callers: EffortView. API: GET /api/v1/effort.
+    var targetBand: V1TodayTargetBand? = nil
 }
 
 /// The day's strain, 0–21, worded and toned as the web's ring.

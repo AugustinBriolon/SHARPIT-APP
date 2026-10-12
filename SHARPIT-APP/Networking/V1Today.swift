@@ -15,6 +15,35 @@ nonisolated struct V1TodayResponse: Codable, Sendable, Equatable {
     /// A race goal's day, or the few days after it once a session is linked; absent from
     /// servers that predate it and on every other day.
     var race: V1TodayRace? = nil
+    /// Garmin daily stress (ADR-079). Callers: TodayFold. API: GET /api/v1/today.
+    var stress: V1TodayStress? = nil
+    var energyBank: V1TodayEnergyBank? = nil
+    var targetBand: V1TodayTargetBand? = nil
+}
+
+nonisolated struct V1TodayStress: Codable, Sendable, Equatable {
+    var value: Double
+    var asOf: String
+}
+
+nonisolated struct V1TodayEnergyBank: Codable, Sendable, Equatable {
+    var algorithmVersion: String
+    var value: Double?
+    var typicalBaseline: Double?
+    var asOfMinuteOfDay: Int
+    var series: [V1TodayEnergyBankPoint]
+}
+
+nonisolated struct V1TodayEnergyBankPoint: Codable, Sendable, Equatable {
+    var minuteOfDay: Int
+    var value: Double
+}
+
+nonisolated struct V1TodayTargetBand: Codable, Sendable, Equatable {
+    var algorithmVersion: String
+    var low: Double
+    var high: Double
+    var status: String?
 }
 
 /// The race moment Résumé leads with (`selectRaceMoment` server-side).
@@ -206,6 +235,7 @@ nonisolated enum V1TodaySignalKey: String, Codable, Sendable {
     case recovery
     case effort
     case adaptation
+    case stress
 }
 
 nonisolated enum TrainingDayId {

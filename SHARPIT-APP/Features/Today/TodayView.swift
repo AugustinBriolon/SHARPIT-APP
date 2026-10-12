@@ -356,6 +356,19 @@ private struct TodayFoldView: View {
                         value: phase.showsGauges
                     )
                 }
+                // ADR-079. Callers: TodayFoldView. API: V1 today day scores. User: Bevel gaps plan.
+                TodayDayScoresStrip(
+                    energyBank: fold.energyBank,
+                    stress: fold.stress,
+                    targetBand: fold.targetBand
+                )
+                .opacity(phase.showsGauges ? 1 : 0)
+                .offset(y: phase.showsGauges ? 0 : 18)
+                .animation(
+                    reduceMotion ? .easeOut(duration: 0.01)
+                        : .spring(response: 0.40, dampingFraction: 0.80).delay(0.10),
+                    value: phase.showsGauges
+                )
                 if features.isOn(.regularity), let consistency = fold.consistency, !consistency.days.isEmpty {
                     ConsistencyStrip(
                         consistency: consistency,
@@ -571,7 +584,7 @@ private struct TodayFoldView: View {
                 SleepView(client: signalClient, tokenProvider: tokenProvider)
             case .recovery:
                 RecoveryView(client: signalClient, tokenProvider: tokenProvider)
-            case .effort, .adaptation:
+            case .effort, .adaptation, .stress:
                 EmptyView()
             }
         }

@@ -104,6 +104,12 @@ struct EffortSections: View {
                     .foregroundStyle(SharpitColor.foreground)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            // ADR-079. Callers: EffortSections. API: targetBand. User: Bevel gaps plan.
+            if let band = effort.targetBand {
+                Text(Self.targetBandLine(band))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
             if let line = EffortReadout.actionLine(effort) {
                 Label(line, systemImage: "clock.arrow.circlepath")
                     .font(SharpitTypography.meta)
@@ -113,6 +119,16 @@ struct EffortSections: View {
                 router.discussWithCoach(about: CoachDiscuss.describe(.today))
             }
             .padding(.top, SharpitSpacing.xxs)
+        }
+    }
+
+    private static func targetBandLine(_ band: V1TodayTargetBand) -> String {
+        let range = "Cible \(Int(band.low.rounded()))–\(Int(band.high.rounded()))"
+        switch band.status {
+        case "below": return "\(range) · sous la cible"
+        case "within": return "\(range) · dans la cible"
+        case "above": return "\(range) · au-dessus"
+        default: return range
         }
     }
 }

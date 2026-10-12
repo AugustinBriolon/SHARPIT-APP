@@ -13,6 +13,7 @@ struct SharpItWidgetsBundle: WidgetBundle {
         VerdictWidget()
         NutritionWidget()
         SleepWidget()
+        EnergyBankWidget() // ADR-079. Callers: WidgetKit. User: Bevel gaps plan.
         WeightWidget()
         VolumeWidget()
         RegularityWidget()

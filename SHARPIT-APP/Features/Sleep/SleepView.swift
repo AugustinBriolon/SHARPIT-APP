@@ -158,15 +158,31 @@ private struct SleepCoachCard: View {
                                 .foregroundStyle(SharpitColor.foreground)
                         }
                         Spacer(minLength: 0)
-                        if let duration = sleep.recommendedDurationMin {
+                        // ADR-079. Callers: SleepCoachCard. API: sleepNeededMin. User: Bevel gaps plan.
+                        if let duration = sleep.sleepNeededMin ?? sleep.recommendedDurationMin {
                             VStack(alignment: .trailing, spacing: 2) {
-                                Text("pour dormir")
+                                Text("Besoin cette nuit")
                                     .font(SharpitTypography.meta)
                                     .foregroundStyle(SharpitColor.mutedForeground)
                                 Text(SleepReadout.duration(duration))
                                     .font(SharpitTypography.instrument)
                                     .foregroundStyle(SharpitColor.foreground)
                             }
+                        }
+                    }
+                    if let contributors = sleep.sleepNeededContributors {
+                        let bits = [
+                            contributors.debtBoostMin > 0
+                                ? "dette +\(Int(contributors.debtBoostMin)) min" : nil,
+                            contributors.strainBoostMin > 0
+                                ? "effort +\(Int(contributors.strainBoostMin)) min" : nil,
+                            contributors.efficiencyBoostMin > 0
+                                ? "efficacité +\(Int(contributors.efficiencyBoostMin)) min" : nil,
+                        ].compactMap { $0 }
+                        if !bits.isEmpty {
+                            Text(bits.joined(separator: " · "))
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.mutedForeground)
                         }
                     }
                 }

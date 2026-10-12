@@ -118,7 +118,7 @@ private struct OvernightGaugeCell: View {
             SharpitColor.primary
         case .recovery:
             SharpitColor.signalRecovery
-        case .effort, .adaptation:
+        case .effort, .adaptation, .stress:
             SharpitColor.primary
         }
     }
@@ -202,7 +202,7 @@ private struct OvernightGaugeCell: View {
         switch gauge.key {
         case .sleep: "Sommeil"
         case .recovery: "Récupération"
-        case .effort, .adaptation: gauge.key.instrumentLabel
+        case .effort, .adaptation, .stress: gauge.key.instrumentLabel
         }
     }
 }

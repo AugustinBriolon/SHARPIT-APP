@@ -97,6 +97,7 @@ extension V1TodaySignalKey {
         case .recovery: "Récup"
         case .effort: "Effort"
         case .adaptation: "Adapt."
+        case .stress: "Stress" // ADR-079. Callers: OvernightGaugePair. User: Bevel gaps plan.
         }
     }
 
@@ -106,6 +107,7 @@ extension V1TodaySignalKey {
         case .recovery: "heart"
         case .effort: "bolt"
         case .adaptation: "arrow.triangle.2.circlepath"
+        case .stress: "waveform.path.ecg"
         }
     }
 }

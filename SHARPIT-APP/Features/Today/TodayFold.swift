@@ -10,6 +10,10 @@ struct TodayFold: Sendable, Equatable {
     var morningProposal: V1TodayMorningProposal? = nil
     /// Race day, or the result in the days after it.
     var race: RaceMomentModel? = nil
+    /// ADR-079. Callers: TodayView. API: V1TodayResponse day scores.
+    var stress: V1TodayStress? = nil
+    var energyBank: V1TodayEnergyBank? = nil
+    var targetBand: V1TodayTargetBand? = nil
 }
 
 struct InkPlateModel: Sendable, Equatable {
@@ -137,7 +141,10 @@ enum TodayFoldMapper {
             consistency: response.consistency,
             weather: response.weather,
             morningProposal: response.morningProposal,
-            race: RaceMomentMapper.map(response.race, trainingDayId: response.trainingDayId)
+            race: RaceMomentMapper.map(response.race, trainingDayId: response.trainingDayId),
+            stress: response.stress,
+            energyBank: response.energyBank,
+            targetBand: response.targetBand
         )
     }
 }

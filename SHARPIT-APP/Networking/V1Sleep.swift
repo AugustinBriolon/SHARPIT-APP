@@ -25,6 +25,9 @@ nonisolated struct V1SleepResponse: Decodable, Sendable, Equatable {
     let regularityMin: Double?
     let recommendedBedtimeMin: Double?
     let recommendedDurationMin: Double?
+    /// ADR-079 sleep needed. Callers: SleepView. API: GET /api/v1/sleep.
+    var sleepNeededMin: Double? = nil
+    var sleepNeededContributors: V1SleepNeededContributors? = nil
     let debt7Min: Double?
     let debt14Min: Double?
     let recoveryNote: String?
@@ -110,4 +113,10 @@ nonisolated struct V1SleepInsight: Decodable, Sendable, Equatable, Hashable {
     let tone: V1RecoveryTone
     let title: String
     let detail: String
+}
+
+nonisolated struct V1SleepNeededContributors: Decodable, Sendable, Equatable {
+    let debtBoostMin: Double
+    let strainBoostMin: Double
+    let efficiencyBoostMin: Double
 }

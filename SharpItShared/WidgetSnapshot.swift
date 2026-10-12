@@ -48,6 +48,8 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         var verdict: Verdict?
         var sessions: [Session]
         var sleep: Sleep?
+        /// ADR-079. Callers: EnergyBankWidget. API: Today fold energyBank.
+        var energyBank: EnergyBank? = nil
 
         /// The session to put forward: the first one still to do, else the last one done.
         var leadSession: Session? {
@@ -92,6 +94,12 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         /// 0…100, the dial's value; nil when the gauge shows no number.
         var score: Int?
         /// What the gauge shows under the dial — « 7 h 12 », a cause…
+        var caption: String?
+    }
+
+    /// SharpIt-native Energy Bank (ADR-079), as Résumé's day scores read it.
+    nonisolated struct EnergyBank: Codable, Equatable, Sendable {
+        var score: Int?
         var caption: String?
     }
 

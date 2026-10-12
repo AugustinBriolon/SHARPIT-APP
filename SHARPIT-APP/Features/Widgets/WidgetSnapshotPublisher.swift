@@ -7,6 +7,12 @@ extension WidgetSnapshot.Day {
     /// widgets say what Résumé says.
     init(fold: TodayFold) {
         let sleep = fold.gauges.first { $0.key == .sleep }
+        // ADR-079. Callers: widgets. API: Today fold. User: Bevel gaps plan.
+        let energy = fold.energyBank.flatMap { bank -> WidgetSnapshot.EnergyBank? in
+            guard let value = bank.value else { return nil }
+            let caption = bank.typicalBaseline.map { "typ. \(Int($0.rounded()))" }
+            return WidgetSnapshot.EnergyBank(score: Int(value.rounded()), caption: caption)
+        }
         self.init(
             trainingDayId: fold.trainingDayId,
             verdict: WidgetSnapshot.Verdict(
@@ -27,7 +33,8 @@ extension WidgetSnapshot.Day {
                     }
                 )
             },
-            sleep: sleep.map { WidgetSnapshot.Sleep(score: Int($0.score), caption: $0.caption) }
+            sleep: sleep.map { WidgetSnapshot.Sleep(score: Int($0.score), caption: $0.caption) },
+            energyBank: energy
         )
     }
 }
