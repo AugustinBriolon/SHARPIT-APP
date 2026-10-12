@@ -43,11 +43,41 @@ final class GoalStore {
     }
 
     var activeGoals: [V1Goal] {
-        goals.filter { !$0.achieved }
+        goals.filter { !$0.isReached }
     }
 
     var completedGoals: [V1Goal] {
-        goals.filter(\.achieved)
+        goals.filter(\.isReached)
+    }
+
+    /// Races past their day with no result yet: « Ta course est passée ».
+    var racesAwaitingResult: [V1Goal] {
+        goals.filter { $0.raceStatus == .awaitingResult }
+    }
+
+    /// The sessions of a race's day, the longest first — what « Lier ma séance » offers.
+    func raceDayActivities(for goal: V1Goal) -> [V1ActivityListItem] {
+        GoalOrdering.raceDayActivities(for: goal, in: activities)
+    }
+
+    /// Links a session to a race as its result: the race reads done on the tap, the server
+    /// marks it reached, and the goals are read back; a refusal puts the race back.
+    func linkResult(_ activity: V1ActivityListItem, to goal: V1Goal) async {
+        guard let mutator = activityClient as? any ActivityMutating,
+              let index = goals.firstIndex(where: { $0.id == goal.id }) else { return }
+        let previous = goals[index]
+        goals[index].status = .done
+        goals[index].result = V1GoalRaceResult(activityId: activity.id, durationSec: activity.duration)
+        do {
+            try await SharpitRetry.run {
+                try await mutator.updateActivity(id: activity.id, fields: ["goalId": .string(goal.id)], token: try await tokenProvider())
+            }
+            await activityClient?.invalidateActivities()
+            await load()
+        } catch {
+            if let idx = goals.firstIndex(where: { $0.id == goal.id }) { goals[idx] = previous }
+            SharpitWriteFailures.shared.report("La séance n’a pas pu être liée à la course. Réessaie dans un instant.")
+        }
     }
 
     /// The race the season is built toward: the nearest upcoming A race, else the nearest
@@ -213,13 +243,24 @@ nonisolated enum GoalOrdering {
     static func nextRace(in goals: [V1Goal], now: Date = Date(), calendar: Calendar = .current) -> V1Goal? {
         let today = calendar.startOfDay(for: now)
         let upcoming = goals
-            .filter { !$0.achieved && $0.kind == .race }
+            .filter { !$0.isReached && $0.kind == .race }
             .compactMap { goal -> (V1Goal, Date)? in
                 guard let date = goal.targetDate, calendar.startOfDay(for: date) >= today else { return nil }
                 return (goal, date)
             }
             .sorted { $0.1 < $1.1 }
         return (upcoming.first { $0.0.priority == .a } ?? upcoming.first)?.0
+    }
+
+    static func raceDayActivities(
+        for goal: V1Goal,
+        in activities: [V1ActivityListItem],
+        calendar: Calendar = .current
+    ) -> [V1ActivityListItem] {
+        guard let day = goal.targetDate else { return [] }
+        return activities
+            .filter { calendar.isDate($0.date, inSameDayAs: day) }
+            .sorted { ($0.duration ?? 0) > ($1.duration ?? 0) }
     }
 
     static func active(_ goals: [V1Goal]) -> [V1Goal] {

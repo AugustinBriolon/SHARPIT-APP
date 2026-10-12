@@ -29,6 +29,11 @@ struct GoalsView: View {
                     .revealed(hasAppeared, index: 0)
                 }
 
+                ForEach(store.racesAwaitingResult) { race in
+                    RaceAwaitingResultNotice(goal: race, store: store)
+                        .revealed(hasAppeared, index: 0)
+                }
+
                 if store.goals.isEmpty && store.isLoading {
                     // The cards' own shape while the goals load, never a blank page.
                     LazyVStack(spacing: SharpitSpacing.sm) {
@@ -252,7 +257,7 @@ private struct GoalCard: View {
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                Text(goal.kind == .race ? GoalFormat.raceLine(goal) : GoalFormat.metricLine(goal))
+                Text(goal.kind == .race ? GoalFormat.raceCardLine(goal) : GoalFormat.metricLine(goal))
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .lineLimit(1)
@@ -269,7 +274,7 @@ private struct GoalCard: View {
 
     @ViewBuilder
     private var trailing: some View {
-        if goal.achieved {
+        if goal.isReached {
             Image(systemName: "checkmark.seal.fill")
                 .font(.title3)
                 .foregroundStyle(SharpitColor.signalRecovery)
@@ -352,7 +357,7 @@ struct GoalHero: View {
     private var race: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack {
-                SharpitEyebrow(goal.achieved ? "Course courue" : (goal.phaseLabel ?? "Course"), systemImage: "flag.checkered")
+                SharpitEyebrow(goal.isReached ? "Course courue" : (goal.phaseLabel ?? "Course"), systemImage: "flag.checkered")
                 Spacer(minLength: 0)
                 if let priority = goal.priority {
                     GoalPriorityChip(priority: priority, onInk: true)
@@ -362,7 +367,15 @@ struct GoalHero: View {
                 .font(SharpitTypography.pageTitle)
                 .tracking(SharpitTypography.pageTitleTracking)
                 .foregroundStyle(SharpitColor.inkSurfaceForeground)
-            if !goal.achieved, goal.daysRemaining != nil {
+            if goal.isReached, goal.result?.durationSec != nil {
+                Text(GoalFormat.doneLine(goal))
+                    .font(SharpitTypography.verdict)
+                    .tracking(SharpitTypography.verdictTracking)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            } else if !goal.isReached, goal.daysRemaining != nil {
                 HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xs) {
                     Text(GoalFormat.daysValue(goal))
                         .font(SharpitTypography.heroScore)
@@ -442,7 +455,7 @@ private struct GoalBadge: View {
     }
 
     private var tone: Color {
-        if goal.achieved { return SharpitColor.signalRecovery }
+        if goal.isReached { return SharpitColor.signalRecovery }
         if goal.kind == .race, goal.priority != .a { return SharpitColor.mutedForeground }
         return SharpitColor.primary
     }
@@ -491,6 +504,37 @@ enum GoalFormat {
             .joined(separator: " · ")
     }
 
+    /// A race card's second line: its result once done, a word once past without one, else
+    /// its day, format and place.
+    static func raceCardLine(_ goal: V1Goal) -> String {
+        switch goal.raceStatus {
+        case .done?: doneLine(goal)
+        case .awaitingResult?: "Ta course est passée · résultat à lier"
+        default: raceLine(goal)
+        }
+    }
+
+    /// « Terminée · 5:40:03 · −19:57 vs objectif »; the time against the aim only when it
+    /// names one, « Terminée » alone without a linked time.
+    static func doneLine(_ goal: V1Goal) -> String {
+        let time = goal.result?.durationSec
+        let delta = time.flatMap { seconds in
+            RaceTime.targetSeconds(from: goal.targetPerformance).map { RaceDelta(seconds: seconds - $0).label }
+        }
+        return ["Terminée", time.map(RaceTime.clock), delta].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// « Prévu 6:05 · Réalisé 5:40 »: the projection against the race run, to the minute.
+    static func plannedVsActual(projectedSeconds: Int, actualSeconds: Double) -> String {
+        "Prévu \(hoursMinutes(Double(projectedSeconds))) · Réalisé \(hoursMinutes(actualSeconds))"
+    }
+
+    /// « 6:05 »: hours and minutes, rounded to the minute.
+    static func hoursMinutes(_ seconds: Double) -> String {
+        let minutes = Int((seconds / 60).rounded())
+        return String(format: "%d:%02d", minutes / 60, minutes % 60)
+    }
+
     /// « 265 / 280 W » or « Cible 280 W ».
     static func metricLine(_ goal: V1Goal) -> String {
         let unit = goal.unit.map { " \($0)" } ?? ""
@@ -513,4 +557,109 @@ private extension V1Goal {
         V1Goal(id: "skeleton-0", title: "Semi-marathon de printemps", kind: .race, targetDate: .now.addingTimeInterval(60 * 86_400)),
         V1Goal(id: "skeleton-1", title: "Poids de forme", kind: .metric, currentValue: 72, targetValue: 70, unit: "kg"),
     ]
+}
+
+/// A race past its day with no result: say so where the goals are read, and offer the two ways
+/// out — link the session raced, or validate the race without one.
+struct RaceAwaitingResultNotice: View {
+    let goal: V1Goal
+    let store: GoalStore
+    @State private var isPicking = false
+    @State private var isWorking = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("Ta course est passée", systemImage: "flag.checkered")
+            Text(goal.title)
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+            Text("Lie la séance de ta course pour garder ton temps, ou valide l'objectif tel quel.")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+            HStack(spacing: SharpitSpacing.sm) {
+                Button("Lier ma séance", systemImage: "link") { isPicking = true }
+                    .font(SharpitTypography.bodyEmphasis)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.horizontal, SharpitSpacing.md)
+                    .padding(.vertical, SharpitSpacing.xs)
+                    .foregroundStyle(SharpitColor.primaryForeground)
+                    .background(SharpitColor.primary, in: Capsule())
+                Button("Valider l'objectif") {
+                    Task {
+                        isWorking = true
+                        await store.toggleAchieved(goal)
+                        isWorking = false
+                    }
+                }
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.primary)
+            }
+            .buttonStyle(.sharpitPressable)
+            .disabled(isWorking)
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .sheet(isPresented: $isPicking) {
+            RaceResultPickerSheet(goal: goal, candidates: store.raceDayActivities(for: goal)) { activity in
+                isPicking = false
+                Task { await store.linkResult(activity, to: goal) }
+            }
+            .sharpitSheet()
+        }
+    }
+}
+
+/// « Lier ma séance »: the sessions of the race's day, the longest first; a tap links and closes.
+private struct RaceResultPickerSheet: View {
+    let goal: V1Goal
+    let candidates: [V1ActivityListItem]
+    let onPick: (V1ActivityListItem) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if candidates.isEmpty {
+                    SharpitStateMessage(
+                        title: "Aucune séance ce jour-là",
+                        symbol: "figure.run",
+                        detail: "Synchronise ta montre, ou ouvre la séance de ta course pour la lier depuis son menu."
+                    )
+                } else {
+                    List(candidates) { activity in
+                        Button { onPick(activity) } label: { row(activity) }
+                            .buttonStyle(.plain)
+                    }
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .navigationTitle("Lier ma séance")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Annuler") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func row(_ activity: V1ActivityListItem) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(activity.title ?? activity.type.label)
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+            Text([ActivityFormat.dayLabel(for: activity.date), activity.duration.map { RaceTime.clock($0) }]
+                .compactMap { $0 }
+                .joined(separator: " · "))
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+    }
 }

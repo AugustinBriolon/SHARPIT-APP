@@ -36,9 +36,14 @@ struct GoalDetailView: View {
             VStack(spacing: SharpitSpacing.md) {
                 GoalHero(goal: goal)
                     .revealed(hasAppeared, index: 0)
+                if goal.raceStatus == .awaitingResult {
+                    RaceAwaitingResultNotice(goal: goal, store: store)
+                        .revealed(hasAppeared, index: 1)
+                }
                 Group {
                     metricsOverviewGrid
-                    if let proj = raceProjection, !proj.segments.isEmpty {
+                    // A race run reads its real legs on its session; the projected split is gone.
+                    if goal.raceStatus != .done, let proj = raceProjection, !proj.segments.isEmpty {
                         segmentsCard(proj.segments)
                     }
                     if goal.kind == .metric {
@@ -52,8 +57,11 @@ struct GoalDetailView: View {
                     }
                 }
                 .revealed(hasAppeared, index: 1)
-                actionButtonsSection
-                    .revealed(hasAppeared, index: 2)
+                // A race awaiting its result validates from its notice, above.
+                if goal.raceStatus != .awaitingResult {
+                    actionButtonsSection
+                        .revealed(hasAppeared, index: 2)
+                }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
@@ -123,7 +131,9 @@ struct GoalDetailView: View {
                 )
             }
 
-            if let proj = raceProjection {
+            if goal.raceStatus == .done, let actual = goal.result?.durationSec {
+                raceOutcomeCard(actual: actual, projected: raceProjection)
+            } else if let proj = raceProjection {
                 racePositionCard(proj: proj)
             } else if goal.kind == .metric, let cur = goal.currentValue, let tgt = goal.targetValue {
                 metricPositionCard(current: cur, target: tgt)
@@ -197,6 +207,48 @@ struct GoalDetailView: View {
                     in: Capsule()
                 )
                 .foregroundStyle(proj.isAhead ? SharpitColor.primary : SharpitColor.signalCaution)
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .sharpitSurface(.panel)
+    }
+
+    /// A race run: the time, the projection it was read against, and the gap to the aim.
+    private func raceOutcomeCard(actual: Double, projected: GoalRaceProjectionResult?) -> some View {
+        let delta = RaceTime.targetSeconds(from: goal.targetPerformance).map { RaceDelta(seconds: actual - $0) }
+        return VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            HStack {
+                Text("Résultat")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer()
+                Image(systemName: "flag.checkered")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.signalRecovery)
+            }
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(RaceTime.clock(actual))
+                        .font(SharpitTypography.verdict)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .monospacedDigit()
+                    if let projected {
+                        Text(GoalFormat.plannedVsActual(projectedSeconds: projected.projectedSeconds, actualSeconds: actual))
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .monospacedDigit()
+                    }
+                }
+                Spacer()
+                if let delta {
+                    Text(delta.label)
+                        .font(.system(size: 12, weight: .bold))
+                        .monospacedDigit()
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background((delta.isAhead ? SharpitColor.primary : SharpitColor.signalCaution).opacity(0.15), in: Capsule())
+                        .foregroundStyle(delta.isAhead ? SharpitColor.primary : SharpitColor.signalCaution)
+                }
             }
         }
         .padding(SharpitSpacing.cardPadding)

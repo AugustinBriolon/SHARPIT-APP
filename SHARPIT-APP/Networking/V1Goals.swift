@@ -43,6 +43,18 @@ nonisolated enum GoalHorizon: String, Codable, CaseIterable, Identifiable, Senda
     var id: String { rawValue }
 }
 
+/// Where a race stands, as the server reads it (`raceGoalStanding`): done once validated or
+/// once its day has come with a session linked; past its day with neither, it awaits its result.
+nonisolated enum GoalRaceStatus: String, Codable, Sendable {
+    case upcoming, raceDay, done, awaitingResult
+}
+
+/// A race's result: the session linked to it and its time.
+nonisolated struct V1GoalRaceResult: Codable, Sendable, Equatable {
+    let activityId: String
+    let durationSec: Double?
+}
+
 /// An athlete goal, as `/api/goals` returns it.
 nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
     let id: String
@@ -63,12 +75,16 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
     var raceFormat: String?
     var targetPerformance: String?
     var createdAt: Date?
+    /// Nil for a figure goal, or from a server that predates it.
+    var status: GoalRaceStatus?
+    var result: V1GoalRaceResult?
 
     enum CodingKeys: String, CodingKey {
         case id, title, kind, horizon, metricKey
         case startValue, currentValue, targetValue, unit, lowerIsBetter
         case targetDate, location, achieved, notes
         case priority, raceFormat, targetPerformance, createdAt
+        case status, result
     }
 
     init(
@@ -89,7 +105,9 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         priority: GoalPriority? = nil,
         raceFormat: String? = nil,
         targetPerformance: String? = nil,
-        createdAt: Date? = nil
+        createdAt: Date? = nil,
+        status: GoalRaceStatus? = nil,
+        result: V1GoalRaceResult? = nil
     ) {
         self.id = id
         self.title = title
@@ -109,6 +127,8 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         self.raceFormat = raceFormat
         self.targetPerformance = targetPerformance
         self.createdAt = createdAt
+        self.status = status
+        self.result = result
     }
 
     init(from decoder: Decoder) throws {
@@ -139,6 +159,8 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         } else {
             createdAt = nil
         }
+        status = (try? container.decodeIfPresent(GoalRaceStatus.self, forKey: .status)) ?? nil
+        result = (try? container.decodeIfPresent(V1GoalRaceResult.self, forKey: .result)) ?? nil
     }
 
     func encode(to encoder: Encoder) throws {
@@ -161,6 +183,24 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         try container.encodeIfPresent(raceFormat, forKey: .raceFormat)
         try container.encodeIfPresent(targetPerformance, forKey: .targetPerformance)
         try container.encodeIfPresent(createdAt?.toAPI, forKey: .createdAt)
+        try container.encodeIfPresent(status, forKey: .status)
+        try container.encodeIfPresent(result, forKey: .result)
+    }
+
+    /// The server's reading, with a validation shown on the tap before it answers.
+    var raceStatus: GoalRaceStatus? {
+        guard kind == .race else { return nil }
+        return achieved ? .done : status
+    }
+
+    /// Reached by hand, or a race run: listed under « Atteints ».
+    var isReached: Bool {
+        achieved || raceStatus == .done
+    }
+
+    /// The race's day has come — the server's rule for a session linked to it to make it done.
+    var isRaceDayReached: Bool {
+        (daysRemaining ?? 0) <= 0
     }
 
     /// Days remaining until targetDate, nil if no targetDate.

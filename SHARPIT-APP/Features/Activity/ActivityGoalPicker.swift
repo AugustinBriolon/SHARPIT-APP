@@ -1,14 +1,16 @@
 import SwiftUI
 
 extension V1ActivityGoal {
-    /// The link as the session page shows it before the server answers.
+    /// The link as the session page shows it before the server answers — which marks a race
+    /// reached once its day has come and a session is linked to it.
     init(goal: V1Goal) {
         self.init(
             id: goal.id,
             title: goal.title,
             raceFormat: goal.raceFormat,
             targetPerformance: goal.targetPerformance,
-            targetDate: goal.targetDate?.toAPI
+            targetDate: goal.targetDate?.toAPI,
+            achieved: goal.achieved || (goal.kind == .race && goal.isRaceDayReached)
         )
     }
 }

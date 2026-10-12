@@ -177,6 +177,7 @@ struct ActivityDetailView: View {
                                     reassessments: reassessments(for: detail),
                                     onReassess: { reassessing = $0 },
                                     onOpenLeg: { openLeg($0, viewport: proxy.size) },
+                                    onValidateGoal: { validateGoal(detail) },
                                     course: course,
                                     courseSelection: courseSelection,
                                     onSelectCourse: { select($0, viewport: proxy.size) }
@@ -210,6 +211,7 @@ struct ActivityDetailView: View {
                             reassessments: reassessments(for: detail),
                             onReassess: { reassessing = $0 },
                             onOpenLeg: { openLeg($0, viewport: proxy.size) },
+                            onValidateGoal: { validateGoal(detail) },
                             course: course,
                             courseSelection: courseSelection,
                             onSelectCourse: { select($0, viewport: proxy.size) }
@@ -644,6 +646,27 @@ struct ActivityDetailView: View {
         }
     }
 
+    /// « Valider l'objectif » from the race header: shown on the tap, sent behind, put back if
+    /// the server refuses for good.
+    private func validateGoal(_ detail: V1ActivityDetail) {
+        guard let goal = detail.goal, goal.achieved == false else { return }
+        var reached = goal
+        reached.achieved = true
+        withAnimation(SharpitMotion.reveal) { phase = .loaded(detail.withGoal(reached)) }
+        Task {
+            do {
+                _ = try await SharpitRetry.run {
+                    try await goalClient.toggleAchieved(id: goal.id, achieved: true, token: try await tokenProvider())
+                }
+            } catch {
+                if case .loaded(let current) = phase {
+                    withAnimation(SharpitMotion.reveal) { phase = .loaded(current.withGoal(goal)) }
+                }
+                SharpitWriteFailures.shared.report("L’objectif n’a pas pu être validé. Réessaie dans un instant.")
+            }
+        }
+    }
+
     /// Deletes on the server first; only then leaves the page and refreshes the list — a failed
     /// DELETE must not dismiss as if the session were gone.
     private func delete() {
@@ -824,6 +847,8 @@ private struct ActivityDetailContent: View {
     var onReassess: (PainReassessment) -> Void = { _ in }
     /// Opens one leg's own recording; nil where the page cannot push it.
     var onOpenLeg: ((String) -> Void)? = nil
+    /// Marks the linked race reached, from its header.
+    var onValidateGoal: () -> Void = {}
     /// A triathlon's legs, read one at a time under the course map; empty for any other session.
     var course: [TriathlonLegTrack] = []
     var courseSelection: TriathlonSelection = .overview
@@ -952,7 +977,7 @@ private struct ActivityDetailContent: View {
     @ViewBuilder
     private var overviewSections: some View {
             if let goal = detail.goal {
-                ActivityRaceHeader(goal: goal, result: raceResult)
+                ActivityRaceHeader(goal: goal, result: raceResult, onValidate: onValidateGoal)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 12)
                     .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 1)), value: appeared)
@@ -1284,6 +1309,7 @@ extension V1ActivityType {
 private struct ActivityRaceHeader: View {
     let goal: V1ActivityGoal
     let result: RaceResultModel?
+    var onValidate: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -1301,11 +1327,24 @@ private struct ActivityRaceHeader: View {
             if let result {
                 RaceTimeReadout(result: result)
             }
+            switch goal.achieved {
+            case true?:
+                Label("Objectif atteint", systemImage: "checkmark.seal.fill")
+                    .font(SharpitTypography.meta.weight(.semibold))
+                    .foregroundStyle(SharpitColor.signalRecovery)
+            case false?:
+                Button("Valider l'objectif", systemImage: "checkmark.circle", action: onValidate)
+                    .font(SharpitTypography.meta.weight(.semibold))
+                    .foregroundStyle(SharpitColor.primary)
+                    .buttonStyle(.sharpitPressable)
+            case nil:
+                EmptyView()
+            }
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
     }
 
     private var detailLine: String? {

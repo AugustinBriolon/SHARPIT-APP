@@ -243,6 +243,8 @@ nonisolated struct V1ActivityGoal: Codable, Sendable, Equatable {
     let raceFormat: String?
     let targetPerformance: String?
     let targetDate: String?
+    /// Nil from a server that predates it: the race header then offers nothing.
+    var achieved: Bool? = nil
 }
 
 struct V1ActivityWeather: Sendable, Equatable {

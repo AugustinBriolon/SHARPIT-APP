@@ -18,3 +18,12 @@ after a goal is marked reached; a failed read keeps what was shown), each the go
 `performance` metric config), the period (« Semaine 27 · 2026 », « juillet 2026 », « Année 2026 »),
 the day and « marqué manuellement » — as the web's `GoalAchievementsHistory`. One reached by a
 session pushes it (`GoalRoute.activity`) in the Objectifs stack.
+
+**A race run.** The server reads where each race stands (`status`: upcoming / raceDay / done /
+awaitingResult, and `result`: the linked session and its time, from `raceGoalStanding`) and marks a
+race reached when a session is linked once its day has come; unlinking never un-reaches it. A done
+race sits under « Atteints » and reads « Terminée · 5:40:03 · −19:57 vs objectif »; its page swaps
+the projection for « Résultat » (« Prévu 6:05 · Réalisé 5:40 ») and drops the projected split. A race
+past its day with neither shows `RaceAwaitingResultNotice` atop Objectifs and on its page: « Lier ma
+séance » (that day's sessions, longest first) or « Valider l'objectif ». The session's race header
+offers « Valider l'objectif » while the race is not reached, « Objectif atteint » once it is.
