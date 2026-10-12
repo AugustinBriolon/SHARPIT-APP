@@ -162,3 +162,13 @@ struct TriathlonCourseTests {
         #expect(TriathlonTransitionReadout.rows(legs[3]).isEmpty)
     }
 }
+
+struct TriathlonLegTapTests {
+    @Test func aTappedLegRowSelectsItsLegInPlaceAndAnUnknownOneDoesNot() {
+        var run = leg("run", 60, label: "Course", distance: 900)
+        run.sourceActivityId = "apple-run"
+        let tracks = TriathlonCourse.tracks(legs: [leg("swim", 40, label: "Natation"), run], parent: nil, legStreams: [])
+        #expect(TriathlonCourse.selection(forLegSource: "apple-run", in: tracks) == .leg(1))
+        #expect(TriathlonCourse.selection(forLegSource: "elsewhere", in: tracks) == nil)
+    }
+}

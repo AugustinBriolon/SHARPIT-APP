@@ -176,7 +176,7 @@ struct ActivityDetailView: View {
                                     },
                                     reassessments: reassessments(for: detail),
                                     onReassess: { reassessing = $0 },
-                                    onOpenLeg: { openedLeg = $0 },
+                                    onOpenLeg: { openLeg($0, viewport: proxy.size) },
                                     course: course,
                                     courseSelection: courseSelection,
                                     onSelectCourse: { select($0, viewport: proxy.size) }
@@ -209,7 +209,7 @@ struct ActivityDetailView: View {
                             onExpandToggle: {},
                             reassessments: reassessments(for: detail),
                             onReassess: { reassessing = $0 },
-                            onOpenLeg: { openedLeg = $0 },
+                            onOpenLeg: { openLeg($0, viewport: proxy.size) },
                             course: course,
                             courseSelection: courseSelection,
                             onSelectCourse: { select($0, viewport: proxy.size) }
@@ -522,6 +522,14 @@ struct ActivityDetailView: View {
         if let route = detail.stream?.route, !route.isEmpty { return route }
         if let route = streamPayload?.route, !route.isEmpty { return route }
         return course.flatMap(\.route)
+    }
+
+    private func openLeg(_ id: String, viewport: CGSize) {
+        if let selection = TriathlonCourse.selection(forLegSource: id, in: course) {
+            select(selection, viewport: viewport)
+        } else {
+            openedLeg = id
+        }
     }
 
     /// The leg's reading changes at once; the camera flies to the leg, or jumps under Reduce

@@ -64,6 +64,12 @@ nonisolated enum TriathlonCourse {
         return tracks.first { $0.id == id }
     }
 
+    /// A tapped leg row selects that leg in place; only a leg the course does not draw opens its
+    /// own recording — an Apple Health leg row has neither the route nor the splits.
+    static func selection(forLegSource id: String, in tracks: [TriathlonLegTrack]) -> TriathlonSelection? {
+        tracks.first { $0.leg.sourceActivityId == id }.map { .leg($0.id) }
+    }
+
     /// What the camera frames: the whole course, or the leg; empty for a leg without GPS, which
     /// leaves the camera where it is.
     static func route(for selection: TriathlonSelection, in tracks: [TriathlonLegTrack]) -> [V1ActivityCoordinate] {
