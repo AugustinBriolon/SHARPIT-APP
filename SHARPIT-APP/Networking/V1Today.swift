@@ -12,6 +12,47 @@ nonisolated struct V1TodayResponse: Codable, Sendable, Equatable {
     var consistency: V1TodayConsistency? = nil
     /// The night's proposal for today's session while it waits for an answer.
     var morningProposal: V1TodayMorningProposal? = nil
+    /// A race goal's day, or the few days after it once a session is linked; absent from
+    /// servers that predate it and on every other day.
+    var race: V1TodayRace? = nil
+}
+
+/// The race moment Résumé leads with (`selectRaceMoment` server-side).
+nonisolated struct V1TodayRace: Codable, Sendable, Equatable {
+    var goalId: String
+    var title: String
+    var raceFormat: String?
+    var targetPerformance: String?
+    /// `yyyy-MM-dd`, the athlete's own day.
+    var targetDate: String
+    /// `raceDay` or `postRace`; kept as text so a phase this build does not know drops the
+    /// card instead of the whole day.
+    var phase: String
+    var activity: V1TodayRaceActivity?
+}
+
+/// The session linked to the race goal, once there is one.
+nonisolated struct V1TodayRaceActivity: Codable, Sendable, Equatable {
+    var id: String
+    var title: String?
+    var durationSec: Double?
+    /// Empty for a single-sport race.
+    var legs: [V1MultisportLeg] = []
+
+    init(id: String, title: String? = nil, durationSec: Double? = nil, legs: [V1MultisportLeg] = []) {
+        self.id = id
+        self.title = title
+        self.durationSec = durationSec
+        self.legs = legs
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        durationSec = try container.decodeIfPresent(Double.self, forKey: .durationSec)
+        legs = (try? container.decodeIfPresent([V1MultisportLeg].self, forKey: .legs)) ?? []
+    }
 }
 
 /// The morning recalibration the server proposes after the check-in: today's session eased

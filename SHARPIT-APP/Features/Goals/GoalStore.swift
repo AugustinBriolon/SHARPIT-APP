@@ -66,6 +66,13 @@ final class GoalStore {
         goals.first { $0.id == id }
     }
 
+    /// The sessions raced for a goal; none when the server cannot say (offline, or a server
+    /// that predates the link) — the section is then simply absent.
+    func linkedActivities(goalId: String) async -> [V1GoalLinkedActivity] {
+        guard let token = try? await tokenProvider() else { return [] }
+        return (try? await client.linkedActivities(goalId: goalId, token: token)) ?? []
+    }
+
     func load() async {
         guard !isLoading else { return }
         isLoading = true

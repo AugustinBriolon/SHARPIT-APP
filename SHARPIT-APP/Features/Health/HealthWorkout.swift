@@ -12,6 +12,7 @@ nonisolated struct HealthWorkout: Encodable, Equatable, Sendable {
         case swim = "SWIM"
         case strength = "STRENGTH"
         case hike = "HIKE"
+        case triathlon = "TRIATHLON"
         case other = "OTHER"
     }
 
@@ -77,6 +78,7 @@ extension HealthWorkout.Sport {
              .highIntensityIntervalTraining, .coreTraining:
             self = .strength
         case .hiking, .walking: self = .hike
+        case .swimBikeRun: self = .triathlon
         default: self = .other
         }
     }
@@ -90,6 +92,7 @@ extension HealthWorkout.Sport {
         case .walking: "Marche"
         case .hiking: "Randonnée"
         case .yoga: "Yoga"
+        case .swimBikeRun: "Triathlon"
         case .traditionalStrengthTraining, .functionalStrengthTraining, .coreTraining: "Renforcement"
         case .crossTraining, .highIntensityIntervalTraining: "Entraînement fractionné"
         default: "Séance"
@@ -102,7 +105,8 @@ extension HealthWorkout.Sport {
         case .run, .hike: .distanceWalkingRunning
         case .bike: .distanceCycling
         case .swim: .distanceSwimming
-        case .strength, .other: nil
+        // A triathlon's distance spans three sports; the server sums its legs.
+        case .strength, .triathlon, .other: nil
         }
     }
 }

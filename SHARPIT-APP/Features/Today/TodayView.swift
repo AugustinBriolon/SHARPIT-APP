@@ -303,6 +303,16 @@ private struct TodayFoldView: View {
                 if let controls {
                     controls
                 }
+                if let race = fold.race {
+                    TodayRaceLink(race: race, tokenProvider: tokenProvider)
+                        .opacity(phase.showsPlate ? 1 : 0)
+                        .offset(y: phase.showsPlate ? 0 : 10)
+                        .animation(
+                            reduceMotion ? .easeOut(duration: 0.01)
+                                : .spring(response: 0.38, dampingFraction: 0.78),
+                            value: phase.showsPlate
+                        )
+                }
                 InkVerdictPlate(plate: fold.plate, revealed: phase.showsPlate)
 
                 if let store = activityStatusStore, store.current != .active, store.phase != .loading {
@@ -727,6 +737,25 @@ private struct TodaySessionLink: View {
                 plate
             }
             .buttonStyle(.sharpitPressable)
+        }
+    }
+}
+
+/// The race card, opening its session once there is one and the screen can fetch it.
+private struct TodayRaceLink: View {
+    let race: RaceMomentModel
+    let tokenProvider: (() async throws -> String)?
+
+    var body: some View {
+        if let activityId = race.activityId, let tokenProvider {
+            NavigationLink {
+                ActivityDetailView(activity: activityId, client: ActivityClient(), tokenProvider: tokenProvider)
+            } label: {
+                RaceDayCard(race: race, opensSession: true)
+            }
+            .buttonStyle(.sharpitPressable)
+        } else {
+            RaceDayCard(race: race)
         }
     }
 }

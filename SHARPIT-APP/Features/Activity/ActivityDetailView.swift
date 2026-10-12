@@ -7,6 +7,7 @@ struct ActivityDetailView: View {
     let initialActivity: V1ActivityListItem?
     let client: any ActivityServing
     let linker: any PlannedSessionLinking
+    let goalClient: any GoalServing
     let tokenProvider: () async throws -> String
 
     @State private var phase: DetailPhase
@@ -26,6 +27,7 @@ struct ActivityDetailView: View {
     @State private var routeIntensity: RouteIntensity?
     @State private var editing: ActivityEditing?
     @State private var isConfirmingDeletion = false
+    @State private var isPickingGoal = false
     @State private var notice: ActivityNotice?
     /// The pains and injuries the athlete follows, read for the questions owed after a session.
     @State private var zones: SensitiveZonesStore?
@@ -63,12 +65,14 @@ struct ActivityDetailView: View {
         initialActivity: V1ActivityListItem? = nil,
         client: any ActivityServing,
         linker: any PlannedSessionLinking = PlannedSessionClient(),
+        goalClient: any GoalServing = GoalClient(),
         tokenProvider: @escaping () async throws -> String
     ) {
         self.activity = activity
         self.initialActivity = initialActivity
         self.client = client
         self.linker = linker
+        self.goalClient = goalClient
         self.tokenProvider = tokenProvider
         _phase = State(initialValue: initialActivity.map { .loaded(.preview(from: $0)) } ?? .loading)
         _appeared = State(initialValue: initialActivity != nil)
@@ -317,8 +321,11 @@ struct ActivityDetailView: View {
                     if !isMapExpanded, let mutator = client as? any ActivityMutating {
                         ActivityActionsMenu(
                             canSendToWatch: detail.type == .strength && !detail.strengthSets.isEmpty,
+                            isLinkedToGoal: detail.goal != nil,
                             onEdit: { editing = ActivityEditing(id: detail.id, draft: ActivityDraft(detail: detail), mutator: mutator) },
                             onSendToWatch: { Task { await sendToWatch(detail) } },
+                            onPickGoal: { isPickingGoal = true },
+                            onUnlinkGoal: { link(goal: nil, detail: detail, mutator: mutator) },
                             onDelete: { isConfirmingDeletion = true }
                         )
                     }
@@ -446,6 +453,19 @@ struct ActivityDetailView: View {
                 }
             }
         }
+        .sheet(isPresented: $isPickingGoal) {
+            if case .loaded(let detail) = phase, let mutator = client as? any ActivityMutating {
+                ActivityGoalPickerSheet(
+                    currentGoalId: detail.goalId,
+                    activityDate: detail.date,
+                    loadGoals: { try await goalClient.goals(token: try await tokenProvider()) },
+                    onPick: { goal in link(goal: V1ActivityGoal(goal: goal), detail: detail, mutator: mutator) }
+                )
+                .presentationDetents([.medium, .large])
+                .sharpitSheet()
+                .presentationDragIndicator(.visible)
+            }
+        }
         .alert("Supprimer cette séance ?", isPresented: $isConfirmingDeletion) {
             Button("Supprimer", role: .destructive) { delete() }
             Button("Annuler", role: .cancel) {}
@@ -524,6 +544,39 @@ struct ActivityDetailView: View {
             await client.invalidateActivities()
             router?.noteCalendarChanged()
             await load()
+        }
+    }
+
+    /// Links the session to a goal, or unlinks it with nil: shown on the tap, sent behind, put
+    /// back if the server refuses for good.
+    private func link(goal: V1ActivityGoal?, detail: V1ActivityDetail, mutator: any ActivityMutating) {
+        isPickingGoal = false
+        guard goal?.id != detail.goalId else { return }
+        let previous = detail.goal
+        withAnimation(SharpitMotion.reveal) {
+            phase = .loaded(detail.withGoal(goal))
+        }
+        Task {
+            do {
+                try await SharpitRetry.run {
+                    try await mutator.updateActivity(
+                        id: detail.id,
+                        fields: ["goalId": goal.map { .string($0.id) } ?? .null],
+                        token: try await tokenProvider()
+                    )
+                }
+                await client.invalidateActivities()
+                router?.noteActivitiesChanged()
+            } catch {
+                if case .loaded(let current) = phase {
+                    withAnimation(SharpitMotion.reveal) {
+                        phase = .loaded(current.withGoal(previous))
+                    }
+                }
+                SharpitWriteFailures.shared.report(goal == nil
+                    ? "L’objectif n’a pas pu être délié. Réessaie dans un instant."
+                    : "La séance n’a pas pu être liée à l’objectif. Réessaie dans un instant.")
+            }
         }
     }
 
@@ -777,6 +830,13 @@ private struct ActivityDetailContent: View {
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 12)
             .padding(.top, clearsBackButton ? 56 : 0)
+
+            if let goal = detail.goal {
+                ActivityRaceHeader(goal: goal, result: raceResult)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 12)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 1)), value: appeared)
+            }
 
             contextSection
                 .opacity(appeared ? 1 : 0)
@@ -1069,9 +1129,22 @@ private struct ActivityDetailContent: View {
         detail.distanceM ?? streamPayload?.stats?.totalDistance
     }
 
+    private var raceResult: RaceResultModel? {
+        RaceResultModel.make(
+            durationSec: detail.duration,
+            legs: detail.multisportLegs,
+            targetPerformance: detail.goal?.targetPerformance
+        )
+    }
+
     private var multisportLegsSection: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Jambes multisport")
+            SharpitEyebrow("Enchaînement")
+            let segments = RaceLegsTimeline.segments(detail.multisportLegs)
+            if !segments.isEmpty {
+                RaceLegsBar(segments: segments)
+                    .padding(.bottom, SharpitSpacing.xxs)
+            }
             ForEach(detail.multisportLegs) { leg in
                 HStack(spacing: SharpitSpacing.sm) {
                     Image(systemName: leg.symbolName)
@@ -1151,6 +1224,46 @@ private extension V1ActivityType {
             false
         }
     }
+}
+
+/// The goal a session was raced for, read against it: the goal, its format, and the final time
+/// beside the aim.
+private struct ActivityRaceHeader: View {
+    let goal: V1ActivityGoal
+    let result: RaceResultModel?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitEyebrow("Objectif", systemImage: "flag.checkered")
+            Text(goal.title)
+                .font(SharpitTypography.cardTitle)
+                .tracking(SharpitTypography.cardTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .lineLimit(2)
+            if let line = detailLine {
+                Text(line)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
+            if let result {
+                RaceTimeReadout(result: result)
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var detailLine: String? {
+        let clean = { (text: String?) in text?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank }
+        let parts = [clean(goal.raceFormat), clean(goal.targetPerformance).map { "Objectif · \($0)" }].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: "  ·  ")
+    }
+}
+
+private extension String {
+    var nilIfBlank: String? { isEmpty ? nil : self }
 }
 
 private func activityTone(_ type: V1ActivityType) -> Color {

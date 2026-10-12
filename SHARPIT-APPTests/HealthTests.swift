@@ -262,6 +262,10 @@ private func workout(_ id: String, endingDaysAgo days: Double) -> HealthWorkout 
     #expect(HealthWorkout.Sport(activityType: .functionalStrengthTraining) == .strength)
     #expect(HealthWorkout.Sport(activityType: .walking) == .hike)
     #expect(HealthWorkout.Sport(activityType: .yoga) == .other)
+    #expect(HealthWorkout.Sport(activityType: .swimBikeRun) == .triathlon)
+    #expect(HealthWorkout.Sport.triathlon.rawValue == "TRIATHLON")
+    #expect(HealthWorkout.Sport.triathlon.title(for: .swimBikeRun) == "Triathlon")
+    #expect(HealthWorkout.Sport.triathlon.distanceType == nil)
     #expect(HealthWorkout.Sport.run.distanceType == .distanceWalkingRunning)
     #expect(HealthWorkout.Sport.strength.distanceType == nil)
 }

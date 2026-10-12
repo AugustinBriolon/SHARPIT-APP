@@ -8,6 +8,8 @@ struct TodayFold: Sendable, Equatable {
     var consistency: V1TodayConsistency?
     var weather: V1TodayWeather?
     var morningProposal: V1TodayMorningProposal? = nil
+    /// Race day, or the result in the days after it.
+    var race: RaceMomentModel? = nil
 }
 
 struct InkPlateModel: Sendable, Equatable {
@@ -134,7 +136,8 @@ enum TodayFoldMapper {
                 },
             consistency: response.consistency,
             weather: response.weather,
-            morningProposal: response.morningProposal
+            morningProposal: response.morningProposal,
+            race: RaceMomentMapper.map(response.race, trainingDayId: response.trainingDayId)
         )
     }
 }

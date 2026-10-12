@@ -16,6 +16,7 @@ struct GoalDetailView: View {
     @State private var showsDeleteConfirmation = false
     @State private var isEditing = false
     @State private var hasAppeared = false
+    @State private var linkedActivities: [V1GoalLinkedActivity] = []
 
     /// Read from the store, so validating the goal updates this page in place.
     private var goal: V1Goal {
@@ -46,6 +47,9 @@ struct GoalDetailView: View {
                     if let notes = goal.notes, !notes.trimmingCharacters(in: .whitespaces).isEmpty {
                         notesCard(notes)
                     }
+                    if !linkedActivities.isEmpty, store.sessionReader != nil {
+                        linkedActivitiesSection
+                    }
                 }
                 .revealed(hasAppeared, index: 1)
                 actionButtonsSection
@@ -58,6 +62,10 @@ struct GoalDetailView: View {
         .navigationTitle(goal.kind == .race ? "Course" : "Objectif")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { hasAppeared = true }
+        .task(id: goalId) {
+            let activities = await store.linkedActivities(goalId: goalId)
+            withAnimation(SharpitMotion.reveal) { linkedActivities = activities }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -362,6 +370,21 @@ struct GoalDetailView: View {
 
     // MARK: - Notes Card
 
+    /// The sessions raced for this goal, each pushing its page in the Objectifs stack.
+    private var linkedActivitiesSection: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("Activités liées")
+            ForEach(linkedActivities) { activity in
+                NavigationLink(value: GoalRoute.activity(activity.id)) {
+                    GoalLinkedActivityRow(activity: activity)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Voir la séance")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private func notesCard(_ notes: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Notes & Stratégie")
@@ -416,5 +439,47 @@ struct GoalDetailView: View {
             return String(Int(num))
         }
         return String(format: "%.1f", num)
+    }
+}
+
+/// One session linked to the goal: its sport, title, day and time.
+private struct GoalLinkedActivityRow: View {
+    let activity: V1GoalLinkedActivity
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Image(systemName: activity.type.symbolName)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(SharpitSportTone.label(for: activity.type))
+                .frame(width: 38, height: 38)
+                .background(SharpitSportTone.background(for: activity.type), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(activity.title ?? activity.type.label)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Text(meta)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .monospacedDigit()
+            }
+            Spacer(minLength: SharpitSpacing.xs)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                .accessibilityHidden(true)
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var meta: String {
+        [ActivityFormat.dayLabel(for: activity.date), activity.duration.map { RaceTime.clock($0) }]
+            .compactMap { $0 }
+            .joined(separator: " · ")
     }
 }

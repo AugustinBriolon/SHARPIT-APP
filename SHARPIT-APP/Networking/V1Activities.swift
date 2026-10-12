@@ -189,7 +189,7 @@ nonisolated struct V1ActivityStreamStats: Decodable, Sendable, Equatable {
     let totalAscent: Double?
 }
 
-nonisolated struct V1MultisportLeg: Decodable, Sendable, Equatable, Identifiable {
+nonisolated struct V1MultisportLeg: Codable, Sendable, Equatable, Identifiable {
     let kind: String
     let label: String
     let durationSec: Double
@@ -200,6 +200,9 @@ nonisolated struct V1MultisportLeg: Decodable, Sendable, Equatable, Identifiable
     let elevationM: Double?
     let calories: Double?
     let transitionIndex: Int?
+    /// The hidden leg row a Strava- or Apple-built triathlon was assembled from; nil for a
+    /// Garmin leg and on servers that predate it.
+    var sourceActivityId: String? = nil
 
     var id: String {
         "\(kind)-\(transitionIndex ?? 0)-\(label)"
@@ -220,6 +223,15 @@ nonisolated struct V1MultisportLeg: Decodable, Sendable, Equatable, Identifiable
         }
         return activityType.symbolName
     }
+}
+
+/// The goal a session was raced for (`Activity.goalId`).
+nonisolated struct V1ActivityGoal: Codable, Sendable, Equatable {
+    let id: String
+    let title: String
+    let raceFormat: String?
+    let targetPerformance: String?
+    let targetDate: String?
 }
 
 struct V1ActivityWeather: Sendable, Equatable {
@@ -281,6 +293,10 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
     let narrativeAnalysis: V1ActivityNarrative?
     let stream: V1ActivityStream?
     let multisportLegs: [V1MultisportLeg]
+    /// Nil when unlinked, and on servers that predate the link.
+    let goal: V1ActivityGoal?
+
+    var goalId: String? { goal?.id }
 
     static func preview(from activity: V1ActivityListItem) -> V1ActivityDetail {
         V1ActivityDetail(
@@ -309,7 +325,8 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
             plannedSession: activity.plannedSession,
             narrativeAnalysis: nil,
             stream: nil,
-            multisportLegs: []
+            multisportLegs: [],
+            goal: nil
         )
     }
 
@@ -323,7 +340,8 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
             avgPaceSecPer100m: avgPaceSecPer100m, avgHr: avgHr, cadence: cadence,
             avgCadence: avgCadence, avgPower: avgPower, swimSets: swimSets, swolf: swolf,
             calories: calories, strengthSets: strengthSets, plannedSession: plannedSession,
-            narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs
+            narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs,
+            goal: goal
         )
     }
 
@@ -336,7 +354,22 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
             avgPaceSecPer100m: avgPaceSecPer100m, avgHr: avgHr, cadence: cadence,
             avgCadence: avgCadence, avgPower: avgPower, swimSets: swimSets, swolf: swolf,
             calories: calories, strengthSets: strengthSets, plannedSession: nil,
-            narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs
+            narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs,
+            goal: goal
+        )
+    }
+
+    /// The same session linked to `goal`, or unlinked with nil — shown before the server answers.
+    func withGoal(_ goal: V1ActivityGoal?) -> V1ActivityDetail {
+        V1ActivityDetail(
+            id: id, type: type, date: date, title: title, duration: duration, load: load,
+            rpe: rpe, feeling: feeling, weather: weather, notes: notes,
+            distanceM: distanceM, elevationM: elevationM, paceSecPerKm: paceSecPerKm,
+            avgPaceSecPer100m: avgPaceSecPer100m, avgHr: avgHr, cadence: cadence,
+            avgCadence: avgCadence, avgPower: avgPower, swimSets: swimSets, swolf: swolf,
+            calories: calories, strengthSets: strengthSets, plannedSession: plannedSession,
+            narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs,
+            goal: goal
         )
     }
 
@@ -366,7 +399,8 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         plannedSession: V1ActivityPlannedSession?,
         narrativeAnalysis: V1ActivityNarrative?,
         stream: V1ActivityStream?,
-        multisportLegs: [V1MultisportLeg]
+        multisportLegs: [V1MultisportLeg],
+        goal: V1ActivityGoal?
     ) {
         self.id = id
         self.type = type
@@ -394,13 +428,14 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         self.narrativeAnalysis = narrativeAnalysis
         self.stream = stream
         self.multisportLegs = multisportLegs
+        self.goal = goal
     }
 
     enum CodingKeys: String, CodingKey {
         case id, type, date, title, duration, load, rpe, feeling, weather, notes
         case runMetrics, bikeMetrics, swimMetrics, hikeMetrics, plannedSession
         case narrativeAnalysis, stream
-        case strengthSets, multisportLegs
+        case strengthSets, multisportLegs, goal
     }
 
     init(from decoder: Decoder) throws {
@@ -420,6 +455,7 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         narrativeAnalysis = try container.decodeIfPresent(V1ActivityNarrative.self, forKey: .narrativeAnalysis)
         stream = try container.decodeIfPresent(V1ActivityStream.self, forKey: .stream)
         multisportLegs = (try? container.decodeIfPresent([V1MultisportLeg].self, forKey: .multisportLegs)) ?? []
+        goal = try? container.decodeIfPresent(V1ActivityGoal.self, forKey: .goal)
 
         let metrics: V1ActivityMetricBundle? = {
             switch decodedType {

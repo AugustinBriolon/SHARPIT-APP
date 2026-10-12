@@ -9,6 +9,8 @@ nonisolated protocol GoalServing: Sendable {
     func updateGoal(id: String, fields: [String: JSONValue], token: String) async throws -> V1Goal
     /// Each time a goal was reached, newest first (`/api/v1/goals/achievements`).
     func achievements(limit: Int, token: String) async throws -> [V1GoalAchievement]
+    /// The sessions linked to a goal, newest first (`GET /api/v1/goals/[id]`).
+    func linkedActivities(goalId: String, token: String) async throws -> [V1GoalLinkedActivity]
 }
 
 extension GoalServing {
@@ -17,6 +19,10 @@ extension GoalServing {
     }
 
     func achievements(limit _: Int, token _: String) async throws -> [V1GoalAchievement] {
+        []
+    }
+
+    func linkedActivities(goalId _: String, token _: String) async throws -> [V1GoalLinkedActivity] {
         []
     }
 }
@@ -68,6 +74,13 @@ actor GoalClient: GoalServing {
         let (data, response) = try await session.data(for: request)
         try validate(response: response)
         return (try JSONDecoder().decode(LossyRecordArray<V1GoalAchievement>.self, from: data)).items
+    }
+
+    func linkedActivities(goalId: String, token: String) async throws -> [V1GoalLinkedActivity] {
+        let request = makeRequest(path: "/api/v1/goals/\(goalId)", method: "GET", token: token)
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response)
+        return try JSONDecoder().decode(V1GoalDetailPayload.self, from: data).activities
     }
 
     func deleteGoal(id: String, token: String) async throws {

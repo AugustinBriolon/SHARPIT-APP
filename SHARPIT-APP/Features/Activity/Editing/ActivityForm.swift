@@ -273,8 +273,12 @@ struct ActivityEditing: Identifiable {
 /// session, then Supprimer apart, as the system's menus put a destructive action.
 struct ActivityActionsMenu: View {
     let canSendToWatch: Bool
+    /// Whether the session is raced for a goal: « Lier à un objectif », or change and « Délier ».
+    var isLinkedToGoal = false
     let onEdit: () -> Void
     let onSendToWatch: () -> Void
+    var onPickGoal: () -> Void = {}
+    var onUnlinkGoal: () -> Void = {}
     let onDelete: () -> Void
 
     var body: some View {
@@ -282,6 +286,12 @@ struct ActivityActionsMenu: View {
             Button("Modifier", systemImage: "pencil", action: onEdit)
             if canSendToWatch {
                 Button("Envoyer à la montre", systemImage: "applewatch.radiowaves.left.and.right", action: onSendToWatch)
+            }
+            if isLinkedToGoal {
+                Button("Changer d’objectif", systemImage: "flag", action: onPickGoal)
+                Button("Délier l’objectif", systemImage: "flag.slash", action: onUnlinkGoal)
+            } else {
+                Button("Lier à un objectif", systemImage: "flag", action: onPickGoal)
             }
             Divider()
             Button("Supprimer", systemImage: "trash", role: .destructive, action: onDelete)

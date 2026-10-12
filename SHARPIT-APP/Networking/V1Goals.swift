@@ -250,3 +250,47 @@ nonisolated struct CreateGoalInput: Codable, Sendable {
         try container.encodeIfPresent(notes, forKey: .notes)
     }
 }
+
+/// A session linked to a goal (`Activity.goalId`), as `GET /api/v1/goals/[id]` lists them,
+/// newest first.
+nonisolated struct V1GoalLinkedActivity: Decodable, Sendable, Equatable, Identifiable {
+    let id: String
+    let title: String?
+    let type: V1ActivityType
+    let date: Date
+    let duration: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, type, date, duration
+    }
+
+    init(id: String, title: String? = nil, type: V1ActivityType, date: Date, duration: Double? = nil) {
+        self.id = id
+        self.title = title
+        self.type = type
+        self.date = date
+        self.duration = duration
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        type = (try? container.decodeIfPresent(V1ActivityType.self, forKey: .type)) ?? .other
+        date = try Date.fromAPI(container.decode(String.self, forKey: .date))
+        duration = try container.decodeIfPresent(Double.self, forKey: .duration)
+    }
+}
+
+/// `GET /api/v1/goals/[id]`, read only for its linked sessions: a server that predates the
+/// link sends none.
+nonisolated struct V1GoalDetailPayload: Decodable, Sendable {
+    let activities: [V1GoalLinkedActivity]
+
+    enum CodingKeys: String, CodingKey { case activities }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        activities = (try? container.decodeIfPresent(LossyRecordArray<V1GoalLinkedActivity>.self, forKey: .activities))?.items ?? []
+    }
+}
