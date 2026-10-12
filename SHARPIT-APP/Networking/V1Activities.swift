@@ -225,6 +225,17 @@ nonisolated struct V1MultisportLeg: Codable, Sendable, Equatable, Identifiable {
     }
 }
 
+/// `/api/v1/activities/[id]/multisport-streams`: each sport leg's own recording, read from the
+/// server's cache (the detail read already stored them); transitions carry none.
+nonisolated struct V1MultisportStreams: Decodable, Sendable, Equatable {
+    let legs: [V1MultisportLegStream]
+}
+
+nonisolated struct V1MultisportLegStream: Decodable, Sendable, Equatable {
+    let leg: V1MultisportLeg
+    let stream: V1ActivityStreamPayload
+}
+
 /// The goal a session was raced for (`Activity.goalId`).
 nonisolated struct V1ActivityGoal: Codable, Sendable, Equatable {
     let id: String
@@ -360,6 +371,34 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
             narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs,
             goal: goal, raceAnalysis: raceAnalysis
         )
+    }
+
+    /// One leg of this multisport session read as a session of its own sport, so the page's
+    /// sport sections take it as they take any session. Pace is derived as the server words it:
+    /// per km for a run, per 100 m for a swim, none for a ride.
+    func leg(_ leg: V1MultisportLeg) -> V1ActivityDetail {
+        let distance = leg.distanceM.flatMap { $0 > 0 ? $0 : nil }
+        let type = leg.activityType
+        return V1ActivityDetail(
+            id: id, type: type, date: date, title: leg.label, duration: leg.durationSec, load: nil,
+            rpe: nil, feeling: nil, weather: nil, notes: nil,
+            distanceM: distance, elevationM: leg.elevationM,
+            paceSecPerKm: type == .run ? distance.map { leg.durationSec / $0 * 1_000 } : nil,
+            avgPaceSecPer100m: type == .swim ? distance.map { leg.durationSec / $0 * 100 } : nil,
+            avgHr: leg.avgHr, cadence: nil, avgCadence: nil, avgPower: nil, swimSets: nil, swolf: nil,
+            calories: leg.calories, strengthSets: [], plannedSession: nil, narrativeAnalysis: nil,
+            stream: nil, multisportLegs: [], goal: nil, raceAnalysis: nil
+        )
+    }
+
+    var strengthSetCount: Int {
+        strengthSets.reduce(0) { $0 + $1.sets }
+    }
+
+    /// Nil when nothing was lifted with a load.
+    var strengthVolumeKg: Double? {
+        let volume = strengthSets.reduce(0.0) { $0 + Double($1.sets * $1.reps) * ($1.weightKg ?? 0) }
+        return volume > 0 ? volume : nil
     }
 
     /// The same session linked to `goal`, or unlinked with nil — shown before the server answers.

@@ -123,7 +123,7 @@ struct RaceLegRowLink: View {
 }
 
 /// Each leg's time in the five heart-rate zones, one thin bar per leg, the key once below.
-private struct RaceZonesBlock: View {
+struct RaceZonesBlock: View {
     let rows: [RaceZoneRow]
 
     var body: some View {

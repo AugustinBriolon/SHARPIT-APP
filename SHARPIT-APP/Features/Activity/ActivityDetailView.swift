@@ -42,6 +42,9 @@ struct ActivityDetailView: View {
     @State private var mapCamera: MapCamera?
     /// The route drawn again from start to finish, played and paused from the map's buttons.
     @State private var routeReplay = RouteReplay()
+    /// A triathlon's legs, from the parent's recording first, then each leg's own.
+    @State private var course: [TriathlonLegTrack] = []
+    @State private var courseSelection: TriathlonSelection = .overview
     @Environment(\.dismiss) private var dismiss
     @Environment(ShellRouter.self) private var router: ShellRouter?
 
@@ -87,9 +90,7 @@ struct ActivityDetailView: View {
                 ActivityDetailLoading(viewportHeight: proxy.size.height)
                     .ignoresSafeArea()
             case .loaded(let detail):
-                let route = detail.stream?.route.isEmpty == false
-                    ? detail.stream?.route ?? []
-                    : streamPayload?.route ?? []
+                let route = mapRoute(for: detail)
                 let reservesMapSpace = !route.isEmpty ||
                     (isEnriching && detail.type.supportsPotentialRoute)
                 if reservesMapSpace {
@@ -118,7 +119,10 @@ struct ActivityDetailView: View {
                                     isOffRoute: $isMapOffRoute,
                                     camera: $mapCamera,
                                     mapStyle: mapStyleSelection.mapStyle,
-                                    replay: routeReplay
+                                    replay: routeReplay,
+                                    course: course,
+                                    courseSelection: courseSelection,
+                                    initialRegion: courseRegion(.overview, viewport: proxy.size)
                                 )
                             } else if !route.isEmpty {
                                 ActivityRouteHero(
@@ -130,7 +134,10 @@ struct ActivityDetailView: View {
                                     isOffRoute: $isMapOffRoute,
                                     camera: $mapCamera,
                                     mapStyle: mapStyleSelection.mapStyle,
-                                    replay: routeReplay
+                                    replay: routeReplay,
+                                    course: course,
+                                    courseSelection: courseSelection,
+                                    initialRegion: courseRegion(.overview, viewport: proxy.size)
                                 )
                             } else {
                                 ActivityRouteLoadingSurface()
@@ -141,7 +148,7 @@ struct ActivityDetailView: View {
                         ScrollView {
                             VStack(spacing: 0) {
                                 Color.clear
-                                    .frame(height: proxy.size.height * 0.62)
+                                    .frame(height: proxy.size.height * Self.mapVisibleShare)
                                     .contentShape(Rectangle())
                                     .allowsHitTesting(!isMapExpanded)
                                     .onTapGesture {
@@ -169,7 +176,10 @@ struct ActivityDetailView: View {
                                     },
                                     reassessments: reassessments(for: detail),
                                     onReassess: { reassessing = $0 },
-                                    onOpenLeg: { openedLeg = $0 }
+                                    onOpenLeg: { openedLeg = $0 },
+                                    course: course,
+                                    courseSelection: courseSelection,
+                                    onSelectCourse: { select($0, viewport: proxy.size) }
                                 )
                                 .frame(width: proxy.size.width, alignment: .leading)
                             }
@@ -199,7 +209,10 @@ struct ActivityDetailView: View {
                             onExpandToggle: {},
                             reassessments: reassessments(for: detail),
                             onReassess: { reassessing = $0 },
-                            onOpenLeg: { openedLeg = $0 }
+                            onOpenLeg: { openedLeg = $0 },
+                            course: course,
+                            courseSelection: courseSelection,
+                            onSelectCourse: { select($0, viewport: proxy.size) }
                         )
                         .frame(width: proxy.size.width, alignment: .leading)
                     }
@@ -256,9 +269,7 @@ struct ActivityDetailView: View {
         }
         .overlay(alignment: .topTrailing) {
             if case .loaded(let detail) = phase {
-                let route = detail.stream?.route.isEmpty == false
-                    ? detail.stream?.route ?? []
-                    : streamPayload?.route ?? []
+                let route = mapRoute(for: detail)
                 HStack(spacing: 8) {
                     if !route.isEmpty {
                         if isMapExpanded && isMapOffRoute {
@@ -503,6 +514,44 @@ struct ActivityDetailView: View {
         }
     }
 
+    /// Share of the screen the map shows above the page's panel.
+    private static let mapVisibleShare = 0.62
+
+    /// The recorded route; for a triathlon without one of its own, its legs' joined end to end.
+    private func mapRoute(for detail: V1ActivityDetail) -> [V1ActivityCoordinate] {
+        if let route = detail.stream?.route, !route.isEmpty { return route }
+        if let route = streamPayload?.route, !route.isEmpty { return route }
+        return course.flatMap(\.route)
+    }
+
+    /// The leg's reading changes at once; the camera flies to the leg, or jumps under Reduce
+    /// Motion, and stays put for a leg without GPS.
+    private func select(_ selection: TriathlonSelection, viewport: CGSize) {
+        withAnimation(.easeOut(duration: 0.25)) { courseSelection = selection }
+        guard let region = courseRegion(selection, viewport: viewport) else { return }
+        SharpitMotion.run(.easeInOut(duration: 0.8)) { mapCameraPosition = .region(region) }
+    }
+
+    private func courseRegion(_ selection: TriathlonSelection, viewport: CGSize) -> MKCoordinateRegion? {
+        guard !course.isEmpty else { return nil }
+        return RouteFraming.region(
+            for: TriathlonCourse.route(for: selection, in: course),
+            viewport: viewport,
+            visibleHeightShare: Self.mapVisibleShare,
+            minimumSpan: 0.002
+        )
+    }
+
+    /// A triathlon's legs come from the parent's recording at once; each leg's own recording,
+    /// which the server kept when it read the race, then replaces its slice.
+    private func loadLegStreams(for detail: V1ActivityDetail, token: String) async {
+        guard !course.isEmpty,
+              let legStreams = try? await client.multisportStreams(id: activity, token: token),
+              !legStreams.isEmpty
+        else { return }
+        course = TriathlonCourse.tracks(legs: detail.multisportLegs, parent: streamPayload, legStreams: legStreams)
+    }
+
     private func reassessments(for detail: V1ActivityDetail) -> [PainReassessment] {
         PainReassessment.due(after: detail.date, zones: zones?.zones?.zones ?? [])
     }
@@ -670,7 +719,7 @@ struct ActivityDetailView: View {
         return ActivitySplit.make(
             samples: streamPayload?.samples ?? [],
             totalDuration: detail.duration,
-            segmentDistance: detail.type == .bike ? 5_000 : 1_000
+            segmentDistance: detail.type.splitDistance
         )
     }
 
@@ -705,17 +754,21 @@ struct ActivityDetailView: View {
             let detail = try await detailRequest
             streamPayload = try? await streamRequest
             isEnriching = false
+            course = detail.type == .triathlon
+                ? TriathlonCourse.tracks(legs: detail.multisportLegs, parent: streamPayload, legStreams: [])
+                : []
             withAnimation(SharpitMotion.reveal) {
                 phase = .loaded(detail)
             }
 
-            guard !SharpitMotion.reduceMotion else {
+            if SharpitMotion.reduceMotion {
                 appeared = true
-                return
+            } else {
+                SharpitMotion.run {
+                    appeared = true
+                }
             }
-            SharpitMotion.run {
-                appeared = true
-            }
+            await loadLegStreams(for: detail, token: token)
         } catch is CancellationError {
         } catch let error as SharpitAPIError where error == .unauthorized {
             phase = .unauthorized
@@ -763,7 +816,12 @@ private struct ActivityDetailContent: View {
     var onReassess: (PainReassessment) -> Void = { _ in }
     /// Opens one leg's own recording; nil where the page cannot push it.
     var onOpenLeg: ((String) -> Void)? = nil
+    /// A triathlon's legs, read one at a time under the course map; empty for any other session.
+    var course: [TriathlonLegTrack] = []
+    var courseSelection: TriathlonSelection = .overview
+    var onSelectCourse: (TriathlonSelection) -> Void = { _ in }
     @State private var selectedChartMetrics: [ActivityChartMetric] = [.heartRate]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
@@ -793,7 +851,7 @@ private struct ActivityDetailContent: View {
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 HStack {
-                    Label(detail.type.label, systemImage: detail.type.symbolName)
+                    Label { Text(detail.type.label) } icon: { Image(sharpitSymbol: detail.type.symbolName) }
                         .font(SharpitTypography.eyebrow)
                         .tracking(SharpitTypography.eyebrowTracking)
                         .textCase(.uppercase)
@@ -840,6 +898,51 @@ private struct ActivityDetailContent: View {
             .offset(y: appeared ? 0 : 12)
             .padding(.top, clearsBackButton ? 56 : 0)
 
+            if !course.isEmpty {
+                SharpitSegmentedControl(
+                    selection: Binding(get: { courseSelection }, set: { onSelectCourse($0) }),
+                    options: TriathlonCourse.options(course).map { .init(value: $0.value, label: $0.label) }
+                )
+                .opacity(appeared ? 1 : 0)
+            }
+
+            if let track = TriathlonCourse.track(for: courseSelection, in: course) {
+                TriathlonLegSections(track: track, race: detail)
+                    .id(track.id)
+                    .transition(courseTransition)
+            } else {
+                Group { overviewSections }
+                    .transition(courseTransition)
+            }
+        }
+        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.top, SharpitSpacing.lg)
+        .padding(.bottom, SharpitSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            Group {
+                if clearsBackButton {
+                    Color.clear
+                } else {
+                    RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                        .fill(SharpitElevatedColor.sheet)
+                        .sharpitShadow(.panel)
+                }
+            }
+        )
+        .environment(\.sharpitElevation, clearsBackButton ? .base : .sheet)
+        .foregroundStyle(SharpitColor.foreground)
+    }
+
+    /// A leg's reading slides up as it fades in; under Reduce Motion it only fades. Any other
+    /// session never switches, and keeps the page's own arrival.
+    private var courseTransition: AnyTransition {
+        if course.isEmpty { return .identity }
+        return reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12))
+    }
+
+    @ViewBuilder
+    private var overviewSections: some View {
             if let goal = detail.goal {
                 ActivityRaceHeader(goal: goal, result: raceResult)
                     .opacity(appeared ? 1 : 0)
@@ -907,7 +1010,7 @@ private struct ActivityDetailContent: View {
                 ActivitySplitsSection(
                     splits: splits,
                     tone: tone,
-                    segmentDistance: detail.type == .bike ? 5_000 : 1_000
+                    segmentDistance: detail.type.splitDistance
                 )
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 12)
@@ -925,64 +1028,12 @@ private struct ActivityDetailContent: View {
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 8)), value: appeared)
             }
-        }
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.top, SharpitSpacing.lg)
-        .padding(.bottom, SharpitSpacing.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Group {
-                if clearsBackButton {
-                    Color.clear
-                } else {
-                    RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                        .fill(SharpitElevatedColor.sheet)
-                        .sharpitShadow(.panel)
-                }
-            }
-        )
-        .environment(\.sharpitElevation, clearsBackButton ? .base : .sheet)
-        .foregroundStyle(SharpitColor.foreground)
     }
 
     private var metricGrid: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            Text("Résumé de séance")
-                .font(SharpitTypography.bodyEmphasis.weight(.semibold))
-                .foregroundStyle(SharpitColor.mutedForeground)
-            LazyVGrid(columns: [GridItem(.flexible(minimum: 0)), GridItem(.flexible(minimum: 0))], spacing: SharpitSpacing.md) {
-                ForEach(primaryMetrics) { metric in
-                    ActivityHeroMetric(metric: metric)
-                }
-            }
-        }
-        .padding(.horizontal, SharpitSpacing.md)
-        .padding(.vertical, SharpitSpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
-    }
-
-    private var primaryMetrics: [ActivityHeroMetricData] {
-        var metrics: [ActivityHeroMetricData] = []
-        if let duration = detail.duration { metrics.append(.init(label: "Durée", value: ActivityFormat.duration(duration), unit: nil)) }
-        if detail.type == .strength {
-            if !detail.strengthSets.isEmpty { metrics.append(.init(label: "Séries", value: "\(totalStrengthSets)", unit: nil)) }
-            if let volume = strengthVolume { metrics.append(.init(label: "Volume", value: "\(Int(volume.rounded()))", unit: "kg")) }
-        } else if let distance = effectiveDistanceM {
-            metrics.append(.init(label: "Distance", value: distance >= 1_000 ? String(format: "%.1f", distance / 1_000) : "\(Int(distance.rounded()))", unit: distance >= 1_000 ? "km" : "m"))
-        }
-        if let elevation = detail.elevationM, detail.type != .swim && detail.type != .strength { metrics.append(.init(label: "Dénivelé", value: "\(Int(elevation.rounded()))", unit: "m")) }
-        if detail.type == .swim, let pace = detail.avgPaceSecPer100m { metrics.append(.init(label: "Allure", value: ActivityFormat.pace(pace), unit: "/100 m")) }
-        else if detail.type != .strength, let pace = detail.paceSecPerKm { metrics.append(.init(label: "Allure", value: ActivityFormat.pace(pace), unit: "/km")) }
-        // Last, because it is what the session cost rather than what it was (ADR 0006).
-        if let load = detail.load, load > 0 {
-            metrics.append(.init(
-                label: isExpertReading ? "TSS" : "Charge",
-                value: "\(Int(load.rounded()))",
-                unit: nil
-            ))
-        }
-        return metrics
+        ActivityMetricGrid(
+            metrics: ActivityHeroMetricData.primary(for: detail, distanceM: effectiveDistanceM, isExpertReading: isExpertReading)
+        )
     }
 
     /// What the athlete said about the session and how it matched the plan. Both open a
@@ -1105,24 +1156,16 @@ private struct ActivityDetailContent: View {
         StrengthExerciseReadout.exercises(from: detail.strengthSets)
     }
 
-    private var totalStrengthSets: Int {
-        detail.strengthSets.reduce(0) { $0 + $1.sets }
-    }
+    private var totalStrengthSets: Int { detail.strengthSetCount }
 
-    private var strengthVolume: Double? {
-        let volume = detail.strengthSets.reduce(0.0) { $0 + Double($1.sets * $1.reps) * ($1.weightKg ?? 0) }
-        return volume > 0 ? volume : nil
-    }
+    private var strengthVolume: Double? { detail.strengthVolumeKg }
 
     private var tone: Color {
         activityTone(detail.type)
     }
 
     private var availableChartMetrics: [ActivityChartMetric] {
-        let samples = streamPayload?.samples ?? []
-        return ActivityChartMetric.allCases.filter { metric in
-            samples.contains { metric.value(for: $0) != nil }
-        }
+        ActivityChartMetric.available(in: streamPayload?.samples ?? [])
     }
 
     private var dateLabel: String {
@@ -1223,6 +1266,9 @@ extension V1ActivityType {
             false
         }
     }
+
+    /// Metres per split: a ride is read every 5 km.
+    var splitDistance: Double { self == .bike ? 5_000 : 1_000 }
 }
 
 /// The goal a session was raced for, read against it: the goal, its format, and the final time
@@ -1265,11 +1311,11 @@ private extension String {
     var nilIfBlank: String? { isEmpty ? nil : self }
 }
 
-private func activityTone(_ type: V1ActivityType) -> Color {
+func activityTone(_ type: V1ActivityType) -> Color {
     SharpitSportTone.label(for: type)
 }
 
-private struct ActivitySplit: Identifiable, Equatable {
+struct ActivitySplit: Identifiable, Equatable {
     let id: Int
     let distanceLabel: String
     let paceSeconds: Double
@@ -1322,6 +1368,12 @@ private struct ActivitySplit: Identifiable, Equatable {
         }
     }
 
+    /// A ride reads in km/h (its 5 km segments); a run or a swim in pace per km.
+    func figure(segmentDistance: Double) -> String {
+        guard segmentDistance >= 5_000, paceSeconds > 0 else { return ActivityFormat.pace(paceSeconds) }
+        return "\(RaceAnalysisReadout.pace(3_600 / paceSeconds, .kmh)) km/h"
+    }
+
     private static func sample(at distance: Double, in samples: [V1ActivityStreamSample]) -> V1ActivityStreamSample? {
         samples.min { abs($0.d - distance) < abs($1.d - distance) }
     }
@@ -1331,7 +1383,7 @@ private struct ActivitySplit: Identifiable, Equatable {
     }
 }
 
-private struct ActivitySplitsSection: View {
+struct ActivitySplitsSection: View {
     let splits: [ActivitySplit]
     let tone: Color
     let segmentDistance: Double
@@ -1344,10 +1396,10 @@ private struct ActivitySplitsSection: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
             ForEach(splits) { split in
                 HStack(alignment: .center, spacing: SharpitSpacing.xs) {
-                    Text(split.distanceLabel).font(SharpitTypography.instrument).foregroundStyle(SharpitColor.mutedForeground).frame(width: 52, alignment: .leading)
+                    Text(split.distanceLabel).font(SharpitTypography.instrument).foregroundStyle(SharpitColor.mutedForeground).lineLimit(1).fixedSize().frame(minWidth: 52, alignment: .leading)
                     VStack(alignment: .leading, spacing: 7) {
                         HStack(alignment: .firstTextBaseline, spacing: 7) {
-                            Text(ActivityFormat.pace(split.paceSeconds)).font(.headline.monospacedDigit().weight(.semibold))
+                            Text(split.figure(segmentDistance: segmentDistance)).font(.headline.monospacedDigit().weight(.semibold))
                             Text(String(format: "%+.0f%%", split.variation)).font(.caption.weight(.semibold)).foregroundStyle(split.variation <= 0 ? .green : .orange)
                         }
                         GeometryReader { proxy in
@@ -1366,7 +1418,7 @@ private struct ActivitySplitsSection: View {
     }
 }
 
-private enum ActivityChartMetric: String, CaseIterable, Identifiable {
+enum ActivityChartMetric: String, CaseIterable, Identifiable {
     case heartRate
     case pace
     case power
@@ -1421,6 +1473,10 @@ private enum ActivityChartMetric: String, CaseIterable, Identifiable {
         }
     }
 
+    static func available(in samples: [V1ActivityStreamSample]) -> [ActivityChartMetric] {
+        allCases.filter { metric in samples.contains { metric.value(for: $0) != nil } }
+    }
+
     func formatted(_ value: Double) -> String {
         switch self {
         case .pace:
@@ -1438,7 +1494,7 @@ private struct ActivityChartPoint: Identifiable {
     let metric: ActivityChartMetric
 }
 
-private struct ActivityChartsSection: View {
+struct ActivityChartsSection: View {
     let samples: [V1ActivityStreamSample]
     let metrics: [ActivityChartMetric]
     @Binding var selection: [ActivityChartMetric]
@@ -1635,14 +1691,62 @@ private struct DetailMetric: View {
     }
 }
 
-private struct ActivityHeroMetricData: Identifiable {
+struct ActivityHeroMetricData: Identifiable {
     let id = UUID()
     let label: String
     let value: String
     let unit: String?
 }
 
-private struct ActivityHeroMetric: View {
+extension ActivityHeroMetricData {
+    /// « Résumé de séance »: what the session was, then what it cost (ADR 0006).
+    static func primary(for detail: V1ActivityDetail, distanceM: Double?, isExpertReading: Bool) -> [ActivityHeroMetricData] {
+        var metrics: [ActivityHeroMetricData] = []
+        if let duration = detail.duration { metrics.append(.init(label: "Durée", value: ActivityFormat.duration(duration), unit: nil)) }
+        if detail.type == .strength {
+            if !detail.strengthSets.isEmpty { metrics.append(.init(label: "Séries", value: "\(detail.strengthSetCount)", unit: nil)) }
+            if let volume = detail.strengthVolumeKg { metrics.append(.init(label: "Volume", value: "\(Int(volume.rounded()))", unit: "kg")) }
+        } else if let distance = distanceM {
+            metrics.append(.init(label: "Distance", value: distance >= 1_000 ? String(format: "%.1f", distance / 1_000) : "\(Int(distance.rounded()))", unit: distance >= 1_000 ? "km" : "m"))
+        }
+        if let elevation = detail.elevationM, detail.type != .swim && detail.type != .strength { metrics.append(.init(label: "Dénivelé", value: "\(Int(elevation.rounded()))", unit: "m")) }
+        if detail.type == .swim, let pace = detail.avgPaceSecPer100m { metrics.append(.init(label: "Allure", value: ActivityFormat.pace(pace), unit: "/100 m")) }
+        else if detail.type != .strength, let pace = detail.paceSecPerKm { metrics.append(.init(label: "Allure", value: ActivityFormat.pace(pace), unit: "/km")) }
+        // Last, because it is what the session cost rather than what it was (ADR 0006).
+        if let load = detail.load, load > 0 {
+            metrics.append(.init(
+                label: isExpertReading ? "TSS" : "Charge",
+                value: "\(Int(load.rounded()))",
+                unit: nil
+            ))
+        }
+        return metrics
+    }
+}
+
+struct ActivityMetricGrid: View {
+    var title = "Résumé de séance"
+    let metrics: [ActivityHeroMetricData]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            Text(title)
+                .font(SharpitTypography.bodyEmphasis.weight(.semibold))
+                .foregroundStyle(SharpitColor.mutedForeground)
+            LazyVGrid(columns: [GridItem(.flexible(minimum: 0)), GridItem(.flexible(minimum: 0))], spacing: SharpitSpacing.md) {
+                ForEach(metrics) { metric in
+                    ActivityHeroMetric(metric: metric)
+                }
+            }
+        }
+        .padding(.horizontal, SharpitSpacing.md)
+        .padding(.vertical, SharpitSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
+    }
+}
+
+struct ActivityHeroMetric: View {
     let metric: ActivityHeroMetricData
 
     var body: some View {
@@ -1726,6 +1830,11 @@ private struct ActivityRouteHero: View {
     var intensity: RouteIntensity? = nil
     /// While it plays or pauses, only the part already travelled is drawn, over a faint route.
     var replay: RouteReplay? = nil
+    /// A triathlon's legs, each drawn in its sport's colour; the selected one stays bright.
+    var course: [TriathlonLegTrack] = []
+    var courseSelection: TriathlonSelection = .overview
+    /// Where the camera opens instead of the route's own region.
+    var initialRegion: MKCoordinateRegion? = nil
 
     private var coordinates: [CLLocationCoordinate2D] {
         route.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
@@ -1764,6 +1873,17 @@ private struct ActivityRouteHero: View {
                             CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
                         })
                         .stroke(RouteIntensityTone.color(level: segment.level), lineWidth: 5)
+                    }
+                } else if replayProgress == nil, !course.isEmpty {
+                    ForEach(courseLayers) { track in
+                        let isSelected = courseSelection == .leg(track.id)
+                        MapPolyline(coordinates: track.route.map {
+                            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+                        })
+                        .stroke(
+                            courseColor(track).opacity(courseSelection == .overview || isSelected ? 1 : 0.3),
+                            lineWidth: isSelected ? 6 : 5
+                        )
                     }
                 } else {
                     MapPolyline(coordinates: drawnRoute.map {
@@ -1810,9 +1930,19 @@ private struct ActivityRouteHero: View {
         .accessibilityLabel("Tracé GPS de l’activité, \(route.count) points")
         .onAppear {
             if !route.isEmpty {
-                position = .region(region)
+                position = .region(initialRegion ?? region)
             }
         }
+    }
+
+    /// The selected leg last, so it is drawn over the legs it crosses.
+    private var courseLayers: [TriathlonLegTrack] {
+        course.filter { $0.route.count > 1 }
+            .sorted { (courseSelection == .leg($0.id) ? 1 : 0) < (courseSelection == .leg($1.id) ? 1 : 0) }
+    }
+
+    private func courseColor(_ track: TriathlonLegTrack) -> Color {
+        track.segment.sport.map { SharpitSportTone.accent(for: $0) } ?? SharpitColor.mutedForeground
     }
 }
 
@@ -1956,7 +2086,7 @@ struct CollapsedActivityBottomBar: View {
                 .padding(.top, 10)
 
             HStack(spacing: 12) {
-                Image(systemName: detail.type.symbolName)
+                Image(sharpitSymbol: detail.type.symbolName)
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(tone)
                     .frame(width: 38, height: 38)

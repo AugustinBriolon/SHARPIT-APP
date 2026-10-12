@@ -147,3 +147,17 @@ struct RaceAnalysisTests {
         #expect(RaceAnalysisReadout.totalLine(analysis) == "5:40:03")
     }
 }
+
+struct ActivitySplitFigureTests {
+    private func split(paceSeconds: Double) -> ActivitySplit {
+        ActivitySplit(id: 0, distanceLabel: "5 km", paceSeconds: paceSeconds, variation: 0, heartRate: nil, elevationGain: 0, progress: 1)
+    }
+
+    @Test func aRideSplitReadsInKilometresPerHour() {
+        #expect(split(paceSeconds: 120).figure(segmentDistance: 5_000) == "30,0 km/h")
+    }
+
+    @Test func aRunSplitKeepsItsPacePerKilometre() {
+        #expect(split(paceSeconds: 300).figure(segmentDistance: 1_000) == ActivityFormat.pace(300))
+    }
+}

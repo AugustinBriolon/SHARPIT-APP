@@ -22,6 +22,34 @@ nonisolated enum RouteFraming {
         return share < minimumShare
     }
 
+    /// The region that shows `route` inside the top `visibleHeightShare` of a `viewport`-sized
+    /// map, the rest being under the page's panel: the span grows so the route fits that band at
+    /// `margin`, and the centre moves south so the route sits in it. Nil without a route.
+    static func region(
+        for route: [V1ActivityCoordinate],
+        viewport: CGSize,
+        visibleHeightShare: Double = 1,
+        margin: Double = 1.35,
+        minimumSpan: Double = 0.008
+    ) -> MKCoordinateRegion? {
+        guard let bounds = Bounds(route), viewport.width > 0, viewport.height > 0 else { return nil }
+        let share = min(max(visibleHeightShare, 0.1), 1)
+        let centerLat = (bounds.minLat + bounds.maxLat) / 2
+        // Degrees of latitude per degree of longitude on screen at this latitude.
+        let aspect = Double(viewport.height / viewport.width) * cos(centerLat * .pi / 180)
+        let latSpan = max(
+            max(bounds.maxLat - bounds.minLat, minimumSpan) * margin / share,
+            max(bounds.maxLon - bounds.minLon, minimumSpan) * margin * aspect
+        )
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(
+                latitude: centerLat - latSpan * (1 - share) / 2,
+                longitude: (bounds.minLon + bounds.maxLon) / 2
+            ),
+            span: MKCoordinateSpan(latitudeDelta: latSpan, longitudeDelta: latSpan / max(aspect, .ulpOfOne))
+        )
+    }
+
     private struct Bounds {
         let minLat, maxLat, minLon, maxLon: Double
 

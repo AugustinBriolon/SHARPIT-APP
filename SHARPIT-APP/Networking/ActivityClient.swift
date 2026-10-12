@@ -19,6 +19,8 @@ protocol ActivityServing: Sendable {
     func activities(forceRefresh: Bool, token: String) async throws -> [V1ActivityListItem]
     func activity(id: String, token: String) async throws -> V1ActivityDetail
     func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload
+    /// A multisport session's sport legs, each with its own recording.
+    func multisportStreams(id: String, token: String) async throws -> [V1MultisportLegStream]
     func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail
     func updateSubjective(id: String, rpe: Double?, feeling: String?, token: String) async throws
     /// Forgets the cached list. Linking a session changes what each activity says about its
@@ -48,6 +50,8 @@ extension ActivityServing {
     /// Most conformers hold no cache, so the default is to have nothing to forget.
     func invalidateActivities() async {}
     func forgetActivity(id _: String) async {}
+    /// Conformers that serve no multisport session have no legs to give.
+    func multisportStreams(id _: String, token _: String) async throws -> [V1MultisportLegStream] { [] }
 }
 
 actor ActivityClient: ActivityServing, ActivityMutating {
@@ -56,6 +60,8 @@ actor ActivityClient: ActivityServing, ActivityMutating {
     private var activitiesCache: [V1ActivityListItem]?
     private var detailCache: [String: V1ActivityDetail] = [:]
     private var streamCache: [String: V1ActivityStreamPayload] = [:]
+    // shortcut: memory only, so each launch asks once more (the server answers from its cache); keep them on disk if the race page is opened often.
+    private var multisportCache: [String: [V1MultisportLegStream]] = [:]
     /// Survives the client and the launch: a session opened once opens instantly after.
     private let disk: ActivityDiskCache?
 
@@ -158,6 +164,19 @@ actor ActivityClient: ActivityServing, ActivityMutating {
             disk?.write(data, .stream, id: id)
         }
         return stream
+    }
+
+    func multisportStreams(id: String, token: String) async throws -> [V1MultisportLegStream] {
+        if let cached = multisportCache[id] {
+            return cached
+        }
+        let streams: V1MultisportStreams = try await request(
+            path: "/api/v1/activities/\(id)/multisport-streams",
+            queryItems: [],
+            token: token
+        )
+        multisportCache[id] = streams.legs
+        return streams.legs
     }
 
     func invalidateActivities() {
