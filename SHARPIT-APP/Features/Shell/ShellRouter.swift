@@ -121,6 +121,10 @@ final class ShellRouter {
             let catchUp = PlanCatchUp(label: label, date: TrainingDayId.date(day) ?? yesterday)
             select(.plan)
             present(after: settingsWasUp) { $0.pendingCatchUp = catchUp }
+        case .morningBrief(let day):
+            // Today first (verdict surface), then the coach with the morning-brief chip.
+            select(.today)
+            discussWithCoach(about: CoachDiscuss.describe(.morningBrief(trainingDayId: day)))
         }
     }
 
@@ -159,6 +163,8 @@ enum NotificationDestination: Equatable {
     case activity(id: String)
     /// A missed session, by the label the coach is told and its training day.
     case catchUp(label: String, day: String)
+    /// Morning verdict → Today then coach with `morning-brief` discuss context.
+    case morningBrief(day: String)
 }
 
 /// What a link asks Résumé to show.

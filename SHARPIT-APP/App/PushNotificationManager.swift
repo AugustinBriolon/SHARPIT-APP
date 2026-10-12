@@ -133,8 +133,14 @@ final class PushNotificationManager {
     nonisolated static func destination(for userInfo: [AnyHashable: Any]) -> NotificationDestination? {
         let aps = userInfo["aps"] as? [String: Any]
         let category = userInfo["category"] as? String ?? aps?["category"] as? String
-        if category == "MORNING_VERDICT" || aps?["thread-id"] as? String == "morning-verdict" {
-            return .tab(.today)
+        if category == "MORNING_VERDICT"
+            || aps?["thread-id"] as? String == "morning-verdict"
+            || userInfo["openCoachBrief"] as? Bool == true
+        {
+            let day = (userInfo["trainingDayId"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let resolved = (day?.isEmpty == false) ? day! : TrainingDayId.today()
+            return .morningBrief(day: resolved)
         }
         guard let urlString = userInfo["url"] as? String, let url = URL(string: urlString) else { return nil }
         switch url.path {

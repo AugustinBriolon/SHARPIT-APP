@@ -90,21 +90,46 @@ struct CoachMemoryView: View {
     }
 
     private var datedEntriesSection: some View {
-        Section(
-            eyebrow: "Déplacements & contraintes",
-            footer: "Périodes temporaires avec impact direct sur les séances planifiées."
-        ) {
+        Group {
+            memorySection(
+                eyebrow: "Déplacements & contraintes",
+                footer: "Périodes temporaires avec impact direct sur les séances planifiées.",
+                entries: store.entries.filter { $0.type == .travel || $0.type == .constraint },
+                empty: "Aucun déplacement ou contrainte planifié."
+            )
+            memorySection(
+                eyebrow: "Blessures",
+                footer: "Gènes ou blessures suivies dans le temps.",
+                entries: store.entries.filter { $0.type == .injury },
+                empty: "Aucune blessure enregistrée."
+            )
+            memorySection(
+                eyebrow: "Préférences & notes",
+                footer: "Mémoire durable structurée — en plus du journal libre ci-dessus.",
+                entries: store.entries.filter { $0.type == .preference || $0.type == .note },
+                empty: "Aucune préférence ni note."
+            )
+        }
+    }
+
+    private func memorySection(
+        eyebrow: String,
+        footer: String,
+        entries: [CoachMemoryEntry],
+        empty: String
+    ) -> some View {
+        Section(eyebrow: eyebrow, footer: footer) {
             if store.entries.isEmpty && store.isLoading {
                 entryRow(CoachMemoryEntry(type: .travel, label: "Déplacement professionnel", startDate: .now, endDate: .now.addingTimeInterval(3 * 86_400)))
                     .redacted(reason: .placeholder)
                     .accessibilityLabel("Chargement")
-            } else if store.entries.isEmpty {
-                Text("Aucun déplacement ou contrainte planifié.")
+            } else if entries.isEmpty {
+                Text(empty)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .padding(.vertical, 4)
             } else {
-                ForEach(store.entries) { entry in
+                ForEach(entries) { entry in
                     Button {
                         selectedEntryForDetail = entry
                     } label: {
@@ -124,9 +149,19 @@ struct CoachMemoryView: View {
         .sharpitListRows()
     }
 
+    private func entrySymbol(_ type: CoachMemoryType) -> String {
+        switch type {
+        case .travel: "airplane"
+        case .constraint: "clock.badge.exclamationmark"
+        case .injury: "bandage"
+        case .preference: "slider.horizontal.3"
+        case .note: "note.text"
+        }
+    }
+
     private func entryRow(_ entry: CoachMemoryEntry) -> some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            Image(systemName: entry.type == .travel ? "airplane" : "clock.badge.exclamationmark")
+            Image(systemName: entrySymbol(entry.type))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(SharpitColor.primary)
                 .frame(width: 28, height: 28)

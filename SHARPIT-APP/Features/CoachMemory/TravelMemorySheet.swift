@@ -53,10 +53,21 @@ struct TravelMemorySheet: View {
         if type == .travel && locationLabel.trimmingCharacters(in: .whitespaces).isEmpty && label.trimmingCharacters(in: .whitespaces).isEmpty {
             return true
         }
-        if type == .constraint && label.trimmingCharacters(in: .whitespaces).isEmpty {
+        if type != .travel && label.trimmingCharacters(in: .whitespaces).isEmpty {
             return true
         }
         return isSubmitting
+    }
+
+    private var showsTrainingImpact: Bool {
+        switch type {
+        case .travel, .constraint, .injury: true
+        case .preference, .note: false
+        }
+    }
+
+    private var showsDatePickers: Bool {
+        !type.isOpenEnded
     }
 
     var body: some View {
@@ -68,7 +79,7 @@ struct TravelMemorySheet: View {
                             Text(t.label).tag(t)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                 }
 
                 Section(eyebrow: "Détails") {
@@ -127,13 +138,21 @@ struct TravelMemorySheet: View {
 
                         TextField("Titre (optionnel, ex: Déplacement pro)", text: $label)
                     } else {
-                        TextField("Motif (ex: Astreinte, Travaux...)", text: $label)
+                        TextField(type == .injury ? "Blessure / gène (ex: Genou droit)" : "Titre", text: $label)
                     }
 
-                    DatePicker("Début", selection: $startDate, displayedComponents: .date)
-                    DatePicker("Fin", selection: $endDate, displayedComponents: .date)
+                    if showsDatePickers {
+                        DatePicker("Début", selection: $startDate, displayedComponents: .date)
+                        DatePicker("Fin", selection: $endDate, displayedComponents: .date)
+                    }
+
+                    if !showsTrainingImpact {
+                        TextField("Notes pour le coach (optionnel)", text: $note, axis: .vertical)
+                            .lineLimit(2...4)
+                    }
                 }
 
+                if showsTrainingImpact {
                 Section(
                     eyebrow: "Impact sur l'entraînement",
                     footer: constraintFooter
@@ -168,9 +187,10 @@ struct TravelMemorySheet: View {
                     TextField("Notes pour le coach (optionnel)", text: $note, axis: .vertical)
                         .lineLimit(2...4)
                 }
+                }
             }
             .sharpitGroupedList()
-            .navigationTitle(type == .travel ? "Nouveau déplacement" : "Nouvelle contrainte")
+            .navigationTitle(sheetTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -247,22 +267,40 @@ struct TravelMemorySheet: View {
         }
     }
 
+    private var sheetTitle: String {
+        switch type {
+        case .travel: "Nouveau déplacement"
+        case .constraint: "Nouvelle contrainte"
+        case .injury: "Nouvelle blessure"
+        case .preference: "Nouvelle préférence"
+        case .note: "Nouvelle note"
+        }
+    }
+
     @MainActor
     private func submit() async {
         isSubmitting = true
         defer { isSubmitting = false }
 
         let allowed = trainingConstraint == .none ? [] : Array(selectedDisciplines).sorted()
+        let resolvedEnd: Date = {
+            if type.isOpenEnded {
+                return Calendar.current.date(from: DateComponents(year: 2099, month: 12, day: 31)) ?? endDate
+            }
+            return endDate
+        }()
 
         let input = CreateCoachMemoryInput(
             type: type,
             label: label.trimmingCharacters(in: .whitespaces).isEmpty ? nil : label.trimmingCharacters(in: .whitespaces),
-            locationLabel: locationLabel.trimmingCharacters(in: .whitespaces).isEmpty ? nil : locationLabel.trimmingCharacters(in: .whitespaces),
+            locationLabel: type == .travel && !locationLabel.trimmingCharacters(in: .whitespaces).isEmpty
+                ? locationLabel.trimmingCharacters(in: .whitespaces)
+                : nil,
             startDate: startDate,
-            endDate: endDate,
+            endDate: resolvedEnd,
             note: note.trimmingCharacters(in: .whitespaces).isEmpty ? nil : note.trimmingCharacters(in: .whitespaces),
-            trainingConstraint: trainingConstraint,
-            allowedDisciplines: allowed.isEmpty ? nil : allowed
+            trainingConstraint: showsTrainingImpact ? trainingConstraint : .full,
+            allowedDisciplines: showsTrainingImpact && !allowed.isEmpty ? allowed : nil
         )
 
         let ok = await store.createEntry(input)

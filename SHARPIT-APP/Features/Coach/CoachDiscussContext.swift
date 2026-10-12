@@ -10,6 +10,7 @@ import Foundation
 /// label — the same shape the web's registry has.
 nonisolated enum CoachDiscussTarget: Equatable, Hashable, Sendable {
     case today
+    case morningBrief(trainingDayId: String)
     case plannedSession(sessionId: String)
     case activity(activityId: String)
     case planning(horizonDays: Int)
@@ -19,6 +20,7 @@ nonisolated enum CoachDiscussTarget: Equatable, Hashable, Sendable {
     var kind: String {
         switch self {
         case .today: "today"
+        case .morningBrief: "morning-brief"
         case .plannedSession: "planned-session"
         case .activity: "activity"
         case .planning: "planning"
@@ -52,6 +54,8 @@ nonisolated struct CoachDiscussContext: Equatable, Hashable, Sendable, Identifia
         switch target {
         case .today:
             break
+        case .morningBrief(let trainingDayId):
+            fields["trainingDayId"] = .string(trainingDayId)
         case .plannedSession(let sessionId):
             fields["sessionId"] = .string(sessionId)
         case .activity(let activityId):
@@ -78,6 +82,9 @@ nonisolated extension CoachDiscussContext {
         switch kind {
         case "today":
             target = .today
+        case "morning-brief":
+            guard let day = metadata["trainingDayId"]?.string else { return nil }
+            target = .morningBrief(trainingDayId: day)
         case "planned-session":
             guard let id = metadata["sessionId"]?.string else { return nil }
             target = .plannedSession(sessionId: id)
@@ -124,6 +131,8 @@ nonisolated enum CoachDiscuss {
         let label: String = switch target {
         case .today:
             "Ton état du jour"
+        case .morningBrief:
+            "Brief du matin"
         case .plannedSession:
             resolved.map { "Séance prévue · \($0)" } ?? "Une séance prévue"
         case .activity:

@@ -78,18 +78,40 @@ struct PushAndHandoffTests {
 
     @Test func morningVerdictPushNotificationRoutingByCategory() {
         let manager = PushNotificationManager()
-        manager.didReceiveNotificationResponse(userInfo: ["category": "MORNING_VERDICT"])
-        #expect(manager.pendingDestination == .tab(.today))
-        #expect(manager.consumePendingDestination() == .tab(.today))
+        manager.didReceiveNotificationResponse(userInfo: [
+            "category": "MORNING_VERDICT",
+            "trainingDayId": "2026-10-12",
+        ])
+        #expect(manager.pendingDestination == .morningBrief(day: "2026-10-12"))
+        #expect(manager.consumePendingDestination() == .morningBrief(day: "2026-10-12"))
         #expect(manager.pendingDestination == nil)
     }
 
     @Test func morningVerdictPushNotificationRoutingByApsCategory() {
-        #expect(PushNotificationManager.destination(for: ["aps": ["category": "MORNING_VERDICT"]]) == .tab(.today))
+        #expect(
+            PushNotificationManager.destination(for: [
+                "aps": ["category": "MORNING_VERDICT"],
+                "trainingDayId": "2026-10-12",
+            ]) == .morningBrief(day: "2026-10-12")
+        )
     }
 
     @Test func morningVerdictPushNotificationRoutingByThreadId() {
-        #expect(PushNotificationManager.destination(for: ["aps": ["thread-id": "morning-verdict"]]) == .tab(.today))
+        #expect(
+            PushNotificationManager.destination(for: [
+                "aps": ["thread-id": "morning-verdict"],
+                "trainingDayId": "2026-10-12",
+            ]) == .morningBrief(day: "2026-10-12")
+        )
+    }
+
+    @Test func morningVerdictOpenCoachBriefFlagRoutesToBrief() {
+        #expect(
+            PushNotificationManager.destination(for: [
+                "openCoachBrief": true,
+                "trainingDayId": "2026-10-01",
+            ]) == .morningBrief(day: "2026-10-01")
+        )
     }
 
     /// Every push the server sends, and the session reminder, lands where it speaks of.

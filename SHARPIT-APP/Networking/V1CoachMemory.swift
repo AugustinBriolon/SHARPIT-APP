@@ -3,6 +3,9 @@ import Foundation
 nonisolated enum CoachMemoryType: String, Codable, CaseIterable, Identifiable, Sendable {
     case travel = "TRAVEL"
     case constraint = "CONSTRAINT"
+    case injury = "INJURY"
+    case preference = "PREFERENCE"
+    case note = "NOTE"
 
     var id: String { rawValue }
 
@@ -10,6 +13,17 @@ nonisolated enum CoachMemoryType: String, Codable, CaseIterable, Identifiable, S
         switch self {
         case .travel: "Déplacement / voyage"
         case .constraint: "Contrainte"
+        case .injury: "Blessure / gène"
+        case .preference: "Préférence"
+        case .note: "Note"
+        }
+    }
+
+    /// PREFERENCE / NOTE stay until archived (open-ended end date on the server).
+    var isOpenEnded: Bool {
+        switch self {
+        case .preference, .note: true
+        default: false
         }
     }
 }
@@ -115,10 +129,14 @@ nonisolated struct CoachMemoryEntry: Identifiable, Codable, Sendable, Equatable 
     var displayTitle: String {
         if let label, !label.isEmpty { return label }
         if let locationLabel, !locationLabel.isEmpty { return locationLabel }
-        return type == .travel ? "Déplacement" : "Contrainte"
+        return type.label
     }
 
     var formattedDateRange: String {
+        if type.isOpenEnded {
+            let year = Calendar.current.component(.year, from: endDate)
+            if year >= 2099 { return "Durable" }
+        }
         let fmt = DateFormatter()
         fmt.locale = Locale(identifier: "fr_FR")
         fmt.dateFormat = "d MMM"

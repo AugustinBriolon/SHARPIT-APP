@@ -7,6 +7,7 @@ import Testing
 
 @Test func discussKindsMatchTheWebDiscriminants() {
     #expect(CoachDiscussTarget.today.kind == "today")
+    #expect(CoachDiscussTarget.morningBrief(trainingDayId: "2026-10-12").kind == "morning-brief")
     #expect(CoachDiscussTarget.plannedSession(sessionId: "s-1").kind == "planned-session")
     #expect(CoachDiscussTarget.activity(activityId: "a-1").kind == "activity")
     #expect(CoachDiscussTarget.planning(horizonDays: 7).kind == "planning")
@@ -14,6 +15,7 @@ import Testing
 
 @Test func aNamedTargetReadsAsTheWebWritesIt() {
     #expect(CoachDiscuss.describe(.today).label == "Ton état du jour")
+    #expect(CoachDiscuss.describe(.morningBrief(trainingDayId: "2026-10-12")).label == "Brief du matin")
     #expect(
         CoachDiscuss.describe(.activity(activityId: "a-1"), name: "Sortie longue").label
             == "Séance réalisée · Sortie longue"
@@ -67,6 +69,19 @@ import Testing
     #expect(planning["horizonDays"] == .number(7))
 
     #expect(CoachDiscuss.describe(.today).metadata == ["discussKind": .string("today")])
+
+    let brief = CoachDiscuss.describe(.morningBrief(trainingDayId: "2026-10-12")).metadata
+    #expect(brief["discussKind"] == .string("morning-brief"))
+    #expect(brief["trainingDayId"] == .string("2026-10-12"))
+}
+
+@MainActor
+@Test func morningBriefDestinationOpensTodayThenCoach() {
+    let router = ShellRouter()
+    router.open(.morningBrief(day: "2026-10-12"))
+    #expect(router.selectedTab == .coach)
+    #expect(router.pendingCoachContext?.kind == "morning-brief")
+    #expect(router.pendingCoachContext?.label == "Brief du matin")
 }
 
 @MainActor
