@@ -83,7 +83,28 @@ actor ActivityClient: ActivityServing, ActivityMutating {
             token: token
         )
         activitiesCache = activities
+        dropDetailsDisagreeing(with: activities)
         return activities
+    }
+
+    /// How many recent sessions have their disk copy checked on each list read; older ones are
+    /// rarely edited, and each check decodes a file.
+    private nonisolated static let diskAgreementWindow = 40
+
+    /// Forgets every kept detail the fresh list contradicts, so the page never opens on an old
+    /// title the list has already replaced.
+    private func dropDetailsDisagreeing(with items: [V1ActivityListItem]) {
+        let recent = Set(items.sorted { $0.date > $1.date }.prefix(Self.diskAgreementWindow).map(\.id))
+        for item in items {
+            let kept = detailCache[item.id] ?? (recent.contains(item.id) ? storedDetail(id: item.id) : nil)
+            guard let kept, !ActivityCachePolicy.detail(kept, agreesWith: item) else { continue }
+            detailCache[item.id] = nil
+            disk?.remove(.detail, id: item.id)
+        }
+    }
+
+    private func storedDetail(id: String) -> V1ActivityDetail? {
+        disk?.read(.detail, id: id).flatMap { try? JSONDecoder().decode(V1ActivityDetail.self, from: $0.data) }
     }
 
     /// Memory, then disk while the copy is fresh, then the server — and the disk copy of any age

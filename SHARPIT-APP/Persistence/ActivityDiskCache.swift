@@ -71,4 +71,10 @@ nonisolated enum ActivityCachePolicy {
         case .plannedBreakdown: false
         }
     }
+
+    /// A kept detail still says what the list says: a session renamed, retyped or re-timed
+    /// elsewhere (on the web, or by a merge on the server) makes the copy stale whatever its age.
+    static func detail(_ detail: V1ActivityDetail, agreesWith item: V1ActivityListItem) -> Bool {
+        detail.title == item.title && detail.type == item.type && detail.duration == item.duration
+    }
 }

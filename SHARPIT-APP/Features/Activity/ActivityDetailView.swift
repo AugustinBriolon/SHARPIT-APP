@@ -28,6 +28,8 @@ struct ActivityDetailView: View {
     @State private var editing: ActivityEditing?
     @State private var isConfirmingDeletion = false
     @State private var isPickingGoal = false
+    /// A triathlon leg opened on its own recording.
+    @State private var openedLeg: String?
     @State private var notice: ActivityNotice?
     /// The pains and injuries the athlete follows, read for the questions owed after a session.
     @State private var zones: SensitiveZonesStore?
@@ -166,7 +168,8 @@ struct ActivityDetailView: View {
                                         }
                                     },
                                     reassessments: reassessments(for: detail),
-                                    onReassess: { reassessing = $0 }
+                                    onReassess: { reassessing = $0 },
+                                    onOpenLeg: { openedLeg = $0 }
                                 )
                                 .frame(width: proxy.size.width, alignment: .leading)
                             }
@@ -195,7 +198,8 @@ struct ActivityDetailView: View {
                             isMapExpanded: false,
                             onExpandToggle: {},
                             reassessments: reassessments(for: detail),
-                            onReassess: { reassessing = $0 }
+                            onReassess: { reassessing = $0 },
+                            onOpenLeg: { openedLeg = $0 }
                         )
                         .frame(width: proxy.size.width, alignment: .leading)
                     }
@@ -452,6 +456,9 @@ struct ActivityDetailView: View {
                     await load()
                 }
             }
+        }
+        .navigationDestination(item: $openedLeg) { id in
+            ActivityDetailView(activity: id, client: client, linker: linker, goalClient: goalClient, tokenProvider: tokenProvider)
         }
         .sheet(isPresented: $isPickingGoal) {
             if case .loaded(let detail) = phase, let mutator = client as? any ActivityMutating {
@@ -754,6 +761,8 @@ private struct ActivityDetailContent: View {
     var onExpandToggle: () -> Void = {}
     var reassessments: [PainReassessment] = []
     var onReassess: (PainReassessment) -> Void = { _ in }
+    /// Opens one leg's own recording; nil where the page cannot push it.
+    var onOpenLeg: ((String) -> Void)? = nil
     @State private var selectedChartMetrics: [ActivityChartMetric] = [.heartRate]
 
     var body: some View {
@@ -861,7 +870,12 @@ private struct ActivityDetailContent: View {
                     .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 3)), value: appeared)
             }
 
-            if detail.type == .triathlon, !detail.multisportLegs.isEmpty {
+            if let analysis = detail.raceAnalysis {
+                RaceAnalysisSections(analysis: analysis, showsTotal: detail.goal == nil, onOpenLeg: onOpenLeg)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 12)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 3)), value: appeared)
+            } else if detail.type == .triathlon, !detail.multisportLegs.isEmpty {
                 multisportLegsSection
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 12)
@@ -1142,30 +1156,12 @@ private struct ActivityDetailContent: View {
             SharpitEyebrow("Enchaînement")
             let segments = RaceLegsTimeline.segments(detail.multisportLegs)
             if !segments.isEmpty {
-                RaceLegsBar(segments: segments)
-                    .padding(.bottom, SharpitSpacing.xxs)
+                RaceLegsBar(segments: segments, compact: true)
             }
-            ForEach(detail.multisportLegs) { leg in
-                HStack(spacing: SharpitSpacing.sm) {
-                    Image(systemName: leg.symbolName)
-                        .foregroundStyle(activityTone(leg.activityType))
-                        .frame(width: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(leg.label)
-                            .font(SharpitTypography.bodyEmphasis.weight(.semibold))
-                        Text(ActivityFormat.duration(leg.durationSec))
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-                    Spacer()
-                    if let distance = leg.distanceM {
-                        Text(distance >= 1_000
-                             ? String(format: "%.1f km", distance / 1_000)
-                             : "\(Int(distance.rounded())) m")
-                            .font(SharpitTypography.instrument)
-                    }
+            VStack(spacing: 0) {
+                ForEach(RaceAnalysisReadout.legRows(detail.multisportLegs)) { row in
+                    RaceLegRowLink(row: row, onOpen: onOpenLeg)
                 }
-                .padding(.vertical, 4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1215,12 +1211,15 @@ private extension V1ActivityType {
             false
         }
     }
+}
 
+extension V1ActivityType {
+    /// Per-kilometre splits read one sport's pace; a triathlon's legs are read by leg instead.
     var supportsSplits: Bool {
         switch self {
-        case .run, .bike, .hike, .triathlon:
+        case .run, .bike, .hike:
             true
-        case .swim, .strength, .other:
+        case .swim, .strength, .triathlon, .other:
             false
         }
     }

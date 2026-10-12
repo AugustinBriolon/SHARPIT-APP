@@ -89,7 +89,7 @@ enum ActivityTechnicalReadout {
         return analysis.thresholds?.lthr.map { "LTHR \(Int($0.rounded())) bpm" }
     }
 
-    private static func decouplingNote(_ magnitude: Double) -> String {
+    static func decouplingNote(_ magnitude: Double) -> String {
         if magnitude < 5 { return "Peu de dérive cardiaque" }
         if magnitude < 10 { return "Correct pour une sortie longue" }
         return "Dérive élevée : chaleur, fatigue ou endurance"
@@ -112,34 +112,7 @@ struct ActivityTechnicalSection: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitEyebrow("Analyse technique")
             if !rows.isEmpty {
-                LazyVGrid(
-                    columns: [GridItem(.flexible(), spacing: SharpitSpacing.md, alignment: .topLeading), GridItem(.flexible(), alignment: .topLeading)],
-                    alignment: .leading,
-                    spacing: SharpitSpacing.md
-                ) {
-                    ForEach(rows) { row in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(row.label)
-                                .font(SharpitTypography.label)
-                                .tracking(SharpitTypography.labelTracking)
-                                .textCase(.uppercase)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                                .lineLimit(1)
-                            Text(row.value)
-                                .font(SharpitTypography.data)
-                                .tracking(SharpitTypography.dataTracking)
-                                .foregroundStyle(SharpitColor.foreground)
-                                .monospacedDigit()
-                            if let note = row.note {
-                                Text(note)
-                                    .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                        .accessibilityElement(children: .combine)
-                    }
-                }
+                ActivityTechnicalGrid(rows: rows)
             }
             if !heartZones.isEmpty {
                 ZoneDistribution(title: "Zones cardiaques", zones: heartZones)
@@ -159,6 +132,42 @@ struct ActivityTechnicalSection: View {
     }
 }
 
+/// Figures two by two: a label, the value, and what it says.
+struct ActivityTechnicalGrid: View {
+    let rows: [ActivityTechnicalRow]
+
+    var body: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: SharpitSpacing.md, alignment: .topLeading), GridItem(.flexible(), alignment: .topLeading)],
+            alignment: .leading,
+            spacing: SharpitSpacing.md
+        ) {
+            ForEach(rows) { row in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(row.label)
+                        .font(SharpitTypography.label)
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                    Text(row.value)
+                        .font(SharpitTypography.data)
+                        .tracking(SharpitTypography.dataTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .monospacedDigit()
+                    if let note = row.note {
+                        Text(note)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+}
+
 /// Time in each zone: one bar split by zone, then a line per zone with its share and time.
 private struct ZoneDistribution: View {
     let title: String
@@ -174,7 +183,7 @@ private struct ZoneDistribution: View {
                     ForEach(Array(zones.enumerated()), id: \.element.id) { index, zone in
                         if zone.percent > 0 {
                             Rectangle()
-                                .fill(Self.tone(index))
+                                .fill(SharpitZoneTone.color(index))
                                 .frame(width: max(2, (proxy.size.width - CGFloat(zones.count) * 2) * zone.percent / 100))
                         }
                     }
@@ -185,7 +194,7 @@ private struct ZoneDistribution: View {
             VStack(spacing: 6) {
                 ForEach(Array(zones.enumerated()), id: \.element.id) { index, zone in
                     HStack(spacing: SharpitSpacing.xs) {
-                        Circle().fill(Self.tone(index)).frame(width: 7, height: 7)
+                        Circle().fill(SharpitZoneTone.color(index)).frame(width: 7, height: 7)
                         Text(zone.shortLabel)
                             .font(SharpitTypography.meta.weight(.semibold))
                             .foregroundStyle(SharpitColor.foreground)
@@ -207,10 +216,5 @@ private struct ZoneDistribution: View {
                 }
             }
         }
-    }
-
-    /// Easy to hard, in the app's intensity signals — the web's five chart tones.
-    static func tone(_ index: Int) -> Color {
-        [SharpitColor.signalRecovery, SharpitColor.signalBase, SharpitColor.signalTempo, SharpitColor.signalThreshold, SharpitColor.signalVo2][min(index, 4)]
     }
 }

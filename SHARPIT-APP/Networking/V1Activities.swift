@@ -295,6 +295,8 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
     let multisportLegs: [V1MultisportLeg]
     /// Nil when unlinked, and on servers that predate the link.
     let goal: V1ActivityGoal?
+    /// Nil unless the session is a triathlon or raced for a goal, and on older servers.
+    let raceAnalysis: V1RaceAnalysis?
 
     var goalId: String? { goal?.id }
 
@@ -326,7 +328,8 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
             narrativeAnalysis: nil,
             stream: nil,
             multisportLegs: [],
-            goal: nil
+            goal: nil,
+            raceAnalysis: nil
         )
     }
 
@@ -341,7 +344,7 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
             avgCadence: avgCadence, avgPower: avgPower, swimSets: swimSets, swolf: swolf,
             calories: calories, strengthSets: strengthSets, plannedSession: plannedSession,
             narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs,
-            goal: goal
+            goal: goal, raceAnalysis: raceAnalysis
         )
     }
 
@@ -355,7 +358,7 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
             avgCadence: avgCadence, avgPower: avgPower, swimSets: swimSets, swolf: swolf,
             calories: calories, strengthSets: strengthSets, plannedSession: nil,
             narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs,
-            goal: goal
+            goal: goal, raceAnalysis: raceAnalysis
         )
     }
 
@@ -369,7 +372,7 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
             avgCadence: avgCadence, avgPower: avgPower, swimSets: swimSets, swolf: swolf,
             calories: calories, strengthSets: strengthSets, plannedSession: plannedSession,
             narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs,
-            goal: goal
+            goal: goal, raceAnalysis: raceAnalysis
         )
     }
 
@@ -400,7 +403,8 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         narrativeAnalysis: V1ActivityNarrative?,
         stream: V1ActivityStream?,
         multisportLegs: [V1MultisportLeg],
-        goal: V1ActivityGoal?
+        goal: V1ActivityGoal?,
+        raceAnalysis: V1RaceAnalysis?
     ) {
         self.id = id
         self.type = type
@@ -429,13 +433,14 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         self.stream = stream
         self.multisportLegs = multisportLegs
         self.goal = goal
+        self.raceAnalysis = raceAnalysis
     }
 
     enum CodingKeys: String, CodingKey {
         case id, type, date, title, duration, load, rpe, feeling, weather, notes
         case runMetrics, bikeMetrics, swimMetrics, hikeMetrics, plannedSession
         case narrativeAnalysis, stream
-        case strengthSets, multisportLegs, goal
+        case strengthSets, multisportLegs, goal, raceAnalysis
     }
 
     init(from decoder: Decoder) throws {
@@ -456,6 +461,7 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         stream = try container.decodeIfPresent(V1ActivityStream.self, forKey: .stream)
         multisportLegs = (try? container.decodeIfPresent([V1MultisportLeg].self, forKey: .multisportLegs)) ?? []
         goal = try? container.decodeIfPresent(V1ActivityGoal.self, forKey: .goal)
+        raceAnalysis = try? container.decodeIfPresent(V1RaceAnalysis.self, forKey: .raceAnalysis)
 
         let metrics: V1ActivityMetricBundle? = {
             switch decodedType {
