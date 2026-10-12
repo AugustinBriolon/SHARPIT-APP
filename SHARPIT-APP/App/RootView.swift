@@ -164,6 +164,7 @@ struct RootView: View {
             guard phase == .active else { return }
             Task { await runHistoryImport() }
             Task { await refreshSessionReminders() }
+            Task { await refreshDayCheckIns() }
             Task { await pro?.drainUnfinished() }
         }
         .onChange(of: historyImport.state) { _, state in showHistoryToast(for: state) }
@@ -182,6 +183,7 @@ struct RootView: View {
 
             if let destination = pushManager.consumePendingDestination() { router.open(destination) }
             await refreshSessionReminders()
+            await refreshDayCheckIns()
         }
         // The plan changed elsewhere (a coach proposal carried out): the reminders follow it.
         .onChange(of: router.calendarRevision) { _, _ in Task { await refreshSessionReminders() } }
@@ -231,6 +233,15 @@ struct RootView: View {
             sessionWriter: plannedSessionClient,
             busyClient: sharpitClient,
             calendarLinker: sharpitClient
+        )
+    }
+
+    /// Callers: RootView. API: dayCheckIns prefs. User: fix all — P2 check-ins.
+    private func refreshDayCheckIns() async {
+        await DayCheckInReminderScheduler.shared.refresh(
+            isEnabledOnPhone: pushManager.isEnabledByAthlete,
+            profiles: profileClient,
+            tokenProvider: liveToken
         )
     }
 

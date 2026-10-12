@@ -204,6 +204,8 @@ struct SettingsView: View {
             prefs.weeklyReview ? "bilan" : nil,
             prefs.sessionReminder ? "rappels" : nil,
             prefs.sessionDone ? "séances faites" : nil,
+            prefs.targetStrain ? "cible du jour" : nil,
+            prefs.dayCheckIns ? "check-ins" : nil,
             prefs.missedSession ? "séances manquées" : nil,
             prefs.syncAlerts ? "alertes" : nil,
         ].compactMap { $0 }

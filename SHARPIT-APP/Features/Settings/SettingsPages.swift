@@ -322,6 +322,7 @@ struct NotificationPrefsView: View {
                     await push.setEnabled(on, tokenProvider: tokenProvider)
                     await refreshStatus()
                     await refreshSessionReminders()
+                    await refreshDayCheckIns()
                 }
             }
         )
@@ -341,6 +342,15 @@ struct NotificationPrefsView: View {
         )
     }
 
+    /// Callers: NotificationsSettings. API: dayCheckIns. User: fix all — P2 check-ins.
+    private func refreshDayCheckIns() async {
+        await DayCheckInReminderScheduler.shared.refresh(
+            isEnabledOnPhone: isOn,
+            profiles: profileClient,
+            tokenProvider: tokenProvider
+        )
+    }
+
     private var kinds: some View {
         Section(
             eyebrow: "Ce que SharpIt t'envoie",
@@ -350,6 +360,8 @@ struct NotificationPrefsView: View {
             toggle("Bilan de la semaine", detail: "Le résumé de ta semaine d'entraînement.", symbol: "calendar", key: "weeklyReview", value: prefs.weeklyReview)
             toggle("Rappel de séance", detail: "Une heure avant une séance prévue.", symbol: "figure.run", key: "sessionReminder", value: prefs.sessionReminder)
             toggle("Séance faite", detail: "Après une séance synchronisée : sa part du plan et la suivante.", symbol: "checkmark.seal", key: "sessionDone", value: prefs.sessionDone)
+            toggle("Cible du jour", detail: "Quand ton effort entre dans la bande cible du jour.", symbol: "target", key: "targetStrain", value: prefs.targetStrain)
+            toggle("Check-ins du jour", detail: "Rappels locaux : hydratation, humeur, caféine.", symbol: "checklist", key: "dayCheckIns", value: prefs.dayCheckIns)
             toggle("Séance manquée", detail: "Le lendemain, pour réorganiser ta semaine en un geste.", symbol: "arrow.uturn.forward", key: "missedSession", value: prefs.missedSession)
             toggle("Alertes de synchronisation", detail: "Quand une source doit être reconnectée.", symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
             Toggle(isOn: Binding(
@@ -387,6 +399,7 @@ struct NotificationPrefsView: View {
                 store.save(patch)
                 // The scheduler reads the server's prefs, so it waits for the write to land.
                 if key == "sessionReminder" { Task { await store.settle(); await refreshSessionReminders() } }
+                if key == "dayCheckIns" { Task { await store.settle(); await refreshDayCheckIns() } }
             }
         )) {
             Label {

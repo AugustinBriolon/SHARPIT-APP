@@ -19,6 +19,17 @@ nonisolated struct V1TodayResponse: Codable, Sendable, Equatable {
     var stress: V1TodayStress? = nil
     var energyBank: V1TodayEnergyBank? = nil
     var targetBand: V1TodayTargetBand? = nil
+    /// Chronological day events. Callers: TodayTimelineStrip. API: GET /api/v1/today. User: fix all.
+    var timeline: [V1DayTimelineEvent]? = nil
+}
+
+nonisolated struct V1DayTimelineEvent: Codable, Sendable, Equatable, Identifiable {
+    var kind: String
+    var minuteOfDay: Double?
+    var title: String
+    var detail: String?
+
+    var id: String { "\(kind)-\(minuteOfDay.map { String(Int($0)) } ?? "x")-\(title)" }
 }
 
 nonisolated struct V1TodayStress: Codable, Sendable, Equatable {

@@ -61,10 +61,14 @@ struct EffortSections: View {
                 )
             }
             EffortVerdictSection(effort: effort)
-            EffortLoadSection(load: effort.load, isExpert: isExpertReading)
+            EffortLoadSection(load: effort.load, cardioLoad: effort.cardioLoad, isExpert: isExpertReading)
+            EffortStrainSplitSection(active: effort.activeStrain, passive: effort.passiveStrain)
             EffortDailySignalsSection(signals: effort.composition.signals)
             if effort.composition.available, !effort.composition.contributors.isEmpty {
                 EffortCompositionSection(composition: effort.composition)
+            }
+            if let performance = effort.strainPerformance, performance.dayCount > 0 {
+                EffortStrainPerformanceSection(performance: performance)
             }
             EffortDimensionsSection(dimensions: effort.dimensions, dominant: effort.dominantDimension)
             // The curves are the training-load vocabulary: shown to the athlete who asked for
@@ -98,6 +102,9 @@ struct EffortSections: View {
                 scale: EffortReadout.strainScale,
                 fractionDigits: 1
             )
+            Text("Strain du jour · 0–21")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
             if !effort.strain.subtitle.isEmpty {
                 Text(effort.strain.subtitle)
                     .font(SharpitTypography.body)
@@ -181,8 +188,10 @@ private struct EffortVerdictSection: View {
 
 /// The evidence step: the day's load, the week's, the ramp and the form — the same figures in
 /// both readings, named for the reading they are shown in (ADR 0006).
+/// Callers: EffortSections. API: load + cardioLoad. User: fix all — cardio vs strain vocab.
 private struct EffortLoadSection: View {
     let load: V1EffortLoad
+    let cardioLoad: V1EffortCardioLoad?
     let isExpert: Bool
 
     var body: some View {
@@ -213,8 +222,92 @@ private struct EffortLoadSection: View {
                         tone: EffortReadout.formTone(load.tsb)
                     )
                 }
+                if let cardioLoad {
+                    GridRow {
+                        SharpitStatTile(
+                            caption: isExpert ? "Cardio Load (CTL)" : "Forme cardio",
+                            value: EffortReadout.load(cardioLoad.ctl),
+                            note: "≠ Strain du jour"
+                        )
+                        SharpitStatTile(
+                            caption: isExpert ? "ATL" : "Fatigue aiguë",
+                            value: EffortReadout.load(cardioLoad.atl)
+                        )
+                    }
+                }
             }
             .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// Active (sessions + cardio) vs passive (movement / NEAT) strain split.
+private struct EffortStrainSplitSection: View {
+    let active: V1EffortStrainSplit?
+    let passive: V1EffortStrainSplit?
+
+    var body: some View {
+        if active != nil || passive != nil {
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                SharpitEyebrow("Actif / passif")
+                HStack(spacing: SharpitSpacing.sm) {
+                    SharpitStatTile(
+                        caption: active?.label ?? "Effort actif",
+                        value: active?.score.map { EffortReadout.strain($0) } ?? "—"
+                    )
+                    SharpitStatTile(
+                        caption: passive?.label ?? "Effort passif",
+                        value: passive?.score.map { EffortReadout.strain($0) } ?? "—",
+                        note: "Hors séance"
+                    )
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+/// Rolling Strain Performance vs target band.
+private struct EffortStrainPerformanceSection: View {
+    let performance: V1StrainPerformance
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("Strain Performance")
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                if let pct = performance.withinPct {
+                    Text("\(Int(pct.rounded())) % dans la cible · \(Int(performance.withinCount))/\(Int(performance.dayCount)) j")
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                }
+                ForEach(performance.history.suffix(7)) { day in
+                    HStack {
+                        Text(day.date)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                        Spacer()
+                        Text(day.strain.map { EffortReadout.strain($0) } ?? "—")
+                            .font(SharpitTypography.instrument)
+                            .monospacedDigit()
+                        Text(statusLabel(day.status))
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .frame(width: 72, alignment: .trailing)
+                    }
+                }
+            }
+            .padding(SharpitSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.panel)
+        }
+    }
+
+    private func statusLabel(_ status: String?) -> String {
+        switch status {
+        case "below": return "Sous"
+        case "within": return "Cible"
+        case "above": return "Au-dessus"
+        default: return "—"
         }
     }
 }
@@ -350,7 +443,7 @@ private struct EffortPmcSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Charge vs forme · \(points.count) jours")
+            SharpitEyebrow("Cardio Load (CTL) vs forme · \(points.count) j")
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 Chart {
                     RuleMark(y: .value("Zéro", 0.0))

@@ -71,11 +71,15 @@ nonisolated struct V1NotificationPrefs: Codable, Sendable, Equatable {
     var sessionDone = true
     var missedSession = true
     var syncAlerts = true
+    /// « Cible du jour atteinte » when strain enters the target band.
+    var targetStrain = true
+    /// Local hydration / mood / caffeine check-in reminders (on-device).
+    var dayCheckIns = true
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case morningVerdict, morningTime, weeklyReview, sessionReminder, sessionDone, missedSession, syncAlerts
+        case morningVerdict, morningTime, weeklyReview, sessionReminder, sessionDone, missedSession, syncAlerts, targetStrain, dayCheckIns
     }
 
     init(from decoder: Decoder) throws {
@@ -87,6 +91,8 @@ nonisolated struct V1NotificationPrefs: Codable, Sendable, Equatable {
         sessionDone = (try? container.decodeIfPresent(Bool.self, forKey: .sessionDone)) ?? true
         missedSession = (try? container.decodeIfPresent(Bool.self, forKey: .missedSession)) ?? true
         syncAlerts = (try? container.decodeIfPresent(Bool.self, forKey: .syncAlerts)) ?? true
+        targetStrain = (try? container.decodeIfPresent(Bool.self, forKey: .targetStrain)) ?? true
+        dayCheckIns = (try? container.decodeIfPresent(Bool.self, forKey: .dayCheckIns)) ?? true
     }
 }
 

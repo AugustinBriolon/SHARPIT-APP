@@ -20,9 +20,19 @@ nonisolated struct V1TrainingLoad: Decodable, Sendable, Equatable {
         var id: String { weekEnd }
     }
 
+    /// Cold-start honesty for CTL/ATL (Bevel-style calibrating). Optional for older APIs.
+    nonisolated struct Calibration: Decodable, Sendable, Equatable {
+        var status: String
+        var daysWithLoad: Int
+        var daysNeeded: Int
+
+        var isCalibrating: Bool { status == "calibrating" }
+    }
+
     var trainingDayId: String
     var days: [Day]
     var weeks: [Week]
+    var calibration: Calibration?
 }
 
 nonisolated protocol TrainingLoadServing: Sendable {

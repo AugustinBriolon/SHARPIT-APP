@@ -369,6 +369,15 @@ private struct TodayFoldView: View {
                         : .spring(response: 0.40, dampingFraction: 0.80).delay(0.10),
                     value: phase.showsGauges
                 )
+                // Callers: TodayFoldView. API: timeline. User: fix all — P2 day timeline.
+                TodayTimelineStrip(events: fold.timeline)
+                .opacity(phase.showsGauges ? 1 : 0)
+                .offset(y: phase.showsGauges ? 0 : 18)
+                .animation(
+                    reduceMotion ? .easeOut(duration: 0.01)
+                        : .spring(response: 0.40, dampingFraction: 0.80).delay(0.12),
+                    value: phase.showsGauges
+                )
                 if features.isOn(.regularity), let consistency = fold.consistency, !consistency.days.isEmpty {
                     ConsistencyStrip(
                         consistency: consistency,

@@ -33,6 +33,40 @@ nonisolated struct V1EffortResponse: Decodable, Sendable, Equatable {
     let completenessLabel: String
     /// ADR-079 target band. Callers: EffortView. API: GET /api/v1/effort.
     var targetBand: V1TodayTargetBand? = nil
+    /// Cardio Load (CTL/ATL/TSB) — distinct from day Strain. Callers: EffortView. API: GET /api/v1/effort. User: fix all.
+    var cardioLoad: V1EffortCardioLoad? = nil
+    var activeStrain: V1EffortStrainSplit? = nil
+    var passiveStrain: V1EffortStrainSplit? = nil
+    var strainPerformance: V1StrainPerformance? = nil
+}
+
+nonisolated struct V1EffortCardioLoad: Decodable, Sendable, Equatable {
+    let ctl: Double
+    let atl: Double
+    let tsb: Double
+    let label: String
+}
+
+nonisolated struct V1EffortStrainSplit: Decodable, Sendable, Equatable {
+    let score: Double?
+    let label: String
+}
+
+nonisolated struct V1StrainPerformance: Decodable, Sendable, Equatable {
+    let withinCount: Double
+    let dayCount: Double
+    let withinPct: Double?
+    let history: [V1StrainPerformanceDay]
+}
+
+nonisolated struct V1StrainPerformanceDay: Decodable, Sendable, Equatable, Identifiable {
+    let date: String
+    let strain: Double?
+    let low: Double
+    let high: Double
+    let status: String?
+
+    var id: String { date }
 }
 
 /// The day's strain, 0–21, worded and toned as the web's ring.

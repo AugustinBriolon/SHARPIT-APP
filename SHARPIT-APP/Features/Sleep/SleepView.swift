@@ -156,6 +156,12 @@ private struct SleepCoachCard: View {
                                 .font(SharpitTypography.data)
                                 .tracking(SharpitTypography.dataTracking)
                                 .foregroundStyle(SharpitColor.foreground)
+                            // Callers: SleepCoachCard. API: windDownStartMin. User: fix all — P3 bedtime.
+                            if let windDown = sleep.windDownStartMin {
+                                Text("Coupez les écrans vers \(SleepReadout.clock(windDown))")
+                                    .font(SharpitTypography.meta)
+                                    .foregroundStyle(SharpitColor.mutedForeground)
+                            }
                         }
                         Spacer(minLength: 0)
                         // ADR-079. Callers: SleepCoachCard. API: sleepNeededMin. User: Bevel gaps plan.

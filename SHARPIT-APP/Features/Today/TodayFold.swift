@@ -14,6 +14,8 @@ struct TodayFold: Sendable, Equatable {
     var stress: V1TodayStress? = nil
     var energyBank: V1TodayEnergyBank? = nil
     var targetBand: V1TodayTargetBand? = nil
+    /// Day timeline. Callers: TodayView. API: V1TodayResponse.timeline. User: fix all.
+    var timeline: [V1DayTimelineEvent] = []
 }
 
 struct InkPlateModel: Sendable, Equatable {
@@ -144,7 +146,8 @@ enum TodayFoldMapper {
             race: RaceMomentMapper.map(response.race, trainingDayId: response.trainingDayId),
             stress: response.stress,
             energyBank: response.energyBank,
-            targetBand: response.targetBand
+            targetBand: response.targetBand,
+            timeline: response.timeline ?? []
         )
     }
 }

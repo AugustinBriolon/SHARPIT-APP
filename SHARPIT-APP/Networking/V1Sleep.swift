@@ -24,6 +24,8 @@ nonisolated struct V1SleepResponse: Decodable, Sendable, Equatable {
     let averages: V1SleepAverages
     let regularityMin: Double?
     let recommendedBedtimeMin: Double?
+    /// Wind-down start, 45 min before recommended bedtime. Callers: SleepView. API: GET /api/v1/sleep. User: fix all.
+    var windDownStartMin: Double? = nil
     let recommendedDurationMin: Double?
     /// ADR-079 sleep needed. Callers: SleepView. API: GET /api/v1/sleep.
     var sleepNeededMin: Double? = nil

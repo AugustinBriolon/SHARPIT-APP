@@ -12,6 +12,11 @@ struct TrainingLoadCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(title: "Forme", symbol: "chart.xyaxis.line", showsChevron: false)
+            if let calibration = load.calibration, calibration.isCalibrating {
+                Text(calibrationCaption(calibration))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.signalCaution)
+            }
             if let today {
                 HStack(alignment: .top, spacing: SharpitSpacing.md) {
                     figure("Forme chronique", value: "\(Int(today.ctl.rounded()))", caption: "CTL", tone: SharpitColor.foreground)
@@ -36,6 +41,16 @@ struct TrainingLoadCard: View {
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
+    }
+
+    private func calibrationCaption(_ calibration: V1TrainingLoad.Calibration) -> String {
+        let remaining = max(0, calibration.daysNeeded - calibration.daysWithLoad)
+        if remaining == 0 {
+            return "En calibration — encore quelques jours de charge."
+        }
+        return remaining == 1
+            ? "En calibration — encore 1 jour de charge pour fiabiliser la forme."
+            : "En calibration — encore \(remaining) jours de charge pour fiabiliser la forme."
     }
 
     private func figure(_ label: String, value: String, caption: String, tone: Color) -> some View {
