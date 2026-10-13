@@ -325,7 +325,7 @@ struct OwnFoodsSettingsView: View {
                 )
             } else {
                 FoodCustomPage(purpose: .edit(product)) { draft in
-                    try await store.update(product, with: draft)
+                    store.update(product, with: draft)
                 } onSaved: { _ in
                     editing = nil
                 }

@@ -18,6 +18,9 @@ nonisolated enum FoodLogError: Error, Equatable, LocalizedError {
 nonisolated protocol FoodLogServing: Sendable {
     func day(trainingDayId: String, token: String) async throws -> V1FoodLogDay
     func add(_ draft: FoodLogDraft, token: String) async throws -> V1FoodLogEntry
+    /// Several entries in one transaction (a described meal validated whole): all stored or none,
+    /// answered in the drafts' order.
+    func add(_ drafts: [FoodLogDraft], token: String) async throws -> [V1FoodLogEntry]
     func update(entryId: String, _ change: FoodLogEntryChange, token: String) async throws -> V1FoodLogEntry
     func delete(entryId: String, token: String) async throws
     func search(_ query: String, token: String) async throws -> V1FoodSearchResults
@@ -66,6 +69,12 @@ actor FoodLogClient: FoodLogServing {
         var request = try request(Self.path, method: "POST", token: token)
         request.httpBody = try Self.body(for: draft)
         return try decode(V1FoodLogEntryEnvelope.self, from: try await send(request)).entry
+    }
+
+    func add(_ drafts: [FoodLogDraft], token: String) async throws -> [V1FoodLogEntry] {
+        var request = try request("\(Self.path)/entries/batch", method: "POST", token: token)
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["entries": drafts.map(Self.payload(for:))])
+        return try decode(V1FoodLogEntryList.self, from: try await send(request)).entries
     }
 
     func update(entryId: String, _ change: FoodLogEntryChange, token: String) async throws -> V1FoodLogEntry {
@@ -190,6 +199,10 @@ actor FoodLogClient: FoodLogServing {
 
     /// Exactly one of `productId` and `quick`, as the server requires.
     nonisolated static func body(for draft: FoodLogDraft) throws -> Data {
+        try JSONSerialization.data(withJSONObject: payload(for: draft))
+    }
+
+    nonisolated static func payload(for draft: FoodLogDraft) -> [String: Any] {
         var payload: [String: Any] = [
             "trainingDayId": draft.trainingDayId,
             "meal": draft.meal.rawValue,
@@ -207,7 +220,7 @@ actor FoodLogClient: FoodLogServing {
                 "fat": quick.fat ?? 0,
             ] as [String: Any]
         }
-        return try JSONSerialization.data(withJSONObject: payload)
+        return payload
     }
 
     /// Only the fields that change: an absent key leaves the server's value.

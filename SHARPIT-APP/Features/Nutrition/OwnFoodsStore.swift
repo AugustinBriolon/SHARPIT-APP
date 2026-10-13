@@ -14,8 +14,10 @@ final class OwnFoodsStore {
 
     private(set) var phase: Phase = .loading
     private(set) var foods: [V1FoodProduct] = []
-    /// A delete that failed, said on the page the athlete is still on.
+    /// A delete or an edit that failed for good, said on the list the athlete is back on.
     private(set) var failure: String?
+    /// One edit at a time, in order, so an older answer never lands over a newer edit.
+    @ObservationIgnored private var write: Task<Void, Never>?
 
     private let client: any FoodLogServing
     private let tokenProvider: () async throws -> String
@@ -37,13 +39,49 @@ final class OwnFoodsStore {
         }
     }
 
-    /// Waits for the server's answer (retried): the edit page closes on success only.
-    func update(_ product: V1FoodProduct, with draft: FoodCustomDraft) async throws -> V1FoodProduct {
-        let stored = try await SharpitRetry.run {
-            try await client.updateCustomFood(id: product.id, draft, token: try await tokenProvider())
+    /// Shows the edit on the tap and answers the food as shown, so the page closes at once; the
+    /// server's food (its score worked out again) replaces it once stored. A failure for good
+    /// puts the food back and is said on the list. `settle()` waits for the write.
+    func update(_ product: V1FoodProduct, with draft: FoodCustomDraft) -> V1FoodProduct {
+        let shown = Self.applying(draft, to: product)
+        replace(shown)
+        failure = nil
+        let previous = write
+        write = Task {
+            await previous?.value
+            do {
+                let stored = try await SharpitRetry.run {
+                    try await client.updateCustomFood(id: product.id, draft, token: try await tokenProvider())
+                }
+                replace(stored)
+            } catch {
+                replace(product)
+                failure = FoodLogStore.failureMessage(error, action: "Aliment non modifié")
+            }
         }
-        foods = Self.sorted(foods.map { $0.id == stored.id ? stored : $0 })
-        return stored
+        return shown
+    }
+
+    func settle() async { await write?.value }
+
+    private func replace(_ product: V1FoodProduct) {
+        foods = Self.sorted(foods.map { $0.id == product.id ? product : $0 })
+    }
+
+    nonisolated static func applying(_ draft: FoodCustomDraft, to product: V1FoodProduct) -> V1FoodProduct {
+        var shown = product
+        shown.name = draft.name
+        shown.brand = draft.brand
+        shown.kcalPer100g = draft.kcalPer100g
+        shown.proteinPer100g = draft.proteinPer100g
+        shown.carbsPer100g = draft.carbsPer100g
+        shown.fatPer100g = draft.fatPer100g
+        shown.fiberPer100g = draft.fiberPer100g
+        shown.sugarPer100g = draft.sugarPer100g
+        shown.saltPer100g = draft.saltPer100g
+        shown.saturatedFatPer100g = draft.saturatedFatPer100g
+        shown.servingGrams = draft.servingGrams
+        return shown
     }
 
     /// Creates a recipe or replaces one's ingredients, waiting for the server's label (retried).

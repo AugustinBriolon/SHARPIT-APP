@@ -552,6 +552,23 @@ private actor StubFoodLog: FoodLogServing {
         )
     }
 
+    private(set) var batches: [[FoodLogDraft]] = []
+    /// Runs while a batch is in flight, to read what the athlete sees before the answer.
+    var duringBatch: (@Sendable () async -> Void)?
+    func setDuringBatch(_ hook: @escaping @Sendable () async -> Void) { duringBatch = hook }
+
+    func add(_ drafts: [FoodLogDraft], token: String) async throws -> [V1FoodLogEntry] {
+        await duringBatch?()
+        if let failure { throw failure }
+        batches.append(drafts)
+        return drafts.enumerated().map { index, draft in
+            V1FoodLogEntry(
+                id: "batch-\(index)", meal: draft.meal, productId: nil, name: "Stored", brand: nil,
+                grams: draft.grams, kcal: 42, protein: 1, carbs: 2, fat: 3
+            )
+        }
+    }
+
     func update(entryId: String, _ change: FoodLogEntryChange, token: String) async throws -> V1FoodLogEntry {
         if let failure { throw failure }
         let entry = try #require(day.entries.first { $0.id == entryId })
@@ -710,6 +727,60 @@ private func makeStore(_ client: StubFoodLog, recorder: Recorder) -> FoodLogStor
     #expect(recorder.failures == ["Aliment non ajouté. Réessaie dans un instant."])
 }
 
+/// What the day showed while a write was in flight.
+@MainActor
+private final class InFlightView {
+    var names: [String] = []
+    var lunchKcal: Double = 0
+    var allPending = false
+}
+
+private let describedDrafts = [
+    FoodLogDraft(trainingDayId: "2026-10-01", meal: .lunch, grams: 300, source: .quick(FoodQuickAdd(name: "Faux-filet", kcal: 650))),
+    FoodLogDraft(trainingDayId: "2026-10-01", meal: .lunch, grams: 150, source: .quick(FoodQuickAdd(name: "Frites", kcal: 450))),
+    FoodLogDraft(trainingDayId: "2026-10-01", meal: .lunch, grams: 120, source: .quick(FoodQuickAdd(name: "Brocolis", kcal: 40))),
+]
+
+@MainActor
+@Test func aDescribedMealShowsWholeOnTheTapAndGoesOutInOneRequest() async {
+    let client = StubFoodLog()
+    let recorder = Recorder()
+    let store = makeStore(client, recorder: recorder)
+    await store.load(trainingDayId: "2026-10-01")
+    let seen = InFlightView()
+    await client.setDuringBatch {
+        await MainActor.run {
+            seen.names = store.entries.map(\.name)
+            seen.lunchKcal = store.section(.lunch).kcal
+            seen.allPending = store.entries.allSatisfy(\.isPending)
+        }
+    }
+
+    await store.add(describedDrafts)
+    #expect(seen.names == ["Faux-filet", "Frites", "Brocolis"])
+    #expect(seen.lunchKcal == 1140)
+    #expect(seen.allPending)
+    #expect(store.entries.map(\.id) == ["batch-0", "batch-1", "batch-2"])
+    #expect(await client.batches == [describedDrafts])
+    #expect(await client.added.isEmpty)
+    #expect(recorder.reloads == 1)
+    #expect(recorder.failures.isEmpty)
+}
+
+@MainActor
+@Test func aDescribedMealThatFailsIsTakenBackWholeAndSaidOnce() async throws {
+    let day = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    let recorder = Recorder()
+    let store = makeStore(StubFoodLog(day: day, failure: SharpitAPIError.badRequest), recorder: recorder)
+    await store.load(trainingDayId: "2026-10-01")
+    let before = store.entries
+
+    await store.add(describedDrafts)
+    #expect(store.entries == before)
+    #expect(recorder.reloads == 0)
+    #expect(recorder.failures == ["Aliments non ajoutés. Réessaie dans un instant."])
+}
+
 @MainActor
 @Test func aDeleteThatFailsPutsTheEntryBackInPlace() async throws {
     let day = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
@@ -828,7 +899,7 @@ private nonisolated func ownFood(_ id: String, _ name: String) -> V1FoodProduct 
 }
 
 @MainActor
-@Test func ownFoodsLoadSortedAndAnEditReplacesTheFood() async throws {
+@Test func ownFoodsLoadSortedAndAnEditReplacesTheFood() async {
     let client = StubFoodLog(ownFoods: [ownFood("c2", "Muesli"), ownFood("c1", "Granola")])
     let store = OwnFoodsStore(client: client, tokenProvider: { "t" })
     await store.load()
@@ -838,9 +909,29 @@ private nonisolated func ownFood(_ id: String, _ name: String) -> V1FoodProduct 
     var draft = FoodCustomDraft(product: store.foods[1])
     draft.name = "Avoine"
     draft.kcalPer100g = 380
-    let stored = try await store.update(store.foods[1], with: draft)
-    #expect(stored.kcalPer100g == 380)
+    let shown = store.update(store.foods[1], with: draft)
+    // Shown on the tap, before the server answered.
+    #expect(shown.kcalPer100g == 380)
     #expect(store.foods.map(\.name) == ["Avoine", "Granola"])
+    await store.settle()
+    #expect(store.foods.map(\.name) == ["Avoine", "Granola"])
+    #expect(store.failure == nil)
+}
+
+@MainActor
+@Test func anOwnFoodEditRefusedForGoodPutsTheFoodBackAndSaysSo() async {
+    let client = StubFoodLog(ownFoods: [ownFood("c1", "Granola")])
+    let store = OwnFoodsStore(client: client, tokenProvider: { "t" })
+    await store.load()
+    await client.setFailure(SharpitAPIError.badRequest)
+
+    var draft = FoodCustomDraft(product: store.foods[0])
+    draft.name = "Avoine"
+    _ = store.update(store.foods[0], with: draft)
+    #expect(store.foods.map(\.name) == ["Avoine"])
+    await store.settle()
+    #expect(store.foods.map(\.name) == ["Granola"])
+    #expect(store.failure == "Aliment non modifié. Réessaie dans un instant.")
 }
 
 @MainActor

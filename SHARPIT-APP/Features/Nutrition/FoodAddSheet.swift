@@ -100,7 +100,7 @@ struct FoodAddSheet: View {
             )
         case .editFood(let product):
             FoodCustomPage(purpose: .edit(product)) { draft in
-                try await ownFoods.update(product, with: draft)
+                ownFoods.update(product, with: draft)
             } onSaved: { stored in
                 store.productChanged(stored)
                 path.removeLast()
@@ -152,11 +152,7 @@ struct FoodAddSheet: View {
     }
 
     private func logMany(_ drafts: [FoodLogDraft]) {
-        Task {
-            for draft in drafts {
-                await store.add(draft)
-            }
-        }
+        Task { await store.add(drafts) }
         dismiss()
     }
 }

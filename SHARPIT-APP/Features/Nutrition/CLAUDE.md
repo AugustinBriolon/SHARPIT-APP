@@ -45,7 +45,7 @@ weighed raw, the cooked weight and servings optional, the label per 100 g live (
 the web's `recipeLabel`) — then goes on to its portion; a recipe opened from « Mes aliments » edits
 its ingredients (`/api/v1/food-log/recipes`). Every
 write shows at once and goes out through `SharpitRetry`, put back and toasted if it fails for good;
-the server rebuilds the day, so the page reads `/api/v1/nutrition` again for the totals. Open Food
+the server rebuilds the day, so the page reads `/api/v1/nutrition` again for the totals. A described meal (`FoodDescribePage`) validated whole shows all its foods at once and goes out in one request (`FoodLogStore.add(_ drafts:)`, `POST /api/v1/food-log/entries/batch`, all stored or none), its rows swapped for the server's in one change. Open Food
 Facts is asked by the server only, and « Données Open Food Facts (ODbL) » stands wherever its
 products are listed or picked. The iPhone app never links or syncs MyFitnessPal — its access is
 unofficial, App Review 5.2.2 (`docs/adr/0010`, a test guards the routes): the athlete imports their

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 
 /// One training day of the in-app food log (SHARPIT ADR-061): its entries by meal, the
 /// athlete's targets and the foods logged lately.
@@ -138,6 +139,40 @@ final class FoodLogStore {
         } catch {
             entries.removeAll { $0.id == pending.id }
             reportFailure(Self.failureMessage(error, action: "Aliment non ajouté"))
+        }
+    }
+
+    /// Several foods at once (a described meal): all shown on the tap, sent in one request, and
+    /// swapped for the server's rows in one change so the day moves once, not per food. The
+    /// server stores them all or none, so a failure for good takes them all back.
+    func add(_ drafts: [FoodLogDraft]) async {
+        guard drafts.count > 1 else {
+            if let draft = drafts.first { await add(draft) }
+            return
+        }
+        let pending = drafts.map(Self.pendingEntry(for:))
+        entries.append(contentsOf: pending)
+        let pendingIds = Set(pending.map(\.id))
+        do {
+            let stored = try await SharpitRetry.run {
+                try await client.add(drafts, token: try await tokenProvider())
+            }
+            // Same rows, new ids: swapped without the list animating them out and in again.
+            var swap = Transaction()
+            swap.disablesAnimations = true
+            withTransaction(swap) {
+                entries = entries.map { entry in
+                    guard let index = pending.firstIndex(where: { $0.id == entry.id }), index < stored.count else { return entry }
+                    return Self.keepingHealth(of: entry, in: stored[index])
+                }
+            }
+            for (draft, entry) in zip(drafts, stored) { rememberRecent(draft, stored: entry) }
+            await onChange()
+            await refreshHealth()
+            await mirrorNutritionToAppleHealth()
+        } catch {
+            entries.removeAll { pendingIds.contains($0.id) }
+            reportFailure(Self.failureMessage(error, action: "Aliments non ajoutés"))
         }
     }
 
