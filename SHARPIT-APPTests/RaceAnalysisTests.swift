@@ -161,3 +161,16 @@ struct ActivitySplitFigureTests {
         #expect(split(paceSeconds: 300).figure(segmentDistance: 1_000) == ActivityFormat.pace(300))
     }
 }
+
+struct ActivityFormatTests {
+    @Test func aPaceReadsWithoutItsUnitSoTheGridSetsIt() {
+        #expect(ActivityFormat.paceClock(106.5) == "1'47\"")
+        #expect(ActivityFormat.paceClock(302) == "5'02\"")
+        #expect(ActivityFormat.paceClock(119.6) == "2'00\"")
+        #expect(ActivityFormat.pace(302) == "5'02\"/km")
+    }
+
+    @Test func aRideReadsItsAverageSpeed() {
+        #expect(ActivityFormat.speedKmh(distanceM: 87_820, duration: 11_516) == "27,5")
+    }
+}

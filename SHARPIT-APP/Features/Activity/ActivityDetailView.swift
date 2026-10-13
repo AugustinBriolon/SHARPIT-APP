@@ -180,12 +180,10 @@ struct ActivityDetailView: View {
                                     onValidateGoal: { validateGoal(detail) },
                                     course: course,
                                     courseSelection: courseSelection,
-                                    onSelectCourse: { select($0, viewport: proxy.size) }
+                                    onSelectCourse: { select($0, viewport: proxy.size) },
+                                    bottomInset: proxy.safeAreaInsets.bottom
                                 )
                                 .frame(width: proxy.size.width, alignment: .leading)
-
-                                // The map layout ignores the safe area, so the last card would sit under the tab bar.
-                                Color.clear.frame(height: proxy.safeAreaInsets.bottom + SharpitSpacing.md)
                             }
                             .frame(width: proxy.size.width, alignment: .leading)
                         }
@@ -856,6 +854,9 @@ private struct ActivityDetailContent: View {
     var course: [TriathlonLegTrack] = []
     var courseSelection: TriathlonSelection = .overview
     var onSelectCourse: (TriathlonSelection) -> Void = { _ in }
+    /// The map layout ignores the safe area: the sheet itself grows by the tab bar's height, so its
+    /// last card clears the bar and no map shows under the sheet.
+    var bottomInset: CGFloat = 0
     @State private var selectedChartMetrics: [ActivityChartMetric] = [.heartRate]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -953,16 +954,18 @@ private struct ActivityDetailContent: View {
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.lg)
-        .padding(.bottom, SharpitSpacing.lg)
+        .padding(.bottom, SharpitSpacing.lg + bottomInset)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             Group {
                 if clearsBackButton {
                     Color.clear
                 } else {
+                    // Drawn past its bottom edge, so pulling beyond the end never shows the map.
                     RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
                         .fill(SharpitElevatedColor.sheet)
                         .sharpitShadow(.panel)
+                        .padding(.bottom, -800)
                 }
             }
         )
@@ -1760,8 +1763,14 @@ extension ActivityHeroMetricData {
             metrics.append(.init(label: "Distance", value: distance >= 1_000 ? String(format: "%.1f", distance / 1_000) : "\(Int(distance.rounded()))", unit: distance >= 1_000 ? "km" : "m"))
         }
         if let elevation = detail.elevationM, detail.type != .swim && detail.type != .strength { metrics.append(.init(label: "Dénivelé", value: "\(Int(elevation.rounded()))", unit: "m")) }
-        if detail.type == .swim, let pace = detail.avgPaceSecPer100m { metrics.append(.init(label: "Allure", value: ActivityFormat.pace(pace), unit: "/100 m")) }
-        else if detail.type != .strength, let pace = detail.paceSecPerKm { metrics.append(.init(label: "Allure", value: ActivityFormat.pace(pace), unit: "/km")) }
+        if detail.type == .swim, let pace = detail.avgPaceSecPer100m {
+            metrics.append(.init(label: "Allure", value: ActivityFormat.paceClock(pace), unit: "/100 m"))
+        } else if detail.type == .bike, let distance = distanceM, let duration = detail.duration, duration > 0 {
+            // A ride reads in km/h, never as a pace per km.
+            metrics.append(.init(label: "Vitesse", value: ActivityFormat.speedKmh(distanceM: distance, duration: duration), unit: "km/h"))
+        } else if detail.type != .strength, let pace = detail.paceSecPerKm {
+            metrics.append(.init(label: "Allure", value: ActivityFormat.paceClock(pace), unit: "/km"))
+        }
         // Last, because it is what the session cost rather than what it was (ADR 0006).
         if let load = detail.load, load > 0 {
             metrics.append(.init(

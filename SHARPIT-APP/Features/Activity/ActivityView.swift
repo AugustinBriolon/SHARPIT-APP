@@ -386,7 +386,18 @@ enum ActivityFormat {
     }
 
     static func pace(_ seconds: Double) -> String {
-        "\(Int(seconds / 60))'\(String(format: "%02d", Int(seconds.rounded()) % 60))\"/km"
+        "\(paceClock(seconds))/km"
+    }
+
+    /// « 27,4 » — a ride's average speed in km/h, without its unit.
+    static func speedKmh(distanceM: Double, duration: Double) -> String {
+        String(format: "%.1f", distanceM / duration * 3.6).replacingOccurrences(of: ".", with: ",")
+    }
+
+    /// « 1'46" » — a pace without its unit, for a readout that sets the unit apart (/km, /100 m).
+    static func paceClock(_ seconds: Double) -> String {
+        let rounded = Int(seconds.rounded())
+        return "\(rounded / 60)'\(String(format: "%02d", rounded % 60))\""
     }
 
     /// Session load, in the words of the reading it is shown in (ADR 0006).
