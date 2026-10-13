@@ -138,9 +138,7 @@ struct JournalPrefsDrawer: View {
                     }
                 }
                 .contextMenu {
-                    Button("Supprimer", systemImage: "trash", role: .destructive) {
-                        Task { await store.removeCustomItem(item.id) }
-                    }
+                    SharpitDeleteMenuButton { Task { await store.removeCustomItem(item.id) } }
                 }
             }
         }

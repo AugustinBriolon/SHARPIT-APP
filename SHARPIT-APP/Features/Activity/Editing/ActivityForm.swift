@@ -294,7 +294,7 @@ struct ActivityActionsMenu: View {
                 Button("Lier à un objectif", systemImage: "flag", action: onPickGoal)
             }
             Divider()
-            Button("Supprimer", systemImage: "trash", role: .destructive, action: onDelete)
+            SharpitDeleteMenuButton(action: onDelete)
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 17, weight: .semibold))

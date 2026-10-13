@@ -80,9 +80,7 @@ struct GoalDetailView: View {
                 Menu {
                     Button("Modifier", systemImage: "pencil") { isEditing = true }
                     Divider()
-                    Button("Supprimer", systemImage: "trash", role: .destructive) {
-                        showsDeleteConfirmation = true
-                    }
+                    SharpitDeleteMenuButton { showsDeleteConfirmation = true }
                 } label: {
                     Label("Actions", systemImage: "ellipsis")
                 }
