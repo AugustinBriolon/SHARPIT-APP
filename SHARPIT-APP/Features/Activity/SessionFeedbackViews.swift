@@ -356,6 +356,20 @@ struct ComplianceDetailSheet: View {
                             .lineSpacing(3)
                     }
 
+                    if let strengths = analysis.strengths, !strengths.isEmpty {
+                        AnalysisBulletBlock(title: "Forces", items: strengths, tone: SharpitColor.signalRecovery)
+                    }
+
+                    if let improvements = analysis.improvements, !improvements.isEmpty {
+                        AnalysisBulletBlock(title: "À travailler", items: improvements, tone: SharpitColor.signalCaution)
+                    }
+
+                    if let tags = analysis.scoreTags, !tags.isEmpty {
+                        Text(tags.map(SessionAnalysisScoreTagLabel.fr).joined(separator: " · "))
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+
                     if let remarks = analysis.remarks, !remarks.isEmpty {
                         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                             SharpitEyebrow("Ce que montrent les données")
@@ -396,6 +410,19 @@ struct ComplianceDetailSheet: View {
                             SharpitColor.primary.opacity(0.10),
                             in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
                         )
+                    }
+
+                    if let reassessments = analysis.physicalReassessments, !reassessments.isEmpty {
+                        AnalysisBulletBlock(
+                            title: "Zones à réévaluer",
+                            items: reassessments.map { item in
+                                "\(item.noteTitle) — \(item.question)"
+                            },
+                            tone: SharpitColor.signalCaution
+                        )
+                        Text("Parle au coach pour Continuer, Alléger, Reporter ou Pause.")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
                     }
                 }
                 .padding(SharpitSpacing.pageInset)
@@ -469,6 +496,50 @@ struct ComplianceDetailSheet: View {
                         .background(verdict.tone.opacity(0.14), in: Capsule())
                 }
             }
+        }
+    }
+}
+
+private struct AnalysisBulletBlock: View {
+    let title: String
+    let items: [String]
+    let tone: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow(title)
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                ForEach(items, id: \.self) { item in
+                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+                        Circle()
+                            .fill(tone)
+                            .frame(width: 7, height: 7)
+                            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                        Text(item)
+                            .font(SharpitTypography.body)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(SharpitSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.panel)
+        }
+    }
+}
+
+private enum SessionAnalysisScoreTagLabel {
+    static func fr(_ raw: String) -> String {
+        switch raw {
+        case "PACING": return "Allure"
+        case "INTENSITY": return "Intensité"
+        case "VOLUME": return "Volume"
+        case "EXECUTION": return "Exécution"
+        case "RECOVERY": return "Récupération"
+        case "TECHNIQUE": return "Technique"
+        case "FUELING": return "Nutrition"
+        case "CONSISTENCY": return "Régularité"
+        default: return raw
         }
     }
 }

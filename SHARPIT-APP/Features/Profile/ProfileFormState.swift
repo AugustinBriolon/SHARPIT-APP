@@ -19,6 +19,7 @@ nonisolated struct ProfileFormState: Equatable {
     var maxHr = ""
     var lthr = ""
     var runThresholdPace = ""
+    var runEasyPace = ""
     var swimCss = ""
     var poolLength = ""
 
@@ -35,6 +36,7 @@ nonisolated struct ProfileFormState: Equatable {
         maxHr = ProfileFieldFormat.integer(profile.maxHr)
         lthr = ProfileFieldFormat.integer(profile.lthr)
         runThresholdPace = ProfileFieldFormat.pace(profile.runThresholdPaceSecPerKm)
+        runEasyPace = ProfileFieldFormat.pace(profile.runEasyPaceSecPerKm)
         swimCss = ProfileFieldFormat.pace(profile.swimCssSecPer100m)
         poolLength = ProfileFieldFormat.integer(profile.defaultPoolLengthM)
     }
@@ -69,7 +71,7 @@ nonisolated struct ProfileFormState: Equatable {
             return ProfileFieldFormat.parseInteger(text) == nil ? "Une puissance en watts." : nil
         case .maxHr, .lthr:
             return bounded(text, min: 80, max: 240, unit: "bpm")
-        case .runThresholdPace:
+        case .runThresholdPace, .runEasyPace:
             return ProfileFieldFormat.parsePace(text) == nil ? "Une allure, comme 4:15." : nil
         case .swimCss:
             return ProfileFieldFormat.parsePace(text) == nil ? "Une allure, comme 1:38." : nil
@@ -106,6 +108,11 @@ nonisolated struct ProfileFormState: Equatable {
             was: profile.runThresholdPaceSecPerKm
         )
         patch.setIfChanged(
+            .runEasyPaceSecPerKm,
+            double: ProfileFieldFormat.parsePace(runEasyPace),
+            was: profile.runEasyPaceSecPerKm
+        )
+        patch.setIfChanged(
             .swimCssSecPer100m,
             double: ProfileFieldFormat.parsePace(swimCss),
             was: profile.swimCssSecPer100m
@@ -132,6 +139,7 @@ nonisolated struct ProfileFormState: Equatable {
         case .maxHr: maxHr
         case .lthr: lthr
         case .runThresholdPace: runThresholdPace
+        case .runEasyPace: runEasyPace
         case .swimCss: swimCss
         case .poolLength: poolLength
         }
@@ -154,6 +162,7 @@ nonisolated enum ProfileFormField: String, CaseIterable, Sendable {
     case maxHr
     case lthr
     case runThresholdPace
+    case runEasyPace
     case swimCss
     case poolLength
 }

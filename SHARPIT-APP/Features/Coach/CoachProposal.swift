@@ -39,6 +39,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         case "tool-updatePlannedSession": "pencil.line"
         case "tool-deletePlannedSession": "calendar.badge.minus"
         case "tool-setTravelContext": "mappin.and.ellipse"
+        case "tool-proposePlaybookAction": "cross.case"
         default: "heart.text.square"
         }
     }
@@ -50,6 +51,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         "tool-deletePlannedSession": "Supprimer une séance",
         "tool-setTravelContext": "Enregistrer un contexte voyage",
         "tool-setTrainingConstraint": "Enregistrer une contrainte",
+        "tool-proposePlaybookAction": "Action absence / douleur",
     ]
 
     private static let doneLabels = [
@@ -59,6 +61,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         "tool-deletePlannedSession": "Séance supprimée",
         "tool-setTravelContext": "Contexte voyage enregistré",
         "tool-setTrainingConstraint": "Contrainte enregistrée",
+        "tool-proposePlaybookAction": "Action enregistrée",
     ]
 
     private static let failureHints = [
@@ -68,11 +71,20 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         "tool-deletePlannedSession": "Cette séance n'a pas pu être supprimée",
         "tool-setTravelContext": "Ce contexte voyage n'a pas pu être enregistré",
         "tool-setTrainingConstraint": "Cette contrainte n'a pas pu être enregistrée",
+        "tool-proposePlaybookAction": "Cette action n'a pas pu être enregistrée",
     ]
 
     private static let sportLabels = [
         "RUN": "Course", "BIKE": "Vélo", "SWIM": "Natation", "STRENGTH": "Musculation",
         "TRIATHLON": "Triathlon", "HIKE": "Randonnée", "OTHER": "Autre",
+    ]
+
+    private static let playbookActionLabels = [
+        "CONTINUE": "Continuer",
+        "LIGHTEN": "Alléger",
+        "POSTPONE": "Reporter",
+        "RESTART": "Reprendre progressivement",
+        "PAUSE": "Mettre en pause",
     ]
 
     /// The French name of a session intensity, as the coach and the generator both show it.
@@ -143,6 +155,15 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
                 .compactMap { $0.map(Self.formattedDate) }
                 .joined(separator: " → ")
                 .nilIfEmpty
+            steps = []
+        case "tool-proposePlaybookAction":
+            let action = input["action"]?.string.flatMap { Self.playbookActionLabels[$0] }
+            headline = input["label"]?.string
+                ?? action
+                ?? title
+                ?? Self.proposalLabels[type]
+                ?? "Proposition"
+            intentLine = input["rationale"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             steps = []
         default:
             headline = title.flatMap { $0.isEmpty ? nil : $0 } ?? Self.proposalLabels[type] ?? "Proposition"
@@ -261,7 +282,8 @@ private extension String {
 struct CoachProposalCard: View {
     let proposal: CoachProposal
     /// Nil while an answer is on its way: the buttons wait with it.
-    let onAnswer: ((Bool) -> Void)?
+    /// Bool is approval; optional reasonOverride covers « Modifier » (revise).
+    let onAnswer: ((Bool, String?) -> Void)?
 
     @State private var confirmingDelete = false
 
@@ -333,16 +355,21 @@ struct CoachProposalCard: View {
             }
 
             HStack(spacing: SharpitSpacing.sm) {
-                answerButton(proposal.isDelete ? "Garder" : "Refuser", prominent: false) {
+                answerButton(proposal.isDelete ? "Garder" : "Ignorer", prominent: false) {
                     confirmingDelete = false
-                    onAnswer?(false)
+                    onAnswer?(false, nil)
+                }
+                if !proposal.isDelete {
+                    answerButton("Modifier", prominent: false) {
+                        onAnswer?(false, CoachUIParts.reviseReason)
+                    }
                 }
                 answerButton(approveLabel, prominent: true) {
                     if proposal.isDelete, !confirmingDelete {
                         withAnimation(SharpitMotion.selection) { confirmingDelete = true }
                         return
                     }
-                    onAnswer?(true)
+                    onAnswer?(true, nil)
                 }
             }
             .disabled(onAnswer == nil)
@@ -420,7 +447,7 @@ struct CoachProposalCard: View {
     }
 
     private var approveLabel: String {
-        guard proposal.isDelete else { return "Valider" }
+        guard proposal.isDelete else { return "Appliquer" }
         return confirmingDelete ? "Confirmer la suppression" : "Confirmer"
     }
 

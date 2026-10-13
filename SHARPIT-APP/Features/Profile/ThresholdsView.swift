@@ -28,7 +28,7 @@ struct ThresholdsView: View {
     }
 
     private static let ownedFields: [ProfileFormField] = [
-        .ftpW, .maxHr, .lthr, .runThresholdPace, .swimCss, .poolLength,
+        .ftpW, .maxHr, .lthr, .runThresholdPace, .runEasyPace, .swimCss, .poolLength,
     ]
 
     var body: some View {
@@ -255,25 +255,54 @@ struct ThresholdsView: View {
     private var runSection: some View {
         disciplineContainer(
             title: "Course à pied",
-            subtitle: "Allure seuil pour les intensités tempo, seuil et le rTSS.",
+            subtitle: "Allure seuil et allure Z2 (endurance) pour calibrer les footings et le rTSS.",
             symbolName: "figure.run",
             color: SharpitSportColor.color(SharpitSportColor.run)
         ) {
-            ThresholdInputField(
-                label: "Allure seuil",
-                text: $form.runThresholdPace,
-                placeholder: "4:15",
-                unit: "/km",
-                keyboard: .numbersAndPunctuation,
-                error: form.error(for: .runThresholdPace),
-                dynamicHint: runPaceHint,
-                onChange: scheduleAutoSave
-            )
+            VStack(spacing: SharpitSpacing.sm) {
+                ThresholdInputField(
+                    label: "Allure seuil",
+                    text: $form.runThresholdPace,
+                    placeholder: "4:15",
+                    unit: "/km",
+                    keyboard: .numbersAndPunctuation,
+                    error: form.error(for: .runThresholdPace),
+                    dynamicHint: paceHint(form.runThresholdPace),
+                    onChange: scheduleAutoSave
+                )
+                ThresholdInputField(
+                    label: "Allure Z2 / endurance",
+                    text: $form.runEasyPace,
+                    placeholder: derivedEasyPacePlaceholder,
+                    unit: "/km",
+                    keyboard: .numbersAndPunctuation,
+                    error: form.error(for: .runEasyPace),
+                    dynamicHint: easyPaceHint,
+                    onChange: scheduleAutoSave
+                )
+            }
         }
     }
 
-    private var runPaceHint: String? {
-        guard let paceSec = ProfileFieldFormat.parsePace(form.runThresholdPace), paceSec > 0 else { return nil }
+    private var derivedEasyPacePlaceholder: String {
+        guard let threshold = ProfileFieldFormat.parsePace(form.runThresholdPace), threshold > 0 else {
+            return "5:00"
+        }
+        let derived = Int((threshold * 1.15).rounded())
+        return ProfileFieldFormat.pace(Double(derived))
+    }
+
+    private var easyPaceHint: String? {
+        if let hint = paceHint(form.runEasyPace) { return hint }
+        if form.runEasyPace.trimmingCharacters(in: .whitespaces).isEmpty,
+           ProfileFieldFormat.parsePace(form.runThresholdPace) != nil {
+            return "Vide = dérivée du seuil (~+15 %)"
+        }
+        return nil
+    }
+
+    private func paceHint(_ text: String) -> String? {
+        guard let paceSec = ProfileFieldFormat.parsePace(text), paceSec > 0 else { return nil }
         let kmh = 3600.0 / paceSec
         return String(format: "%.1f km/h", kmh)
     }

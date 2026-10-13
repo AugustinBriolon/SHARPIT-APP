@@ -3,7 +3,8 @@ import SwiftUI
 
 /// Plan → Objectifs: the races and figures the season is built toward.
 ///
-/// One list, no tabs: the next race leads on the ink plate, then the goals in progress, then —
+/// One list, no tabs: the next race leads on the ink plate, the races leading to it on the season
+/// timeline, then the goals in progress, then —
 /// further down, only when there are any — the ones reached. A goal and a new goal open as pages
 /// in this stack. The store is Plan's, so reopening shows the goals at once and refreshes them
 /// quietly.
@@ -16,8 +17,10 @@ struct GoalsView: View {
         _store = State(initialValue: store)
     }
 
+    /// Neither on the plate nor on the season timeline.
     private var inProgress: [V1Goal] {
-        store.activeGoalsOrdered.filter { $0.id != store.nextRace?.id }
+        let shown = Set([store.nextRace?.id].compactMap { $0 } + (store.seasonTimeline?.steps.map(\.id) ?? []))
+        return store.activeGoalsOrdered.filter { !shown.contains($0.id) }
     }
 
     var body: some View {
@@ -29,6 +32,16 @@ struct GoalsView: View {
                     }
                     .buttonStyle(.sharpitPressable)
                     .revealed(hasAppeared, index: 0)
+                }
+
+                if let timeline = store.seasonTimeline, !timeline.steps.isEmpty {
+                    SeasonTimelineView(timeline: timeline)
+                        .revealed(hasAppeared, index: 1)
+                }
+
+                ForEach(store.seasonConflicts) { conflict in
+                    SeasonConflictNotice(conflict: conflict, store: store)
+                        .revealed(hasAppeared, index: 1)
                 }
 
                 ForEach(store.racesAwaitingResult) { race in
@@ -226,8 +239,8 @@ private struct NextRaceCard: View {
             HStack {
                 SharpitEyebrow("Prochain cap", systemImage: "flag.checkered")
                 Spacer(minLength: 0)
-                if let priority = goal.priority {
-                    GoalPriorityChip(priority: priority, onInk: true)
+                if let role = goal.role {
+                    GoalRoleChip(role: role)
                 }
             }
             HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xs) {
@@ -276,7 +289,8 @@ private struct GoalCard: View {
                 Text(goal.kind == .race ? GoalFormat.raceCardLine(goal) : GoalFormat.metricLine(goal))
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
                     .monospacedDigit()
             }
             Spacer(minLength: SharpitSpacing.xs)
@@ -375,8 +389,8 @@ struct GoalHero: View {
             HStack {
                 SharpitEyebrow(goal.isReached ? "Course courue" : (goal.phaseLabel ?? "Course"), systemImage: "flag.checkered")
                 Spacer(minLength: 0)
-                if let priority = goal.priority {
-                    GoalPriorityChip(priority: priority, onInk: true)
+                if let role = goal.role {
+                    GoalRoleChip(role: role)
                 }
             }
             Text(goal.title)
@@ -405,6 +419,11 @@ struct GoalHero: View {
             Text(GoalFormat.raceLine(goal))
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+            if !goal.isReached, let consequence = goal.roleConsequence {
+                Text(consequence)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+            }
             if let performance = goal.targetPerformance, !performance.isEmpty {
                 Label("Objectif chrono · \(performance)", systemImage: "stopwatch")
                     .font(SharpitTypography.meta.weight(.semibold))
@@ -457,13 +476,8 @@ private struct GoalBadge: View {
 
     var body: some View {
         Group {
-            if goal.kind == .race, let priority = goal.priority {
-                Text(priority.rawValue)
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-            } else {
-                Image(systemName: goal.kind == .race ? "flag.fill" : "gauge.with.dots.needle.67percent")
-                    .font(.system(size: 14, weight: .semibold))
-            }
+            Image(systemName: goal.kind == .race ? "flag" : "gauge.with.dots.needle.67percent")
+                .font(.system(size: 14, weight: .semibold))
         }
         .foregroundStyle(tone)
         .frame(width: 38, height: 38)
@@ -472,27 +486,158 @@ private struct GoalBadge: View {
 
     private var tone: Color {
         if goal.isReached { return SharpitColor.signalRecovery }
-        if goal.kind == .race, goal.priority != .a { return SharpitColor.mutedForeground }
+        if goal.kind == .race, goal.role != .primary { return SharpitColor.mutedForeground }
         return SharpitColor.primary
     }
 }
 
-private struct GoalPriorityChip: View {
-    let priority: GoalPriority
-    var onInk = false
+/// The race's role on the ink plate: the principal in the highlight, the others quiet.
+private struct GoalRoleChip: View {
+    let role: GoalRole
 
     var body: some View {
-        Text("Objectif \(priority.rawValue)")
+        Text(role.label)
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
             .textCase(.uppercase)
-            .foregroundStyle(priority == .a ? SharpitColor.highlightForeground : (onInk ? SharpitColor.inkSurfaceForeground : SharpitColor.foreground))
+            .foregroundStyle(role == .primary ? SharpitColor.highlightForeground : SharpitColor.inkSurfaceForeground)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, 3)
             .background(
-                priority == .a ? SharpitColor.highlight : SharpitColor.inkSurfaceForeground.opacity(onInk ? 0.16 : 0.08),
+                role == .primary ? SharpitColor.highlight : SharpitColor.inkSurfaceForeground.opacity(0.16),
                 in: Capsule()
             )
+    }
+}
+
+// MARK: - Season
+
+/// The races before the principal, soonest first, on a rail that ends on the principal: each
+/// its day, what it is, how far, its role toward the principal and the gap to what follows.
+private struct SeasonTimelineView: View {
+    let timeline: GoalSeason.Timeline
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("En route · \(timeline.steps.count) \(timeline.steps.count == 1 ? "étape" : "étapes")", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(timeline.steps) { step in
+                    NavigationLink(value: GoalRoute.detail(step.goal)) {
+                        stepRow(step)
+                    }
+                    .buttonStyle(.sharpitPressable)
+                }
+                principalRow
+            }
+            .padding(SharpitSpacing.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.panel)
+        }
+    }
+
+    private func stepRow(_ step: GoalSeason.Step) -> some View {
+        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+            rail(node: Circle().strokeBorder(SharpitColor.primary, lineWidth: 2), continues: true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(Self.day(step.goal))
+                    .font(SharpitTypography.meta.weight(.semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .monospacedDigit()
+                Text(step.goal.title)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.leading)
+                Text(Self.meta(step.goal))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                Text(step.goal.role == .training ? GoalRole.training.label : "\(GoalRole.step.label) vers \(timeline.principal.title)")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.primary)
+                    .multilineTextAlignment(.leading)
+                Text("puis \(GoalSeason.span(days: step.daysToNext))")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.8))
+                    .padding(.top, SharpitSpacing.xs)
+                    .padding(.bottom, SharpitSpacing.sm)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                .padding(.top, SharpitSpacing.sm)
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+
+    private var principalRow: some View {
+        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+            rail(node: Circle().fill(SharpitColor.highlight), continues: false)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(Self.day(timeline.principal))
+                    .font(SharpitTypography.meta.weight(.semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .monospacedDigit()
+                Text(timeline.principal.title)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                Text([GoalRole.primary.label, Self.meta(timeline.principal)].joined(separator: " · "))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func rail(node: some View, continues: Bool) -> some View {
+        VStack(spacing: 0) {
+            node.frame(width: 11, height: 11).padding(.top, 3)
+            if continues {
+                Rectangle()
+                    .fill(SharpitColor.mutedForeground.opacity(0.25))
+                    .frame(width: 1.5)
+                    .frame(maxHeight: .infinity)
+            }
+        }
+        .frame(width: 11)
+    }
+
+    /// « 12 avr. 2027 »
+    private static func day(_ goal: V1Goal) -> String {
+        goal.targetDate?.sharpitFormatted(.dateTime.day().month(.abbreviated).year()) ?? ""
+    }
+
+    /// « Triathlon L · dans 6 mois »
+    private static func meta(_ goal: V1Goal) -> String {
+        [goal.raceFormat, goal.daysRemaining.map(GoalSeason.until(days:))]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+    }
+}
+
+/// Two principals in one season, said quietly, with the one change that settles it.
+private struct SeasonConflictNotice: View {
+    let conflict: GoalSeason.Conflict
+    let store: GoalStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitEyebrow("Deux objectifs principaux", systemImage: "flag.2.crossed")
+            Text("\(conflict.kept.title) et \(conflict.demoted.title) sont à moins de six mois l’une de l’autre : le plan ne s’affûte vraiment que pour une.")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+            Button("Passer \(conflict.demoted.title) en course étape") {
+                store.setPriority(.b, of: conflict.demoted)
+            }
+            .font(SharpitTypography.bodyEmphasis)
+            .foregroundStyle(SharpitColor.primary)
+            .buttonStyle(.sharpitPressable)
+            .padding(.top, SharpitSpacing.xxs)
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
     }
 }
 
@@ -526,7 +671,7 @@ enum GoalFormat {
         switch goal.raceStatus {
         case .done?: doneLine(goal)
         case .awaitingResult?: "Ta course est passée · résultat à lier"
-        default: raceLine(goal)
+        default: [goal.role?.label, raceLine(goal)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
         }
     }
 

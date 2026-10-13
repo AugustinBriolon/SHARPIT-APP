@@ -19,7 +19,7 @@ nonisolated struct GoalDraft: Equatable, Sendable {
     var unit = ""
     var notes = ""
 
-    /// A new goal: a race three months out, the athlete's main one.
+    /// A new goal: a race three months out; its role is suggested by the form (`GoalSeason`).
     static func new(now: Date = .now, calendar: Calendar = .current) -> GoalDraft {
         GoalDraft(targetDate: calendar.date(byAdding: .month, value: 3, to: now) ?? now)
     }
@@ -31,7 +31,7 @@ nonisolated struct GoalDraft: Equatable, Sendable {
     init(goal: V1Goal, now: Date = .now) {
         kind = goal.kind
         title = goal.title
-        priority = goal.priority ?? .a
+        priority = goal.role?.priority ?? .a
         hasTargetDate = goal.targetDate != nil
         targetDate = goal.targetDate ?? now
         location = goal.location ?? ""
@@ -52,6 +52,12 @@ nonisolated struct GoalDraft: Equatable, Sendable {
         if !targetValueText.isEmpty, Self.parse(targetValueText) == nil { return "La valeur cible n’est pas un nombre." }
         if !currentValueText.isEmpty, Self.parse(currentValueText) == nil { return "La valeur actuelle n’est pas un nombre." }
         return nil
+    }
+
+    /// The other principal race this one would share a season with; nil unless it is a principal.
+    func principalConflict(among goals: [V1Goal], excluding id: String? = nil) -> V1Goal? {
+        guard kind == .race, priority == .a else { return nil }
+        return GoalSeason.principalConflict(date: targetDate, among: goals, excluding: id)
     }
 
     var creation: CreateGoalInput {
@@ -127,7 +133,13 @@ extension V1Goal {
         let created = draft.creation
         goal.title = created.title
         goal.kind = draft.kind
-        if draft.kind == .race { goal.priority = draft.priority }
+        if draft.kind == .race {
+            goal.priority = draft.priority
+            // The server's reading of the old role; read from the letter until it answers.
+            goal.priorityRole = nil
+            goal.priorityConsequence = nil
+            goal.seasonConflict = nil
+        }
         goal.targetDate = created.targetDate
         if draft.kind == .race {
             goal.location = created.location

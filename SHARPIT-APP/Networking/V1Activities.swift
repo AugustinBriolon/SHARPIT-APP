@@ -110,7 +110,18 @@ nonisolated struct V1PlannedSessionAnalysis: Decodable, Sendable, Hashable {
     let verdict: String?
     let summary: String?
     let remarks: [String]?
+    let strengths: [String]?
+    let improvements: [String]?
+    let scoreTags: [String]?
     let recommendation: String?
+    let physicalReassessments: [V1PhysicalReassessment]?
+}
+
+nonisolated struct V1PhysicalReassessment: Decodable, Sendable, Hashable {
+    let noteId: String
+    let noteTitle: String
+    let question: String
+    let suggestedSeverity: Double?
 }
 
 nonisolated struct V1ActivityNarrative: Decodable, Sendable, Equatable {

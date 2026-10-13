@@ -119,6 +119,8 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     var maxHr: Int?
     var lthr: Int?
     var runThresholdPaceSecPerKm: Double?
+    /// Allure Z2 / endurance (s/km). Nil → coach dérive du seuil.
+    var runEasyPaceSecPerKm: Double?
     var swimCssSecPer100m: Double?
     var defaultPoolLengthM: Int?
     var vo2maxRunning: Int?
@@ -154,6 +156,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         maxHr: Int? = nil,
         lthr: Int? = nil,
         runThresholdPaceSecPerKm: Double? = nil,
+        runEasyPaceSecPerKm: Double? = nil,
         swimCssSecPer100m: Double? = nil,
         defaultPoolLengthM: Int? = nil,
         vo2maxRunning: Int? = nil,
@@ -179,6 +182,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         self.maxHr = maxHr
         self.lthr = lthr
         self.runThresholdPaceSecPerKm = runThresholdPaceSecPerKm
+        self.runEasyPaceSecPerKm = runEasyPaceSecPerKm
         self.swimCssSecPer100m = swimCssSecPer100m
         self.defaultPoolLengthM = defaultPoolLengthM
         self.vo2maxRunning = vo2maxRunning
@@ -197,7 +201,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case displayMode, tier, heightCm, birthDate, targetWeightKg
         case sleepTargetMinutes, sleepBedtimeTargetMin
-        case ftpW, maxHr, lthr, runThresholdPaceSecPerKm, swimCssSecPer100m
+        case ftpW, maxHr, lthr, runThresholdPaceSecPerKm, runEasyPaceSecPerKm, swimCssSecPer100m
         case defaultPoolLengthM, vo2maxRunning, vo2maxCycling, thresholdsSyncedAt
         case equipment, practicedSports, trainingAvailability, onboardingCompletedAt
         case sex, notificationPrefs, featurePrefs
@@ -216,6 +220,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         maxHr = try container.decodeIfPresent(Int.self, forKey: .maxHr)
         lthr = try container.decodeIfPresent(Int.self, forKey: .lthr)
         runThresholdPaceSecPerKm = try container.decodeIfPresent(Double.self, forKey: .runThresholdPaceSecPerKm)
+        runEasyPaceSecPerKm = try container.decodeIfPresent(Double.self, forKey: .runEasyPaceSecPerKm)
         swimCssSecPer100m = try container.decodeIfPresent(Double.self, forKey: .swimCssSecPer100m)
         defaultPoolLengthM = try container.decodeIfPresent(Int.self, forKey: .defaultPoolLengthM)
         vo2maxRunning = try container.decodeIfPresent(Int.self, forKey: .vo2maxRunning)
@@ -263,6 +268,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
         try container.encodeIfPresent(maxHr, forKey: .maxHr)
         try container.encodeIfPresent(lthr, forKey: .lthr)
         try container.encodeIfPresent(runThresholdPaceSecPerKm, forKey: .runThresholdPaceSecPerKm)
+        try container.encodeIfPresent(runEasyPaceSecPerKm, forKey: .runEasyPaceSecPerKm)
         try container.encodeIfPresent(swimCssSecPer100m, forKey: .swimCssSecPer100m)
         try container.encodeIfPresent(defaultPoolLengthM, forKey: .defaultPoolLengthM)
         try container.encodeIfPresent(vo2maxRunning, forKey: .vo2maxRunning)
@@ -327,6 +333,7 @@ nonisolated enum AthleteProfileField: String, CaseIterable, Sendable {
     case maxHr
     case lthr
     case runThresholdPaceSecPerKm
+    case runEasyPaceSecPerKm
     case swimCssSecPer100m
     case defaultPoolLengthM
     case equipment

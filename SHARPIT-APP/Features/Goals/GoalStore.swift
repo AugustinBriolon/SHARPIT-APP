@@ -88,10 +88,27 @@ final class GoalStore {
         }
     }
 
-    /// The race the season is built toward: the nearest upcoming A race, else the nearest
-    /// upcoming race of any priority. Nil when no race lies ahead.
+    /// The race the season is built toward: the nearest upcoming principal race, else the nearest
+    /// upcoming race of any role. Nil when no race lies ahead.
     var nextRace: V1Goal? {
         GoalOrdering.nextRace(in: goals)
+    }
+
+    /// The principal ahead and the races leading to it; nil without a principal.
+    var seasonTimeline: GoalSeason.Timeline? {
+        GoalSeason.timeline(in: goals)
+    }
+
+    var seasonConflicts: [GoalSeason.Conflict] {
+        GoalSeason.conflicts(in: goals)
+    }
+
+    /// « Passer X en course étape », from the season notice or the form's confirmation.
+    func setPriority(_ priority: GoalPriority, of goal: V1Goal) {
+        let original = GoalDraft(goal: goal)
+        var draft = original
+        draft.priority = priority
+        update(goal, with: draft, from: original)
     }
 
     /// Active goals in the order an athlete reads them: dated ones soonest first, then the
@@ -176,6 +193,7 @@ final class GoalStore {
                 try await client.createGoal(input, token: try await tokenProvider())
             }
             goals.append(newGoal)
+            await refreshGoals()
             return true
         } catch {
             errorMessage = "Impossible de créer l'objectif"
@@ -195,6 +213,7 @@ final class GoalStore {
                     try await client.updateGoal(id: goal.id, fields: fields, token: try await tokenProvider())
                 }
                 if let idx = goals.firstIndex(where: { $0.id == updated.id }) { goals[idx] = updated }
+                await refreshGoals()
             } catch {
                 if let idx = goals.firstIndex(where: { $0.id == goal.id }) { goals[idx] = previous }
                 if case SharpitAPIError.message(let reason) = error {
@@ -204,6 +223,14 @@ final class GoalStore {
                 }
             }
         }
+    }
+
+    /// A role or a day changed on one race moves the season of the others (`seasonConflict`):
+    /// read the goals again, quietly; a failed read keeps what is shown.
+    private func refreshGoals() async {
+        guard let token = try? await tokenProvider(),
+              let fresh = try? await client.goals(token: token) else { return }
+        goals = fresh
     }
 
     func toggleAchieved(_ goal: V1Goal) async {
@@ -259,7 +286,7 @@ nonisolated enum GoalOrdering {
                 return (goal, date)
             }
             .sorted { $0.1 < $1.1 }
-        return (upcoming.first { $0.0.priority == .a } ?? upcoming.first)?.0
+        return (upcoming.first { $0.0.role == .primary } ?? upcoming.first)?.0
     }
 
     static func raceDayActivities(

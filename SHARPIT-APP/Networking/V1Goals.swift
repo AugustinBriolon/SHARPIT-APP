@@ -1,7 +1,7 @@
 import Foundation
 
-/// Priority of a race goal (triathlon standard):
-/// A = Primary season goal, B = Intermediate race, C = Preparation / test race.
+/// Priority of a race goal as the server stores it (triathlon A/B/C). The athlete never reads
+/// the letter: each one is shown as its `GoalRole`.
 nonisolated enum GoalPriority: String, Codable, CaseIterable, Identifiable, Sendable {
     case a = "A"
     case b = "B"
@@ -9,13 +9,53 @@ nonisolated enum GoalPriority: String, Codable, CaseIterable, Identifiable, Send
 
     var id: String { rawValue }
 
-    var label: String {
+    var role: GoalRole {
         switch self {
-        case .a: "Objectif A (Principal)"
-        case .b: "Course B (Intermédiaire)"
-        case .c: "Test C (Préparation)"
+        case .a: .primary
+        case .b: .step
+        case .c: .training
         }
     }
+}
+
+/// What a race is to the plan, in the athlete's words — the server's `priorityRole`, or read
+/// from the letter on a server that predates it.
+nonisolated enum GoalRole: String, Codable, CaseIterable, Identifiable, Sendable {
+    case primary
+    case step
+    case training
+
+    var id: String { rawValue }
+
+    var priority: GoalPriority {
+        switch self {
+        case .primary: .a
+        case .step: .b
+        case .training: .c
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .primary: "Objectif principal"
+        case .step: "Course étape"
+        case .training: "Course d’entraînement"
+        }
+    }
+
+    var consequence: String {
+        switch self {
+        case .primary: "Le plan s’articule autour, avec un vrai affûtage."
+        case .step: "Quelques jours d’affûtage et de récupération, la progression continue."
+        case .training: "Pas d’affûtage, compte comme une séance dure."
+        }
+    }
+}
+
+/// Another principal race too close to this one (`seasonConflict`).
+nonisolated struct V1SeasonConflict: Codable, Sendable, Equatable {
+    let otherGoalId: String
+    let otherTitle: String
 }
 
 nonisolated enum GoalKind: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -234,6 +274,10 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
     var result: V1GoalRaceResult?
     /// The server's finish projection; nil for a format it cannot project, or from an older server.
     var projection: V1RaceProjection?
+    /// Nil from a server that predates them; `role` and `roleConsequence` then read the letter.
+    var priorityRole: GoalRole?
+    var priorityConsequence: String?
+    var seasonConflict: V1SeasonConflict?
 
     enum CodingKeys: String, CodingKey {
         case id, title, kind, horizon, metricKey
@@ -241,6 +285,7 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         case targetDate, location, achieved, notes
         case priority, raceFormat, targetPerformance, createdAt
         case status, result, projection
+        case priorityRole, priorityConsequence, seasonConflict
     }
 
     init(
@@ -264,7 +309,10 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         createdAt: Date? = nil,
         status: GoalRaceStatus? = nil,
         result: V1GoalRaceResult? = nil,
-        projection: V1RaceProjection? = nil
+        projection: V1RaceProjection? = nil,
+        priorityRole: GoalRole? = nil,
+        priorityConsequence: String? = nil,
+        seasonConflict: V1SeasonConflict? = nil
     ) {
         self.id = id
         self.title = title
@@ -287,6 +335,9 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         self.status = status
         self.result = result
         self.projection = projection
+        self.priorityRole = priorityRole
+        self.priorityConsequence = priorityConsequence
+        self.seasonConflict = seasonConflict
     }
 
     init(from decoder: Decoder) throws {
@@ -320,6 +371,9 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         status = (try? container.decodeIfPresent(GoalRaceStatus.self, forKey: .status)) ?? nil
         result = (try? container.decodeIfPresent(V1GoalRaceResult.self, forKey: .result)) ?? nil
         projection = (try? container.decodeIfPresent(V1RaceProjection.self, forKey: .projection)) ?? nil
+        priorityRole = (try? container.decodeIfPresent(GoalRole.self, forKey: .priorityRole)) ?? nil
+        priorityConsequence = (try? container.decodeIfPresent(String.self, forKey: .priorityConsequence)) ?? nil
+        seasonConflict = (try? container.decodeIfPresent(V1SeasonConflict.self, forKey: .seasonConflict)) ?? nil
     }
 
     func encode(to encoder: Encoder) throws {
@@ -345,12 +399,27 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         try container.encodeIfPresent(status, forKey: .status)
         try container.encodeIfPresent(result, forKey: .result)
         try container.encodeIfPresent(projection, forKey: .projection)
+        try container.encodeIfPresent(priorityRole, forKey: .priorityRole)
+        try container.encodeIfPresent(priorityConsequence, forKey: .priorityConsequence)
+        try container.encodeIfPresent(seasonConflict, forKey: .seasonConflict)
     }
 
     /// The server's reading, with a validation shown on the tap before it answers.
     var raceStatus: GoalRaceStatus? {
         guard kind == .race else { return nil }
         return achieved ? .done : status
+    }
+
+    /// What the race is to the plan: the server's word, else read from the letter. Nil for a figure.
+    var role: GoalRole? {
+        guard kind == .race else { return nil }
+        return priorityRole ?? priority?.role
+    }
+
+    /// « Le plan s’articule autour, avec un vrai affûtage. » — the server's line, else the role's.
+    var roleConsequence: String? {
+        guard let role else { return nil }
+        return priorityConsequence ?? role.consequence
     }
 
     /// Reached by hand, or a race run: listed under « Atteints ».

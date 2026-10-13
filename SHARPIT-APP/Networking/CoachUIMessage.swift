@@ -190,12 +190,14 @@ nonisolated enum CoachUIParts {
         "tool-deletePlannedSession",
         "tool-setTravelContext",
         "tool-setTrainingConstraint",
+        "tool-proposePlaybookAction",
         "tool-logFoods",
     ]
 
     /// The reasons the web attaches to an answer (`coach-approval-reason.ts`) — the model reads them.
-    static let approvedReason = "Validé par l’athlète"
-    static let deniedReason = "Refusé par l’athlète — ne pas appliquer cette action ; proposer une alternative ou demander une précision"
+    static let approvedReason = "Appliqué par l’athlète"
+    static let deniedReason = "Ignoré par l’athlète — ne pas appliquer cette action ; proposer une alternative ou demander une précision"
+    static let reviseReason = "L’athlète demande une version modifiée — ne pas appliquer ; reformuler la proposition selon son prochain message"
     static let dismissedReason = "Proposition ignorée — nouvelle demande envoyée"
 
     static func isTerminal(_ state: String?) -> Bool {
@@ -221,7 +223,8 @@ nonisolated enum CoachUIParts {
         _ parts: [JSONValue],
         approvalId: String,
         approved: Bool,
-        replacingInput: JSONValue? = nil
+        replacingInput: JSONValue? = nil,
+        reasonOverride: String? = nil
     ) -> [JSONValue] {
         parts.map { part in
             guard case .object(var object) = part,
@@ -231,7 +234,9 @@ nonisolated enum CoachUIParts {
             else { return part }
             object["state"] = .string("approval-responded")
             approval["approved"] = .bool(approved)
-            approval["reason"] = .string(approved ? approvedReason : deniedReason)
+            approval["reason"] = .string(
+                reasonOverride ?? (approved ? approvedReason : deniedReason)
+            )
             object["approval"] = .object(approval)
             if approved, let replacingInput {
                 object["input"] = replacingInput

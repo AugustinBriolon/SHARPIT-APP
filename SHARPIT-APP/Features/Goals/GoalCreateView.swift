@@ -8,19 +8,34 @@ struct GoalCreateView: View {
 
     @State private var draft = GoalDraft.new()
     @State private var isSubmitting = false
+    /// Once the athlete picks a role, the suggestion stops following the day and the format.
+    @State private var roleTouched = false
+    @State private var conflict: V1Goal?
 
     var body: some View {
-        GoalFormFields(draft: $draft)
+        GoalFormFields(draft: $draft, onRolePicked: { roleTouched = true })
             .navigationTitle("Nouvel objectif")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Ajouter") {
-                        Task { await submit() }
+                        conflict = draft.principalConflict(among: store.goals)
+                        if conflict == nil { Task { await submit() } }
                     }
                     .disabled(draft.missingRequirement != nil || isSubmitting)
                 }
             }
+            .onChange(of: draft.targetDate, initial: true) { suggestRole() }
+            .onChange(of: draft.raceFormat) { suggestRole() }
+            .onChange(of: store.goals) { suggestRole() }
+            .principalConflictConfirmation($conflict, store: store) {
+                Task { await submit() }
+            }
+    }
+
+    private func suggestRole() {
+        guard !roleTouched else { return }
+        draft.priority = GoalSeason.suggestedPriority(date: draft.targetDate, format: draft.raceFormat, among: store.goals)
     }
 
     /// A creation waits for the server's id: the goal's page needs it.
@@ -42,6 +57,7 @@ struct GoalEditView: View {
 
     @State private var original: GoalDraft
     @State private var draft: GoalDraft
+    @State private var conflict: V1Goal?
 
     init(goal: V1Goal, store: GoalStore) {
         self.goal = goal
@@ -58,12 +74,47 @@ struct GoalEditView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("OK") {
-                        store.update(goal, with: draft, from: original)
-                        dismiss()
+                        conflict = movesIntoSeason ? draft.principalConflict(among: store.goals, excluding: goal.id) : nil
+                        if conflict == nil { save() }
                     }
                     .disabled(draft.missingRequirement != nil || draft == original)
                 }
             }
+            .principalConflictConfirmation($conflict, store: store, save: save)
+    }
+
+    /// Asked only when the role or the day changed: a conflict the athlete already kept is not
+    /// asked again on every edit of the notes.
+    private var movesIntoSeason: Bool {
+        original.priority != draft.priority || original.kind != draft.kind
+            || !Calendar.current.isDate(original.targetDate, inSameDayAs: draft.targetDate)
+    }
+
+    private func save() {
+        store.update(goal, with: draft, from: original)
+        dismiss()
+    }
+}
+
+private extension View {
+    /// One principal per season: saving a principal within six months of another asks, calmly,
+    /// which one the plan tapers for — nothing changes without the athlete's word.
+    func principalConflictConfirmation(_ other: Binding<V1Goal?>, store: GoalStore, save: @escaping () -> Void) -> some View {
+        confirmationDialog(
+            "Déjà un objectif principal cette saison",
+            isPresented: Binding(get: { other.wrappedValue != nil }, set: { if !$0 { other.wrappedValue = nil } }),
+            titleVisibility: .visible,
+            presenting: other.wrappedValue
+        ) { goal in
+            Button("Passer \(goal.title) en course étape") {
+                store.setPriority(.b, of: goal)
+                save()
+            }
+            Button("Garder les deux") { save() }
+            Button("Annuler", role: .cancel) {}
+        } message: { goal in
+            Text("\(goal.title) est à moins de six mois. Deux courses principales se disputent le même affûtage : le plan n’en prépare vraiment qu’une.")
+        }
     }
 }
 
@@ -71,6 +122,7 @@ struct GoalEditView: View {
 private struct GoalFormFields: View {
     @Binding var draft: GoalDraft
     var footer: String?
+    var onRolePicked: () -> Void = {}
 
     var body: some View {
         Form {
@@ -88,11 +140,6 @@ private struct GoalFormFields: View {
                     .textInputAutocapitalization(.sentences)
 
                 if draft.kind == .race {
-                    Picker("Priorité", selection: $draft.priority) {
-                        ForEach(GoalPriority.allCases) { priority in
-                            Text(priority.label).tag(priority)
-                        }
-                    }
                     DatePicker("Date de la course", selection: $draft.targetDate, displayedComponents: .date)
                     TextField("Format (Marathon, 70.3…)", text: $draft.raceFormat)
                     TextField("Lieu", text: $draft.location)
@@ -112,6 +159,26 @@ private struct GoalFormFields: View {
                 }
             }
 
+            if draft.kind == .race {
+                Section(eyebrow: "Place dans la saison") {
+                    Picker("Place dans la saison", selection: rolePick) {
+                        ForEach(GoalRole.allCases) { role in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(role.label)
+                                    .font(SharpitTypography.bodyEmphasis)
+                                    .foregroundStyle(SharpitColor.foreground)
+                                Text(role.consequence)
+                                    .font(SharpitTypography.meta)
+                                    .foregroundStyle(SharpitColor.mutedForeground)
+                            }
+                            .tag(role.priority)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                }
+            }
+
             Section {
                 TextField("Notes", text: $draft.notes, axis: .vertical)
                     .lineLimit(3...6)
@@ -123,5 +190,12 @@ private struct GoalFormFields: View {
         }
         .sharpitGroupedList()
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    private var rolePick: Binding<GoalPriority> {
+        Binding(get: { draft.priority }, set: {
+            draft.priority = $0
+            onRolePicked()
+        })
     }
 }

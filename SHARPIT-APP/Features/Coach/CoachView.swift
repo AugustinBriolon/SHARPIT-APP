@@ -258,10 +258,17 @@ struct CoachView: View {
 
     /// Answers a proposal card. Always available — `respond` stops an in-flight stream first,
     /// so Ajouter stays tappable while the SSE is still closing.
-    private var answerHandler: ((String, Bool, JSONValue?) -> Void)? {
+    private var answerHandler: ((String, Bool, JSONValue?, String?) -> Void)? {
         let store = store
-        return { approvalId, approved, input in
-            Task { await store.respond(to: approvalId, approved: approved, replacingInput: input) }
+        return { approvalId, approved, input, reason in
+            Task {
+                await store.respond(
+                    to: approvalId,
+                    approved: approved,
+                    replacingInput: input,
+                    reasonOverride: reason
+                )
+            }
         }
     }
 
@@ -490,7 +497,7 @@ private struct CoachMessageRow: View {
     let message: CoachMessage
     let isStreaming: Bool
     let isReplying: Bool
-    let onAnswer: ((String, Bool, JSONValue?) -> Void)?
+    let onAnswer: ((String, Bool, JSONValue?, String?) -> Void)?
     let onRetry: ((String, JSONValue?) -> Void)?
     let onOpenNutrition: (() -> Void)?
 
@@ -620,15 +627,15 @@ private extension View {
 }
 
 extension CoachMessageRow {
-    private func answer(for proposal: CoachProposal) -> ((Bool) -> Void)? {
+    private func answer(for proposal: CoachProposal) -> ((Bool, String?) -> Void)? {
         guard case .awaiting(let approvalId) = proposal.status, let onAnswer else { return nil }
-        return { approved in onAnswer(approvalId, approved, nil) }
+        return { approved, reason in onAnswer(approvalId, approved, nil, reason) }
     }
 
     private func answer(for proposal: CoachFoodLogProposal) -> ((Bool, JSONValue?) -> Void)? {
         guard case .awaiting = proposal.status, let onAnswer else { return nil }
         let approvalId = proposal.approvalId
-        return { approved, input in onAnswer(approvalId, approved, input) }
+        return { approved, input in onAnswer(approvalId, approved, input, nil) }
     }
 
     private func retry(for proposal: CoachFoodLogProposal) -> ((JSONValue?) -> Void)? {

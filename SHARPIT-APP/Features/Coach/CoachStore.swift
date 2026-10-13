@@ -118,7 +118,12 @@ final class CoachStore {
     /// turn goes back to the server, which carries out the approved ones and goes on writing in
     /// the same message — the web's `addToolApprovalResponse` and `sendAutomaticallyWhen`.
     /// `replacingInput` updates the tool input before approval (edited meal / grams on logFoods).
-    func respond(to approvalId: String, approved: Bool, replacingInput: JSONValue? = nil) async {
+    func respond(
+        to approvalId: String,
+        approved: Bool,
+        replacingInput: JSONValue? = nil,
+        reasonOverride: String? = nil
+    ) async {
         await waitForReplyStop()
         guard !isReplying, let index = messages.indices.last,
               messages[index].role == .assistant, let parts = messages[index].parts
@@ -128,7 +133,8 @@ final class CoachStore {
             parts,
             approvalId: approvalId,
             approved: approved,
-            replacingInput: replacingInput
+            replacingInput: replacingInput,
+            reasonOverride: reasonOverride
         )
         messages[index].parts = answered
         failure = nil
