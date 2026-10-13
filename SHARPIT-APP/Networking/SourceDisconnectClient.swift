@@ -73,6 +73,11 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
         let keys = Set(status.providers.map(\.key))
         return allCases.filter { keys.contains($0.statusKey) }
     }
+
+    /// OAuth sources the phone can connect itself (Garmin stays on its own SSO handoff).
+    static let oauthConnectable: [DisconnectableSource] = [.strava, .withings, .google]
+
+    var connectsViaOAuthHandoff: Bool { Self.oauthConnectable.contains(self) }
 }
 
 nonisolated protocol SourceDisconnecting: Sendable {

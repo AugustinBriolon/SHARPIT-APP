@@ -145,3 +145,61 @@ private func connect(
     #expect(GarminConnectOutcome.denied.tone == .error)
     #expect(GarminConnectOutcome.cancelled.message == "Connexion Garmin annulée")
 }
+
+// MARK: - Provider OAuth in-app session
+
+private struct StubOAuthHandoff: ProviderOAuthHandoffServing {
+    var result: Result<URL, Error> = .success(URL(string: "https://sharpit.app/sign-in?__clerk_ticket=t")!)
+
+    func providerHandoffURL(_ source: DisconnectableSource, token _: String) async throws -> URL {
+        _ = source
+        return try result.get()
+    }
+}
+
+private func connectOAuth(
+    source: DisconnectableSource = .strava,
+    handoff: StubOAuthHandoff = StubOAuthHandoff(),
+    closingOn result: Result<URL, Error>
+) async -> ProviderOAuthConnectOutcome {
+    await ProviderOAuthConnect.run(
+        source: source,
+        client: handoff,
+        tokenProvider: { "jwt" }
+    ) { _, _ in try result.get() }
+}
+
+@Test func anOAuthSessionClosingOnTheCallbackSaysHowItEnded() async {
+    let connected = await connectOAuth(
+        closingOn: .success(URL(string: "https://sharpit.app/connect/strava/callback?strava=connected")!)
+    )
+    let denied = await connectOAuth(
+        source: .google,
+        closingOn: .success(URL(string: "https://sharpit.app/connect/google/callback?google=denied")!)
+    )
+    #expect(connected == .connected)
+    #expect(connected.isLinked)
+    #expect(denied == .denied)
+    #expect(!denied.isLinked)
+}
+
+@Test func closingTheOAuthSheetIsACancellationNotAFailure() async {
+    let outcome = await connectOAuth(closingOn: .failure(ASWebAuthenticationSessionError(.canceledLogin)))
+    #expect(outcome == .cancelled)
+}
+
+@Test func anOAuthCallbackForTheWrongProviderIsAFailure() async {
+    let mismatch = await connectOAuth(
+        source: .strava,
+        closingOn: .success(URL(string: "https://sharpit.app/connect/google/callback?google=connected")!)
+    )
+    #expect(mismatch == .failed)
+}
+
+@Test func oauthOutcomesReadTheWebsStatusesAndSayThemInFrench() {
+    #expect(ProviderOAuthConnectOutcome(status: "already_connected") == .alreadyConnected)
+    #expect(ProviderOAuthConnectOutcome(status: "unknown") == .failed)
+    #expect(ProviderOAuthConnect.callbackPath(for: .withings) == "/connect/withings/callback")
+    #expect(ProviderOAuthConnectOutcome.connected.message(for: .strava).hasPrefix("Strava connecté"))
+    #expect(ProviderOAuthConnectOutcome.cancelled.tone == .syncing)
+}

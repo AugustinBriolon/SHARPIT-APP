@@ -37,10 +37,10 @@ private var utcCalendar: Calendar {
     #expect(DisconnectableSource.connected(in: nil).isEmpty)
 }
 
-@Test func theSourcesFooterSaysWhereWebSourcesConnect() {
-    #expect(ConnectionsReadout.webSourcesFooter(connected: []).contains("sharpit.app"))
-    #expect(ConnectionsReadout.webSourcesFooter(connected: [.garmin]) == ConnectionsReadout.webSourcesFooter(connected: []))
-    #expect(ConnectionsReadout.webSourcesFooter(connected: [.withings]).hasPrefix("Touche une source"))
+@Test func theSourcesFooterSaysSourcesConnectInApp() {
+    #expect(ConnectionsReadout.sourcesFooter.hasPrefix("Touche une source"))
+    #expect(DisconnectableSource.oauthConnectable == [.strava, .withings, .google])
+    #expect(ConnectionsReadout.disconnected(.strava).text == "Non connecté")
 }
 
 @Test func aFailedDisconnectionSaysTheServersReasonOrTheFix() {

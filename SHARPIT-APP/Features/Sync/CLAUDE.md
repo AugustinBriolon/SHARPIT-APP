@@ -35,7 +35,6 @@ Garmin where `ProviderAvailability` shows it, Withings and Google Agenda wheneve
 `/api/v1/sync-status` lists them): the tap asks first — a confirmation naming what stops and what
 stays, in the web's words (« Déconnecter Withings ? ») — then `SourceDisconnectClient` posts
 `/api/v1/{garmin,withings,google}/disconnect` through `SharpitRetry` and waits for it, since the
-server revokes the grant at the provider; the list is read again and a toast says it. Withings and
-Google Agenda are still connected on the web only — their OAuth return lands on the web's settings,
-not on an Associated Domains path an authentication session can close on — and the section's footer
-says so (`ConnectionsReadout.webSourcesFooter`).
+server revokes the grant at the provider; the list is read again and a toast says it. Strava,
+Withings and Google Agenda connect in-app the same way as Garmin (`ProviderOAuthConnect` /
+`POST /api/v1/<source>/handoff`); the footer says so (`ConnectionsReadout.sourcesFooter`).

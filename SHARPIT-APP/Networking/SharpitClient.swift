@@ -41,7 +41,16 @@ nonisolated protocol GarminHandoffServing: Sendable {
     func garminHandoffURL(token: String) async throws -> URL
 }
 
+/// Same ticket handoff for Strava / Google / Withings (`POST /api/v1/<source>/handoff`).
+nonisolated protocol ProviderOAuthHandoffServing: Sendable {
+    func providerHandoffURL(_ source: DisconnectableSource, token: String) async throws -> URL
+}
+
 nonisolated struct V1GarminHandoff: Decodable, Sendable {
+    let url: URL
+}
+
+nonisolated struct V1ProviderOAuthHandoff: Decodable, Sendable {
     let url: URL
 }
 
@@ -51,7 +60,7 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, RecoveryServing, EffortServing, AdaptationServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing, SourcePrefsServing, AppleHealthLinking, AppleCalendarLinking, AppleCalendarBusyServing {
+actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, RecoveryServing, EffortServing, AdaptationServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing, ProviderOAuthHandoffServing, SourcePrefsServing, AppleHealthLinking, AppleCalendarLinking, AppleCalendarBusyServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -143,6 +152,15 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
 
     func garminHandoffURL(token: String) async throws -> URL {
         try await send(V1GarminHandoff.self, path: "/api/v1/garmin/handoff", method: "POST", token: token).url
+    }
+
+    func providerHandoffURL(_ source: DisconnectableSource, token: String) async throws -> URL {
+        try await send(
+            V1ProviderOAuthHandoff.self,
+            path: "/api/v1/\(source.rawValue)/handoff",
+            method: "POST",
+            token: token
+        ).url
     }
 
     func uploadHealth(_ days: [HealthDailySummary], token: String) async throws -> Int {

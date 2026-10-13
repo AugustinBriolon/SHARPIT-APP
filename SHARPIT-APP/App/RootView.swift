@@ -284,6 +284,8 @@ struct RootView: View {
         switch IncomingLink.parse(url) {
         case .garminCallback(let status):
             handleGarminCallback(status: status)
+        case .oauthCallback(let provider, let status):
+            handleOAuthCallback(provider: provider, status: status)
         case .tab(let tab):
             router.open(.tab(tab))
         case .settings(let route):
@@ -324,6 +326,34 @@ struct RootView: View {
             }
             // A new connection brings its whole history, not just recent weeks.
             await runHistoryImport()
+        }
+    }
+
+    /// Universal-link return when the OAuth sheet did not swallow the callback (Safari / cold open).
+    private func handleOAuthCallback(provider: String, status: String?) {
+        guard let source = DisconnectableSource(rawValue: provider), source.connectsViaOAuthHandoff else {
+            return
+        }
+        let outcome = ProviderOAuthConnectOutcome(status: status)
+        toastCenter.show(
+            outcome.message(for: source),
+            symbol: outcome.symbol,
+            tone: outcome.tone,
+            autoDismissAfter: outcome.toastDuration
+        )
+        guard outcome == .connected else { return }
+        Task {
+            do {
+                let token = try await liveToken()
+                _ = try await sharpitClient.sync(token: token)
+            } catch {
+                toastCenter.show(
+                    SharpitErrorGuidance.message(for: error, subject: "La synchronisation"),
+                    symbol: "exclamationmark.triangle",
+                    tone: .error,
+                    autoDismissAfter: 4
+                )
+            }
         }
     }
 }

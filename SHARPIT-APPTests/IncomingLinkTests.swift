@@ -12,6 +12,12 @@ struct IncomingLinkTests {
         #expect(link("https://sharpit.app/connect/garmin/callback") == .garminCallback(status: nil))
     }
 
+    @Test func oauthCallbacksOnTheApexCarryTheirStatus() {
+        #expect(link("https://sharpit.app/connect/strava/callback?strava=connected") == .oauthCallback(provider: "strava", status: "connected"))
+        #expect(link("https://sharpit.app/connect/google/callback?google=denied") == .oauthCallback(provider: "google", status: "denied"))
+        #expect(link("https://sharpit.app/connect/withings/callback") == .oauthCallback(provider: "withings", status: nil))
+    }
+
     @Test(arguments: [
         "https://api.sharpit.app/connect/garmin/callback?garmin=connected",
         "https://web.sharpit.app/connect/garmin/callback?garmin=connected",

@@ -8,6 +8,8 @@ import Observation
 /// custom scheme belongs to Clerk's OAuth redirects and is not a navigation link.
 enum IncomingLink: Equatable {
     case garminCallback(status: String?)
+    /// Strava / Google / Withings handoff outcome (`?strava=` / `?google=` / `?withings=`).
+    case oauthCallback(provider: String, status: String?)
     case tab(ShellTab)
     /// Paramètres, on one of its pages when the path names it.
     case settings(SettingsRoute?)
@@ -32,6 +34,12 @@ enum IncomingLink: Equatable {
         if components.path == "/connect/garmin/callback" {
             let status = components.queryItems?.first(where: { $0.name == "garmin" })?.value
             return .garminCallback(status: status)
+        }
+        for provider in ["strava", "google", "withings"] {
+            if components.path == "/connect/\(provider)/callback" {
+                let status = components.queryItems?.first(where: { $0.name == provider })?.value
+                return .oauthCallback(provider: provider, status: status)
+            }
         }
         if components.path == "/settings" {
             return .settings(nil)

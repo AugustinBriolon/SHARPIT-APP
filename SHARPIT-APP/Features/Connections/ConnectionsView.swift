@@ -2,12 +2,10 @@ import AuthenticationServices
 import ClerkKit
 import SwiftUI
 
-/// Paramètres → Sources de données: every source the iPhone app links — Apple Health, and Garmin
-/// when `ProviderAvailability` offers it; until then a Garmin watch reaches SHARPIT through Apple
-/// Health. Withings and Google Agenda are linked on the web (their OAuth return has no native
-/// handoff yet) and show here once connected, so they can be disconnected from the phone: a
-/// connected row asks first (`DisconnectableSource`), then `/api/v1/<source>/disconnect`.
-/// Apple Health is switched on here, because only the phone can read it.
+/// Paramètres → Sources de données: every source the iPhone app links — Apple Health, Apple
+/// Calendar, Garmin when `ProviderAvailability` offers it, and Strava / Withings / Google via
+/// an in-app OAuth handoff. A connected row asks before disconnect (`DisconnectableSource`),
+/// then `/api/v1/<source>/disconnect`.
 ///
 /// Each source is one two-line row — its own mark, its name, one short status — so the rows
 /// keep the same height whatever the status says. Recency surfaces on the toast shown while a
@@ -18,6 +16,7 @@ struct ConnectionsView: View {
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
     var garminClient: any GarminHandoffServing = SharpitClient()
+    var oauthHandoffClient: any ProviderOAuthHandoffServing = SharpitClient()
     var disconnectClient: any SourceDisconnecting = SourceDisconnectClient()
     var sourcePrefsClient: any SourcePrefsServing = SharpitClient()
 
@@ -29,19 +28,20 @@ struct ConnectionsView: View {
     @State private var appleHealthToastToken: UUID?
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var isConnectingGarmin = false
+    @State private var connectingOAuth: DisconnectableSource?
     @State private var confirmingDisconnect: DisconnectableSource?
     @State private var disconnecting: DisconnectableSource?
 
     var body: some View {
         List {
-            Section(eyebrow: "Sources", footer: ConnectionsReadout.webSourcesFooter(connected: webSources)) {
+            Section(eyebrow: "Sources", footer: ConnectionsReadout.sourcesFooter) {
                 if ProviderAvailability.garminInApp {
                     garminRow
                 }
                 appleHealthRow
                 appleCalendarRow
-                ForEach(webSources) { source in
-                    connectedSourceRow(source)
+                ForEach(DisconnectableSource.oauthConnectable) { source in
+                    oauthSourceRow(source)
                 }
             }
             .sharpitListRows()
@@ -154,34 +154,49 @@ struct ConnectionsView: View {
         )
     }
 
-    /// The sources linked on the web that the phone can only disconnect.
-    private var webSources: [DisconnectableSource] {
-        DisconnectableSource.connected(in: status).filter { $0 != .garmin }
+    private func isOAuthConnected(_ source: DisconnectableSource) -> Bool {
+        status?.providers.contains(where: { $0.key == source.statusKey }) ?? false
     }
 
-    /// A source linked on the web: its mark, its name, what it brings; a tap asks to disconnect it.
-    private func connectedSourceRow(_ source: DisconnectableSource) -> some View {
-        let badge = ConnectionsReadout.connected(source)
+    /// Strava / Withings / Google: connect in-app, or ask before disconnect once linked.
+    private func oauthSourceRow(_ source: DisconnectableSource) -> some View {
+        let linked = isOAuthConnected(source)
+        let badge = linked
+            ? ConnectionsReadout.connected(source)
+            : ConnectionsReadout.disconnected(source)
         return Button {
-            confirmingDisconnect = source
+            if linked {
+                confirmingDisconnect = source
+            } else {
+                Task { await connectOAuth(source) }
+            }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
                 ProviderLogo(provider: source.logo)
                 sourceTitle(source.name, status: badge.text, tone: badge.tone.color)
                 Spacer(minLength: SharpitSpacing.xs)
-                if disconnecting == source {
+                if disconnecting == source || connectingOAuth == source {
                     ProgressView()
-                } else {
+                } else if linked {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(SharpitColor.primary)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
                 }
             }
             .contentShape(.rect)
         }
         .foregroundStyle(SharpitColor.foreground)
-        .disabled(disconnecting == source)
-        .accessibilityHint("Propose de déconnecter \(source.name)")
+        .disabled(disconnecting == source || connectingOAuth != nil)
+        .accessibilityHint(
+            linked
+                ? "Propose de déconnecter \(source.name)"
+                : "Connecter \(source.name) dans l'application"
+        )
     }
 
     private var isGarminConnected: Bool {
@@ -284,6 +299,38 @@ struct ConnectionsView: View {
                 }
             }
         )
+    }
+
+    private func connectOAuth(_ source: DisconnectableSource) async {
+        guard connectingOAuth == nil else { return }
+        connectingOAuth = source
+        defer { connectingOAuth = nil }
+        let outcome = await ProviderOAuthConnect.run(
+            source: source,
+            client: oauthHandoffClient,
+            tokenProvider: tokenProvider,
+            authenticate: webAuthenticationSession.providerOAuthConnect
+        )
+        if outcome.isLinked {
+            await loadStatus()
+        }
+        toastCenter.show(
+            outcome.message(for: source),
+            symbol: outcome.symbol,
+            tone: outcome.tone,
+            autoDismissAfter: outcome.toastDuration
+        )
+        guard outcome == .connected else { return }
+        do {
+            status = try await syncClient.sync(token: try await tokenProvider())
+        } catch {
+            toastCenter.show(
+                SharpitErrorGuidance.message(for: error, subject: "La synchronisation"),
+                symbol: "exclamationmark.triangle",
+                tone: .error,
+                autoDismissAfter: 4
+            )
+        }
     }
 
     /// Garmin opens in an in-app sheet (SHARPIT ADR-047); a new link is synced and its whole
