@@ -183,6 +183,9 @@ struct ActivityDetailView: View {
                                     onSelectCourse: { select($0, viewport: proxy.size) }
                                 )
                                 .frame(width: proxy.size.width, alignment: .leading)
+
+                                // The map layout ignores the safe area, so the last card would sit under the tab bar.
+                                Color.clear.frame(height: proxy.safeAreaInsets.bottom + SharpitSpacing.md)
                             }
                             .frame(width: proxy.size.width, alignment: .leading)
                         }
