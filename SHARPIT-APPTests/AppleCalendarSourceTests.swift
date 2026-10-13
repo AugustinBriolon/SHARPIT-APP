@@ -36,5 +36,29 @@ import Testing
         source.syncLinkedFromServer(true)
         await source.disable(token: { "tok" })
         #expect(source.isLinked)
+        #expect(source.state == .failed("Déconnexion Calendrier Apple impossible."))
+    }
+
+    @Test @MainActor func disableShowsOffOnTheTap() async throws {
+        let suite = "apple-calendar-disable-at-once"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+
+        final class WatchingLink: AppleCalendarLinking, @unchecked Sendable {
+            var during: (@Sendable () async -> Void)?
+            func linkAppleCalendar(_ linked: Bool, token: String) async throws { await during?() }
+        }
+        @MainActor final class Seen { var linked: Bool? }
+
+        let client = WatchingLink()
+        let source = AppleCalendarSource(client: client, defaults: defaults)
+        source.bind(userId: "u1")
+        source.syncLinkedFromServer(true)
+        let seen = Seen()
+        client.during = { await MainActor.run { seen.linked = source.isLinked } }
+        await source.disable(token: { "tok" })
+        #expect(seen.linked == false)
+        #expect(!source.isLinked)
+        #expect(source.state == .idle)
     }
 }

@@ -13,7 +13,14 @@ private final class StubCoachMemoryClient: CoachMemoryServing, @unchecked Sendab
         stubbedSnapshot
     }
 
-    func saveProfileContext(_ context: String, token: String) async throws {}
+    var contextFailure: (any Error)?
+    /// Runs while the context save is in flight, to read what the athlete sees before the answer.
+    var duringContextSave: (@Sendable () async -> Void)?
+
+    func saveProfileContext(_ context: String, token: String) async throws {
+        await duringContextSave?()
+        if let contextFailure { throw contextFailure }
+    }
 
     func createEntry(_ input: CreateCoachMemoryInput, token: String) async throws -> CoachMemoryEntry {
         let entry = CoachMemoryEntry(
@@ -155,3 +162,36 @@ private final class StubCoachMemoryClient: CoachMemoryServing, @unchecked Sendab
     }
 }
 
+
+@MainActor
+@Test func coachContextCountsAsSavedOnTheTap() async {
+    let client = StubCoachMemoryClient()
+    let failures = SharpitWriteFailures()
+    let store = CoachMemoryStore(client: client, tokenProvider: { "token" }, failures: failures)
+    store.profileContextText = "Je m'entraîne le soir."
+    let dirtyDuringSave = DirtyFlag()
+    client.duringContextSave = { await MainActor.run { dirtyDuringSave.value = store.isContextDirty } }
+
+    await store.saveContext()
+    #expect(dirtyDuringSave.value == false)
+    #expect(!store.isContextDirty)
+    #expect(failures.latest == nil)
+}
+
+@MainActor
+@Test func coachContextThatFailsForGoodIsDirtyAgainAndSaid() async {
+    let client = StubCoachMemoryClient()
+    client.contextFailure = SharpitAPIError.badRequest
+    let failures = SharpitWriteFailures()
+    let store = CoachMemoryStore(client: client, tokenProvider: { "token" }, failures: failures)
+    store.profileContextText = "Je m'entraîne le soir."
+
+    await store.saveContext()
+    #expect(store.isContextDirty)
+    #expect(failures.latest?.message == "Contexte non enregistré. Réessaie dans un instant.")
+}
+
+@MainActor
+private final class DirtyFlag {
+    var value: Bool?
+}

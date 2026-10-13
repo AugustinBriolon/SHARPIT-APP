@@ -3,7 +3,6 @@ import SwiftUI
 /// Réglages → Mémoire du coach: permanent athlete context and dated constraints/travels.
 struct CoachMemoryView: View {
     @State private var store: CoachMemoryStore
-    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var showsCreateSheet = false
     @State private var selectedEntryForDetail: CoachMemoryEntry?
 
@@ -65,19 +64,9 @@ struct CoachMemoryView: View {
 
                     Spacer()
 
-                    if store.isSavingContext {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    } else if store.isContextDirty {
+                    if store.isContextDirty {
                         Button("Enregistrer") {
-                            Task {
-                                let ok = await store.saveContext()
-                                if ok {
-                                    toastCenter?.show("Contexte enregistré", symbol: "checkmark.circle.fill", tone: .success)
-                                } else {
-                                    toastCenter?.show("Erreur d'enregistrement", symbol: "exclamationmark.triangle.fill", tone: .error)
-                                }
-                            }
+                            Task { await store.saveContext() }
                         }
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.primary)

@@ -10,7 +10,6 @@ struct MacroPlanSheet: View {
     @State private var selectedGoalId: String = ""
     @State private var isLoading = true
     @State private var isGenerating = false
-    @State private var isArchiving = false
     @State private var errorMessage: String?
     @State private var showingArchiveAlert = false
 
@@ -140,7 +139,7 @@ struct MacroPlanSheet: View {
                     HStack(spacing: 6) {
                         Image(systemName: "archivebox")
                             .font(.system(size: 13, weight: .semibold))
-                        Text(isArchiving ? "Archivage en cours…" : "Archiver ce plan macro")
+                        Text("Archiver ce plan macro")
                             .font(SharpitTypography.bodyEmphasis)
                     }
                     .frame(maxWidth: .infinity)
@@ -148,7 +147,6 @@ struct MacroPlanSheet: View {
                     .foregroundStyle(SharpitColor.destructive)
                     .background(SharpitColor.destructive.opacity(0.1), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
                 }
-                .disabled(isArchiving)
                 .padding(.top, SharpitSpacing.sm)
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
@@ -296,19 +294,22 @@ struct MacroPlanSheet: View {
         isGenerating = false
     }
 
+    /// Gone from the sheet on the confirm, archived behind (retried); a refusal for good puts the
+    /// plan back and is said in the app's toast.
     private func archiveCurrentPlan() async {
         guard let currentPlan = plan else { return }
-        isArchiving = true
+        plan = nil
         do {
-            let token = try await tokenProvider()
-            try await trainingPlanClient.archivePlan(id: currentPlan.id, token: token)
-            plan = nil
+            try await SharpitRetry.run { [trainingPlanClient, tokenProvider] in
+                try await trainingPlanClient.archivePlan(id: currentPlan.id, token: try await tokenProvider())
+            }
             onPlanChanged()
         } catch {
-            errorMessage = error.localizedDescription
+            if plan == nil { plan = currentPlan }
+            SharpitWriteFailures.shared.report("Le plan n’a pas pu être archivé. Réessaie dans un instant.")
         }
-        isArchiving = false
     }
+
 
     private func dateRangeString(for plan: V1TrainingPlan) -> String? {
         guard let first = plan.weeks.first, let last = plan.weeks.last else { return nil }
@@ -416,9 +417,18 @@ private struct MacroWeekRowView: View {
                 }
 
                 if week.isDeload {
-                    Text("Récupération")
+                    Text("Semaine facile")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.signalRecovery)
+                } else if let quality = WeekQualityLabel.from(
+                    focus: week.focus,
+                    phase: week.phase,
+                    isDeload: week.isDeload
+                ) {
+                    Text(quality)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
                 } else if let focus = week.focus, !focus.isEmpty {
                     Text(focus)
                         .font(SharpitTypography.meta)
@@ -456,5 +466,44 @@ private struct MacroWeekRowView: View {
         let weekInterval = cal.dateInterval(of: .weekOfYear, for: date)
         guard let c = currentInterval, let w = weekInterval else { return false }
         return abs(c.start.timeIntervalSince(w.start)) < 86400
+    }
+}
+
+/// Athlete-facing week quality derived from focus/phase (mirrors ADR-083 / week-quality.ts).
+private enum WeekQualityLabel {
+    static func from(focus: String?, phase: V1PlanPhase, isDeload: Bool) -> String? {
+        if isDeload { return "Semaine facile" }
+        let haystack = [focus, phase.rawValue].compactMap { $0 }.joined(separator: " ").lowercased()
+        if haystack.range(of: "reprise|retour|return", options: .regularExpression) != nil {
+            return "Reprise"
+        }
+        if haystack.range(of: "deload|récup|recup|facile|alléger|alleger", options: .regularExpression) != nil {
+            return "Semaine facile"
+        }
+        if haystack.range(of: "affût|affut|taper", options: .regularExpression) != nil {
+            return "Affûtage"
+        }
+        if haystack.range(of: "force|côte|cote|hill|ppg|renfo", options: .regularExpression) != nil {
+            return "Force / côtes"
+        }
+        if haystack.range(of: "vma|vo2", options: .regularExpression) != nil {
+            return "VMA / VO2"
+        }
+        if haystack.range(of: "seuil|tempo|lt2|sweet", options: .regularExpression) != nil {
+            return "Seuil"
+        }
+        if haystack.range(of: "allure|spécific|specific|simulation|race", options: .regularExpression) != nil {
+            return "Allure spécifique"
+        }
+        if haystack.range(of: "aérob|aerob|zone.?2|fondamentale|endurance|volume", options: .regularExpression) != nil {
+            return "Volume aérobie"
+        }
+        switch phase {
+        case .base: return "Volume aérobie"
+        case .build: return "Seuil"
+        case .peak: return "Allure spécifique"
+        case .taper: return "Affûtage"
+        case .race: return "Course"
+        }
     }
 }

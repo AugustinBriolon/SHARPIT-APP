@@ -6,17 +6,22 @@ import Observation
 final class CoachMemoryStore {
     private(set) var snapshot = CoachMemorySnapshot()
     var profileContextText: String = ""
-    private(set) var isSavingContext = false
     private(set) var isLoading = false
     private(set) var errorMessage: String?
     private(set) var lastSavedContext: String = ""
 
     private let client: any CoachMemoryServing
     private let tokenProvider: () async throws -> String
+    private let failures: SharpitWriteFailures
 
-    init(client: any CoachMemoryServing, tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any CoachMemoryServing,
+        tokenProvider: @escaping () async throws -> String,
+        failures: SharpitWriteFailures = .shared
+    ) {
         self.client = client
         self.tokenProvider = tokenProvider
+        self.failures = failures
     }
 
     var isContextDirty: Bool {
@@ -45,22 +50,19 @@ final class CoachMemoryStore {
         }
     }
 
-    @discardableResult
-    func saveContext() async -> Bool {
-        guard !isSavingContext else { return false }
-        isSavingContext = true
-        errorMessage = nil
-        defer { isSavingContext = false }
+    /// Counts as saved on the tap and goes out behind; a write that fails for good makes the
+    /// text dirty again and is said in the app's toast.
+    func saveContext() async {
+        let text = profileContextText
+        let previous = lastSavedContext
+        lastSavedContext = text
         do {
-            let text = profileContextText
             try await SharpitRetry.run {
                 try await client.saveProfileContext(text, token: try await tokenProvider())
             }
-            lastSavedContext = profileContextText
-            return true
         } catch {
-            errorMessage = "Impossible d'enregistrer le contexte"
-            return false
+            if lastSavedContext == text { lastSavedContext = previous }
+            failures.report("Contexte non enregistré. Réessaie dans un instant.")
         }
     }
 
