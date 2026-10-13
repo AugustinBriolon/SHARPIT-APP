@@ -35,7 +35,9 @@ struct ConnectionsView: View {
     var body: some View {
         List {
             Section(eyebrow: "Sources", footer: ConnectionsReadout.sourcesFooter) {
-                if ProviderAvailability.garminInApp {
+                // Offer Garmin to link in debug builds; keep the row when already linked so
+                // a production build can still disconnect it.
+                if ProviderAvailability.garminInApp || isGarminConnected {
                     garminRow
                 }
                 appleHealthRow

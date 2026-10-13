@@ -39,7 +39,7 @@ private var utcCalendar: Calendar {
 
 @Test func theSourcesFooterSaysSourcesConnectInApp() {
     #expect(ConnectionsReadout.sourcesFooter.hasPrefix("Touche une source"))
-    #expect(DisconnectableSource.oauthConnectable == [.strava, .withings, .google])
+    #expect(DisconnectableSource.oauthConnectable == [.withings, .google, .strava])
     #expect(ConnectionsReadout.disconnected(.strava).text == "Non connecté")
 }
 

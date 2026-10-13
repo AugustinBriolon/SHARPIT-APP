@@ -75,7 +75,8 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
     }
 
     /// OAuth sources the phone can connect itself (Garmin stays on its own SSO handoff).
-    static let oauthConnectable: [DisconnectableSource] = [.strava, .withings, .google]
+    /// Same order as the web Compte → Sources list (after Garmin).
+    static let oauthConnectable: [DisconnectableSource] = [.withings, .google, .strava]
 
     var connectsViaOAuthHandoff: Bool { Self.oauthConnectable.contains(self) }
 }

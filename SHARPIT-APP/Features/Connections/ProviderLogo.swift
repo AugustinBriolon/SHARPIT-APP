@@ -3,9 +3,9 @@ import UIKit
 
 /// A data source's own mark, at the size and corner iOS uses for an app icon in a list row.
 ///
-/// The artwork comes from the asset catalog (`Provider/Garmin`, `Provider/AppleHealth`), as
-/// each provider ships it — SHARPIT never redraws a brand. Until an asset is added the row
-/// shows a neutral tile with a system symbol, so the screen never has a hole in it.
+/// The artwork comes from the asset catalog (`Provider/Garmin`, `Provider/AppleHealth`…),
+/// the same files Compte → Sources uses on the web — SHARPIT never redraws a brand. Until
+/// an asset is added the row shows a neutral tile with a system symbol.
 struct ProviderLogo: View {
     enum Provider {
         case garmin
