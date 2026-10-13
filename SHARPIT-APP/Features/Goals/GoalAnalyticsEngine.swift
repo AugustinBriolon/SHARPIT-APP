@@ -32,52 +32,42 @@ enum GoalAnalyticsEngine {
         activities: [V1ActivityListItem] = [],
         now: Date = Date()
     ) -> GoalVolumeStats {
-        let createdDate = goal.createdAt ?? .distantPast
         let calendar = Calendar.current
-        let startOfDayCreated = calendar.startOfDay(for: createdDate)
-
-        // 1. Linked sessions for this goal on or after created date
-        let linked = sessions.filter { session in
-            guard session.goalId == goal.id else { return false }
-            let sessionDay = calendar.startOfDay(for: session.date)
-            return sessionDay >= startOfDayCreated
-        }
-
-        guard !linked.isEmpty else {
-            return .empty
-        }
-
-        // 2. Activity lookup map
+        let start = calendar.startOfDay(for: goal.createdAt ?? .distantPast)
+        // A race run closes its preparation on race day; what came after is the next block.
+        let end = goal.targetDate.flatMap { day in
+            day < now ? calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: day)) : nil
+        } ?? .distantFuture
+        let inWindow = { (date: Date) in date >= start && date < end }
         let activityById = Dictionary(uniqueKeysWithValues: activities.map { ($0.id, $0) })
 
-        // 3. Filter done sessions (completed or has activity)
-        let doneSessions = linked.filter { session in
-            session.completed == true || session.activityId != nil
+        // Planned sessions tied to the goal and done; else every session done while preparing it.
+        let doneSessions = sessions.filter { session in
+            session.goalId == goal.id && inWindow(session.date)
+                && (session.completed == true || session.activityId != nil)
+        }
+        let done: [(type: String, duration: Double)] = doneSessions.isEmpty
+            ? activities.filter { inWindow($0.date) }.map { ($0.type.rawValue, $0.duration ?? 0) }
+            : doneSessions.map { session in
+                // Embedded activity duration > list activity duration > planned minutes.
+                let listed = session.activityId.flatMap { activityById[$0] }
+                let duration = [session.activity?.duration, listed?.duration, session.durationMin.map { Double($0 * 60) }]
+                    .compactMap { $0 }.first { $0 > 0 } ?? 0
+                let type = session.type ?? session.activity?.type ?? listed?.type.rawValue ?? "OTHER"
+                return (type, duration)
+            }
+
+        guard !done.isEmpty else {
+            return .empty
         }
 
         var totalDurationSec: Double = 0
         var durationByType: [String: Double] = [:]
         var countByType: [String: Int] = [:]
-
-        for session in doneSessions {
-            // Determine duration: embedded activity duration > list activity duration > durationMin * 60
-            let duration: Double
-            if let embDur = session.activity?.duration, embDur > 0 {
-                duration = embDur
-            } else if let actId = session.activityId, let act = activityById[actId], let actDur = act.duration, actDur > 0 {
-                duration = actDur
-            } else if let min = session.durationMin, min > 0 {
-                duration = Double(min * 60)
-            } else {
-                duration = 0
-            }
-
-            totalDurationSec += duration
-
-            let rawType = session.type ?? session.activity?.type ?? (session.activityId.flatMap { activityById[$0]?.type.rawValue }) ?? "OTHER"
-            let normalizedType = rawType.uppercased()
-
-            durationByType[normalizedType, default: 0] += duration
+        for item in done {
+            let normalizedType = item.type.uppercased()
+            totalDurationSec += item.duration
+            durationByType[normalizedType, default: 0] += item.duration
             countByType[normalizedType, default: 0] += 1
         }
 
@@ -93,12 +83,12 @@ enum GoalAnalyticsEngine {
         let hint = topSportName.map { "Mix : \($0) en tête" } ?? "Depuis le début du cap"
 
         return GoalVolumeStats(
-            sessionsDone: doneSessions.count,
+            sessionsDone: done.count,
             durationSeconds: totalDurationSec,
             durationLabel: formatDuration(totalDurationSec),
             topSportLabel: topSportName,
-            sessionHint: doneSessions.isEmpty ? "Aucune séance liée pour l’instant" : hint,
-            durationHint: (doneSessions.isEmpty || totalDurationSec <= 0) ? "Temps consacré" : hint
+            sessionHint: hint,
+            durationHint: totalDurationSec <= 0 ? "Temps consacré" : hint
         )
     }
 

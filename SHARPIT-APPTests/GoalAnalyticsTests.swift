@@ -120,3 +120,20 @@ import Testing
         #expect(cd.contains("jours restants") || cd.contains("J-") || cd.contains("Jour J") || cd.contains("passée"))
     }
 }
+
+@Test func aReachedRaceCountsItsPreparationFromActivitiesWhenNoSessionIsTied() {
+    let day: TimeInterval = 86_400
+    let race = Date(timeIntervalSince1970: 1_800_000_000)
+    let goal = V1Goal(id: "g", title: "Half", kind: .race, targetDate: race, achieved: true, createdAt: race - 60 * day)
+    let activities = [
+        V1ActivityListItem(type: .bike, date: race - 30 * day, duration: 7_200),
+        V1ActivityListItem(type: .run, date: race - 10 * day, duration: 3_600),
+        V1ActivityListItem(type: .triathlon, date: race + 3_600, duration: 20_403),
+        V1ActivityListItem(type: .run, date: race + 5 * day, duration: 2_400),   // after the race: next block
+        V1ActivityListItem(type: .run, date: race - 90 * day, duration: 2_400),  // before the goal existed
+    ]
+    let stats = GoalAnalyticsEngine.computeVolumeStats(goal: goal, sessions: [], activities: activities, now: race + 7 * day)
+    #expect(stats.sessionsDone == 3)
+    #expect(stats.durationSeconds == 31_203)
+    #expect(stats.topSportLabel == "Triathlon")
+}
