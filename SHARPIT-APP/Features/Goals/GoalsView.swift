@@ -534,12 +534,6 @@ enum GoalFormat {
         return ["Terminée", time.map(RaceTime.clock), delta].compactMap { $0 }.joined(separator: " · ")
     }
 
-    /// « 6:05 »: hours and minutes, rounded to the minute.
-    static func hoursMinutes(_ seconds: Double) -> String {
-        let minutes = Int((seconds / 60).rounded())
-        return String(format: "%d:%02d", minutes / 60, minutes % 60)
-    }
-
     /// « 265 / 280 W » or « Cible 280 W ».
     static func metricLine(_ goal: V1Goal) -> String {
         let unit = goal.unit.map { " \($0)" } ?? ""

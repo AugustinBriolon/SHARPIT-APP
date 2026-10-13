@@ -144,8 +144,8 @@ import Testing
     @Test func plannedSaysWhenItWasRecalculated() {
         let frozen = RaceProjectionReadout(V1RaceProjection(finishSec: 21_912, lowSec: 21_000, highSec: 22_500, frozenAt: Date()))
         let live = RaceProjectionReadout(V1RaceProjection(finishSec: 21_912, lowSec: 21_000, highSec: 22_500))
-        #expect(frozen.plannedVsActual(actualSeconds: 20_403) == "Prévu 6:05 · Réalisé 5:40")
-        #expect(live.plannedVsActual(actualSeconds: 20_403) == "Prévu (recalculé) 6:05 · Réalisé 5:40")
+        #expect(frozen.plannedVsActual(actualSeconds: 20_403) == "Prévu 6h05 · Réalisé 5h40")
+        #expect(live.plannedVsActual(actualSeconds: 20_403) == "Prévu (recalculé) 6h05 · Réalisé 5h40")
     }
 
     @Test func storeReadsTheServerProjectionForRacesOnly() throws {

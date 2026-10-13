@@ -103,11 +103,11 @@ struct RaceProjectionReadout: Sendable, Equatable {
         }
     }
 
-    /// « Prévu 6:05 · Réalisé 5:40 » against a frozen pre-race projection; « Prévu (recalculé) »
+    /// « Prévu 6h05 · Réalisé 5h40 » against a frozen pre-race projection; « Prévu (recalculé) »
     /// when the server re-projected after the race, so the comparison stays honest.
     func plannedVsActual(actualSeconds: Double) -> String {
         let planned = projection.frozenAt == nil ? "Prévu (recalculé)" : "Prévu"
-        return "\(planned) \(GoalFormat.hoursMinutes(projection.finishSec)) · Réalisé \(GoalFormat.hoursMinutes(actualSeconds))"
+        return "\(planned) \(GoalAnalyticsEngine.formatDuration(projection.finishSec)) · Réalisé \(GoalAnalyticsEngine.formatDuration(actualSeconds))"
     }
 
     private static func sport(_ kind: V1RaceProjection.LegKind) -> V1ActivityType? {
