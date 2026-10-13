@@ -17,7 +17,8 @@ after a goal is marked reached; a failed read keeps what was shown), each the go
 `GoalAchievementReadout.line` — the figure in the goal's unit (a chrono for `unit: chrono` or a
 `performance` metric config), the period (« Semaine 27 · 2026 », « juillet 2026 », « Année 2026 »),
 the day and « marqué manuellement » — as the web's `GoalAchievementsHistory`. One reached by a
-session pushes it (`GoalRoute.activity`) in the Objectifs stack.
+session pushes it (`GoalRoute.activity`) in the Objectifs stack. A reached goal's single result (`_performance`) is left out
+(`GoalOrdering.recentAchievements`): its « Atteints » card already reads it.
 
 **A race run.** The server reads where each race stands (`status`: upcoming / raceDay / done /
 awaitingResult, and `result`: the linked session and its time, from `raceGoalStanding`) and marks a

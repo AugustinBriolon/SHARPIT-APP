@@ -54,7 +54,7 @@ struct GoalsView: View {
                         .opacity(0.8)
                 }
 
-                if !store.achievements.isEmpty {
+                if !store.recentAchievements.isEmpty {
                     achievementList
                         .revealed(hasAppeared, index: inProgress.count + store.completedGoals.count + 3)
                 }
@@ -127,7 +127,7 @@ struct GoalsView: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitEyebrow("Réalisations récentes")
             LazyVStack(spacing: SharpitSpacing.sm) {
-                ForEach(store.achievements) { achievement in
+                ForEach(store.recentAchievements) { achievement in
                     if let activity = achievement.activity, store.sessionReader != nil {
                         NavigationLink(value: GoalRoute.activity(activity.id)) {
                             GoalAchievementRow(achievement: achievement, opensSession: true)

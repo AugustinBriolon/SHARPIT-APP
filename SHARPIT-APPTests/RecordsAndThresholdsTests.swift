@@ -328,6 +328,16 @@ private nonisolated let achievementsJSON = """
         #expect(chrono.hasSuffix(" · marqué manuellement"))
     }
 
+    @Test func aReachedGoalsSingleResultIsNotListedTwice() throws {
+        let achievements = try JSONDecoder().decode(
+            LossyRecordArray<V1GoalAchievement>.self,
+            from: Data(achievementsJSON.utf8)
+        ).items
+        // g2's result already reads on its « Atteints » card; g1's weekly periods stay.
+        #expect(GoalOrdering.recentAchievements(achievements, reachedGoalIds: ["g1", "g2"]).map(\.id) == ["ga1"])
+        #expect(GoalOrdering.recentAchievements(achievements, reachedGoalIds: []).map(\.id) == ["ga1", "ga2"])
+    }
+
     @Test func wordsPeriodsAndUnits() {
         #expect(GoalAchievementReadout.period("2026-07") == "juillet 2026")
         #expect(GoalAchievementReadout.period("2026") == "Année 2026")

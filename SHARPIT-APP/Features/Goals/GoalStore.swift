@@ -50,6 +50,12 @@ final class GoalStore {
         goals.filter(\.isReached)
     }
 
+    /// « Réalisations récentes » without a reached goal's single result, which its « Atteints »
+    /// card already reads: the list keeps the periods of goals reached again and again.
+    var recentAchievements: [V1GoalAchievement] {
+        GoalOrdering.recentAchievements(achievements, reachedGoalIds: Set(completedGoals.map(\.id)))
+    }
+
     /// Races past their day with no result yet: « Ta course est passée ».
     var racesAwaitingResult: [V1Goal] {
         goals.filter { $0.raceStatus == .awaitingResult }
@@ -240,6 +246,13 @@ final class GoalStore {
 }
 
 nonisolated enum GoalOrdering {
+    static func recentAchievements(
+        _ achievements: [V1GoalAchievement],
+        reachedGoalIds: Set<String>
+    ) -> [V1GoalAchievement] {
+        achievements.filter { !($0.periodKey == "_performance" && reachedGoalIds.contains($0.goal.id)) }
+    }
+
     static func nextRace(in goals: [V1Goal], now: Date = Date(), calendar: Calendar = .current) -> V1Goal? {
         let today = calendar.startOfDay(for: now)
         let upcoming = goals
