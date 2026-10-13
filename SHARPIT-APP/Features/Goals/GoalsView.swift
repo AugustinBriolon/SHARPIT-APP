@@ -37,12 +37,15 @@ struct GoalsView: View {
                 }
 
                 if store.goals.isEmpty && store.isLoading {
-                    // The cards' own shape while the goals load, never a blank page.
-                    LazyVStack(spacing: SharpitSpacing.sm) {
-                        ForEach(V1Goal.placeholders) { GoalCard(goal: $0) }
+                    // The page's own shape while the goals load: the race plate, then each section.
+                    VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                        NextRaceCard(goal: V1Goal.placeholderRace)
+                        skeletonSection("En cours", goals: V1Goal.placeholders)
+                        skeletonSection("Atteints", goals: [V1Goal.placeholderReached])
                     }
                     .redacted(reason: .placeholder)
                     .allowsHitTesting(false)
+                    .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Chargement des objectifs")
                 } else if store.activeGoals.isEmpty {
                     emptyState
@@ -99,6 +102,13 @@ struct GoalsView: View {
         .onAppear { hasAppeared = true }
     }
 
+    private func skeletonSection(_ title: String, goals: [V1Goal]) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitEyebrow("\(title) · \(goals.count)")
+            ForEach(goals) { GoalCard(goal: $0) }
+        }
+    }
+
     private func goalList(title: String, goals: [V1Goal], startIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitEyebrow("\(title) · \(goals.count)")
@@ -115,11 +125,7 @@ struct GoalsView: View {
                             Label(goal.achieved ? "Remettre en cours" : "Marquer comme atteint",
                                   systemImage: goal.achieved ? "arrow.uturn.backward" : "checkmark.circle")
                         }
-                        Button(role: .destructive) {
-                            Task { await store.delete(id: goal.id) }
-                        } label: {
-                            Label("Supprimer", systemImage: "trash")
-                        }
+                        SharpitDeleteMenuButton { Task { await store.delete(id: goal.id) } }
                     }
                     .revealed(hasAppeared, index: startIndex + index)
                 }
@@ -556,6 +562,10 @@ private extension V1Goal {
         V1Goal(id: "skeleton-0", title: "Semi-marathon de printemps", kind: .race, targetDate: .now.addingTimeInterval(60 * 86_400)),
         V1Goal(id: "skeleton-1", title: "Poids de forme", kind: .metric, currentValue: 72, targetValue: 70, unit: "kg"),
     ]
+    static let placeholderRace = V1Goal(
+        id: "skeleton-race", title: "Triathlon de la saison", kind: .race, targetDate: .now.addingTimeInterval(90 * 86_400)
+    )
+    static let placeholderReached = V1Goal(id: "skeleton-reached", title: "Course de l'an dernier", kind: .race, achieved: true)
 }
 
 /// A race past its day with no result: say so where the goals are read, and offer the two ways
