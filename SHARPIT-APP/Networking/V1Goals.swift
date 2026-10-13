@@ -55,6 +55,160 @@ nonisolated struct V1GoalRaceResult: Codable, Sendable, Equatable {
     let durationSec: Double?
 }
 
+/// A race's projected finish, computed server-side: the time, its range, each leg and where
+/// its pace came from. Unknown values are tolerated: a leg of an unknown kind is dropped, an
+/// unknown source or confidence reads nil.
+nonisolated struct V1RaceProjection: Codable, Sendable, Equatable {
+    nonisolated enum LegKind: String, Codable, Sendable { case swim, t1, bike, t2, run }
+    nonisolated enum LegSource: String, Codable, Sendable { case history, recent, profile, `default` }
+    nonisolated enum Confidence: String, Codable, Sendable { case low, medium, high }
+
+    nonisolated struct Leg: Codable, Sendable, Equatable {
+        let kind: LegKind
+        let sec: Double
+        var source: LegSource?
+
+        enum CodingKeys: String, CodingKey { case kind, sec, source }
+
+        init(kind: LegKind, sec: Double, source: LegSource? = nil) {
+            self.kind = kind
+            self.sec = sec
+            self.source = source
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            kind = try container.decode(LegKind.self, forKey: .kind)
+            sec = try container.decode(Double.self, forKey: .sec)
+            source = (try? container.decodeIfPresent(LegSource.self, forKey: .source)) ?? nil
+        }
+    }
+
+    /// One week's race-day projection, as the server recorded it.
+    nonisolated struct HistoryPoint: Codable, Sendable, Equatable {
+        let weekKey: String
+        let date: Date
+        let finishSec: Double
+
+        enum CodingKeys: String, CodingKey { case weekKey, date, finishSec }
+
+        init(weekKey: String, date: Date, finishSec: Double) {
+            self.weekKey = weekKey
+            self.date = date
+            self.finishSec = finishSec
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            weekKey = (try? container.decode(String.self, forKey: .weekKey)) ?? ""
+            date = try Date.fromAPI(container.decode(String.self, forKey: .date))
+            finishSec = try container.decode(Double.self, forKey: .finishSec)
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(weekKey, forKey: .weekKey)
+            try container.encode(date.toAPI, forKey: .date)
+            try container.encode(finishSec, forKey: .finishSec)
+        }
+    }
+
+    nonisolated struct Trend: Codable, Sendable, Equatable {
+        /// Negative when getting faster.
+        var secPerWeek: Double?
+    }
+
+    /// The projection at race day.
+    let finishSec: Double
+    let lowSec: Double
+    let highSec: Double
+    var targetSec: Double?
+    /// Finish − target: negative when faster.
+    var deltaSec: Double?
+    var legs: [Leg]
+    var confidence: Confidence?
+    /// French hints on what would sharpen it, shown as-is.
+    var missing: [String]
+    /// Set once the projection was frozen before the race.
+    var frozenAt: Date?
+    /// The finish if the race were today.
+    var todaySec: Double?
+    /// Share of planned sessions done, 0...1.
+    var regularity: Double?
+    var trend: Trend?
+    /// Weekly race-day projections, oldest first.
+    var history: [HistoryPoint]
+
+    enum CodingKeys: String, CodingKey {
+        case finishSec, lowSec, highSec, targetSec, deltaSec, legs, confidence, missing, frozenAt
+        case todaySec, regularity, trend, history
+    }
+
+    init(
+        finishSec: Double,
+        lowSec: Double,
+        highSec: Double,
+        targetSec: Double? = nil,
+        deltaSec: Double? = nil,
+        legs: [Leg] = [],
+        confidence: Confidence? = nil,
+        missing: [String] = [],
+        frozenAt: Date? = nil,
+        todaySec: Double? = nil,
+        regularity: Double? = nil,
+        trend: Trend? = nil,
+        history: [HistoryPoint] = []
+    ) {
+        self.finishSec = finishSec
+        self.lowSec = lowSec
+        self.highSec = highSec
+        self.targetSec = targetSec
+        self.deltaSec = deltaSec
+        self.legs = legs
+        self.confidence = confidence
+        self.missing = missing
+        self.frozenAt = frozenAt
+        self.todaySec = todaySec
+        self.regularity = regularity
+        self.trend = trend
+        self.history = history
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        finishSec = try container.decode(Double.self, forKey: .finishSec)
+        lowSec = (try? container.decode(Double.self, forKey: .lowSec)) ?? finishSec
+        highSec = (try? container.decode(Double.self, forKey: .highSec)) ?? finishSec
+        targetSec = (try? container.decodeIfPresent(Double.self, forKey: .targetSec)) ?? nil
+        deltaSec = (try? container.decodeIfPresent(Double.self, forKey: .deltaSec)) ?? nil
+        legs = (try? container.decodeIfPresent(LossyRecordArray<Leg>.self, forKey: .legs))?.items ?? []
+        confidence = (try? container.decodeIfPresent(Confidence.self, forKey: .confidence)) ?? nil
+        missing = (try? container.decodeIfPresent(LossyRecordArray<String>.self, forKey: .missing))?.items ?? []
+        frozenAt = ((try? container.decodeIfPresent(String.self, forKey: .frozenAt)) ?? nil).flatMap { try? Date.fromAPI($0) }
+        todaySec = (try? container.decodeIfPresent(Double.self, forKey: .todaySec)) ?? nil
+        regularity = (try? container.decodeIfPresent(Double.self, forKey: .regularity)) ?? nil
+        trend = (try? container.decodeIfPresent(Trend.self, forKey: .trend)) ?? nil
+        history = (try? container.decodeIfPresent(LossyRecordArray<HistoryPoint>.self, forKey: .history))?.items ?? []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(finishSec, forKey: .finishSec)
+        try container.encode(lowSec, forKey: .lowSec)
+        try container.encode(highSec, forKey: .highSec)
+        try container.encodeIfPresent(targetSec, forKey: .targetSec)
+        try container.encodeIfPresent(deltaSec, forKey: .deltaSec)
+        try container.encode(legs, forKey: .legs)
+        try container.encodeIfPresent(confidence, forKey: .confidence)
+        try container.encode(missing, forKey: .missing)
+        try container.encodeIfPresent(frozenAt?.toAPI, forKey: .frozenAt)
+        try container.encodeIfPresent(todaySec, forKey: .todaySec)
+        try container.encodeIfPresent(regularity, forKey: .regularity)
+        try container.encodeIfPresent(trend, forKey: .trend)
+        try container.encode(history, forKey: .history)
+    }
+}
+
 /// An athlete goal, as `/api/goals` returns it.
 nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
     let id: String
@@ -78,13 +232,15 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
     /// Nil for a figure goal, or from a server that predates it.
     var status: GoalRaceStatus?
     var result: V1GoalRaceResult?
+    /// The server's finish projection; nil for a format it cannot project, or from an older server.
+    var projection: V1RaceProjection?
 
     enum CodingKeys: String, CodingKey {
         case id, title, kind, horizon, metricKey
         case startValue, currentValue, targetValue, unit, lowerIsBetter
         case targetDate, location, achieved, notes
         case priority, raceFormat, targetPerformance, createdAt
-        case status, result
+        case status, result, projection
     }
 
     init(
@@ -107,7 +263,8 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         targetPerformance: String? = nil,
         createdAt: Date? = nil,
         status: GoalRaceStatus? = nil,
-        result: V1GoalRaceResult? = nil
+        result: V1GoalRaceResult? = nil,
+        projection: V1RaceProjection? = nil
     ) {
         self.id = id
         self.title = title
@@ -129,6 +286,7 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         self.createdAt = createdAt
         self.status = status
         self.result = result
+        self.projection = projection
     }
 
     init(from decoder: Decoder) throws {
@@ -161,6 +319,7 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         }
         status = (try? container.decodeIfPresent(GoalRaceStatus.self, forKey: .status)) ?? nil
         result = (try? container.decodeIfPresent(V1GoalRaceResult.self, forKey: .result)) ?? nil
+        projection = (try? container.decodeIfPresent(V1RaceProjection.self, forKey: .projection)) ?? nil
     }
 
     func encode(to encoder: Encoder) throws {
@@ -185,6 +344,7 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         try container.encodeIfPresent(createdAt?.toAPI, forKey: .createdAt)
         try container.encodeIfPresent(status, forKey: .status)
         try container.encodeIfPresent(result, forKey: .result)
+        try container.encodeIfPresent(projection, forKey: .projection)
     }
 
     /// The server's reading, with a validation shown on the tap before it answers.

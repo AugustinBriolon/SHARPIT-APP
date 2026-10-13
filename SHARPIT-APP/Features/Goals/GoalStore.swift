@@ -10,7 +10,6 @@ final class GoalStore {
     }
     private(set) var sessions: [V1PlannedSessionItem] = []
     private(set) var activities: [V1ActivityListItem] = []
-    private(set) var profile: V1AthleteProfile?
     /// Each time a goal was reached, newest first — « Réalisations récentes », at the foot of Objectifs.
     private(set) var achievements: [V1GoalAchievement] = []
     private(set) var isLoading = false
@@ -24,6 +23,9 @@ final class GoalStore {
 
     /// What an achievement's session opens with, pushed in the Objectifs stack.
     var sessionReader: (any ActivityServing)? { activityClient }
+
+    /// What « Compléter mes seuils » opens with, pushed in the Objectifs stack.
+    var thresholdsClient: (any AthleteProfileServing)? { profileClient }
 
     /// How many achievements the page lists, as the web's history does.
     static let achievementsLimit = 15
@@ -118,15 +120,13 @@ final class GoalStore {
             let token = try await tokenProvider()
             goals = try await client.goals(token: token)
 
-            // Concurrently load sessions, profile, and activities to supply accurate goal analytics
+            // Sessions and activities feed the volume stats and « Lier ma séance ».
             async let fetchedSessions = fetchSessions(token: token)
-            async let fetchedProfile = fetchProfile(token: token)
             async let fetchedActivities = fetchActivities(token: token)
             async let fetchedAchievements = fetchAchievements(token: token)
 
-            let (s, p, a) = await (fetchedSessions, fetchedProfile, fetchedActivities)
+            let (s, a) = await (fetchedSessions, fetchedActivities)
             self.sessions = s
-            self.profile = p
             self.activities = a
             // A history that failed to read keeps what was shown: it is never the page's error.
             if let reached = await fetchedAchievements { self.achievements = reached }
@@ -154,11 +154,6 @@ final class GoalStore {
         try? await client.achievements(limit: Self.achievementsLimit, token: token)
     }
 
-    private func fetchProfile(token: String) async -> V1AthleteProfile? {
-        guard let client = profileClient else { return nil }
-        return try? await client.athleteProfile(token: token)
-    }
-
     private func fetchActivities(token: String) async -> [V1ActivityListItem] {
         guard let client = activityClient else { return [] }
         return (try? await client.activities(token: token)) ?? []
@@ -168,8 +163,10 @@ final class GoalStore {
         GoalAnalyticsEngine.computeVolumeStats(goal: goal, sessions: sessions, activities: activities)
     }
 
-    func raceProjection(for goal: V1Goal) -> GoalRaceProjectionResult? {
-        GoalAnalyticsEngine.computeRaceProjection(goal: goal, profile: profile, activities: activities)
+    /// The server's projection, read as the page shows it; nil for a goal that is not a race.
+    func raceProjection(for goal: V1Goal) -> RaceProjectionReadout? {
+        guard goal.kind == .race else { return nil }
+        return goal.projection.map { RaceProjectionReadout($0) }
     }
 
     @discardableResult

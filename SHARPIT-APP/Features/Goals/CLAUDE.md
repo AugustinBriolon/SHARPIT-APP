@@ -28,3 +28,12 @@ the projection for « Résultat » (« Prévu 6:05 · Réalisé 5:40 ») and dro
 past its day with neither shows `RaceAwaitingResultNotice` atop Objectifs and on its page: « Lier ma
 séance » (that day's sessions, longest first) or « Valider l'objectif ». The session's race header
 offers « Valider l'objectif » while the race is not reached, « Objectif atteint » once it is.
+
+**The projection is the server's.** `V1Goal.projection` (`V1RaceProjection`, decoded leniently) is the
+only race projection; the app computes none. `RaceProjectionReadout` reads it for « Position »: the
+race-day finish and range (« 5h41 », « 5h35 – 5h48 »), the gap from `deltaSec`, « Si c'était
+aujourd'hui », the weekly trajectory (`RaceTrajectoryChart`, faster upward, target as a rule, hidden
+below two points) with « −22 min en 8 semaines », « Régularité : 82 % des séances faites · fiabilité
+moyenne », the server's `missing` hints with « Compléter mes seuils » (`GoalRoute.thresholds`), and
+each projected leg with its source. No projection reads « Projection indisponible pour ce format ».
+A done race's « Prévu » is the frozen pre-race projection, « Prévu (recalculé) » when not frozen.

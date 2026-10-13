@@ -51,10 +51,6 @@ import Testing
         #expect(goal.raceStatus == .done)
     }
 
-    @Test func plannedVsActualRoundsToTheMinute() {
-        #expect(GoalFormat.plannedVsActual(projectedSeconds: 21_912, actualSeconds: 20_403) == "Prévu 6:05 · Réalisé 5:40")
-    }
-
     @Test func raceDayActivitiesAreThatDaysLongestFirst() {
         let calendar = Calendar(identifier: .gregorian)
         let day = past

@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 
 /// One goal, as a full page pushed in the Objectifs stack — not a sheet over the Objectifs
@@ -27,7 +28,7 @@ struct GoalDetailView: View {
         store.volumeStats(for: goal)
     }
 
-    private var raceProjection: GoalRaceProjectionResult? {
+    private var raceProjection: RaceProjectionReadout? {
         store.raceProjection(for: goal)
     }
 
@@ -43,8 +44,8 @@ struct GoalDetailView: View {
                 Group {
                     metricsOverviewGrid
                     // A race run reads its real legs on its session; the projected split is gone.
-                    if goal.raceStatus != .done, let proj = raceProjection, !proj.segments.isEmpty {
-                        segmentsCard(proj.segments)
+                    if goal.raceStatus != .done, let proj = raceProjection, !proj.legs.isEmpty {
+                        projectedSplitCard(proj.legs)
                     }
                     if goal.kind == .metric {
                         metricProgressSection
@@ -133,8 +134,8 @@ struct GoalDetailView: View {
 
             if goal.raceStatus == .done, let actual = goal.result?.durationSec {
                 raceOutcomeCard(actual: actual, projected: raceProjection)
-            } else if let proj = raceProjection {
-                racePositionCard(proj: proj)
+            } else if goal.kind == .race {
+                racePositionCard(raceProjection)
             } else if goal.kind == .metric, let cur = goal.currentValue, let tgt = goal.targetValue {
                 metricPositionCard(current: cur, target: tgt)
             }
@@ -168,64 +169,102 @@ struct GoalDetailView: View {
         .sharpitSurface(.panelAlt)
     }
 
-    private func racePositionCard(proj: GoalRaceProjectionResult) -> some View {
+    /// The server's projection: the finish and its range, the gap to the aim, how far to trust
+    /// it and what would sharpen it — or an honest line when it cannot project this race.
+    private func racePositionCard(_ proj: RaceProjectionReadout?) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack {
-                Text("Position")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                Spacer()
-                Image(systemName: "scope")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.primary)
-            }
-
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(proj.projectedLabel)
-                        .font(SharpitTypography.verdict)
-                        .foregroundStyle(SharpitColor.foreground)
+            SharpitCardHeader(title: "Position", symbol: "scope", showsChevron: false)
+            if let proj {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(proj.finishLabel)
+                            .font(SharpitTypography.verdict)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .monospacedDigit()
+                        Text(proj.rangeLabel)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .monospacedDigit()
+                    }
+                    Spacer()
+                    if let delta = proj.delta {
+                        deltaPill(delta)
+                    }
+                }
+                if let today = proj.todayLine {
+                    Text(today)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
                         .monospacedDigit()
-
-                    Text("vs \(proj.targetLabel)")
+                }
+                if !proj.trajectory.isEmpty {
+                    RaceTrajectoryChart(points: proj.trajectory, targetSec: proj.projection.targetSec)
+                    if let line = proj.trajectoryLine {
+                        Text(line)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .monospacedDigit()
+                    }
+                }
+                if let confidence = proj.confidenceLine {
+                    Text(confidence)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Image(systemName: proj.isAhead ? "arrow.down.right" : "arrow.up.right")
-                        .font(.system(size: 11, weight: .bold))
-                    Text(proj.gapLabel)
-                        .font(.system(size: 12, weight: .bold))
+                if !proj.missing.isEmpty {
+                    missingHints(proj.missing)
                 }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(
-                    (proj.isAhead ? SharpitColor.primary : SharpitColor.signalCaution).opacity(0.15),
-                    in: Capsule()
-                )
-                .foregroundStyle(proj.isAhead ? SharpitColor.primary : SharpitColor.signalCaution)
+            } else {
+                Text("Projection indisponible pour ce format")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
             }
         }
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panel)
     }
 
+    /// What would sharpen the projection, as the server words it, and the way to fill it in.
+    private func missingHints(_ hints: [String]) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+            ForEach(hints, id: \.self) { hint in
+                Text("· \(hint)")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if store.thresholdsClient != nil {
+                NavigationLink(value: GoalRoute.thresholds) {
+                    HStack(spacing: 4) {
+                        Text("Compléter mes seuils")
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .accessibilityHidden(true)
+                    }
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.primary)
+                }
+                .buttonStyle(.sharpitPressable)
+                .padding(.top, SharpitSpacing.xxs)
+            }
+        }
+    }
+
+    private func deltaPill(_ delta: RaceDelta) -> some View {
+        Text(delta.label)
+            .font(.system(size: 12, weight: .bold))
+            .monospacedDigit()
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background((delta.isAhead ? SharpitColor.primary : SharpitColor.signalCaution).opacity(0.15), in: Capsule())
+            .foregroundStyle(delta.isAhead ? SharpitColor.primary : SharpitColor.signalCaution)
+    }
+
     /// A race run: the time, the projection it was read against, and the gap to the aim.
-    private func raceOutcomeCard(actual: Double, projected: GoalRaceProjectionResult?) -> some View {
+    private func raceOutcomeCard(actual: Double, projected: RaceProjectionReadout?) -> some View {
         let delta = RaceTime.targetSeconds(from: goal.targetPerformance).map { RaceDelta(seconds: actual - $0) }
         return VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack {
-                Text("Résultat")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                Spacer()
-                Image(systemName: "flag.checkered")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.signalRecovery)
-            }
+            SharpitCardHeader(title: "Résultat", symbol: "flag.checkered", tint: SharpitColor.signalRecovery, showsChevron: false)
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(RaceTime.clock(actual))
@@ -233,7 +272,7 @@ struct GoalDetailView: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .monospacedDigit()
                     if let projected {
-                        Text(GoalFormat.plannedVsActual(projectedSeconds: projected.projectedSeconds, actualSeconds: actual))
+                        Text(projected.plannedVsActual(actualSeconds: actual))
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
                             .monospacedDigit()
@@ -241,13 +280,7 @@ struct GoalDetailView: View {
                 }
                 Spacer()
                 if let delta {
-                    Text(delta.label)
-                        .font(.system(size: 12, weight: .bold))
-                        .monospacedDigit()
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background((delta.isAhead ? SharpitColor.primary : SharpitColor.signalCaution).opacity(0.15), in: Capsule())
-                        .foregroundStyle(delta.isAhead ? SharpitColor.primary : SharpitColor.signalCaution)
+                    deltaPill(delta)
                 }
             }
         }
@@ -302,70 +335,42 @@ struct GoalDetailView: View {
         .sharpitSurface(.panel)
     }
 
-    // MARK: - Segments Card
+    // MARK: - Projected Split
 
-    private func segmentsCard(_ segments: [GoalPositionSegment]) -> some View {
+    /// The projected legs, each with its time and, quietly, where its pace came from.
+    private func projectedSplitCard(_ legs: [RaceProjectionReadout.Leg]) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack {
-                Text("Détail par segment")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                Spacer()
+            SharpitCardHeader(title: "Détail par segment", symbol: "stopwatch", showsChevron: false) {
                 Text("Projection")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
-
-            // Visual segmented bar
-            GeometryReader { geo in
-                HStack(spacing: 2) {
-                    ForEach(segments) { seg in
-                        let width = max(geo.size.width * Double(seg.sharePct) / 100.0 - 2, 4)
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(segmentColor(for: seg.kind))
-                            .frame(width: width, height: 6)
-                    }
-                }
-            }
-            .frame(height: 6)
-            .padding(.vertical, 2)
-
-            VStack(spacing: 6) {
-                ForEach(segments) { seg in
-                    HStack {
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(segmentColor(for: seg.kind))
-                                .frame(width: 8, height: 8)
-                            Text(seg.label)
+            RaceLegsBar(segments: legs.map(\.segment), compact: true)
+            VStack(spacing: SharpitSpacing.xs) {
+                ForEach(legs) { leg in
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(leg.segment.label)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.foreground)
+                                .foregroundStyle(leg.segment.isTransition ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                            if let source = leg.sourceLabel {
+                                Text(source)
+                                    .font(SharpitTypography.meta)
+                                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.8))
+                            }
                         }
                         Spacer()
-                        Text(seg.timeLabel)
+                        Text(leg.timeLabel)
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.foreground)
                             .monospacedDigit()
-                        Text("(\(seg.sharePct)%)")
-                            .font(.system(size: 11))
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .frame(width: 38, alignment: .trailing)
                     }
+                    .accessibilityElement(children: .combine)
                 }
             }
         }
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panelAlt)
-    }
-
-    private func segmentColor(for kind: String) -> Color {
-        switch kind {
-        case "swim": SharpitSportColor.color(SharpitSportColor.swim)
-        case "bike": SharpitSportColor.color(SharpitSportColor.bike)
-        case "run": SharpitSportColor.color(SharpitSportColor.run)
-        case "t1", "t2": SharpitColor.mutedForeground.opacity(0.6)
-        default: SharpitColor.primary
-        }
     }
 
     // MARK: - Metric Progress Section
@@ -533,5 +538,43 @@ private struct GoalLinkedActivityRow: View {
         [ActivityFormat.dayLabel(for: activity.date), activity.duration.map { RaceTime.clock($0) }]
             .compactMap { $0 }
             .joined(separator: " · ")
+    }
+}
+
+/// The race-day projection week after week, faster reading upward, against the target.
+private struct RaceTrajectoryChart: View {
+    let points: [RaceProjectionReadout.TrajectoryPoint]
+    let targetSec: Double?
+
+    var body: some View {
+        Chart {
+            if let targetSec {
+                RuleMark(y: .value("Objectif", targetSec))
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            }
+            ForEach(points, id: \.date) { point in
+                LineMark(x: .value("Semaine", point.date), y: .value("Arrivée", point.finishSec))
+                    .foregroundStyle(SharpitColor.primary)
+                    .interpolationMethod(.monotone)
+                PointMark(x: .value("Semaine", point.date), y: .value("Arrivée", point.finishSec))
+                    .foregroundStyle(SharpitColor.primary)
+                    .symbolSize(point == points.last ? 36 : 14)
+            }
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
+                AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
+                AxisValueLabel {
+                    if let seconds = value.as(Double.self) {
+                        Text(GoalAnalyticsEngine.formatDuration(seconds))
+                    }
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false, reversed: true))
+        .frame(height: 90)
+        .accessibilityLabel("Trajectoire de la projection")
     }
 }

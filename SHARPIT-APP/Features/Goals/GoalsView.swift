@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// Plan → Objectifs: the races and figures the season is built toward.
@@ -9,6 +10,7 @@ import SwiftUI
 struct GoalsView: View {
     @State private var store: GoalStore
     @State private var hasAppeared = false
+    @Environment(\.modelContext) private var modelContext
 
     init(store: GoalStore) {
         _store = State(initialValue: store)
@@ -85,6 +87,10 @@ struct GoalsView: View {
             case .activity(let id):
                 if let reader = store.sessionReader {
                     ActivityDetailView(activity: id, client: reader, tokenProvider: store.tokenProvider)
+                }
+            case .thresholds:
+                if let client = store.thresholdsClient {
+                    ThresholdsView(client: client, tokenProvider: store.tokenProvider, modelContext: modelContext)
                 }
             }
         }
@@ -178,12 +184,15 @@ enum GoalRoute: Hashable {
     case create
     /// The session that reached a goal, from « Réalisations récentes ».
     case activity(String)
+    /// « Seuils & repères », from a projection's missing hints.
+    case thresholds
 
     static func == (lhs: GoalRoute, rhs: GoalRoute) -> Bool {
         switch (lhs, rhs) {
         case let (.detail(l), .detail(r)): l.id == r.id
         case (.create, .create): true
         case let (.activity(l), .activity(r)): l == r
+        case (.thresholds, .thresholds): true
         default: false
         }
     }
@@ -195,6 +204,7 @@ enum GoalRoute: Hashable {
         case .activity(let id):
             hasher.combine("activity")
             hasher.combine(id)
+        case .thresholds: hasher.combine("thresholds")
         }
     }
 }
@@ -522,11 +532,6 @@ enum GoalFormat {
             RaceTime.targetSeconds(from: goal.targetPerformance).map { RaceDelta(seconds: seconds - $0).label }
         }
         return ["Terminée", time.map(RaceTime.clock), delta].compactMap { $0 }.joined(separator: " · ")
-    }
-
-    /// « Prévu 6:05 · Réalisé 5:40 »: the projection against the race run, to the minute.
-    static func plannedVsActual(projectedSeconds: Int, actualSeconds: Double) -> String {
-        "Prévu \(hoursMinutes(Double(projectedSeconds))) · Réalisé \(hoursMinutes(actualSeconds))"
     }
 
     /// « 6:05 »: hours and minutes, rounded to the minute.

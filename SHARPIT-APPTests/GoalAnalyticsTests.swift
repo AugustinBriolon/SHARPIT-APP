@@ -2,18 +2,6 @@ import Foundation
 import Testing
 @testable import Sharpit
 
-@Test func targetSecondsParsesFormatsCorrectly() {
-    #expect(GoalAnalyticsEngine.parseTargetSeconds("Sub 6h") == 21600)
-    #expect(GoalAnalyticsEngine.parseTargetSeconds("Sous 6h") == 21600)
-    #expect(GoalAnalyticsEngine.parseTargetSeconds("6h") == 21600)
-    #expect(GoalAnalyticsEngine.parseTargetSeconds("1h30") == 5400)
-    #expect(GoalAnalyticsEngine.parseTargetSeconds("Sub 1h30") == 5400)
-    #expect(GoalAnalyticsEngine.parseTargetSeconds("3:15:00") == 11700)
-    #expect(GoalAnalyticsEngine.parseTargetSeconds("45:00") == 2700)
-    #expect(GoalAnalyticsEngine.parseTargetSeconds(nil) == nil)
-    #expect(GoalAnalyticsEngine.parseTargetSeconds("") == nil)
-}
-
 @Test func volumeStatsAggregatesDoneSessionsAndDurations() {
     let goalId = "goal_half_1"
     let created = Date(timeIntervalSince1970: 1721147257) // 2026-07-16
@@ -108,36 +96,6 @@ import Testing
     #expect(stats.topSportLabel == "Vélo")
     #expect(stats.sessionHint == "Mix : Vélo en tête")
     #expect(stats.durationHint == "Mix : Vélo en tête")
-}
-
-@Test func triathlonProjectionCalculatesAccurateFinishForHalfIronman() {
-    let goal = V1Goal(
-        id: "goal_half_1",
-        title: "Half IronMan Versailles",
-        kind: .race,
-        raceFormat: "HALF IRON MAN",
-        targetPerformance: "Sub 6h"
-    )
-
-    let profile = V1AthleteProfile(
-        ftpW: 207,
-        runThresholdPaceSecPerKm: 306.0,
-        swimCssSecPer100m: 103.5
-    )
-
-    let proj = GoalAnalyticsEngine.computeRaceProjection(goal: goal, profile: profile)
-    #expect(proj != nil)
-
-    guard let p = proj else { return }
-    // 35:04 swim + 2:06 T1 + 2:48:21 bike + 1:19 T2 + 1:56:12 run (threshold × 1.08 brick
-    // slowdown) = 5:23:02, i.e. 19382 seconds
-    #expect(p.projectedSeconds == 19382)
-    #expect(p.projectedLabel.starts(with: "5:23:"))
-    #expect(p.targetLabel == "Sub 6h")
-    #expect(p.isAhead)
-    #expect(p.gapLabel.contains("sous la cible"))
-    #expect(p.segments.count == 5)
-    #expect(p.segments.map(\.kind) == ["swim", "t1", "bike", "t2", "run"])
 }
 
 @Test func goalDecodesCreatedAtAndCalculatesPhase() throws {

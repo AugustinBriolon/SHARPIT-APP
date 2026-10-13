@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Sharpit
 
-private struct StubGoalClient: GoalServing {
+struct StubGoalClient: GoalServing {
     var stubbedGoals: [V1Goal] = []
 
     func goals(token: String) async throws -> [V1Goal] {
