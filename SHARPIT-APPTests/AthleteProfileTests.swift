@@ -66,7 +66,7 @@ import Testing
         "displayMode", "heightCm", "birthDate", "targetWeightKg",
         "sleepTargetMinutes", "sleepBedtimeTargetMin",
         "ftpW", "maxHr", "lthr",
-        "runThresholdPaceSecPerKm", "swimCssSecPer100m", "defaultPoolLengthM",
+        "runThresholdPaceSecPerKm", "runEasyPaceSecPerKm", "swimCssSecPer100m", "defaultPoolLengthM",
         "equipment", "practicedSports", "trainingAvailability",
         "sex", "notificationPrefs",
     ])
