@@ -113,6 +113,8 @@ struct RootView: View {
         }
         .background(SharpitCanvasBackground())
         // Paramètres is a sheet over whichever tab is showing, opened from the avatar.
+        // The sheet sits above this view's overlay, so the toast host is mounted again
+        // inside it — otherwise sync / connect toasts hide behind Paramètres.
         .sheet(isPresented: $router.isShowingSettings) {
             SettingsView(
                 appleHealth: appleHealth,
@@ -125,6 +127,8 @@ struct RootView: View {
                 modelContext: modelContext,
                 openingOn: router.settingsRoute
             )
+            .environment(toastCenter)
+            .overlay(alignment: .top) { SharpitToastHost(center: toastCenter) }
         }
         .overlay(alignment: .top) { SharpitToastHost(center: toastCenter) }
         // A write retried in the background and still refused: said once, wherever the athlete is.

@@ -129,8 +129,8 @@ private struct SharpitToastView: View {
     }
 }
 
-/// Hosts the one toast the app shows, pinned under the status bar regardless of which tab is
-/// in front. `RootView` mounts this once, above the `TabView`.
+/// Hosts the one toast the app shows, pinned under the status bar. `RootView` mounts this
+/// above the `TabView`, and again on the Paramètres sheet (sheets cover the tab overlay).
 struct SharpitToastHost: View {
     let center: SharpitToastCenter
 

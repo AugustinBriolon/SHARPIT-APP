@@ -41,7 +41,7 @@ struct ProviderLogo: View {
             case .withings: "Provider/Withings"
             case .renpho: "Provider/Renpho"
             case .google: "Provider/Google"
-            case .appleCalendar: "Provider/AppleHealth"
+            case .appleCalendar: "Provider/AppleCalendar"
             }
         }
 
