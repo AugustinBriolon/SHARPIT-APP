@@ -133,7 +133,7 @@ struct JournalPrefsDrawer: View {
                     Task { await store.setCustomItemEnabled(item.id, enabled) }
                 }
                 .swipeActions {
-                    Button("Supprimer", role: .destructive) {
+                    SharpitSwipeDeleteButton {
                         Task { await store.removeCustomItem(item.id) }
                     }
                 }

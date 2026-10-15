@@ -36,6 +36,17 @@ enum SessionFeeling: Int, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Garmin-style face for a one-line feeling picker.
+    var emoji: String {
+        switch self {
+        case .veryBad: "😫"
+        case .bad: "😕"
+        case .okay: "😐"
+        case .good: "🙂"
+        case .veryGood: "😄"
+        }
+    }
+
     /// Reads the web's words, and the words earlier builds of this app wrote
     /// ("Très mauvais", "Mauvais", "Moyen") so those sessions still show a value.
     init?(stored: String?) {

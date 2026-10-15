@@ -68,9 +68,7 @@ struct SavedMealsPage: View {
                 Button { onLog(saved) } label: { SavedMealRow(saved: saved) }
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) { pendingDelete = saved } label: {
-                            Label("Supprimer", systemImage: "trash")
-                        }
+                        SharpitSwipeDeleteButton { pendingDelete = saved }
                     }
             }
         } header: {
@@ -175,8 +173,8 @@ struct FoodRecipePage: View {
                 ForEach($builder.lines) { $line in
                     FoodNumberRow(title: line.ingredient.name, unit: "g", text: $line.gramsText)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) { builder.remove(line.id) } label: {
-                                Label("Retirer", systemImage: "minus.circle")
+                            SharpitSwipeDeleteButton(title: "Retirer", systemImage: "minus.circle") {
+                                builder.remove(line.id)
                             }
                         }
                 }

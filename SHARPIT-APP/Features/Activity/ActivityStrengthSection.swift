@@ -73,7 +73,10 @@ struct ActivityStrengthSection: View {
     }
 
     private func row(_ exercise: StrengthExerciseReadout) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            if let thumb = ExerciseMediaCatalog.thumbURL(name: exercise.exercise) {
+                GuidedExerciseThumbView(url: thumb, size: 44)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(exercise.exercise)
                     .font(SharpitTypography.cardTitle)

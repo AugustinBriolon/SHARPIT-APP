@@ -17,3 +17,18 @@ struct SharpitDeleteMenuButton: View {
         }
     }
 }
+
+/// Destructive list swipe. Same RootView tint leak paints the trash green on a non-red chip;
+/// pinning `.tint(destructive)` restores white glyph on red background.
+struct SharpitSwipeDeleteButton: View {
+    var title: String = "Supprimer"
+    var systemImage: String = "trash"
+    let action: () -> Void
+
+    var body: some View {
+        Button(role: .destructive, action: action) {
+            Label(title, systemImage: systemImage)
+        }
+        .tint(SharpitColor.destructive)
+    }
+}

@@ -54,6 +54,7 @@ private struct SignInAwardWinning: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         ZStack {
@@ -63,35 +64,42 @@ private struct SignInAwardWinning: View {
             PrecisionParticleField()
                 .ignoresSafeArea()
 
-            // 2 — Main Content Layout
-            VStack(spacing: 0) {
-                // Top status chip
-                systemStatusChip
-                    .padding(.top, 56)
-                    .opacity(showHeader ? 1 : 0)
-                    .offset(y: showHeader ? 0 : -12)
+            // 2 — Page that fills the window; short heights (landscape / Split View) scroll.
+            GeometryReader { geo in
+                let short = verticalSizeClass == .compact || geo.size.height < 720
+                ScrollView(.vertical) {
+                    VStack(spacing: 0) {
+                        systemStatusChip
+                            .padding(.top, short ? 24 : 56)
+                            .opacity(showHeader ? 1 : 0)
+                            .offset(y: showHeader ? 0 : -12)
 
-                Spacer(minLength: 16)
+                        Spacer(minLength: short ? 8 : 16)
 
-                // Center Telemetry Instrument with Floating HUD Cards
-                telemetryHero
-                    .frame(maxWidth: .infinity)
+                        telemetryHero
+                            .scaleEffect(short ? 0.72 : 1)
+                            .frame(height: short ? 224 : 310)
+                            .frame(maxWidth: .infinity)
 
-                Spacer(minLength: 20)
+                        Spacer(minLength: short ? 8 : 20)
 
-                // Typography & Value Props
-                brandingBlock
-                    .opacity(showText ? 1 : 0)
-                    .offset(y: showText ? 0 : 16)
-                    .padding(.bottom, 32)
+                        brandingBlock
+                            .opacity(showText ? 1 : 0)
+                            .offset(y: showText ? 0 : 16)
+                            .padding(.bottom, short ? 16 : 32)
 
-                // Bottom Action Deck
-                ctaDeck
-                    .padding(.horizontal, SharpitSpacing.pageInset)
-                    .padding(.bottom, 36)
-                    .opacity(showCTA ? 1 : 0)
-                    .offset(y: showCTA ? 0 : 20)
+                        ctaDeck
+                            .padding(.horizontal, SharpitSpacing.pageInset)
+                            .padding(.bottom, short ? 20 : 36)
+                            .opacity(showCTA ? 1 : 0)
+                            .offset(y: showCTA ? 0 : 20)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: geo.size.height)
+                }
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
             }
+            .sharpitRegularColumn()
         }
         .ignoresSafeArea(.keyboard)
         .task { await runChoreography() }

@@ -57,7 +57,7 @@ enum ConnectionsReadout {
 
     /// What Apple Health is for, unless something stops it: the switch already says on or off.
     static func appleHealthSubtitle(isAvailable: Bool, state: AppleHealthSource.State) -> Line {
-        guard isAvailable else { return Line(text: "Indisponible sur cet iPhone", isProblem: false) }
+        guard isAvailable else { return Line(text: "Indisponible sur cet appareil", isProblem: false) }
         if case .failed(let message) = state { return Line(text: message, isProblem: true) }
         return Line(text: "Séances, sommeil et cœur de ta montre", isProblem: false)
     }

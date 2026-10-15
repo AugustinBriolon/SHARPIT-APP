@@ -28,6 +28,7 @@ struct PlanGeneratorSheet: View {
             }
             .task { await store.loadGoals() }
         }
+        .sharpitSheet()
     }
 
     @ViewBuilder

@@ -97,6 +97,10 @@ private func hex(_ color: Color, style: UIUserInterfaceStyle = .light) -> String
     #expect(SharpitSpacing.pageInset == 16)
 }
 
+@Test func regularColumnCapsAnIPadWindow() {
+    #expect(SharpitSpacing.regularColumn == 760)
+}
+
 @Test func cardRadiusMatchesThePanelRadius() {
     #expect(SharpitSpacing.cardRadius == SharpitRadius.panel)
     #expect(SharpitTokens.radius == 16)

@@ -54,6 +54,7 @@ struct RootView: View {
                     syncClient: sharpitClient,
                     appleHealth: appleHealth
                 )
+                .sharpitRegularColumn()
             }
             Tab(
                 ShellDestination.plan.title,
@@ -66,6 +67,7 @@ struct RootView: View {
                     activityClient: ActivityClient(),
                     tokenProvider: liveToken
                 )
+                .sharpitRegularColumn()
             }
             Tab(
                 ShellDestination.coach.title,
@@ -78,6 +80,7 @@ struct RootView: View {
                     quota: CoachQuotaClient(),
                     tokenProvider: liveToken
                 )
+                .sharpitRegularColumn()
             }
             Tab(
                 ShellDestination.activity.title,
@@ -88,6 +91,7 @@ struct RootView: View {
                     client: ActivityClient(),
                     tokenProvider: liveToken
                 )
+                .sharpitRegularColumn()
             }
             if features.isOn(.health) {
                 Tab(
@@ -101,9 +105,11 @@ struct RootView: View {
                         tokenProvider: liveToken,
                         modelContext: modelContext
                     )
+                    .sharpitRegularColumn()
                 }
             }
         }
+        .tabViewStyle(.sidebarAdaptable)
         // A tab turned off while showing, or a link to it, lands on Résumé.
         .onChange(of: router.selectedTab, initial: true) { _, tab in
             if tab == .body, !features.isOn(.health) { router.select(.today) }
@@ -166,6 +172,7 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            pushManager.clearIconBadge()
             Task { await runHistoryImport() }
             Task { await refreshSessionReminders() }
             Task { await refreshDayCheckIns() }

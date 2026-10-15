@@ -98,10 +98,8 @@ struct CoachHistoryView: View {
                     trailing: SharpitSpacing.pageInset
                 ))
                 .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
+                    SharpitSwipeDeleteButton {
                         Task { await store.delete(conversation) }
-                    } label: {
-                        Label("Supprimer", systemImage: "trash")
                     }
                 }
             }

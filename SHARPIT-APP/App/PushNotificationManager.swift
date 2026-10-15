@@ -110,9 +110,18 @@ final class PushNotificationManager {
         }
     }
 
-    /// Handles a tapped notification: remembers where it leads.
+    /// Handles a tapped notification: remembers where it leads, and drops the icon badge.
     func didReceiveNotificationResponse(userInfo: [AnyHashable: Any]) {
         pendingDestination = Self.destination(for: userInfo)
+        clearIconBadge()
+    }
+
+    /// Morning push (and others) set `aps.badge = 1`; nothing used to clear it, so the home-screen
+    /// « 1 » stuck until the athlete long-pressed the icon. Opening SharpIt is enough.
+    func clearIconBadge() {
+        Task {
+            try? await UNUserNotificationCenter.current().setBadgeCount(0)
+        }
     }
 
     /// Consumes where the last tapped notification leads, if anywhere.

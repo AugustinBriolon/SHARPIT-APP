@@ -27,11 +27,18 @@ struct PlannedSessionPreview: Identifiable, Hashable {
     let garminWorkoutId: String?
     let garminWorkoutScheduledDate: String?
     let garminWorkoutPushedAt: Date?
+    /// STRENGTH / mobilité prescription — drives « Lancer la séance ».
+    let strengthPrescription: JSONValue?
 
     /// One of the week's key sessions (SHARPIT F2).
     let isKey: Bool
 
     var id: String { sessionId ?? title }
+
+    /// True when the prescription has at least one named exercise to follow on the phone.
+    var canFollowOnPhone: Bool {
+        StrengthExerciseDraft.exercises(in: strengthPrescription).contains(where: \.isNamed)
+    }
 
     init(
         sessionId: String?,
@@ -48,6 +55,7 @@ struct PlannedSessionPreview: Identifiable, Hashable {
         garminWorkoutId: String? = nil,
         garminWorkoutScheduledDate: String? = nil,
         garminWorkoutPushedAt: Date? = nil,
+        strengthPrescription: JSONValue? = nil,
         isKey: Bool = false
     ) {
         self.isKey = isKey
@@ -65,6 +73,7 @@ struct PlannedSessionPreview: Identifiable, Hashable {
         self.garminWorkoutId = garminWorkoutId
         self.garminWorkoutScheduledDate = garminWorkoutScheduledDate
         self.garminWorkoutPushedAt = garminWorkoutPushedAt
+        self.strengthPrescription = strengthPrescription
     }
 }
 
@@ -136,6 +145,7 @@ extension PlannedSessionPreview {
             garminWorkoutId: session.garminWorkoutId,
             garminWorkoutScheduledDate: session.garminWorkoutScheduledDate,
             garminWorkoutPushedAt: session.garminWorkoutPushedAt,
+            strengthPrescription: session.strengthPrescription,
             isKey: session.isKey
         )
     }
@@ -223,9 +233,13 @@ struct PlannedSessionDrawer: View {
     var watchPush: SessionWatchPushContext?
     /// Lets the athlete edit, move or delete the session; nil where the plan cannot be changed.
     var editing: SessionEditingContext?
+    /// Creates the STRENGTH activity after a phone-guided follow; nil where the screen cannot write.
+    var guidedFinish: GuidedStrengthFinishContext?
     /// Fetches the session's breakdown when the preview arrived without one — Today's
     /// payload carries the line, not the prescription behind it.
     var loadBreakdown: (() async -> V1PlannedSessionBreakdown?)?
+    /// Today's line has no prescription: load it with the plan day so « Lancer la séance » still appears.
+    var loadStrengthPrescription: (() async -> JSONValue?)?
     /// The breakdown read last time this session was opened, shown at once while
     /// `loadBreakdown` asks again — the loader only spins on a first opening.
     var storedBreakdown: V1PlannedSessionBreakdown?
@@ -244,8 +258,18 @@ struct PlannedSessionDrawer: View {
     @State private var localWatchPush: PlannedSessionWatchPushResult?
     @State private var loadedBreakdown: V1PlannedSessionBreakdown?
     @State private var isLoadingBreakdown = false
+    @State private var loadedPrescription: JSONValue?
+    @State private var guidedSession: GuidedStrengthSession?
     @State private var isEditing = false
     @State private var isConfirmingDeletion = false
+
+    private var effectivePrescription: JSONValue? {
+        preview.strengthPrescription ?? loadedPrescription
+    }
+
+    private var canFollowOnPhone: Bool {
+        StrengthExerciseDraft.exercises(in: effectivePrescription).contains(where: \.isNamed)
+    }
 
     private var steps: [V1PlannedSessionStep] {
         preview.steps.isEmpty ? loadedBreakdown?.steps ?? [] : preview.steps
@@ -320,6 +344,15 @@ struct PlannedSessionDrawer: View {
     private var page: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+                if canFollowOnPhone, guidedFinish != nil {
+                    GuidedSessionLaunchButton {
+                        guidedSession = GuidedStrengthSession.make(
+                            title: preview.title,
+                            plannedSessionId: preview.sessionId,
+                            prescription: effectivePrescription
+                        )
+                    }
+                }
                 PlannedSessionSummary(
                     preview: preview,
                     steps: steps,
@@ -359,6 +392,7 @@ struct PlannedSessionDrawer: View {
         }
         .background(SharpitCanvasBackground())
         .animation(SharpitMotion.reveal, value: steps.count)
+        .animation(SharpitMotion.reveal, value: canFollowOnPhone)
         .task { await fetchBreakdownIfMissing() }
         .navigationTitle(isEmbedded ? preview.sport : "Séance prévue")
         .navigationBarTitleDisplayMode(.inline)
@@ -374,6 +408,11 @@ struct PlannedSessionDrawer: View {
                     showingLinkPicker = false
                     linking.onLinked()
                 }
+            }
+        }
+        .fullScreenCover(item: $guidedSession) { guided in
+            if let guidedFinish {
+                GuidedStrengthWorkoutView(session: guided, finish: guidedFinish)
             }
         }
         .confirmationDialog(
@@ -505,6 +544,12 @@ struct PlannedSessionDrawer: View {
     }
 
     private func fetchBreakdownIfMissing() async {
+        async let breakdown: Void = fetchBreakdown()
+        async let prescription: Void = fetchPrescription()
+        _ = await (breakdown, prescription)
+    }
+
+    private func fetchBreakdown() async {
         guard preview.steps.isEmpty, loadedBreakdown == nil, let loadBreakdown else { return }
         loadedBreakdown = storedBreakdown
         isLoadingBreakdown = storedBreakdown == nil
@@ -513,6 +558,68 @@ struct PlannedSessionDrawer: View {
             withAnimation(SharpitMotion.reveal) { loadedBreakdown = fresh }
         }
         isLoadingBreakdown = false
+    }
+
+    private func fetchPrescription() async {
+        guard preview.strengthPrescription == nil, loadedPrescription == nil, let loadStrengthPrescription else { return }
+        if let fresh = await loadStrengthPrescription() {
+            withAnimation(SharpitMotion.reveal) { loadedPrescription = fresh }
+        }
+    }
+}
+
+extension GuidedStrengthSession: Identifiable {
+    var id: String { plannedSessionId ?? title }
+}
+
+/// Primary CTA to open the phone-guided strength follow — louder than a drawer row,
+/// still a panel (not a Forest slab): play mark + press scale, optical play offset.
+struct GuidedSessionLaunchButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: SharpitSpacing.md) {
+                ZStack {
+                    Circle()
+                        .fill(SharpitColor.primary)
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(SharpitColor.primaryForeground)
+                        // Play glyph sits optically left of center — nudge it.
+                        .offset(x: 1)
+                }
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Lancer la séance")
+                        .font(SharpitTypography.sectionTitle)
+                        .tracking(SharpitTypography.sectionTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("Séries, repos et chrono — sur le téléphone")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(SharpitTypography.label)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .accessibilityHidden(true)
+            }
+            .padding(SharpitSpacing.cardPadding)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .sharpitSurface(.panel)
+            .overlay(
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .strokeBorder(SharpitColor.primary.opacity(0.35), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel("Lancer la séance")
+        .accessibilityHint("Ouvre le suivi guidé sur le téléphone")
     }
 }
 

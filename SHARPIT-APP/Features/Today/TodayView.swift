@@ -516,7 +516,9 @@ private struct TodayFoldView: View {
                 preview: preview,
                 linking: linkContext,
                 watchPush: watchPushContext,
+                guidedFinish: guidedFinishContext,
                 loadBreakdown: breakdownLoader(for: preview),
+                loadStrengthPrescription: strengthPrescriptionLoader(for: preview),
                 storedBreakdown: storedBreakdown(for: preview)
             ) { context in
                 router.discussWithCoach(about: context)
@@ -530,6 +532,7 @@ private struct TodayFoldView: View {
                 brick: brick,
                 linking: linkContext,
                 watchPush: watchPushContext,
+                guidedFinish: guidedFinishContext,
                 loadLegs: brickLoader(for: brick)
             ) { context in
                 router.discussWithCoach(about: context)
@@ -695,6 +698,38 @@ private struct TodayFoldView: View {
             }
             return breakdown
         }
+    }
+
+    /// Today's card has no prescription payload — load it from the plan so muscu can be followed.
+    private func strengthPrescriptionLoader(for preview: PlannedSessionPreview) -> (() async -> JSONValue?)? {
+        guard let tokenProvider, let sessionId = preview.sessionId, preview.strengthPrescription == nil else { return nil }
+        let day = TrainingDayId.date(fold.trainingDayId) ?? .now
+        return {
+            guard let token = try? await tokenProvider(),
+                  let sessions = try? await PlannedSessionClient().plannedSessions(from: day, to: day, token: token)
+            else { return nil }
+            return sessions.first(where: { $0.id == sessionId })?.strengthPrescription
+        }
+    }
+
+    private var guidedFinishContext: GuidedStrengthFinishContext? {
+        guard let tokenProvider else { return nil }
+        return GuidedStrengthFinishContext(
+            client: ActivityClient(),
+            linker: PlannedSessionClient(),
+            tokenProvider: tokenProvider,
+            onFinished: { _ in
+                selectedPreview = nil
+                selectedBrick = nil
+                toastCenter?.show(
+                    "Séance muscu enregistrée",
+                    symbol: "checkmark.circle.fill",
+                    tone: .success,
+                    autoDismissAfter: 3.0
+                )
+                onSessionLinked()
+            }
+        )
     }
 
     /// The breakdown read the last time this session was opened, so the drawer opens on it.

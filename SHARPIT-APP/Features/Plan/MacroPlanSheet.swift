@@ -54,6 +54,7 @@ struct MacroPlanSheet: View {
                 Text("Les phases et charges cibles disparaissent de Plan. Les séances déjà posées au calendrier restent.")
             }
         }
+        .sharpitSheet()
     }
 
     // MARK: - Active Plan View

@@ -148,7 +148,10 @@ private struct PlannedStepContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+            HStack(alignment: .top, spacing: SharpitSpacing.xs) {
+                if let thumb = ExerciseMediaCatalog.thumbURL(name: step.label) {
+                    GuidedExerciseThumbView(url: thumb, size: 40)
+                }
                 Text(step.label)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)

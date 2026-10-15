@@ -15,6 +15,8 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     var regularity: Regularity?
     var training: Training?
     var goal: Goal?
+    /// Latest GPS session for the « Dernière activité » map widget.
+    var lastActivity: LastActivity?
     /// The parts of SharpIt the athlete uses: a widget of a feature turned off says so.
     var features: V1FeaturePrefs?
     /// SharpIt Pro: the extra widgets (sleep, weight, volume, regularity, goal) are Pro. Nil until
@@ -28,6 +30,7 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         regularity: Regularity? = nil,
         training: Training? = nil,
         goal: Goal? = nil,
+        lastActivity: LastActivity? = nil,
         features: V1FeaturePrefs? = nil
     ) {
         self.day = day
@@ -36,6 +39,7 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         self.regularity = regularity
         self.training = training
         self.goal = goal
+        self.lastActivity = lastActivity
         self.features = features
     }
 
@@ -189,6 +193,32 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         var targetPerformance: String?
     }
 
+    // MARK: Last activity
+
+    /// The most recent GPS session — map image lives beside the snapshot JSON in the App Group.
+    nonisolated struct LastActivity: Codable, Equatable, Sendable {
+        var id: String
+        var title: String
+        var sport: V1ActivityType
+        var dayId: String
+        var distanceValue: String
+        var distanceUnit: String
+        var durationValue: String
+        var durationUnit: String
+        var paceLabel: String
+        var paceValue: String
+        var paceUnit: String
+        /// `[lat, lon]` pairs, downsampled — the widget draws the trail from these (no PNG required).
+        var route: [[Double]]
+
+        /// Gallery / placeholder ids open the Activité tab, never a fake detail.
+        var link: URL {
+            id.isEmpty || id == "preview" || id == "a-last"
+                ? WidgetSnapshot.link("/activity")
+                : WidgetSnapshot.link("/activity/\(id)")
+        }
+    }
+
     // MARK: Freshness
 
     func day(on date: Date, calendar: Calendar = .current) -> Day? {
@@ -241,12 +271,32 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
 nonisolated enum WidgetSnapshotStore {
     static let appGroup = "group.app.sharpit.ios"
     static let fileName = "widget-snapshot.json"
+    /// Map PNG for « Dernière activité », written by the app next to the JSON.
+    static let lastActivityMapFileName = "last-activity-map.png"
 
     static func read(from directory: URL? = containerURL) -> WidgetSnapshot? {
         guard let url = directory?.appending(path: fileName),
               let data = try? Data(contentsOf: url)
         else { return nil }
-        return try? decoder.decode(WidgetSnapshot.self, from: data)
+        if var snapshot = try? decoder.decode(WidgetSnapshot.self, from: data) {
+            // Gallery placeholder id once leaked into the store and opened a missing session.
+            if snapshot.lastActivity?.id.isEmpty == true || snapshot.lastActivity?.id == "a-last" {
+                snapshot.lastActivity = nil
+                try? write(snapshot, to: directory)
+            }
+            return snapshot
+        }
+        // `lastActivity` schema moved (value/unit split): a stale key used to fail the whole
+        // file and blank every widget. Drop that section and keep the rest.
+        guard var json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        json.removeValue(forKey: "lastActivity")
+        guard let repaired = try? JSONSerialization.data(withJSONObject: json),
+              let snapshot = try? decoder.decode(WidgetSnapshot.self, from: repaired)
+        else { return nil }
+        try? write(snapshot, to: directory)
+        return snapshot
     }
 
     static func write(_ snapshot: WidgetSnapshot, to directory: URL? = containerURL) throws {
