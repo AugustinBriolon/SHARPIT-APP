@@ -120,19 +120,19 @@ import Testing
     store.feeling = .good
     store.notes = "Léa — prêt"
 
-    var confirmedVerdict: V1WellnessVerdictSummary?
-    var failed = false
-    #expect(store.submitOptimistic(
-        onConfirmed: { confirmedVerdict = $0 },
-        onFailed: { failed = true }
-    ))
+    let outcome = RessentiSaveOutcome()
+    let started = store.submitOptimistic(
+        onConfirmed: { outcome.verdict = $0 },
+        onFailed: { outcome.failed = true }
+    )
+    #expect(started)
     // Optimistic: UI may close immediately with didSave already true.
     #expect(store.didSave)
     #expect(local.draft(athleteId: "lea", localDate: "2026-10-15")?.feeling == 4)
 
     await store.settle()
-    #expect(!failed)
-    #expect(confirmedVerdict?.overallVerdict == .caution)
+    #expect(!outcome.failed)
+    #expect(outcome.verdict?.overallVerdict == .caution)
     #expect(local.draft(athleteId: "lea", localDate: "2026-10-15") == nil)
     let sent = await client.recorded()
     #expect(sent.count == 1)
@@ -158,17 +158,17 @@ import Testing
     store.energy = .four
     store.notes = "Léa — note à garder"
 
-    var confirmed = false
-    var failed = false
-    #expect(store.submitOptimistic(
-        onConfirmed: { _ in confirmed = true },
-        onFailed: { failed = true }
-    ))
+    let outcome = RessentiSaveOutcome()
+    let started = store.submitOptimistic(
+        onConfirmed: { _ in outcome.confirmed = true },
+        onFailed: { outcome.failed = true }
+    )
+    #expect(started)
     #expect(store.didSave)
 
     await store.settle()
-    #expect(failed)
-    #expect(!confirmed)
+    #expect(outcome.failed)
+    #expect(!outcome.confirmed)
     // Input never lost silently — still in the protected file.
     let draft = try #require(local.draft(athleteId: "lea", localDate: "2026-10-15"))
     #expect(draft.feeling == SessionFeeling.okay.rawValue)
@@ -225,6 +225,14 @@ import Testing
     #expect(!SharpitBannerDismiss.shouldDismiss(height: height, translationY: 40, velocityY: 200))
     // Up follows the finger 1:1.
     #expect(SharpitBannerDismiss.offset(translationY: -30, height: height) == -30)
+}
+
+/// Captures optimistic-save callbacks without non-Sendable local `var` captures in `#expect`.
+@MainActor
+private final class RessentiSaveOutcome: @unchecked Sendable {
+    var verdict: V1WellnessVerdictSummary?
+    var confirmed = false
+    var failed = false
 }
 
 /// Local stub — kept here so Ressenti tests do not depend on WellnessTests internals.
