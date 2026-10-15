@@ -6,6 +6,10 @@ import Observation
 /// Server is the source of truth for whether today's check-in exists
 /// (`GET /api/v1/wellness-checkin/status`). Dismissal and draft live on disk
 /// (`WellnessCheckInLocalStore`), never in UserDefaults.
+///
+/// Saves are optimistic: the sheet closes and the morning-feel badge clears on tap;
+/// state is final only after the server confirms. On failure the draft stays on disk
+/// so the sheet can reopen with the typed input and « Pas enregistré, réessaie ».
 @MainActor
 @Observable
 final class RessentiDuJourStore {
@@ -14,6 +18,9 @@ final class RessentiDuJourStore {
         case submitting
         case failed(String)
     }
+
+    /// Exact copy shown when a background save fails for good.
+    static let saveFailureMessage = "Pas enregistré, réessaie"
 
     private(set) var phase: Phase = .idle
     /// Primary morning feeling — maps onto wellness `mood`.
@@ -25,6 +32,7 @@ final class RessentiDuJourStore {
     var detailsExpanded = false
     /// Set after a successful save so the host can fade the plate when the code changed.
     private(set) var submittedVerdict: V1WellnessVerdictSummary?
+    /// Optimistic then confirmed — cleared again if the server refuses.
     private(set) var didSave = false
 
     private let client: any WellnessServing
@@ -33,6 +41,7 @@ final class RessentiDuJourStore {
     private let athleteId: String
     /// Always today's local training day — never another day from this sheet.
     private let trainingDayId: String
+    @ObservationIgnored private var write: Task<Void, Never>?
 
     var canSubmit: Bool { feeling != nil && phase != .submitting }
 
@@ -41,13 +50,17 @@ final class RessentiDuJourStore {
         tokenProvider: @escaping () async throws -> String,
         athleteId: String,
         trainingDayId: String = TrainingDayId.today(),
-        local: WellnessCheckInLocalStore = .shared
+        local: WellnessCheckInLocalStore = .shared,
+        initialFailureMessage: String? = nil
     ) {
         self.client = client
         self.tokenProvider = tokenProvider
         self.athleteId = athleteId
         self.trainingDayId = trainingDayId
         self.local = local
+        if let initialFailureMessage {
+            phase = .failed(initialFailureMessage)
+        }
         restoreDraft()
     }
 
@@ -94,35 +107,57 @@ final class RessentiDuJourStore {
         )
     }
 
-    /// Waits for the server, then clears the draft. Returns the additive verdict summary.
-    @discardableResult
-    func submit() async -> V1WellnessVerdictSummary? {
-        guard let entry = makeEntry() else { return nil }
-        phase = .submitting
-        do {
-            let response = try await SharpitRetry.run {
-                try await self.client.submitWellnessCheckin(
-                    entry,
-                    trainingDayId: self.trainingDayId,
-                    token: try await self.tokenProvider()
-                )
-            }
-            local.clearDraft(athleteId: athleteId)
-            submittedVerdict = response.verdict
-            didSave = true
-            phase = .idle
-            return response.verdict
-        } catch {
-            phase = .failed(Self.message(for: error))
-            return nil
-        }
+    /// Waits for the check-in sent last — for a test.
+    func settle() async {
+        await write?.value
     }
 
-    private static func message(for error: Error) -> String {
-        if let apiError = error as? SharpitAPIError, apiError == .unauthorized {
-            return "Session expirée. Reconnecte-toi."
+    /// Optimistic save: persists the draft, marks `didSave`, and sends behind the closed sheet.
+    ///
+    /// Returns `false` when nothing can be sent (no feeling). Captures dependencies so the
+    /// write outlives the sheet's store. Never logs health values, notes, or tokens.
+    @discardableResult
+    func submitOptimistic(
+        onConfirmed: @escaping @MainActor (V1WellnessVerdictSummary?) -> Void,
+        onFailed: @escaping @MainActor () -> Void
+    ) -> Bool {
+        guard let entry = makeEntry() else { return false }
+        persistDraft()
+        didSave = true
+        phase = .submitting
+
+        let client = self.client
+        let tokenProvider = self.tokenProvider
+        let trainingDayId = self.trainingDayId
+        let local = self.local
+        let athleteId = self.athleteId
+
+        write = Task { [weak self] in
+            do {
+                let response = try await SharpitRetry.run {
+                    try await client.submitWellnessCheckin(
+                        entry,
+                        trainingDayId: trainingDayId,
+                        token: try await tokenProvider()
+                    )
+                }
+                local.clearDraft(athleteId: athleteId)
+                await MainActor.run {
+                    self?.submittedVerdict = response.verdict
+                    self?.phase = .idle
+                }
+                await onConfirmed(response.verdict)
+            } catch is CancellationError {
+            } catch {
+                // Draft stays on disk — the host reopens the sheet with it.
+                await MainActor.run {
+                    self?.didSave = false
+                    self?.phase = .failed(Self.saveFailureMessage)
+                }
+                await onFailed()
+            }
         }
-        return "Ton ressenti n'a pas pu être enregistré."
+        return true
     }
 }
 

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import Sharpit
@@ -36,10 +37,10 @@ import Testing
     defer { try? FileManager.default.removeItem(at: url) }
     let store = WellnessCheckInLocalStore(fileURL: url)
 
-    #expect(!store.isDismissed(athleteId: "a1", localDate: "2026-10-15"))
-    store.dismiss(athleteId: "a1", localDate: "2026-10-15")
-    #expect(store.isDismissed(athleteId: "a1", localDate: "2026-10-15"))
-    #expect(!store.isDismissed(athleteId: "a1", localDate: "2026-10-16"))
+    #expect(!store.isDismissed(athleteId: "lea", localDate: "2026-10-15"))
+    store.dismiss(athleteId: "lea", localDate: "2026-10-15")
+    #expect(store.isDismissed(athleteId: "lea", localDate: "2026-10-15"))
+    #expect(!store.isDismissed(athleteId: "lea", localDate: "2026-10-16"))
     #expect(!store.isDismissed(athleteId: "a2", localDate: "2026-10-15"))
 }
 
@@ -51,18 +52,51 @@ import Testing
 
     store.saveDraft(
         WellnessCheckInLocalStore.Draft(feeling: 4, energy: 3, soreness: nil, stress: nil, notes: "ok", detailsExpanded: true),
-        athleteId: "a1",
+        athleteId: "lea",
         localDate: "2026-10-15"
     )
-    #expect(store.draft(athleteId: "a1", localDate: "2026-10-15")?.feeling == 4)
-    store.clearDraft(athleteId: "a1")
-    #expect(store.draft(athleteId: "a1", localDate: "2026-10-15") == nil)
+    #expect(store.draft(athleteId: "lea", localDate: "2026-10-15")?.feeling == 4)
+    store.clearDraft(athleteId: "lea")
+    #expect(store.draft(athleteId: "lea", localDate: "2026-10-15") == nil)
     store.erase()
     #expect(store.load() == nil)
 }
 
+/// Drafts live in the protected Application Support file from #17 — never UserDefaults.
+@Test func ressentiDraftStorageIsProtectedFileNotUserDefaults() throws {
+    let sharedURL = WellnessCheckInLocalStore.shared.fileURL
+    #expect(sharedURL.lastPathComponent == "WellnessCheckInLocal.json")
+    #expect(sharedURL.path.contains("Application Support") || sharedURL.path.contains("Application%20Support"))
+
+    let defaults = UserDefaults.standard
+    let before = defaults.dictionaryRepresentation().keys.filter { $0.localizedCaseInsensitiveContains("wellness") || $0.localizedCaseInsensitiveContains("ressenti") }
+
+    let url = FileManager.default.temporaryDirectory
+        .appending(path: "wellness-storage-\(UUID().uuidString).json")
+    defer { try? FileManager.default.removeItem(at: url) }
+    let local = WellnessCheckInLocalStore(fileURL: url)
+    // Demo athlete Léa — no real health values.
+    local.saveDraft(
+        WellnessCheckInLocalStore.Draft(
+            feeling: 4,
+            energy: 3,
+            soreness: 2,
+            stress: 2,
+            notes: "Léa — matin démo",
+            detailsExpanded: false
+        ),
+        athleteId: "lea",
+        localDate: "2026-10-15"
+    )
+    #expect(FileManager.default.fileExists(atPath: url.path))
+    #expect(local.draft(athleteId: "lea", localDate: "2026-10-15")?.notes == "Léa — matin démo")
+
+    let after = defaults.dictionaryRepresentation().keys.filter { $0.localizedCaseInsensitiveContains("wellness") || $0.localizedCaseInsensitiveContains("ressenti") }
+    #expect(Set(after) == Set(before))
+}
+
 @MainActor
-@Test func ressentiSubmitMapsFeelingToMoodAndReturnsVerdict() async throws {
+@Test func ressentiOptimisticSuccessClearsDraftAfterConfirm() async throws {
     let client = StubWellnessForRessenti(
         verdict: V1WellnessVerdictSummary(
             overallVerdict: .caution,
@@ -72,41 +106,145 @@ import Testing
         )
     )
     let url = FileManager.default.temporaryDirectory
-        .appending(path: "wellness-ressenti-\(UUID().uuidString).json")
+        .appending(path: "wellness-ressenti-ok-\(UUID().uuidString).json")
     defer { try? FileManager.default.removeItem(at: url) }
     let local = WellnessCheckInLocalStore(fileURL: url)
 
     let store = RessentiDuJourStore(
         client: client,
         tokenProvider: { "token" },
-        athleteId: "a1",
+        athleteId: "lea",
         trainingDayId: "2026-10-15",
         local: local
     )
-    #expect(!store.canSubmit)
     store.feeling = .good
-    #expect(store.canSubmit)
+    store.notes = "Léa — prêt"
 
-    let entry = try #require(store.makeEntry())
-    #expect(entry.mood == 4)
-    #expect(entry.energyLevel == 3)
-
-    let verdict = await store.submit()
-    #expect(verdict?.overallVerdict == .caution)
+    let outcome = RessentiSaveOutcome()
+    let started = store.submitOptimistic(
+        onConfirmed: { outcome.verdict = $0 },
+        onFailed: { outcome.failed = true }
+    )
+    #expect(started)
+    // Optimistic: UI may close immediately with didSave already true.
     #expect(store.didSave)
-    #expect(local.draft(athleteId: "a1", localDate: "2026-10-15") == nil)
+    #expect(local.draft(athleteId: "lea", localDate: "2026-10-15")?.feeling == 4)
+
+    await store.settle()
+    #expect(!outcome.failed)
+    #expect(outcome.verdict?.overallVerdict == .caution)
+    #expect(local.draft(athleteId: "lea", localDate: "2026-10-15") == nil)
     let sent = await client.recorded()
     #expect(sent.count == 1)
     #expect(sent.first?.mood == 4)
 }
 
+@MainActor
+@Test func ressentiOptimisticFailureKeepsDraftAndReportsMessage() async throws {
+    let client = StubWellnessForRessenti(verdict: nil, shouldFail: true)
+    let url = FileManager.default.temporaryDirectory
+        .appending(path: "wellness-ressenti-fail-\(UUID().uuidString).json")
+    defer { try? FileManager.default.removeItem(at: url) }
+    let local = WellnessCheckInLocalStore(fileURL: url)
+
+    let store = RessentiDuJourStore(
+        client: client,
+        tokenProvider: { "token" },
+        athleteId: "lea",
+        trainingDayId: "2026-10-15",
+        local: local
+    )
+    store.feeling = .okay
+    store.energy = .four
+    store.notes = "Léa — note à garder"
+
+    let outcome = RessentiSaveOutcome()
+    let started = store.submitOptimistic(
+        onConfirmed: { _ in outcome.confirmed = true },
+        onFailed: { outcome.failed = true }
+    )
+    #expect(started)
+    #expect(store.didSave)
+
+    await store.settle()
+    #expect(outcome.failed)
+    #expect(!outcome.confirmed)
+    // Input never lost silently — still in the protected file.
+    let draft = try #require(local.draft(athleteId: "lea", localDate: "2026-10-15"))
+    #expect(draft.feeling == SessionFeeling.okay.rawValue)
+    #expect(draft.energy == WellnessScore.four.rawValue)
+    #expect(draft.notes == "Léa — note à garder")
+    #expect(RessentiDuJourStore.saveFailureMessage == "Pas enregistré, réessaie")
+
+    // Reopen path: a new store restores the draft and can show the failure copy.
+    let reopened = RessentiDuJourStore(
+        client: client,
+        tokenProvider: { "token" },
+        athleteId: "lea",
+        trainingDayId: "2026-10-15",
+        local: local,
+        initialFailureMessage: RessentiDuJourStore.saveFailureMessage
+    )
+    #expect(reopened.feeling == .okay)
+    #expect(reopened.notes == "Léa — note à garder")
+    #expect(reopened.phase == .failed(RessentiDuJourStore.saveFailureMessage))
+}
+
+@MainActor
+@Test func morningFeelBadgeClearsOptimisticallyAndRestoresOnFailure() {
+    var count = 3
+    let badge = MorningFeelBadge(
+        readCount: { count },
+        writeCount: { count = $0 }
+    )
+    #expect(!badge.isAwaitingConfirmation)
+    badge.clearOptimistically()
+    #expect(count == 0)
+    #expect(badge.isAwaitingConfirmation)
+
+    badge.restore()
+    #expect(count == 3)
+    #expect(!badge.isAwaitingConfirmation)
+
+    count = 2
+    badge.clearOptimistically()
+    #expect(count == 0)
+    badge.confirmCleared()
+    #expect(count == 0)
+    #expect(!badge.isAwaitingConfirmation)
+}
+
+@Test func bannerDismissCommitsPastFortyPercentOrFastFlick() {
+    let height: CGFloat = 100
+    #expect(SharpitBannerDismiss.shouldDismiss(height: height, translationY: -40, velocityY: 0))
+    #expect(!SharpitBannerDismiss.shouldDismiss(height: height, translationY: -20, velocityY: 0))
+    #expect(SharpitBannerDismiss.shouldDismiss(height: height, translationY: -10, velocityY: -1000))
+    // Downward rubber band stays positive and never dismisses.
+    #expect(SharpitBannerDismiss.offset(translationY: 40, height: height) > 0)
+    #expect(SharpitBannerDismiss.offset(translationY: 40, height: height) < 40)
+    #expect(!SharpitBannerDismiss.shouldDismiss(height: height, translationY: 40, velocityY: 200))
+    // Up follows the finger 1:1.
+    #expect(SharpitBannerDismiss.offset(translationY: -30, height: height) == -30)
+}
+
+/// Captures optimistic-save callbacks without non-Sendable local `var` captures in `#expect`.
+@MainActor
+private final class RessentiSaveOutcome: @unchecked Sendable {
+    var verdict: V1WellnessVerdictSummary?
+    var confirmed = false
+    var failed = false
+}
+
 /// Local stub — kept here so Ressenti tests do not depend on WellnessTests internals.
+/// Demo athlete data only (Léa); never real user health values.
 private actor StubWellnessForRessenti: WellnessServing {
     private let verdict: V1WellnessVerdictSummary?
+    private let shouldFail: Bool
     private(set) var submitted: [V1WellnessEntry] = []
 
-    init(verdict: V1WellnessVerdictSummary?) {
+    init(verdict: V1WellnessVerdictSummary?, shouldFail: Bool = false) {
         self.verdict = verdict
+        self.shouldFail = shouldFail
     }
 
     func wellnessCheckin(trainingDayId _: String, token _: String) async throws -> V1WellnessCheckin {
@@ -122,6 +260,7 @@ private actor StubWellnessForRessenti: WellnessServing {
         trainingDayId: String,
         token _: String
     ) async throws -> V1WellnessSubmitResponse {
+        if shouldFail { throw SharpitAPIError.server }
         submitted.append(entry)
         return V1WellnessSubmitResponse(
             trainingDayId: trainingDayId,

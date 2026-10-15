@@ -25,6 +25,10 @@ struct TodayView: View {
     /// Today's food log for the nutrition card. Nil without a token or a client.
     @State private var nutrition: NutritionTodayStore?
     @State private var showsCheckIn = false
+    /// True while an optimistic Ressenti save waits on the server — blocks re-prompting.
+    @State private var ressentiPendingConfirmation = false
+    /// Shown when the sheet reopens after a failed optimistic save.
+    @State private var ressentiFailureMessage: String?
     /// Bumped when a wellness save changed the morning verdict — fades the ink plate.
     @State private var verdictFadeToken = 0
     /// Held as well as handed to the store, because the journal opened from here caches its
@@ -161,8 +165,28 @@ struct TodayView: View {
                         tokenProvider: tokenProvider,
                         athleteId: athleteId,
                         trainingDayId: TrainingDayId.today(),
+                        initialFailureMessage: ressentiFailureMessage,
+                        onOptimisticClose: {
+                            ressentiPendingConfirmation = true
+                            ressentiFailureMessage = nil
+                            showsCheckIn = false
+                            MorningFeelBadge.shared.clearOptimistically()
+                        },
                         onSaved: { summary in
+                            ressentiPendingConfirmation = false
+                            ressentiFailureMessage = nil
+                            MorningFeelBadge.shared.confirmCleared()
                             handleRessentiSaved(summary)
+                        },
+                        onSaveFailed: {
+                            ressentiPendingConfirmation = false
+                            ressentiFailureMessage = RessentiDuJourStore.saveFailureMessage
+                            MorningFeelBadge.shared.restore()
+                            // Let the optimistic dismiss settle before re-presenting with the draft.
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .milliseconds(350))
+                                showsCheckIn = true
+                            }
                         }
                     )
                 }
@@ -223,7 +247,7 @@ extension TodayView {
     /// is missing and the athlete has not dismissed it for this local day.
     @MainActor
     fileprivate func evaluateRessentiPrompt() async {
-        guard !showsCheckIn else { return }
+        guard !showsCheckIn, !ressentiPendingConfirmation else { return }
         guard let wellnessClient, let tokenProvider, let athleteId = localAthleteId else { return }
         do {
             let token = try await tokenProvider()
