@@ -28,7 +28,15 @@ private struct StubTodayClient: TodayServing {
         Issue.record("expected loaded phase")
         return
     }
-    #expect(fold.plate.statusLabel == "FEU VERT")
+    // FixtureTodayClient ships the additive verdict vocabulary (PR #154 tags), not the
+    // legacy « FEU VERT » label still present in full.json for decode backward-compat.
+    #expect(fold.plate.statusLabel == "Léger")
+    #expect(fold.plate.stateCode == .trainEasy)
+    #expect(fold.plate.showHeadline == false)
+    #expect(fold.plate.instruction == "Reste en endurance facile.")
+    #expect(fold.plate.explanationEssential == "Ton corps est prêt pour une séance légère.")
+    #expect(fold.plate.limiterSignals == [.sleepShort])
+    #expect(fold.plate.vsYesterdayLabel == "Comme hier")
     #expect(fold.gauges.map(\.key) == [.sleep, .recovery])
     #expect(fold.sessions.first?.sport == "Course")
 }
