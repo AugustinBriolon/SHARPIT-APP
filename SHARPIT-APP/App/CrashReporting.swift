@@ -26,12 +26,12 @@ enum CrashReporting {
         options.attachScreenshot = false
         options.attachViewHierarchy = false
         // Replay is a view reconstruction, not a raw screen recording. Text and images stay masked.
-        // Keep every session while we confirm uploads in Sentry (kill ≠ error, so onError alone
-        // never covers a clean quit). Drop `sessionSampleRate` to 0.1 in production after that.
+        // onError keeps every crash session; routine sessions stay sparse — 100% ate memory and
+        // coincided with launch traps on TestFlight.
         options.sessionReplay.maskAllText = true
         options.sessionReplay.maskAllImages = true
         options.sessionReplay.onErrorSampleRate = 1
-        options.sessionReplay.sessionSampleRate = 1
+        options.sessionReplay.sessionSampleRate = 0.1
         options.enableAutoBreadcrumbTracking = true
         options.enableNetworkBreadcrumbs = true
         options.enableCaptureFailedRequests = false
