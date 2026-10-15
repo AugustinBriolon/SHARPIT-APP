@@ -75,11 +75,13 @@ enum HealthUploadObserver {
                 return
             }
             let finish = ObserverCompletion(completion)
-            // Explicit MainActor: an unstructured Task from HealthKit's queue used to form a
-            // partial of `sendNewSamples` and trap on `dispatch_assert_queue` (APPLE-IOS-2).
-            Task { @MainActor in
-                await HealthUploadObserver.sendNewSamples()
-                finish.run()
+            // Hop onto main first: forming a MainActor partial from HealthKit's queue trapped
+            // on `dispatch_assert_queue` at launch (APPLE-IOS-2). Completion stays off main.
+            DispatchQueue.main.async {
+                Task { @MainActor in
+                    await HealthUploadObserver.sendNewSamples()
+                    finish.run()
+                }
             }
         }
     }

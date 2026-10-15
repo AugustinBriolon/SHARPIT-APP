@@ -18,8 +18,8 @@ import Testing
     #expect(options.sessionReplay.maskAllText)
     #expect(options.sessionReplay.maskAllImages)
     #expect(options.sessionReplay.networkDetailAllowUrls.isEmpty)
-    #expect(options.sessionReplay.onErrorSampleRate == 1)
-    #expect(options.sessionReplay.sessionSampleRate == 0.1)
+    #expect(options.sessionReplay.onErrorSampleRate == 0)
+    #expect(options.sessionReplay.sessionSampleRate == 0)
 }
 
 @Test func crashReportsGoToTheEURegion() throws {

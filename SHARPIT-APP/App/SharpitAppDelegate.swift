@@ -2,7 +2,6 @@ import UIKit
 import UserNotifications
 
 /// Application delegate handling APNs registration callbacks and foreground notification presentation.
-@MainActor
 final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
@@ -10,9 +9,12 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         // Before anything else returns: a background launch by HealthKit delivers only to
-        // observers registered here.
+        // observers registered here. UIKit calls this on main; assumeIsolated avoids an
+        // async hop that would register too late for a HK wake (APPLE-IOS-2).
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
-            HealthUploadObserver.start()
+            MainActor.assumeIsolated {
+                HealthUploadObserver.start()
+            }
         }
         return true
     }
@@ -21,7 +23,9 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        PushNotificationManager.shared.didRegisterForRemoteNotifications(with: deviceToken)
+        Task { @MainActor in
+            PushNotificationManager.shared.didRegisterForRemoteNotifications(with: deviceToken)
+        }
     }
 
     /// A silent push after the server synced the athlete's sources: today is read again so the
@@ -59,8 +63,11 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
-        // Store before completionHandler — a cold launch can otherwise finish before RootView reads it.
-        PushNotificationManager.shared.didReceiveNotificationResponse(userInfo: userInfo)
-        completionHandler()
+        // Destination must be stored before we tell the system we're done — otherwise a cold
+        // launch can finish the callback before MainActor runs and RootView never sees a tap.
+        Task { @MainActor in
+            PushNotificationManager.shared.didReceiveNotificationResponse(userInfo: userInfo)
+            completionHandler()
+        }
     }
 }
