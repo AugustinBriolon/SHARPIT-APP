@@ -35,3 +35,21 @@ import Testing
         #expect(center.current == nil)
     }
 }
+
+@Suite struct SharpitBannerDismissTests {
+    @Test func upwardDragPastFortyPercentDismisses() {
+        #expect(SharpitBannerDismiss.shouldDismiss(height: 50, translationY: -20, velocityY: 0))
+        #expect(!SharpitBannerDismiss.shouldDismiss(height: 50, translationY: -10, velocityY: 0))
+    }
+
+    @Test func fastUpwardFlickDismissesEvenWhenShort() {
+        #expect(SharpitBannerDismiss.shouldDismiss(height: 80, translationY: -8, velocityY: -950))
+    }
+
+    @Test func downwardDragIsRubberBandedAndDoesNotDismiss() {
+        let offset = SharpitBannerDismiss.offset(translationY: 30, height: 60)
+        #expect(offset > 0)
+        #expect(offset < 30)
+        #expect(!SharpitBannerDismiss.shouldDismiss(height: 60, translationY: 30, velocityY: 400))
+    }
+}

@@ -5,12 +5,21 @@ import SwiftUI
 /// Reuses `SubjectiveScale` + `RatingGrid` (post-strength rating) directly — no fork.
 /// Extra journal scales stay collapsed under « Ajouter un détail »; expanding them
 /// switches the detent to `.large`.
+///
+/// « Enregistrer » is optimistic: the sheet closes at once; the host clears the
+/// morning-feel badge. Server confirmation finalises; a refusal reopens with the
+/// draft and `RessentiDuJourStore.saveFailureMessage`.
 struct RessentiDuJourSheet: View {
     @State private var store: RessentiDuJourStore
     @State private var detent: PresentationDetent = .medium
     @State private var saveSucceeded = false
 
+    /// Fired on tap — host closes the sheet and clears the badge before the network returns.
+    let onOptimisticClose: () -> Void
+    /// Fired only after the server confirms.
     let onSaved: (V1WellnessVerdictSummary?) -> Void
+    /// Fired when the write fails for good — host restores badge and reopens.
+    let onSaveFailed: () -> Void
     let onDismissLater: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -22,7 +31,10 @@ struct RessentiDuJourSheet: View {
         athleteId: String,
         trainingDayId: String = TrainingDayId.today(),
         local: WellnessCheckInLocalStore = .shared,
+        initialFailureMessage: String? = nil,
+        onOptimisticClose: @escaping () -> Void = {},
         onSaved: @escaping (V1WellnessVerdictSummary?) -> Void,
+        onSaveFailed: @escaping () -> Void = {},
         onDismissLater: @escaping () -> Void = {}
     ) {
         _store = State(
@@ -31,10 +43,13 @@ struct RessentiDuJourSheet: View {
                 tokenProvider: tokenProvider,
                 athleteId: athleteId,
                 trainingDayId: trainingDayId,
-                local: local
+                local: local,
+                initialFailureMessage: initialFailureMessage
             )
         )
+        self.onOptimisticClose = onOptimisticClose
         self.onSaved = onSaved
+        self.onSaveFailed = onSaveFailed
         self.onDismissLater = onDismissLater
     }
 
@@ -191,7 +206,7 @@ struct RessentiDuJourSheet: View {
             }
 
             Button {
-                Task { await save() }
+                save()
             } label: {
                 HStack(spacing: SharpitSpacing.xs) {
                     if store.phase == .submitting {
@@ -221,27 +236,25 @@ struct RessentiDuJourSheet: View {
         .background(.bar)
     }
 
-    private func save() async {
-        let verdict = await store.submit()
-        guard store.didSave else {
-            if case .failed(let message) = store.phase {
+    /// Closes at once; the write continues behind. Input stays in the protected draft file.
+    private func save() {
+        let started = store.submitOptimistic(
+            onConfirmed: { verdict in
+                onSaved(verdict)
                 toastCenter?.show(
-                    message,
-                    symbol: "exclamationmark.triangle.fill",
-                    tone: .error,
-                    autoDismissAfter: 3.5
+                    "Ressenti noté ✓",
+                    symbol: "checkmark.circle.fill",
+                    tone: .success,
+                    autoDismissAfter: 2.5
                 )
+            },
+            onFailed: {
+                onSaveFailed()
             }
-            return
-        }
-        saveSucceeded = true
-        onSaved(verdict)
-        dismiss()
-        toastCenter?.show(
-            "Ressenti noté ✓",
-            symbol: "checkmark.circle.fill",
-            tone: .success,
-            autoDismissAfter: 2.5
         )
+        guard started else { return }
+        saveSucceeded = true
+        onOptimisticClose()
+        dismiss()
     }
 }

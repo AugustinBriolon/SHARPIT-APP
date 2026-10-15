@@ -131,21 +131,88 @@ private struct SharpitToastView: View {
 
 /// Hosts the one toast the app shows, pinned under the status bar. `RootView` mounts this
 /// above the `TabView`, and again on the Paramètres sheet (sheets cover the tab overlay).
+///
+/// Swipe up follows the finger and dismisses past ~40 % height or on a fast flick
+/// (`SharpitBannerDismiss`); downward drag rubber-bands. Reduce Motion: fade only.
 struct SharpitToastHost: View {
     let center: SharpitToastCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var dragOffset: CGFloat = 0
+    @State private var bannerHeight: CGFloat = 48
 
     var body: some View {
         VStack(spacing: 0) {
             if let toast = center.current {
                 SharpitToastView(toast: toast)
                     .padding(.top, SharpitSpacing.xs)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear.preference(key: BannerHeightKey.self, value: geo.size.height)
+                        }
+                    )
+                    .onPreferenceChange(BannerHeightKey.self) { bannerHeight = max($0, 1) }
+                    .offset(y: reduceMotion ? 0 : dragOffset)
+                    .opacity(reduceMotion && dragOffset < 0 ? max(0, 1 + dragOffset / max(bannerHeight, 1)) : 1)
+                    .gesture(dismissDrag)
+                    .transition(
+                        reduceMotion
+                            ? .opacity
+                            : .move(edge: .top).combined(with: .opacity)
+                    )
                     .onTapGesture { center.dismissCurrent() }
+                    .onChange(of: toast.id) { _, _ in dragOffset = 0 }
             }
             Spacer(minLength: 0)
         }
         .animation(SharpitMotion.reveal, value: center.current)
         .allowsHitTesting(center.current != nil)
+    }
+
+    private var dismissDrag: some Gesture {
+        DragGesture(minimumDistance: 8)
+            .onChanged { value in
+                if reduceMotion {
+                    // Track upward intent only; dismiss is a fade on end.
+                    dragOffset = min(0, value.translation.height)
+                    return
+                }
+                dragOffset = SharpitBannerDismiss.offset(
+                    translationY: value.translation.height,
+                    height: bannerHeight
+                )
+            }
+            .onEnded { value in
+                let shouldClose = SharpitBannerDismiss.shouldDismiss(
+                    height: bannerHeight,
+                    translationY: value.translation.height,
+                    velocityY: value.velocity.height
+                )
+                if shouldClose {
+                    if reduceMotion {
+                        withAnimation(SharpitMotion.fade) {
+                            center.dismissCurrent()
+                            dragOffset = 0
+                        }
+                    } else {
+                        withAnimation(SharpitMotion.reveal) {
+                            dragOffset = -bannerHeight * 1.2
+                        }
+                        center.dismissCurrent()
+                        dragOffset = 0
+                    }
+                } else {
+                    withAnimation(SharpitMotion.reveal) {
+                        dragOffset = 0
+                    }
+                }
+            }
+    }
+}
+
+private struct BannerHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 48
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
