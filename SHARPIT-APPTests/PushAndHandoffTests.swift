@@ -122,7 +122,29 @@ struct PushAndHandoffTests {
         #expect(PushNotificationManager.destination(for: ["url": "/settings"]) == .settings(nil))
         #expect(PushNotificationManager.destination(for: ["url": "/plan"]) == .tab(.plan))
         #expect(PushNotificationManager.destination(for: ["url": "https://sharpit.app/today"]) == .tab(.today))
+        #expect(PushNotificationManager.destination(for: ["url": "/journal"]) == .journal)
+        #expect(PushNotificationManager.destination(for: ["url": "/plan/session/sess-1"]) == .plannedSession(id: "sess-1"))
         #expect(PushNotificationManager.destination(for: [:]) == nil)
+    }
+
+    @MainActor
+    @Test func aRepeatedTapStillDelivers() {
+        let manager = PushNotificationManager()
+        manager.didReceiveNotificationResponse(userInfo: ["url": "/plan"])
+        let firstToken = manager.pendingDeliveryToken
+        #expect(manager.consumePendingDestination() == .tab(.plan))
+
+        manager.didReceiveNotificationResponse(userInfo: ["url": "/plan"])
+        #expect(manager.pendingDeliveryToken == firstToken &+ 1)
+        #expect(manager.consumePendingDestination() == .tab(.plan))
+    }
+
+    @MainActor
+    @Test func aJournalReminderOpensTodayJournal() {
+        let router = ShellRouter()
+        router.open(.journal)
+        #expect(router.selectedTab == .today)
+        #expect(router.pendingJournal)
     }
 
     /// « Dommage pour hier » opens the catch-up with the miss; without it, Plan.

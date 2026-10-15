@@ -41,6 +41,9 @@ final class ShellRouter {
     /// its barcode scanner.
     var pendingTodayPage: TodayPage?
 
+    /// Open Journal from Résumé once — a day-check-in reminder tapped.
+    var pendingJournal = false
+
     /// Résumé on one of its pages. Paramètres is closed first: a widget tapped while it was up
     /// would otherwise open its page behind the sheet.
     func openToday(_ page: TodayPage) {
@@ -116,6 +119,8 @@ final class ShellRouter {
             openSettings(on: route)
         case .activity(let id):
             openActivity(id: id)
+        case .plannedSession(let id):
+            openPlannedSession(id: id)
         case .catchUp(let label, let day):
             let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now
             let catchUp = PlanCatchUp(label: label, date: TrainingDayId.date(day) ?? yesterday)
@@ -125,6 +130,10 @@ final class ShellRouter {
             // Today first (verdict surface), then the coach with the morning-brief chip.
             select(.today)
             discussWithCoach(about: CoachDiscuss.describe(.morningBrief(trainingDayId: day)))
+        case .journal:
+            isShowingSettings = false
+            pendingJournal = true
+            select(.today)
         }
     }
 
@@ -161,10 +170,14 @@ enum NotificationDestination: Equatable {
     case goals
     case settings(SettingsRoute?)
     case activity(id: String)
+    /// A planned session reminder — open that session's drawer in Plan.
+    case plannedSession(id: String)
     /// A missed session, by the label the coach is told and its training day.
     case catchUp(label: String, day: String)
     /// Morning verdict → Today then coach with `morning-brief` discuss context.
     case morningBrief(day: String)
+    /// Day check-in local reminder → Résumé then Journal.
+    case journal
 }
 
 /// What a link asks Résumé to show.

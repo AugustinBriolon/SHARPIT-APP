@@ -16,6 +16,10 @@ final class PushNotificationManager {
     /// Where the last tapped notification leads, until the shell opens it.
     var pendingDestination: NotificationDestination?
 
+    /// Bumped on every tap so RootView's `onChange` fires even when the destination equals the
+    /// previous one (e.g. two `/plan` reminders in a row).
+    private(set) var pendingDeliveryToken = 0
+
     /// The athlete's own switch, in Paramètres. iOS owns the permission and the app cannot take
     /// it back, so « off » means the server forgets this device and SharpIt stops asking — the
     /// only way to be silent without sending the athlete into iOS Settings.
@@ -113,6 +117,7 @@ final class PushNotificationManager {
     /// Handles a tapped notification: remembers where it leads, and drops the icon badge.
     func didReceiveNotificationResponse(userInfo: [AnyHashable: Any]) {
         pendingDestination = Self.destination(for: userInfo)
+        pendingDeliveryToken &+= 1
         clearIconBadge()
     }
 
@@ -135,6 +140,7 @@ final class PushNotificationManager {
     nonisolated static let weeklyReviewPath = "/plan/review"
     nonisolated static let sourcesPath = "/settings/sources"
     nonisolated static let activityPathPrefix = "/activity/"
+    nonisolated static let plannedSessionPathPrefix = "/plan/session/"
     nonisolated static let catchUpPath = "/plan/catch-up"
 
     /// Where a notification leads: by its category for the morning verdict, by its `url`
@@ -156,6 +162,8 @@ final class PushNotificationManager {
         case planGeneratorPath: return .planGenerator
         case weeklyReviewPath: return .weeklyReview
         case sourcesPath: return .settings(.sources)
+        // Local day-check-in reminders — Journal lives under Résumé.
+        case "/journal": return .journal
         // « Dommage pour hier » opens « Ajuster le planning » with the miss said.
         case catchUpPath:
             guard let missed = userInfo["catchUp"] as? [String: Any],
@@ -169,6 +177,10 @@ final class PushNotificationManager {
         case let path where path.hasPrefix(activityPathPrefix):
             let id = String(path.dropFirst(activityPathPrefix.count))
             return id.isEmpty || id.contains("/") ? nil : .activity(id: id)
+        // Local session reminder — open that planned session in Plan.
+        case let path where path.hasPrefix(plannedSessionPathPrefix):
+            let id = String(path.dropFirst(plannedSessionPathPrefix.count))
+            return id.isEmpty || id.contains("/") ? .tab(.plan) : .plannedSession(id: id)
         default: return IncomingLink.tab(forPath: url.path).map(NotificationDestination.tab)
         }
     }

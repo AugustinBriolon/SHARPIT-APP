@@ -65,15 +65,14 @@ nonisolated enum VerdictStateCode: Equatable, Hashable, Sendable {
         }
     }
 
-    /// Ink-band accent for the status tag.
+    /// Ink-band accent — must invert with the band (Lime↔Forest). Canvas tokens like
+    /// `primary` collide with Lime ink in dark mode and disappear.
     var inkAccent: Color {
         switch self {
-        case .recover: SharpitColor.primary
-        case .caution: SharpitColor.signalVo2
-        case .trainEasy: SharpitColor.signalTempo
-        case .trainSmart: SharpitColor.signalRecovery
-        case .trainHard, .raceReady: SharpitColor.inkAccent
-        case .insufficientData, .unknown: SharpitColor.inkSurfaceForeground.opacity(0.4)
+        case .recover, .caution, .trainEasy, .trainSmart, .trainHard, .raceReady:
+            SharpitColor.inkAccent
+        case .insufficientData, .unknown:
+            SharpitColor.inkSurfaceForeground.opacity(0.45)
         }
     }
 }

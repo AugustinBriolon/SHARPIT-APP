@@ -116,7 +116,12 @@ final class SessionReminderScheduler {
             content.body = reminder.body
             content.sound = .default
             content.threadIdentifier = "session-reminder"
-            content.userInfo = ["url": "/plan"]
+            let sessionId = String(reminder.id.dropFirst(SessionReminderPlanner.identifierPrefix.count))
+            content.userInfo = [
+                "url": sessionId.isEmpty
+                    ? "/plan"
+                    : PushNotificationManager.plannedSessionPathPrefix + sessionId,
+            ]
             let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: reminder.fireDate)
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
             try? await center.add(UNNotificationRequest(identifier: reminder.id, content: content, trigger: trigger))

@@ -60,9 +60,11 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
+        // Destination must be stored before we tell the system we're done — otherwise a cold
+        // launch can finish the callback before MainActor runs and RootView never sees a tap.
         Task { @MainActor in
             PushNotificationManager.shared.didReceiveNotificationResponse(userInfo: userInfo)
+            completionHandler()
         }
-        completionHandler()
     }
 }

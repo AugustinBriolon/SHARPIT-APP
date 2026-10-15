@@ -180,6 +180,10 @@ struct RootView: View {
         }
         .onChange(of: historyImport.state) { _, state in showHistoryToast(for: state) }
         .task {
+            // Open a cold-launch tap before any network work — otherwise the athlete sits on
+            // the default tab while prefs load and thinks the notification did nothing.
+            openPendingNotificationIfNeeded()
+
             // Read here, on the main actor: the `async let` below runs off it.
             // Only while the athlete has not switched SharpIt's notifications off.
             let pushEnabled = pushManager.isEnabledByAthlete
@@ -192,7 +196,7 @@ struct RootView: View {
             }()
             _ = await (modeLoad, featuresLoad, pushSetup)
 
-            if let destination = pushManager.consumePendingDestination() { router.open(destination) }
+            openPendingNotificationIfNeeded()
             await refreshSessionReminders()
             await refreshDayCheckIns()
         }
@@ -205,8 +209,9 @@ struct RootView: View {
                 }
             }
         }
-        .onChange(of: pushManager.pendingDestination) { _, _ in
-            if let destination = pushManager.consumePendingDestination() { router.open(destination) }
+        // Token, not destination: two identical taps (e.g. `/plan`) must each open again.
+        .onChange(of: pushManager.pendingDeliveryToken, initial: true) { _, _ in
+            openPendingNotificationIfNeeded()
         }
         // Heard by the app, so a link that arrived before the tabs did is still followed.
         .onChange(of: linkInbox?.pending, initial: true) { _, _ in
@@ -288,6 +293,12 @@ struct RootView: View {
             )
         case .idle:
             break
+        }
+    }
+
+    private func openPendingNotificationIfNeeded() {
+        if let destination = pushManager.consumePendingDestination() {
+            router.open(destination)
         }
     }
 

@@ -2,12 +2,11 @@ import SwiftUI
 
 /// The Today verdict plate — the first and largest thing on the morning screen.
 ///
-/// Ink band (`surface-ink`): Forest on light, Lime on dark. Separation by inversion only —
-/// no nested surfaces, no chip chrome. Hierarchy is type + one hierarchical SF Symbol,
-/// the same language as Fitness / Health status cards.
+/// Ink band (`surface-ink`): Forest on light, Lime on dark. Separation by inversion only.
+/// Every color on this surface must come from the ink pair (`inkSurfaceForeground` /
+/// `inkAccent`) — canvas tokens like `primary` collide with the inverted band in dark mode.
 ///
-/// Layout: status meta + symbol → decision (verdict type) → why (body) → quiet frein/confidence.
-/// Plain text only — never Markdown.
+/// Layout: status + symbol → decision → why. Plain text only — never Markdown.
 struct InkVerdictPlate: View {
     let plate: InkPlateModel
     var revealed: Bool = true
@@ -15,38 +14,12 @@ struct InkVerdictPlate: View {
     /// Bumped when a wellness save changed the verdict — drives a one-shot fade.
     var contentFadeToken: Int = 0
 
-    @State private var symbolPulse = false
     @State private var contentOpacity: Double = 1
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.isExpertReading) private var isExpertReading
 
-    private var statusTone: PackTierTone {
-        PackTierTone.statusDot(for: plate.statusLabel, stateCode: plate.stateCode)
-    }
-    private var barsTone: PackTierTone { PackTierTone.bars(for: plate.packTier) }
-    private var filledBars: Int { ConfidenceBars.filled(fromPct: plate.confidencePct) }
-
-    private var accent: Color {
-        plate.stateCode?.inkAccent ?? inkColor(for: statusTone)
-    }
-
     private var explanationText: String? { plate.explanation(isExpert: isExpertReading) }
     private var instructionText: String? { plate.safeInstruction }
-    private var limiterChip: String? { plate.limiterChip(isExpert: isExpertReading) }
-
-    private var legacyLimiter: String? {
-        guard limiterChip == nil,
-              let cause = plate.limitingCause, !cause.isEmpty,
-              explanationText == nil, instructionText == nil
-        else { return nil }
-        return "Limité par · \(cause)"
-    }
-
-    private var freinLine: String? { limiterChip ?? legacyLimiter }
-
-    private var showsConfidence: Bool {
-        plate.confidenceLabel != nil || plate.confidencePct != nil
-    }
 
     /// The decision the athlete reads first: headline when shown, otherwise the instruction.
     private var decisionText: String? {
@@ -60,6 +33,11 @@ struct InkVerdictPlate: View {
         return instructionText
     }
 
+    /// Ink-legible ink: cream on Forest, Forest on Lime.
+    private var ink: Color { SharpitColor.inkSurfaceForeground }
+    /// Accent that inverts with the band — never canvas `primary`.
+    private var accent: Color { SharpitColor.inkAccent }
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             headerRow
@@ -68,7 +46,7 @@ struct InkVerdictPlate: View {
                 Text(decision)
                     .font(SharpitTypography.verdict)
                     .tracking(SharpitTypography.verdictTracking)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                    .foregroundStyle(ink)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -76,20 +54,16 @@ struct InkVerdictPlate: View {
             if let subline = decisionSubline {
                 Text(subline)
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.88))
+                    .foregroundStyle(ink.opacity(0.92))
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             if let explanation = explanationText {
                 Text(explanation)
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.62))
+                    .foregroundStyle(ink.opacity(0.78))
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if freinLine != nil || showsConfidence {
-                metaFooter
             }
         }
         .opacity(contentOpacity)
@@ -108,15 +82,6 @@ struct InkVerdictPlate: View {
         .redacted(reason: placeholder ? .placeholder : [])
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
-        .onChange(of: revealed) { _, isRevealed in
-            guard isRevealed, !reduceMotion else { return }
-            Task {
-                try? await Task.sleep(for: .milliseconds(380))
-                withAnimation(.easeInOut(duration: 0.22)) { symbolPulse = true }
-                try? await Task.sleep(for: .milliseconds(280))
-                withAnimation(.easeInOut(duration: 0.22)) { symbolPulse = false }
-            }
-        }
         .onChange(of: contentFadeToken) { _, _ in
             guard contentFadeToken > 0 else { return }
             if reduceMotion {
@@ -130,7 +95,6 @@ struct InkVerdictPlate: View {
         }
     }
 
-    /// Decision first — the plate's job is "what to do this morning".
     private var accessibilityLabel: String {
         [
             decisionText,
@@ -138,8 +102,6 @@ struct InkVerdictPlate: View {
             plate.statusLabel,
             plate.vsYesterdayLabel,
             explanationText,
-            freinLine,
-            plate.confidenceLabel,
             plate.estimationGaps.isEmpty ? nil : plate.estimationGaps.joined(separator: ", "),
         ]
         .compactMap { $0 }
@@ -147,11 +109,6 @@ struct InkVerdictPlate: View {
         .joined(separator: ". ")
     }
 
-    private var mutedInk: Color {
-        SharpitColor.inkSurfaceForeground.opacity(0.52)
-    }
-
-    /// Eyebrow + vs-yesterday on the left; one hierarchical symbol as the only ornament.
     private var headerRow: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             VStack(alignment: .leading, spacing: 3) {
@@ -159,12 +116,12 @@ struct InkVerdictPlate: View {
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
-                    .foregroundStyle(accent.opacity(0.9))
+                    .foregroundStyle(accent)
 
                 if let vs = plate.vsYesterdayLabel, !vs.isEmpty {
                     Text(vs)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(mutedInk)
+                        .foregroundStyle(ink.opacity(0.72))
                 }
             }
 
@@ -174,58 +131,12 @@ struct InkVerdictPlate: View {
                 .font(.system(size: 34, weight: .semibold))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(accent)
-                .scaleEffect(symbolPulse ? 1.06 : 1.0)
                 .accessibilityHidden(true)
-        }
-    }
-
-    /// One quiet line — no capsules, no nested panels.
-    private var metaFooter: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            if let frein = freinLine {
-                Text(frein)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(mutedInk)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-
-            if showsConfidence {
-                confidenceMarks
-            }
-        }
-        .padding(.top, SharpitSpacing.xxs)
-    }
-
-    private var confidenceMarks: some View {
-        HStack(spacing: SharpitSpacing.xs) {
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(1...3, id: \.self) { level in
-                    RoundedRectangle(cornerRadius: 1, style: .continuous)
-                        .fill(inkColor(for: barsTone).opacity(level <= filledBars ? 0.7 : 0.16))
-                        .frame(width: 4, height: CGFloat(4 + level * 3))
-                }
-            }
-            .accessibilityHidden(true)
-            if let label = plate.confidenceLabel {
-                Text(label)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(mutedInk)
-            }
-        }
-    }
-
-    private func inkColor(for tone: PackTierTone) -> Color {
-        switch tone {
-        case .highlight: SharpitColor.inkAccent
-        case .caution: SharpitColor.signalCaution
-        case .muted: SharpitColor.inkSurfaceForeground.opacity(0.4)
         }
     }
 }
 
-#Preview("Repos · sans headline") {
+#Preview("Repos · light") {
     InkVerdictPlate(
         plate: InkPlateModel(
             statusLabel: "Repos",
@@ -248,29 +159,31 @@ struct InkVerdictPlate: View {
     )
     .padding()
     .background(SharpitCanvasBackground())
+    .preferredColorScheme(.light)
 }
 
-#Preview("Feu vert · avec headline") {
+#Preview("Repos · dark") {
     InkVerdictPlate(
         plate: InkPlateModel(
-            statusLabel: "FEU VERT",
-            headline: "Séance prévue pour aujourd'hui",
-            actionLine: "Entraîne-toi — légèrement",
+            statusLabel: "Repos",
+            headline: "Priorité au repos",
+            actionLine: "Privilégie le repos ou une marche très légère.",
             limitingCause: nil,
-            confidencePct: 72,
+            confidencePct: 55,
             confidenceLabel: "Estimation partielle",
             packTier: .partial,
             estimationGaps: [],
-            posture: .steady,
-            explanationEssential: "La nuit a tenu. Tu peux tenir le plan sans forcer.",
-            explanationExpert: "HRV dans la norme.",
-            instruction: "Entraîne-toi — légèrement",
-            limiterSignals: [],
-            vsYesterdayLabel: "Comme hier",
-            showHeadline: true,
-            stateCode: .trainSmart
+            posture: .protect,
+            explanationEssential: "Ta forme ressentie est bonne, mais ton corps n’a pas encore récupéré et ta nuit a été trop courte. Un vrai repos aujourd’hui.",
+            explanationExpert: "VFC basse.",
+            instruction: "Privilégie le repos ou une marche très légère.",
+            limiterSignals: [.hrvLow, .sleepShort],
+            vsYesterdayLabel: "Changé depuis hier",
+            showHeadline: false,
+            stateCode: .recover
         )
     )
     .padding()
     .background(SharpitCanvasBackground())
+    .preferredColorScheme(.dark)
 }

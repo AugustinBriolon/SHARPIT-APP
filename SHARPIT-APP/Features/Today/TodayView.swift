@@ -31,6 +31,8 @@ struct TodayView: View {
     @State private var ressentiFailureMessage: String?
     /// Bumped when a wellness save changed the morning verdict — fades the ink plate.
     @State private var verdictFadeToken = 0
+    /// Résumé's push stack — Journal from the chip or a day-check-in notification.
+    @State private var path = NavigationPath()
     /// Held as well as handed to the store, because the journal opened from here caches its
     /// own day and needs the same context.
     private let modelContext: ModelContext?
@@ -75,7 +77,7 @@ struct TodayView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ZStack {
                 switch store.phase {
                 case .loading:
@@ -158,6 +160,26 @@ struct TodayView: View {
             .onChange(of: router.checkInRevision) { _, _ in
                 Task { await store.load(resetToLoading: false) }
             }
+            .navigationDestination(for: TodayNav.self) { destination in
+                switch destination {
+                case .journal:
+                    if let journalClient, let wellnessClient, let tokenProvider {
+                        JournalView(
+                            client: journalClient,
+                            wellness: wellnessClient,
+                            tokenProvider: tokenProvider,
+                            modelContext: modelContext
+                        )
+                    }
+                }
+            }
+            .onChange(of: router.pendingJournal, initial: true) { _, pending in
+                guard pending else { return }
+                router.pendingJournal = false
+                guard features.isOn(.journal), journalClient != nil, wellnessClient != nil, tokenProvider != nil
+                else { return }
+                path.append(TodayNav.journal)
+            }
             .sheet(isPresented: $showsCheckIn) {
                 if let wellnessClient, let tokenProvider, let athleteId = localAthleteId {
                     RessentiDuJourSheet(
@@ -206,6 +228,10 @@ struct TodayView: View {
     }
 }
 
+private enum TodayNav: Hashable {
+    case journal
+}
+
 extension TodayView {
     /// Mode, Journal and weather, as one row of glass chips.
     @ViewBuilder
@@ -216,14 +242,7 @@ extension TodayView {
                     ActivityStatusButton(store: activityStatusStore, showsLabel: true)
                 }
                 if features.isOn(.journal), let journalClient, let wellnessClient, let tokenProvider {
-                    NavigationLink {
-                        JournalView(
-                            client: journalClient,
-                            wellness: wellnessClient,
-                            tokenProvider: tokenProvider,
-                            modelContext: modelContext
-                        )
-                    } label: {
+                    NavigationLink(value: TodayNav.journal) {
                         Label("Journal", systemImage: "book.closed")
                             .labelStyle(.titleAndIcon)
                             .foregroundStyle(SharpitColor.foreground)
