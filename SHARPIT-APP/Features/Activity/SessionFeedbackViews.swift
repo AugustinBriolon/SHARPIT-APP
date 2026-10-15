@@ -319,6 +319,8 @@ struct RatingGrid: View {
                         .scaleEffect(isSelected ? 1.04 : 1)
                 }
                 .buttonStyle(.sharpitPressable)
+                .accessibilityLabel("\(value) sur \(values.count)")
+                .accessibilityValue(isSelected ? "Sélectionné" : "Non sélectionné")
                 .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             }
         }

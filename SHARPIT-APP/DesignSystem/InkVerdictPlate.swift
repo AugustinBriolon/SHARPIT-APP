@@ -6,35 +6,73 @@ import SwiftUI
 /// the verdict is the one inverted surface in the app. No gradient, no drop shadow — the
 /// plate separates itself from the canvas by inversion, which is the strongest available
 /// separation and the one the web already uses.
+///
+/// Layout (PR #154): tag (+ vsYesterday on the right) → optional headline → explanation
+/// (density-aware, secondary) → instruction (bold). Plain text only — never Markdown.
 struct InkVerdictPlate: View {
     let plate: InkPlateModel
     var revealed: Bool = true
     var placeholder: Bool = false
+    /// Bumped when a wellness save changed the verdict — drives a one-shot fade.
+    var contentFadeToken: Int = 0
 
     /// Drives the 2-beat status dot pulse that fires once the plate is fully revealed.
     @State private var dotPulse = false
+    @State private var contentOpacity: Double = 1
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isExpertReading) private var isExpertReading
 
-    private var statusTone: PackTierTone { PackTierTone.statusDot(for: plate.statusLabel) }
+    private var statusTone: PackTierTone {
+        PackTierTone.statusDot(for: plate.statusLabel, stateCode: plate.stateCode)
+    }
     private var barsTone: PackTierTone { PackTierTone.bars(for: plate.packTier) }
     private var filledBars: Int { ConfidenceBars.filled(fromPct: plate.confidencePct) }
+
+    private var tagAccent: Color {
+        plate.stateCode?.inkAccent ?? inkColor(for: statusTone)
+    }
+
+    private var explanationText: String? { plate.explanation(isExpert: isExpertReading) }
+    private var instructionText: String? { plate.safeInstruction }
+    private var limiterChip: String? { plate.limiterChip(isExpert: isExpertReading) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             statusRow
 
-            Text(plate.headline)
-                .font(SharpitTypography.verdict)
-                .tracking(SharpitTypography.verdictTracking)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground)
-
-            if let action = plate.actionLine, !action.isEmpty {
-                Text(action)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.82))
+            if plate.displaysHeadline {
+                Text(plate.headline)
+                    .font(SharpitTypography.verdict)
+                    .tracking(SharpitTypography.verdictTracking)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            if let cause = plate.limitingCause, !cause.isEmpty {
+            if let explanation = explanationText {
+                Text(explanation)
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let instruction = instructionText {
+                Text(instruction)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let chip = limiterChip {
+                Text(chip)
+                    .font(SharpitTypography.label)
+                    .tracking(SharpitTypography.labelTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(mutedInk)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if let cause = plate.limitingCause, !cause.isEmpty,
+                      explanationText == nil, instructionText == nil
+            {
+                // Legacy fallback when the additive frein codes are absent.
                 Text("Limité par · \(cause)")
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
@@ -46,10 +84,10 @@ struct InkVerdictPlate: View {
                 confidenceRow
             }
         }
+        .opacity(contentOpacity)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.ink)
-        // Spring scale-up reveal: plate arrives with physical weight.
         .opacity(revealed ? 1 : 0)
         .scaleEffect(revealed ? 1 : 0.94, anchor: .top)
         .offset(y: revealed ? 0 : 10)
@@ -63,7 +101,6 @@ struct InkVerdictPlate: View {
         .accessibilityLabel(accessibilityLabel)
         .onChange(of: revealed) { _, isRevealed in
             guard isRevealed, !reduceMotion else { return }
-            // Fire dot pulse after the plate spring settles (~400 ms).
             Task {
                 try? await Task.sleep(for: .milliseconds(400))
                 withAnimation(.easeInOut(duration: 0.22)) { dotPulse = true }
@@ -75,6 +112,17 @@ struct InkVerdictPlate: View {
                 withAnimation(.easeInOut(duration: 0.22)) { dotPulse = false }
             }
         }
+        .onChange(of: contentFadeToken) { _, _ in
+            guard contentFadeToken > 0 else { return }
+            if reduceMotion {
+                contentOpacity = 1
+                return
+            }
+            contentOpacity = 0.35
+            withAnimation(.easeInOut(duration: 0.28)) {
+                contentOpacity = 1
+            }
+        }
     }
 
     /// The plate reads the estimation gaps aloud even though it no longer prints them:
@@ -83,9 +131,11 @@ struct InkVerdictPlate: View {
     private var accessibilityLabel: String {
         [
             plate.statusLabel,
-            plate.headline,
-            plate.actionLine,
-            plate.limitingCause.map { "Limité par \($0)" },
+            plate.vsYesterdayLabel,
+            plate.displaysHeadline ? plate.headline : nil,
+            explanationText,
+            instructionText,
+            limiterChip,
             plate.confidenceLabel,
             plate.estimationGaps.isEmpty ? nil : plate.estimationGaps.joined(separator: ", "),
         ]
@@ -100,13 +150,19 @@ struct InkVerdictPlate: View {
     }
 
     private var statusRow: some View {
-        HStack(spacing: SharpitSpacing.xs) {
+        HStack(alignment: .center, spacing: SharpitSpacing.xs) {
             HStack(spacing: SharpitSpacing.xs) {
-                Circle()
-                    .fill(dotColor)
-                    .frame(width: 8, height: 8)
-                    // 2-beat pulse fires once the plate spring settles.
-                    .scaleEffect(dotPulse ? 1.35 : 1.0)
+                if let code = plate.stateCode {
+                    Image(systemName: code.symbolName)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(tagAccent)
+                        .accessibilityHidden(true)
+                } else {
+                    Circle()
+                        .fill(tagAccent)
+                        .frame(width: 8, height: 8)
+                        .scaleEffect(dotPulse ? 1.35 : 1.0)
+                }
                 Text(plate.statusLabel)
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
@@ -115,9 +171,16 @@ struct InkVerdictPlate: View {
             }
             .padding(.horizontal, SharpitSpacing.sm)
             .padding(.vertical, SharpitSpacing.xxs + 2)
-            .background(dotColor.opacity(0.12), in: Capsule())
+            .background(tagAccent.opacity(0.12), in: Capsule())
 
             Spacer(minLength: 0)
+
+            if let vs = plate.vsYesterdayLabel, !vs.isEmpty {
+                Text(vs)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(mutedInk)
+                    .multilineTextAlignment(.trailing)
+            }
         }
     }
 
@@ -143,7 +206,6 @@ struct InkVerdictPlate: View {
         .padding(.top, SharpitSpacing.xxs)
     }
 
-    private var dotColor: Color { inkColor(for: statusTone) }
     private var barColor: Color { inkColor(for: barsTone) }
 
     /// Tones resolved *on the ink band*, where `--ink-accent` is the legible accent:
@@ -160,15 +222,22 @@ struct InkVerdictPlate: View {
 #Preview {
     InkVerdictPlate(
         plate: InkPlateModel(
-            statusLabel: "FEU VERT",
-            headline: "Journée modérée",
-            actionLine: "Entraîne-toi — légèrement",
-            limitingCause: "Sommeil",
+            statusLabel: "Repos",
+            headline: "Priorité au repos",
+            actionLine: "Privilégie le repos ou une marche très légère.",
+            limitingCause: nil,
             confidencePct: 55,
             confidenceLabel: "ESTIMATION PARTIELLE",
             packTier: .partial,
             estimationGaps: ["Baseline HRV partielle (moins de 14 j)"],
-            posture: .steady
+            posture: .protect,
+            explanationEssential: "Ton corps n’a pas encore récupéré.",
+            explanationExpert: "VFC basse.",
+            instruction: "Privilégie le repos ou une marche très légère.",
+            limiterSignals: [.hrvLow, .sleepShort],
+            vsYesterdayLabel: "Changé depuis hier",
+            showHeadline: false,
+            stateCode: .recover
         )
     )
     .padding()

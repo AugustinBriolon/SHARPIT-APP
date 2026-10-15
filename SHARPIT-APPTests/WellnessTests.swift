@@ -36,25 +36,44 @@ import Testing
 
 private actor StubWellnessClient: WellnessServing {
     private let checkin: V1WellnessCheckin
+    private let status: V1WellnessCheckinStatus
     private let failsSubmit: Bool
+    private let submitVerdict: V1WellnessVerdictSummary?
     private(set) var submitted: [V1WellnessEntry] = []
 
-    init(checkin: V1WellnessCheckin = V1WellnessCheckin(completed: false, entry: nil), failsSubmit: Bool = false) {
+    init(
+        checkin: V1WellnessCheckin = V1WellnessCheckin(completed: false, entry: nil),
+        status: V1WellnessCheckinStatus = V1WellnessCheckinStatus(localDate: "2026-09-20", completed: false),
+        failsSubmit: Bool = false,
+        submitVerdict: V1WellnessVerdictSummary? = nil
+    ) {
         self.checkin = checkin
+        self.status = status
         self.failsSubmit = failsSubmit
+        self.submitVerdict = submitVerdict
     }
 
     func wellnessCheckin(trainingDayId _: String, token _: String) async throws -> V1WellnessCheckin {
         checkin
     }
 
+    func wellnessCheckinStatus(token _: String) async throws -> V1WellnessCheckinStatus {
+        status
+    }
+
     func submitWellnessCheckin(
         _ entry: V1WellnessEntry,
-        trainingDayId _: String,
+        trainingDayId: String,
         token _: String
-    ) async throws {
+    ) async throws -> V1WellnessSubmitResponse {
         if failsSubmit { throw SharpitAPIError.badRequest }
         submitted.append(entry)
+        return V1WellnessSubmitResponse(
+            trainingDayId: trainingDayId,
+            completed: true,
+            alreadyCompleted: false,
+            verdict: submitVerdict
+        )
     }
 
     func recorded() -> [V1WellnessEntry] { submitted }

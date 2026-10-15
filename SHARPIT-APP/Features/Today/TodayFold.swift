@@ -26,6 +26,36 @@ struct InkPlateModel: Sendable, Equatable {
     var packTier: V1TodayPackTier?
     var estimationGaps: [String]
     var posture: V1TodayPosture
+    /// Additive verdict fields (PR #154) — optional so a cached legacy day still paints.
+    var explanationEssential: String? = nil
+    var explanationExpert: String? = nil
+    var instruction: String? = nil
+    var limiterSignals: [LimiterSignalCode] = []
+    var vsYesterdayLabel: String? = nil
+    var showHeadline: Bool = true
+    var stateCode: VerdictStateCode? = nil
+
+    /// Explanation for the current reading density — plain text only.
+    func explanation(isExpert: Bool) -> String? {
+        let raw = isExpert ? explanationExpert : explanationEssential
+        return VerdictCopySanitizer.display(raw, fallback: VerdictCopySanitizer.fallbackExplanation)
+    }
+
+    /// Instruction, with placeholder guard.
+    var safeInstruction: String? {
+        VerdictCopySanitizer.display(instruction, fallback: VerdictCopySanitizer.fallbackInstruction)
+            ?? VerdictCopySanitizer.display(actionLine, fallback: VerdictCopySanitizer.fallbackInstruction)
+    }
+
+    func limiterChip(isExpert: Bool) -> String? {
+        LimiterChipCopy.text(codes: limiterSignals, isExpert: isExpert)
+    }
+
+    /// Whether the large headline should paint (false when the server says so, or empty).
+    var displaysHeadline: Bool {
+        guard showHeadline else { return false }
+        return !headline.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 }
 
 struct SessionCardModel: Sendable, Equatable, Identifiable {
@@ -85,13 +115,18 @@ enum PackTierTone: Equatable {
         }
     }
 
-    /// Status row dot — follows the go/stop label, not packTier (PARTIAL stays amber on bars only).
-    static func statusDot(for statusLabel: String) -> PackTierTone {
+    /// Status row dot — prefers the stable state code; falls back to legacy go/stop labels.
+    static func statusDot(for statusLabel: String, stateCode: VerdictStateCode? = nil) -> PackTierTone {
+        if let stateCode {
+            return stateCode.statusTone
+        }
         let label = statusLabel.uppercased()
-        if label.contains("ROUGE") || label.contains("STOP") {
+        if label.contains("ROUGE") || label.contains("STOP") || label.contains("REPOS") {
             return .muted
         }
-        if label.contains("ORANGE") || label.contains("JAUNE") || label.contains("AMBRE") {
+        if label.contains("ORANGE") || label.contains("JAUNE") || label.contains("AMBRE")
+            || label.contains("PRUDENCE")
+        {
             return .caution
         }
         return .highlight
@@ -99,6 +134,23 @@ enum PackTierTone: Equatable {
 }
 
 enum TodayFoldMapper {
+    /// Prefer the array; fall back to the singular code for older additive payloads.
+    static func resolvedLimiterSignals(_ verdict: V1TodayVerdict) -> [LimiterSignalCode] {
+        if let signals = verdict.limiterSignals, !signals.isEmpty {
+            return signals
+        }
+        if let signal = verdict.limiterSignal {
+            return [signal]
+        }
+        return []
+    }
+
+    static func resolvedStateCode(_ code: VerdictStateCode?) -> VerdictStateCode? {
+        guard let code else { return nil }
+        if case .unknown(let raw) = code, raw.isEmpty { return nil }
+        return code
+    }
+
     static func map(_ response: V1TodayResponse) -> TodayFold {
         let verdict = response.verdict
         return TodayFold(
@@ -114,7 +166,15 @@ enum TodayFoldMapper {
                 confidenceLabel: verdict.confidenceLabel,
                 packTier: verdict.packTier,
                 estimationGaps: verdict.estimationGaps ?? [],
-                posture: verdict.posture
+                posture: verdict.posture,
+                explanationEssential: verdict.explanation?.essential,
+                explanationExpert: verdict.explanation?.expert,
+                instruction: verdict.instruction?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                limiterSignals: Self.resolvedLimiterSignals(verdict),
+                vsYesterdayLabel: verdict.vsYesterdayLabel?
+                    .trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                showHeadline: verdict.showHeadline ?? true,
+                stateCode: Self.resolvedStateCode(verdict.stateCode)
             ),
             sessions: response.sessions.map { session in
                 SessionCardModel(

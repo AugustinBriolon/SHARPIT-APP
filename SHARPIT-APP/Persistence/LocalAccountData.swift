@@ -35,6 +35,7 @@ enum LocalAccountData {
         try? context.delete(model: CachedResponse.self)
         try? context.save()
         disk.removeAll()
+        WellnessCheckInLocalStore.shared.erase()
         defaults.removeObject(forKey: ownerKey)
         // The home screen too: another athlete's day never shows on it.
         WidgetSnapshotPublisher.erase()
