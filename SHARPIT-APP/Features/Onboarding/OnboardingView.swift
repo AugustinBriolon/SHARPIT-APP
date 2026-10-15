@@ -31,16 +31,20 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             SharpitCanvasBackground()
-            switch store.phase {
-            case .loading:
-                SharpitLaunchMark()
-            case .steps:
-                steps
-                    .transition(.opacity)
-            case .bootstrap:
-                OnboardingBootstrapView(onDone: onFinished)
-                    .transition(.opacity.combined(with: .scale(scale: 1.04)))
+            Group {
+                switch store.phase {
+                case .loading:
+                    SharpitLaunchMark()
+                case .steps:
+                    steps
+                        .transition(.opacity)
+                case .bootstrap:
+                    OnboardingBootstrapView(onDone: onFinished)
+                        .transition(.opacity.combined(with: .scale(scale: 1.04)))
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .sharpitRegularColumn()
         }
         .animation(SharpitMotion.reveal, value: store.phase)
         .task { await store.load() }

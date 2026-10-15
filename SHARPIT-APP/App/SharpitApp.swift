@@ -97,7 +97,7 @@ private struct PersistenceCannotStartView: View {
             Text("SharpIt ne peut pas démarrer")
                 .font(SharpitTypography.pageTitle)
                 .foregroundStyle(SharpitColor.foreground)
-            Text("Le stockage local est indisponible. Relance l’app, ou libère de l’espace sur cet iPhone.")
+            Text("Le stockage local est indisponible. Relance l’app, ou libère de l’espace sur cet appareil.")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .multilineTextAlignment(.center)

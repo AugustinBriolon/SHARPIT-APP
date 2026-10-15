@@ -22,11 +22,9 @@ struct SharpitUserProfileSheet: View {
             .background(SharpitCanvasBackground())
             .navigationBarHidden(true)
         }
-        // Sheet presentation that matches other drawers in the app.
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        // Replace the white system sheet background with the app canvas.
-        .presentationBackground(SharpitColor.background)
+        .sharpitSheet()
     }
 
     private var sharpitHeader: some View {

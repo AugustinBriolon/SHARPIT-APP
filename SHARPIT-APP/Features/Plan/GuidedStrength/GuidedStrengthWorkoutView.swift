@@ -97,6 +97,8 @@ struct GuidedStrengthWorkoutView: View {
             }
         }
         .interactiveDismissDisabled(isSaving)
+        .background(SharpitCanvasBackground())
+        .sharpitRegularColumn()
         .onAppear {
             publishLiveActivityIfNeeded()
             heartRate.startIfEnabled()

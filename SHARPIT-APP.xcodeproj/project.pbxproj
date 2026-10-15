@@ -455,7 +455,7 @@
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "SHARPIT se connecte à ta ceinture ou ton brassard Bluetooth pour afficher ta fréquence cardiaque pendant le suivi muscu sur le téléphone.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Avec SharpIt Pro, tes séances planifiées s'écrivent dans un calendrier « SharpIt » et suivent les changements de ton plan. SharpIt ne touche à aucun autre calendrier.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "SHARPIT utilise l'appareil photo pour lire le code-barres des aliments que tu ajoutes à ton journal. Les images restent sur ton iPhone.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "SHARPIT utilise l'appareil photo pour lire le code-barres des aliments que tu ajoutes à ton journal. Les images restent sur ton appareil.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "SHARPIT peut écrire dans Apple Santé le total de ta journée alimentaire (énergie et macros) et le poids que tu notes dans l'app, pour les garder alignés avec Santé.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
@@ -467,6 +467,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.sharpit.ios;
@@ -482,7 +483,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -510,7 +511,7 @@
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "SHARPIT se connecte à ta ceinture ou ton brassard Bluetooth pour afficher ta fréquence cardiaque pendant le suivi muscu sur le téléphone.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Avec SharpIt Pro, tes séances planifiées s'écrivent dans un calendrier « SharpIt » et suivent les changements de ton plan. SharpIt ne touche à aucun autre calendrier.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "SHARPIT utilise l'appareil photo pour lire le code-barres des aliments que tu ajoutes à ton journal. Les images restent sur ton iPhone.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "SHARPIT utilise l'appareil photo pour lire le code-barres des aliments que tu ajoutes à ton journal. Les images restent sur ton appareil.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "SHARPIT lit ton sommeil, ta fréquence cardiaque, ta VFC, tes pas et tes séances dans Apple Santé pour mettre à jour ton état du jour dès que ta montre a synchronisé.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "SHARPIT peut écrire dans Apple Santé le total de ta journée alimentaire (énergie et macros) et le poids que tu notes dans l'app, pour les garder alignés avec Santé.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SHARPIT utilise ta position pour afficher la météo Apple du lieu où tu t'entraînes.";
@@ -522,6 +523,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.sharpit.ios;
@@ -537,7 +539,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -565,7 +567,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SharpIt.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SharpIt";
 			};
 			name = Debug;
@@ -594,7 +596,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SharpIt.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SharpIt";
 			};
 			name = Release;
@@ -631,7 +633,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -668,7 +670,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

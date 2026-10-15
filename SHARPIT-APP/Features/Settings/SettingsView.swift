@@ -179,7 +179,7 @@ struct SettingsView: View {
 
     private var appearanceControl: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SettingsRow(symbol: "circle.lefthalf.filled", tint: SettingsTone.appearance, title: "Apparence", detail: "Propre à cet iPhone", showsChevron: false)
+            SettingsRow(symbol: "circle.lefthalf.filled", tint: SettingsTone.appearance, title: "Apparence", detail: "Propre à cet appareil", showsChevron: false)
             SharpitSegmentedControl(
                 selection: $appearance,
                 options: AppearancePreference.allCases.map {

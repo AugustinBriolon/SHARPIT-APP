@@ -115,6 +115,7 @@ private struct SharpitSheetModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(\.sharpitElevation, .sheet)
+            .sharpitRegularColumn()
             .presentationBackground(SharpitElevatedColor.sheet)
     }
 }
@@ -126,7 +127,7 @@ extension View {
         modifier(SharpitShadowModifier(style: style))
     }
 
-    /// Every sheet goes through here, so none falls back to the system's black.
+    /// Every sheet goes through here: elevated canvas, and a phone column on a wide window.
     func sharpitSheet() -> some View {
         modifier(SharpitSheetModifier())
     }

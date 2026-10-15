@@ -29,7 +29,7 @@ import Testing
 
     #expect(normal == .init(text: "Séances, sommeil et cœur de ta montre", isProblem: false))
     #expect(sending == normal)
-    #expect(unavailable == .init(text: "Indisponible sur cet iPhone", isProblem: false))
+    #expect(unavailable == .init(text: "Indisponible sur cet appareil", isProblem: false))
     #expect(refused == .init(text: "Accès refusé.", isProblem: true))
 }
 

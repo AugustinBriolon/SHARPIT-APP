@@ -256,7 +256,7 @@ struct NotificationPrefsView: View {
 
     var body: some View {
         List {
-            Section(eyebrow: "Sur cet iPhone", footer: masterFooter) {
+            Section(eyebrow: "Sur cet appareil", footer: masterFooter) {
                 Toggle(isOn: masterBinding) {
                     Label {
                         Text("Autoriser les notifications")
@@ -304,8 +304,8 @@ struct NotificationPrefsView: View {
             return "Refusées dans les réglages d'iOS : touche l'interrupteur pour les ouvrir."
         }
         return isOn
-            ? "Choisis ci-dessous ce que SharpIt envoie sur cet iPhone."
-            : "Cet iPhone ne reçoit plus rien. Tes choix sont gardés pour quand tu les réactives."
+            ? "Choisis ci-dessous ce que SharpIt envoie sur cet appareil."
+            : "Cet appareil ne reçoit plus rien. Tes choix sont gardés pour quand tu les réactives."
     }
 
     private var masterBinding: Binding<Bool> {
@@ -354,7 +354,7 @@ struct NotificationPrefsView: View {
     private var kinds: some View {
         Section(
             eyebrow: "Ce que SharpIt t'envoie",
-            footer: "Les rappels de séance partent de cet iPhone, depuis ton plan : une heure avant, ou à 7 h 30 le jour même si la séance n'a pas d'heure."
+            footer: "Les rappels de séance partent de cet appareil, depuis ton plan : une heure avant, ou à 7 h 30 le jour même si la séance n'a pas d'heure."
         ) {
             toggle("Verdict du matin", detail: "Ta lecture du jour, une fois ta nuit synchronisée.", symbol: "sun.horizon", key: "morningVerdict", value: prefs.morningVerdict)
             toggle("Bilan de la semaine", detail: "Le résumé de ta semaine d'entraînement.", symbol: "calendar", key: "weeklyReview", value: prefs.weeklyReview)

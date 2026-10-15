@@ -58,6 +58,7 @@ struct PrivacyConsentWallView: View {
                 .padding(.bottom, SharpitSpacing.xl)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { actionBar }
+            .sharpitRegularColumn()
         }
         .sheet(item: $openDocument) { document in
             LegalDocumentSheet(document: document)

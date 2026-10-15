@@ -44,6 +44,8 @@ enum SharpitSpacing {
 
     /// System layout margin on iPhone; screen content aligns to it.
     static let pageInset: CGFloat = md
+    /// Cap on a regular-width window so a phone column does not stretch across an iPad.
+    static let regularColumn: CGFloat = 760
     /// Gap between the causal-column sections of a screen.
     static let section: CGFloat = lg
     static let cardPadding: CGFloat = md
@@ -54,6 +56,28 @@ enum SharpitSpacing {
     static let cardRadius: CGFloat = SharpitRadius.panel
     /// Radius for chips and other controls nested inside a card.
     static let chipRadius: CGFloat = SharpitTokens.radius * 0.75
+}
+
+extension View {
+    /// Centers a phone-shaped page in a regular-width window without stretching it.
+    /// Fills the available height so the canvas and chrome stay edge-to-edge vertically.
+    /// shortcut: one column; a screen gets its own iPad layout when it needs the width.
+    func sharpitRegularColumn() -> some View {
+        modifier(SharpitRegularColumn())
+    }
+}
+
+private struct SharpitRegularColumn: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    func body(content: Content) -> some View {
+        content
+            .frame(
+                maxWidth: sizeClass == .regular ? SharpitSpacing.regularColumn : .infinity,
+                maxHeight: .infinity
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 }
 
 /// Hairline weights. The web draws its separation with a 1px border, not a shadow.
