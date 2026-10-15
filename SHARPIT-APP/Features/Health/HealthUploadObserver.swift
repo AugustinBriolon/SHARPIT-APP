@@ -79,6 +79,7 @@ enum HealthUploadObserver {
             // on `dispatch_assert_queue` at launch (APPLE-IOS-2). Completion stays off main.
             DispatchQueue.main.async {
                 Task { @MainActor in
+                    CrashReporting.note("health.observer.fired", category: "health")
                     await HealthUploadObserver.sendNewSamples()
                     finish.run()
                 }

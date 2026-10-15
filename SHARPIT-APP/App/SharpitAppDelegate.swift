@@ -14,6 +14,7 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
             MainActor.assumeIsolated {
                 HealthUploadObserver.start()
+                CrashReporting.note("health.observer.started", category: "health")
             }
         }
         return true

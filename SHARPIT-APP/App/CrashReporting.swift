@@ -1,13 +1,12 @@
 import Foundation
 import SentrySwift
 
-/// Crash reports and masked session replays to Sentry (EU).
+/// Crash reports, structured logs, and masked error-only session replays to Sentry (EU).
 ///
 /// No performance tracing, no crash screenshots, no view hierarchy, no default PII.
-/// Replay keeps the SDK defaults: every text, image, and input is masked, and request
-/// bodies stay off (`networkDetailAllowUrls` is empty). A report must never carry what
-/// the athlete measured or wrote. Breadcrumbs keep network URLs only by path, and every
-/// event is stripped of request bodies before it leaves the iPhone.
+/// Replay stays masked and only uploads the ~30s buffer when an error/crash happens.
+/// A report must never carry what the athlete measured or wrote. Breadcrumbs keep network
+/// URLs only by path, and every event is stripped of request bodies before it leaves.
 enum CrashReporting {
     /// A DSN is a public client key — safe in the binary, it can only send events.
     static let dsn = "https://82d4a00ff393d0fa14999292cb2cf454@o4512180262535168.ingest.de.sentry.io/4512180266860624"
@@ -25,12 +24,27 @@ enum CrashReporting {
         options.tracesSampleRate = 0
         options.attachScreenshot = false
         options.attachViewHierarchy = false
-        // Replay off until launch is stable — 100% sampling ate memory on TestFlight; keep
-        // masks ready so turning it back on cannot leak text or images.
+
+        // Structured logs: searchable in Sentry even when nothing is raised as an error.
+        // They flush on a timer and on the next launch after a hard kill — not mid-SIGKILL.
+        options.enableLogs = true
+
+        // MetricKit: hangs, CPU spikes, disk-write exceptions that are not NSExceptions.
+        options.enableMetricKit = true
+
+        // Concurrency frames in crash stacks (HealthKit / MainActor traps).
+        options.swiftAsyncStacktraces = true
+
+        // Jetsam / force-quit after memory pressure — reported on the next cold start.
+        options.enableWatchdogTerminationTracking = true
+
+        // Replay: buffer only; upload the last ~30s when an error or crash is sampled.
+        // Never film every session (memory). Text and images stay masked.
         options.sessionReplay.maskAllText = true
         options.sessionReplay.maskAllImages = true
-        options.sessionReplay.onErrorSampleRate = 0
+        options.sessionReplay.onErrorSampleRate = 1
         options.sessionReplay.sessionSampleRate = 0
+
         options.enableAutoBreadcrumbTracking = true
         options.enableNetworkBreadcrumbs = true
         options.enableCaptureFailedRequests = false
@@ -55,6 +69,15 @@ enum CrashReporting {
         components.query = nil
         crumb.setData(value: components.string, key: "url")
         return crumb
+    }
+
+    /// Breadcrumb + structured log for a privacy-safe checkpoint (screen, gate, HK wake…).
+    /// Never pass health values, notes, tokens, or free text the athlete typed.
+    static func note(_ message: String, category: String = "app") {
+        let crumb = Breadcrumb(level: .info, category: category)
+        crumb.message = message
+        SentrySDK.addBreadcrumb(crumb)
+        SentrySDK.logger.info(message, attributes: ["category": category])
     }
 
     /// Ties reports to the Clerk user id only, so a crash can be matched to a support request.
