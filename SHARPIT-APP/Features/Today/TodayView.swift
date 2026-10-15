@@ -158,7 +158,7 @@ struct TodayView: View {
                 Task { await store.refresh() }
             }
             .onChange(of: router.checkInRevision) { _, _ in
-                Task { await store.load(resetToLoading: false) }
+                Task { await store.load(resetToLoading: false, force: true) }
             }
             .navigationDestination(for: TodayNav.self) { destination in
                 switch destination {

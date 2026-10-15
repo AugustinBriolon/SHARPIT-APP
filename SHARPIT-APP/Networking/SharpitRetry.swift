@@ -28,7 +28,8 @@ nonisolated enum SharpitRetry {
     static func isTransient(_ error: any Error) -> Bool {
         switch error {
         case let error as SharpitAPIError:
-            error == .transport || error == .server || error == .rateLimited
+            // 429 is a refusal for this window — retrying burns the quota further.
+            error == .transport || error == .server
         case is URLError:
             true
         default:

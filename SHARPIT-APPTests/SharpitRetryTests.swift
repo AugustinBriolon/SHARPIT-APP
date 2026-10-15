@@ -58,9 +58,23 @@ private actor Attempts {
 @Test func onlyTheNetworkAndTheServerFailingAreTransient() {
     #expect(SharpitRetry.isTransient(SharpitAPIError.transport))
     #expect(SharpitRetry.isTransient(SharpitAPIError.server))
-    #expect(SharpitRetry.isTransient(SharpitAPIError.rateLimited))
+    #expect(!SharpitRetry.isTransient(SharpitAPIError.rateLimited))
     #expect(SharpitRetry.isTransient(URLError(.timedOut)))
     #expect(!SharpitRetry.isTransient(SharpitAPIError.unauthorized))
     #expect(!SharpitRetry.isTransient(SharpitAPIError.badRequest))
     #expect(!SharpitRetry.isTransient(SharpitAPIError.message("Objectif invalide")))
+}
+
+@Test func aRateLimitIsNotTriedAgain() async {
+    let attempts = Attempts()
+
+    await #expect(throws: SharpitAPIError.rateLimited) {
+        try await SharpitRetry.run(sleep: { await attempts.paused($0) }) {
+            _ = await attempts.next()
+            throw SharpitAPIError.rateLimited
+        }
+    }
+
+    #expect(await attempts.count == 1)
+    #expect(await attempts.pauses.isEmpty)
 }

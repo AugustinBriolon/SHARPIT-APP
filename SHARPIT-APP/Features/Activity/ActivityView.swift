@@ -13,6 +13,7 @@ struct ActivityView: View {
     /// Created on the first open and kept, so Records shows at once when reopened.
     @State private var records: RecordsStore?
     @State private var isShowingRecords = false
+    @State private var loadGate = LoadGate()
     @Environment(ShellRouter.self) private var router: ShellRouter?
     /// Its completion brings older activities in, so the list reloads when it lands.
     @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
@@ -154,40 +155,46 @@ struct ActivityView: View {
 
     @MainActor
     private func load(force: Bool = false) async {
-        do {
-            let token = try await tokenProvider()
-            let activities = try await client.activities(forceRefresh: force, token: token)
-            WidgetSnapshotPublisher.publish(activities)
-            // Only a list that changed is swapped in. Replacing an identical list while the
-            // pull-to-refresh gesture was ending left the scroll view stuck pulled down.
-            if case .loaded(let shown) = phase {
-                if shown != activities {
-                    // A list replacing a list is not animated: the refresh control is still
-                    // settling, and an animated height change under it is what kept it pulled down.
-                    phase = activities.isEmpty ? .empty : .loaded(activities)
+        await loadGate.run(force: force) {
+            do {
+                let token = try await tokenProvider()
+                let activities = try await client.activities(forceRefresh: force, token: token)
+                WidgetSnapshotPublisher.publish(activities)
+                // Only a list that changed is swapped in. Replacing an identical list while the
+                // pull-to-refresh gesture was ending left the scroll view stuck pulled down.
+                if case .loaded(let shown) = phase {
+                    if shown != activities {
+                        // A list replacing a list is not animated: the refresh control is still
+                        // settling, and an animated height change under it is what kept it pulled down.
+                        phase = activities.isEmpty ? .empty : .loaded(activities)
+                    }
+                } else {
+                    SharpitMotion.run(SharpitMotion.fade) {
+                        phase = activities.isEmpty ? .empty : .loaded(activities)
+                    }
                 }
-            } else {
-                SharpitMotion.run(SharpitMotion.fade) {
-                    phase = activities.isEmpty ? .empty : .loaded(activities)
+                // Widget « Dernière activité » only — the list stays as plain rows.
+                let snapshotActivities = activities
+                Task(priority: .utility) {
+                    guard let previews = try? await client.routePreviews(token: token) else { return }
+                    await WidgetSnapshotPublisher.publishLastActivity(from: snapshotActivities, routes: previews)
                 }
+                return true
+            } catch is CancellationError {
+                return false
+            } catch let error as URLError where error.code == .cancelled {
+                // The refresh task ended before its request: what is on screen stays.
+                return false
+            } catch let error as SharpitAPIError where error == .unauthorized {
+                phase = .unauthorized
+                return false
+            } catch let error as ActivityClientError {
+                phase = .failed(error.localizedDescription)
+                return false
+            } catch {
+                phase = .failed("Impossible de charger l’historique : \(error.localizedDescription)")
+                return false
             }
-            // Widget « Dernière activité » only — the list stays as plain rows.
-            let snapshotActivities = activities
-            Task(priority: .utility) {
-                guard let previews = try? await client.routePreviews(token: token) else { return }
-                await WidgetSnapshotPublisher.publishLastActivity(from: snapshotActivities, routes: previews)
-            }
-        } catch is CancellationError {
-            return
-        } catch let error as URLError where error.code == .cancelled {
-            // The refresh task ended before its request: what is on screen stays.
-            return
-        } catch let error as SharpitAPIError where error == .unauthorized {
-            phase = .unauthorized
-        } catch let error as ActivityClientError {
-            phase = .failed(error.localizedDescription)
-        } catch {
-            phase = .failed("Impossible de charger l’historique : \(error.localizedDescription)")
         }
     }
 }

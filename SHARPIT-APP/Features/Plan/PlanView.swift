@@ -36,6 +36,7 @@ struct PlanView: View {
     /// The coach's trips, for the week's « Déplacement » chip (the web's `TravelContextBanner`).
     @State private var travels: [CoachMemoryEntry] = []
     @State private var showingTravel = false
+    @State private var extrasGate = LoadGate()
 
     init(
         client: any PlannedSessionServing,
@@ -206,9 +207,8 @@ struct PlanView: View {
                 }
             }
             .task { await store.loadAroundSelection() }
-            .task { await loadTravels() }
-            .task(id: isExpertReading) { await loadTrainingLoad() }
-            .task { await loadTrajectory() }
+            .task { await loadPlanExtras() }
+            .task(id: isExpertReading) { await loadTrainingLoad(force: true) }
             .task { await generation.resume() }
             .onAppear {
                 let router = router
@@ -241,8 +241,7 @@ struct PlanView: View {
             .onChange(of: router.calendarRevision) { _, _ in
                 Task {
                     await store.reload()
-                    await loadTrainingLoad()
-                    await loadTrajectory()
+                    await loadPlanExtras(force: true)
                 }
             }
         }
@@ -274,6 +273,16 @@ extension PlanView {
         }.first
     }
 
+    /// Travels + trajectory (+ training load in expert): one gated burst per tab visit.
+    fileprivate func loadPlanExtras(force: Bool = false) async {
+        await extrasGate.run(force: force) {
+            await loadTravels()
+            await loadTrajectory()
+            await loadTrainingLoad(force: true)
+            return true
+        }
+    }
+
     /// The trips are a quiet extra: a failed read leaves the week without its chip.
     fileprivate func loadTravels() async {
         guard let token = try? await tokenProvider(),
@@ -282,8 +291,9 @@ extension PlanView {
     }
 
     /// Read only in the expert reading: the essential one never shows it, so never asks for it.
-    fileprivate func loadTrainingLoad() async {
+    fileprivate func loadTrainingLoad(force: Bool = false) async {
         guard isExpertReading, let token = try? await tokenProvider() else { return }
+        if !force, trainingLoad != nil { return }
         if let load = try? await SharpitClient().trainingLoad(trainingDayId: TrainingDayId.today(), token: token) {
             trainingLoad = load
         }

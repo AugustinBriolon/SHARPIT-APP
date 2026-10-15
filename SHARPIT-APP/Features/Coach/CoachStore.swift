@@ -44,6 +44,7 @@ final class CoachStore {
     private var replyTask: Task<Void, Never>?
     /// True only when the athlete pressed stop — not when Approve cancels a winding-down stream.
     private var userStoppedReply = false
+    private let quotaGate = LoadGate()
 
     init(
         client: any CoachChatServing,
@@ -57,10 +58,14 @@ final class CoachStore {
         self.tokenProvider = tokenProvider
     }
 
-    func refreshQuota() async {
+    func refreshQuota(force: Bool = false) async {
         guard let quotaClient, let tokenProvider else { return }
-        if let fresh = try? await quotaClient.quota(token: try await tokenProvider()) {
-            quota = fresh
+        await quotaGate.run(force: force) {
+            guard let fresh = try? await quotaClient.quota(token: try await tokenProvider()) else {
+                return false
+            }
+            self.quota = fresh
+            return true
         }
     }
 
@@ -166,7 +171,7 @@ final class CoachStore {
         replyTask = task
         await task.value
         if replyTask == task { replyTask = nil }
-        await refreshQuota()
+        await refreshQuota(force: true)
     }
 
     /// Cancels an in-flight reply and waits until `isReplying` clears — so Approve on a food

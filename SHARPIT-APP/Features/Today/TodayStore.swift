@@ -27,6 +27,8 @@ final class TodayStore {
     private let proposals: any MorningProposalServing
     private let tokenProvider: (() async throws -> String)?
     private let modelContext: ModelContext?
+    /// Tab `.task` re-fires on every return; skip the network while the day is still fresh.
+    private let networkGate = LoadGate()
 
     init(
         client: any TodayServing = FixtureTodayClient(),
@@ -66,7 +68,7 @@ final class TodayStore {
             return false
         }
         if accept {
-            await load(resetToLoading: false)
+            await load(resetToLoading: false, force: true)
         }
         return accept
     }
@@ -88,43 +90,49 @@ final class TodayStore {
         return "Résumé"
     }
 
-    func load(resetToLoading: Bool) async {
+    func load(resetToLoading: Bool, force: Bool = false) async {
         let dayId = TrainingDayId.today()
         let hadCache = hydrateFromSnapshotIfNeeded(dayId: dayId, resetToLoading: resetToLoading)
 
-        do {
-            // Never send `Authorization: Bearer ` with an empty token. Without a provider the
-            // store stays fixture-only (previews / offline demos).
-            let token: String
-            if let tokenProvider {
-                token = try await tokenProvider()
-            } else {
+        // Never send `Authorization: Bearer ` with an empty token. Without a provider the
+        // store stays fixture-only (previews / offline demos).
+        guard let tokenProvider else {
+            do {
                 let payload = try await client.today(trainingDayId: dayId, token: "fixture")
                 apply(payload)
                 persistSnapshot(payload)
-                return
+            } catch {
+                if hadCache, case .loaded = phase { return }
+                if case .loaded = phase { return }
+                phase = .failed(Self.failureMessage(for: error))
             }
-            let payload = try await client.today(trainingDayId: dayId, token: token)
-            apply(payload)
-            persistSnapshot(payload)
-        } catch is CancellationError {
             return
-        } catch let error as SharpitAPIError where error == .unauthorized {
-            phase = .unauthorized
-        } catch {
-            // Keep stale snapshot on transport failure when we already painted it.
-            if hadCache, case .loaded = phase {
-                return
+        }
+
+        await networkGate.run(force: force) {
+            do {
+                let token = try await tokenProvider()
+                let payload = try await self.client.today(trainingDayId: dayId, token: token)
+                self.apply(payload)
+                self.persistSnapshot(payload)
+                return true
+            } catch is CancellationError {
+                return false
+            } catch let error as SharpitAPIError where error == .unauthorized {
+                self.phase = .unauthorized
+                return false
+            } catch {
+                // Keep stale snapshot on transport failure when we already painted it.
+                if hadCache, case .loaded = self.phase { return false }
+                if case .loaded = self.phase { return false }
+                self.phase = .failed(Self.failureMessage(for: error))
+                return false
             }
-            if case .loaded = phase {
-                return
-            }
-            phase = .failed(Self.failureMessage(for: error))
         }
     }
 
     func refresh() async {
-        await load(resetToLoading: false)
+        await load(resetToLoading: false, force: true)
         if case .loaded(let fold) = phase {
             flashScores()
             markNewSessionDones(in: fold)

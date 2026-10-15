@@ -50,6 +50,7 @@ final class FoodLogStore {
     private let healthWriter: (any HealthWriting)?
     /// One Santé mirror at a time — overlapping replaceQuantity calls would race deletes.
     @ObservationIgnored private var mirrorChain: Task<Void, Never>?
+    private let loadGate = LoadGate()
 
     init(
         trainingDayId: String = TrainingDayId.today(now: .now),
@@ -99,24 +100,31 @@ final class FoodLogStore {
 
     /// Reads a day. Another day than the one held clears the entries first, so a day never
     /// shows under another date.
-    func load(trainingDayId dayId: String) async {
-        if dayId != trainingDayId {
+    func load(trainingDayId dayId: String, force: Bool = false) async {
+        let dayChanged = dayId != trainingDayId
+        if dayChanged {
             trainingDayId = dayId
             entries = []
             phase = .loading
+            loadGate.invalidate()
         }
-        do {
-            let day = try await client.day(trainingDayId: dayId, token: try await tokenProvider())
-            guard dayId == trainingDayId else { return }
-            entries = day.entries
-            targets = day.targets
-            recent = day.recent
-            adoptHealth(day)
-            phase = .ready
-        } catch is CancellationError {
-        } catch {
-            guard dayId == trainingDayId, phase != .ready else { return }
-            phase = .failed(SharpitErrorGuidance.message(for: error, subject: "Ton journal alimentaire"))
+        await loadGate.run(force: force || dayChanged) {
+            do {
+                let day = try await self.client.day(trainingDayId: dayId, token: try await self.tokenProvider())
+                guard dayId == self.trainingDayId else { return false }
+                self.entries = day.entries
+                self.targets = day.targets
+                self.recent = day.recent
+                self.adoptHealth(day)
+                self.phase = .ready
+                return true
+            } catch is CancellationError {
+                return false
+            } catch {
+                guard dayId == self.trainingDayId, self.phase != .ready else { return false }
+                self.phase = .failed(SharpitErrorGuidance.message(for: error, subject: "Ton journal alimentaire"))
+                return false
+            }
         }
     }
 

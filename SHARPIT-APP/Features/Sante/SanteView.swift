@@ -22,6 +22,7 @@ struct SanteView: View {
     @State private var opened: V1HealthMarker?
     @State private var isEditingWeightTarget = false
     @State private var hasAppeared = false
+    @State private var reloadGate = LoadGate()
 
     init(
         profileClient: any AthleteProfileServing & BodyCompositionServing,
@@ -49,7 +50,7 @@ struct SanteView: View {
                 case .unauthorized:
                     SharpitStateMessage.sessionExpired()
                 case .failed(let message):
-                    SharpitStateMessage.failed(message) { Task { await reload() } }
+                    SharpitStateMessage.failed(message) { Task { await reload(force: true) } }
                 case .empty:
                     SharpitStateMessage(
                         title: "Rien de mesuré pour l'instant",
@@ -74,7 +75,7 @@ struct SanteView: View {
                     }
                 }
             }
-            .sheet(isPresented: $isEditingWeightTarget, onDismiss: { Task { await reload() } }) {
+            .sheet(isPresented: $isEditingWeightTarget, onDismiss: { Task { await reload(force: true) } }) {
                 WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
             }
             .sheet(item: $opened) { marker in
@@ -82,16 +83,19 @@ struct SanteView: View {
             }
             .task { await reload() }
             // Buying Pro brings the biological age in without waiting for the next visit.
-            .onChange(of: pro?.isPro) { _, _ in Task { await reload() } }
+            .onChange(of: pro?.isPro) { _, _ in Task { await reload(force: true) } }
         }
     }
 
-    private func reload() async {
-        async let overview: Void = store.load()
-        async let corps: Void = history.load()
-        async let declared: Void = zones.load()
-        async let day: Void = store.loadDay()
-        _ = await (overview, corps, declared, day)
+    private func reload(force: Bool = false) async {
+        await reloadGate.run(force: force) {
+            async let overview: Void = store.load()
+            async let corps: Void = history.load()
+            async let declared: Void = zones.load()
+            async let day: Void = store.loadDay()
+            _ = await (overview, corps, declared, day)
+            return true
+        }
     }
 
     private var readout: some View {
@@ -129,7 +133,7 @@ struct SanteView: View {
             .padding(.bottom, SharpitSpacing.xl)
         }
         .modifier(ScrollUnderGlass())
-        .refreshable { await reload() }
+        .refreshable { await reload(force: true) }
         .onAppear { hasAppeared = true }
     }
 
