@@ -21,6 +21,8 @@ protocol ActivityServing: Sendable {
     func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload
     /// A multisport session's sport legs, each with its own recording.
     func multisportStreams(id: String, token: String) async throws -> [V1MultisportLegStream]
+    /// Downsampled GPS paths for every streamed activity — one call for the Activité list cards.
+    func routePreviews(token: String) async throws -> [String: [V1ActivityCoordinate]]
     func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail
     func updateSubjective(id: String, rpe: Double?, feeling: String?, token: String) async throws
     /// Forgets the cached list. Linking a session changes what each activity says about its
@@ -52,6 +54,8 @@ extension ActivityServing {
     func forgetActivity(id _: String) async {}
     /// Conformers that serve no multisport session have no legs to give.
     func multisportStreams(id _: String, token _: String) async throws -> [V1MultisportLegStream] { [] }
+    /// Stubs and previews have no GPS paths.
+    func routePreviews(token _: String) async throws -> [String: [V1ActivityCoordinate]] { [:] }
 }
 
 actor ActivityClient: ActivityServing, ActivityMutating {
@@ -62,6 +66,7 @@ actor ActivityClient: ActivityServing, ActivityMutating {
     private var streamCache: [String: V1ActivityStreamPayload] = [:]
     // shortcut: memory only, so each launch asks once more (the server answers from its cache); keep them on disk if the race page is opened often.
     private var multisportCache: [String: [V1MultisportLegStream]] = [:]
+    private var routePreviewsCache: [String: [V1ActivityCoordinate]]?
     /// Survives the client and the launch: a session opened once opens instantly after.
     private let disk: ActivityDiskCache?
 
@@ -179,8 +184,26 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         return streams.legs
     }
 
+    func routePreviews(token: String) async throws -> [String: [V1ActivityCoordinate]] {
+        if let routePreviewsCache { return routePreviewsCache }
+        let raw: [String: [[Double]]] = try await request(
+            path: "/api/activities/route-previews",
+            queryItems: [],
+            token: token
+        )
+        let mapped = raw.mapValues { pairs in
+            pairs.compactMap { pair -> V1ActivityCoordinate? in
+                guard pair.count >= 2 else { return nil }
+                return V1ActivityCoordinate(latitude: pair[0], longitude: pair[1])
+            }
+        }.filter { $0.value.count >= 2 }
+        routePreviewsCache = mapped
+        return mapped
+    }
+
     func invalidateActivities() {
         activitiesCache = nil
+        routePreviewsCache = nil
     }
 
     func forgetActivity(id: String) {

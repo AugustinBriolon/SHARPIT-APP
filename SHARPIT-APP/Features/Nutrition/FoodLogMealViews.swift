@@ -212,10 +212,8 @@ struct FoodLogMealPage: View {
                     .disabled(entry.isPending)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         if !entry.isPending {
-                            Button(role: .destructive) {
+                            SharpitSwipeDeleteButton {
                                 Task { await store.delete(entry) }
-                            } label: {
-                                Label("Supprimer", systemImage: "trash")
                             }
                         }
                     }

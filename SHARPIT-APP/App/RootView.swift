@@ -166,6 +166,7 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            pushManager.clearIconBadge()
             Task { await runHistoryImport() }
             Task { await refreshSessionReminders() }
             Task { await refreshDayCheckIns() }

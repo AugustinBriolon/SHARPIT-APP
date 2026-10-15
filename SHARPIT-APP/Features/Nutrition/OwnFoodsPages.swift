@@ -67,9 +67,7 @@ struct OwnFoodsPage: View {
                 }
                 .buttonStyle(.plain)
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) { pendingDelete = product } label: {
-                        Label("Supprimer", systemImage: "trash")
-                    }
+                    SharpitSwipeDeleteButton { pendingDelete = product }
                     Button { onEdit(product) } label: {
                         Label("Modifier", systemImage: "pencil")
                     }
@@ -77,9 +75,7 @@ struct OwnFoodsPage: View {
                 }
                 .contextMenu {
                     Button { onEdit(product) } label: { Label("Modifier", systemImage: "pencil") }
-                    Button(role: .destructive) { pendingDelete = product } label: {
-                        Label("Supprimer", systemImage: "trash")
-                    }
+                    SharpitDeleteMenuButton { pendingDelete = product }
                 }
             }
         } footer: {

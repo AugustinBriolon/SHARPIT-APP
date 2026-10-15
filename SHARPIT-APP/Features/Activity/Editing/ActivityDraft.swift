@@ -151,14 +151,18 @@ struct ActivityDraft: Equatable {
 
     private var strengthSets: JSONValue {
         .array(exercises.filter(\.isNamed).enumerated().map { order, exercise in
-            .object([
+            var object: [String: JSONValue] = [
                 "exercise": .string(exercise.name.trimmingCharacters(in: .whitespacesAndNewlines)),
                 "sets": .number(Double(exercise.sets)),
-                // A done set counts at least one repetition.
+                // A done set counts at least one repetition (including a timed hold).
                 "reps": .number(Double(max(exercise.reps, 1))),
                 "weightKg": exercise.weightKg.map(JSONValue.number) ?? .null,
                 "order": .number(Double(order)),
-            ])
+            ]
+            if let durationSec = exercise.durationSec {
+                object["durationSec"] = .number(Double(durationSec))
+            }
+            return .object(object)
         })
     }
 

@@ -156,7 +156,7 @@ nonisolated struct V1ActivityStreamData: Decodable, Sendable, Equatable {
     }
 }
 
-nonisolated struct V1ActivityCoordinate: Decodable, Sendable, Equatable {
+nonisolated struct V1ActivityCoordinate: Codable, Sendable, Equatable, Hashable {
     let latitude: Double
     let longitude: Double
 }

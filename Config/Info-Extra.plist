@@ -20,23 +20,13 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>SHARPIT utilise l'appareil photo pour lire le code-barres des aliments que tu ajoutes à ton journal. Les images restent sur ton iPhone.</string>
-	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Avec SharpIt Pro, tes séances planifiées s'écrivent dans un calendrier « SharpIt » et suivent les changements de ton plan. SharpIt ne touche à aucun autre calendrier.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>SHARPIT peut écrire dans Apple Santé le total de ta journée alimentaire (énergie et macros) et le poids que tu notes dans l'app, pour les garder alignés avec Santé.</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
 	<key>SharpitAPIOrigin</key>
 	<string>$(SHARPIT_API_ORIGIN)</string>
 	<key>SharpitWebOrigin</key>
 	<string>$(SHARPIT_WEB_ORIGIN)</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

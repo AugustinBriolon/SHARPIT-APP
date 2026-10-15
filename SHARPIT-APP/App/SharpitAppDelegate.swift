@@ -44,13 +44,13 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         #endif
     }
 
-    // Foreground presentation: display banner, sound and badge for morning verdict.
+    // Foreground: banner + sound. No badge — the athlete is already in the app.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .badge, .sound])
+        completionHandler([.banner, .sound])
     }
 
     // Action when user taps on the push notification banner.

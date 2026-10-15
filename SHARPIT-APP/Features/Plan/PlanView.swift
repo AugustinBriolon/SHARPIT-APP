@@ -126,7 +126,8 @@ struct PlanView: View {
                         preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
                         linking: linkContext(on: session.date),
                         watchPush: watchPushContext(on: session.date),
-                        editing: editingContext(for: session)
+                        editing: editingContext(for: session),
+                        guidedFinish: guidedFinishContext()
                     ) { context in
                         router.discussWithCoach(about: context)
                     }
@@ -134,7 +135,8 @@ struct PlanView: View {
                     BrickSessionDrawer(
                         brick: PlannedBrickPreview(brick: brick, isExpertReading: isExpertReading),
                         linking: linkContext(on: brick.date),
-                        watchPush: watchPushContext(on: brick.date)
+                        watchPush: watchPushContext(on: brick.date),
+                        guidedFinish: guidedFinishContext()
                     ) { context in
                         router.discussWithCoach(about: context)
                     }
@@ -342,6 +344,25 @@ extension PlanView {
             editor: editor,
             onSaved: { selection = .session($0) },
             onDeleted: { selection = nil }
+        )
+    }
+
+    fileprivate func guidedFinishContext() -> GuidedStrengthFinishContext? {
+        guard let mutator = activityClient as? any ActivityMutating else { return nil }
+        return GuidedStrengthFinishContext(
+            client: mutator,
+            linker: linker,
+            tokenProvider: tokenProvider,
+            onFinished: { _ in
+                selection = nil
+                toastCenter?.show(
+                    "Séance muscu enregistrée",
+                    symbol: "checkmark.circle.fill",
+                    tone: .success,
+                    autoDismissAfter: 3.0
+                )
+                Task { await store.loadAroundSelection() }
+            }
         )
     }
 

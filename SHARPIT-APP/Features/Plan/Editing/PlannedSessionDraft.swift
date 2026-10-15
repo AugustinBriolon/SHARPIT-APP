@@ -167,18 +167,28 @@ struct StrengthExerciseDraft: Identifiable, Equatable {
     var sets: Int
     var reps: Int
     var weightKg: Double?
+    /// Hold time for isometrics / mobility — nil when the set is counted in reps.
+    var durationSec: Int?
     private var preserved: [String: JSONValue]
     private let originalName: String
 
     static let setsRange = 1...50
     static let repsRange = 0...500
 
-    init(id: UUID = UUID(), name: String = "", sets: Int = 3, reps: Int = 10, weightKg: Double? = nil) {
+    init(
+        id: UUID = UUID(),
+        name: String = "",
+        sets: Int = 3,
+        reps: Int = 10,
+        weightKg: Double? = nil,
+        durationSec: Int? = nil
+    ) {
         self.id = id
         self.name = name
         self.sets = sets
         self.reps = reps
         self.weightKg = weightKg
+        self.durationSec = durationSec
         preserved = [:]
         originalName = name
     }
@@ -191,11 +201,26 @@ struct StrengthExerciseDraft: Identifiable, Equatable {
         sets = Self.int(object["sets"]) ?? 1
         reps = Self.int(object["reps"]) ?? 0
         if case .number(let weight)? = object["weightKg"] { weightKg = weight } else { weightKg = nil }
-        for key in ["exercise", "sets", "reps", "weightKg", "order"] { object[key] = nil }
+        durationSec = Self.int(object["durationSec"])
+        for key in ["exercise", "sets", "reps", "weightKg", "durationSec", "order"] { object[key] = nil }
         preserved = object
     }
 
     var isNamed: Bool { !trimmedName.isEmpty }
+
+    /// Timed rest after a set, when the coach prescribed one (`restMode == time`).
+    var restSec: Int? { Self.int(preserved["restSec"]) }
+
+    var restMode: String? { preserved["restMode"]?.string }
+
+    var notes: String? { preserved["notes"]?.string }
+
+    /// Catalog id when the server (or a prior resolve) attached form media.
+    var exerciseCatalogId: String? {
+        guard let value = preserved["exerciseCatalogId"]?.string else { return nil }
+        let raw = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return raw.isEmpty ? nil : raw
+    }
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
@@ -226,6 +251,7 @@ struct StrengthExerciseDraft: Identifiable, Equatable {
         object["sets"] = .number(Double(sets))
         object["reps"] = .number(Double(reps))
         object["weightKg"] = weightKg.map(JSONValue.number) ?? .null
+        object["durationSec"] = durationSec.map { .number(Double($0)) } ?? .null
         object["order"] = .number(Double(order))
         return .object(object)
     }
@@ -239,5 +265,6 @@ struct StrengthExerciseDraft: Identifiable, Equatable {
     static func == (lhs: StrengthExerciseDraft, rhs: StrengthExerciseDraft) -> Bool {
         lhs.id == rhs.id && lhs.name == rhs.name && lhs.sets == rhs.sets
             && lhs.reps == rhs.reps && lhs.weightKg == rhs.weightKg
+            && lhs.durationSec == rhs.durationSec
     }
 }

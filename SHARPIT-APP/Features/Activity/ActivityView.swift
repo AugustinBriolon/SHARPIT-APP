@@ -161,14 +161,21 @@ struct ActivityView: View {
             // Only a list that changed is swapped in. Replacing an identical list while the
             // pull-to-refresh gesture was ending left the scroll view stuck pulled down.
             if case .loaded(let shown) = phase {
-                if shown == activities { return }
-                // A list replacing a list is not animated: the refresh control is still
-                // settling, and an animated height change under it is what kept it pulled down.
-                phase = activities.isEmpty ? .empty : .loaded(activities)
-                return
+                if shown != activities {
+                    // A list replacing a list is not animated: the refresh control is still
+                    // settling, and an animated height change under it is what kept it pulled down.
+                    phase = activities.isEmpty ? .empty : .loaded(activities)
+                }
+            } else {
+                SharpitMotion.run(SharpitMotion.fade) {
+                    phase = activities.isEmpty ? .empty : .loaded(activities)
+                }
             }
-            SharpitMotion.run(SharpitMotion.fade) {
-                phase = activities.isEmpty ? .empty : .loaded(activities)
+            // Widget « Dernière activité » only — the list stays as plain rows.
+            let snapshotActivities = activities
+            Task(priority: .utility) {
+                guard let previews = try? await client.routePreviews(token: token) else { return }
+                await WidgetSnapshotPublisher.publishLastActivity(from: snapshotActivities, routes: previews)
             }
         } catch is CancellationError {
             return

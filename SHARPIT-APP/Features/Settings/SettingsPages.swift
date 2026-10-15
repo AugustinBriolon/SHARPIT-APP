@@ -381,6 +381,40 @@ struct NotificationPrefsView: View {
                 }
             }
             .tint(SharpitColor.primary)
+            Toggle(isOn: Binding(
+                get: { GuidedStrengthRestLiveActivityPreference.isEnabled },
+                set: { GuidedStrengthRestLiveActivityPreference.setEnabled($0) }
+            )) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Live Activity muscu")
+                            .font(SharpitTypography.bodyEmphasis)
+                        Text("Séance et timer de repos sur l'écran verrouillé.")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                } icon: {
+                    SharpitRowIcon(symbol: "timer")
+                }
+            }
+            .tint(SharpitColor.primary)
+            Toggle(isOn: Binding(
+                get: { GuidedHeartRatePreference.isEnabled },
+                set: { GuidedHeartRatePreference.setEnabled($0) }
+            )) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Capteur FC Bluetooth")
+                            .font(SharpitTypography.bodyEmphasis)
+                        Text("Ou tape « FC » en haut pendant un suivi muscu — ceinture / brassard BLE.")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                } icon: {
+                    SharpitRowIcon(symbol: "heart.fill")
+                }
+            }
+            .tint(SharpitColor.primary)
         }
         .sharpitListRows()
         // Placeholders only while the very first read is under way; a failure says so below

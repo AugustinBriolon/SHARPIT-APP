@@ -126,10 +126,8 @@ struct CoachMemoryView: View {
                     }
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
+                        SharpitSwipeDeleteButton {
                             Task { await store.deleteEntry(id: entry.id) }
-                        } label: {
-                            Label("Supprimer", systemImage: "trash")
                         }
                     }
                 }
