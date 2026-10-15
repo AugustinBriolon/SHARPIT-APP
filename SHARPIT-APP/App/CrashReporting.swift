@@ -1,11 +1,13 @@
 import Foundation
 import SentrySwift
 
-/// Crash and error reports to Sentry (EU), and nothing more.
+/// Crash reports and masked session replays to Sentry (EU).
 ///
-/// No performance tracing, no session replay, no screenshots, no view hierarchy, no default PII:
-/// a report must never carry what the athlete measured or wrote. Breadcrumbs keep network URLs
-/// only by path, and every event is stripped of request bodies before it leaves the iPhone.
+/// No performance tracing, no crash screenshots, no view hierarchy, no default PII.
+/// Replay keeps the SDK defaults: every text, image, and input is masked, and request
+/// bodies stay off (`networkDetailAllowUrls` is empty). A report must never carry what
+/// the athlete measured or wrote. Breadcrumbs keep network URLs only by path, and every
+/// event is stripped of request bodies before it leaves the iPhone.
 enum CrashReporting {
     /// A DSN is a public client key — safe in the binary, it can only send events.
     static let dsn = "https://82d4a00ff393d0fa14999292cb2cf454@o4512180262535168.ingest.de.sentry.io/4512180266860624"
@@ -23,6 +25,13 @@ enum CrashReporting {
         options.tracesSampleRate = 0
         options.attachScreenshot = false
         options.attachViewHierarchy = false
+        // Replay is a view reconstruction, not a raw screen recording. Text and images stay masked.
+        // Error sessions are always kept; healthy sessions are sampled, except in debug where
+        // every session is sent so a local run can be checked in Sentry.
+        options.sessionReplay.maskAllText = true
+        options.sessionReplay.maskAllImages = true
+        options.sessionReplay.onErrorSampleRate = 1
+        options.sessionReplay.sessionSampleRate = environment == "debug" ? 1 : Float(0.1)
         options.enableAutoBreadcrumbTracking = true
         options.enableNetworkBreadcrumbs = true
         options.enableCaptureFailedRequests = false

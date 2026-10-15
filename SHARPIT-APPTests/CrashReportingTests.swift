@@ -4,6 +4,7 @@ import Testing
 @testable import Sharpit
 
 /// A crash report must never carry what the athlete measured or wrote.
+/// Replay is on, but text, images, and request bodies stay masked.
 @Test func crashReportsCarryNoPersonalDataOrTracing() {
     let options = Options()
     CrashReporting.configure(options, environment: "test")
@@ -14,6 +15,15 @@ import Testing
     #expect(options.attachScreenshot == false)
     #expect(options.attachViewHierarchy == false)
     #expect(options.enableCaptureFailedRequests == false)
+    #expect(options.sessionReplay.maskAllText)
+    #expect(options.sessionReplay.maskAllImages)
+    #expect(options.sessionReplay.networkDetailAllowUrls.isEmpty)
+    #expect(options.sessionReplay.onErrorSampleRate == 1)
+    #expect(options.sessionReplay.sessionSampleRate == Float(0.1))
+
+    let debug = Options()
+    CrashReporting.configure(debug, environment: "debug")
+    #expect(debug.sessionReplay.sessionSampleRate == 1)
 }
 
 @Test func crashReportsGoToTheEURegion() throws {
