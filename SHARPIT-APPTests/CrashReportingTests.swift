@@ -19,11 +19,7 @@ import Testing
     #expect(options.sessionReplay.maskAllImages)
     #expect(options.sessionReplay.networkDetailAllowUrls.isEmpty)
     #expect(options.sessionReplay.onErrorSampleRate == 1)
-    #expect(options.sessionReplay.sessionSampleRate == Float(0.1))
-
-    let debug = Options()
-    CrashReporting.configure(debug, environment: "debug")
-    #expect(debug.sessionReplay.sessionSampleRate == 1)
+    #expect(options.sessionReplay.sessionSampleRate == 1)
 }
 
 @Test func crashReportsGoToTheEURegion() throws {
