@@ -15,7 +15,7 @@ nonisolated enum VerdictCopySanitizer {
     /// Built per call — `Regex` is not `Sendable`, so it must not live in a static `let`
     /// under Swift 6 strict concurrency.
     static func containsUnresolvedPlaceholder(_ text: String) -> Bool {
-        text.range(of: #"\{[^}]+\}"#, options: .regularExpression) != nil
+        text.range(of: #"\{[^}]*\}"#, options: .regularExpression) != nil
     }
 
     /// Returns the text when clean, otherwise the fallback and a privacy-safe log line.
