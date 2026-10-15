@@ -124,7 +124,7 @@ final class MorningWellnessStore {
         // the time a write fails for good, so that is said in the app's toast.
         write = Task { [client, tokenProvider, trainingDayId, onSaved] in
             do {
-                try await SharpitRetry.run {
+                _ = try await SharpitRetry.run {
                     try await client.submitWellnessCheckin(
                         entry,
                         trainingDayId: trainingDayId,

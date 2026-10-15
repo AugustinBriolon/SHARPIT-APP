@@ -29,6 +29,29 @@ nonisolated struct V1WellnessCheckin: Decodable, Equatable, Sendable {
     let entry: V1WellnessEntry?
 }
 
+/// GET `/api/v1/wellness-checkin/status` — whether today's morning ressenti exists.
+/// Never carries scale values / notes.
+nonisolated struct V1WellnessCheckinStatus: Decodable, Equatable, Sendable {
+    let localDate: String
+    let completed: Bool
+}
+
+/// Codes-only verdict slice returned on POST wellness (no scores / notes).
+nonisolated struct V1WellnessVerdictSummary: Decodable, Equatable, Sendable {
+    var overallVerdict: VerdictStateCode?
+    var limitingFactorSystem: String?
+    var limitingFactorCode: String?
+    var limiter: String?
+}
+
+nonisolated struct V1WellnessSubmitResponse: Decodable, Equatable, Sendable {
+    var trainingDayId: String?
+    var completed: Bool?
+    var alreadyCompleted: Bool?
+    /// Additive. Null when no snapshot is available yet — client refetches Today.
+    var verdict: V1WellnessVerdictSummary?
+}
+
 nonisolated enum WellnessSoreness {
     /// 1 → 0 … 5 → 10, linear, matching `mapSorenessUiToDomain` on the web.
     static func domain(fromUI score: WellnessScore) -> Int {

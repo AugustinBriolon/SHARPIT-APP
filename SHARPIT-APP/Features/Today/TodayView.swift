@@ -25,6 +25,8 @@ struct TodayView: View {
     /// Today's food log for the nutrition card. Nil without a token or a client.
     @State private var nutrition: NutritionTodayStore?
     @State private var showsCheckIn = false
+    /// Bumped when a wellness save changed the morning verdict — fades the ink plate.
+    @State private var verdictFadeToken = 0
     /// Held as well as handed to the store, because the journal opened from here caches its
     /// own day and needs the same context.
     private let modelContext: ModelContext?
@@ -80,6 +82,7 @@ struct TodayView: View {
                         hasCompletedArrival: store.hasCompletedArrival,
                         pulseScores: store.pulseScores,
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
+                        verdictFadeToken: verdictFadeToken,
                         tokenProvider: tokenProvider,
                         signalClient: signalClient,
                         nutrition: nutrition,
@@ -140,7 +143,10 @@ struct TodayView: View {
             }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
-                Task { await pullProviders(force: false) }
+                Task {
+                    await pullProviders(force: false)
+                    await evaluateRessentiPrompt()
+                }
             }
             .onChange(of: router.calendarRevision) { _, _ in
                 Task { await store.refresh() }
@@ -149,13 +155,16 @@ struct TodayView: View {
                 Task { await store.load(resetToLoading: false) }
             }
             .sheet(isPresented: $showsCheckIn) {
-                if let wellnessClient, let tokenProvider {
-                    MorningWellnessSheet(
+                if let wellnessClient, let tokenProvider, let athleteId = localAthleteId {
+                    RessentiDuJourSheet(
                         client: wellnessClient,
                         tokenProvider: tokenProvider,
+                        athleteId: athleteId,
                         trainingDayId: TrainingDayId.today(),
-                        onSaved: { router.noteMorningCheckIn() }
-                    ) { _ in }
+                        onSaved: { summary in
+                            handleRessentiSaved(summary)
+                        }
+                    )
                 }
             }
             .task {
@@ -167,6 +176,7 @@ struct TodayView: View {
                 Task { await pullProviders(force: false) }
                 weather.start()
                 _ = await nutritionRead
+                await evaluateRessentiPrompt()
             }
         }
     }
@@ -204,6 +214,57 @@ extension TodayView {
         }
     }
 
+    /// Clerk user claimed into `LocalAccountData` — scopes draft / dismissal per athlete.
+    fileprivate var localAthleteId: String? {
+        UserDefaults.standard.string(forKey: LocalAccountData.ownerKey)
+    }
+
+    /// Server is the source of truth: present the half-sheet only when today's check-in
+    /// is missing and the athlete has not dismissed it for this local day.
+    @MainActor
+    fileprivate func evaluateRessentiPrompt() async {
+        guard !showsCheckIn else { return }
+        guard let wellnessClient, let tokenProvider, let athleteId = localAthleteId else { return }
+        do {
+            let token = try await tokenProvider()
+            let status = try await wellnessClient.wellnessCheckinStatus(token: token)
+            guard !status.completed else { return }
+            guard !WellnessCheckInLocalStore.shared.isDismissed(
+                athleteId: athleteId,
+                localDate: status.localDate
+            ) else { return }
+            showsCheckIn = true
+        } catch {
+            // Silent — never block Résumé on a status read; the athlete can still open it
+            // from the morning proposal card.
+        }
+    }
+
+    @MainActor
+    fileprivate func handleRessentiSaved(_ summary: V1WellnessVerdictSummary?) {
+        let previous = currentStateCode()
+        let next = summary?.overallVerdict
+        let verdictChanged: Bool = {
+            guard let next else { return true }
+            if let previous { return previous != next }
+            return true
+        }()
+        router.noteMorningCheckIn()
+        Task {
+            await store.load(resetToLoading: false)
+            if verdictChanged {
+                verdictFadeToken += 1
+            }
+        }
+    }
+
+    fileprivate func currentStateCode() -> VerdictStateCode? {
+        if case .loaded(let fold) = store.phase {
+            return fold.plate.stateCode
+        }
+        return nil
+    }
+
     /// Pulls the providers — always when asked, otherwise only when the last pull is stale —
     /// and reloads Today when fresh data came in.
     fileprivate func pullProviders(force: Bool) async {
@@ -231,6 +292,7 @@ private struct TodayFoldView: View {
     var hasCompletedArrival: Bool = false
     var pulseScores: Bool = false
     var sessionDoneCelebrations: Set<String> = []
+    var verdictFadeToken: Int = 0
     var tokenProvider: (() async throws -> String)?
     var signalClient: (any SleepServing & RecoveryServing)?
     var nutrition: NutritionTodayStore?
@@ -267,6 +329,7 @@ private struct TodayFoldView: View {
         hasCompletedArrival: Bool = false,
         pulseScores: Bool = false,
         sessionDoneCelebrations: Set<String> = [],
+        verdictFadeToken: Int = 0,
         tokenProvider: (() async throws -> String)? = nil,
         signalClient: (any SleepServing & RecoveryServing)? = nil,
         nutrition: NutritionTodayStore? = nil,
@@ -283,6 +346,7 @@ private struct TodayFoldView: View {
         self.hasCompletedArrival = hasCompletedArrival
         self.pulseScores = pulseScores
         self.sessionDoneCelebrations = sessionDoneCelebrations
+        self.verdictFadeToken = verdictFadeToken
         self.tokenProvider = tokenProvider
         self.signalClient = signalClient
         self.nutrition = nutrition
@@ -313,7 +377,11 @@ private struct TodayFoldView: View {
                             value: phase.showsPlate
                         )
                 }
-                InkVerdictPlate(plate: fold.plate, revealed: phase.showsPlate)
+                InkVerdictPlate(
+                    plate: fold.plate,
+                    revealed: phase.showsPlate,
+                    contentFadeToken: verdictFadeToken
+                )
 
                 if let store = activityStatusStore, store.current != .active, store.phase != .loading {
                     ActivityStatusAlertLine(status: store.current)

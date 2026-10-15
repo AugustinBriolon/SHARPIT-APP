@@ -50,16 +50,26 @@ struct FixtureTodayClient: TodayServing {
             empty: nil,
             verdict: V1TodayVerdict(
                 eyebrow: "Ce matin",
-                headline: "Séance prévue",
+                headline: "Journée légère",
                 subline: "Tenir",
                 posture: .steady,
                 confidencePct: 72,
                 limitingCause: "Sommeil court",
-                statusLabel: "FEU VERT",
-                actionLine: "Entraîne-toi — légèrement",
+                statusLabel: "Léger",
+                actionLine: "Reste en endurance facile.",
                 confidenceLabel: "ESTIMATION PARTIELLE",
                 packTier: .partial,
-                estimationGaps: ["Baseline HRV partielle (moins de 14 j)"]
+                estimationGaps: ["Baseline HRV partielle (moins de 14 j)"],
+                explanation: V1TodayExplanation(
+                    essential: "Ton corps est prêt pour une séance légère.",
+                    expert: "TSB stable · VFC dans la norme."
+                ),
+                instruction: "Reste en endurance facile.",
+                limiterSignals: [.sleepShort],
+                limiterSignal: .sleepShort,
+                vsYesterdayLabel: "Comme hier",
+                showHeadline: false,
+                stateCode: .trainEasy
             ),
             weather: V1TodayWeather(city: "Lyon", tempC: 12, condition: "Nuageux"),
             sessions: [

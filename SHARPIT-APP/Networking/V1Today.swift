@@ -149,6 +149,12 @@ nonisolated enum V1TodayEmptyCode: String, Codable, Sendable {
     case noContent = "NO_CONTENT"
 }
 
+/// Dual reading for the morning verdict explanation (ADR-023) — the client picks by displayMode.
+nonisolated struct V1TodayExplanation: Codable, Sendable, Equatable {
+    var essential: String
+    var expert: String
+}
+
 nonisolated struct V1TodayVerdict: Codable, Sendable, Equatable {
     var eyebrow: String
     var headline: String
@@ -161,6 +167,20 @@ nonisolated struct V1TodayVerdict: Codable, Sendable, Equatable {
     var confidenceLabel: String? = nil
     var packTier: V1TodayPackTier? = nil
     var estimationGaps: [String]? = nil
+    /// Additive (PR #154). Dual density — never Markdown.
+    var explanation: V1TodayExplanation? = nil
+    /// Additive. Short plain-text instruction (impératif tutoyé).
+    var instruction: String? = nil
+    /// Additive. Frein codes sorted by importance; unknown codes decode without failing.
+    var limiterSignals: [LimiterSignalCode]? = nil
+    /// Additive. First frein code (= `limiterSignals[0]` when present).
+    var limiterSignal: LimiterSignalCode? = nil
+    /// Additive. Compared to yesterday for this athlete only.
+    var vsYesterdayLabel: String? = nil
+    /// Additive. New clients hide the headline when false / empty (legacy keeps `headline`).
+    var showHeadline: Bool? = nil
+    /// Additive. Stable machine code for colour / icon.
+    var stateCode: VerdictStateCode? = nil
 }
 
 nonisolated enum V1TodayPackTier: String, Codable, Sendable {
