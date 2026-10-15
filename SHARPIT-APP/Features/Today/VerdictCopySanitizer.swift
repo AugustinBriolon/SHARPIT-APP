@@ -12,10 +12,10 @@ nonisolated enum VerdictCopySanitizer {
     static let fallbackExplanation = "Le verdict n’est pas disponible pour le moment."
     static let fallbackInstruction = "Suis ton plan avec prudence."
 
-    private static let unresolvedPlaceholder = /\{[^}]+\}/
-
+    /// Built per call — `Regex` is not `Sendable`, so it must not live in a static `let`
+    /// under Swift 6 strict concurrency.
     static func containsUnresolvedPlaceholder(_ text: String) -> Bool {
-        text.contains(unresolvedPlaceholder)
+        text.range(of: #"\{[^}]+\}"#, options: .regularExpression) != nil
     }
 
     /// Returns the text when clean, otherwise the fallback and a privacy-safe log line.
