@@ -189,11 +189,17 @@ queue.
 
 The source of truth is the web design system, not this repo:
 
-- Law: `../SHARPIT/design.md` and `../SHARPIT/docs/design/DESIGN_LANGUAGE.md`
-- Values: `../SHARPIT/src/lib/brand/brand-tokens.ts` and `../SHARPIT/src/app/globals.css`
+- Law: `../SHARPIT-WEBAPP/design.md` and `../SHARPIT-WEBAPP/docs/design/DESIGN_LANGUAGE.md`
+- Values: `../SHARPIT-WEBAPP/packages/app/src/lib/brand/brand-tokens.ts` and
+  `../SHARPIT-WEBAPP/packages/ui/src/styles/globals.css` — colours **and geometry** (radii, paddings,
+  sizes) reach `SharpitTokens` through `yarn tokens:ios`
 
-Genre is **instrument-editorial**: a precision readout, not a fitness dashboard. That
-implies color reserved for semantic state and no decorative gradients or washes. Apple
+The brand is **Ink & Lime** (SHARPIT-WEBAPP ADR-085, `docs/adr/0012`): a cool off-white canvas, white
+cards (28 pt corner, soft wide shadow, no border), ink figures and icon tiles, lime as the only hue,
+SF Pro with heavy tabular figures. The look is the seven reference cards in
+`../SHARPIT-WEBAPP/docs/design/reference/ink-and-lime/`; the Debug gallery rebuilds them from the
+components (`defaults write app.sharpit.ios SharpitDesignGallery -bool YES` in the simulator) — new
+work should look like it. A sport is told by its glyph in the ink tile, never by a colour. Apple
 chrome (tab bar, navigation, Liquid Glass) stays system; brand meaning lives in the content.
 
 Liquid Glass is chrome only: the tab and navigation bars, toolbar controls — Plan's
@@ -205,9 +211,9 @@ docked actions of the onboarding and the consent wall; `sharpitGlassControl`,
 (`SharpitCalendarSheet`) so a day can carry a mark: filled for an activity or data, a ring for
 a session ahead, muted for one missed or a day read empty.
 
-Elevation is where the app departs from the web (`docs/adr/0002`): surfaces have no
-hairline border; on light they lift with a soft neutral shadow (`sharpitShadow`), on dark by
-luminosity only. Every sheet uses `.sharpitSheet()` so none falls back to system black, and
+Elevation: surfaces have no hairline border; on light a card lifts with one soft, wide shadow
+(`sharpitShadow(.panel)`), on dark by luminosity only. Inside a card, rows sit white in a grey
+`SharpitInsetGroup`, separated by air. Every sheet uses `.sharpitSheet()` so none falls back to system black, and
 no screen uses `Color(uiColor: .systemBackground)`.
 
 Color and affordance (`docs/adr/0004`): numbers take semantic tones from
@@ -226,9 +232,11 @@ yet. The web's favicons and PWA icons carry the same mark.
 
 What makes a surface feel finished, applied everywhere new work lands:
 
-- **One component per recurring shape.** Every readout card uses `SharpitCardHeader` (badge,
-  label, chevron) and `SharpitTelemetryCapsule` (the foot line); never a local copy that drifts a
-  point. Symbols are stroked in content; filled only for a status mark (a check, a seal).
+- **One component per recurring shape.** Every card opens with `SharpitCardHeader` (icon tile,
+  title, subtitle, accessory, chevron); figures use `SharpitHeroFigure` / `SharpitRowFigure`, pills
+  `SharpitPill`, bars `SharpitProgressBar` / `SharpitGoalTrack`, rows `SharpitInsetGroup` /
+  `SharpitInsetRow` with `SharpitNumberChip` / `SharpitCheckBox`, actions `SharpitPrimaryButton`
+  (primary / accent / secondary); never a local copy that drifts a point. Symbols are stroked in content; filled only for a status mark (a check, a seal).
 - **Anticipate.** A screen fetches what is stale before being asked (providers are pulled on launch
   and foreground, `ProviderSyncStore`) and says it quietly, never with a blocking state.
 - **Announce news, not work.** After a sync, say what came in (« 3 aliments ajoutés »); say « à jour »

@@ -35,18 +35,15 @@ WeatherKit and HealthKit are entitled and need a paid team; on a free Personal T
 still builds and runs, but the weather chip reads "Météo indisponible" and Apple Health cannot
 be enabled. Associated Domains is not entitled yet.
 
-## Brand fonts
+## Brand and type
 
-Syne, IBM Plex Sans and JetBrains Mono (all SIL OFL 1.1) carry most of the SHARPIT
-identity. They are not committed yet:
+The app speaks Ink & Lime (`docs/adr/0012`) in SF Pro, the system face — no fonts to fetch or
+bundle. Colours and geometry come from the web repository through `yarn tokens:ios`. To see the
+reference cards rebuilt from the components without an account, run a Debug build with:
 
 ```bash
-./scripts/fetch-brand-fonts.sh
+xcrun simctl spawn booted defaults write app.sharpit.ios SharpitDesignGallery -bool YES
 ```
-
-The files land in `SharpItShared/Fonts` and `SharpitFonts.register()` picks up
-whatever is in the bundle at launch — no Info.plist or project change needed. Until then
-`SharpitTypography` falls back to the system face: the layout is right, the identity is not.
 
 ## Pointing at a server
 
