@@ -17,10 +17,10 @@ struct SanteDayState: Equatable {
         var tiles: [Tile] = []
         if let bank = response.energyBank, let value = bank.value {
             tiles.append(Tile(
-                caption: "Réserve",
+                caption: "Énergie",
                 value: "\(Int(value.rounded()))",
                 unit: "/100",
-                note: bank.typicalBaseline.map { "typ. \(Int($0.rounded()))" }
+                note: bank.typicalBaseline.map { "D'habitude \(Int($0.rounded()))" }
             ))
         }
         if let stress = response.stress {
@@ -33,7 +33,7 @@ struct SanteDayState: Equatable {
         }
         if let band = response.targetBand {
             tiles.append(Tile(
-                caption: "Cible effort",
+                caption: "Effort visé",
                 value: String(format: "%.0f–%.0f", band.low, band.high),
                 unit: nil,
                 note: Self.statusLabel(band.status)
@@ -51,9 +51,9 @@ struct SanteDayState: Equatable {
 
     static func statusLabel(_ status: String?) -> String? {
         switch status {
-        case "below": "Sous la cible"
-        case "within": "Dans la cible"
-        case "above": "Au-dessus"
+        case "below": "Encore à faire"
+        case "within": "Atteint"
+        case "above": "Dépassé"
         default: nil
         }
     }

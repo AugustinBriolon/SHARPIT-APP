@@ -57,10 +57,9 @@ struct SanteHero: View {
             } else if let pill {
                 Text(pill)
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(tone)
-                    .padding(.horizontal, SharpitSpacing.md)
-                    .padding(.vertical, SharpitSpacing.xs)
-                    .background(tone.opacity(0.16), in: Capsule())
+                    .foregroundStyle(tone == SharpitColor.foreground ? SharpitColor.foreground : tone)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, -SharpitSpacing.xs)
             }
             ruler
                 .frame(height: 56)
@@ -112,14 +111,19 @@ struct SanteHero: View {
                 }
                 .accessibilityHidden(true)
         } else if case .age(let age) = mode {
-            Text(BiologicalAgeReadout.years(hasAppeared ? age.years : (age.chronologicalYears ?? age.years)))
-                .font(SharpitTypography.showcaseScore)
-                .tracking(SharpitTypography.showcaseScoreTracking)
-                .foregroundStyle(SharpitColor.foreground)
-                .contentTransition(.numericText())
-                .animation(SharpitMotion.reveal, value: hasAppeared)
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
+            HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xxs) {
+                Text(BiologicalAgeReadout.years(hasAppeared ? age.years : (age.chronologicalYears ?? age.years)))
+                    .font(SharpitTypography.showcaseScore)
+                    .tracking(SharpitTypography.showcaseScoreTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .contentTransition(.numericText())
+                    .animation(SharpitMotion.reveal, value: hasAppeared)
+                Text("ans")
+                    .font(SharpitTypography.gaugeScore)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
         } else {
             HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xxs) {
                 Text("\(synthesis.inNorm)")
@@ -191,24 +195,36 @@ struct SanteHero: View {
         }
     }
 
+    /// What moved this month, one line each: the marker, then its change with an arrow in the
+    /// change's tone — read down a column instead of across stacked chips.
     private var highlights: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: SharpitSpacing.xs) { chips }
-            VStack(spacing: SharpitSpacing.xs) { chips }
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Ce qui a bougé ce mois-ci")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .padding(.bottom, SharpitSpacing.xs)
+            ForEach(Array(synthesis.highlights.enumerated()), id: \.element.key) { index, highlight in
+                if index > 0 { Divider() }
+                HStack(spacing: SharpitSpacing.sm) {
+                    Image(systemName: highlight.delta >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(highlight.tone.markColor)
+                        .frame(width: 26, height: 26)
+                        .background(SharpitColor.foreground.opacity(0.08), in: Circle())
+                    Text(SanteReadout.title(highlight.key))
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    Text(SanteReadout.signedDelta(highlight.delta, for: highlight.key))
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .monospacedDigit()
+                }
+                .padding(.vertical, SharpitSpacing.xs)
+                .accessibilityElement(children: .combine)
+            }
         }
-    }
-
-    private var chips: some View {
-        ForEach(synthesis.highlights, id: \.key) { highlight in
-            Text(SanteReadout.highlight(highlight))
-                .font(SharpitTypography.meta.weight(.semibold))
-                .foregroundStyle(highlight.tone.color)
-                .lineLimit(1)
-                .fixedSize()
-                .padding(.horizontal, SharpitSpacing.sm)
-                .padding(.vertical, SharpitSpacing.xxs + 2)
-                .background(highlight.tone.color.opacity(0.14), in: Capsule())
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
 }
@@ -251,11 +267,11 @@ private struct SanteAgeRuler: View {
                     .frame(width: 3, height: 36)
                     .offset(x: position(isRevealed ? min(max(biological, Double(low)), Double(low + span * 2)) : civil) - 1.5, y: -3)
                     .animation(SharpitMotion.reveal, value: isRevealed)
-                Text("\(Int(civil.rounded())) · ton âge")
+                Text("âge civil")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize()
-                    .offset(x: position(civil) - 34, y: 36)
+                    .offset(x: position(civil) - 28, y: 36)
             }
         }
     }

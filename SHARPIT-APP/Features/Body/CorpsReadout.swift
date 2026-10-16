@@ -434,15 +434,19 @@ enum BiologicalAgeReadout {
     static func gap(_ age: V1BiologicalAge) -> String? {
         guard let civil = age.chronologicalYears else { return nil }
         switch Int(civil.rounded()) - Int(age.years.rounded()) {
-        case 0: return "Ton âge civil"
-        case 1: return "1 an de moins"
-        case -1: return "1 an de plus"
-        case let years where years > 0: return "\(years) ans de moins"
-        case let years: return "\(-years) ans de plus"
+        case 0: return "Comme ton âge civil"
+        case 1: return "1 an de moins que ton âge civil"
+        case -1: return "1 an de plus que ton âge civil"
+        case let years where years > 0: return "\(years) ans de moins que ton âge civil"
+        case let years: return "\(-years) ans de plus que ton âge civil"
         }
     }
 
+    /// Compared in whole years, as shown: nil when the two read the same, so an equal age is
+    /// never tinted as older.
     static func isYounger(_ age: V1BiologicalAge) -> Bool? {
-        age.chronologicalYears.map { age.years < $0 }
+        guard let civil = age.chronologicalYears else { return nil }
+        let gap = Int(civil.rounded()) - Int(age.years.rounded())
+        return gap == 0 ? nil : gap > 0
     }
 }

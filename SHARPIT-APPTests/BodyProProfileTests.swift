@@ -152,6 +152,12 @@ private let overviewJSON = """
     let same = V1BiologicalAge(years: 36, chronologicalYears: 36, method: nil, confidence: nil, computedAt: nil)
     #expect(BiologicalAgeReadout.comparison(one) == "Âge civil 36 ans · 1 an de plus")
     #expect(BiologicalAgeReadout.comparison(same) == "Âge civil 36 ans")
+    // An age that reads the same as the civil one is neither younger nor older, even a few
+    // months over it.
+    let almost = V1BiologicalAge(years: 36.3, chronologicalYears: 36, method: nil, confidence: nil, computedAt: nil)
+    #expect(BiologicalAgeReadout.isYounger(almost) == nil)
+    #expect(BiologicalAgeReadout.gap(almost) == "Comme ton âge civil")
+    #expect(BiologicalAgeReadout.gap(one) == "1 an de plus que ton âge civil")
 }
 
 @Test func belowProTheOverviewSaysTheBiologicalAgeIsPro() throws {

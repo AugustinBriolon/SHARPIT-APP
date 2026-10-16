@@ -24,9 +24,9 @@ private let bank = V1TodayEnergyBank(algorithmVersion: "v1", value: 63.6, typica
         targetBand: V1TodayTargetBand(algorithmVersion: "v1", low: 8.4, high: 12.6, status: "within")
     )))
     #expect(state.tiles == [
-        .init(caption: "Réserve", value: "64", unit: "/100", note: "typ. 71"),
+        .init(caption: "Énergie", value: "64", unit: "/100", note: "D'habitude 71"),
         .init(caption: "Stress", value: "52", unit: "/100", note: "Modéré"),
-        .init(caption: "Cible effort", value: "8–13", unit: nil, note: "Dans la cible"),
+        .init(caption: "Effort visé", value: "8–13", unit: nil, note: "Atteint"),
     ])
 }
 
@@ -46,8 +46,8 @@ private let bank = V1TodayEnergyBank(algorithmVersion: "v1", value: 63.6, typica
 @Test func santeDayStateWordsStressAndBandStatus() {
     #expect(SanteDayState.stressCaption(49) == "Calme")
     #expect(SanteDayState.stressCaption(75) == "Élevé")
-    #expect(SanteDayState.statusLabel("below") == "Sous la cible")
-    #expect(SanteDayState.statusLabel("above") == "Au-dessus")
+    #expect(SanteDayState.statusLabel("below") == "Encore à faire")
+    #expect(SanteDayState.statusLabel("above") == "Dépassé")
     #expect(SanteDayState.statusLabel(nil) == nil)
 }
 

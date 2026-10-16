@@ -172,6 +172,15 @@ enum SanteReadout {
 }
 
 extension V1HealthTone {
+    /// The arrow of a change: lime when it is good news, caution to watch, muted otherwise.
+    var markColor: Color {
+        switch self {
+        case .good: SharpitColor.highlight
+        case .neutral: SharpitColor.mutedForeground
+        case .watch: SharpitColor.signalCaution
+        }
+    }
+
     /// Colour only for a semantic state (`docs/adr/0004`).
     var color: Color {
         switch self {
