@@ -184,7 +184,7 @@ struct JournalView: View {
     private var dayMetricsSection: some View {
         let metrics = store.visibleTrackables.filter { [.caffeine, .mood, .hydration, .driving].contains($0.kind) }
         if !metrics.isEmpty {
-            JournalSection(title: "Journée") {
+            JournalSection(isGrouped: true, title: "Journée") {
                 ForEach(metrics) { trackable in
                     JournalTrackableRow(
                         trackable: trackable,
@@ -205,6 +205,7 @@ struct JournalView: View {
     private var checklistSection: some View {
         if !store.checklist.isEmpty {
             JournalSection(
+                isGrouped: true,
                 title: "Checklist auto",
                 hint: "Dérivée de tes données santé et activités — lecture seule."
             ) {
@@ -219,7 +220,7 @@ struct JournalView: View {
     private var priorNightSection: some View {
         let trackables = store.priorNightTrackables
         if !trackables.isEmpty {
-            JournalSection(title: "Nuit", hint: priorNightHint) {
+            JournalSection(isGrouped: true, title: "Nuit", hint: priorNightHint) {
                 ForEach(trackables) { trackable in
                     JournalTrackableRow(trackable: trackable, store: store)
                 }
@@ -242,7 +243,7 @@ struct JournalView: View {
         let trackables = store.dayTrackables
         let custom = store.visibleCustomItems
         if !trackables.isEmpty || !custom.isEmpty {
-            JournalSection(title: "Signaux du jour") {
+            JournalSection(isGrouped: true, title: "Signaux du jour") {
                 ForEach(trackables) { trackable in
                     JournalTrackableRow(trackable: trackable, store: store)
                 }
@@ -259,11 +260,11 @@ struct JournalView: View {
 private struct JournalLoadingRows: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            JournalSection(title: "Journée") {
+            JournalSection(isGrouped: true, title: "Journée") {
                 JournalMetricRow(label: "Humeur", symbolName: "face.smiling", value: "Non renseigné") {}
                 JournalMetricRow(label: "Caféine", symbolName: "cup.and.saucer", value: "— mg") {}
             }
-            JournalSection(title: "Signaux du jour") {
+            JournalSection(isGrouped: true, title: "Signaux du jour") {
                 ForEach(["Alcool", "Écrans tard", "Repas tardif", "Sieste"], id: \.self) { label in
                     JournalFactorRow(label: label, symbolName: "circle", state: .unset) { _ in }
                 }
@@ -277,6 +278,8 @@ private struct JournalLoadingRows: View {
 }
 
 struct JournalSection<Content: View>: View {
+    /// The journal's own rows sit in one card (`JournalRowsCard`); the analyses' cards do not.
+    var isGrouped = false
     let title: String
     var hint: String?
     @ViewBuilder let content: Content
@@ -290,9 +293,59 @@ struct JournalSection<Content: View>: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            content
+            if isGrouped {
+                JournalRowsCard { content }
+            } else {
+                content
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The rows of a section as one white card, split by an inset hairline as an iOS list is —
+/// one surface per section, not a card per signal.
+struct JournalRowsCard<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Group(subviews: content) { rows in
+                ForEach(rows) { row in
+                    row
+                    if row.id != rows.last?.id {
+                        Divider()
+                            .overlay(SharpitColor.border)
+                            .padding(.leading, JournalRowMetrics.textInset)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, SharpitSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+    }
+}
+
+/// One measure for every journal row, so labels and hairlines line up across sections.
+enum JournalRowMetrics {
+    static let tile: CGFloat = 32
+    static let minHeight: CGFloat = 56
+    /// Where a row's label starts: the tile and its gap.
+    static var textInset: CGFloat { tile + SharpitSpacing.sm }
+}
+
+/// A row's glyph: ink on the chip tone, one size everywhere (ADR-085, no hue per category).
+struct JournalRowIcon: View {
+    let symbolName: String
+
+    var body: some View {
+        Image(systemName: symbolName)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(SharpitColor.foreground)
+            .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
+            .background(SharpitColor.chipSurface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .accessibilityHidden(true)
     }
 }
 
@@ -310,7 +363,6 @@ private struct JournalTrackableRow: View {
             JournalFactorRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                iconColor: trackable.category.color,
                 state: store.entry.state(of: trackable.id)
             ) { newState in
                 store.set(factorId: trackable.id, to: newState)
@@ -320,7 +372,6 @@ private struct JournalTrackableRow: View {
             JournalMetricRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                iconColor: trackable.category.color,
                 value: store.entry.caffeineMg.map { "\($0) mg" } ?? "— mg",
                 onOpen: onOpenCaffeine
             )
@@ -328,7 +379,6 @@ private struct JournalTrackableRow: View {
             JournalMetricRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                iconColor: trackable.category.color,
                 value: store.entry.hydrationMl.map { "\($0) ml" } ?? "— ml",
                 onOpen: onOpenHydration
             )
@@ -336,7 +386,6 @@ private struct JournalTrackableRow: View {
             JournalMetricRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                iconColor: trackable.category.color,
                 value: JournalDrivingFormat.minutes(store.entry.drivingMinutes),
                 onOpen: onOpenDriving
             )
@@ -344,7 +393,6 @@ private struct JournalTrackableRow: View {
             JournalMetricRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                iconColor: trackable.category.color,
                 value: store.moodLabel ?? "Non renseigné",
                 onOpen: onOpenWellness
             )
@@ -363,7 +411,6 @@ private struct JournalCustomItemRow: View {
         JournalFactorRow(
             label: item.label,
             symbolName: JournalCatalogue.customSymbolName,
-            iconColor: SharpitColor.primary,
             state: store.entry.state(of: item.id)
         ) { newState in
             store.set(factorId: item.id, to: newState)
@@ -377,18 +424,13 @@ private struct JournalCustomItemRow: View {
 struct JournalMetricRow: View {
     let label: String
     let symbolName: String
-    var iconColor: Color = SharpitColor.mutedForeground
     let value: String
     let onOpen: () -> Void
 
     var body: some View {
         Button(action: onOpen) {
             HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: symbolName)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(iconColor)
-                    .frame(width: 24)
-                    .accessibilityHidden(true)
+                JournalRowIcon(symbolName: symbolName)
 
                 Text(label)
                     .font(SharpitTypography.body)
@@ -397,20 +439,17 @@ struct JournalMetricRow: View {
                 Spacer(minLength: SharpitSpacing.xs)
 
                 Text(value)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(isUnset ? SharpitColor.mutedForeground : SharpitColor.primary)
-                    .monospacedDigit()
+                    .font(SharpitTypography.system(size: 15, weight: isUnset ? .regular : .semibold, relativeTo: .subheadline, digits: true))
+                    .foregroundStyle(isUnset ? SharpitColor.mutedForeground : SharpitColor.foreground)
 
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .frame(width: 26, height: 26)
-                    .background(SharpitColor.analysisGrid, in: RoundedRectangle(cornerRadius: 7))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
                     .accessibilityHidden(true)
             }
-            .padding(SharpitSpacing.cardPadding)
+            .frame(minHeight: JournalRowMetrics.minHeight)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
@@ -430,10 +469,13 @@ private struct JournalChecklistRow: View {
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
             Image(systemName: item.status.symbolName)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(item.status.tone)
-                .frame(width: 28, height: 28)
-                .background(item.status.tone.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(item.status == .done ? SharpitColor.highlightForeground : SharpitColor.mutedForeground)
+                .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
+                .background(
+                    item.status == .done ? SharpitColor.highlight : SharpitColor.chipSurface,
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                )
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
@@ -453,9 +495,9 @@ private struct JournalChecklistRow: View {
 
             Spacer(minLength: 0)
         }
-        .padding(SharpitSpacing.cardPadding)
+        .padding(.vertical, SharpitSpacing.sm)
+        .frame(minHeight: JournalRowMetrics.minHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
     }
 }
@@ -484,24 +526,18 @@ private extension JournalAutoStatus {
 struct JournalFactorRow: View, Equatable {
     let label: String
     let symbolName: String
-    var iconColor: Color = SharpitColor.mutedForeground
     let state: JournalFactorState
     let onChange: (JournalFactorState) -> Void
 
     static func == (lhs: JournalFactorRow, rhs: JournalFactorRow) -> Bool {
         lhs.label == rhs.label &&
         lhs.symbolName == rhs.symbolName &&
-        lhs.iconColor == rhs.iconColor &&
         lhs.state == rhs.state
     }
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            Image(systemName: symbolName)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(iconColor)
-                .frame(width: 24)
-                .accessibilityHidden(true)
+            JournalRowIcon(symbolName: symbolName)
 
             Text(label)
                 .font(SharpitTypography.body)
@@ -514,9 +550,9 @@ struct JournalFactorRow: View, Equatable {
             JournalAnswerToggle(state: state, onChange: onChange)
                 .equatable()
         }
-        .padding(SharpitSpacing.cardPadding)
+        .padding(.vertical, SharpitSpacing.xxs)
+        .frame(minHeight: JournalRowMetrics.minHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 
@@ -545,21 +581,21 @@ private extension JournalFactorState {
         }
     }
 
-    /// The selection pill follows the answer: a recorded "non" reads red, an unanswered
-    /// day stays quiet, a recorded "oui" is what the day now carries.
+    /// The selection pill follows the answer: « oui » takes the lime the day now carries, « non »
+    /// the ink — an answer, not an alarm — and an unanswered day stays a quiet white.
     var tone: Color {
         switch self {
-        case .no: SharpitColor.signalRisk
+        case .no: SharpitColor.primary
         case .unset: SharpitElevatedColor.control
-        case .yes: SharpitColor.primary
+        case .yes: SharpitColor.highlight
         }
     }
 
     var onTone: Color {
         switch self {
-        case .no: .white
+        case .no: SharpitColor.primaryForeground
         case .unset: SharpitColor.foreground
-        case .yes: SharpitColor.primaryForeground
+        case .yes: SharpitColor.highlightForeground
         }
     }
 }
@@ -596,7 +632,7 @@ private struct JournalAnswerToggle: View, Equatable {
         ZStack(alignment: .leading) {
             // 1. Static track background (never moves, strictly centered vertically)
             Capsule()
-                .fill(SharpitColor.analysisGrid)
+                .fill(SharpitColor.chipSurface)
                 .frame(width: Self.trackWidth, height: Self.trackHeight)
 
             // 2. Sliding indicator pill (strictly horizontal offset, centered vertically)

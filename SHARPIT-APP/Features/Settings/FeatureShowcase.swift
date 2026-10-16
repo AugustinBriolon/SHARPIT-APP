@@ -43,9 +43,11 @@ struct FeatureShowcase: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .sharpitGlassChip()
                 .padding(.bottom, SharpitSpacing.xs)
-            JournalMetricRow(label: "Humeur", symbolName: "face.smiling", iconColor: SharpitColor.primary, value: "Bien") {}
-            JournalFactorRow(label: "Alcool", symbolName: "wineglass", state: .no) { _ in }
-            JournalFactorRow(label: "Écrans tard", symbolName: "iphone", state: .yes) { _ in }
+            JournalRowsCard {
+                JournalMetricRow(label: "Humeur", symbolName: "face.smiling", value: "Bien") {}
+                JournalFactorRow(label: "Alcool", symbolName: "wineglass", state: .no) { _ in }
+                JournalFactorRow(label: "Écrans tard", symbolName: "iphone", state: .yes) { _ in }
+            }
         }
     }
 
