@@ -20,45 +20,15 @@ struct SleepTargetsSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section(
-                    eyebrow: "Durée visée",
-                    footer: "La lecture de tes nuits et ta dette de sommeil se comparent à ce repère."
-                ) {
-                    HStack {
-                        Text(SleepTargetFormat.duration(minutes))
-                            .font(SharpitTypography.data)
-                            .tracking(SharpitTypography.dataTracking)
-                            .monospacedDigit()
-                            .contentTransition(.numericText(value: Double(minutes)))
-                        Spacer()
-                        Stepper("Durée", value: $minutes, in: 240...720, step: 15)
-                            .labelsHidden()
-                    }
-                    SharpitSegmentedControl(
-                        selection: $minutes,
-                        options: Self.presets.map {
-                            SharpitSegmentedControl<Int>.Option(value: $0, label: SleepTargetFormat.short($0))
-                        }
-                    )
-                    .listRowSeparator(.hidden)
+            ScrollView {
+                VStack(spacing: SharpitSpacing.md) {
+                    durationCard
+                    scheduleCard
                 }
-                .sharpitListRows()
-
-                Section(
-                    eyebrow: "Coucher",
-                    footer: "Un repère de régularité : se coucher à heure fixe compte autant que la durée."
-                ) {
-                    Toggle("Heure de coucher visée", isOn: $hasBedtime.animation(SharpitMotion.selection))
-                        .tint(SharpitColor.primary)
-                    if hasBedtime {
-                        DatePicker("Coucher", selection: $bedtime, displayedComponents: .hourAndMinute)
-                            .environment(\.locale, SharpitLocale.french)
-                    }
-                }
-                .sharpitListRows()
+                .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.vertical, SharpitSpacing.sm)
             }
-            .sharpitGroupedList()
+            .background(SharpitCanvasBackground())
             .disabled(!hasLoaded)
             .redacted(reason: hasLoaded ? [] : .placeholder)
             .navigationTitle("Objectifs de sommeil")
@@ -82,10 +52,124 @@ struct SleepTargetsSheet: View {
                 hasLoaded = true
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.fraction(0.75), .large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
+
+    /// The duration as one large figure between − and +, the usual targets one tap below.
+    private var durationCard: some View {
+        VStack(spacing: SharpitSpacing.md) {
+            SharpitCardHeader(
+                title: "Durée visée",
+                symbol: "moon.zzz.fill",
+                subtitle: "Tes nuits et ta dette de sommeil se lisent face à ce repère.",
+                showsChevron: false
+            )
+            HStack {
+                stepButton("minus", label: "Moins 15 minutes", delta: -15)
+                Spacer(minLength: 0)
+                Text(SleepTargetFormat.duration(minutes))
+                    .font(SharpitTypography.heroScore)
+                    .tracking(SharpitTypography.heroScoreTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .monospacedDigit()
+                    .contentTransition(.numericText(value: Double(minutes)))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .accessibilityLabel("Durée visée")
+                    .accessibilityValue(SleepTargetFormat.duration(minutes))
+                    .accessibilityAdjustableAction { direction in
+                        step(direction == .increment ? 15 : -15)
+                    }
+                Spacer(minLength: 0)
+                stepButton("plus", label: "Plus 15 minutes", delta: 15)
+            }
+            SharpitSegmentedControl(
+                selection: $minutes.animation(SharpitMotion.selection),
+                options: Self.presets.map {
+                    SharpitSegmentedControl<Int>.Option(value: $0, label: SleepTargetFormat.short($0))
+                }
+            )
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .sharpitSurface(.panel)
+    }
+
+    /// A fixed bedtime, and the wake time it gives with the duration above — the night as a span.
+    private var scheduleCard: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            Toggle(isOn: $hasBedtime.animation(SharpitMotion.selection)) {
+                SharpitCardHeader(
+                    title: "Heure fixe",
+                    symbol: "bed.double.fill",
+                    subtitle: "Se coucher à la même heure compte autant que la durée.",
+                    showsChevron: false
+                )
+            }
+            .tint(SharpitColor.highlight)
+
+            if hasBedtime {
+                HStack(spacing: SharpitSpacing.sm) {
+                    VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                        Label("Coucher", systemImage: "moon.fill")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                        DatePicker("Coucher", selection: $bedtime, displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                            .environment(\.locale, SharpitLocale.french)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(SharpitSpacing.sm)
+                    .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitRadius.row)
+
+                    VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                        Label("Réveil", systemImage: "alarm.fill")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                        Text(SleepTargetFormat.clock(SleepTargetFormat.wake(bedtime: Self.minutes(from: bedtime), duration: minutes)))
+                            .font(SharpitTypography.data)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                            .frame(minHeight: 34, alignment: .leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(SharpitSpacing.sm)
+                    .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitRadius.row)
+                    .accessibilityElement(children: .combine)
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                Text("Réveil calculé avec ta durée visée.")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .sharpitSurface(.panel)
+    }
+
+    private func stepButton(_ symbol: String, label: String, delta: Int) -> some View {
+        Button { step(delta) } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(width: 52, height: 52)
+                .background(SharpitColor.chipSurface, in: Circle())
+        }
+        .buttonStyle(.sharpitPressable)
+        .disabled(!Self.range.contains(minutes + delta))
+        .accessibilityLabel(label)
+    }
+
+    private func step(_ delta: Int) {
+        let next = minutes + delta
+        guard Self.range.contains(next) else { return }
+        withAnimation(SharpitMotion.selection) { minutes = next }
+    }
+
+    private static let range = 240...720
 
     private func save() {
         var patch = AthleteProfilePatch()
@@ -117,6 +201,16 @@ nonisolated enum SleepTargetFormat {
         let hours = minutes / 60
         let rest = minutes % 60
         return rest == 0 ? "\(hours) h" : "\(hours) h \(String(format: "%02d", rest))"
+    }
+
+    /// The wake time a bedtime and a duration give, in minutes after midnight.
+    static func wake(bedtime: Int, duration: Int) -> Int {
+        (bedtime + duration) % (24 * 60)
+    }
+
+    /// 420 → « 07:00 ».
+    static func clock(_ minutes: Int) -> String {
+        String(format: "%02d:%02d", minutes / 60, minutes % 60)
     }
 
     /// 450 → « 7h30 », 480 → « 8 h » — for the presets.

@@ -125,6 +125,8 @@ private let overviewJSON = """
     #expect(SleepTargetFormat.duration(450) == "7 h 30")
     #expect(SleepTargetFormat.duration(480) == "8 h")
     #expect(SleepTargetFormat.short(510) == "8h30")
+    // Bed at 23:00 for 8 h wakes at 07:00, across midnight.
+    #expect(SleepTargetFormat.clock(SleepTargetFormat.wake(bedtime: 23 * 60, duration: 480)) == "07:00")
 }
 
 // MARK: - Biological age (SHARPIT ADR-045)
