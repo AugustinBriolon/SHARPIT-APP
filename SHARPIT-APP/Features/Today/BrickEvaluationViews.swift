@@ -21,14 +21,9 @@ struct BrickEvaluationTile: View {
                     .foregroundStyle(SharpitColor.primary)
             case .ready:
                 HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.lg) {
-                    reading("Effort", value: store.rpe, outOf: 10, tone: store.rpe.map(SessionFeedbackTone.effort))
-                    reading("Transitions", value: store.transitionRating, outOf: 5, tone: nil)
-                    reading(
-                        "Ressenti",
-                        value: store.feeling?.rawValue,
-                        outOf: 5,
-                        tone: store.feeling.map(SessionFeedbackTone.feeling)
-                    )
+                    reading("Effort", value: store.rpe, outOf: 10)
+                    reading("Transitions", value: store.transitionRating, outOf: 5)
+reading("Ressenti", value: store.feeling?.rawValue, outOf: 5)
                 }
             }
         }
@@ -36,9 +31,9 @@ struct BrickEvaluationTile: View {
         .accessibilityHint("Ouvre l'évaluation du brick")
     }
 
-    private func reading(_ label: String, value: Int?, outOf: Int, tone: Color?) -> some View {
+    private func reading(_ label: String, value: Int?, outOf: Int) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            ScaleReadout(value: value, outOf: outOf, tone: tone ?? SharpitColor.foreground)
+            ScaleReadout(value: value, outOf: outOf)
             Text(label)
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)

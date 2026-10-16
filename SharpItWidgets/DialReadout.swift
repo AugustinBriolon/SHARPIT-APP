@@ -10,25 +10,21 @@ struct DialReadout: View {
 
     var body: some View {
         SharpitTickGauge(score: score)
-            .overlay(alignment: .top) {
-                GeometryReader { proxy in
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text(figure)
-                            .font(SharpitTypography.gaugeScore)
-                            .tracking(SharpitTypography.gaugeScoreTracking)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .monospacedDigit()
-                            .minimumScaleFactor(0.6)
-                        if let unit {
-                            Text(unit)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
+            .sharpitDialCentre {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(figure)
+                        .font(SharpitTypography.gaugeScore)
+                        .tracking(SharpitTypography.gaugeScoreTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.6)
+                    if let unit {
+                        Text(unit)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
                     }
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity)
-                    .offset(y: proxy.size.height * SharpitTickGaugeGeometry.readoutTopFraction)
                 }
+                .lineLimit(1)
             }
     }
 }

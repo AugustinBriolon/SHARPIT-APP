@@ -164,13 +164,17 @@ struct SharpitActionDock<Content: View>: View {
 /// adjustment carry the same one.
 struct SharpitSportBadge: View {
     let type: V1ActivityType
+    var size: CGFloat = 38
 
     var body: some View {
         Image(sharpitSymbol: type.symbolName)
-            .font(.system(size: 16, weight: .bold))
+            .font(.system(size: size * 0.42, weight: .bold))
             .foregroundStyle(SharpitSportTone.tileGlyph(for: type))
-            .frame(width: 38, height: 38)
-            .background(SharpitSportTone.tile(for: type), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(width: size, height: size)
+            .background(
+                SharpitSportTone.tile(for: type),
+                in: RoundedRectangle(cornerRadius: SharpitRadius.tile * size / SharpitTokens.tileSize, style: .continuous)
+            )
             .accessibilityHidden(true)
     }
 }

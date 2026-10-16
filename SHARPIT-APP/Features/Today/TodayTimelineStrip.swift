@@ -10,27 +10,9 @@ struct TodayTimelineStrip: View {
         if !events.isEmpty {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                 SharpitCardHeader(title: "Fil de la journée", symbol: "clock", showsChevron: false)
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    ForEach(events) { event in
-                        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-                            Text(clock(event.minuteOfDay))
-                                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
-                                .foregroundStyle(SharpitColor.foreground)
-                                .frame(width: 48, alignment: .leading)
-                            SharpitIconTile(symbol: symbol(for: event.kind), size: 30)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(event.title)
-                                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
-                                    .foregroundStyle(SharpitColor.foreground)
-                                if let detail = event.detail, !detail.isEmpty {
-                                    Text(detail)
-                                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline))
-                                        .foregroundStyle(SharpitColor.mutedForeground)
-                                }
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .accessibilityElement(children: .combine)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
+                        row(event, isLast: index == events.count - 1)
                     }
                 }
             }
@@ -48,16 +30,43 @@ struct TodayTimelineStrip: View {
         return String(format: "%02d:%02d", hour, minute)
     }
 
-    private func symbol(for kind: String) -> String {
-        switch kind {
-        case "sleep": return "moon.zzz"
-        case "wake": return "sun.horizon"
-        case "session": return "figure.run"
-        case "meal": return "fork.knife"
-        case "stress": return "waveform.path.ecg"
-        case "checkin": return "checkmark.circle"
-        case "note": return "note.text"
-        default: return "circle"
+    /// One beat of the day: its time, a dot on the rail, what happened. No icon per row — the
+    /// rail carries the order, the words carry the kind; a session's dot is lime.
+    private func row(_ event: V1DayTimelineEvent, isLast: Bool) -> some View {
+        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+            Text(event.minuteOfDay == nil ? "" : clock(event.minuteOfDay))
+                .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .footnote, digits: true))
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .frame(width: 42, alignment: .leading)
+                .padding(.top, 2)
+
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(event.kind == "session" ? SharpitColor.highlight : SharpitColor.foreground)
+                    .frame(width: 9, height: 9)
+                    .padding(.top, 5)
+                Rectangle()
+                    .fill(isLast ? Color.clear : SharpitColor.track)
+                    .frame(width: 2)
+                    .frame(maxHeight: .infinity)
+                    .padding(.top, 4)
+            }
+            .frame(width: 9)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(event.title)
+                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.foreground)
+                if let detail = event.detail, !detail.isEmpty {
+                    Text(detail)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+            }
+            .padding(.bottom, isLast ? 0 : SharpitSpacing.md)
+            Spacer(minLength: 0)
         }
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
     }
 }

@@ -29,7 +29,7 @@ extension V1SensitiveZone.Strategy {
 enum ZoneSeverityTint {
     static func color(_ severity: Int?) -> Color {
         guard let severity else { return SharpitColor.mutedForeground }
-        if severity == 0 { return SharpitColor.signalRecovery }
+        if severity == 0 { return SharpitColor.foreground }
         if severity >= 7 { return SharpitColor.signalRisk }
         return severity >= 4 ? SharpitColor.signalCaution : SharpitColor.foreground
     }
@@ -224,7 +224,7 @@ private struct SensitiveZoneRow: View {
                 if zone.resolutionSuggested {
                     Text("Plus de douleur depuis deux semaines")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.signalRecovery)
+                        .foregroundStyle(SharpitColor.foreground)
                 }
             }
             Spacer(minLength: 0)

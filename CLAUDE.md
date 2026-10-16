@@ -216,8 +216,9 @@ Elevation: surfaces have no hairline border; on light a card lifts with one soft
 `SharpitInsetGroup`, separated by air. Every sheet uses `.sharpitSheet()` so none falls back to system black, and
 no screen uses `Color(uiColor: .systemBackground)`.
 
-Color and affordance (`docs/adr/0004`): numbers take semantic tones from
-`SessionFeedbackTone`, anything that opens something is a raised tile with a chevron and
+Color and affordance (`docs/adr/0004`): figures and status words are ink; only caution and risk
+keep a hue (`RecoveryReadout.tone`). The intensity ramp of `SessionFeedbackTone` (light grey → lime)
+is for fills — a rating grid's ticks, a bar — never for type on a white card. Anything that opens something is a raised tile with a chevron and
 `.buttonStyle(.sharpitPressable)`, and `CoachDiscussButton` is a tinted pill placed with
 the title of what it discusses — never at the bottom of a screen. Session feeling is written in the web's words (`SessionFeeling.storedValue`).
 

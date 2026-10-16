@@ -96,7 +96,8 @@ private struct OvernightGaugeCell: View {
             footCaption
         }
         .frame(maxWidth: .infinity)
-        .padding(SharpitSpacing.md)
+        .padding(.horizontal, SharpitSpacing.sm + 2)
+        .padding(.vertical, SharpitSpacing.md)
         .sharpitSurface(.panel)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
@@ -109,25 +110,11 @@ private struct OvernightGaugeCell: View {
     }
 
     private var dial: some View {
-        ZStack(alignment: .top) {
-            SharpitTickGauge(score: displayedScore)
-
-            GeometryReader { geo in
-                readout
-                    .frame(width: geo.size.width)
-                    .position(
-                        x: geo.size.width / 2,
-                        y: geo.size.height * SharpitTickGaugeGeometry.readoutTopFraction
-                            + readoutHeight / 2
-                    )
-            }
-        }
+        SharpitTickGauge(score: displayedScore)
+            .sharpitDialCentre { readout }
         .frame(maxWidth: dialMaxWidth)
         .aspectRatio(SharpitTickGaugeGeometry.aspectRatio, contentMode: .fit)
     }
-
-    /// Approximate height of the score block, used to hang it from its top edge.
-    private var readoutHeight: CGFloat { 50 }
 
     private var readout: some View {
         VStack(spacing: 1) {

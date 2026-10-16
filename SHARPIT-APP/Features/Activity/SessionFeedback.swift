@@ -99,7 +99,7 @@ enum SessionVerdict: String, Sendable {
 
     var tone: Color {
         switch self {
-        case .asPlanned: SharpitColor.signalRecovery
+        case .asPlanned: SharpitColor.foreground
         case .harder, .longer: SharpitColor.signalCaution
         case .easier, .shorter: SharpitColor.signalNeutral
         case .different: SharpitColor.signalRisk
@@ -133,7 +133,7 @@ enum SessionFeedbackTone {
 
     static func compliance(_ score: Double) -> Color {
         switch score {
-        case 85...: SharpitColor.signalRecovery
+        case 85...: SharpitColor.foreground
         case 60..<85: SharpitColor.signalCaution
         default: SharpitColor.signalRisk
         }

@@ -108,18 +108,10 @@ private struct AdaptationVerdictSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitEyebrow("Ce que ça implique")
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "arrow.forward.circle")
-                    .font(SharpitTypography.sectionTitle)
-                    .foregroundStyle(RecoveryReadout.tone(for: adaptation.verdict.tone))
-                    .accessibilityHidden(true)
-                Text(adaptation.verdict.label)
-                    .font(SharpitTypography.cardTitle)
-                    .foregroundStyle(RecoveryReadout.tone(for: adaptation.verdict.tone))
-            }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
+            DayDetailVerdictCard(
+                label: adaptation.verdict.label,
+                tone: RecoveryReadout.tone(for: adaptation.verdict.tone)
+            )
 
             HStack(spacing: SharpitSpacing.sm) {
                 SharpitStatTile(

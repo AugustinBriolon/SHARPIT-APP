@@ -278,10 +278,10 @@ private struct ActivityIntro: View {
 private struct RecordsEntryTile: View {
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            SharpitRowIcon(symbol: "trophy", tone: SharpitColor.recordAccent)
+            SharpitIconTile(symbol: "trophy")
             VStack(alignment: .leading, spacing: 2) {
                 Text("Records")
-                    .font(SharpitTypography.bodyEmphasis)
+                    .font(SharpitTypography.cardTitle)
                     .foregroundStyle(SharpitColor.foreground)
                 Text("Tes meilleures performances par sport")
                     .font(SharpitTypography.meta)
@@ -289,11 +289,11 @@ private struct RecordsEntryTile: View {
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
         }
-        .padding(.horizontal, SharpitSpacing.cardPadding)
-        .padding(.vertical, SharpitSpacing.sm)
+        .padding(.horizontal, SharpitSpacing.md)
+        .padding(.vertical, SharpitSpacing.sm + 2)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
         .contentShape(RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
@@ -307,28 +307,17 @@ private struct ActivityRow: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(tone.opacity(0.16))
-                    .frame(width: 46, height: 46)
-                Image(sharpitSymbol: activity.type.symbolName)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(tone)
-            }
+            SharpitSportBadge(type: activity.type, size: SharpitTokens.tileSize)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(activity.title ?? activity.type.label)
-                        .font(.headline)
+                        .font(SharpitTypography.cardTitle)
+                        .tracking(SharpitTypography.cardTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(1)
                     if activity.plannedSession != nil {
-                        Text("PLAN")
-                            .font(SharpitTypography.label)
-                            .tracking(0.7)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(.thinMaterial, in: Capsule())
+                        SharpitPill("Plan")
                     }
                 }
                 HStack(spacing: 8) {
@@ -340,27 +329,24 @@ private struct ActivityRow: View {
                         Text(metric)
                     }
                 }
-                .font(.subheadline)
+                .font(SharpitTypography.meta)
+                .monospacedDigit()
                 .foregroundStyle(SharpitColor.mutedForeground)
+                .lineLimit(1)
             }
 
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
         }
-        .padding(.horizontal, SharpitSpacing.cardPadding)
-        .padding(.vertical, SharpitSpacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous)
-                .fill(SharpitColor.analysisSurface)
-        )
+        .padding(.horizontal, SharpitSpacing.md)
+        .padding(.vertical, SharpitSpacing.sm + 2)
+        .sharpitSurface(.panel)
         .contentShape(RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityHint("Ouvrir le détail")
     }
-
-    private var tone: Color { SharpitSportTone.label(for: activity.type) }
 }
 
 private struct ActivityListLoading: View {

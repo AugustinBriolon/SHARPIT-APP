@@ -147,37 +147,12 @@ private struct EffortVerdictSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitEyebrow("Ce que ça implique")
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                HStack(spacing: SharpitSpacing.sm) {
-                    Image(systemName: "arrow.forward.circle")
-                        .font(SharpitTypography.sectionTitle)
-                        .foregroundStyle(RecoveryReadout.tone(for: effort.verdict.tone))
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(effort.verdict.label)
-                            .font(SharpitTypography.cardTitle)
-                            .foregroundStyle(RecoveryReadout.tone(for: effort.verdict.tone))
-                        if let capacity = EffortReadout.capacity(effort.trainingCapacity) {
-                            Text(capacity)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                    }
-                }
-                if let limiting = effort.limitingFactor, !limiting.isEmpty {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        Text("Facteur limitant")
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                        Text(limiting)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .fontWeight(.semibold)
-                    }
-                    .font(SharpitTypography.meta)
-                }
-            }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
+            DayDetailVerdictCard(
+                label: effort.verdict.label,
+                tone: RecoveryReadout.tone(for: effort.verdict.tone),
+                capacity: EffortReadout.capacity(effort.trainingCapacity),
+                limitingFactor: effort.limitingFactor
+            )
 
             if !effort.rationale.isEmpty {
                 DayDetailRationale(lines: effort.rationale)

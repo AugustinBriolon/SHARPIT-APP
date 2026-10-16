@@ -21,8 +21,8 @@ enum SharpitTickGaugeGeometry {
     /// Width / height of the gauge box.
     static let aspectRatio: CGFloat = boxWidth / boxHeight
 
-    /// Where the score sits, as a fraction of the box height — the dial's centre.
-    static let readoutTopFraction: CGFloat = 0.5
+    /// The dial's centre as a fraction of the box — where a readout's own centre belongs.
+    static let centreFraction = CGPoint(x: centreX / boxWidth, y: centreY / boxHeight)
 
     /// Where the « 0 » and « 100 » scale labels sit, in box units.
     static let scaleLabelY: CGFloat = 160
@@ -128,18 +128,36 @@ struct SharpitTickGauge: View, Animatable {
                     height: radius * 2
                 )
             )
-            // A soft lime halo, then the knob.
-            let halo = Path(ellipseIn: CGRect(
-                x: thumb.x * scale - radius * 1.8,
-                y: thumb.y * scale - radius * 1.8,
-                width: radius * 3.6,
-                height: radius * 3.6
+            // A card-coloured ring cuts the knob out of the ticks, so it reads as one crisp dot.
+            let ring = Path(ellipseIn: CGRect(
+                x: thumb.x * scale - radius * 1.5,
+                y: thumb.y * scale - radius * 1.5,
+                width: radius * 3,
+                height: radius * 3
             ))
-            context.fill(halo, with: .color(SharpitColor.highlight.opacity(0.25)))
+            context.fill(ring, with: .color(SharpitColor.card))
             context.fill(dot, with: .color(SharpitColor.highlight))
         }
         .aspectRatio(SharpitTickGaugeGeometry.aspectRatio, contentMode: .fit)
         .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    /// Centres `content` on the dial's centre, not the box's: the sweep is open at the bottom,
+    /// so the box's middle sits below the arc's and a figure placed there reads low.
+    func sharpitDialCentre<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        let content = content()
+        return overlay {
+            GeometryReader { proxy in
+                content
+                    .frame(maxWidth: proxy.size.width * 0.66)
+                    .position(
+                        x: proxy.size.width * SharpitTickGaugeGeometry.centreFraction.x,
+                        y: proxy.size.height * SharpitTickGaugeGeometry.centreFraction.y
+                    )
+            }
+        }
     }
 }
 

@@ -15,24 +15,26 @@ struct SharpitCardHeader<Accessory: View>: View {
     @ViewBuilder var accessory: () -> Accessory
 
     var body: some View {
-        HStack(alignment: .center, spacing: isCompact ? SharpitSpacing.xs : SharpitSpacing.sm) {
-            SharpitIconTile(symbol: symbol, size: isCompact ? 32 : SharpitTokens.tileSize)
+        HStack(alignment: .center, spacing: isCompact ? SharpitSpacing.xxs + 2 : SharpitSpacing.sm) {
+            SharpitIconTile(symbol: symbol, size: isCompact ? 30 : SharpitTokens.tileSize)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(isCompact ? SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline) : SharpitTypography.cardTitle)
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(isCompact ? 0.75 : 0.8)
                 if let subtitle {
                     Text(subtitle)
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                         .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
 
-            Spacer(minLength: SharpitSpacing.xs)
+            Spacer(minLength: isCompact ? 2 : SharpitSpacing.xs)
 
             accessory()
 

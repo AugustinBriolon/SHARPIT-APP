@@ -298,8 +298,8 @@ private struct CountingNutritionClient: NutritionServing {
     #expect(NutritionReadout.energySplit(protein: 0, carbohydrates: 0, fat: 0).isEmpty)
 }
 
-@Test func eachMealHasItsOwnHue() {
-    let hues = ["breakfast", "lunch", "dinner", "snacks"].map { SharpitNutritionTone.meal($0).description }
-    #expect(Set(hues).count == 4)
-    #expect(SharpitNutritionTone.meal("SNACK").description == SharpitNutritionTone.meal("snacks").description)
+@Test func mealsAreInkNotAHue() {
+    for meal in ["breakfast", "lunch", "dinner", "snacks"] {
+        #expect(SharpitNutritionTone.meal(meal) == SharpitColor.primary)
+    }
 }

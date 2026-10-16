@@ -12,12 +12,16 @@ struct SessionPlate: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(
-                title: session.brickChain ?? session.title,
-                symbol: symbol,
-                subtitle: subtitle
-            ) {
-                statusPills
+            // The pills sit beside the title when it fits whole, else on their own line under it.
+            ViewThatFits(in: .horizontal) {
+                SharpitCardHeader(title: headerTitle, symbol: symbol, subtitle: subtitle) {
+                    statusPills
+                }
+                VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                    SharpitCardHeader(title: headerTitle, symbol: symbol, subtitle: subtitle)
+                    statusPills
+                        .padding(.leading, SharpitTokens.tileSize + SharpitSpacing.sm)
+                }
             }
 
             if !telemetryMetrics.isEmpty {
@@ -60,6 +64,8 @@ struct SessionPlate: View {
     }
 
     // MARK: – Header
+
+    private var headerTitle: String { session.brickChain ?? session.title }
 
     /// A brick shows its first leg's glyph; the chain itself is the title.
     private var symbol: String {

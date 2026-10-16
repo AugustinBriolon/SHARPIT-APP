@@ -2,13 +2,13 @@ import SwiftUI
 
 /// Labels and tones for the recovery screen, kept out of the view so they can be tested.
 enum RecoveryReadout {
+    /// Read as text and marks: the intensity ramp's light grey and lime are fills, unreadable as
+    /// type on a white card (ADR-085), so only caution and risk keep a hue.
     static func tone(for signal: V1SignalTone) -> Color {
         switch signal {
-        case .strong: SharpitColor.primary
-        case .good: SharpitColor.signalRecovery
+        case .strong, .good, .elevated: SharpitColor.primary
         case .moderate: SharpitColor.signalTempo
         case .caution: SharpitColor.signalCaution
-        case .elevated: SharpitColor.signalVo2
         case .risk: SharpitColor.signalRisk
         case .neutral: SharpitColor.signalNeutral
         }

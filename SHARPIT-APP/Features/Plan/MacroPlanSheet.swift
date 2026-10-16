@@ -415,7 +415,7 @@ private struct MacroWeekRowView: View {
                 if week.isDeload {
                     Text("Semaine facile")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.signalRecovery)
+                        .foregroundStyle(SharpitColor.foreground)
                 } else if let quality = WeekQualityLabel.from(
                     focus: week.focus,
                     phase: week.phase,

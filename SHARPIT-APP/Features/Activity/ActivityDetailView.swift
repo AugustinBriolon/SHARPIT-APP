@@ -1337,7 +1337,7 @@ private struct ActivityRaceHeader: View {
             case true?:
                 Label("Objectif atteint", systemImage: "checkmark.seal.fill")
                     .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(SharpitColor.signalRecovery)
+                    .foregroundStyle(SharpitColor.foreground)
             case false?:
                 Button("Valider l'objectif", systemImage: "checkmark.circle", action: onValidate)
                     .font(SharpitTypography.meta.weight(.semibold))

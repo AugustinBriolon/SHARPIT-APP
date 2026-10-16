@@ -93,9 +93,9 @@ private struct NutritionDayGlance: View {
             if let calories, calories.goal != nil {
                 NutritionGoalBar(
                     fill: NutritionReadout.fill(pct: calories.pct),
-                    tone: NutritionReadout.goalTone(pct: calories.pct)
+                    tone: NutritionReadout.goalBarTone(pct: calories.pct)
                 )
-                .frame(width: 128, height: 4)
+                .frame(width: 128, height: 6)
                 .padding(.top, SharpitSpacing.xs)
             }
         }

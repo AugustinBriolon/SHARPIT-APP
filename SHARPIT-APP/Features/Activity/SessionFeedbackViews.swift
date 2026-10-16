@@ -12,29 +12,45 @@ struct ReadoutTile<Value: View>: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                HStack(spacing: SharpitSpacing.xxs) {
-                    Text(caption)
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
+                ReadoutTileCaption(caption) {
                     Image(systemName: "chevron.right")
-                        .font(SharpitTypography.label)
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .accessibilityHidden(true)
                 }
                 value
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
-            .padding(SharpitSpacing.md)
+            .padding(SharpitSpacing.lg)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .sharpitSurface(.panel)
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// A half-width tile's title: sentence case and ink, like a card header without its tile.
+struct ReadoutTileCaption<Trailing: View>: View {
+    let caption: String
+    @ViewBuilder let trailing: Trailing
+
+    init(_ caption: String, @ViewBuilder trailing: () -> Trailing) {
+        self.caption = caption
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        HStack(spacing: SharpitSpacing.xxs) {
+            Text(caption)
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+                .foregroundStyle(SharpitColor.foreground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Spacer(minLength: 0)
+            trailing
+        }
     }
 }
 
@@ -55,16 +71,8 @@ struct SessionFeedbackTile: View {
                     .symbolEffect(.bounce, options: .nonRepeating)
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.md) {
-                    ScaleReadout(
-                        value: rpe,
-                        outOf: 10,
-                        tone: rpe.map(SessionFeedbackTone.effort) ?? SharpitColor.mutedForeground
-                    )
-                    ScaleReadout(
-                        value: feeling?.rawValue,
-                        outOf: 5,
-                        tone: feeling.map(SessionFeedbackTone.feeling) ?? SharpitColor.mutedForeground
-                    )
+                    ScaleReadout(value: rpe, outOf: 10)
+                    ScaleReadout(value: feeling?.rawValue, outOf: 5)
                 }
             }
         }
@@ -72,17 +80,17 @@ struct SessionFeedbackTile: View {
     }
 }
 
+/// A figure on its scale, in ink; the scale's ramp lives in the drawer's grid, not in the type.
 struct ScaleReadout: View {
     let value: Int?
     let outOf: Int
-    let tone: Color
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 1) {
             Text(value.map(String.init) ?? "—")
                 .font(SharpitTypography.gaugeScore)
                 .tracking(SharpitTypography.gaugeScoreTracking)
-                .foregroundStyle(tone)
+                .foregroundStyle(value == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
                 .contentTransition(.numericText())
             Text("/\(outOf)")
                 .font(SharpitTypography.meta)
@@ -102,21 +110,20 @@ struct ComplianceTile: View {
 
     var body: some View {
         ReadoutTile(caption: "Conformité", action: action) {
-            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
                         .font(SharpitTypography.gaugeScore)
                         .tracking(SharpitTypography.gaugeScoreTracking)
                         .foregroundStyle(tone)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                     Text("%")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
                 if let verdict {
-                    Label(verdict.label, systemImage: verdict.symbolName)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(verdict.tone)
-                        .lineLimit(2)
+                    SharpitPill(verdict.label, style: verdict == .asPlanned ? .lime : .neutral)
                 }
             }
         }
@@ -128,16 +135,9 @@ struct ComplianceTile: View {
 struct CompliancePendingTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(spacing: SharpitSpacing.xxs) {
-                Text("Conformité")
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+            ReadoutTileCaption("Conformité") {
                 Image(systemName: "hourglass")
-                    .font(SharpitTypography.label)
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .symbolEffect(.pulse)
                     .accessibilityHidden(true)
@@ -159,7 +159,7 @@ struct CompliancePendingTile: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
         }
-        .padding(SharpitSpacing.md)
+        .padding(SharpitSpacing.lg)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
@@ -235,7 +235,7 @@ struct SubjectiveScale<Grid: View>: View {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value.map(String.init) ?? "—")
                         .font(SharpitTypography.gaugeScore)
-                        .foregroundStyle(tone ?? SharpitColor.mutedForeground)
+                        .foregroundStyle(tone == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
                         .contentTransition(.numericText())
                     Text("/\(outOf)")
                         .font(SharpitTypography.meta)
@@ -266,7 +266,7 @@ struct SaveStatusLine: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
             case .saved:
                 Label("Enregistré", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(SharpitColor.signalRecovery)
+                    .foregroundStyle(SharpitColor.foreground)
             case .failed(let message):
                 Label(message, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(SharpitColor.signalCaution)
@@ -302,10 +302,10 @@ struct RatingGrid: View {
                         .font(SharpitTypography.data)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .foregroundStyle(isSelected ? Color.white : SharpitColor.foreground)
+                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
                         .background {
-                            RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                                .fill(isSelected ? tone(value) : SharpitElevatedColor.panelOnSheet)
+                            RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous)
+                                .fill(isSelected ? SharpitColor.primary : SharpitElevatedColor.panelOnSheet)
                                 .sharpitShadow(.control)
                         }
                         .overlay(alignment: .bottom) {
@@ -359,7 +359,7 @@ struct ComplianceDetailSheet: View {
                     }
 
                     if let strengths = analysis.strengths, !strengths.isEmpty {
-                        AnalysisBulletBlock(title: "Forces", items: strengths, tone: SharpitColor.signalRecovery)
+                        AnalysisBulletBlock(title: "Forces", items: strengths, tone: SharpitColor.foreground)
                     }
 
                     if let improvements = analysis.improvements, !improvements.isEmpty {

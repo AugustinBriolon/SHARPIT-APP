@@ -307,7 +307,7 @@ private struct GoalCard: View {
         if goal.isReached {
             Image(systemName: "checkmark.seal.fill")
                 .font(.title3)
-                .foregroundStyle(SharpitColor.signalRecovery)
+                .foregroundStyle(SharpitColor.foreground)
         } else if goal.kind == .metric, let progress = goal.progressFraction {
             ZStack {
                 SharpitScoreRing(fraction: progress, tone: SharpitColor.primary, lineWidth: 3.5)
@@ -341,7 +341,7 @@ private struct GoalAchievementRow: View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             Image(systemName: "trophy")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(SharpitColor.signalRecovery)
+                .foregroundStyle(SharpitColor.foreground)
                 .frame(width: 38, height: 38)
                 .background(SharpitColor.signalRecovery.opacity(0.13), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
@@ -456,7 +456,7 @@ struct GoalHero: View {
             Spacer(minLength: 0)
             if let progress = goal.progressFraction {
                 ZStack {
-                    SharpitScoreRing(fraction: progress, tone: goal.achieved ? SharpitColor.signalRecovery : SharpitColor.primary, lineWidth: 6)
+                    SharpitScoreRing(fraction: progress, tone: goal.achieved ? SharpitColor.highlight : SharpitColor.primary, lineWidth: 6)
                     Text("\(Int((progress * 100).rounded()))%")
                         .font(SharpitTypography.data)
                         .monospacedDigit()

@@ -28,7 +28,7 @@ import Testing
 }
 
 @Test func complianceTonesFollowTheScoreBands() {
-    #expect(SessionFeedbackTone.compliance(95) == SharpitColor.signalRecovery)
+    #expect(SessionFeedbackTone.compliance(95) == SharpitColor.foreground)
     #expect(SessionFeedbackTone.compliance(70) == SharpitColor.signalCaution)
     #expect(SessionFeedbackTone.compliance(40) == SharpitColor.signalRisk)
 }

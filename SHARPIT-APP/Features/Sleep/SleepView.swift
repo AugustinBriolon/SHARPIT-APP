@@ -151,8 +151,8 @@ private struct SleepHero: View {
     }
 
     private var dial: some View {
-        ZStack {
-            SharpitTickGauge(score: sleep.score.map { CGFloat($0) }, showsScale: true)
+        SharpitTickGauge(score: sleep.score.map { CGFloat($0) }, showsScale: true)
+            .sharpitDialCentre {
             VStack(spacing: SharpitSpacing.xxs) {
                 Text(sleep.score.map { "\(Int($0.rounded()))" } ?? "—")
                     .font(SharpitTypography.system(size: 64, weight: .heavy, relativeTo: .largeTitle, digits: true))
@@ -165,7 +165,6 @@ private struct SleepHero: View {
                     SharpitPill(delta, style: (sleep.score ?? 0) >= (sleep.averages.score ?? 0) ? .limeSoft : .neutral)
                 }
             }
-            .offset(y: 8)
         }
         .padding(.horizontal, SharpitSpacing.xl)
         .frame(maxWidth: .infinity)

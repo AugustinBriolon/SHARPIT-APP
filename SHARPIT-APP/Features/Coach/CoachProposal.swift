@@ -297,7 +297,7 @@ struct CoachProposalCard: View {
             case .accepted:
                 receipt(status: "Validé, en cours d'application", symbol: "checkmark", tone: SharpitColor.primary, inProgress: true)
             case .applied:
-                receipt(status: proposal.doneLabel, symbol: "checkmark.circle.fill", tone: SharpitColor.signalRecovery)
+                receipt(status: proposal.doneLabel, symbol: "checkmark.circle.fill", tone: SharpitColor.foreground)
             case .refused:
                 receipt(status: "Refusé", symbol: "xmark.circle", tone: SharpitColor.mutedForeground, struck: true)
             case .failed(let hint):

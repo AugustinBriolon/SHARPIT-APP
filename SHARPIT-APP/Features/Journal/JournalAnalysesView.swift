@@ -83,7 +83,7 @@ struct JournalAnalysesView: View {
 
             if !analyses.lifts.isEmpty {
                 JournalSection(title: "Ce qui t'aide") {
-                    domains(analyses.lifts, tone: SharpitColor.signalRecovery)
+                    domains(analyses.lifts, tone: SharpitColor.foreground)
                 }
             }
             if !analyses.drags.isEmpty {

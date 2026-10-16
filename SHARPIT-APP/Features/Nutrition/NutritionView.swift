@@ -240,9 +240,8 @@ private struct NutritionEmptyDayPlate: View {
 
     var body: some View {
         VStack(spacing: SharpitSpacing.md) {
-            ZStack(alignment: .top) {
-                SharpitTickGauge(score: nil)
-                GeometryReader { geo in
+            SharpitTickGauge(score: nil)
+                .sharpitDialCentre {
                     VStack(spacing: 4) {
                         Image(systemName: "fork.knife")
                             .font(.system(size: 22, weight: .semibold))
@@ -251,10 +250,7 @@ private struct NutritionEmptyDayPlate: View {
                             .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
-                    .frame(width: geo.size.width)
-                    .position(x: geo.size.width / 2, y: geo.size.height * SharpitTickGaugeGeometry.readoutTopFraction + 22)
                 }
-            }
             .frame(width: 200, height: 200 / SharpitTickGaugeGeometry.aspectRatio)
             .accessibilityHidden(true)
 
@@ -363,9 +359,8 @@ private struct NutritionEnergyPlate: View {
     }
 
     private var dial: some View {
-        ZStack(alignment: .top) {
-            SharpitTickGauge(score: calories?.pct.map { CGFloat(min(max($0, 0), 100)) })
-            GeometryReader { geo in
+        SharpitTickGauge(score: calories?.pct.map { CGFloat(min(max($0, 0), 100)) })
+            .sharpitDialCentre {
                 VStack(spacing: 1) {
                     Text(NutritionReadout.kcal(day.calories))
                         .font(SharpitTypography.gaugeScore)
@@ -376,10 +371,7 @@ private struct NutritionEnergyPlate: View {
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(SharpitColor.mutedForeground.opacity(0.85))
                 }
-                .frame(width: geo.size.width)
-                .position(x: geo.size.width / 2, y: geo.size.height * SharpitTickGaugeGeometry.readoutTopFraction + 25)
             }
-        }
         .frame(width: 230, height: 230 / SharpitTickGaugeGeometry.aspectRatio)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(NutritionReadout.kcal(day.calories)) kilocalories consommées")

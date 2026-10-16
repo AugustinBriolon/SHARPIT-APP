@@ -139,7 +139,7 @@ struct FeedbackView: View {
         VStack(spacing: SharpitSpacing.md) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 56, weight: .semibold))
-                .foregroundStyle(SharpitColor.signalRecovery)
+                .foregroundStyle(SharpitColor.foreground)
                 .symbolEffect(.bounce, value: sealArrival)
             VStack(spacing: SharpitSpacing.xs) {
                 Text("Merci, c’est bien arrivé")

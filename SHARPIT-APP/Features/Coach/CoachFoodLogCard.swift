@@ -437,7 +437,7 @@ struct CoachFoodLogCard: View {
 
     private var appliedReceipt: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            receipt(status: appliedLabel, symbol: "checkmark.circle.fill", tone: SharpitColor.signalRecovery)
+            receipt(status: appliedLabel, symbol: "checkmark.circle.fill", tone: SharpitColor.foreground)
             if let onOpenNutrition {
                 Button(action: onOpenNutrition) {
                     Text("Voir dans Nutrition")

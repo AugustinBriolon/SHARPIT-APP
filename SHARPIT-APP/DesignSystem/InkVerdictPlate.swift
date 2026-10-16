@@ -1,12 +1,9 @@
 import SwiftUI
 
-/// The Today verdict plate — the first and largest thing on the morning screen.
-///
-/// Ink band (`surface-ink`): Forest on light, Lime on dark. Separation by inversion only.
-/// Every color on this surface must come from the ink pair (`inkSurfaceForeground` /
-/// `inkAccent`) — canvas tokens like `primary` collide with the inverted band in dark mode.
-///
-/// Layout: status + symbol → decision → why. Plain text only — never Markdown.
+/// The Today verdict — the first card on the morning screen, laid out as the reference stat
+/// card (ADR-085): the state's tile, « Verdict du jour » and what changed, the status as a lime
+/// pill; then the decision as the hero, the why in muted prose, and the confidence as a bar.
+/// Plain text only — never Markdown.
 struct InkVerdictPlate: View {
     let plate: InkPlateModel
     var revealed: Bool = true
@@ -33,44 +30,55 @@ struct InkVerdictPlate: View {
         return instructionText
     }
 
-    /// Ink-legible ink: cream on Forest, Forest on Lime.
-    private var ink: Color { SharpitColor.inkSurfaceForeground }
-    /// Accent that inverts with the band — never canvas `primary`.
-    private var accent: Color { SharpitColor.inkAccent }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            headerRow
-
-            if let decision = decisionText {
-                Text(decision)
-                    .font(SharpitTypography.verdict)
-                    .tracking(SharpitTypography.verdictTracking)
-                    .foregroundStyle(ink)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            SharpitCardHeader(
+                title: "Verdict du jour",
+                symbol: plate.stateCode?.symbolName ?? "circle.fill",
+                subtitle: plate.vsYesterdayLabel,
+                showsChevron: false
+            ) {
+                if !plate.statusLabel.isEmpty {
+                    SharpitPill(plate.statusLabel, style: .lime)
+                }
             }
 
-            if let subline = decisionSubline {
-                Text(subline)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(ink.opacity(0.92))
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                if let decision = decisionText {
+                    Text(decision)
+                        .font(SharpitTypography.system(size: 26, weight: .bold, relativeTo: .title))
+                        .tracking(-0.4)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let subline = decisionSubline {
+                    Text(subline)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let explanation = explanationText {
+                    Text(explanation)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                }
             }
 
-            if let explanation = explanationText {
-                Text(explanation)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(ink.opacity(0.78))
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
+            if let confidence = plate.confidencePct {
+                SharpitProgressBar(
+                    label: plate.confidenceLabel ?? "Confiance",
+                    value: "\(confidence) %",
+                    fraction: Double(confidence) / 100
+                )
             }
         }
         .opacity(contentOpacity)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, SharpitSpacing.md)
-        .padding(.vertical, SharpitSpacing.lg)
-        .sharpitSurface(.ink)
+        .padding(SharpitSpacing.cardPadding)
+        .sharpitSurface(.panel)
         .opacity(revealed ? 1 : 0)
         .scaleEffect(revealed ? 1 : 0.96, anchor: .top)
         .offset(y: revealed ? 0 : 8)
@@ -109,31 +117,6 @@ struct InkVerdictPlate: View {
         .joined(separator: ". ")
     }
 
-    private var headerRow: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(plate.statusLabel)
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(accent)
-
-                if let vs = plate.vsYesterdayLabel, !vs.isEmpty {
-                    Text(vs)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(ink.opacity(0.72))
-                }
-            }
-
-            Spacer(minLength: 0)
-
-            Image(systemName: plate.stateCode?.symbolName ?? "circle.fill")
-                .font(.system(size: 34, weight: .semibold))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(accent)
-                .accessibilityHidden(true)
-        }
-    }
 }
 
 #Preview("Repos · light") {

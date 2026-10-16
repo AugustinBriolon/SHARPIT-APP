@@ -145,13 +145,13 @@ struct SanteHero: View {
     private var tone: Color {
         if let age = synthesis.biologicalAge {
             switch BiologicalAgeReadout.isYounger(age) {
-            case true?: return SharpitColor.signalRecovery
+            case true?: return SharpitColor.foreground
             case false?: return SharpitColor.signalCaution
             case nil: return SharpitColor.primary
             }
         }
         if mode == .locked { return SharpitColor.primary }
-        return watchCount == 0 ? SharpitColor.signalRecovery : SharpitColor.signalCaution
+        return watchCount == 0 ? SharpitColor.foreground : SharpitColor.signalCaution
     }
 
     /// The way to Pro, where the pill would say the gap.

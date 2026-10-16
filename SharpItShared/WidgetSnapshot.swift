@@ -352,9 +352,9 @@ extension WidgetSnapshot.Macro.Kind {
     /// One hue per macro, from the signal family — the app's nutrition columns and the widgets'.
     var tone: Color {
         switch self {
-        case .protein: SharpitColor.signalRecovery
-        case .carbohydrates: SharpitColor.signalBase
-        case .fat: SharpitColor.signalTempo
+        case .protein: SharpitColor.primary
+        case .carbohydrates: SharpitColor.highlight
+        case .fat: SharpitColor.signalBase
         }
     }
 }

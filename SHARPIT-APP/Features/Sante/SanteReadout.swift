@@ -167,7 +167,7 @@ extension V1HealthTone {
     /// Colour only for a semantic state (`docs/adr/0004`).
     var color: Color {
         switch self {
-        case .good: SharpitColor.signalRecovery
+        case .good: SharpitColor.foreground
         case .neutral: SharpitColor.mutedForeground
         case .watch: SharpitColor.signalCaution
         }

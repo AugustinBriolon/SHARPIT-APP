@@ -100,13 +100,13 @@ private struct PlanTrajectoryTileView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(title: title, symbol: symbol, tint: SharpitColor.primary)
+            SharpitCardHeader(title: title, symbol: symbol, isCompact: true)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(tile.value)
-                        .font(SharpitTypography.data)
-                        .tracking(SharpitTypography.dataTracking)
-                        .foregroundStyle(tile.unit == nil ? SharpitColor.mutedForeground : tone)
+                        .font(SharpitTypography.gaugeScore)
+                        .tracking(SharpitTypography.gaugeScoreTracking)
+                        .foregroundStyle(tile.unit == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
                         .contentTransition(.numericText())
                     if let unit = tile.unit {
                         Text(unit)
@@ -128,7 +128,8 @@ private struct PlanTrajectoryTileView: View {
                 SharpitTelemetryCapsule(lead: caption)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
+        .padding(.horizontal, SharpitSpacing.sm + 2)
+        .padding(.vertical, SharpitSpacing.md)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)

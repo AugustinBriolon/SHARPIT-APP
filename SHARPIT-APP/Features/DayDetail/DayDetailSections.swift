@@ -16,6 +16,52 @@ struct DayDetailAlert: View {
 }
 
 /// The reading's reasons, one arrow each — the recommendation step of the causal column.
+/// The verdict card of a day drill-down: an ink tile, the verdict and what it leaves for
+/// training, then the limiting factor on its own lines — the server words it as a sentence.
+struct DayDetailVerdictCard: View {
+    let label: String
+    let tone: Color
+    var capacity: String? = nil
+    var limitingFactor: String? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            HStack(spacing: SharpitSpacing.sm) {
+                SharpitIconTile(symbol: "arrow.forward")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label)
+                        .font(SharpitTypography.cardTitle)
+                        .tracking(SharpitTypography.cardTitleTracking)
+                        .foregroundStyle(tone)
+                    if let capacity {
+                        Text(capacity)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                }
+            }
+            if let limitingFactor, !limitingFactor.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Facteur limitant")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                    Text(limitingFactor)
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(SharpitSpacing.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .sharpitSurface(.panelAlt)
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 struct DayDetailRationale: View {
     let lines: [String]
 

@@ -265,17 +265,15 @@ struct FoodHealthScoreHeader: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.md) {
-            ZStack {
-                SharpitTickGauge(score: health.score.map { CGFloat($0) })
-                    .frame(width: dialWidth)
-                    .aspectRatio(SharpitTickGaugeGeometry.aspectRatio, contentMode: .fit)
-                Text(health.score.map(String.init) ?? "—")
-                    .font(SharpitTypography.gaugeScore)
-                    .tracking(SharpitTypography.gaugeScoreTracking)
-                    .monospacedDigit()
-                    .foregroundStyle(SharpitColor.foreground)
-                    .offset(y: dialWidth * 0.12)
-            }
+            SharpitTickGauge(score: health.score.map { CGFloat($0) })
+                .frame(width: dialWidth)
+                .sharpitDialCentre {
+                    Text(health.score.map(String.init) ?? "—")
+                        .font(SharpitTypography.gaugeScore)
+                        .tracking(SharpitTypography.gaugeScoreTracking)
+                        .monospacedDigit()
+                        .foregroundStyle(SharpitColor.foreground)
+                }
             .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
