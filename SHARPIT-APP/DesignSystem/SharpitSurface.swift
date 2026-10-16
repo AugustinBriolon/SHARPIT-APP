@@ -1,67 +1,70 @@
 import SwiftUI
 
-/// Corner radii derived from the exported brand radius.
-///
-/// On the web, `--radius-analysis` (0.875×) is tighter than `--radius-analysis-lg`
-/// (1.125×). On iOS the ink verdict already used the larger continuous corner, and
-/// the tighter panels read as cards inside cards next to it (ADR-0008: HIG outranks
-/// the web scale here). Default panels share the verdict's radius.
+/// Corner radii, exported from the web geometry tokens (ADR-085).
 enum SharpitRadius {
-    /// `--radius-analysis-sm`
-    static let small = SharpitTokens.radius * 0.5
-    /// Default panel — same continuous corner as the ink verdict.
-    static let panel = SharpitTokens.radius * 1.125
-    /// Alt panels and the ink band — kept as an alias of `panel`.
-    static let panelLarge = SharpitTokens.radius * 1.125
+    /// Number chips and check boxes.
+    static let small = SharpitTokens.chipRadius
+    /// Cards.
+    static let panel = SharpitTokens.cardRadius
+    /// The ink band — same corner as a card.
+    static let panelLarge = SharpitTokens.cardRadius
+    /// The grey group that holds rows.
+    static let inset = SharpitTokens.insetRadius
+    /// A row inside an inset group.
+    static let row = SharpitTokens.rowRadius
+    /// Icon tiles.
+    static let tile = SharpitTokens.tileRadius
+    /// Buttons and segmented controls.
+    static let control = SharpitTokens.radius
 }
 
-/// The surfaces of the instrument-editorial system.
+/// The surfaces of the Ink & Lime system (ADR-085).
 ///
-/// A surface separates itself from the canvas by luminosity and, on light, by a soft
-/// neutral shadow — not by a hairline border. The web draws a 1px border; the app stopped
-/// (ADR 0002 in this repository): on a phone the outline of every row read as a form grid, and
-/// Apple's own grouped surfaces lift instead of outlining.
+/// A white card lifts off the cool canvas with one soft, wide shadow on light and by
+/// luminosity on dark — never with a border. Inside a card, rows sit in a grey inset group.
 enum SharpitSurfaceStyle {
     /// `analysis-panel` — the default content surface.
     case panel
-    /// `analysis-panel-alt` — a quieter alternate, for nested or selected blocks. It stays
-    /// flat: it reads as set into the page, which is what a selection should look like.
+    /// `inset-group` — the grey container that holds white rows inside a card. Flat.
     case panelAlt
-    /// `chip-surface` — compact controls and signal cells.
+    /// `chip-surface` — neutral chips, compact controls and signal cells. Flat.
     case chip
-    /// `surface-ink` — the inverted band: Forest on light, Lime on dark.
+    /// `surface-ink` — ink on light, a lifted graphite on dark.
     case ink
+    /// A white row inside an inset group. Flat.
+    case row
 
     func fill(at elevation: SharpitElevationLevel) -> Color {
         switch (self, elevation) {
         case (.panel, .sheet), (.chip, .sheet): SharpitElevatedColor.panelOnSheet
         case (.panel, .base): SharpitColor.analysisSurface
-        case (.panelAlt, _): SharpitColor.analysisSurfaceAlt
+        case (.panelAlt, _): SharpitColor.insetGroup
         case (.chip, .base): SharpitColor.chipSurface
         case (.ink, _): SharpitColor.inkSurface
+        case (.row, _): SharpitElevatedColor.row
         }
     }
 
     var shadow: SharpitShadowStyle? {
         switch self {
         case .panel, .ink: .panel
-        case .chip: .control
-        case .panelAlt: nil
+        case .chip, .panelAlt, .row: nil
         }
     }
 
     var radius: CGFloat {
         switch self {
-        case .panel: SharpitRadius.panel
-        case .panelAlt, .ink: SharpitRadius.panelLarge
-        case .chip: SharpitRadius.small
+        case .panel, .ink: SharpitRadius.panel
+        case .panelAlt: SharpitRadius.inset
+        case .row: SharpitRadius.row
+        case .chip: SharpitSpacing.chipRadius
         }
     }
 
     /// The color text takes when it sits on this surface.
     var foreground: Color {
         switch self {
-        case .panel, .panelAlt, .chip: SharpitColor.cardForeground
+        case .panel, .panelAlt, .chip, .row: SharpitColor.cardForeground
         case .ink: SharpitColor.inkSurfaceForeground
         }
     }
@@ -91,23 +94,10 @@ extension View {
         modifier(SharpitSurfaceModifier(style: style))
     }
 
-    /// Applies the signature high-precision specular top-edge light highlight on panel cards.
+    /// Cards have no border in Ink & Lime (ADR-085).
+    /// shortcut: kept as a no-op so 24 call sites compile; delete with the screen sweep.
     func sharpitCardSpecularBorder(radius: CGFloat = SharpitRadius.panel) -> some View {
-        overlay(
-            RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.35),
-                            Color.white.opacity(0.06),
-                            Color.black.opacity(0.05)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.75
-                )
-        )
+        self
     }
 }
 

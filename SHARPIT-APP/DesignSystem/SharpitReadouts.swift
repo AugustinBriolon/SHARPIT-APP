@@ -1,24 +1,19 @@
 import SwiftUI
 
-/// A small measured value on a panel: caption on top, figure, optional note. Used in
-/// rows of two or three on drill-down screens.
+/// A small measured value: the figure first, bold, its unit muted beside it, then what it
+/// is in a quiet line under it — the stat row of the references (ADR-085).
 struct SharpitStatTile: View {
     let caption: String
     let value: String
     var unit: String?
     var note: String?
     var tone: Color = SharpitColor.foreground
+    /// Flat inside a card (the stat row under a chart); a card of its own on the canvas.
+    var isFlat = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            Text(caption)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
                     .font(SharpitTypography.data)
                     .tracking(SharpitTypography.dataTracking)
@@ -28,10 +23,15 @@ struct SharpitStatTile: View {
                     .contentTransition(.numericText())
                 if let unit {
                     Text(unit)
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline))
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
             }
+            Text(caption)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             if let note {
                 Text(note)
                     .font(SharpitTypography.meta)
@@ -39,9 +39,41 @@ struct SharpitStatTile: View {
                     .lineLimit(2)
             }
         }
-        .padding(SharpitSpacing.md)
+        .padding(isFlat ? 0 : SharpitSpacing.md)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .sharpitSurface(.panel)
+        .background {
+            if !isFlat { Color.clear.sharpitSurface(.panel) }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A hero figure with its unit and an optional delta pill: « 102.5 kg  +5 kg ».
+struct SharpitHeroFigure: View {
+    let value: String
+    var unit: String?
+    var delta: String?
+    var deltaStyle: SharpitPill.Style = .neutral
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+            Text(value)
+                .font(SharpitTypography.heroScore)
+                .tracking(SharpitTypography.heroScoreTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .contentTransition(.numericText())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            if let unit {
+                Text(unit)
+                    .font(SharpitTypography.unit)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
+            if let delta {
+                SharpitPill(delta, style: deltaStyle)
+                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
+            }
+        }
         .accessibilityElement(children: .combine)
     }
 }
@@ -87,7 +119,7 @@ struct SharpitConfidenceLine: View {
                         Capsule()
                             .fill(index < ConfidenceBars.filled(fromPct: rounded)
                                   ? SharpitColor.primary
-                                  : SharpitColor.analysisGrid)
+                                  : SharpitColor.track)
                             .frame(width: 10, height: 4)
                     }
                 }
@@ -125,19 +157,19 @@ struct SharpitHeroScore: View {
             Text(figure)
                 .font(SharpitTypography.heroScore)
                 .tracking(SharpitTypography.heroScoreTracking)
-                .foregroundStyle(score == nil ? SharpitColor.mutedForeground : tone)
+                .foregroundStyle(score == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
                 .contentTransition(.numericText())
                 .animation(SharpitMotion.selection, value: score)
             Text("/\(scale)")
-                .font(SharpitTypography.meta)
+                .font(SharpitTypography.unit)
                 .foregroundStyle(SharpitColor.mutedForeground)
             Spacer(minLength: 0)
             Text(label)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(tone)
-                .padding(.horizontal, SharpitSpacing.sm)
-                .padding(.vertical, SharpitSpacing.xxs + 2)
-                .background(tone.opacity(0.14), in: Capsule())
+                .font(SharpitTypography.system(size: 14, weight: .bold, relativeTo: .subheadline))
+                .foregroundStyle(SharpitColor.foreground)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(SharpitColor.chipSurface, in: Capsule())
         }
         .accessibilityElement(children: .combine)
     }

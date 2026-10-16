@@ -18,7 +18,6 @@ struct SharpitApp: App {
             CrashReporting.note("app.init", category: "lifecycle")
             Task { await AppDistribution.prepare() }
         }
-        SharpitFonts.register()
         Clerk.configure(publishableKey: ClerkConfiguration.publishableKey)
         modelContainer = Self.makeModelContainer()
     }
@@ -58,6 +57,9 @@ struct SharpitApp: App {
                 .sharpitAppearance()
         } else if CoachDemo.isRequested {
             CoachDemoHost()
+                .sharpitAppearance()
+        } else if DesignGalleryDemo.isRequested {
+            DesignGalleryHost()
                 .sharpitAppearance()
         } else {
             app

@@ -226,7 +226,7 @@ struct ThresholdsView: View {
             title: "Cyclisme / Vélo",
             subtitle: "Puissance de référence pour les zones de watts et la charge vélo.",
             symbolName: "bicycle",
-            color: SharpitSportColor.color(SharpitSportColor.bike)
+            color: SharpitColor.foreground
         ) {
             ThresholdInputField(
                 label: "FTP (Functional Threshold Power)",
@@ -257,7 +257,7 @@ struct ThresholdsView: View {
             title: "Course à pied",
             subtitle: "Allure seuil et allure Z2 (endurance) pour calibrer les footings et le rTSS.",
             symbolName: "figure.run",
-            color: SharpitSportColor.color(SharpitSportColor.run)
+            color: SharpitColor.foreground
         ) {
             VStack(spacing: SharpitSpacing.sm) {
                 ThresholdInputField(
@@ -314,7 +314,7 @@ struct ThresholdsView: View {
             title: "Natation",
             subtitle: "Vitesse critique de nage (CSS) et longueur de bassin habituelle.",
             symbolName: "figure.pool.swim",
-            color: SharpitSportColor.color(SharpitSportColor.swim)
+            color: SharpitColor.foreground
         ) {
             VStack(spacing: SharpitSpacing.sm) {
                 ThresholdInputField(
@@ -359,13 +359,13 @@ struct ThresholdsView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
-                            isSelected ? SharpitSportColor.color(SharpitSportColor.swim).opacity(0.18) : SharpitColor.card,
+                            isSelected ? SharpitColor.foreground.opacity(0.18) : SharpitColor.card,
                             in: RoundedRectangle(cornerRadius: SharpitRadius.small)
                         )
-                        .foregroundStyle(isSelected ? SharpitSportColor.color(SharpitSportColor.swim) : SharpitColor.foreground)
+                        .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.foreground)
                         .overlay(
                             RoundedRectangle(cornerRadius: SharpitRadius.small)
-                                .strokeBorder(isSelected ? SharpitSportColor.color(SharpitSportColor.swim) : SharpitColor.border.opacity(0.6), lineWidth: isSelected ? 1.5 : 1)
+                                .strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.border.opacity(0.6), lineWidth: isSelected ? 1.5 : 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -394,10 +394,10 @@ struct ThresholdsView: View {
 
                 HStack(spacing: SharpitSpacing.sm) {
                     if let running {
-                        vo2maxCard(title: "VO₂max course", value: running, icon: "figure.run", color: SharpitSportColor.color(SharpitSportColor.run))
+                        vo2maxCard(title: "VO₂max course", value: running, icon: "figure.run", color: SharpitColor.foreground)
                     }
                     if let cycling {
-                        vo2maxCard(title: "VO₂max vélo", value: cycling, icon: "bicycle", color: SharpitSportColor.color(SharpitSportColor.bike))
+                        vo2maxCard(title: "VO₂max vélo", value: cycling, icon: "bicycle", color: SharpitColor.foreground)
                     }
                 }
             }

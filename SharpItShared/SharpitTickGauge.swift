@@ -1,43 +1,47 @@
 import SwiftUI
 
-/// Geometry of the overnight gauge, ported from the web's `overnight-gauge-geometry.ts`.
-///
-/// The values are the web's `viewBox` units (200 × 118) and are scaled to whatever width
-/// the card gives. Keeping them identical is the point: this is the same instrument on
-/// both surfaces, not a lookalike rebuilt from a screenshot.
+/// Geometry of the score dial (ADR-085): a 270° sweep of heavy ticks, open at the bottom,
+/// in a 200 × 168 box scaled to whatever width the card gives.
 enum SharpitTickGaugeGeometry {
-    static let tickCount = 52
+    static let tickCount = 56
     static let boxWidth: CGFloat = 200
-    static let boxHeight: CGFloat = 118
+    static let boxHeight: CGFloat = 168
     static let centreX: CGFloat = 100
-    static let centreY: CGFloat = 100
-    static let radiusInner: CGFloat = 72
-    static let radiusOuter: CGFloat = 78
-    static let tickWidth: CGFloat = 1.6
-    static let thumbRadius: CGFloat = 3.75
+    static let centreY: CGFloat = 92
+    static let radiusInner: CGFloat = 66
+    static let radiusOuter: CGFloat = 80
+    /// Ticks past the score are shorter: the unlit part of the dial recedes.
+    static let radiusInnerUnlit: CGFloat = 72
+    static let tickWidth: CGFloat = 3.6
+    static let thumbRadius: CGFloat = 6
+    /// The sweep, from bottom-left (225°) clockwise over the top to bottom-right (−45°).
+    static let startAngle: CGFloat = .pi * 5 / 4
+    static let endAngle: CGFloat = -.pi / 4
 
     /// Width / height of the gauge box.
     static let aspectRatio: CGFloat = boxWidth / boxHeight
 
-    /// Where the score sits, as a fraction of the box height — the web's `top-[44%]`.
-    static let readoutTopFraction: CGFloat = 0.44
+    /// Where the score sits, as a fraction of the box height — the dial's centre.
+    static let readoutTopFraction: CGFloat = 0.5
 
-    /// The score a tick stands for, 0…100.
+    /// Where the « 0 » and « 100 » scale labels sit, in box units.
+    static let scaleLabelY: CGFloat = 160
+
     static func tickScore(at index: Int) -> CGFloat {
         guard tickCount > 1 else { return 100 }
         return CGFloat(index) / CGFloat(tickCount - 1) * 100
     }
 
-    /// Angle of a tick, sweeping the top semicircle from π (left) to 0 (right).
+    /// Angle of a tick along the sweep.
     static func angle(at index: Int) -> CGFloat {
-        guard tickCount > 1 else { return 0 }
+        guard tickCount > 1 else { return startAngle }
         let t = CGFloat(index) / CGFloat(tickCount - 1)
-        return .pi + (0 - .pi) * t
+        return startAngle + (endAngle - startAngle) * t
     }
 
     static func angle(forScore score: CGFloat) -> CGFloat {
         let t = min(max(score, 0), 100) / 100
-        return .pi + (0 - .pi) * t
+        return startAngle + (endAngle - startAngle) * t
     }
 
     /// A point on the dial, in box units. Y grows downward, as in SVG.
@@ -53,11 +57,8 @@ enum SharpitTickGaugeGeometry {
     }
 }
 
-/// The overnight dial: 52 radial ticks, lit up to the score.
-///
-/// A thick stroked arc was the wrong instrument — it reads heavy at card width and left
-/// no room around the number whatever the spacing. Ticks are 1.6 units wide against a
-/// 78-unit radius, which is what makes the web version look like a readout.
+/// The score dial: heavy ink ticks up to the score, a lime band and knob at the reading,
+/// short track ticks after it, and optional « 0 » / « 100 » at the open ends.
 ///
 /// Animatable: a change of score inside an animation sweeps the ticks one by one rather than
 /// redrawing the dial at its new value.
@@ -66,6 +67,8 @@ struct SharpitTickGauge: View, Animatable {
     var score: CGFloat?
     /// Draws the thumb at 0 too — a progress dial shows where it starts; a readout at 0 does not.
     var showsThumbAtStart = false
+    /// Writes « 0 » and « 100 » under the open ends of the dial.
+    var showsScale = false
 
     var animatableData: CGFloat {
         get { score ?? 0 }
@@ -80,7 +83,9 @@ struct SharpitTickGauge: View, Animatable {
                 let angle = SharpitTickGaugeGeometry.angle(at: index)
                 let inner = SharpitTickGaugeGeometry.point(
                     angle: angle,
-                    radius: SharpitTickGaugeGeometry.radiusInner
+                    radius: SharpitTickTone.isLit(at: index, score: score)
+                        ? SharpitTickGaugeGeometry.radiusInner
+                        : SharpitTickGaugeGeometry.radiusInnerUnlit
                 )
                 let outer = SharpitTickGaugeGeometry.point(
                     angle: angle,
@@ -101,6 +106,17 @@ struct SharpitTickGauge: View, Animatable {
                 )
             }
 
+            if showsScale {
+                for (label, x) in [("0", 0.22), ("100", 0.78)] {
+                    context.draw(
+                        Text(label)
+                            .font(.system(size: 12 * max(scale, 0.8), weight: .medium).monospacedDigit())
+                            .foregroundStyle(SharpitColor.mutedForeground),
+                        at: CGPoint(x: size.width * x, y: SharpitTickGaugeGeometry.scaleLabelY * scale)
+                    )
+                }
+            }
+
             guard let score, score > 0.5 || showsThumbAtStart else { return }
             let thumb = SharpitTickGaugeGeometry.thumb(forScore: score)
             let radius = SharpitTickGaugeGeometry.thumbRadius * scale
@@ -112,29 +128,38 @@ struct SharpitTickGauge: View, Animatable {
                     height: radius * 2
                 )
             )
+            // A soft lime halo, then the knob.
+            let halo = Path(ellipseIn: CGRect(
+                x: thumb.x * scale - radius * 1.8,
+                y: thumb.y * scale - radius * 1.8,
+                width: radius * 3.6,
+                height: radius * 3.6
+            ))
+            context.fill(halo, with: .color(SharpitColor.highlight.opacity(0.25)))
             context.fill(dot, with: .color(SharpitColor.highlight))
-            context.stroke(
-                dot,
-                with: .color(SharpitColor.highlightForeground),
-                style: StrokeStyle(lineWidth: scale)
-            )
         }
         .aspectRatio(SharpitTickGaugeGeometry.aspectRatio, contentMode: .fit)
         .accessibilityHidden(true)
     }
 }
 
-/// Tick colours, mirroring the web's `overnightTickStroke`.
+/// Tick colours (ADR-085): ink up to the score, lime for the last stretch before it,
+/// track after it.
 enum SharpitTickTone {
-    /// Ticks within this many points below the score take the highlight, so the dial
-    /// brightens as it approaches the reading instead of ending on a hard edge.
+    /// Ticks within this many points below the score take the lime, so the dial brightens
+    /// as it reaches the reading instead of ending on a hard edge.
     static let highlightBand: CGFloat = 14
 
+    static func isLit(at index: Int, score: CGFloat?) -> Bool {
+        guard let score else { return false }
+        return SharpitTickGaugeGeometry.tickScore(at: index) <= score
+    }
+
     static func stroke(at index: Int, score: CGFloat?) -> Color {
-        guard let score else { return SharpitColor.analysisBorder }
+        guard let score else { return SharpitColor.track }
 
         let tickScore = SharpitTickGaugeGeometry.tickScore(at: index)
-        if tickScore > score { return SharpitColor.analysisBorder }
+        if tickScore > score { return SharpitColor.track }
         if tickScore >= score - highlightBand { return SharpitColor.highlight }
         return SharpitColor.foreground
     }

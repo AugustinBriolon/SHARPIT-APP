@@ -29,7 +29,7 @@ import Testing
     #expect(SessionPriorityPolicy.showsTag(sessionCount: 2, priority: false) == false)
 }
 
-@Test func tickDialSweepsTheTopSemicircle() {
+@Test func tickDialSweepsThreeQuartersOpenAtTheBottom() {
     let geometry = SharpitTickGaugeGeometry.self
     let first = geometry.point(angle: geometry.angle(at: 0), radius: geometry.radiusOuter)
     let last = geometry.point(
@@ -37,22 +37,23 @@ import Testing
         radius: geometry.radiusOuter
     )
 
-    // Left end, right end, both on the centre line.
-    #expect(abs(first.x - (geometry.centreX - geometry.radiusOuter)) < 0.01)
-    #expect(abs(first.y - geometry.centreY) < 0.01)
-    #expect(abs(last.x - (geometry.centreX + geometry.radiusOuter)) < 0.01)
-    #expect(abs(last.y - geometry.centreY) < 0.01)
+    // Both ends below the centre, mirrored left and right; the middle tick at the top.
+    #expect(first.y > geometry.centreY)
+    #expect(abs(first.y - last.y) < 0.01)
+    #expect(abs((first.x + last.x) / 2 - geometry.centreX) < 0.01)
+    let top = geometry.point(angle: geometry.angle(forScore: 50), radius: geometry.radiusOuter)
+    #expect(abs(top.y - (geometry.centreY - geometry.radiusOuter)) < 0.01)
 }
 
-@Test func everyTickStaysOnItsRadius() {
+@Test func everyTickStaysOnItsRadiusAndInsideTheBox() {
     let geometry = SharpitTickGaugeGeometry.self
     for index in 0..<geometry.tickCount {
         let point = geometry.point(angle: geometry.angle(at: index), radius: geometry.radiusOuter)
         let dx = point.x - geometry.centreX
         let dy = point.y - geometry.centreY
         #expect(abs((dx * dx + dy * dy).squareRoot() - geometry.radiusOuter) < 0.01)
-        // The dial is the top half only.
-        #expect(point.y <= geometry.centreY + 0.01)
+        #expect(point.y >= 0 && point.y <= geometry.boxHeight)
+        #expect(point.x >= 0 && point.x <= geometry.boxWidth)
     }
 }
 
@@ -68,19 +69,20 @@ import Testing
 }
 
 @Test func ticksLightUpToTheScoreAndNoFurther() {
-    // Mirrors the web's overnightTickStroke: unread dial is all border, a read one lights
-    // every tick at or below the score and leaves the rest as track.
+    // An unread dial is all track; a read one lights every tick at or below the score.
     let unread = SharpitTickTone.stroke(at: 10, score: nil)
-    #expect(unread == SharpitColor.analysisBorder)
+    #expect(unread == SharpitColor.track)
 
     let geometry = SharpitTickGaugeGeometry.self
     for index in 0..<geometry.tickCount {
         let tickScore = geometry.tickScore(at: index)
         let stroke = SharpitTickTone.stroke(at: index, score: 60)
         if tickScore > 60 {
-            #expect(stroke == SharpitColor.analysisBorder)
+            #expect(stroke == SharpitColor.track)
+            #expect(!SharpitTickTone.isLit(at: index, score: 60))
         } else {
-            #expect(stroke != SharpitColor.analysisBorder)
+            #expect(stroke != SharpitColor.track)
+            #expect(SharpitTickTone.isLit(at: index, score: 60))
         }
     }
 }

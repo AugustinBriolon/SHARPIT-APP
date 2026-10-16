@@ -33,6 +33,9 @@ nonisolated enum SharpitElevatedColor {
         darkLift: 0.06
     )
 
+    /// A row inside an inset group: white on light, one step above the group on dark.
+    static let row = adaptive(light: SharpitColor.card, dark: SharpitColor.chipSurface)
+
     /// The resting pill of a segmented control: white on light, a lifted track on dark.
     static let control = adaptive(
         light: SharpitColor.chipSurface,
@@ -88,7 +91,8 @@ enum SharpitShadowStyle {
     fileprivate var layers: (contact: Layer, ambient: Layer) {
         switch self {
         case .panel:
-            (Layer(opacity: 0.04, radius: 1, y: 1), Layer(opacity: 0.06, radius: 12, y: 4))
+            // `--card-shadow`: barely-there contact + a very wide, soft ambient.
+            (Layer(opacity: 0.03, radius: 1, y: 1), Layer(opacity: 0.06, radius: 20, y: 10))
         case .control:
             (Layer(opacity: 0.08, radius: 1, y: 1), Layer(opacity: 0.08, radius: 4, y: 2))
         }

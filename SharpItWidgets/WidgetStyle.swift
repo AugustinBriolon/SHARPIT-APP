@@ -1,23 +1,17 @@
 import SwiftUI
 import WidgetKit
 
-/// The app's canvas behind a widget: Snow White or Forest Night, the dot grid and the two brand
-/// halos — `SharpitCanvasTexture`, the very one the app draws. A verdict adds a halo in its
-/// posture's tone: color is state, never decoration.
+/// The app's card behind a widget: white on light, the card tone on dark (ADR-085). A widget is
+/// itself a card, so it takes the card surface, not the page canvas, and no texture or halo.
 ///
 /// Clipped to `ContainerRelativeShape` so the fill follows Apple's continuous widget corner —
 /// the same radius Weather and Calendar use — instead of reading as a tighter card inside it.
 struct WidgetCanvas: View {
+    /// shortcut: kept so call sites compile; the halo is gone, delete with the widget sweep.
     var stateTone: Color?
 
     var body: some View {
-        ZStack {
-            SharpitColor.background
-            SharpitCanvasTexture()
-            if let stateTone {
-                RadialGradient(colors: [stateTone.opacity(0.22), .clear], center: .topTrailing, startRadius: 0, endRadius: 170)
-            }
-        }
+        SharpitColor.card
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(ContainerRelativeShape())
     }

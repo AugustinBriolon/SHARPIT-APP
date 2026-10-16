@@ -23,10 +23,11 @@ extension ButtonStyle where Self == SharpitPressableStyle {
     static var sharpitPressable: SharpitPressableStyle { SharpitPressableStyle() }
 }
 
-/// A compact score ring — a readout beside its number, never the hero of a screen.
+/// A score ring: a round-capped arc on the track — compact beside a number, or thick around
+/// a countdown (ADR-085). Lime is the default tone.
 struct SharpitScoreRing: View {
     let fraction: Double
-    let tone: Color
+    var tone: Color = SharpitColor.highlight
     var lineWidth: CGFloat = 4
 
     @State private var shown: Double = 0
@@ -34,7 +35,7 @@ struct SharpitScoreRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(SharpitColor.analysisGrid, lineWidth: lineWidth)
+                .stroke(SharpitColor.track, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: shown)
                 .stroke(tone, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))

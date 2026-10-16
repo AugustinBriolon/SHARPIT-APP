@@ -142,10 +142,10 @@ private struct SessionHero: View {
             if session.isDone {
                 WidgetGlyph(symbol: "checkmark.circle.fill", tint: SharpitColor.primary)
             } else {
-                WidgetGlyph(symbol: session.sport.symbolName, tint: SharpitSportColor.color(session.sport.identity))
+                WidgetGlyph(symbol: session.sport.symbolName, tint: SharpitColor.foreground)
             }
         } content: {
-            WidgetEyebrow(text: session.isDone ? "Faite · \(session.sport.label)" : session.sport.label, tint: SharpitSportColor.color(session.sport.identity))
+            WidgetEyebrow(text: session.isDone ? "Faite · \(session.sport.label)" : session.sport.label, tint: SharpitColor.foreground)
             WidgetTitle(text: session.title)
                 .padding(.top, 2)
             HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -163,7 +163,7 @@ private struct SessionLine: View {
     var body: some View {
         HStack(spacing: 10) {
             Capsule()
-                .fill(SharpitSportColor.color(session.sport.identity))
+                .fill(SharpitColor.foreground)
                 .frame(width: 3, height: 34)
                 .widgetAccentable()
             VStack(alignment: .leading, spacing: 2) {

@@ -89,7 +89,7 @@ struct LastActivityView: View {
     @ViewBuilder
     private var small: some View {
         if let activity {
-            let tone = SharpitSportColor.color(activity.sport.identity)
+            let tone = SharpitColor.foreground
             WidgetFrame(title: WidgetDay.label(activity.dayId)) {
                 WidgetGlyph(symbol: activity.sport.symbolName, tint: tone)
             } content: {
@@ -121,7 +121,7 @@ struct LastActivityView: View {
     @ViewBuilder
     private var medium: some View {
         if let activity {
-            let tone = SharpitSportColor.color(activity.sport.identity)
+            let tone = SharpitColor.foreground
             WidgetFrame(title: WidgetDay.label(activity.dayId)) {
                 WidgetGlyph(symbol: activity.sport.symbolName, tint: tone)
             } content: {

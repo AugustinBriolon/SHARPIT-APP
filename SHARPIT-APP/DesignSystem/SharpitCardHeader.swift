@@ -1,53 +1,60 @@
 import SwiftUI
 
-/// The header every readout card on Résumé and Corps shares: a tinted round badge with its
-/// symbol, the uppercase label, then an optional accessory and the disclosure chevron. One
-/// component, so a badge, a tracking or a chevron can never drift a point between cards.
+/// The header every card shares: the ink icon tile, a title and a muted subtitle, then an
+/// optional accessory (a pill, a figure) and the disclosure chevron. One component, so a tile,
+/// a weight or a gap can never drift a point between cards.
 struct SharpitCardHeader<Accessory: View>: View {
     let title: String
     let symbol: String
+    var subtitle: String? = nil
+    /// shortcut: ignored since ADR-085 (tiles are always ink + lime); drop with the screen sweep.
     var tint: Color = SharpitColor.primary
     var showsChevron = true
     @ViewBuilder var accessory: () -> Accessory
 
     var body: some View {
-        HStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(tint.opacity(0.12))
-                    .frame(width: 22, height: 22)
-                Image(systemName: symbol)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(tint)
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            SharpitIconTile(symbol: symbol)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(SharpitTypography.cardTitle)
+                    .tracking(SharpitTypography.cardTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
             }
-            .accessibilityHidden(true)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
 
-            Text(title)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.foreground.opacity(0.85))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-
-            Spacer(minLength: 2)
+            Spacer(minLength: SharpitSpacing.xs)
 
             accessory()
 
             if showsChevron {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
                     .accessibilityHidden(true)
             }
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 }
 
 extension SharpitCardHeader where Accessory == EmptyView {
-    init(title: String, symbol: String, tint: Color = SharpitColor.primary, showsChevron: Bool = true) {
-        self.init(title: title, symbol: symbol, tint: tint, showsChevron: showsChevron) { EmptyView() }
+    init(
+        title: String,
+        symbol: String,
+        subtitle: String? = nil,
+        tint: Color = SharpitColor.primary,
+        showsChevron: Bool = true
+    ) {
+        self.init(title: title, symbol: symbol, subtitle: subtitle, tint: tint, showsChevron: showsChevron) { EmptyView() }
     }
 }
 
@@ -60,28 +67,24 @@ struct SharpitTelemetryCapsule: View {
     var body: some View {
         HStack(spacing: 4) {
             Text(lead)
-                .font(.system(size: 11, weight: value == nil ? .medium : .regular))
+                .font(.system(size: 13, weight: value == nil ? .medium : .regular))
                 .foregroundStyle(SharpitColor.mutedForeground)
             if let value {
                 Text("·")
-                    .font(.system(size: 11, weight: .regular))
+                    .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
                 Text(value)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(SharpitColor.foreground)
             }
         }
         .lineLimit(1)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
         .frame(maxWidth: .infinity)
         .background(
             Capsule(style: .continuous)
-                .fill(SharpitColor.secondary.opacity(0.55))
-                .overlay(
-                    Capsule(style: .continuous)
-                        .strokeBorder(SharpitColor.border.opacity(0.06), lineWidth: 0.5)
-                )
+                .fill(SharpitColor.chipSurface)
         )
         .accessibilityElement(children: .combine)
     }

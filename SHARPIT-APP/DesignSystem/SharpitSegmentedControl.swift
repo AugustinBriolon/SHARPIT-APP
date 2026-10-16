@@ -2,10 +2,8 @@ import SwiftUI
 
 /// A choice among a few options, answered in place — appearance, reading density.
 ///
-/// The system segmented picker draws a grey iOS 6 track that reads as a form control dropped
-/// on an editorial page. This one keeps the same behaviour — one selection, VoiceOver sees a
-/// set of buttons with one selected — on the app's surfaces: a quiet track and a raised pill
-/// that slides to the choice under the finger.
+/// Ink & Lime (ADR-085): a neutral chip track, the choice an ink capsule with white text that
+/// slides under the finger. VoiceOver sees a set of buttons with one selected.
 struct SharpitSegmentedControl<Value: Hashable>: View {
     struct Option: Identifiable {
         let value: Value
@@ -39,25 +37,24 @@ struct SharpitSegmentedControl<Value: Hashable>: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
                     }
-                    .font(SharpitTypography.meta.weight(isSelected ? .semibold : .medium))
-                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground)
-                    .frame(maxWidth: .infinity, minHeight: 36)
+                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+                    .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
+                    .frame(maxWidth: .infinity, minHeight: 38)
                     .background {
                         if isSelected {
-                            Capsule()
-                                .fill(SharpitColor.card)
-                                .sharpitShadow(.control)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(SharpitColor.primary)
                                 .matchedGeometryEffect(id: "pill", in: pill)
                         }
                     }
-                    .contentShape(Capsule())
+                    .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             }
         }
-        .padding(3)
-        .background(SharpitColor.analysisGrid.opacity(0.45), in: Capsule())
+        .padding(4)
+        .background(SharpitColor.chipSurface, in: RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous))
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.5 : 1)
     }

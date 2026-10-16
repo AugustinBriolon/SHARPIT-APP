@@ -14,22 +14,12 @@ struct SharpitRowIcon: View {
     var background: Color? = nil
 
     @ScaledMetric(relativeTo: .body) private var column: CGFloat = 28
-    @ScaledMetric(relativeTo: .body) private var badgeSize: CGFloat = 30
-    @ScaledMetric(relativeTo: .body) private var symbolSize: CGFloat = 15
+    private let badgeSize: CGFloat = 32
 
     var body: some View {
-        if let background {
-            ZStack {
-                RoundedRectangle(cornerRadius: badgeSize * 0.217, style: .continuous)
-                    .fill(background)
-                    .frame(width: badgeSize, height: badgeSize)
-
-                Image(systemName: symbol)
-                    .font(.system(size: symbolSize, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-            .frame(width: badgeSize, height: badgeSize)
-            .accessibilityHidden(true)
+        if background != nil {
+            // A badged row takes the brand's icon tile: ink, lime glyph (ADR-085).
+            SharpitIconTile(symbol: symbol, size: badgeSize)
         } else {
             Image(systemName: symbol)
                 .font(.body)

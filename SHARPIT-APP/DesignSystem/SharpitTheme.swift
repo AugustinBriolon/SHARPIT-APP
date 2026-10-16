@@ -48,13 +48,23 @@ enum SharpitSpacing {
     static let regularColumn: CGFloat = 760
     /// Gap between the causal-column sections of a screen.
     static let section: CGFloat = lg
-    static let cardPadding: CGFloat = md
+    /// Card padding (`--space-card`).
+    static let cardPadding: CGFloat = SharpitTokens.cardPadding
+    /// Grey inset group padding and the gap between its rows.
+    static let insetPadding: CGFloat = SharpitTokens.insetPadding
+    static let rowGap: CGFloat = SharpitTokens.rowGap
+    /// Horizontal padding inside a row.
+    static let rowPaddingX: CGFloat = SharpitTokens.rowPaddingX
     /// The Human Interface Guidelines' smallest tappable size, in points (`docs/adr/0008`).
     static let minimumTouchTarget: CGFloat = 44
+    /// Button height (`--size-control`).
+    static let controlHeight: CGFloat = SharpitTokens.controlHeight
+    /// Row minimum height (`--size-row`).
+    static let rowHeight: CGFloat = SharpitTokens.rowHeight
 
     /// Card / panel corner — matches the ink verdict continuous radius.
     static let cardRadius: CGFloat = SharpitRadius.panel
-    /// Radius for chips and other controls nested inside a card.
+    /// Radius for neutral chips nested inside a card.
     static let chipRadius: CGFloat = SharpitTokens.radius * 0.75
 }
 

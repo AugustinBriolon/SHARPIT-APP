@@ -226,5 +226,5 @@ extension VolumeSport {
 
     var symbolName: String { activityType?.symbolName ?? "figure.mixed.cardio" }
 
-    var tone: Color { activityType.map { SharpitSportColor.color($0.identity) } ?? SharpitColor.primary }
+    var tone: Color { SharpitColor.foreground }
 }

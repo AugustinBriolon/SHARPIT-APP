@@ -65,26 +65,78 @@ struct CoachWorkingHeader: View {
     }
 }
 
-/// The screen's main action, docked under the content: full width, a touch taller than a
-/// regular glass button (near the HIG's 44 pt), short of the large size that felt heavy.
+/// A full-width action in the brand's three weights (ADR-085): ink for the screen's one main
+/// action, lime for a positive live action (Pause, Valider), neutral chip for a secondary one.
+/// 52 pt tall, 16 pt continuous corner, an optional circled glyph after the title.
 struct SharpitPrimaryButton: View {
+    enum Style {
+        case primary
+        case accent
+        case secondary
+    }
+
     let title: String
+    var style: Style = .primary
+    var trailingSymbol: String? = nil
     var isBusy = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: SharpitSpacing.xs) {
-                if isBusy { ProgressView().tint(SharpitColor.primaryForeground) }
+                if isBusy { ProgressView().tint(foreground) }
                 Text(title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.primaryForeground)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline))
+                if let trailingSymbol {
+                    Image(systemName: trailingSymbol)
+                        .font(.system(size: 20, weight: .semibold))
+                        .symbolRenderingMode(.hierarchical)
+                }
             }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 30)
+            .foregroundStyle(foreground)
+            .frame(maxWidth: .infinity, minHeight: SharpitSpacing.controlHeight)
+            .background(background, in: RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous))
         }
-        .sharpitGlassButton(prominent: true)
-        .tint(SharpitColor.primary)
+        .buttonStyle(.sharpitPressable)
+    }
+
+    private var foreground: Color {
+        switch style {
+        case .primary: SharpitColor.primaryForeground
+        case .accent: SharpitColor.highlightForeground
+        case .secondary: SharpitColor.foreground
+        }
+    }
+
+    private var background: Color {
+        switch style {
+        case .primary: SharpitColor.primary
+        case .accent: SharpitColor.highlight
+        case .secondary: SharpitColor.chipSurface
+        }
+    }
+}
+
+/// « + Ajouter une série »: a dashed outline that reads as a place for something new.
+struct SharpitDashedAddButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: "plus")
+                .labelStyle(.titleAndIcon)
+                .font(SharpitTypography.system(size: 16, weight: .medium, relativeTo: .body))
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight)
+                .overlay(
+                    RoundedRectangle(cornerRadius: SharpitRadius.row, style: .continuous)
+                        .strokeBorder(SharpitColor.mutedForeground.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                )
+                .contentShape(RoundedRectangle(cornerRadius: SharpitRadius.row, style: .continuous))
+        }
+        .buttonStyle(.sharpitPressable)
     }
 }
 
@@ -108,19 +160,18 @@ struct SharpitActionDock<Content: View>: View {
     }
 }
 
-/// A session's sport, as a tinted round mark — the rows of a generated week and of an
+/// A session's sport, as an ink tile with a lime glyph — the rows of a generated week and of an
 /// adjustment carry the same one.
 struct SharpitSportBadge: View {
     let type: V1ActivityType
 
     var body: some View {
-        ZStack {
-            Circle().fill(SharpitSportTone.label(for: type).opacity(0.14)).frame(width: 38, height: 38)
-            Image(sharpitSymbol: type.symbolName)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(SharpitSportTone.label(for: type))
-        }
-        .accessibilityHidden(true)
+        Image(sharpitSymbol: type.symbolName)
+            .font(.system(size: 16, weight: .bold))
+            .foregroundStyle(SharpitSportTone.tileGlyph(for: type))
+            .frame(width: 38, height: 38)
+            .background(SharpitSportTone.tile(for: type), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .accessibilityHidden(true)
     }
 }
 
@@ -133,7 +184,7 @@ struct SharpitKeepToggle: View {
         Button(action: action) {
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.4))
+                .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground.opacity(0.4))
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 44, height: 44)
                 .contentShape(.rect)

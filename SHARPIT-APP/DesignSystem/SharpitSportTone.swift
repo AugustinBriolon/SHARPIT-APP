@@ -1,34 +1,38 @@
 import SwiftUI
 
-/// Sport identity — one chromatic family per activity type, exported from the web.
+/// Sport identity — Ink & Lime (ADR-085): a sport is told by its icon, never its colour.
 ///
-/// The web assigns these in `SPORT_IDENTITY_HEX`: orange run, emerald bike, sky swim,
-/// rose strength, teal triathlon, amber hike, brand green for anything else. Lime Pulse is
-/// never reused here — the highlight stays product punctuation, not a sport.
-///
-/// This is the only place the mapping exists. Feature views used to carry their own
-/// `case .bike: .blue` ladders, which is how the app ended up with a blue bike and a
-/// magenta strength session that matched nothing on the web.
+/// Every sport resolves to the same monochrome treatment, so the mapping stays the one
+/// place feature views ask, and a sport can never drift back into its own hue.
 enum SharpitSportTone {
+    /// Line, stroke and glyph colour — ink on light, near-white on dark.
     static func accent(for type: V1ActivityType) -> Color {
-        SharpitSportColor.color(token(for: type))
+        SharpitColor.foreground
     }
 
-    /// Text drawn in the sport's hue — a tag's word, a glyph on a chip. On dark the raw hue
-    /// sits too close to the canvas (a rose strength tag read at barely 3:1), so it is
-    /// lifted toward the foreground, as the web lightens to its `-300` shade there.
+    /// Text in the sport's slot — same as any foreground text.
     static func label(for type: V1ActivityType) -> Color {
-        SharpitElevatedColor.adaptive(light: accent(for: type), dark: accent(for: type), darkLift: 0.45)
+        SharpitColor.foreground
     }
 
-    /// Chip fill — the web's `bg-{hue}-500/20`.
+    /// Chip fill — the neutral chip.
     static func background(for type: V1ActivityType) -> Color {
-        accent(for: type).opacity(0.2)
+        SharpitColor.chipSurface
     }
 
-    /// Hairline around a chip — the web's `border-{hue}-500/35`.
+    /// Chips carry no outline.
     static func border(for type: V1ActivityType) -> Color {
-        accent(for: type).opacity(0.35)
+        .clear
+    }
+
+    /// Icon tile fill — ink squircle on light, graphite on dark.
+    static func tile(for type: V1ActivityType) -> Color {
+        SharpitColor.inkSurface
+    }
+
+    /// Glyph on the icon tile — lime.
+    static func tileGlyph(for type: V1ActivityType) -> Color {
+        SharpitColor.inkAccent
     }
 
     // MARK: - String-keyed entry point
@@ -58,10 +62,6 @@ enum SharpitSportTone {
     }
 
     // MARK: - Mapping
-
-    private static func token(for type: V1ActivityType) -> SharpitRGBA {
-        type.identity
-    }
 
     private static func type(forLabel sport: String) -> V1ActivityType {
         V1ActivityType(sportLabel: sport)
