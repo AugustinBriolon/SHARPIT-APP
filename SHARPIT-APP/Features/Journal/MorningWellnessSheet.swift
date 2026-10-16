@@ -41,7 +41,7 @@ struct MorningWellnessSheet: View {
                     }
                 }
         }
-        .presentationDetents([.fraction(0.58), .large])
+        .presentationDetents([.fraction(0.8), .large])
         .sharpitSheet()
         .presentationDragIndicator(.visible)
         .task { await store.load() }
@@ -98,31 +98,23 @@ struct MorningWellnessSheet: View {
                     }
                     .padding(.top, SharpitSpacing.xxs)
 
-                    Button {
-                        guard let label = store.submit() else { return }
-                        onCompleted(label)
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 14, weight: .bold))
-                            Text("Enregistrer")
-                                .font(SharpitTypography.bodyEmphasis)
-                        }
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .sharpitShadow(.control)
-                    }
-                    .buttonStyle(.sharpitPressable)
-                    .disabled(!store.canSubmit)
-                    .opacity(store.canSubmit ? 1 : 0.45)
-                    .padding(.top, SharpitSpacing.xxs)
                 }
                 .padding(SharpitSpacing.pageInset)
             }
             .scrollBounceBehavior(.basedOnSize)
+            // Docked, so « Enregistrer » is never cut by the sheet's height.
+            .safeAreaInset(edge: .bottom) {
+                SharpitPrimaryButton(title: "Enregistrer", trailingSymbol: "checkmark") {
+                    guard let label = store.submit() else { return }
+                    onCompleted(label)
+                    dismiss()
+                }
+                .disabled(!store.canSubmit)
+                .opacity(store.canSubmit ? 1 : 0.45)
+                .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.vertical, SharpitSpacing.sm)
+                .background(SharpitColor.background)
+            }
         }
     }
 }
@@ -141,22 +133,9 @@ private struct WellnessDimensionRow: View {
         }
     }
 
-    private var iconColor: Color {
-        switch dimension {
-        case .mood: SharpitColor.primary
-        case .energy: SharpitColor.signalTempo
-        case .soreness: SharpitColor.signalCaution
-        case .stress: SharpitColor.signalVo2
-        }
-    }
-
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: iconName)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(iconColor)
-                .frame(width: 32, height: 32)
-                .background(iconColor.opacity(0.12), in: Circle())
+            JournalRowIcon(symbolName: iconName)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(dimension.title)
