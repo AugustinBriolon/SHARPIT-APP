@@ -82,22 +82,18 @@ struct JournalAnalysesView: View {
             }
 
             if !analyses.lifts.isEmpty {
-                JournalSection(title: "Ce qui t'aide") {
-                    domains(analyses.lifts, tone: SharpitColor.foreground)
-                }
+                group("Ce qui t'aide", analyses.lifts, kind: .lift)
             }
             if !analyses.drags.isEmpty {
-                JournalSection(title: "Ce qui te freine") {
-                    domains(analyses.drags, tone: SharpitColor.signalCaution)
-                }
+                group("Ce qui te freine", analyses.drags, kind: .drag)
             }
             if !analyses.leads.isEmpty {
-                JournalSection(
-                    title: "Pistes à confirmer",
+                group(
+                    "Pistes à confirmer",
+                    analyses.leads,
+                    kind: .lead,
                     hint: "Écart encore fragile : continue à noter avant de changer quoi que ce soit."
-                ) {
-                    domains(analyses.leads, tone: SharpitColor.mutedForeground)
-                }
+                )
             }
 
             SharpitListFooter(
@@ -106,53 +102,96 @@ struct JournalAnalysesView: View {
         }
     }
 
-    private func domains(_ domains: [V1JournalAnalysesDomain], tone: Color) -> some View {
-        VStack(spacing: SharpitSpacing.sm) {
-            ForEach(domains) { domain in
-                JournalAnalysesDomainCard(domain: domain, tone: tone)
+    private func group(
+        _ title: String,
+        _ domains: [V1JournalAnalysesDomain],
+        kind: JournalAnalysesKind,
+        hint: String? = nil
+    ) -> some View {
+        JournalSection(title: title, hint: hint) {
+            VStack(spacing: SharpitSpacing.sm) {
+                ForEach(domains) { domain in
+                    JournalAnalysesDomainCard(domain: domain, kind: kind)
+                }
             }
+        }
+    }
+}
+
+/// Which list a habit sits in, which sets its pill: lime for what helps, caution for what
+/// drags, neutral for what is still to confirm.
+enum JournalAnalysesKind {
+    case lift, drag, lead
+
+    var pill: SharpitPill.Style {
+        switch self {
+        case .lift: .limeSoft
+        case .drag, .lead: .neutral
+        }
+    }
+
+    var tone: Color {
+        switch self {
+        case .lift: SharpitColor.foreground
+        case .drag: SharpitColor.signalCaution
+        case .lead: SharpitColor.mutedForeground
         }
     }
 }
 
 // MARK: - Plate
 
-/// « À retenir »: the verdict, its count, what to try, and what already holds.
+/// « À retenir »: one sentence to act on, how much it rests on, and what already holds.
 private struct JournalAnalysesPlate: View {
     let reading: V1JournalAnalysesReading
 
-    private var muted: Color { SharpitColor.inkSurfaceForeground.opacity(0.68) }
+    private var ink: Color { SharpitColor.inkSurfaceForeground }
+
+    /// The verdict and the hint often say the same thing; the hint is the one to act on.
+    private var sentence: String {
+        reading.actionHint.isEmpty ? reading.verdict : reading.actionHint
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            Text("À retenir")
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(muted)
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            HStack(spacing: SharpitSpacing.sm) {
+                Image(systemName: "lightbulb")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
+                    .background(SharpitColor.highlight, in: RoundedRectangle(cornerRadius: SharpitRadius.tile, style: .continuous))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("À retenir")
+                        .font(SharpitTypography.cardTitle)
+                        .foregroundStyle(ink)
+                    Text(reading.summary)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(ink.opacity(0.6))
+                        .monospacedDigit()
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
 
-            Text(reading.verdict)
-                .font(SharpitTypography.verdict)
-                .tracking(SharpitTypography.verdictTracking)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(reading.summary)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(muted)
-                .monospacedDigit()
-
-            Text(reading.actionHint)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.86))
+            Text(sentence)
+                .font(SharpitTypography.system(size: 22, weight: .bold, relativeTo: .title2))
+                .tracking(-0.3)
+                .foregroundStyle(ink)
                 .fixedSize(horizontal: false, vertical: true)
 
             if !reading.strengths.isEmpty {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                     ForEach(reading.strengths, id: \.self) { strength in
-                        Text("Ce qui tient · \(strength)")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(muted)
+                        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                            Circle()
+                                .fill(SharpitColor.highlight)
+                                .frame(width: 6, height: 6)
+                                .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                            Text(strength)
+                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                                .foregroundStyle(ink.opacity(0.8))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
             }
@@ -166,104 +205,72 @@ private struct JournalAnalysesPlate: View {
 
 // MARK: - Domain
 
-/// One outcome — Sommeil, Récupération, Body Battery — and its habits on a shared axis.
+/// One outcome — Sommeil, Récupération, Body Battery — and each habit that goes with it as a
+/// row: its name and the gap, then « sans → avec » on two points.
 private struct JournalAnalysesDomainCard: View {
     let domain: V1JournalAnalysesDomain
-    let tone: Color
+    let kind: JournalAnalysesKind
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(title: domain.title, symbol: domain.outcome.symbol, tint: tone, showsChevron: false)
-
-            ForEach(Array(domain.rows.enumerated()), id: \.element.id) { index, row in
-                if index > 0 { Divider() }
-                JournalAnalysesRowView(row: row, gridPct: domain.ticks.map(\.pct), tone: tone)
+            SharpitCardHeader(title: domain.title, symbol: domain.outcome.symbol, showsChevron: false)
+            SharpitInsetGroup {
+                ForEach(domain.rows) { row in
+                    JournalAnalysesRowView(row: row, kind: kind)
+                }
             }
-
-            axis
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
     }
-
-    /// The axis's labels, under the last row, placed where the grid lines fall.
-    private var axis: some View {
-        GeometryReader { proxy in
-            ForEach(Array(domain.ticks.enumerated()), id: \.offset) { index, tick in
-                Text(tick.label)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .monospacedDigit()
-                    .fixedSize()
-                    .frame(width: proxy.size.width, alignment: alignment(for: index))
-                    .offset(x: offset(for: tick, index: index, width: proxy.size.width))
-            }
-        }
-        .frame(height: 16)
-        .accessibilityHidden(true)
-    }
-
-    private func alignment(for index: Int) -> Alignment {
-        if index == 0 { return .leading }
-        if index == domain.ticks.count - 1 { return .trailing }
-        return .center
-    }
-
-    /// The first and last labels hug the edges; the middle ones centre on their line.
-    private func offset(for tick: V1JournalAnalysesDomain.Tick, index: Int, width: CGFloat) -> CGFloat {
-        guard index > 0, index < domain.ticks.count - 1 else { return 0 }
-        return width * CGFloat(tick.pct / 100) - width / 2
-    }
 }
 
 private struct JournalAnalysesRowView: View {
     let row: V1JournalAnalysesRow
-    let gridPct: [Double]
-    let tone: Color
+    let kind: JournalAnalysesKind
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                Text(row.habit)
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                if let lag = row.lagLabel {
-                    Text(lag)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+            HStack(alignment: .center, spacing: SharpitSpacing.xs) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(row.habit)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                    if let lag = row.lagLabel {
+                        Text(lag)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
                 }
                 Spacer(minLength: SharpitSpacing.xs)
-                Text(row.deltaLabel)
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(tone)
-                    .monospacedDigit()
+                SharpitPill(row.deltaLabel, style: kind.pill)
             }
 
+            // Two points on one line, no day dots or grid: the gap is the reading.
             SharpitDumbbellTrack(
                 withoutPct: row.withoutPct,
                 withPct: row.withPct,
-                withDaysPct: row.withDaysPct,
-                withoutDaysPct: row.withoutDaysPct,
-                gridPct: gridPct,
-                tone: tone,
+                tone: kind.tone,
                 dashed: row.weak
             )
+            .frame(height: 22)
 
-            Text(row.mediansLabel)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.foreground)
-                .monospacedDigit()
-            Text(row.overlapSentence)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(JournalAnalysesReadout.sample(row))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .monospacedDigit()
+            HStack(alignment: .firstTextBaseline) {
+                Text(row.mediansLabel)
+                    .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: SharpitSpacing.xs)
+                Text(JournalAnalysesReadout.sample(row))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .monospacedDigit()
+            }
         }
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
+        .padding(.vertical, SharpitSpacing.sm)
+        .sharpitSurface(.row)
         .accessibilityElement(children: .combine)
+        .accessibilityHint(row.overlapSentence)
     }
 }
