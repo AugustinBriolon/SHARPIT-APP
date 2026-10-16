@@ -124,7 +124,20 @@ private extension StubReviewClient {
 }
 
 @Test func weeklyFiguresReadAsColours() {
-    #expect(WeeklyReviewTone.ratio(0.8) == SharpitColor.signalRecovery)
+    #expect(WeeklyReviewTone.ratio(0.8) == SharpitColor.foreground)
     #expect(WeeklyReviewTone.ratio(0.4) == SharpitColor.signalRisk)
     #expect(WeeklyReviewTone.sleep(minutes: 380) == SharpitColor.signalCaution)
+}
+
+@Test func theHeroReadsSessionsLoadAndSleep() {
+    var stats = V1WeeklyStats()
+    stats.sessionsDone = 5
+    stats.sessionsPlanned = 6
+    stats.totalLoad = 411.6
+    stats.sleep = .init(avgDurationMin: 432, avgScore: nil)
+    #expect(ReviewHeroFigure.all(from: stats) == [
+        ReviewHeroFigure(caption: "Séances", value: "5", unit: "/6"),
+        ReviewHeroFigure(caption: "Charge", value: "412", unit: nil),
+        ReviewHeroFigure(caption: "Sommeil", value: "7 h", unit: "12"),
+    ])
 }

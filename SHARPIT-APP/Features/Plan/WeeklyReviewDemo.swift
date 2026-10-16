@@ -6,6 +6,7 @@ import SwiftUI
 enum WeeklyReviewDemo {
     static var isRequested: Bool {
         ProcessInfo.processInfo.arguments.contains("-SharpitWeeklyReviewDemo")
+            || UserDefaults.standard.bool(forKey: "SharpitWeeklyReviewDemo")
     }
 }
 
