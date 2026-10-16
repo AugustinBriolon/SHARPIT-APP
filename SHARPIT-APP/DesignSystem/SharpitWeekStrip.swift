@@ -89,7 +89,7 @@ struct SharpitStripDay<Mark: View>: View {
                 .font(SharpitTypography.instrument)
                 .foregroundStyle(figureColor)
                 .frame(width: 34, height: 34)
-                .background(emphasis == .filled ? SharpitColor.inkSurface : Color.clear, in: Circle())
+                .background(emphasis == .filled ? SharpitColor.highlight : Color.clear, in: Circle())
                 .animation(SharpitMotion.selection, value: emphasis == .filled)
 
             mark
@@ -101,7 +101,7 @@ struct SharpitStripDay<Mark: View>: View {
 
     private var figureColor: Color {
         switch emphasis {
-        case .filled: SharpitColor.inkSurfaceForeground
+        case .filled: SharpitColor.highlightForeground
         case .accent: SharpitColor.primary
         case .plain, .unavailable: SharpitColor.foreground
         }

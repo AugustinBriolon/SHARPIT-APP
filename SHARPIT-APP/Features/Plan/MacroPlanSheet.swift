@@ -60,93 +60,44 @@ struct MacroPlanSheet: View {
     // MARK: - Active Plan View
 
     private func activePlanContent(_ plan: V1TrainingPlan) -> some View {
-        ScrollView(.vertical) {
+        let maxLoad = max(plan.weeks.map(\.targetLoad).max() ?? 1, 1)
+        return ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                // Summary Card
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("\(plan.weeks.count) semaines")
-                            .font(SharpitTypography.cardTitle)
-                            .foregroundStyle(SharpitColor.foreground)
+                MacroPlanHero(plan: plan, range: dateRangeString(for: plan))
 
-                        Spacer()
-
-                        if let range = dateRangeString(for: plan) {
-                            Text(range)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                    }
-
-                    MacroPhaseRailView(plan: plan)
-                        .padding(.top, SharpitSpacing.xs)
-
-                    if let summary = plan.summary, !summary.isEmpty {
-                        Text(summary)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .lineSpacing(3)
-                            .padding(.top, SharpitSpacing.xxs)
-                    }
-                }
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
-
-                // Weeks by Phase
-                let grouped = groupWeeksByPhase(plan.weeks)
-                ForEach(grouped, id: \.phase) { group in
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        HStack {
-                            Text(group.phase.label.uppercased())
-                                .font(SharpitTypography.label)
-                                .tracking(SharpitTypography.labelTracking)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-
-                            Text("· \(group.weeks.count) sem.")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.7))
-                        }
-                        .padding(.horizontal, 4)
-
-                        VStack(spacing: 0) {
-                            ForEach(Array(group.weeks.enumerated()), id: \.element.id) { index, week in
-                                MacroWeekRowView(week: week)
-
-                                if index < group.weeks.count - 1 {
-                                    Divider()
-                                        .background(SharpitColor.border.opacity(0.35))
-                                }
+                ForEach(groupWeeksByPhase(plan.weeks), id: \.phase) { group in
+                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                        SharpitCardHeader(
+                            title: group.phase.label,
+                            symbol: group.phase.symbolName,
+                            subtitle: group.weeks.count == 1 ? "1 semaine" : "\(group.weeks.count) semaines",
+                            showsChevron: false
+                        )
+                        SharpitInsetGroup {
+                            ForEach(group.weeks) { week in
+                                MacroWeekRowView(week: week, maxLoad: maxLoad)
                             }
                         }
-                        .padding(.horizontal, SharpitSpacing.cardPadding)
-                        .padding(.vertical, 4)
-                        .sharpitSurface(.panel)
                     }
+                    .padding(SharpitSpacing.cardPadding)
+                    .sharpitSurface(.panel)
                 }
 
-                // Helper footer
-                Text("Ensuite : Remplir ma semaine pour poser les séances, Ajuster le planning pour réarranger la charge.")
+                Text("Ensuite : « Remplir ma semaine » pose les séances, « Ajuster le planning » réarrange la charge.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.75))
-                    .padding(.horizontal, 4)
-                    .padding(.top, SharpitSpacing.xs)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .padding(.horizontal, SharpitSpacing.xxs)
 
-                // Archive Button
                 Button(role: .destructive) {
                     showingArchiveAlert = true
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "archivebox")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text("Archiver ce plan macro")
-                            .font(SharpitTypography.bodyEmphasis)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .foregroundStyle(SharpitColor.destructive)
-                    .sharpitConcentricBackground(SharpitColor.destructive.opacity(0.1), minimum: SharpitRadius.small)
+                    Label("Archiver ce plan macro", systemImage: "archivebox")
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.destructive)
+                        .frame(maxWidth: .infinity, minHeight: SharpitSpacing.controlHeight)
+                        .contentShape(.rect)
                 }
-                .padding(.top, SharpitSpacing.sm)
+                .buttonStyle(.sharpitPressable)
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
@@ -159,84 +110,43 @@ struct MacroPlanSheet: View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "calendar.badge.clock")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(SharpitColor.primary)
-                        Text("Définir un plan macro")
-                            .font(SharpitTypography.cardTitle)
-                            .foregroundStyle(SharpitColor.foreground)
-                    }
-
-                    Text("Une course datée sert de jalon. Le plan macro calcule les blocs de charge et les phases jusqu'à l'objectif, sans poser les séances quotidiennes.")
+                    SharpitCardHeader(
+                        title: "Définir un plan macro",
+                        symbol: "calendar.badge.clock",
+                        showsChevron: false
+                    )
+                    Text("Une course datée sert de jalon. Le plan macro calcule les phases et la charge de chaque semaine jusqu'à elle, sans poser les séances. Les courses B et C avant elle deviennent des étapes.")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
 
                 if datedGoals.isEmpty {
-                    VStack(spacing: SharpitSpacing.sm) {
-                        Image(systemName: "target")
-                            .font(.system(size: 28))
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                        Text("Aucun objectif avec date cible à venir")
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.foreground)
-                        Text("Ajoute un objectif ou une course dans ton profil pour générer un plan macro adapté.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(SharpitSpacing.xl)
-                    .sharpitSurface(.panel)
+                    SharpitStateMessage(
+                        title: "Aucun objectif daté à venir",
+                        symbol: "flag.checkered",
+                        detail: "Ajoute une course dans Objectifs pour générer un plan macro."
+                    )
+                    .frame(minHeight: 240)
                 } else {
-                    VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                        Text("OBJECTIF CIBLÉ")
-                            .font(SharpitTypography.label)
-                            .tracking(SharpitTypography.labelTracking)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-
-                        Picker("Objectif", selection: $selectedGoalId) {
+                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                        SharpitCardHeader(title: "Objectif ciblé", symbol: "flag.checkered", showsChevron: false)
+                        SharpitInsetGroup {
                             ForEach(datedGoals) { goal in
-                                Text(formatGoalLabel(goal)).tag(goal.id)
+                                MacroGoalChoiceRow(
+                                    goal: goal,
+                                    isSelected: goal.id == selectedGoalId
+                                ) { selectedGoalId = goal.id }
                             }
                         }
-                        .pickerStyle(.menu)
-                        .tint(SharpitColor.primary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .sharpitConcentricBackground(SharpitColor.secondary.opacity(0.45), minimum: SharpitSpacing.chipRadius)
-
                         if let errorMessage {
                             Text(errorMessage)
                                 .font(SharpitTypography.meta)
                                 .foregroundStyle(SharpitColor.destructive)
                         }
-
-                        Button {
-                            Task { await generateNewPlan() }
-                        } label: {
-                            HStack(spacing: 8) {
-                                if isGenerating {
-                                    ProgressView()
-                                        .tint(SharpitColor.primaryForeground)
-                                    Text("Génération en cours…")
-                                } else {
-                                    Image(systemName: "wand.and.stars")
-                                    Text("Générer le plan macro")
-                                }
-                            }
-                            .font(SharpitTypography.bodyEmphasis)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .foregroundStyle(SharpitColor.primaryForeground)
-                            .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitRadius.small)
-                        }
-                        .disabled(isGenerating || selectedGoalId.isEmpty)
                     }
                     .padding(SharpitSpacing.cardPadding)
                     .sharpitSurface(.panel)
@@ -244,6 +154,20 @@ struct MacroPlanSheet: View {
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
+        }
+        .safeAreaInset(edge: .bottom) {
+            if !datedGoals.isEmpty {
+                SharpitPrimaryButton(
+                    title: isGenerating ? "Génération en cours…" : "Générer le plan macro",
+                    trailingSymbol: isGenerating ? nil : "sparkles",
+                    isBusy: isGenerating
+                ) {
+                    Task { await generateNewPlan() }
+                }
+                .disabled(isGenerating || selectedGoalId.isEmpty)
+                .padding(.horizontal, SharpitSpacing.pageInset)
+                .padding(.bottom, SharpitSpacing.xs)
+            }
         }
     }
 
@@ -318,14 +242,6 @@ struct MacroPlanSheet: View {
         return "\(start) - \(end)"
     }
 
-    private func formatGoalLabel(_ goal: V1Goal) -> String {
-        guard let date = goal.targetDate else { return goal.title }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "fr_FR")
-        f.dateFormat = "d MMM yyyy"
-        return "\(goal.title) · \(f.string(from: date))"
-    }
-
     private func groupWeeksByPhase(_ weeks: [V1PlanWeek]) -> [(phase: V1PlanPhase, weeks: [V1PlanWeek])] {
         var groups: [(phase: V1PlanPhase, weeks: [V1PlanWeek])] = []
         for week in weeks {
@@ -339,6 +255,92 @@ struct MacroPlanSheet: View {
     }
 }
 
+// MARK: - MacroPlanHero
+
+/// The sheet's one ink card: how long, when, the phases in a rail with the current one lit.
+private struct MacroPlanHero: View {
+    let plan: V1TrainingPlan
+    let range: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
+                    .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(plan.weeks.count) semaines")
+                        .font(SharpitTypography.sectionTitle)
+                        .tracking(SharpitTypography.sectionTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                    if let range {
+                        Text(range)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                }
+            }
+
+            MacroPhaseRailView(plan: plan)
+
+            if let summary = plan.summary, !summary.isEmpty {
+                Text(summary)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .environment(\.colorScheme, .dark)
+        .sharpitSurface(.ink)
+    }
+}
+
+// MARK: - MacroGoalChoiceRow
+
+/// A dated goal to build toward: its name, when, its priority; a check on the one chosen.
+private struct MacroGoalChoiceRow: View {
+    let goal: V1Goal
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(goal.title)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1)
+                    if let date = goal.targetDate {
+                        Text(date.sharpitFormatted(.dateTime.day().month(.abbreviated).year()))
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                }
+                Spacer(minLength: SharpitSpacing.xs)
+                if let priority = goal.priority {
+                    SharpitPill("Course \(priority.rawValue)", style: priority == .a ? .lime : .neutral)
+                }
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground.opacity(0.4))
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .padding(.horizontal, SharpitSpacing.rowPaddingX)
+            .frame(minHeight: SharpitSpacing.rowHeight)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
 // MARK: - MacroPhaseRailView
 
 private struct MacroPhaseRailView: View {
@@ -346,29 +348,32 @@ private struct MacroPhaseRailView: View {
 
     var body: some View {
         let runs = computePhaseRuns(plan.weeks)
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             ForEach(runs, id: \.phase) { run in
-                VStack(alignment: .leading, spacing: 3) {
-                    Rectangle()
-                        .fill(run.isCurrent ? SharpitColor.primary : SharpitColor.border.opacity(0.6))
-                        .frame(height: 3)
-                        .clipShape(Capsule())
-
+                VStack(alignment: .leading, spacing: 6) {
+                    Capsule()
+                        .fill(run.isCurrent ? SharpitColor.highlight : SharpitColor.track)
+                        .frame(height: 6)
                     Text(run.phase.shortLabel)
-                        .font(.system(size: 10, weight: run.isCurrent ? .bold : .medium, design: .rounded))
+                        .font(SharpitTypography.system(size: 12, weight: run.isCurrent ? .bold : .medium, relativeTo: .caption))
                         .foregroundStyle(run.isCurrent ? SharpitColor.foreground : SharpitColor.mutedForeground)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
+                // Each phase as wide as its weeks.
                 .frame(maxWidth: .infinity)
+                .layoutPriority(Double(run.weeks))
             }
         }
     }
 
-    private func computePhaseRuns(_ weeks: [V1PlanWeek]) -> [(phase: V1PlanPhase, isCurrent: Bool)] {
-        var runs: [V1PlanPhase] = []
+    private func computePhaseRuns(_ weeks: [V1PlanWeek]) -> [(phase: V1PlanPhase, weeks: Int, isCurrent: Bool)] {
+        var runs: [(phase: V1PlanPhase, weeks: Int)] = []
         for week in weeks {
-            if runs.last != week.phase {
-                runs.append(week.phase)
+            if runs.last?.phase == week.phase {
+                runs[runs.count - 1].weeks += 1
+            } else {
+                runs.append((week.phase, 1))
             }
         }
 
@@ -382,77 +387,48 @@ private struct MacroPhaseRailView: View {
             return abs(weekStart.timeIntervalSince(currentMonday)) < 86400
         }?.phase
 
-        return runs.map { phase in
-            (phase: phase, isCurrent: phase == currentPhase)
+        return runs.map { run in
+            (phase: run.phase, weeks: run.weeks, isCurrent: run.phase == currentPhase)
         }
     }
 }
 
 // MARK: - MacroWeekRowView
 
+/// A week: its date and what it works, the target load as a figure and a bar against the
+/// plan's heaviest week — lime for this week.
 private struct MacroWeekRowView: View {
     let week: V1PlanWeek
+    let maxLoad: Double
 
     var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(weekDateString(week.weekStart))
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-
-                    if isCurrentWeek(week.weekStart) {
-                        Text("CETTE SEMAINE")
-                            .font(.system(size: 9, weight: .bold))
-                            .tracking(SharpitTypography.labelTracking)
-                            .foregroundStyle(SharpitColor.primary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(SharpitColor.primary.opacity(0.12), in: Capsule())
-                    }
-                }
-
-                if week.isDeload {
-                    Text("Semaine facile")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.foreground)
-                } else if let quality = WeekQualityLabel.from(
-                    focus: week.focus,
-                    phase: week.phase,
-                    isDeload: week.isDeload
-                ) {
-                    Text(quality)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(1)
-                } else if let focus = week.focus, !focus.isEmpty {
-                    Text(focus)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-            }
-
-            Spacer(minLength: SharpitSpacing.xs)
-
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(Int(week.targetLoad))")
-                    .font(SharpitTypography.instrument)
-                    .monospacedDigit()
+        let isCurrent = isCurrentWeek(week.weekStart)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Text(week.weekStart.sharpitFormatted(.dateTime.day().month(.abbreviated)))
+                    .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
-
-                Text("TSS")
+                if isCurrent {
+                    SharpitPill("Cette semaine", style: .lime)
+                }
+                Spacer(minLength: SharpitSpacing.xs)
+                SharpitRowFigure(value: "\(Int(week.targetLoad))", unit: "TSS")
+            }
+            if let quality = WeekQualityLabel.from(focus: week.focus, phase: week.phase, isDeload: week.isDeload) {
+                Text(quality)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(1)
             }
+            SharpitBarTrack(
+                fraction: week.targetLoad / maxLoad,
+                tone: isCurrent ? SharpitColor.highlight : SharpitColor.foreground
+            )
+            .frame(height: 4)
         }
-        .padding(.vertical, 10)
-    }
-
-    private func weekDateString(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "fr_FR")
-        f.dateFormat = "d MMM yyyy"
-        return f.string(from: date)
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
+        .padding(.vertical, SharpitSpacing.sm)
+        .accessibilityElement(children: .combine)
     }
 
     private func isCurrentWeek(_ date: Date) -> Bool {

@@ -17,6 +17,16 @@ enum V1PlanPhase: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    var symbolName: String {
+        switch self {
+        case .base: "square.stack.3d.up"
+        case .build: "chart.line.uptrend.xyaxis"
+        case .peak: "scope"
+        case .taper: "arrow.down.right"
+        case .race: "flag.checkered"
+        }
+    }
+
     var shortLabel: String {
         switch self {
         case .base: "Base"

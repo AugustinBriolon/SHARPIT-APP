@@ -191,9 +191,11 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         }
     }
 
-    var symbolName: String {
-        (V1ActivityType(rawValue: type?.uppercased() ?? "") ?? .other).symbolName
+    var activityType: V1ActivityType {
+        V1ActivityType(rawValue: type?.uppercased() ?? "") ?? .other
     }
+
+    var symbolName: String { activityType.symbolName }
 }
 
 extension Date {

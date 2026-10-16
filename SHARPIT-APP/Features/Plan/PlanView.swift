@@ -665,11 +665,9 @@ private struct PlanFocusSession: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitContainerCorner(SharpitRadius.panelLarge)
-        .background(
-            SharpitColor.analysisSurfaceAlt,
-            in: RoundedRectangle(cornerRadius: SharpitRadius.panelLarge, style: .continuous)
-        )
+        // Plan's one ink card: what comes next. Dark inside, so its tokens resolve light on ink.
+        .environment(\.colorScheme, .dark)
+        .sharpitSurface(.ink)
         .accessibilityElement(children: .combine)
     }
 }
@@ -689,7 +687,7 @@ private struct PlanSportChain: View {
                 }
                 Image(systemName: symbol)
                     .font(font)
-                    .foregroundStyle(SharpitColor.primary)
+                    .foregroundStyle(SharpitColor.highlight)
             }
         }
         .accessibilityHidden(true)
@@ -728,14 +726,13 @@ private struct PlanDayRow: View {
                     .font(SharpitTypography.eyebrow)
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
+                let isToday = Calendar.current.isDateInToday(day)
                 Text(day.sharpitFormatted(.dateTime.day()))
                     .font(SharpitTypography.data)
                     .tracking(SharpitTypography.dataTracking)
-                    .foregroundStyle(
-                        Calendar.current.isDateInToday(day)
-                            ? SharpitColor.primary
-                            : SharpitColor.foreground
-                    )
+                    .foregroundStyle(isToday ? SharpitColor.highlightForeground : SharpitColor.foreground)
+                    .padding(.horizontal, 6)
+                    .background(isToday ? SharpitColor.highlight : .clear, in: Capsule())
             }
             .frame(width: 42)
             Rectangle()
@@ -835,10 +832,7 @@ private struct PlanExecutedCard: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            Image(sharpitSymbol: entry.activity.type.symbolName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(SharpitSportTone.label(for: entry.activity.type))
-                .frame(width: 28, height: 28)
+            SharpitSportBadge(type: entry.activity.type, size: 34)
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                 Text(entry.activity.title ?? entry.activity.type.label)
@@ -904,12 +898,13 @@ private struct PlanComplianceMark: View {
     let score: Double
 
     var body: some View {
+        let followed = score >= 85
         Text("\(Int(score.rounded()))")
             .font(SharpitTypography.instrument)
-            .foregroundStyle(SharpitColor.primaryForeground)
+            .foregroundStyle(followed ? SharpitColor.highlightForeground : SharpitColor.foreground)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, SharpitSpacing.xxs)
-            .background(SharpitColor.primary, in: Capsule())
+            .background(followed ? SharpitColor.highlight : SharpitColor.chipSurface, in: Capsule())
             .accessibilityHidden(true)
     }
 }
@@ -925,12 +920,8 @@ private struct PlanSessionCard: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            Image(sharpitSymbol: session.symbolName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(
-                    state == .missed ? SharpitColor.mutedForeground : SharpitColor.primary
-                )
-                .frame(width: 28, height: 28)
+            SharpitSportBadge(type: session.activityType, size: 34)
+                .opacity(state == .missed ? 0.4 : 1)
             VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                 Text(session.title ?? session.displayType)
                     .font(SharpitTypography.bodyEmphasis)
