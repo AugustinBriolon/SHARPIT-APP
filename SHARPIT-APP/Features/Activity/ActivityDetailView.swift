@@ -1104,16 +1104,25 @@ private struct ActivityDetailContent: View {
     private var coachAnalysis: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(
-                title: detail.narrativeAnalysis?.headline ?? "Analyse du coach",
-                symbol: "text.bubble",
-                subtitle: detail.narrativeAnalysis == nil ? "Prête à être générée" : "Analyse du coach",
+                title: "Analyse du coach",
+                symbol: "sparkles",
+                subtitle: detail.narrativeAnalysis == nil ? "Prête à être générée" : nil,
                 showsChevron: false
             )
             if let narrative = detail.narrativeAnalysis {
-                Text(narrative.narrative)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineSpacing(4)
+                // The headline opens the body, whole: too long for a card title, and cut there.
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    Text(narrative.headline)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(narrative.narrative)
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineSpacing(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .textSelection(.enabled)
             } else {
                 Text("SharpIt croise ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")
                     .font(SharpitTypography.body)
@@ -1400,7 +1409,8 @@ struct ActivitySplit: Identifiable, Equatable {
             return ActivitySplit(
                 id: index,
                 distanceLabel: endDistance - startDistance < segmentDistance
-                    ? String(format: "%.1f km", distance / 1_000).replacingOccurrences(of: ".", with: ",")
+                    // Where the split ends, like the whole ones: « 13,8 km », not its own 3,8.
+                    ? String(format: "%.1f km", endDistance / 1_000).replacingOccurrences(of: ".", with: ",")
                     : "\(Int(endDistance / 1_000)) km",
                 paceSeconds: pace,
                 variation: (pace / overallPace - 1) * 100,
@@ -1477,7 +1487,9 @@ struct ActivitySplitsSection: View {
                 .frame(height: 6)
             }
             VStack(alignment: .trailing, spacing: 2) {
-                Text(split.heartRate.map { "\(Int($0.rounded())) bpm" } ?? "—")
+                if let heartRate = split.heartRate {
+                    Text("\(Int(heartRate.rounded())) bpm")
+                }
                 Text("+\(Int(split.elevationGain.rounded())) m")
             }
             .font(SharpitTypography.meta.monospacedDigit())
