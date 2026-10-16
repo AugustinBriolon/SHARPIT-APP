@@ -408,10 +408,10 @@ private struct TodayFoldView: View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if let controls {
-                    // Tucked under the date and closer to the verdict: the chips belong to the title.
+                    // Air under the date, then close to the verdict: the chips lead into the day.
                     controls
-                        .padding(.top, -SharpitSpacing.xxs)
-                        .padding(.bottom, -SharpitSpacing.xxs)
+                        .padding(.top, SharpitSpacing.xxs)
+                        .padding(.bottom, -SharpitSpacing.xs)
                 }
                 if let race = fold.race {
                     TodayRaceLink(race: race, tokenProvider: tokenProvider)

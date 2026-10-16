@@ -49,14 +49,15 @@ extension View {
 extension View {
     /// A labelled control in a row of glass chips — Résumé's mode, Journal and weather under
     /// the date. Glass because the row floats over the scrolled fold.
+    /// Drawn at 34 pt so the row stays light under the date; the tap still gets Apple's 44.
     func sharpitGlassChip() -> some View {
         self
             .font(SharpitTypography.meta.weight(.semibold))
             .padding(.horizontal, SharpitSpacing.sm)
-            .padding(.vertical, SharpitSpacing.xs)
-            .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+            .frame(minHeight: 34)
             .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.chipSurface)
-            .contentShape(Capsule())
+            .padding(.vertical, (SharpitSpacing.minimumTouchTarget - 34) / 2)
+            .contentShape(Rectangle())
     }
 }
 
