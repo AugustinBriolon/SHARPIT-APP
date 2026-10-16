@@ -67,3 +67,12 @@ private struct StubQuota: CoachQuotaServing {
 
     #expect(coach.quota?.remainingQuestions == 3)
 }
+
+@Test func aSpentBudgetBlocksSendingUntilItsWaitRunsOut() {
+    let readAt = Date(timeIntervalSince1970: 1_000)
+    let spent = quota(remaining: 0, usedRatio: 1, retryAfter: 600)
+    #expect(CoachQuotaReadout.isSpent(spent, readAt: readAt, now: readAt.addingTimeInterval(60)))
+    #expect(!CoachQuotaReadout.isSpent(spent, readAt: readAt, now: readAt.addingTimeInterval(601)))
+    #expect(!CoachQuotaReadout.isSpent(quota(remaining: 2, usedRatio: 0.7), readAt: readAt, now: readAt))
+    #expect(!CoachQuotaReadout.isSpent(nil, readAt: nil))
+}

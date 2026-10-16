@@ -27,6 +27,8 @@ final class CoachStore {
     /// What is left of the coach budget, read on open and after each answer. Nil until read,
     /// and kept as it was when a read fails.
     private(set) var quota: V1CoachQuota?
+    /// When `quota` was read, so its wait counts from then.
+    private(set) var quotaReadAt: Date?
 
     /// Called when the server carried out an approved change, so Plan and Résumé reload.
     var onCalendarChanged: (() -> Void)?
@@ -65,6 +67,7 @@ final class CoachStore {
                 return false
             }
             self.quota = fresh
+            self.quotaReadAt = .now
             return true
         }
     }
@@ -76,8 +79,10 @@ final class CoachStore {
     }
 
     var canSend: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isReplying
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isReplying && !isOutOfQuota
     }
+
+    var isOutOfQuota: Bool { CoachQuotaReadout.isSpent(quota, readAt: quotaReadAt) }
 
     var isEmpty: Bool { messages.isEmpty }
 

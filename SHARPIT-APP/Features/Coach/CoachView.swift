@@ -485,6 +485,9 @@ struct CoachView: View {
                 )
         }
         .buttonStyle(.plain)
+        // Spent budget: the question stays in the field, the send waits for the quota card's time.
+        .disabled(action == .send && store.isOutOfQuota)
+        .opacity(action == .send && store.isOutOfQuota ? 0.4 : 1)
         .accessibilityLabel(action.accessibilityLabel)
         .animation(SharpitMotion.selection, value: action)
     }

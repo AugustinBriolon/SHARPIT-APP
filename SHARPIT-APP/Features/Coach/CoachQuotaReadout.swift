@@ -15,6 +15,13 @@ nonisolated enum CoachQuotaReadout {
         }
     }
 
+    /// Whether the budget is spent right now: the server's wait, counted from when it was read,
+    /// has not run out. The composer will not send then — the server would refuse it.
+    static func isSpent(_ quota: V1CoachQuota?, readAt: Date?, now: Date = .now) -> Bool {
+        guard let wait = quota?.retryAfterSeconds, let readAt else { return false }
+        return now < readAt.addingTimeInterval(TimeInterval(wait))
+    }
+
     /// Free athletes are told Pro buys more, once the gauge shows.
     static func offersPro(_ quota: V1CoachQuota) -> Bool {
         !quota.isPro && line(quota) != nil
