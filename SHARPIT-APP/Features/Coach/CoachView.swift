@@ -17,6 +17,8 @@ struct CoachView: View {
     @State private var showingMemory = false
     @FocusState private var composerIsFocused: Bool
     @State private var showsJumpToLatest = false
+    /// The quota card, closed by the athlete; it comes back with the next question typed.
+    @State private var isQuotaNoticeHidden = false
     @State private var scrollPosition = ScrollPosition(idType: String.self)
     @State private var dictation = CoachDictation()
     /// Set by a send, so only a question just asked rises to the top.
@@ -197,8 +199,6 @@ struct CoachView: View {
             .scrollTargetLayout()
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
-            // One selection surface for the thread — drag can cross Moi/Coach turns.
-            .textSelection(.enabled)
         }
         .scrollPosition($scrollPosition)
         // A thumb moving on the thread puts the keyboard away at once — even on an empty
@@ -285,26 +285,55 @@ struct CoachView: View {
         store.isReplying && message.role == .assistant && message.id == store.messages.last?.id
     }
 
-    /// What is left of the coach budget, once half of it is spent: a thin bar of what remains
-    /// and the line that counts it; a Free athlete is shown where more comes from.
+    /// What is left of the coach budget, once half of it is spent: an information card over the
+    /// composer — its own surface, so it never reads through the thread — with a thin bar of
+    /// what remains, « Passer Pro » for a Free athlete, and a close that holds until the next
+    /// keystroke, since the budget matters again the moment a question is being written.
     private func quotaGauge(_ quota: V1CoachQuota, line: String) -> some View {
         let spent = quota.retryAfterSeconds != nil
-        return VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+        let tone = spent ? SharpitColor.signalCaution : SharpitColor.foreground
+        return HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+            Image(systemName: spent ? "hourglass" : "gauge.with.dots.needle.33percent")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tone)
+                .frame(width: 20)
+                .padding(.top, 1)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 Text(line)
-                    .foregroundStyle(spent ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
-                Spacer(minLength: 0)
+                    .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline))
+                    .foregroundStyle(tone)
+                    .fixedSize(horizontal: false, vertical: true)
+                ProgressView(value: 1 - quota.usedRatio)
+                    .tint(spent ? SharpitColor.signalCaution : SharpitColor.foreground)
+                    .accessibilityHidden(true)
                 if CoachQuotaReadout.offersPro(quota) {
                     Button("Passer Pro") { router.openSettings(on: .pro) }
-                        .fontWeight(.semibold)
-                        .foregroundStyle(SharpitColor.primary)
+                        .font(SharpitTypography.meta.weight(.semibold))
+                        .foregroundStyle(SharpitColor.foreground)
                 }
             }
-            .font(SharpitTypography.meta)
-            ProgressView(value: 1 - quota.usedRatio)
-                .tint(spent ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
-                .accessibilityHidden(true)
+            Spacer(minLength: 0)
+            Button {
+                withAnimation(SharpitMotion.reveal) { isQuotaNoticeHidden = true }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .frame(width: 28, height: 28)
+                    .background(SharpitColor.chipSurface, in: Circle())
+                    .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, -10)
+            .padding(.trailing, -10)
+            .accessibilityLabel("Masquer")
         }
+        .padding(SharpitSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 
     /// The composer's one height — the smallest tappable size, for the field and both circles.
@@ -318,7 +347,7 @@ struct CoachView: View {
                     .foregroundStyle(SharpitColor.signalCaution)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            if let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
+            if !isQuotaNoticeHidden, let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
                 quotaGauge(quota, line: line)
             }
             if let context = store.pendingContext {
@@ -342,6 +371,9 @@ struct CoachView: View {
                             .focused($composerIsFocused)
                             // Return at end of a clean line = send. Paste with newlines stays editable.
                             .onChange(of: store.draft) { old, new in
+                                if old.isEmpty, !new.isEmpty, isQuotaNoticeHidden {
+                                    withAnimation(SharpitMotion.reveal) { isQuotaNoticeHidden = false }
+                                }
                                 guard new.contains("\n") else { return }
                                 if CoachComposerDraft.shouldSendOnNewline(old: old, new: new) {
                                     store.draft = String(new.dropLast())
@@ -509,11 +541,11 @@ private struct CoachMessageRow: View {
                 if let context = message.context {
                     CoachContextTag(context: context)
                 }
+                // A question is copied whole, on a long press: no selection handles on one's own words.
                 Text(message.text)
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground)
                     .multilineTextAlignment(.leading)
-                    .textSelection(.enabled)
                     .padding(.horizontal, SharpitSpacing.md)
                     .padding(.vertical, SharpitSpacing.sm)
                     .background(
@@ -522,7 +554,7 @@ private struct CoachMessageRow: View {
                     )
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
-            .coachCopyMenu(CoachMessageCopy.labeledTurn(message))
+            .coachCopyMenu(CoachMessageCopy.plainText(of: message))
 
         case .assistant:
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -530,9 +562,9 @@ private struct CoachMessageRow: View {
                 ForEach(CoachSegment.segments(of: message)) { segment in
                     switch segment {
                     case .text(_, let text):
-                        // One Text (AttributedString) so selection spans the whole prose block.
+                        // One Text (AttributedString) so a selection can take any part of it;
+                        // no context menu here, it would take the long press from the selection.
                         coachProse(text)
-                            .coachCopyMenu(CoachMessageCopy.labeledTurn(message))
                     case .proposal(let proposal):
                         CoachProposalCard(proposal: proposal, onAnswer: answer(for: proposal))
                     case .foodLog(let proposal):
@@ -547,6 +579,8 @@ private struct CoachMessageRow: View {
                 }
                 if isStreaming {
                     CoachWritingMark()
+                } else if !CoachMessageCopy.plainText(of: message).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    CoachCopyButton(text: CoachMessageCopy.plainText(of: message))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -571,6 +605,34 @@ private struct CoachMessageRow: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+/// Copies a whole reply: a quiet glyph at its end that turns into a check for a moment, so the
+/// tap is confirmed where it was made, then settles back.
+private struct CoachCopyButton: View {
+    let text: String
+    @State private var copied = false
+
+    var body: some View {
+        Button {
+            UIPasteboard.general.string = text
+            withAnimation(SharpitMotion.selection) { copied = true }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1.6))
+                withAnimation(SharpitMotion.selection) { copied = false }
+            }
+        } label: {
+            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(copied ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, -SharpitSpacing.xs)
+        .accessibilityLabel(copied ? "Copié" : "Copier la réponse")
     }
 }
 
