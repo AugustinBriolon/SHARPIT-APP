@@ -316,11 +316,7 @@ private struct ActivityRow: View {
                         .tracking(SharpitTypography.cardTitleTracking)
                         .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(1)
-                    // A planned session says how closely it was followed, once the analysis has run.
-                    if let score = activity.plannedSession?.analysis?.complianceScore.map({ Int($0.rounded()) }) {
-                        SharpitPill("\(score) %", style: score >= 85 ? .limeSoft : .neutral)
-                            .accessibilityLabel("\(score) % conforme au plan")
-                    } else if activity.plannedSession != nil {
+                    if activity.plannedSession != nil {
                         SharpitPill("Plan")
                     }
                 }
