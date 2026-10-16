@@ -36,6 +36,7 @@ struct GuidedStrengthWorkoutView: View {
     /// Interactive-pop drag from the leading edge (exercise / rest → overview).
     @State private var edgeBackOffset: CGFloat = 0
     @StateObject private var heartRate = GuidedHeartRateMonitor()
+    @State private var showingHeartRatePicker = false
 
     private enum FieldFocus: Hashable {
         case reps(UUID)
@@ -99,6 +100,9 @@ struct GuidedStrengthWorkoutView: View {
         .interactiveDismissDisabled(isSaving)
         .background(SharpitCanvasBackground())
         .sharpitRegularColumn()
+        .sheet(isPresented: $showingHeartRatePicker) {
+            GuidedHeartRatePickerSheet(monitor: heartRate)
+        }
         .onAppear {
             publishLiveActivityIfNeeded()
             heartRate.startIfEnabled()
@@ -185,22 +189,16 @@ struct GuidedStrengthWorkoutView: View {
         }
     }
 
-    /// Tap to enable BLE HR and scan — no need to dig into Settings first.
+    /// Tap opens the BLE device picker. BPM only after a real connection.
     /// Toolbar `Label` drops its title; use Image + Text so the bpm stays visible.
     private var sessionHeartRateChip: some View {
         Button {
-            if GuidedHeartRatePreference.isEnabled {
-                GuidedHeartRatePreference.setEnabled(false)
-                heartRate.stop()
-            } else {
-                GuidedHeartRatePreference.setEnabled(true)
-                heartRate.startIfEnabled()
-            }
+            showingHeartRatePicker = true
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: heartRateChipSymbol)
                     .font(SharpitTypography.meta)
-                if let bpm = heartRate.bpm, GuidedHeartRatePreference.isEnabled {
+                if let bpm = heartRate.bpm, heartRate.status == .connected {
                     Text("\(bpm)")
                         .font(SharpitTypography.bodyEmphasis)
                         .monospacedDigit()
@@ -215,17 +213,17 @@ struct GuidedStrengthWorkoutView: View {
             .foregroundStyle(heartRateChipColor)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
+            .fixedSize(horizontal: true, vertical: false)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         // Force the toolbar to refresh when bpm ticks (principal placement can stall).
-        .id(heartRate.bpm ?? -1)
+        .id("\(heartRate.status)-\(heartRate.bpm ?? -1)")
         .accessibilityLabel(heartRateAccessibilityLabel)
-        .accessibilityHint("Active ou coupe le capteur cardiaque Bluetooth")
+        .accessibilityHint("Choisir un capteur cardiaque Bluetooth")
     }
 
     private var heartRateChipSymbol: String {
-        guard GuidedHeartRatePreference.isEnabled else { return "heart" }
         switch heartRate.status {
         case .connected: return "heart.fill"
         case .unauthorized, .unavailable: return "heart.slash"
@@ -234,36 +232,30 @@ struct GuidedStrengthWorkoutView: View {
     }
 
     private var heartRateChipTitle: String {
-        guard GuidedHeartRatePreference.isEnabled else { return "FC" }
         switch heartRate.status {
         case .scanning, .connecting: return "…"
-        case .unauthorized, .unavailable: return "FC"
         case .connected where heartRate.bpm == nil: return "…"
+        case .connected: return "FC"
         default: return "FC"
         }
     }
 
     private var heartRateChipColor: Color {
-        if GuidedHeartRatePreference.isEnabled, heartRate.bpm != nil {
-            return SharpitColor.destructive
-        }
-        if GuidedHeartRatePreference.isEnabled, heartRate.status == .connected {
+        if heartRate.status == .connected {
             return SharpitColor.destructive
         }
         return SharpitColor.mutedForeground
     }
 
     private var heartRateAccessibilityLabel: String {
-        if !GuidedHeartRatePreference.isEnabled {
-            return "Connecter un capteur cardiaque"
-        }
-        if let bpm = heartRate.bpm {
+        if let bpm = heartRate.bpm, heartRate.status == .connected {
             return "Fréquence cardiaque \(bpm) battements par minute"
         }
         switch heartRate.status {
         case .scanning, .connecting: return "Recherche du capteur cardiaque"
         case .unauthorized, .unavailable: return "Capteur cardiaque indisponible"
-        default: return "Capteur cardiaque"
+        case .connected: return "Capteur cardiaque connecté"
+        default: return "Connecter un capteur cardiaque"
         }
     }
 
@@ -530,10 +522,21 @@ struct GuidedStrengthWorkoutView: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .focused($focusedField, equals: .duration(set.id))
                         .frame(minWidth: 44, maxWidth: 72, alignment: .leading)
-                        .accessibilityLabel("Durée en secondes")
-                    Text("s")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .accessibilityLabel(set.durationUsesMinutes ? "Durée en minutes" : "Durée en secondes")
+                    Button {
+                        session.setUsesDuration(id: set.id, false)
+                        focusedField = nil
+                    } label: {
+                        Text(set.durationUsesMinutes ? "min" : "s")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.primary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Passer en kilos")
+                    .accessibilityHint("Affiche répétitions et charge")
                     Spacer(minLength: 0)
                 } else {
                     TextField("0", text: repsText(for: set.id))
@@ -560,9 +563,20 @@ struct GuidedStrengthWorkoutView: View {
                         .frame(minWidth: 52, maxWidth: 80, alignment: .leading)
                         .accessibilityLabel("Charge en kilogrammes")
 
-                    Text("kg")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                    Button {
+                        session.setUsesDuration(id: set.id, true)
+                        focusedField = nil
+                    } label: {
+                        Text("kg")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.primary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Passer en durée")
+                    .accessibilityHint("Affiche une durée en minutes")
 
                     Spacer(minLength: 0)
                 }
@@ -589,6 +603,9 @@ struct GuidedStrengthWorkoutView: View {
             .padding(.horizontal, SharpitSpacing.sm)
             .padding(.vertical, SharpitSpacing.sm)
             .background(SharpitColor.analysisSurface, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
+            .scaleEffect(set.isDone ? 0.97 : 1)
+            .opacity(set.isDone ? 0.72 : 1)
+            .animation(SharpitMotion.reveal, value: set.isDone)
         }
     }
 
@@ -894,21 +911,10 @@ struct GuidedStrengthWorkoutView: View {
     // MARK: - Actions
 
     private func completeSet(id: UUID) {
-        guard let index = session.targets.firstIndex(where: { $0.id == id }) else { return }
-        let completed = session.targets[index]
+        guard session.targets.contains(where: { $0.id == id }) else { return }
         session.completeSet(id: id)
         SharpitHaptics.play(.notch(major: true))
         AudioServicesPlaySystemSound(1057)
-
-        let nextSame = session.targets.first {
-            $0.exerciseName == completed.exerciseName && !$0.isDone && !$0.isSkipped
-        }
-        if let rest = completed.restSec, completed.restIsTimed, rest > 0, nextSame != nil {
-            SharpitMotion.run {
-                startRest(seconds: rest, next: nextSame)
-                phase = .resting
-            }
-        }
     }
 
     private func startRest(seconds: Int, next: GuidedStrengthSetTarget? = nil) {
@@ -1120,15 +1126,22 @@ struct GuidedStrengthWorkoutView: View {
         Binding(
             get: {
                 if focusedField == .duration(id), let draft = durationDraft[id] { return draft }
-                guard let sec = session.targets.first(where: { $0.id == id })?.loggedDurationSec else { return "" }
+                guard let set = session.targets.first(where: { $0.id == id }),
+                      let sec = set.loggedDurationSec
+                else { return "" }
+                if set.durationUsesMinutes {
+                    return "\(max(sec / 60, sec > 0 ? 1 : 0))"
+                }
                 return "\(sec)"
             },
             set: { text in
                 durationDraft[id] = text
                 guard let index = session.targets.firstIndex(where: { $0.id == id }) else { return }
                 let digits = text.filter(\.isNumber)
+                let usesMinutes = session.targets[index].durationUsesMinutes
                 if let value = Int(digits) {
-                    session.targets[index].loggedDurationSec = min(max(value, 0), 3600)
+                    let sec = usesMinutes ? min(max(value, 0), 180) * 60 : min(max(value, 0), 3600)
+                    session.targets[index].loggedDurationSec = sec
                 } else if digits.isEmpty {
                     session.targets[index].loggedDurationSec = 0
                 }

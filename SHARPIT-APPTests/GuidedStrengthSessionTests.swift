@@ -235,3 +235,34 @@ import Testing
     #expect(preview.canFollowOnPhone)
     #expect(preview.strengthPrescription != nil)
 }
+
+@Test func flippingASetBetweenKgAndMinutes() throws {
+    let prescription: JSONValue = .object([
+        "sets": .array([
+            .object([
+                "exercise": .string("Squat"),
+                "sets": .number(1),
+                "reps": .number(8),
+                "weightKg": .number(60),
+                "order": .number(0),
+            ]),
+        ]),
+    ])
+    var session = try #require(GuidedStrengthSession.make(
+        title: "Test",
+        plannedSessionId: nil,
+        prescription: prescription
+    ))
+    let id = session.targets[0].id
+    #expect(session.targets[0].usesDuration == false)
+    session.setUsesDuration(id: id, true)
+    #expect(session.targets[0].usesDuration == true)
+    #expect(session.targets[0].loggedDurationSec == 60)
+    #expect(session.targets[0].durationUsesMinutes == true)
+    session.targets[0].loggedDurationSec = 60
+    session.completeSet(id: id)
+    let draft = session.activityDraft()
+    #expect(draft.exercises[0].durationSec == 60)
+    #expect(draft.exercises[0].weightKg == nil)
+    #expect(draft.exercises[0].reps == 0)
+}

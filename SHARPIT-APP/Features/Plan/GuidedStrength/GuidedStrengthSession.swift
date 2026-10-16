@@ -18,13 +18,21 @@ struct GuidedStrengthSetTarget: Identifiable, Equatable, Sendable {
     var loggedReps: Int
     var loggedWeightKg: Double?
     var loggedDurationSec: Int?
+    /// Athlete can flip a set between load (reps × kg) and timed hold (min / s).
+    var usesDuration: Bool
     var isDone: Bool
     var isSkipped: Bool
 
-    var isHold: Bool { (targetDurationSec ?? 0) > 0 && targetReps == 0 }
+    var isHold: Bool { usesDuration }
+
+    /// Edit duration in whole minutes when the hold is ≥ 60 s (or unset).
+    var durationUsesMinutes: Bool {
+        let sec = loggedDurationSec ?? targetDurationSec ?? 0
+        return sec == 0 || sec >= 60
+    }
 
     var targetLine: String {
-        if let duration = targetDurationSec, duration > 0, targetReps == 0 {
+        if let duration = targetDurationSec, duration > 0, targetReps == 0 || usesDuration {
             return PlannedSessionFormat.durationSeconds(duration)
         }
         var parts = ["\(targetReps) rep\(targetReps == 1 ? "" : "s")"]
@@ -44,6 +52,10 @@ struct GuidedStrengthSetTarget: Identifiable, Equatable, Sendable {
             return "\(reps) × \(Self.kilograms(kg))"
         }
         return "\(reps) rep\(reps == 1 ? "" : "s")"
+    }
+
+    static func defaultUsesDuration(reps: Int, durationSec: Int?) -> Bool {
+        (durationSec ?? 0) > 0 && reps == 0
     }
 
     static func kilograms(_ value: Double) -> String {
@@ -127,6 +139,10 @@ struct GuidedStrengthSession: Equatable, Sendable {
                         loggedReps: max(exercise.reps, exercise.durationSec == nil ? 1 : 0),
                         loggedWeightKg: exercise.weightKg,
                         loggedDurationSec: exercise.durationSec,
+                        usesDuration: GuidedStrengthSetTarget.defaultUsesDuration(
+                            reps: exercise.reps,
+                            durationSec: exercise.durationSec
+                        ),
                         isDone: false,
                         isSkipped: false
                     )
@@ -226,11 +242,26 @@ struct GuidedStrengthSession: Equatable, Sendable {
             loggedReps: last.loggedReps,
             loggedWeightKg: last.loggedWeightKg,
             loggedDurationSec: last.loggedDurationSec,
+            usesDuration: last.usesDuration,
             isDone: false,
             isSkipped: false
         )
         targets.insert(inserted, at: lastIndex + 1)
         renumber(exercise: name)
+    }
+
+    /// Flip a set between load (reps × kg) and timed hold.
+    mutating func setUsesDuration(id: UUID, _ on: Bool) {
+        guard let index = targets.firstIndex(where: { $0.id == id }) else { return }
+        targets[index].usesDuration = on
+        if on {
+            if (targets[index].loggedDurationSec ?? 0) <= 0 {
+                targets[index].loggedDurationSec = targets[index].targetDurationSec ?? 60
+            }
+            targets[index].loggedReps = 0
+        } else if targets[index].loggedReps <= 0 {
+            targets[index].loggedReps = max(targets[index].targetReps, 1)
+        }
     }
 
     /// Keeps at least one set per exercise so the card never goes empty mid-follow.
@@ -256,6 +287,7 @@ struct GuidedStrengthSession: Equatable, Sendable {
         targets[next].loggedReps = source.loggedReps
         targets[next].loggedWeightKg = source.loggedWeightKg
         targets[next].loggedDurationSec = source.loggedDurationSec
+        targets[next].usesDuration = source.usesDuration
     }
 
     private mutating func renumber(exercise name: String) {
@@ -283,9 +315,9 @@ struct GuidedStrengthSession: Equatable, Sendable {
             return StrengthExerciseDraft(
                 name: name,
                 sets: done.count,
-                reps: last.loggedReps,
-                weightKg: last.loggedWeightKg,
-                durationSec: last.loggedDurationSec
+                reps: last.usesDuration ? 0 : last.loggedReps,
+                weightKg: last.usesDuration ? nil : last.loggedWeightKg,
+                durationSec: last.usesDuration ? last.loggedDurationSec : nil
             )
         }
     }

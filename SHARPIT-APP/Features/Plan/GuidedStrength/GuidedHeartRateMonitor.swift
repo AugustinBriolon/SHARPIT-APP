@@ -21,6 +21,11 @@ enum HeartRateMeasurement {
 ///
 /// `CBCentralManager` runs on the main queue; published fields are updated on main.
 final class GuidedHeartRateMonitor: NSObject, ObservableObject {
+    struct Device: Identifiable, Equatable {
+        let id: UUID
+        let name: String
+    }
+
     enum Status: Equatable {
         case idle
         case unavailable
@@ -33,27 +38,85 @@ final class GuidedHeartRateMonitor: NSObject, ObservableObject {
     @Published private(set) var bpm: Int?
     @Published private(set) var status: Status = .idle
     @Published private(set) var peripheralName: String?
+    @Published private(set) var devices: [Device] = []
 
     private var central: CBCentralManager?
     private var peripheral: CBPeripheral?
     private var measurementCharacteristic: CBCharacteristic?
+    private var knownPeripherals: [UUID: CBPeripheral] = [:]
     private var wantsRunning = false
+    /// Resume path: reconnect last peripheral without waiting for picker selection.
+    private var preferLastPeripheral = false
 
+    /// Session appear — reconnect only when the athlete already opted in.
     func startIfEnabled() {
         guard GuidedHeartRatePreference.isEnabled else {
             stop()
             return
         }
         wantsRunning = true
-        if central == nil {
-            central = CBCentralManager(delegate: self, queue: .main)
-        } else {
-            handleCentralState(central?.state ?? .unknown)
+        preferLastPeripheral = true
+        ensureCentral()
+    }
+
+    /// Picker sheet — scan and list devices; never auto-connects the first hit.
+    func startScanningForPicker() {
+        wantsRunning = true
+        preferLastPeripheral = false
+        devices = []
+        knownPeripherals = [:]
+        if let peripheral {
+            knownPeripherals[peripheral.identifier] = peripheral
+            upsertDevice(peripheral, name: Self.displayName(for: peripheral))
         }
+        ensureCentral()
+        if central?.state == .poweredOn {
+            beginScanKeepingConnection()
+        }
+    }
+
+    /// Sheet dismissed — stop advertising scan; keep an active link if any.
+    func endPickerScan() {
+        central?.stopScan()
+        if peripheral != nil, status == .connected || status == .connecting {
+            return
+        }
+        if GuidedHeartRatePreference.isEnabled {
+            preferLastPeripheral = true
+            reconnectOrScan()
+            return
+        }
+        stop()
+    }
+
+    func connect(to id: UUID) {
+        let target = knownPeripherals[id]
+            ?? central?.retrievePeripherals(withIdentifiers: [id]).first
+        guard let target else { return }
+        GuidedHeartRatePreference.setEnabled(true)
+        wantsRunning = true
+        preferLastPeripheral = false
+        if let peripheral, peripheral.identifier != id {
+            if let measurementCharacteristic {
+                peripheral.setNotifyValue(false, for: measurementCharacteristic)
+            }
+            central?.cancelPeripheralConnection(peripheral)
+            self.peripheral = nil
+            self.measurementCharacteristic = nil
+            bpm = nil
+        }
+        connect(target)
+    }
+
+    func disconnectAndDisable() {
+        GuidedHeartRatePreference.setEnabled(false)
+        GuidedHeartRatePreference.lastPeripheralUUID = nil
+        stop()
     }
 
     func stop() {
         wantsRunning = false
+        preferLastPeripheral = false
         if let peripheral, let measurementCharacteristic {
             peripheral.setNotifyValue(false, for: measurementCharacteristic)
         }
@@ -63,9 +126,19 @@ final class GuidedHeartRateMonitor: NSObject, ObservableObject {
         central?.stopScan()
         peripheral = nil
         measurementCharacteristic = nil
+        knownPeripherals = [:]
+        devices = []
         bpm = nil
         peripheralName = nil
         status = .idle
+    }
+
+    private func ensureCentral() {
+        if central == nil {
+            central = CBCentralManager(delegate: self, queue: .main)
+        } else {
+            handleCentralState(central?.state ?? .unknown)
+        }
     }
 
     private func handleCentralState(_ state: CBManagerState) {
@@ -83,12 +156,19 @@ final class GuidedHeartRateMonitor: NSObject, ObservableObject {
     }
 
     private func reconnectOrScan() {
-        if let id = GuidedHeartRatePreference.lastPeripheralUUID,
+        if preferLastPeripheral,
+           let id = GuidedHeartRatePreference.lastPeripheralUUID,
            let known = central?.retrievePeripherals(withIdentifiers: [id]).first {
             connect(known)
             return
         }
-        status = .scanning
+        beginScanKeepingConnection()
+    }
+
+    private func beginScanKeepingConnection() {
+        if status != .connected, status != .connecting {
+            status = .scanning
+        }
         central?.scanForPeripherals(
             withServices: [CBUUID(string: "180D")],
             options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
@@ -98,10 +178,30 @@ final class GuidedHeartRateMonitor: NSObject, ObservableObject {
     private func connect(_ peripheral: CBPeripheral) {
         central?.stopScan()
         self.peripheral = peripheral
+        knownPeripherals[peripheral.identifier] = peripheral
         peripheral.delegate = self
-        peripheralName = peripheral.name
+        peripheralName = Self.displayName(for: peripheral)
         status = .connecting
+        upsertDevice(peripheral, name: Self.displayName(for: peripheral))
         central?.connect(peripheral, options: nil)
+    }
+
+    private func upsertDevice(_ peripheral: CBPeripheral, name: String) {
+        knownPeripherals[peripheral.identifier] = peripheral
+        let device = Device(id: peripheral.identifier, name: name)
+        if let index = devices.firstIndex(where: { $0.id == device.id }) {
+            if devices[index].name != device.name {
+                devices[index] = device
+            }
+        } else {
+            devices.append(device)
+            devices.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
+    }
+
+    static func displayName(for peripheral: CBPeripheral) -> String {
+        let raw = peripheral.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return raw.isEmpty ? "Capteur sans nom" : raw
     }
 }
 
@@ -116,14 +216,24 @@ extension GuidedHeartRateMonitor: CBCentralManagerDelegate {
         advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
-        guard wantsRunning, self.peripheral == nil else { return }
-        connect(peripheral)
+        guard wantsRunning else { return }
+        let label: String = {
+            if let name = peripheral.name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+                return name
+            }
+            if let local = advertisementData[CBAdvertisementDataLocalNameKey] as? String {
+                let trimmed = local.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { return trimmed }
+            }
+            return "Capteur sans nom"
+        }()
+        upsertDevice(peripheral, name: label)
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         GuidedHeartRatePreference.lastPeripheralUUID = peripheral.identifier
         status = .connected
-        peripheralName = peripheral.name
+        peripheralName = Self.displayName(for: peripheral)
         peripheral.discoverServices([CBUUID(string: "180D")])
     }
 
@@ -133,7 +243,13 @@ extension GuidedHeartRateMonitor: CBCentralManagerDelegate {
         error: Error?
     ) {
         self.peripheral = nil
-        reconnectOrScan()
+        if preferLastPeripheral {
+            reconnectOrScan()
+        } else if wantsRunning {
+            beginScanKeepingConnection()
+        } else {
+            status = .idle
+        }
     }
 
     func centralManager(
@@ -144,11 +260,16 @@ extension GuidedHeartRateMonitor: CBCentralManagerDelegate {
         bpm = nil
         measurementCharacteristic = nil
         self.peripheral = nil
+        peripheralName = nil
         guard wantsRunning else {
             status = .idle
             return
         }
-        reconnectOrScan()
+        if preferLastPeripheral {
+            reconnectOrScan()
+        } else {
+            beginScanKeepingConnection()
+        }
     }
 }
 
@@ -170,7 +291,6 @@ extension GuidedHeartRateMonitor: CBPeripheralDelegate {
         else { return }
         measurementCharacteristic = characteristic
         peripheral.setNotifyValue(true, for: characteristic)
-        // Some straps only push after an initial read.
         peripheral.readValue(for: characteristic)
     }
 

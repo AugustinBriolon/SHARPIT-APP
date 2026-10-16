@@ -16,6 +16,12 @@ nonisolated enum GuidedHeartRatePreference {
         suite.set(on, forKey: key)
     }
 
+    /// Sign-out / account wipe — drop the switch and the last peripheral id.
+    static func clear() {
+        suite.removeObject(forKey: key)
+        suite.removeObject(forKey: lastPeripheralKey)
+    }
+
     /// Last successfully connected HR peripheral — used to reconnect without a full scan UI.
     static var lastPeripheralUUID: UUID? {
         get {

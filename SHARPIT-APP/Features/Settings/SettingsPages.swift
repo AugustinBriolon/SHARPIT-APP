@@ -406,7 +406,7 @@ struct NotificationPrefsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Capteur FC Bluetooth")
                             .font(SharpitTypography.bodyEmphasis)
-                        Text("Ou tape « FC » en haut pendant un suivi muscu — ceinture / brassard BLE.")
+                        Text("Ou tape « FC » en haut pendant un suivi muscu pour choisir le capteur BLE.")
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
