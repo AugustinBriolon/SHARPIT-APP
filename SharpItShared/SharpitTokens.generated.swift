@@ -25,206 +25,260 @@ nonisolated struct SharpitRGBA: Equatable, Sendable {
 nonisolated enum SharpitColor {
     /// `--background`
     static let background = dynamic(
-        light: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.0587, green: 0.1234, blue: 0.0399, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.9686, green: 0.9725, blue: 0.9804, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0431, green: 0.0431, blue: 0.0471, alpha: 1.0000)
     )
 
     /// `--foreground`
     static let foreground = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.9608, green: 0.9608, blue: 0.9686, alpha: 1.0000)
     )
 
     /// `--card`
     static let card = dynamic(
         light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1079, green: 0.1832, blue: 0.0866, alpha: 1.0000)
+        dark: SharpitRGBA(red: 0.0863, green: 0.0863, blue: 0.0941, alpha: 1.0000)
     )
 
     /// `--card-foreground`
     static let cardForeground = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.9608, green: 0.9608, blue: 0.9686, alpha: 1.0000)
     )
 
     /// `--popover`
     static let popover = dynamic(
         light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1079, green: 0.1832, blue: 0.0866, alpha: 1.0000)
+        dark: SharpitRGBA(red: 0.1176, green: 0.1176, blue: 0.1255, alpha: 1.0000)
     )
 
     /// `--popover-foreground`
     static let popoverForeground = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.9608, green: 0.9608, blue: 0.9686, alpha: 1.0000)
     )
 
     /// `--primary`
     static let primary = dynamic(
-        light: SharpitRGBA(red: 0.1622, green: 0.4349, blue: 0.1385, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.8279, green: 0.9810, blue: 0.5998, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.9608, green: 0.9608, blue: 0.9686, alpha: 1.0000)
     )
 
     /// `--primary-foreground`
     static let primaryForeground = dynamic(
-        light: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1079, green: 0.1832, blue: 0.0866, alpha: 1.0000)
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--secondary`
     static let secondary = dynamic(
-        light: SharpitRGBA(red: 0.9394, green: 0.9458, blue: 0.9107, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1522, green: 0.2213, blue: 0.1331, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.9490, green: 0.9490, blue: 0.9490, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1176, green: 0.1176, blue: 0.1255, alpha: 1.0000)
     )
 
     /// `--secondary-foreground`
     static let secondaryForeground = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.9608, green: 0.9608, blue: 0.9686, alpha: 1.0000)
     )
 
     /// `--muted`
     static let muted = dynamic(
-        light: SharpitRGBA(red: 0.9394, green: 0.9458, blue: 0.9107, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1522, green: 0.2213, blue: 0.1331, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.9490, green: 0.9490, blue: 0.9490, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1176, green: 0.1176, blue: 0.1255, alpha: 1.0000)
     )
 
     /// `--muted-foreground`
     static let mutedForeground = dynamic(
-        light: SharpitRGBA(red: 0.3997, green: 0.3997, blue: 0.3997, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.6896, green: 0.7332, blue: 0.6889, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.4510, green: 0.4510, blue: 0.4706, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.6039, green: 0.6039, blue: 0.6275, alpha: 1.0000)
     )
 
     /// `--accent`
     static let accent = dynamic(
-        light: SharpitRGBA(red: 0.9024, green: 0.9713, blue: 0.8166, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.2017, green: 0.2624, blue: 0.1380, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.9255, green: 0.9804, blue: 0.7529, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1647, green: 0.2078, blue: 0.0627, alpha: 1.0000)
     )
 
     /// `--accent-foreground`
     static let accentForeground = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.3098, green: 0.4196, blue: 0.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
     )
 
     /// `--highlight`
     static let highlight = dynamic(
-        light: SharpitRGBA(red: 0.8279, green: 0.9810, blue: 0.5998, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.8279, green: 0.9810, blue: 0.5998, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
     )
 
     /// `--highlight-foreground`
     static let highlightForeground = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1079, green: 0.1832, blue: 0.0866, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--ink-surface`
     static let inkSurface = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.8279, green: 0.9810, blue: 0.5998, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1647, green: 0.1647, blue: 0.1804, alpha: 1.0000)
     )
 
     /// `--ink-surface-foreground`
     static let inkSurfaceForeground = dynamic(
-        light: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.0587, green: 0.1234, blue: 0.0399, alpha: 1.0000)
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.9608, green: 0.9608, blue: 0.9686, alpha: 1.0000)
     )
 
     /// `--ink-accent`
     static let inkAccent = dynamic(
-        light: SharpitRGBA(red: 0.8279, green: 0.9810, blue: 0.5998, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.0587, green: 0.1234, blue: 0.0399, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
     )
 
     /// `--chip-surface`
     static let chipSurface = dynamic(
-        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1079, green: 0.1832, blue: 0.0866, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.9490, green: 0.9490, blue: 0.9490, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1490, green: 0.1490, blue: 0.1647, alpha: 1.0000)
+    )
+
+    /// `--inset-group`
+    static let insetGroup = dynamic(
+        light: SharpitRGBA(red: 0.9569, green: 0.9569, blue: 0.9490, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1176, green: 0.1176, blue: 0.1255, alpha: 1.0000)
+    )
+
+    /// `--track`
+    static let track = dynamic(
+        light: SharpitRGBA(red: 0.9216, green: 0.9216, blue: 0.9216, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1725, green: 0.1725, blue: 0.1804, alpha: 1.0000)
     )
 
     /// `--destructive`
     static let destructive = dynamic(
         light: SharpitRGBA(red: 0.8441, green: 0.2053, blue: 0.1915, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.9008, green: 0.2649, blue: 0.2401, alpha: 1.0000)
+        dark: SharpitRGBA(red: 0.8018, green: 0.1556, blue: 0.1539, alpha: 1.0000)
+    )
+
+    /// `--destructive-foreground`
+    static let destructiveForeground = dynamic(
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000)
     )
 
     /// `--border`
     static let border = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 0.1200),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 0.1200)
+        light: SharpitRGBA(red: 0.0435, green: 0.0435, blue: 0.0435, alpha: 0.0800),
+        dark: SharpitRGBA(red: 0.9737, green: 0.9737, blue: 0.9737, alpha: 0.1000)
     )
 
     /// `--input`
     static let input = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 0.1400),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 0.1400)
+        light: SharpitRGBA(red: 0.0435, green: 0.0435, blue: 0.0435, alpha: 0.1200),
+        dark: SharpitRGBA(red: 0.9737, green: 0.9737, blue: 0.9737, alpha: 0.1400)
     )
 
     /// `--ring`
     static let ring = dynamic(
-        light: SharpitRGBA(red: 0.1622, green: 0.4349, blue: 0.1385, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.8279, green: 0.9810, blue: 0.5998, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
     )
 
     /// `--analysis-surface`
     static let analysisSurface = dynamic(
         light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1079, green: 0.1832, blue: 0.0866, alpha: 1.0000)
+        dark: SharpitRGBA(red: 0.0863, green: 0.0863, blue: 0.0941, alpha: 1.0000)
     )
 
     /// `--analysis-surface-alt`
     static let analysisSurfaceAlt = dynamic(
-        light: SharpitRGBA(red: 0.9394, green: 0.9458, blue: 0.9107, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1270, green: 0.2032, blue: 0.1056, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.9569, green: 0.9569, blue: 0.9490, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1176, green: 0.1176, blue: 0.1255, alpha: 1.0000)
     )
 
     /// `--analysis-border`
     static let analysisBorder = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 0.1600),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 0.1400)
+        light: SharpitRGBA(red: 0.0435, green: 0.0435, blue: 0.0435, alpha: 0.0800),
+        dark: SharpitRGBA(red: 0.9737, green: 0.9737, blue: 0.9737, alpha: 0.1200)
     )
 
     /// `--analysis-grid`
     static let analysisGrid = dynamic(
-        light: SharpitRGBA(red: 0.1110, green: 0.2277, blue: 0.0758, alpha: 0.0800),
-        dark: SharpitRGBA(red: 0.9888, green: 0.9888, blue: 0.9679, alpha: 0.0800)
+        light: SharpitRGBA(red: 0.0435, green: 0.0435, blue: 0.0435, alpha: 0.0600),
+        dark: SharpitRGBA(red: 0.9737, green: 0.9737, blue: 0.9737, alpha: 0.0800)
     )
 
     /// `--signal-recovery`
     static let signalRecovery = dynamic(
-        light: SharpitRGBA(red: 0.3040, green: 0.5137, blue: 0.3366, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.5347, green: 0.7261, blue: 0.5586, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.7882, green: 0.7882, blue: 0.8039, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.2824, green: 0.2824, blue: 0.2980, alpha: 1.0000)
+    )
+
+    /// `--signal-recovery-foreground`
+    static let signalRecoveryForeground = dynamic(
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.9608, green: 0.9608, blue: 0.9686, alpha: 1.0000)
     )
 
     /// `--signal-base`
     static let signalBase = dynamic(
-        light: SharpitRGBA(red: 0.1622, green: 0.4349, blue: 0.1385, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.8279, green: 0.9810, blue: 0.5998, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.5412, green: 0.5412, blue: 0.5569, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.5412, green: 0.5412, blue: 0.5569, alpha: 1.0000)
+    )
+
+    /// `--signal-base-foreground`
+    static let signalBaseForeground = dynamic(
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--signal-tempo`
     static let signalTempo = dynamic(
-        light: SharpitRGBA(red: 0.5998, green: 0.6885, blue: 0.3708, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.7255, green: 0.8109, blue: 0.5214, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.2902, green: 0.2902, blue: 0.3098, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.7882, green: 0.7882, blue: 0.8039, alpha: 1.0000)
+    )
+
+    /// `--signal-tempo-foreground`
+    static let signalTempoForeground = dynamic(
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--signal-threshold`
     static let signalThreshold = dynamic(
-        light: SharpitRGBA(red: 0.7628, green: 0.6655, blue: 0.2831, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.8561, green: 0.7669, blue: 0.4281, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.9608, green: 0.9608, blue: 0.9686, alpha: 1.0000)
+    )
+
+    /// `--signal-threshold-foreground`
+    static let signalThresholdForeground = dynamic(
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--signal-vo2`
     static let signalVo2 = dynamic(
-        light: SharpitRGBA(red: 0.8399, green: 0.4593, blue: 0.1369, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.9311, green: 0.5675, blue: 0.2976, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+    )
+
+    /// `--signal-vo2-foreground`
+    static let signalVo2Foreground = dynamic(
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--signal-neutral`
     static let signalNeutral = dynamic(
-        light: SharpitRGBA(red: 0.3997, green: 0.3997, blue: 0.3997, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.6896, green: 0.7332, blue: 0.6889, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.5412, green: 0.5412, blue: 0.5569, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.6039, green: 0.6039, blue: 0.6275, alpha: 1.0000)
+    )
+
+    /// `--signal-neutral-foreground`
+    static let signalNeutralForeground = dynamic(
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--signal-caution`
@@ -233,16 +287,34 @@ nonisolated enum SharpitColor {
         dark: SharpitRGBA(red: 0.9973, green: 0.7648, blue: 0.2835, alpha: 1.0000)
     )
 
+    /// `--signal-caution-foreground`
+    static let signalCautionForeground = dynamic(
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
+    )
+
     /// `--signal-risk`
     static let signalRisk = dynamic(
         light: SharpitRGBA(red: 0.7314, green: 0.0410, blue: 0.0630, alpha: 1.0000),
         dark: SharpitRGBA(red: 1.0000, green: 0.4217, blue: 0.3661, alpha: 1.0000)
     )
 
+    /// `--signal-risk-foreground`
+    static let signalRiskForeground = dynamic(
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
+    )
+
     /// `--health-status-ok`
     static let healthStatusOk = dynamic(
-        light: SharpitRGBA(red: 0.2975, green: 0.4610, blue: 0.2615, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.5512, green: 0.7260, blue: 0.5129, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.3098, green: 0.4196, blue: 0.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+    )
+
+    /// `--health-status-ok-foreground`
+    static let healthStatusOkForeground = dynamic(
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--health-status-watch`
@@ -251,10 +323,22 @@ nonisolated enum SharpitColor {
         dark: SharpitRGBA(red: 0.9973, green: 0.7648, blue: 0.2835, alpha: 1.0000)
     )
 
+    /// `--health-status-watch-foreground`
+    static let healthStatusWatchForeground = dynamic(
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
+    )
+
     /// `--health-status-verify`
     static let healthStatusVerify = dynamic(
-        light: SharpitRGBA(red: 0.3040, green: 0.5137, blue: 0.3366, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.5347, green: 0.7261, blue: 0.5586, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.5412, green: 0.5412, blue: 0.5569, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.6039, green: 0.6039, blue: 0.6275, alpha: 1.0000)
+    )
+
+    /// `--health-status-verify-foreground`
+    static let healthStatusVerifyForeground = dynamic(
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--health-status-attention`
@@ -263,22 +347,34 @@ nonisolated enum SharpitColor {
         dark: SharpitRGBA(red: 1.0000, green: 0.4217, blue: 0.3661, alpha: 1.0000)
     )
 
+    /// `--health-status-attention-foreground`
+    static let healthStatusAttentionForeground = dynamic(
+        light: SharpitRGBA(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
+    )
+
     /// `--record-accent`
     static let recordAccent = dynamic(
-        light: SharpitRGBA(red: 0.8399, green: 0.4593, blue: 0.1369, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.9311, green: 0.5675, blue: 0.2976, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+    )
+
+    /// `--record-accent-foreground`
+    static let recordAccentForeground = dynamic(
+        light: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
     )
 
     /// `--radial-track`
     static let radialTrack = dynamic(
-        light: SharpitRGBA(red: 0.9394, green: 0.9458, blue: 0.9107, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.1522, green: 0.2213, blue: 0.1331, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.9216, green: 0.9216, blue: 0.9216, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.1725, green: 0.1725, blue: 0.1804, alpha: 1.0000)
     )
 
     /// `--radial-empty`
     static let radialEmpty = dynamic(
-        light: SharpitRGBA(red: 0.7685, green: 0.7796, blue: 0.7685, alpha: 1.0000),
-        dark: SharpitRGBA(red: 0.2472, green: 0.3288, blue: 0.2247, alpha: 1.0000)
+        light: SharpitRGBA(red: 0.8392, green: 0.8392, blue: 0.8392, alpha: 1.0000),
+        dark: SharpitRGBA(red: 0.2275, green: 0.2275, blue: 0.2431, alpha: 1.0000)
     )
 
     static func dynamic(light: SharpitRGBA, dark: SharpitRGBA) -> Color {
@@ -294,29 +390,51 @@ nonisolated enum SharpitColor {
     }
 }
 
-/// Sport identity, from `SPORT_IDENTITY_HEX` — one chromatic family per activity type.
+/// Sport identity, from `SPORT_IDENTITY_HEX` / `--sport-*` — one chromatic family per activity type.
 /// Never Lime Pulse: the highlight stays brand punctuation for the product, not for a sport.
+/// `on*` members are the fixed foreground (ink/snow) for text on that fill — accent/onAccent.
 nonisolated enum SharpitSportColor {
-    /// `SPORT_IDENTITY_HEX.RUN`
-    static let run = SharpitRGBA(red: 0.9176, green: 0.3451, blue: 0.0471, alpha: 1.0000)
+    /// `SPORT_IDENTITY_HEX.RUN` / `--sport-run`
+    static let run = SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
 
-    /// `SPORT_IDENTITY_HEX.BIKE`
-    static let bike = SharpitRGBA(red: 0.0196, green: 0.5882, blue: 0.4118, alpha: 1.0000)
+    /// `SPORT_IDENTITY_HEX.BIKE` / `--sport-bike`
+    static let bike = SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
 
-    /// `SPORT_IDENTITY_HEX.SWIM`
-    static let swim = SharpitRGBA(red: 0.0078, green: 0.5176, blue: 0.7804, alpha: 1.0000)
+    /// `SPORT_IDENTITY_HEX.SWIM` / `--sport-swim`
+    static let swim = SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
 
-    /// `SPORT_IDENTITY_HEX.STRENGTH`
-    static let strength = SharpitRGBA(red: 0.8824, green: 0.1137, blue: 0.2824, alpha: 1.0000)
+    /// `SPORT_IDENTITY_HEX.STRENGTH` / `--sport-strength`
+    static let strength = SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
 
-    /// `SPORT_IDENTITY_HEX.TRIATHLON`
-    static let triathlon = SharpitRGBA(red: 0.0510, green: 0.5804, blue: 0.5333, alpha: 1.0000)
+    /// `SPORT_IDENTITY_HEX.TRIATHLON` / `--sport-triathlon`
+    static let triathlon = SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
 
-    /// `SPORT_IDENTITY_HEX.HIKE`
-    static let hike = SharpitRGBA(red: 0.7059, green: 0.3255, blue: 0.0353, alpha: 1.0000)
+    /// `SPORT_IDENTITY_HEX.HIKE` / `--sport-hike`
+    static let hike = SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
 
-    /// `SPORT_IDENTITY_HEX.OTHER`
-    static let other = SharpitRGBA(red: 0.1843, green: 0.4196, blue: 0.1569, alpha: 1.0000)
+    /// `SPORT_IDENTITY_HEX.OTHER` / `--sport-other`
+    static let other = SharpitRGBA(red: 0.0549, green: 0.0549, blue: 0.0549, alpha: 1.0000)
+
+    /// `--on-sport-run` — text/icon on the matching sport fill
+    static let onRun = SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+
+    /// `--on-sport-bike` — text/icon on the matching sport fill
+    static let onBike = SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+
+    /// `--on-sport-swim` — text/icon on the matching sport fill
+    static let onSwim = SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+
+    /// `--on-sport-strength` — text/icon on the matching sport fill
+    static let onStrength = SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+
+    /// `--on-sport-triathlon` — text/icon on the matching sport fill
+    static let onTriathlon = SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+
+    /// `--on-sport-hike` — text/icon on the matching sport fill
+    static let onHike = SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
+
+    /// `--on-sport-other` — text/icon on the matching sport fill
+    static let onOther = SharpitRGBA(red: 0.8039, green: 0.9490, blue: 0.1176, alpha: 1.0000)
 
     static func color(_ token: SharpitRGBA) -> Color {
         Color(red: token.red, green: token.green, blue: token.blue, opacity: token.alpha)
@@ -327,4 +445,49 @@ nonisolated enum SharpitSportColor {
 nonisolated enum SharpitTokens {
     /// `BRAND.radius` — card and control radius.
     static let radius: CGFloat = 16.0000
+
+    /// `--radius-card`
+    static let cardRadius: CGFloat = 28.0000
+
+    /// `--radius-inset`
+    static let insetRadius: CGFloat = 24.0000
+
+    /// `--radius-row`
+    static let rowRadius: CGFloat = 18.0000
+
+    /// `--radius-tile`
+    static let tileRadius: CGFloat = 14.0000
+
+    /// `--radius-chip`
+    static let chipRadius: CGFloat = 8.0000
+
+    /// `--space-card`
+    static let cardPadding: CGFloat = 24.0000
+
+    /// `--space-section`
+    static let sectionGap: CGFloat = 24.0000
+
+    /// `--space-inset`
+    static let insetPadding: CGFloat = 12.0000
+
+    /// `--space-row-gap`
+    static let rowGap: CGFloat = 8.0000
+
+    /// `--space-row-x`
+    static let rowPaddingX: CGFloat = 16.0000
+
+    /// `--size-tile`
+    static let tileSize: CGFloat = 44.0000
+
+    /// `--size-chip`
+    static let chipSize: CGFloat = 30.0000
+
+    /// `--size-control`
+    static let controlHeight: CGFloat = 52.0000
+
+    /// `--size-row`
+    static let rowHeight: CGFloat = 56.0000
+
+    /// `--size-bar`
+    static let barThickness: CGFloat = 8.0000
 }

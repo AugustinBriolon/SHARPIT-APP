@@ -9,11 +9,7 @@ struct PrivacyMaskView: View {
             VStack(spacing: SharpitSpacing.md) {
                 SharpitLaunchMark()
                 Text("SharpIt")
-                    .font(.custom(
-                        SharpitFontFamily.heading.resolvedName(for: .bold) ?? "System",
-                        size: 34,
-                        relativeTo: .largeTitle
-                    ))
+                    .font(SharpitTypography.system(size: 34, weight: .bold, relativeTo: .largeTitle))
                     .tracking(-0.8)
                     .foregroundStyle(Color.primary)
             }

@@ -31,14 +31,14 @@ extension ClerkTheme {
                 border: SharpitColor.border
             ),
             fonts: .init(
-                title: .custom(SharpitFontFamily.heading.resolvedName(for: .bold) ?? "System", size: 24, relativeTo: .title),
-                title2: .custom(SharpitFontFamily.heading.resolvedName(for: .semibold) ?? "System", size: 20, relativeTo: .title2),
-                headline: .custom(SharpitFontFamily.heading.resolvedName(for: .semibold) ?? "System", size: 17, relativeTo: .headline),
-                subheadline: .custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 15, relativeTo: .subheadline),
-                body: .custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 16, relativeTo: .body),
-                callout: .custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 15, relativeTo: .callout),
-                footnote: .custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 13, relativeTo: .footnote),
-                caption: .custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 12, relativeTo: .caption)
+                title: SharpitTypography.system(size: 24, weight: .bold, relativeTo: .title),
+                title2: SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title2),
+                headline: SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline),
+                subheadline: SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline),
+                body: SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body),
+                callout: SharpitTypography.system(size: 15, weight: .medium, relativeTo: .callout),
+                footnote: SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote),
+                caption: SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption)
             ),
             design: .init(
                 borderRadius: SharpitTokens.radius

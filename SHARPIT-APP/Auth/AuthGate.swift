@@ -209,7 +209,7 @@ private struct SignInAwardWinning: View {
             }
 
             Text("ANALYSE ATHLÉTIQUE")
-                .font(.custom(SharpitFontFamily.data.resolvedName(for: .medium) ?? "Menlo", size: 10.5))
+                .font(SharpitTypography.system(size: 10.5, weight: .medium, digits: true))
                 .tracking(1.4)
                 .foregroundStyle(SharpitColor.foreground.opacity(0.75))
         }
@@ -299,12 +299,12 @@ private struct SignInAwardWinning: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("SOMMEIL")
-                    .font(.custom(SharpitFontFamily.data.resolvedName(for: .medium) ?? "Menlo", size: 9))
+                    .font(SharpitTypography.system(size: 9, weight: .medium, digits: true))
                     .tracking(0.8)
                     .foregroundStyle(SharpitColor.mutedForeground)
 
                 Text("8h 24m · 94%")
-                    .font(.custom(SharpitFontFamily.data.resolvedName(for: .regular) ?? "Menlo", size: 13))
+                    .font(SharpitTypography.system(size: 13, weight: .regular, digits: true))
                     .fontWeight(.semibold)
                     .foregroundStyle(SharpitColor.cardForeground)
             }
@@ -335,7 +335,7 @@ private struct SignInAwardWinning: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("RÉCUPÉRATION")
-                    .font(.custom(SharpitFontFamily.data.resolvedName(for: .medium) ?? "Menlo", size: 9))
+                    .font(SharpitTypography.system(size: 9, weight: .medium, digits: true))
                     .tracking(0.8)
                     .foregroundStyle(SharpitColor.mutedForeground)
 
@@ -344,7 +344,7 @@ private struct SignInAwardWinning: View {
                         .fill(SharpitColor.signalRecovery)
                         .frame(width: 6, height: 6)
                     Text("Feu Vert · Prêt")
-                        .font(.custom(SharpitFontFamily.data.resolvedName(for: .regular) ?? "Menlo", size: 13))
+                        .font(SharpitTypography.system(size: 13, weight: .regular, digits: true))
                         .fontWeight(.semibold)
                         .foregroundStyle(SharpitColor.cardForeground)
                 }
@@ -369,13 +369,13 @@ private struct SignInAwardWinning: View {
         VStack(spacing: 12) {
             // Main App Wordmark
             Text("SharpIt")
-                .font(.custom(SharpitFontFamily.heading.resolvedName(for: .bold) ?? "System", size: 36, relativeTo: .largeTitle))
+                .font(SharpitTypography.system(size: 36, weight: .bold, relativeTo: .largeTitle))
                 .tracking(-1.0)
                 .foregroundStyle(SharpitColor.foreground)
 
             // Punchy Tagline
             Text("L'intelligence de ton entraînement.")
-                .font(.custom(SharpitFontFamily.body.resolvedName(for: .medium) ?? "System", size: 16, relativeTo: .headline))
+                .font(SharpitTypography.system(size: 16, weight: .medium, relativeTo: .headline))
                 .foregroundStyle(SharpitColor.mutedForeground)
 
             // Value Pillar Badges
@@ -396,7 +396,7 @@ private struct SignInAwardWinning: View {
 
     private func pillarPill(title: String) -> some View {
         Text(title)
-            .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 12))
+            .font(SharpitTypography.system(size: 12, weight: .regular))
             .foregroundStyle(SharpitColor.mutedForeground.opacity(0.9))
     }
 
@@ -409,7 +409,7 @@ private struct SignInAwardWinning: View {
             } label: {
                 HStack(spacing: 10) {
                     Text("Se connecter")
-                        .font(.custom(SharpitFontFamily.body.resolvedName(for: .semibold) ?? "System", size: 17))
+                        .font(SharpitTypography.system(size: 17, weight: .semibold))
                         .foregroundStyle(SharpitColor.primaryForeground)
 
                     Image(systemName: "arrow.right")
@@ -451,7 +451,7 @@ private struct SignInAwardWinning: View {
                     .font(.caption2)
                     .foregroundStyle(SharpitColor.primary.opacity(0.8))
                 Text("Connexion instantanée · Données synchronisées")
-                    .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 12))
+                    .font(SharpitTypography.system(size: 12, weight: .regular))
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
         }

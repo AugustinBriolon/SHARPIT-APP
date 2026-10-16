@@ -218,7 +218,7 @@ struct SessionPlate: View {
                     .frame(width: 6.5, height: 6.5)
 
                 Text(metric.value)
-                    .font(.custom(SharpitFontFamily.body.resolvedName(for: .semibold) ?? "System", size: 15))
+                    .font(SharpitTypography.system(size: 15, weight: .semibold))
                     .foregroundStyle(SharpitColor.foreground)
             }
             .padding(.top, 1)
@@ -226,13 +226,13 @@ struct SessionPlate: View {
             // Quantitative telemetry (e.g. Durée: 45 min, Charge: 50 TSS)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(metric.value)
-                    .font(.custom(SharpitFontFamily.data.resolvedName(for: .medium) ?? "Menlo", size: 19))
+                    .font(SharpitTypography.system(size: 19, weight: .medium, digits: true))
                     .monospacedDigit()
                     .foregroundStyle(SharpitColor.foreground)
 
                 if !metric.unit.isEmpty {
                     Text(metric.unit)
-                        .font(.custom(SharpitFontFamily.body.resolvedName(for: .regular) ?? "System", size: 12))
+                        .font(SharpitTypography.system(size: 12, weight: .regular))
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
             }
