@@ -41,18 +41,16 @@ final class SanteStore {
         if let cached = ResponseCache.read(V1HealthOverview.self, key: ResponseCacheKey.healthOverview, context: modelContext) {
             adopt(cached)
         }
-        // Résumé's snapshot of the day: paints the section before the network answers.
-        if let modelContext,
-           let day = try? TodaySnapshotRepository.load(trainingDayId: TrainingDayId.today(), context: modelContext) {
-            dayState = SanteDayState(day)
-        }
+        // Day tiles need energy/stress/band — not in the glossary-only Today snapshot.
     }
 
-    /// One GET /api/v1/today, saved to the shared day snapshot; a failure keeps what is painted.
+    /// One GET /api/v1/today; glossary plate goes to the shared snapshot, tiles stay in memory.
     func loadDay() async {
         do {
             let day = try await todayClient.today(trainingDayId: TrainingDayId.today(), token: try await tokenProvider())
-            if let modelContext { try? TodaySnapshotRepository.save(day, context: modelContext) }
+            if let modelContext {
+                try? TodaySnapshotRepository.save(TodayFoldMapper.map(day), context: modelContext)
+            }
             SharpitMotion.run { dayState = SanteDayState(day) }
         } catch {
             // The section is secondary to the check-up: no error state of its own.

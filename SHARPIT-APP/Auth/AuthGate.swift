@@ -10,13 +10,17 @@ import SwiftUI
 struct AuthGate<SignedIn: View>: View {
     @Environment(Clerk.self) private var clerk
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var authIsPresented = false
+    @State private var authSession = AuthSession.shared
     var signedIn: () -> SignedIn
 
     var body: some View {
         Group {
             if clerk.user != nil {
                 signedIn()
+            } else if authSession.expiredNotice {
+                SessionExpiredSignIn(onSignIn: { authIsPresented = true })
             } else {
                 SignInAwardWinning(onSignIn: { authIsPresented = true })
             }
@@ -24,10 +28,51 @@ struct AuthGate<SignedIn: View>: View {
         .sheet(isPresented: $authIsPresented) {
             SharpitAuthDrawer()
         }
-        .task(id: clerk.user?.id) {
-            LocalAccountData.claim(userId: clerk.user?.id, context: modelContext)
-            CrashReporting.identify(userId: clerk.user?.id)
+        .overlay {
+            if scenePhase != .active {
+                PrivacyMaskView()
+            }
         }
+        .task {
+            AuthSession.shared.bind(context: modelContext)
+            if let userId = clerk.user?.id {
+                AuthSession.shared.clearExpiredNotice()
+                LocalAccountData.claim(userId: userId, context: modelContext)
+                CrashReporting.identify(userId: userId)
+            }
+        }
+        .onChange(of: clerk.user?.id) { previous, current in
+            if let userId = current {
+                AuthSession.shared.clearExpiredNotice()
+                LocalAccountData.claim(userId: userId, context: modelContext)
+                CrashReporting.identify(userId: userId)
+            } else if previous != nil {
+                // Became nil — purge local data (manual sign-out or hard 401 expiry).
+                LocalAccountData.erase(context: modelContext)
+                CrashReporting.identify(userId: nil)
+            }
+        }
+    }
+}
+
+/// Hard session expiry — one line, no alert, no status codes.
+private struct SessionExpiredSignIn: View {
+    var onSignIn: () -> Void
+
+    var body: some View {
+        VStack(spacing: SharpitSpacing.lg) {
+            Spacer()
+            Text("Ta session a expiré, reconnecte-toi.")
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, SharpitSpacing.pageInset)
+            Button("Se connecter", action: onSignIn)
+                .buttonStyle(.borderedProminent)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(SharpitColor.background.ignoresSafeArea())
     }
 }
 

@@ -24,7 +24,7 @@ import Testing
 @Test func theAppDoesNotAskForHealthRecords() throws {
     let entitlements = URL(filePath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
-        .appending(path: "SHARPIT-APP/SHARPIT.entitlements")
+        .appending(path: "SHARPIT-APP/SharpIt.entitlements")
     let plist = try #require(
         try PropertyListSerialization.propertyList(from: Data(contentsOf: entitlements), format: nil) as? [String: Any]
     )

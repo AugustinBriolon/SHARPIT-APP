@@ -275,7 +275,8 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
         query: [URLQueryItem] = [],
         token: String,
         timeout: TimeInterval = 60,
-        body: Data? = nil
+        body: Data? = nil,
+        allowingAuthRetry: Bool = true
     ) async throws -> Payload {
         guard var components = URLComponents(
             url: baseURL.appending(path: path),
@@ -307,7 +308,8 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
         if !(200...299).contains(statusCode) {
             let bodyString = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             #if DEBUG
-            print("[SharpitClient] \(method) \(url) -> HTTP \(statusCode): \(bodyString.prefix(300))")
+            // Status only — never log Bearer or response bodies with athlete data.
+            print("[SharpitClient] \(method) \(path) -> HTTP \(statusCode)")
             #endif
 
             // The server says why in French, but a caller needs to know it was only too soon.
@@ -315,6 +317,23 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
             // A 5xx is the server failing, not refusing: `.server` lets a write try again
             // (`SharpitRetry`) where a message would read as a refusal.
             if statusCode >= 500 { throw SharpitAPIError.server }
+
+            if statusCode == 401 || statusCode == 403 {
+                if allowingAuthRetry, let refreshed = await AuthSession.shared.refreshTokenOnce() {
+                    return try await send(
+                        Payload.self,
+                        path: path,
+                        method: method,
+                        query: query,
+                        token: refreshed,
+                        timeout: timeout,
+                        body: body,
+                        allowingAuthRetry: false
+                    )
+                }
+                await AuthSession.shared.expireSession()
+                throw SharpitAPIError.unauthorized
+            }
 
             if let errorObj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 if let errorMessage = errorObj["error"] as? String {
@@ -332,8 +351,6 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
             switch statusCode {
             case 400:
                 throw SharpitAPIError.badRequest
-            case 401, 403:
-                throw SharpitAPIError.unauthorized
             case 404:
                 throw SharpitAPIError.message("Route introuvable sur le serveur (404)")
             default:

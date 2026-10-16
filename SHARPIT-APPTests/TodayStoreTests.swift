@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import Sharpit
 
@@ -42,10 +43,22 @@ private struct StubTodayClient: TodayServing {
 }
 
 @MainActor
-@Test func todayStoreMapsUnauthorized() async {
+@Test func todayStoreMapsUnauthorized() async throws {
+    AuthSession.shared.resetForTests()
+    defer { AuthSession.shared.resetForTests() }
+    let container = try SharpitPersistence.makeContainer(inMemory: true)
+    let defaults = try #require(UserDefaults(suiteName: "TodayUnauthorized-\(UUID().uuidString)"))
+    let disk = ActivityDiskCache(
+        directory: FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    )
+    AuthSession.shared.bind(context: ModelContext(container), defaults: defaults, disk: disk)
+    AuthSession.shared.refreshToken = { nil }
+    AuthSession.shared.performSignOut = {}
+
     let store = TodayStore(client: StubTodayClient(mode: .unauthorized), tokenProvider: { "" })
     await store.load(resetToLoading: true)
     #expect(store.phase == .unauthorized)
+    #expect(AuthSession.shared.expiredNotice)
 }
 
 @MainActor
