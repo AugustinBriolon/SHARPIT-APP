@@ -101,6 +101,10 @@ struct SessionPlate: View {
                 SharpitPill("Faite", style: .lime)
                     .scaleEffect(checkSettled ? 1.0 : 0.86)
                     .opacity(checkSettled ? 1.0 : 0.4)
+                // How closely it followed the plan, once the analysis has run.
+                if let score = session.complianceScore {
+                    SharpitPill("\(score) % conforme", style: score >= 85 ? .limeSoft : .neutral)
+                }
             } else {
                 SharpitPill("Prévue", style: .neutral)
             }

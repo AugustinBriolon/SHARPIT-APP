@@ -219,6 +219,8 @@ nonisolated struct V1TodaySession: Codable, Sendable, Equatable, Identifiable {
     var isKey: Bool? = nil
     /// Why the coach wrote this session — Decision Memory rationale; absent on older payloads.
     var rationale: String? = nil
+    /// A done session's match to its plan, 0–100, once analysed; absent on older payloads.
+    var complianceScore: Int? = nil
 }
 
 /// One leg of a brick line.

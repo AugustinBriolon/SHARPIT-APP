@@ -81,6 +81,8 @@ struct SessionCardModel: Sendable, Equatable, Identifiable {
     var isKey = false
     /// Why the coach wrote this session — Decision Memory rationale.
     var rationale: String? = nil
+    /// A done session's match to its plan, 0–100.
+    var complianceScore: Int? = nil
 }
 
 struct OvernightGaugeModel: Sendable, Equatable, Identifiable {
@@ -193,7 +195,8 @@ enum TodayFoldMapper {
                     brickTransitionsSec: session.brickTransitionsSec,
                     brickGroupId: session.brickGroupId,
                     isKey: session.isKey ?? false,
-                    rationale: session.rationale
+                    rationale: session.rationale,
+                    complianceScore: session.complianceScore
                 )
             },
             gauges: response.signals
