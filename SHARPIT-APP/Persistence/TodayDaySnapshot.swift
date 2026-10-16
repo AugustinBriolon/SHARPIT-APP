@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-/// The last Today payload the app saw for a day, so the fold paints offline and before the
-/// network answers.
+/// Offline paint for Aujourd'hui: glossary codes and labels only — never the full API day.
 ///
 /// No `#Unique` on `trainingDayId`: the schema stayed as CloudKit once required it
 /// (`docs/adr/0007`), and uniqueness is enforced on the read path — see
@@ -17,6 +16,69 @@ final class TodayDaySnapshot {
         self.trainingDayId = trainingDayId
         self.fetchedAt = fetchedAt
         self.payloadJSON = payloadJSON
+    }
+}
+
+/// What the app may keep on disk for Aujourd'hui — verdict / instruction / chips, no health measures.
+struct TodaySnapshotCache: Codable, Equatable, Sendable {
+    var trainingDayId: String
+    var stateCode: String?
+    var statusLabel: String
+    var instruction: String?
+    var limiterSignalCodes: [String]
+    var confidenceLabel: String?
+    var confidencePct: Int?
+    var vsYesterdayLabel: String?
+
+    init(fold: TodayFold) {
+        trainingDayId = fold.trainingDayId
+        switch fold.plate.stateCode {
+        case .unknown(let raw)?: stateCode = raw.isEmpty ? nil : raw
+        case let code?: stateCode = code.wireValue
+        case nil: stateCode = nil
+        }
+        statusLabel = fold.plate.statusLabel
+        instruction = fold.plate.safeInstruction
+        limiterSignalCodes = fold.plate.limiterSignals.compactMap { code in
+            switch code {
+            case .unknown(let raw): raw.isEmpty ? nil : raw
+            default: code.wireValue
+            }
+        }
+        confidenceLabel = fold.plate.confidenceLabel
+        confidencePct = fold.plate.confidencePct
+        vsYesterdayLabel = fold.plate.vsYesterdayLabel
+    }
+
+    /// A fold with only the plate filled — sessions / gauges wait for the network.
+    func asFold() -> TodayFold {
+        let signals = limiterSignalCodes.compactMap { LimiterSignalCode(wire: $0) }
+        let code = stateCode.map { VerdictStateCode(wire: $0) }
+        return TodayFold(
+            trainingDayId: trainingDayId,
+            plate: InkPlateModel(
+                statusLabel: statusLabel,
+                headline: "",
+                actionLine: nil,
+                limitingCause: nil,
+                confidencePct: confidencePct,
+                confidenceLabel: confidenceLabel,
+                packTier: nil,
+                estimationGaps: [],
+                posture: .uncertain,
+                explanationEssential: nil,
+                explanationExpert: nil,
+                instruction: instruction,
+                limiterSignals: signals,
+                vsYesterdayLabel: vsYesterdayLabel,
+                showHeadline: false,
+                stateCode: TodayFoldMapper.resolvedStateCode(code)
+            ),
+            sessions: [],
+            gauges: [],
+            consistency: nil,
+            weather: nil
+        )
     }
 }
 
@@ -39,31 +101,37 @@ enum SharpitPersistence {
 }
 
 enum TodaySnapshotRepository {
-    static func load(trainingDayId: String, context: ModelContext) throws -> V1TodayResponse? {
+    /// Only today's snapshot (device calendar) is returned — yesterday's is discarded.
+    static func load(trainingDayId: String, context: ModelContext, todayId: String = TrainingDayId.today()) throws -> TodaySnapshotCache? {
+        guard trainingDayId == todayId else { return nil }
         guard let snapshot = try newest(trainingDayId: trainingDayId, context: context),
               let payload = snapshot.payloadJSON else {
             return nil
         }
-        return try JSONDecoder().decode(V1TodayResponse.self, from: payload)
+        // Legacy full `V1TodayResponse` blobs fail this decode — treat as missing.
+        guard let cache = try? JSONDecoder().decode(TodaySnapshotCache.self, from: payload) else {
+            context.delete(snapshot)
+            try? context.save()
+            return nil
+        }
+        guard cache.trainingDayId == todayId else { return nil }
+        return cache
     }
 
-    static func save(_ response: V1TodayResponse, context: ModelContext) throws {
-        let data = try JSONEncoder().encode(response)
-        let dayId = response.trainingDayId
+    static func save(_ fold: TodayFold, context: ModelContext) throws {
+        let cache = TodaySnapshotCache(fold: fold)
+        let data = try JSONEncoder().encode(cache)
+        let dayId = fold.trainingDayId
         if let existing = try newest(trainingDayId: dayId, context: context) {
             existing.payloadJSON = data
             existing.fetchedAt = .now
         } else {
-            context.insert(
-                TodayDaySnapshot(trainingDayId: dayId, payloadJSON: data)
-            )
+            context.insert(TodayDaySnapshot(trainingDayId: dayId, payloadJSON: data))
         }
         try context.save()
     }
 
     /// The most recent row for a day, deleting any older duplicate.
-    ///
-    /// This replaces the `#Unique` constraint the schema does not declare (see the type).
     private static func newest(
         trainingDayId: String,
         context: ModelContext

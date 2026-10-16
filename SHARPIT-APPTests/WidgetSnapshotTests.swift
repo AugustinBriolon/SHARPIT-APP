@@ -94,8 +94,13 @@ private func card(_ id: String, _ kind: V1TodaySessionKind, sport: String = "Cou
     #expect(read.day == day)
     #expect(read.weight?.kilograms == 72.4)
 
+    let mapURL = directory.appending(path: WidgetSnapshotStore.lastActivityMapFileName)
+    try Data([0x89, 0x50, 0x4E, 0x47]).write(to: mapURL)
+    #expect(FileManager.default.fileExists(atPath: mapURL.path))
+
     WidgetSnapshotStore.erase(in: directory)
     #expect(WidgetSnapshotStore.read(from: directory) == nil)
+    #expect(!FileManager.default.fileExists(atPath: mapURL.path))
 }
 
 /// The food log as its card reads it: the server's budget and remainder, the three macros.

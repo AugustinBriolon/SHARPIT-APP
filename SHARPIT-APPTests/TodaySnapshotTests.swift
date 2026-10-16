@@ -4,60 +4,99 @@ import Testing
 @testable import Sharpit
 
 @MainActor
-@Test func snapshotRepositoryRoundTripsTodayPayload() throws {
+private func leaPlate(
+    statusLabel: String = "Léger",
+    instruction: String? = "Reste en endurance facile.",
+    signals: [LimiterSignalCode] = [.sleepShort],
+    stateCode: VerdictStateCode? = .trainEasy
+) -> InkPlateModel {
+    InkPlateModel(
+        statusLabel: statusLabel,
+        headline: "",
+        actionLine: nil,
+        limitingCause: nil,
+        confidencePct: 70,
+        confidenceLabel: "fiable",
+        packTier: nil,
+        estimationGaps: [],
+        posture: .steady,
+        instruction: instruction,
+        limiterSignals: signals,
+        showHeadline: false,
+        stateCode: stateCode
+    )
+}
+
+@MainActor
+private func leaFold(dayId: String = TrainingDayId.today()) -> TodayFold {
+    TodayFold(
+        trainingDayId: dayId,
+        plate: leaPlate(),
+        sessions: [],
+        gauges: [],
+        consistency: nil,
+        weather: nil
+    )
+}
+
+@MainActor
+@Test func snapshotRepositoryRoundTripsGlossaryCache() throws {
     let container = try SharpitPersistence.makeContainer(inMemory: true)
     let context = ModelContext(container)
-    let response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
+    let fold = leaFold()
 
-    try TodaySnapshotRepository.save(response, context: context)
-    let loaded = try TodaySnapshotRepository.load(
-        trainingDayId: response.trainingDayId,
+    try TodaySnapshotRepository.save(fold, context: context)
+    let loaded = try #require(try TodaySnapshotRepository.load(
+        trainingDayId: fold.trainingDayId,
         context: context
-    )
+    ))
 
-    #expect(loaded == response)
+    #expect(loaded.statusLabel == "Léger")
+    #expect(loaded.instruction == "Reste en endurance facile.")
+    #expect(loaded.limiterSignalCodes == ["sleep_short"])
+    #expect(loaded.stateCode == "TRAIN_EASY")
 }
 
 @MainActor
 @Test func snapshotRepositoryUpsertsSameTrainingDay() throws {
     let container = try SharpitPersistence.makeContainer(inMemory: true)
     let context = ModelContext(container)
-    var response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
+    var fold = leaFold()
 
-    try TodaySnapshotRepository.save(response, context: context)
-    response.verdict.headline = "Updated headline"
-    try TodaySnapshotRepository.save(response, context: context)
+    try TodaySnapshotRepository.save(fold, context: context)
+    fold.plate.statusLabel = "Repos"
+    try TodaySnapshotRepository.save(fold, context: context)
 
     let count = try context.fetchCount(FetchDescriptor<TodayDaySnapshot>())
     #expect(count == 1)
 
     let loaded = try TodaySnapshotRepository.load(
-        trainingDayId: response.trainingDayId,
+        trainingDayId: fold.trainingDayId,
         context: context
     )
-    #expect(loaded?.verdict.headline == "Updated headline")
+    #expect(loaded?.statusLabel == "Repos")
 }
 
 @MainActor
 @Test func storeHydratesFromSnapshotBeforeNetwork() async throws {
     let container = try SharpitPersistence.makeContainer(inMemory: true)
     let context = ModelContext(container)
-    var response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
-    // The store asks the cache for *today*, so the fixture has to be filed under today —
-    // otherwise the test only passes on the day the fixture was captured.
-    response.trainingDayId = TrainingDayId.today()
-    try TodaySnapshotRepository.save(response, context: context)
+    let fold = leaFold()
+    try TodaySnapshotRepository.save(fold, context: context)
 
     let client = FailingTodayClient()
     let store = TodayStore(client: client, modelContext: context)
     await store.load(resetToLoading: true)
 
-    guard case .loaded(let fold) = store.phase else {
+    guard case .loaded(let cached) = store.phase else {
         Issue.record("Expected cached fold after transport failure")
         return
     }
-    #expect(fold.trainingDayId == response.trainingDayId)
-    #expect(fold.plate.headline == response.verdict.headline)
+    #expect(cached.trainingDayId == fold.trainingDayId)
+    #expect(cached.plate.statusLabel == "Léger")
+    #expect(cached.plate.instruction == "Reste en endurance facile.")
+    // Glossary-only: no session cards until the network answers.
+    #expect(cached.sessions.isEmpty)
 }
 
 private struct FailingTodayClient: TodayServing {
@@ -72,18 +111,19 @@ private struct FailingTodayClient: TodayServing {
 @Test func todayNeverKeepsTwoRowsForOneDay() throws {
     let container = try SharpitPersistence.makeContainer(inMemory: true)
     let context = ModelContext(container)
-    let older = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
-    let dayId = older.trainingDayId
+    let dayId = TrainingDayId.today()
+    let cache = TodaySnapshotCache(fold: leaFold(dayId: dayId))
+    let data = try JSONEncoder().encode(cache)
 
     context.insert(TodayDaySnapshot(
         trainingDayId: dayId,
         fetchedAt: Date(timeIntervalSince1970: 1_000_000),
-        payloadJSON: try JSONEncoder().encode(older)
+        payloadJSON: data
     ))
     context.insert(TodayDaySnapshot(
         trainingDayId: dayId,
         fetchedAt: Date(timeIntervalSince1970: 2_000_000),
-        payloadJSON: try JSONEncoder().encode(older)
+        payloadJSON: data
     ))
     try context.save()
 
@@ -100,14 +140,30 @@ private struct FailingTodayClient: TodayServing {
     let container = try SharpitPersistence.makeContainer(inMemory: true)
     let context = ModelContext(container)
     let snapshot = TodayDaySnapshot(
-        trainingDayId: "2026-09-21",
+        trainingDayId: TrainingDayId.today(),
         payloadJSON: Data()
     )
     snapshot.payloadJSON = nil
     context.insert(snapshot)
     try context.save()
 
-    #expect(try TodaySnapshotRepository.load(trainingDayId: "2026-09-21", context: context) == nil)
+    #expect(try TodaySnapshotRepository.load(trainingDayId: TrainingDayId.today(), context: context) == nil)
+}
+
+/// A legacy full `V1TodayResponse` blob fails glossary decode and is dropped.
+@MainActor
+@Test func legacyFullPayloadSnapshotIsDropped() throws {
+    let container = try SharpitPersistence.makeContainer(inMemory: true)
+    let context = ModelContext(container)
+    let dayId = TrainingDayId.today()
+    let response = try JSONDecoder().decode(V1TodayResponse.self, from: fixtureData("full.json"))
+    context.insert(TodayDaySnapshot(
+        trainingDayId: dayId,
+        payloadJSON: try JSONEncoder().encode(response)
+    ))
+    try context.save()
+
+    #expect(try TodaySnapshotRepository.load(trainingDayId: dayId, context: context) == nil)
 }
 
 /// Apple forbids HealthKit data in iCloud, and every cached model holds some (`docs/adr/0009`).
@@ -119,7 +175,7 @@ private struct FailingTodayClient: TodayServing {
 @Test func theAppIsNotEntitledToICloud() throws {
     let entitlements = URL(filePath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
-        .appending(path: "SHARPIT-APP/SHARPIT.entitlements")
+        .appending(path: "SHARPIT-APP/SharpIt.entitlements")
     let plist = try #require(
         try PropertyListSerialization.propertyList(from: Data(contentsOf: entitlements), format: nil) as? [String: Any]
     )

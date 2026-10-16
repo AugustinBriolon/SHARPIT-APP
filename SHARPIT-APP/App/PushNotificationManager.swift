@@ -157,8 +157,11 @@ final class PushNotificationManager {
             let resolved = (day?.isEmpty == false) ? day! : TrainingDayId.today()
             return .morningBrief(day: resolved)
         }
-        guard let urlString = userInfo["url"] as? String, let url = URL(string: urlString) else { return nil }
-        switch url.path {
+        // Relative paths from our APNs payloads, or absolute https://sharpit.app/… — nothing else.
+        guard let urlString = userInfo["url"] as? String,
+              let path = Self.trustedPushPath(urlString)
+        else { return nil }
+        switch path {
         case planGeneratorPath: return .planGenerator
         case weeklyReviewPath: return .weeklyReview
         case sourcesPath: return .settings(.sources)
@@ -181,7 +184,22 @@ final class PushNotificationManager {
         case let path where path.hasPrefix(plannedSessionPathPrefix):
             let id = String(path.dropFirst(plannedSessionPathPrefix.count))
             return id.isEmpty || id.contains("/") ? .tab(.plan) : .plannedSession(id: id)
-        default: return IncomingLink.tab(forPath: url.path).map(NotificationDestination.tab)
+        default: return IncomingLink.tab(forPath: path).map(NotificationDestination.tab)
         }
+    }
+
+    /// Path-only (`/plan`) or `https://sharpit.app/…`. Foreign hosts and other schemes are ignored.
+    /// Paths go through `URL.path` so a trailing slash matches Foundation's normalisation.
+    nonisolated static func trustedPushPath(_ raw: String) -> String? {
+        if raw.hasPrefix("/"), !raw.hasPrefix("//") {
+            guard let url = URL(string: raw) else { return nil }
+            let path = url.path
+            return path.isEmpty ? "/" : path
+        }
+        guard let url = URL(string: raw),
+              url.scheme == "https",
+              url.host == IncomingLink.trustedHost
+        else { return nil }
+        return url.path.isEmpty ? "/" : url.path
     }
 }

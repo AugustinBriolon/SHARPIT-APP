@@ -110,25 +110,53 @@ final class TodayStore {
         }
 
         await networkGate.run(force: force) {
-            do {
-                let token = try await tokenProvider()
-                let payload = try await self.client.today(trainingDayId: dayId, token: token)
-                self.apply(payload)
-                self.persistSnapshot(payload)
-                return true
-            } catch is CancellationError {
-                return false
-            } catch let error as SharpitAPIError where error == .unauthorized {
-                self.phase = .unauthorized
-                return false
-            } catch {
-                // Keep stale snapshot on transport failure when we already painted it.
-                if hadCache, case .loaded = self.phase { return false }
-                if case .loaded = self.phase { return false }
-                self.phase = .failed(Self.failureMessage(for: error))
-                return false
-            }
+            await self.fetchToday(dayId: dayId, tokenProvider: tokenProvider, hadCache: hadCache)
         }
+    }
+
+    /// One network read; on 401 refresh the Clerk token once and retry before purging.
+    private func fetchToday(
+        dayId: String,
+        tokenProvider: @escaping () async throws -> String,
+        hadCache: Bool
+    ) async -> Bool {
+        do {
+            let token = try await tokenProvider()
+            return try await applyNetworkToday(dayId: dayId, token: token)
+        } catch is CancellationError {
+            return false
+        } catch let error as SharpitAPIError where error == .unauthorized {
+            if let refreshed = await AuthSession.shared.refreshTokenOnce() {
+                do {
+                    return try await applyNetworkToday(dayId: dayId, token: refreshed)
+                } catch let error as SharpitAPIError where error == .unauthorized {
+                    await AuthSession.shared.expireSession()
+                    phase = .unauthorized
+                    return false
+                } catch {
+                    return keepOrFail(hadCache: hadCache, error: error)
+                }
+            }
+            await AuthSession.shared.expireSession()
+            phase = .unauthorized
+            return false
+        } catch {
+            return keepOrFail(hadCache: hadCache, error: error)
+        }
+    }
+
+    private func applyNetworkToday(dayId: String, token: String) async throws -> Bool {
+        let payload = try await client.today(trainingDayId: dayId, token: token)
+        apply(payload, animated: true)
+        persistSnapshot(payload)
+        return true
+    }
+
+    private func keepOrFail(hadCache: Bool, error: Error) -> Bool {
+        if hadCache, case .loaded = phase { return false }
+        if case .loaded = phase { return false }
+        phase = .failed(Self.failureMessage(for: error))
+        return false
     }
 
     func refresh() async {
@@ -154,7 +182,8 @@ final class TodayStore {
         }
         do {
             if let cached = try TodaySnapshotRepository.load(trainingDayId: dayId, context: modelContext) {
-                apply(cached)
+                // Today's glossary plate only — no layout jump to a blank loading screen.
+                phase = .loaded(cached.asFold())
                 return true
             }
         } catch {
@@ -166,13 +195,17 @@ final class TodayStore {
         return false
     }
 
-    private func apply(_ payload: V1TodayResponse) {
+    private func apply(_ payload: V1TodayResponse, animated: Bool = false) {
         switch TodayModel.state(from: payload) {
         case .loading:
             phase = .loading
         case .loaded(let response):
             let fold = TodayFoldMapper.map(response)
-            phase = .loaded(fold)
+            if animated {
+                SharpitMotion.run(SharpitMotion.fade) { phase = .loaded(fold) }
+            } else {
+                phase = .loaded(fold)
+            }
             WidgetSnapshotPublisher.publish(fold)
         case .empty(let empty):
             phase = .empty(empty)
@@ -185,8 +218,9 @@ final class TodayStore {
 
     private func persistSnapshot(_ payload: V1TodayResponse) {
         guard let modelContext else { return }
+        let fold = TodayFoldMapper.map(payload)
         do {
-            try TodaySnapshotRepository.save(payload, context: modelContext)
+            try TodaySnapshotRepository.save(fold, context: modelContext)
         } catch {
             // Persistence failure must not break the live fold.
         }

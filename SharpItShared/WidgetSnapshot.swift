@@ -317,8 +317,10 @@ nonisolated enum WidgetSnapshotStore {
 
     /// Signing out or deleting the account leaves nothing of the athlete on the home screen.
     static func erase(in directory: URL? = containerURL) {
-        guard let url = directory?.appending(path: fileName) else { return }
-        try? FileManager.default.removeItem(at: url)
+        guard let directory else { return }
+        for name in [fileName, lastActivityMapFileName] {
+            try? FileManager.default.removeItem(at: directory.appending(path: name))
+        }
     }
 
     static var containerURL: URL? {
