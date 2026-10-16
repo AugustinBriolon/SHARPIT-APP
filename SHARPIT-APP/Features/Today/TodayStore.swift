@@ -176,13 +176,19 @@ final class TodayStore {
 
     @discardableResult
     private func hydrateFromSnapshotIfNeeded(dayId: String, resetToLoading: Bool) -> Bool {
+        // Tab `.task` re-enters load while the rich in-memory fold is still here. The disk
+        // snapshot is glossary-only (plate, no sessions/gauges): never overwrite a live day
+        // with that stub or the résumé blanks until pull-to-refresh forces the network.
+        if case .loaded(let fold) = phase, fold.trainingDayId == dayId {
+            return true
+        }
         guard let modelContext else {
             if resetToLoading { phase = .loading }
             return false
         }
         do {
             if let cached = try TodaySnapshotRepository.load(trainingDayId: dayId, context: modelContext) {
-                // Today's glossary plate only — no layout jump to a blank loading screen.
+                // Cold start / empty phase: paint the plate first, then network fills the rest.
                 phase = .loaded(cached.asFold())
                 return true
             }

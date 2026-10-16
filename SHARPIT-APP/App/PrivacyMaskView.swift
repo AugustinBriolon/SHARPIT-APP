@@ -6,14 +6,17 @@ struct PrivacyMaskView: View {
         ZStack {
             Color(.systemBackground)
                 .ignoresSafeArea()
-            Text("SharpIt")
-                .font(.custom(
-                    SharpitFontFamily.heading.resolvedName(for: .bold) ?? "System",
-                    size: 34,
-                    relativeTo: .largeTitle
-                ))
-                .tracking(-0.8)
-                .foregroundStyle(Color.primary)
+            VStack(spacing: SharpitSpacing.md) {
+                SharpitLaunchMark()
+                Text("SharpIt")
+                    .font(.custom(
+                        SharpitFontFamily.heading.resolvedName(for: .bold) ?? "System",
+                        size: 34,
+                        relativeTo: .largeTitle
+                    ))
+                    .tracking(-0.8)
+                    .foregroundStyle(Color.primary)
+            }
         }
         .accessibilityHidden(true)
     }

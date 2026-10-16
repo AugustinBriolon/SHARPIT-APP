@@ -99,6 +99,34 @@ private func leaFold(dayId: String = TrainingDayId.today()) -> TodayFold {
     #expect(cached.sessions.isEmpty)
 }
 
+/// Tab return re-fires `load` while LoadGate skips the network. Replacing the live fold with
+/// the glossary snapshot used to blank sessions/gauges until pull-to-refresh.
+@MainActor
+@Test func tabReturnKeepsLiveFoldInsteadOfGlossarySnapshot() async throws {
+    let container = try SharpitPersistence.makeContainer(inMemory: true)
+    let context = ModelContext(container)
+    let store = TodayStore(
+        client: FixtureTodayClient(),
+        tokenProvider: { "token" },
+        modelContext: context
+    )
+    await store.load(resetToLoading: true)
+    guard case .loaded(let first) = store.phase else {
+        Issue.record("expected loaded fold after first load")
+        return
+    }
+    #expect(!first.sessions.isEmpty)
+    #expect(!first.gauges.isEmpty)
+
+    await store.load(resetToLoading: false)
+    guard case .loaded(let again) = store.phase else {
+        Issue.record("expected loaded fold after tab return")
+        return
+    }
+    #expect(again.sessions.count == first.sessions.count)
+    #expect(again.gauges.map(\.key) == first.gauges.map(\.key))
+}
+
 private struct FailingTodayClient: TodayServing {
     func today(trainingDayId: String, token: String) async throws -> V1TodayResponse {
         throw SharpitAPIError.transport
