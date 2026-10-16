@@ -64,6 +64,8 @@ struct SharpitPill: View {
         case neutral
         /// Soft lime wash, olive text — a positive comparison.
         case limeSoft
+        /// Ink fill, lime text — a score, apart from the lime states beside it.
+        case ink
     }
 
     let text: String
@@ -90,6 +92,7 @@ struct SharpitPill: View {
         case .lime: SharpitColor.highlightForeground
         case .neutral: SharpitColor.foreground
         case .limeSoft: SharpitColor.accentForeground
+        case .ink: SharpitColor.inkAccent
         }
     }
 
@@ -98,6 +101,7 @@ struct SharpitPill: View {
         case .lime: SharpitColor.highlight
         case .neutral: SharpitColor.chipSurface
         case .limeSoft: SharpitColor.accent
+        case .ink: SharpitColor.inkSurface
         }
     }
 }
