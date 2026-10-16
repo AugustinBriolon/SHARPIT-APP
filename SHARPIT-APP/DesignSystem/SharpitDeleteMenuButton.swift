@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// « Supprimer » inside a menu or context menu. RootView's `.tint(primary)` otherwise paints the
-/// trash green while the destructive role paints the title red; both go through the destructive token.
+/// « Supprimer » inside a menu or context menu, the trash as red as its title. A menu draws its
+/// icons as templates in the app's tint and ignores any SwiftUI colour, so the glyph goes in
+/// already tinted (`alwaysOriginal`).
 struct SharpitDeleteMenuButton: View {
     var title: String = "Supprimer"
     let action: () -> Void
@@ -11,11 +12,15 @@ struct SharpitDeleteMenuButton: View {
             Label {
                 Text(title)
             } icon: {
-                Image(systemName: "trash")
+                Image(uiImage: Self.redTrash)
             }
-            .foregroundStyle(SharpitColor.destructive)
         }
     }
+
+    private static let redTrash: UIImage = {
+        let image = UIImage(systemName: "trash") ?? UIImage()
+        return image.withTintColor(UIColor(SharpitColor.destructive), renderingMode: .alwaysOriginal)
+    }()
 }
 
 /// Destructive list swipe. Same RootView tint leak paints the trash green on a non-red chip;
