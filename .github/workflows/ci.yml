@@ -46,6 +46,7 @@ jobs:
           test -n "$UDID" && test "$UDID" != "null"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
+      # Serial, as locally: tests sharing `AuthSession.shared` raced each other on parallel clones.
       - name: Test
         run: |
           set -o pipefail
@@ -54,6 +55,7 @@ jobs:
             -scheme SHARPIT-APP \
             -destination "id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
+            -parallel-testing-enabled NO \
             CODE_SIGNING_ALLOWED=NO \
             | tee xcodebuild.log | grep -E "error:|✘|Test run with|TEST (SUCCEEDED|FAILED)"
 
