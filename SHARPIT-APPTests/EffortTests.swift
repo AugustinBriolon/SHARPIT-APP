@@ -132,3 +132,11 @@ private struct StubEffort: EffortServing {
     }
     #expect(effort.limitingFactor == "Charge")
 }
+
+@Test func aLimitingFactorKeyReadsAsWords() {
+    #expect(EffortReadout.limitingFactor("fatigue.primaryLimitingFactor.load")
+        == "La charge d’entraînement est le principal levier aujourd’hui.")
+    #expect(EffortReadout.limitingFactor("Le sommeil pèse le plus.") == "Le sommeil pèse le plus.")
+    #expect(EffortReadout.limitingFactor("fatigue.primaryLimitingFactor.unknown") == nil)
+    #expect(EffortReadout.limitingFactor("  ") == nil)
+}

@@ -12,6 +12,23 @@ enum EffortReadout {
         return score.formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "fr_FR")))
     }
 
+    /// The limiting factor as words. The server sends them resolved; a server older than
+    /// SHARPIT-WEBAPP 39f4b0b3 sent the i18n key instead, so the known keys are worded here too.
+    /// shortcut: copies `french.ts`' six lines, drop once every deployed server sends words.
+    static func limitingFactor(_ raw: String?) -> String? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+        guard raw.hasPrefix("fatigue.primaryLimitingFactor.") else { return raw }
+        switch raw.dropFirst("fatigue.primaryLimitingFactor.".count) {
+        case "load": return "La charge d’entraînement est le principal levier aujourd’hui."
+        case "neuromuscular": return "La récupération neuromusculaire est le principal levier."
+        case "metabolic": return "La fatigue métabolique est le principal levier."
+        case "cumulative": return "L’historique de charge sur plusieurs semaines pèse le plus."
+        case "psychological": return "Le stress psychologique est le principal levier."
+        case "multiple": return "Plusieurs dimensions contribuent à la fatigue."
+        default: return nil
+        }
+    }
+
     /// The web's `CAPACITY_LABEL`.
     static func capacity(_ key: String) -> String? {
         switch key {

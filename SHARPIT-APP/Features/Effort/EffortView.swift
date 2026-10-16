@@ -151,7 +151,7 @@ private struct EffortVerdictSection: View {
                 label: effort.verdict.label,
                 tone: RecoveryReadout.tone(for: effort.verdict.tone),
                 capacity: EffortReadout.capacity(effort.trainingCapacity),
-                limitingFactor: effort.limitingFactor
+                limitingFactor: EffortReadout.limitingFactor(effort.limitingFactor)
             )
 
             if !effort.rationale.isEmpty {
