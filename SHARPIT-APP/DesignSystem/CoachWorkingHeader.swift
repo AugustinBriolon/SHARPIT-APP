@@ -95,8 +95,8 @@ struct SharpitPrimaryButton: View {
             }
             .foregroundStyle(foreground)
             .frame(maxWidth: .infinity, minHeight: SharpitSpacing.controlHeight)
-            .background(background, in: RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous))
+            .sharpitConcentricBackground(background, minimum: SharpitRadius.control)
+            .contentShape(.rect)
         }
         .buttonStyle(.sharpitPressable)
     }
@@ -171,10 +171,7 @@ struct SharpitSportBadge: View {
             .font(.system(size: size * 0.42, weight: .bold))
             .foregroundStyle(SharpitSportTone.tileGlyph(for: type))
             .frame(width: size, height: size)
-            .background(
-                SharpitSportTone.tile(for: type),
-                in: RoundedRectangle(cornerRadius: SharpitRadius.tile * size / SharpitTokens.tileSize, style: .continuous)
-            )
+            .sharpitConcentricBackground(SharpitSportTone.tile(for: type), minimum: SharpitRadius.tile * size / SharpitTokens.tileSize)
             .accessibilityHidden(true)
     }
 }

@@ -152,7 +152,7 @@ struct CoachMemoryView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(SharpitColor.primary)
                 .frame(width: 28, height: 28)
-                .background(SharpitColor.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
+                .sharpitConcentricBackground(SharpitColor.primary.opacity(0.12), minimum: 7)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.displayTitle)

@@ -343,7 +343,7 @@ private struct GoalAchievementRow: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(SharpitColor.foreground)
                 .frame(width: 38, height: 38)
-                .background(SharpitColor.signalRecovery.opacity(0.13), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .sharpitConcentricBackground(SharpitColor.signalRecovery.opacity(0.13), minimum: 10)
             VStack(alignment: .leading, spacing: 3) {
                 Text(achievement.goal.title)
                     .font(SharpitTypography.bodyEmphasis)
@@ -481,7 +481,7 @@ private struct GoalBadge: View {
         }
         .foregroundStyle(tone)
         .frame(width: 38, height: 38)
-        .background(tone.opacity(0.13), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .sharpitConcentricBackground(tone.opacity(0.13), minimum: 10)
     }
 
     private var tone: Color {

@@ -128,7 +128,7 @@ struct TravelMemorySheet: View {
                                     }
                                 }
                                 .padding(8)
-                                .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: 8))
+                                .sharpitConcentricBackground(SharpitColor.analysisSurfaceAlt, minimum: 8)
                             }
                         }
                         .onChange(of: completer.suggestions) { _, newSuggs in

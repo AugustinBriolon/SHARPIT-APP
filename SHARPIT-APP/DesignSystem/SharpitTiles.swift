@@ -14,10 +14,7 @@ struct SharpitIconTile: View {
             .font(.system(size: side * 0.42, weight: .bold))
             .foregroundStyle(SharpitColor.inkAccent)
             .frame(width: side, height: side)
-            .background(
-                SharpitColor.inkSurface,
-                in: RoundedRectangle(cornerRadius: SharpitRadius.tile * side / SharpitTokens.tileSize, style: .continuous)
-            )
+            .sharpitConcentricBackground(SharpitColor.inkSurface, minimum: SharpitRadius.tile * side / SharpitTokens.tileSize)
             .accessibilityHidden(true)
     }
 }
@@ -33,7 +30,7 @@ struct SharpitNumberChip: View {
             .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
             .foregroundStyle(SharpitColor.inkSurfaceForeground)
             .frame(width: side, height: side)
-            .background(SharpitColor.inkSurface, in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+            .sharpitConcentricBackground(SharpitColor.inkSurface, minimum: SharpitRadius.small)
     }
 }
 

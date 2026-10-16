@@ -431,7 +431,7 @@ private struct SettingsRow: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 32, height: 32)
-                .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .sharpitConcentricBackground(tint.opacity(0.14), minimum: 9)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(SharpitTypography.bodyEmphasis)

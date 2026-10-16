@@ -219,6 +219,7 @@ struct RessentiDuJourSheet: View {
                 .foregroundStyle(SharpitColor.primaryForeground)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 48)
+                .sharpitContainerCorner(SharpitRadius.panel)
                 .background(
                     SharpitColor.primary,
                     in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)

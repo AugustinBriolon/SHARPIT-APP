@@ -72,7 +72,7 @@ struct MorningProposalCard: View {
                     .accessibilityHidden(true)
             }
             .padding(SharpitSpacing.sm)
-            .background(SharpitColor.insetGroup, in: RoundedRectangle(cornerRadius: SharpitRadius.row, style: .continuous))
+            .sharpitConcentricBackground(SharpitColor.insetGroup, minimum: SharpitRadius.row)
             .contentShape(Rectangle())
         }
         .buttonStyle(.sharpitPressable)

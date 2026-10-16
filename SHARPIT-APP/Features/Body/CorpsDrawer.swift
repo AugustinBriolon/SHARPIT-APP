@@ -248,7 +248,7 @@ struct CorpsMetricDrawer: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(SharpitElevatedColor.panelOnSheet, in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+        .sharpitConcentricBackground(SharpitElevatedColor.panelOnSheet, minimum: SharpitRadius.small)
         .sharpitShadow(.control)
     }
 

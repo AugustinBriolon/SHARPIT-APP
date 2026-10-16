@@ -95,7 +95,7 @@ private struct ThresholdChangeRow: View {
         }
         .padding(.horizontal, SharpitSpacing.sm)
         .padding(.vertical, SharpitSpacing.xs)
-        .background(SharpitColor.analysisGrid.opacity(0.18), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+        .sharpitConcentricBackground(SharpitColor.analysisGrid.opacity(0.18), minimum: SharpitRadius.small)
         .opacity(isAccepted ? 1 : 0.55)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(change.label), \(change.from) vers \(change.to)")

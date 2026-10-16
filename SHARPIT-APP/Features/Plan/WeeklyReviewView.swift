@@ -220,7 +220,7 @@ private struct WeeklyReviewContent: View {
                     .foregroundStyle(SharpitColor.foreground)
                     .frame(maxWidth: .infinity)
                     .frame(height: SharpitTokens.controlHeight)
-                    .background(SharpitColor.chipSurface, in: RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous))
+                    .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitRadius.control)
                 }
                 .buttonStyle(.sharpitPressable)
             }
@@ -243,7 +243,7 @@ private struct WeeklyReviewHero: View {
                     .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(SharpitColor.highlightForeground)
                     .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                    .background(SharpitColor.highlight, in: RoundedRectangle(cornerRadius: SharpitRadius.tile, style: .continuous))
+                    .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(weekLabel)
@@ -385,19 +385,19 @@ private struct ReviewHighlightRow: View {
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(SharpitColor.highlightForeground)
                 .frame(width: 26, height: 26)
-                .background(SharpitColor.highlight, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .sharpitConcentricBackground(SharpitColor.highlight, minimum: 8)
         case .watch:
             Image(systemName: "exclamationmark")
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 26, height: 26)
-                .background(SharpitColor.signalCaution, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .sharpitConcentricBackground(SharpitColor.signalCaution, minimum: 8)
         case .note:
             Image(systemName: "circle.fill")
                 .font(.system(size: 6))
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .frame(width: 26, height: 26)
-                .background(SharpitColor.chipSurface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: 8)
         }
     }
 }

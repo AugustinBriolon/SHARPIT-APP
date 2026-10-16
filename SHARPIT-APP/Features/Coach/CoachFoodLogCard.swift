@@ -465,7 +465,7 @@ struct CoachFoodLogCard: View {
                         .foregroundStyle(SharpitColor.primaryForeground)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                        .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .sharpitConcentricBackground(SharpitColor.primary, minimum: 12)
                         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)

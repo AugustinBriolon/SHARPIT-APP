@@ -497,7 +497,7 @@ private struct NutritionCoachPlate: View {
             }
             .padding(SharpitSpacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(SharpitColor.inkSurfaceForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+            .sharpitConcentricBackground(SharpitColor.inkSurfaceForeground.opacity(0.08), minimum: SharpitRadius.small)
             Button {
                 router.discussWithCoach(about: CoachDiscuss.describe(.nutrition(trainingDayId: dayId)))
             } label: {

@@ -408,6 +408,7 @@ struct ComplianceDetailSheet: View {
                         }
                         .padding(SharpitSpacing.md)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .sharpitContainerCorner(SharpitRadius.panel)
                         .background(
                             SharpitColor.primary.opacity(0.10),
                             in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)

@@ -144,7 +144,7 @@ struct MacroPlanSheet: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .foregroundStyle(SharpitColor.destructive)
-                    .background(SharpitColor.destructive.opacity(0.1), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+                    .sharpitConcentricBackground(SharpitColor.destructive.opacity(0.1), minimum: SharpitRadius.small)
                 }
                 .padding(.top, SharpitSpacing.sm)
             }
@@ -209,7 +209,7 @@ struct MacroPlanSheet: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(SharpitColor.secondary.opacity(0.45), in: RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous))
+                        .sharpitConcentricBackground(SharpitColor.secondary.opacity(0.45), minimum: SharpitSpacing.chipRadius)
 
                         if let errorMessage {
                             Text(errorMessage)
@@ -234,7 +234,7 @@ struct MacroPlanSheet: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .foregroundStyle(SharpitColor.primaryForeground)
-                            .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+                            .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitRadius.small)
                         }
                         .disabled(isGenerating || selectedGoalId.isEmpty)
                     }

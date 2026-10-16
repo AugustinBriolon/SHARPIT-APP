@@ -11,6 +11,7 @@ struct DayDetailAlert: View {
             .foregroundStyle(tone)
             .padding(SharpitSpacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitContainerCorner(SharpitRadius.panel)
             .background(tone.opacity(0.12), in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
     }
 }

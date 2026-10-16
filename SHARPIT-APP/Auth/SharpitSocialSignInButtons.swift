@@ -72,7 +72,7 @@ struct SharpitGoogleSignInButton: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: SharpitSocialSignIn.buttonHeight)
-            .background(fill, in: RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous))
+            .sharpitConcentricBackground(fill, minimum: SharpitTokens.radius)
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
                     .strokeBorder(stroke, lineWidth: 1)

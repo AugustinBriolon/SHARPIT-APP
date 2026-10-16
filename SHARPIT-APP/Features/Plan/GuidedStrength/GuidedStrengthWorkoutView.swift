@@ -800,10 +800,7 @@ struct GuidedStrengthWorkoutView: View {
                             .font(.system(size: 32))
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .padding(.vertical, SharpitSpacing.xs)
-                            .background(
-                                selected ? SharpitColor.chipSurface : Color.clear,
-                                in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                            )
+                            .sharpitConcentricBackground(selected ? SharpitColor.chipSurface : Color.clear, minimum: SharpitRadius.small)
                             .opacity(feeling == nil || selected ? 1 : 0.38)
                             .scaleEffect(selected ? 1.06 : 1)
                             .animation(SharpitMotion.selection, value: feeling)

@@ -1770,6 +1770,7 @@ private struct DetailMetric: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
+        .sharpitContainerCorner(SharpitSpacing.cardRadius)
         .background(SharpitElevatedColor.panelOnSheet, in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
     }
 }

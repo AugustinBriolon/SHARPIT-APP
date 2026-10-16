@@ -129,10 +129,7 @@ private struct RepeatedSet: View {
             }
             .padding(SharpitSpacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                SharpitColor.analysisSurfaceAlt,
-                in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-            )
+            .sharpitConcentricBackground(SharpitColor.analysisSurfaceAlt, minimum: SharpitRadius.small)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(set.repeatCount) fois : " + set.steps.map(\.spokenLabel).joined(separator: ", puis "))

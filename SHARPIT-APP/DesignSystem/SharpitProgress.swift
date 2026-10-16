@@ -127,7 +127,7 @@ struct SharpitGoalTrack: View {
         .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline, digits: true))
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .background(SharpitColor.inkSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .sharpitConcentricBackground(SharpitColor.inkSurface, minimum: 12)
     }
 
     private func end(value: String, label: String, alignment: HorizontalAlignment) -> some View {

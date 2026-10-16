@@ -214,7 +214,7 @@ struct CoachMemoryDetailDrawer: View {
             .foregroundStyle(SharpitColor.signalRisk)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(SharpitColor.signalRisk.opacity(0.1), in: RoundedRectangle(cornerRadius: SharpitRadius.small))
+            .sharpitConcentricBackground(SharpitColor.signalRisk.opacity(0.1), minimum: SharpitRadius.small)
         }
         .buttonStyle(.plain)
         .disabled(isDeleting)

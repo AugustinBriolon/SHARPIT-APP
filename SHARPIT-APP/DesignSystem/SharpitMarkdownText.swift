@@ -82,10 +82,7 @@ struct SharpitMarkdownText: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(SharpitSpacing.sm)
-                .background(
-                    SharpitColor.analysisSurfaceAlt,
-                    in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                )
+                .sharpitConcentricBackground(SharpitColor.analysisSurfaceAlt, minimum: SharpitRadius.small)
 
         case .rule:
             Rectangle()

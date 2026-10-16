@@ -665,6 +665,7 @@ private struct PlanFocusSession: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitContainerCorner(SharpitRadius.panelLarge)
         .background(
             SharpitColor.analysisSurfaceAlt,
             in: RoundedRectangle(cornerRadius: SharpitRadius.panelLarge, style: .continuous)

@@ -45,7 +45,7 @@ struct PainReassessmentSection: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundStyle(SharpitColor.signalCaution)
                             .frame(width: 36, height: 36)
-                            .background(SharpitColor.signalCaution.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .sharpitConcentricBackground(SharpitColor.signalCaution.opacity(0.14), minimum: 10)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.question)
                                 .font(SharpitTypography.bodyEmphasis)

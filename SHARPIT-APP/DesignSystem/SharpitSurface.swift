@@ -75,14 +75,18 @@ private struct SharpitSurfaceModifier: ViewModifier {
     @Environment(\.sharpitElevation) private var elevation
 
     func body(content: Content) -> some View {
+        // The corner is declared inside the fill so what sits within nests concentric to it,
+        // while a nested surface's own fill follows the surface around it.
         content
             .foregroundStyle(style.foreground)
+            .sharpitContainerCorner(style.radius)
             .background {
-                let shape = RoundedRectangle(cornerRadius: style.radius, style: .continuous)
                 if let shadow = style.shadow {
-                    shape.fill(style.fill(at: elevation)).sharpitShadow(shadow)
+                    RoundedRectangle(cornerRadius: style.radius, style: .continuous)
+                        .fill(style.fill(at: elevation))
+                        .sharpitShadow(shadow)
                 } else {
-                    shape.fill(style.fill(at: elevation))
+                    Color.clear.sharpitConcentricBackground(style.fill(at: elevation), minimum: style.radius)
                 }
             }
     }

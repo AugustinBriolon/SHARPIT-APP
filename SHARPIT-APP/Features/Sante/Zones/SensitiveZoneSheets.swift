@@ -260,6 +260,7 @@ struct ZoneCheckinSheet: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .foregroundStyle(.white)
+            .sharpitContainerCorner(SharpitRadius.panel)
             .background(
                 draft.isComplete ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35),
                 in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)

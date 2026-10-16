@@ -358,10 +358,7 @@ struct ThresholdsView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(
-                            isSelected ? SharpitColor.foreground.opacity(0.18) : SharpitColor.card,
-                            in: RoundedRectangle(cornerRadius: SharpitRadius.small)
-                        )
+                        .sharpitConcentricBackground(isSelected ? SharpitColor.foreground.opacity(0.18) : SharpitColor.card, minimum: SharpitRadius.small)
                         .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.foreground)
                         .overlay(
                             RoundedRectangle(cornerRadius: SharpitRadius.small)
@@ -640,11 +637,11 @@ private struct ThresholdInputField: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(SharpitColor.analysisGrid.opacity(0.35), in: RoundedRectangle(cornerRadius: 6))
+                    .sharpitConcentricBackground(SharpitColor.analysisGrid.opacity(0.35), minimum: 6)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(SharpitColor.card, in: RoundedRectangle(cornerRadius: SharpitRadius.small))
+            .sharpitConcentricBackground(SharpitColor.card, minimum: SharpitRadius.small)
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitRadius.small)
                     .strokeBorder(error != nil ? SharpitColor.signalRisk : SharpitColor.border.opacity(0.6), lineWidth: error != nil ? 1.5 : 1)

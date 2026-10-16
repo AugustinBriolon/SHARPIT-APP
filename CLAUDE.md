@@ -262,6 +262,13 @@ projection → limit → confidence.
 No wash in content. Each tab leads with at most one ink card — Résumé's verdict, the weekly
 review's hero, Santé's age — the rest are white cards.
 
+Corners nest concentrically (HIG, iOS 26). A container declares its corner
+(`sharpitContainerCorner`, done by every `sharpitSurface`); what sits inside fills with
+`sharpitConcentricBackground(_:minimum:)` — chips, tiles, buttons, segments — never a fixed
+`RoundedRectangle`, so a button docked at a sheet's foot follows the sheet's curve. The token radius
+is the minimum; before iOS 26 it is the corner. Strokes keep a fixed shape (ConcentricRectangle is
+not insettable).
+
 Notifications speak as a coach who knows the athlete: « tu », warm and plain (« Ta séance t'attend
 à 18:00 », « Dommage pour hier », « On se retrouve demain pour ton vélo endurance »), one honest
 remark at most, every figure true — never hype, emoji, praise for its own sake or guilt. The server

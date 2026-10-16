@@ -251,6 +251,7 @@ private struct SanteWatchCard: View {
         }
         .padding(SharpitSpacing.md + 4)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitContainerCorner(SharpitRadius.panel)
         .background(
             SharpitColor.signalCaution.opacity(0.1),
             in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)

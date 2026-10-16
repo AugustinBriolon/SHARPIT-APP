@@ -551,6 +551,7 @@ private struct CoachMessageRow: View {
                     .multilineTextAlignment(.leading)
                     .padding(.horizontal, SharpitSpacing.md)
                     .padding(.vertical, SharpitSpacing.sm)
+                    .sharpitContainerCorner(SharpitRadius.panel)
                     .background(
                         SharpitColor.inkSurface,
                         in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)

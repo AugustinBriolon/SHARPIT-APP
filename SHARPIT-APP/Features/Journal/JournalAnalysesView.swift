@@ -159,7 +159,7 @@ private struct JournalAnalysesPlate: View {
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(SharpitColor.highlightForeground)
                     .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                    .background(SharpitColor.highlight, in: RoundedRectangle(cornerRadius: SharpitRadius.tile, style: .continuous))
+                    .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("À retenir")

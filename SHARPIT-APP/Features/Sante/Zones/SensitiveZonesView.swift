@@ -472,6 +472,7 @@ private struct ZonePromptCard<Actions: View>: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitContainerCorner(SharpitRadius.panel)
         .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
     }
 }

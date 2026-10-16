@@ -87,7 +87,7 @@ struct ConsistencyStrip: View {
         .padding(.horizontal, SharpitSpacing.sm)
         .padding(.vertical, SharpitSpacing.xs)
         .frame(maxWidth: .infinity)
-        .background(SharpitColor.chipSurface, in: RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous))
+        .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitSpacing.chipRadius)
     }
 
     private var streakText: String {

@@ -134,7 +134,7 @@ struct RouteIntensityLegend: View {
             .frame(width: 140)
         }
         .padding(SharpitSpacing.sm)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+        .sharpitConcentricBackground(.ultraThinMaterial, minimum: SharpitRadius.small)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Tracé coloré selon \(metric.label.lowercased()), de facile à intense")
     }

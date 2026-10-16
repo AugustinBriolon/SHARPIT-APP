@@ -118,7 +118,7 @@ struct SharpitAuthDrawer: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous))
+                .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitTokens.radius)
                 .sharpitShadow(.panel)
             }
             .buttonStyle(.sharpitPressable)
@@ -215,7 +215,7 @@ struct SharpitAuthDrawer: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous))
+                .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitTokens.radius)
             }
             .buttonStyle(.sharpitPressable)
             .disabled(verificationCode.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
@@ -294,7 +294,7 @@ struct SharpitAuthDrawer: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous))
+                .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitTokens.radius)
             }
             .buttonStyle(.sharpitPressable)
             .disabled(verificationCode.isEmpty || isLoading)
@@ -342,7 +342,7 @@ struct SharpitAuthDrawer: View {
         .padding(.horizontal, SharpitSpacing.sm)
         .padding(.vertical, SharpitSpacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SharpitColor.destructive.opacity(0.1), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+        .sharpitConcentricBackground(SharpitColor.destructive.opacity(0.1), minimum: SharpitRadius.small)
     }
 
     // MARK: – Authentication Actions

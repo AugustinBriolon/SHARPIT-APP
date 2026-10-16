@@ -478,6 +478,7 @@ struct GoalDetailView: View {
                 .font(SharpitTypography.bodyEmphasis)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
+                .sharpitContainerCorner(SharpitRadius.panel)
                 .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
                 .foregroundStyle(SharpitColor.primaryForeground)
             }
@@ -507,7 +508,7 @@ private struct GoalLinkedActivityRow: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(SharpitSportTone.label(for: activity.type))
                 .frame(width: 38, height: 38)
-                .background(SharpitSportTone.background(for: activity.type), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .sharpitConcentricBackground(SharpitSportTone.background(for: activity.type), minimum: 10)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(activity.title ?? activity.type.label)

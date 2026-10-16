@@ -80,6 +80,7 @@ struct SanteHero: View {
         .padding(.vertical, SharpitSpacing.xl)
         .frame(maxWidth: .infinity)
         .environment(\.colorScheme, .dark)
+        .sharpitContainerCorner(SharpitRadius.panel)
         .background(SharpitColor.inkSurface, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
         .sharpitShadow(.panel)
         .padding(.horizontal, SharpitSpacing.pageInset)

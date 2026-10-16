@@ -344,7 +344,7 @@ struct JournalRowIcon: View {
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(SharpitColor.foreground)
             .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
-            .background(SharpitColor.chipSurface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: 9)
             .accessibilityHidden(true)
     }
 }
@@ -472,10 +472,7 @@ private struct JournalChecklistRow: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(item.status == .done ? SharpitColor.highlightForeground : SharpitColor.mutedForeground)
                 .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
-                .background(
-                    item.status == .done ? SharpitColor.highlight : SharpitColor.chipSurface,
-                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                )
+                .sharpitConcentricBackground(item.status == .done ? SharpitColor.highlight : SharpitColor.chipSurface, minimum: 9)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {

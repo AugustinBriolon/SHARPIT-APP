@@ -46,7 +46,7 @@ struct SharpitChartBubble: View {
             .foregroundStyle(SharpitColor.inkSurfaceForeground)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(SharpitColor.inkSurface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .sharpitConcentricBackground(SharpitColor.inkSurface, minimum: 10)
     }
 }
 

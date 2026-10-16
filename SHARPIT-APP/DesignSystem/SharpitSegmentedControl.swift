@@ -42,8 +42,8 @@ struct SharpitSegmentedControl<Value: Hashable>: View {
                     .frame(maxWidth: .infinity, minHeight: 38)
                     .background {
                         if isSelected {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(SharpitColor.primary)
+                            Color.clear
+                                .sharpitConcentricBackground(SharpitColor.primary, minimum: 12)
                                 .matchedGeometryEffect(id: "pill", in: pill)
                         }
                     }
@@ -54,7 +54,8 @@ struct SharpitSegmentedControl<Value: Hashable>: View {
             }
         }
         .padding(4)
-        .background(SharpitColor.chipSurface, in: RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous))
+        .sharpitContainerCorner(SharpitRadius.control)
+        .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitRadius.control)
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.5 : 1)
     }
