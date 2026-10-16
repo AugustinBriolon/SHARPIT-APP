@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// The Today verdict — the first card on the morning screen, laid out as the reference stat
-/// card (ADR-085): the state's tile, « Verdict du jour » and what changed, the status as a lime
-/// pill; then the decision as the hero, the why in muted prose, and the confidence as a bar.
-/// Plain text only — never Markdown.
+/// The Today verdict — the one ink card on the morning screen, so it leads the page (ADR-085).
+/// Laid out as the reference stat card turned over: a lime tile with the state's glyph,
+/// « Verdict du jour » and what changed, the status as a lime pill; then the decision as the
+/// hero, the why in softened white, and the confidence as a lime bar on graphite.
+/// Every colour comes from the ink pair, so it holds on both appearances. Plain text only.
 struct InkVerdictPlate: View {
     let plate: InkPlateModel
     var revealed: Bool = true
@@ -30,37 +31,30 @@ struct InkVerdictPlate: View {
         return instructionText
     }
 
+    private var ink: Color { SharpitColor.inkSurfaceForeground }
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(
-                title: "Verdict du jour",
-                symbol: plate.stateCode?.symbolName ?? "circle.fill",
-                subtitle: plate.vsYesterdayLabel,
-                showsChevron: false
-            ) {
-                if !plate.statusLabel.isEmpty {
-                    SharpitPill(plate.statusLabel, style: .lime)
-                }
-            }
+            header
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 if let decision = decisionText {
                     Text(decision)
-                        .font(SharpitTypography.system(size: 26, weight: .bold, relativeTo: .title))
-                        .tracking(-0.4)
-                        .foregroundStyle(SharpitColor.foreground)
+                        .font(SharpitTypography.system(size: 28, weight: .bold, relativeTo: .title))
+                        .tracking(-0.5)
+                        .foregroundStyle(ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let subline = decisionSubline {
                     Text(subline)
                         .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
+                        .foregroundStyle(ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let explanation = explanationText {
                     Text(explanation)
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(ink.opacity(0.7))
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 2)
@@ -68,17 +62,13 @@ struct InkVerdictPlate: View {
             }
 
             if let confidence = plate.confidencePct {
-                SharpitProgressBar(
-                    label: plate.confidenceLabel ?? "Confiance",
-                    value: "\(confidence) %",
-                    fraction: Double(confidence) / 100
-                )
+                confidenceBar(confidence)
             }
         }
         .opacity(contentOpacity)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        .sharpitSurface(.ink)
         .opacity(revealed ? 1 : 0)
         .scaleEffect(revealed ? 1 : 0.96, anchor: .top)
         .offset(y: revealed ? 0 : 8)
@@ -100,6 +90,57 @@ struct InkVerdictPlate: View {
             withAnimation(.easeInOut(duration: 0.28)) {
                 contentOpacity = 1
             }
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            Image(systemName: plate.stateCode?.symbolName ?? "circle.fill")
+                .font(.system(size: 19, weight: .bold))
+                .foregroundStyle(SharpitColor.highlightForeground)
+                .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
+                .background(SharpitColor.highlight, in: RoundedRectangle(cornerRadius: SharpitRadius.tile, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Verdict du jour")
+                    .font(SharpitTypography.cardTitle)
+                    .tracking(SharpitTypography.cardTitleTracking)
+                    .foregroundStyle(ink)
+                if let vs = plate.vsYesterdayLabel, !vs.isEmpty {
+                    Text(vs)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(ink.opacity(0.6))
+                }
+            }
+            .lineLimit(1)
+            Spacer(minLength: SharpitSpacing.xs)
+            if !plate.statusLabel.isEmpty {
+                SharpitPill(plate.statusLabel, style: .lime)
+            }
+        }
+    }
+
+    private func confidenceBar(_ confidence: Int) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(plate.confidenceLabel ?? "Confiance")
+                    .foregroundStyle(ink.opacity(0.6))
+                Spacer(minLength: SharpitSpacing.xs)
+                Text("\(confidence) %")
+                    .fontWeight(.bold)
+                    .monospacedDigit()
+                    .foregroundStyle(ink)
+            }
+            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(ink.opacity(0.14))
+                    Capsule()
+                        .fill(SharpitColor.highlight)
+                        .frame(width: proxy.size.width * SharpitProgressMath.clamped(Double(confidence) / 100))
+                }
+            }
+            .frame(height: 6)
         }
     }
 
