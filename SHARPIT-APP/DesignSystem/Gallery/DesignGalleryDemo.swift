@@ -219,3 +219,182 @@ private struct GalleryCard<Content: View>: View {
     }
 }
 #endif
+
+#if DEBUG
+import ClerkKit
+import SwiftUI
+
+/// A screen on demo data, to check its look in the simulator without an account.
+/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|strength|sleep|records`.
+enum ScreenDemo {
+    static var requested: String? {
+        UserDefaults.standard.string(forKey: "SharpitScreenDemo")
+    }
+}
+
+struct ScreenDemoHost: View {
+    let screen: String
+    @State private var router = ShellRouter()
+    @State private var toastCenter = SharpitToastCenter()
+
+    var body: some View {
+        Group {
+            switch screen {
+            case "sleep":
+                if let sleep = Self.sleep {
+                    NavigationStack {
+                        ScrollView { SleepSections(sleep: sleep) }
+                            .background(SharpitCanvasBackground())
+                            .navigationTitle("Sommeil")
+                    }
+                }
+            case "records":
+                NavigationStack {
+                    RecordsView(
+                        store: RecordsStore(client: DemoRecords(), tokenProvider: { "demo" }),
+                        activityClient: ActivityClient(),
+                        tokenProvider: { "demo" }
+                    )
+                }
+            case "today-extras":
+                ScrollView {
+                    VStack(spacing: SharpitSpacing.md) {
+                        MorningProposalCard(
+                            proposal: V1TodayMorningProposal(
+                                checkInDone: false,
+                                decisionId: "d", sessionId: "s", direction: .down,
+                                changeSummary: "Seuil raccourci à 30 min",
+                                why: "Ta VFC est sous ta moyenne et la nuit a été courte.",
+                                from: .init(intensityLabel: "Seuil", durationMin: 40, description: nil),
+                                to: .init(intensityLabel: "Endurance", durationMin: 30, description: nil)
+                            ),
+                            onCheckIn: {},
+                            onAnswer: { _ in }
+                        )
+                        ConsistencyStrip(
+                            consistency: V1TodayConsistency(
+                                days: (0..<7).map { index in
+                                    V1TodayConsistencyDay(
+                                        date: "2026-10-\(13 + index)",
+                                        weekdayLabel: ["L", "M", "M", "J", "V", "S", "D"][index],
+                                        dayOfMonth: 13 + index,
+                                        hasActivity: [true, false, true, true, false, false, false][index],
+                                        isToday: index == 3,
+                                        isFuture: index > 3
+                                    )
+                                },
+                                thisWeekSessionCount: 3
+                            ),
+                            consecutiveWeeks: 6
+                        ) {}
+                        TodayTimelineStrip(events: [
+                            V1DayTimelineEvent(kind: "wake", minuteOfDay: 422, title: "Réveil", detail: "7 h 32 de sommeil"),
+                            V1DayTimelineEvent(kind: "checkin", minuteOfDay: 450, title: "Check-in du matin", detail: nil),
+                            V1DayTimelineEvent(kind: "session", minuteOfDay: 1080, title: "Seuil 40 min", detail: "Prévue"),
+                        ])
+                    }
+                    .padding(SharpitSpacing.pageInset)
+                }
+                .background(SharpitCanvasBackground())
+            case "strength":
+                if let session = Self.strengthSession {
+                    GuidedStrengthWorkoutView(
+                        session: session,
+                        finish: GuidedStrengthFinishContext(
+                            client: ActivityClient(),
+                            linker: PlannedSessionClient(),
+                            tokenProvider: { "demo" }
+                        )
+                    )
+                }
+            default:
+                TabView {
+                    Tab("Résumé", systemImage: "sun.max") { TodayView() }
+                }
+            }
+        }
+        .environment(router)
+        .environment(toastCenter)
+        .environment(Clerk.shared)
+    }
+
+    private static var sleep: V1SleepResponse? {
+        let nights = (1...14).map { day in
+            #"{ "date": "2026-10-\#(String(format: "%02d", day))", "minutes": \#(400 + (day * 37) % 110) }"#
+        }.joined(separator: ",")
+        let json = #"""
+        {
+          "apiVersion": 1, "trainingDayId": "2026-10-14", "nightStatus": "present", "empty": null,
+          "score": 86, "adequacy": { "key": "EXCELLENT", "label": "Ta meilleure nuit de la semaine." },
+          "durationMin": 452, "targetMin": 480, "targetDeltaMin": -28, "delta7dMin": 32,
+          "stages": { "deepMin": 92, "remMin": 110, "lightMin": 228, "awakeMin": 22 },
+          "bedtimeMin": 1390, "wakeMin": 422,
+          "breakdown": { "durationScore": 94, "architectureScore": 91, "restorativeRatio": 0.88 },
+          "averages": { "score": 78, "durationMin": 434.4, "deepPct": 17.2, "remPct": 23, "nights": 7 },
+          "regularityMin": 35.4, "recommendedBedtimeMin": 1350, "recommendedDurationMin": 495,
+          "debt7Min": 96, "debt14Min": 150, "recoveryNote": null,
+          "history": [\#(nights)],
+          "insights": [{ "tone": "good", "title": "Sommeil profond", "detail": "32 minutes au-dessus de ton habitude." }],
+          "confidencePct": 74
+        }
+        """#
+        return try? JSONDecoder().decode(V1SleepResponse.self, from: Data(json.utf8))
+    }
+
+    private static var strengthSession: GuidedStrengthSession? {
+        func exercise(_ name: String, sets: Int, reps: Int, kg: Double, order: Int) -> JSONValue {
+            .object([
+                "exercise": .string(name), "sets": .number(Double(sets)), "reps": .number(Double(reps)),
+                "weightKg": .number(kg), "restSec": .number(90), "order": .number(Double(order)),
+            ])
+        }
+        return GuidedStrengthSession.make(
+            title: "Push day",
+            plannedSessionId: nil,
+            prescription: .object([
+                "version": .number(1),
+                "sets": .array([
+                    exercise("Développé couché", sets: 4, reps: 8, kg: 100, order: 0),
+                    exercise("Développé militaire", sets: 4, reps: 8, kg: 60, order: 1),
+                    exercise("Écarté poulie", sets: 3, reps: 12, kg: 20, order: 2),
+                ]),
+            ])
+        )
+    }
+}
+/// Records as the server would send them, dated around now so « Nouveau record » shows.
+private struct DemoRecords: RecordsServing {
+    func records(token: String) async throws -> V1Records {
+        let recent = ISO8601DateFormatter().string(from: .now.addingTimeInterval(-3 * 86_400))
+        let json = #"""
+        {
+          "prs": {
+            "run": [
+              { "key": "run-distance", "label": "Plus longue sortie", "entries": [
+                { "rank": 1, "value": 21400, "displayValue": "21,4 km", "sublabel": "5:02/km",
+                  "activityId": "a1", "date": "\#(recent)", "title": "Semi" },
+                { "rank": 2, "value": 18000, "displayValue": "18,0 km", "sublabel": "5:20/km",
+                  "activityId": "a2", "date": "2026-08-01T07:00:00.000Z", "title": "Sortie longue" },
+                { "rank": 3, "value": 16000, "displayValue": "16,0 km", "sublabel": "5:31/km",
+                  "activityId": "a4", "date": "2026-06-11T07:00:00.000Z", "title": "Sortie" }
+              ] }
+            ],
+            "bike": [], "swim": []
+          },
+          "powerCurve": [],
+          "runBests": [
+            { "meters": 5000, "label": "5 km", "entries": [
+              { "rank": 1, "value": 1334, "displayValue": "22:14", "sublabel": "4:27/km",
+                "activityId": "a3", "date": "\#(recent)", "title": "Parkrun" } ] },
+            { "meters": 10000, "label": "10 km", "entries": [
+              { "rank": 1, "value": 2860, "displayValue": "47:40", "sublabel": "4:46/km",
+                "activityId": "a5", "date": "2026-05-01T07:00:00.000Z", "title": "10 km" } ] }
+          ],
+          "runEfforts": [], "bikeEfforts": [],
+          "streamsAnalyzed": 180, "totalActivities": 214
+        }
+        """#
+        return try JSONDecoder().decode(V1Records.self, from: Data(json.utf8))
+    }
+}
+#endif

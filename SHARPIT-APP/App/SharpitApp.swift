@@ -58,6 +58,9 @@ struct SharpitApp: App {
         } else if CoachDemo.isRequested {
             CoachDemoHost()
                 .sharpitAppearance()
+        } else if let screen = ScreenDemo.requested {
+            ScreenDemoHost(screen: screen)
+                .sharpitAppearance()
         } else if DesignGalleryDemo.isRequested {
             DesignGalleryHost()
                 .sharpitAppearance()
