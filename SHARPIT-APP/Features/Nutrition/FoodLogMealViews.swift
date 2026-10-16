@@ -116,8 +116,16 @@ private struct FoodLogMealRow: View {
                     .font(SharpitTypography.cardTitle)
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                // The energy rides with the count, so the title keeps the row's width whole.
                 HStack(spacing: 4) {
                     Text(countLabel)
+                    if !section.entries.isEmpty {
+                        Text("· \(NutritionReadout.kcal(section.kcal)) kcal")
+                            .monospacedDigit()
+                            .contentTransition(.numericText(value: section.kcal))
+                    }
                     if flagged {
                         Image(systemName: "exclamationmark.circle.fill")
                             .foregroundStyle(SharpitColor.signalCaution)
@@ -126,25 +134,12 @@ private struct FoodLogMealRow: View {
                 }
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
+                .lineLimit(1)
             }
+            .layoutPriority(1)
             Spacer(minLength: 0)
             if let health, health.score != nil {
                 FoodHealthBadge(meal: health)
-            }
-            if !section.entries.isEmpty {
-                // One line, in a column of fixed width, so the scores and figures of every meal
-                // stand under one another.
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(NutritionReadout.kcal(section.kcal))
-                        .font(SharpitTypography.instrument)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .contentTransition(.numericText(value: section.kcal))
-                    Text("kcal")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-                .lineLimit(1)
-                .frame(minWidth: 78, alignment: .trailing)
             }
             if opensPage {
                 Image(systemName: "chevron.right")
