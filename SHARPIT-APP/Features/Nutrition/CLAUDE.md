@@ -17,11 +17,11 @@ the nutrition targets (`NutritionTargetsSheet`: macros in grams or as % of the e
 arithmetic in `NutritionTargetSplit`), opens the weight target (`WeightTargetSheet`) or creates one
 and, last, « Importer depuis MyFitnessPal ». The Résumé card follows the gauge cells: tinted badge, energy against
 the goal, the macros as columns, a context capsule. Goals, percentages and the reading are the
-web's; `NutritionReadout` formats them and derives only the energy split (Atwater). Colour carries
-meaning, as Activité's sports and Paramètres' settings do (`SharpitNutritionTone`): each meal its hue
-(petit-déjeuner amber, déjeuner coral, dîner indigo, collations rose) on its glyph and « + », each way
-into the add sheet its tile, and every food, entry and portion a thin bar of its energy split in the
-macros' hues (`NutritionMacroSplitBar`).
+web's; `NutritionReadout` formats them and derives only the energy split (Atwater). Meals and the
+add sheet's ways in are ink, told by glyph and name (`SharpitNutritionTone`, ADR-085); the macros
+alone keep three tones — protein ink, carbohydrates lime, fat grey — on their columns and on every
+food's thin energy-split bar (`NutritionMacroSplitBar`). The goal bar fills lime and turns caution
+only past 110 % of the goal.
 
 **Food log.** The log lives in SHARPIT (SHARPIT ADR-061, `/api/v1/food-log`, `FoodLogClient`): the
 page is never a « connect a provider » wall (`connected` is always true). `FoodLogStore`, owned by
