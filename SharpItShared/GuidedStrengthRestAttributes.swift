@@ -23,6 +23,9 @@ nonisolated struct GuidedStrengthRestAttributes: ActivityAttributes {
         var isPaused: Bool
         var nextExercise: String
         var nextSetLine: String
+        /// When the rest began, so the surfaces can draw its progress; optional so a state
+        /// written by an older build still decodes.
+        var restStartedAt: Date?
 
         init(
             kind: Kind = .active,
@@ -30,10 +33,12 @@ nonisolated struct GuidedStrengthRestAttributes: ActivityAttributes {
             remainingWhenPaused: Int = 0,
             isPaused: Bool = false,
             nextExercise: String = "",
-            nextSetLine: String = ""
+            nextSetLine: String = "",
+            restStartedAt: Date? = nil
         ) {
             self.kind = kind
             self.endsAt = endsAt
+            self.restStartedAt = restStartedAt
             self.remainingWhenPaused = remainingWhenPaused
             self.isPaused = isPaused
             self.nextExercise = nextExercise

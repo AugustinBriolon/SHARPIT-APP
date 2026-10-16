@@ -45,14 +45,21 @@ nonisolated enum CoachReplyPreview {
 nonisolated enum CoachReplyLiveActivityCopy {
     static let title = "Coach"
 
-    static func subtitle(phase: CoachReplyAttributes.Phase, preview: String) -> String {
+    /// The state in a few words; the reply's first line, when there is one, sits under it.
+    static func headline(phase: CoachReplyAttributes.Phase) -> String {
         switch phase {
-        case .replying:
-            return "Répond…"
-        case .ready:
-            return preview.isEmpty ? "Réponse prête" : "Réponse prête · \(preview)"
-        case .failed:
-            return "Réponse interrompue · rouvre SharpIt"
+        case .replying: "Te répond…"
+        case .ready: "Réponse prête"
+        case .failed: "Réponse interrompue"
+        }
+    }
+
+    /// What goes under the headline: the reply's start once ready, the way back once failed.
+    static func detail(phase: CoachReplyAttributes.Phase, preview: String) -> String? {
+        switch phase {
+        case .replying: nil
+        case .ready: preview.isEmpty ? nil : preview
+        case .failed: "Rouvre SharpIt pour la reprendre."
         }
     }
 }

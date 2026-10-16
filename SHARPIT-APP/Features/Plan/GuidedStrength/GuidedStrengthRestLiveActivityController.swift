@@ -18,6 +18,7 @@ final class GuidedStrengthRestLiveActivityController {
     private var kind: GuidedStrengthRestAttributes.Kind = .active
     private var nextExercise = ""
     private var nextSetLine = ""
+    private var restStartedAt: Date?
     private var sessionTitle = ""
     private var startedAt = Date()
 
@@ -58,6 +59,7 @@ final class GuidedStrengthRestLiveActivityController {
         self.nextExercise = nextExercise
         self.nextSetLine = nextSetLine
         self.kind = .resting
+        self.restStartedAt = .now
         scheduleNotification(endsAt: endsAt, nextExercise: nextExercise, nextSetLine: nextSetLine)
 
         let state = GuidedStrengthRestAttributes.ContentState(
@@ -65,7 +67,8 @@ final class GuidedStrengthRestLiveActivityController {
             endsAt: endsAt,
             isPaused: false,
             nextExercise: nextExercise,
-            nextSetLine: nextSetLine
+            nextSetLine: nextSetLine,
+            restStartedAt: restStartedAt
         )
         upsert(state: state, staleDate: endsAt)
     }
@@ -79,7 +82,8 @@ final class GuidedStrengthRestLiveActivityController {
             endsAt: endsAt,
             isPaused: false,
             nextExercise: nextExercise,
-            nextSetLine: nextSetLine
+            nextSetLine: nextSetLine,
+            restStartedAt: restStartedAt
         )
         upsert(state: state, staleDate: endsAt)
     }

@@ -10,14 +10,14 @@ import Testing
     #expect(line.hasSuffix("…"))
 }
 
-@Test func subtitleMatchesPhase() {
-    #expect(CoachReplyLiveActivityCopy.subtitle(phase: .replying, preview: "") == "Répond…")
-    #expect(CoachReplyLiveActivityCopy.subtitle(phase: .ready, preview: "") == "Réponse prête")
-    #expect(CoachReplyLiveActivityCopy.subtitle(phase: .ready, preview: "TSB +4") == "Réponse prête · TSB +4")
-    #expect(
-        CoachReplyLiveActivityCopy.subtitle(phase: .failed, preview: "")
-            == "Réponse interrompue · rouvre SharpIt"
-    )
+@Test func headlineAndDetailMatchPhase() {
+    #expect(CoachReplyLiveActivityCopy.headline(phase: .replying) == "Te répond…")
+    #expect(CoachReplyLiveActivityCopy.headline(phase: .ready) == "Réponse prête")
+    #expect(CoachReplyLiveActivityCopy.headline(phase: .failed) == "Réponse interrompue")
+    #expect(CoachReplyLiveActivityCopy.detail(phase: .replying, preview: "TSB +4") == nil)
+    #expect(CoachReplyLiveActivityCopy.detail(phase: .ready, preview: "") == nil)
+    #expect(CoachReplyLiveActivityCopy.detail(phase: .ready, preview: "TSB +4") == "TSB +4")
+    #expect(CoachReplyLiveActivityCopy.detail(phase: .failed, preview: "") == "Rouvre SharpIt pour la reprendre.")
 }
 
 @Test func startsOnlyWhenReplyingAndEnabled() {
