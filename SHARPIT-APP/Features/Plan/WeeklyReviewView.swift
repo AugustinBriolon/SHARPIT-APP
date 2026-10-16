@@ -539,14 +539,13 @@ private struct ReviewSportShares: View {
         ReviewCard(title: "Temps par sport", symbol: "stopwatch") {
             SharpitInsetGroup {
                 ForEach(shares, id: \.type) { share in
-                    let type = V1ActivityType(rawValue: share.type)
+                    // The server names some sports by key, others in words; both get their glyph.
+                    let known = V1ActivityType(rawValue: share.type)
                     HStack(spacing: SharpitSpacing.sm) {
-                        if let type {
-                            SharpitSportBadge(type: type, size: 32)
-                        }
+                        SharpitSportBadge(type: known ?? V1ActivityType(sportLabel: share.type), size: 32)
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(alignment: .firstTextBaseline) {
-                                Text(type?.label ?? share.type.capitalized)
+                                Text(known?.label ?? share.type.capitalized)
                                     .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
                                     .foregroundStyle(SharpitColor.foreground)
                                 Text(share.count == 1 ? "1 séance" : "\(share.count) séances")

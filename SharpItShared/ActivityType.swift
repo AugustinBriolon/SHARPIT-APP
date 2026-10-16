@@ -58,7 +58,7 @@ nonisolated enum V1ActivityType: String, Codable, Sendable {
         case let value where value.contains("course") || value.contains("run"): .run
         case let value where value.contains("velo") || value.contains("cycl") || value.contains("bike"): .bike
         case let value where value.contains("natation") || value.contains("swim"): .swim
-        case let value where value.contains("force") || value.contains("muscu") || value.contains("gym"): .strength
+        case let value where value.contains("force") || value.contains("renfo") || value.contains("muscu") || value.contains("gym"): .strength
         case let value where value.contains("triathlon"): .triathlon
         case let value where value.contains("rando") || value.contains("hike") || value.contains("marche"): .hike
         default: .other
