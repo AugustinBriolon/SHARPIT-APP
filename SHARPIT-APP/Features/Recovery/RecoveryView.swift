@@ -222,62 +222,69 @@ private struct RecoveryMorningSection: View {
     let recovery: V1RecoveryResponse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Ce matin")
-            HStack(spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            SharpitCardHeader(title: "Ce matin", symbol: "sunrise", subtitle: "Face à ta norme", showsChevron: false)
+
+            HStack(alignment: .top, spacing: SharpitSpacing.md) {
                 SharpitStatTile(
                     caption: "VFC",
                     value: recovery.today.hrv.map { "\(Int($0.rounded()))" } ?? "—",
                     unit: recovery.today.hrv == nil ? nil : "ms",
                     note: RecoveryReadout.hrvNote(recovery.today),
-                    tone: RecoveryReadout.hrvTone(recovery.today)
+                    tone: RecoveryReadout.hrvTone(recovery.today),
+                    isFlat: true
                 )
                 SharpitStatTile(
                     caption: "FC repos",
                     value: recovery.today.restingHr.map { "\(Int($0.rounded()))" } ?? "—",
-                    unit: recovery.today.restingHr == nil ? nil : "bpm"
+                    unit: recovery.today.restingHr == nil ? nil : "bpm",
+                    isFlat: true
                 )
                 if let battery = recovery.today.bodyBattery {
-                    SharpitStatTile(caption: "Batterie", value: "\(Int(battery.rounded()))", unit: "%")
+                    SharpitStatTile(caption: "Batterie", value: "\(Int(battery.rounded()))", unit: "%", isFlat: true)
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: SharpitSpacing.xs) {
-                ForEach(recovery.pillars) { pillar in
-                    PillarChip(pillar: pillar)
+            if !recovery.pillars.isEmpty {
+                SharpitInsetGroup {
+                    ForEach(recovery.pillars) { pillar in
+                        PillarRow(pillar: pillar)
+                    }
                 }
             }
+
             if recovery.dissonanceDetected {
                 Label("Tes données et ton ressenti ne disent pas la même chose.", systemImage: "arrow.left.arrow.right")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.signalCaution)
             }
         }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
     }
 }
 
-private struct PillarChip: View {
+/// One pillar of the morning: what it is, then the server's reading of it, in ink — or in its
+/// hue when it is caution or risk.
+private struct PillarRow: View {
     let pillar: V1RecoveryPillar
 
     var body: some View {
-        let tone = RecoveryReadout.tone(for: pillar.tone)
-        VStack(alignment: .leading, spacing: 2) {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             Text(RecoveryReadout.pillarCaption(pillar.key))
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.mutedForeground)
+            Spacer(minLength: SharpitSpacing.sm)
             Text(pillar.label)
-                .font(SharpitTypography.meta)
-                .fontWeight(.semibold)
-                .foregroundStyle(tone)
-                .lineLimit(2)
-                .minimumScaleFactor(0.85)
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+                .foregroundStyle(RecoveryReadout.tone(for: pillar.tone))
+                .multilineTextAlignment(.trailing)
         }
-        .padding(SharpitSpacing.sm)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(tone.opacity(0.10), in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
+        .padding(.vertical, SharpitSpacing.sm)
+        .frame(minHeight: 48)
+        .sharpitSurface(.row)
         .accessibilityElement(children: .combine)
     }
 }

@@ -36,7 +36,7 @@ struct SharpitStatTile: View {
                 Text(note)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(isFlat ? 0 : SharpitSpacing.md)
