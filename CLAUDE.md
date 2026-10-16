@@ -259,8 +259,8 @@ What makes a surface feel finished, applied everywhere new work lands:
 Screen structure follows the web causal column: state → evidence → recommendation →
 projection → limit → confidence.
 
-The one wash allowed in content is Santé's hero halo: it carries the reading's tone (younger or
-older, anything to watch), behind the one number the tab stands on — never decoration elsewhere.
+No wash in content. Each tab leads with at most one ink card — Résumé's verdict, the weekly
+review's hero, Santé's age — the rest are white cards.
 
 Notifications speak as a coach who knows the athlete: « tu », warm and plain (« Ta séance t'attend
 à 18:00 », « Dommage pour hier », « On se retrouve demain pour ton vélo endurance »), one honest

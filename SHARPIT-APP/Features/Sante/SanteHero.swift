@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// Santé's headline, standing on the page rather than in a card: one very large number on a halo
-/// whose colour is the reading's, a pill that says what it means, and a ruler that places it.
+/// Santé's headline, the tab's one ink card (ADR-085), as the verdict leads Résumé: one very large
+/// number, a pill that says what it means, and a ruler that places it. Younger than the civil age
+/// reads lime, older reads caution; nothing else carries a hue.
 ///
 /// With a biological age, the number is that age and the ruler runs ten years either side of the
 /// civil age. Without one — below Pro, or before the data it needs — the number is how many markers
-/// sit in their norm and the ruler has one tick per marker, in its tone. The halo is the page's
-/// one departure from "no decorative wash": it carries the reading's tone, nothing else.
+/// sit in their norm and the ruler has one tick per marker, in its tone. The card's content is
+/// drawn in the dark appearance, so every token resolves to its light-on-ink value.
 struct SanteHero: View {
     /// What the hero stands on. Below Pro the web never computes the age, so the locked hero shows
     /// a fixed placeholder, blurred — nothing the app holds could reveal it.
@@ -43,9 +44,7 @@ struct SanteHero: View {
     var body: some View {
         VStack(spacing: SharpitSpacing.md) {
             Text(caption)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
+                .font(SharpitTypography.cardTitle)
                 .foregroundStyle(SharpitColor.mutedForeground)
             figure
             if mode == .locked {
@@ -61,8 +60,7 @@ struct SanteHero: View {
                     .foregroundStyle(tone)
                     .padding(.horizontal, SharpitSpacing.md)
                     .padding(.vertical, SharpitSpacing.xs)
-                    .overlay(Capsule().strokeBorder(tone.opacity(0.55), lineWidth: 1))
-                    .background(tone.opacity(0.1), in: Capsule())
+                    .background(tone.opacity(0.16), in: Capsule())
             }
             ruler
                 .frame(height: 56)
@@ -78,11 +76,15 @@ struct SanteHero: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.top, SharpitSpacing.lg)
-        .padding(.bottom, SharpitSpacing.xl)
+        .padding(.horizontal, SharpitSpacing.cardPadding)
+        .padding(.vertical, SharpitSpacing.xl)
         .frame(maxWidth: .infinity)
-        .background(halo)
+        .environment(\.colorScheme, .dark)
+        .background(SharpitColor.inkSurface, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
+        .sharpitShadow(.panel)
+        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.top, SharpitSpacing.xs)
+        .padding(.bottom, SharpitSpacing.lg)
         .onAppear { hasAppeared = true }
         .accessibilityElement(children: .combine)
     }
@@ -145,13 +147,13 @@ struct SanteHero: View {
     private var tone: Color {
         if let age = synthesis.biologicalAge {
             switch BiologicalAgeReadout.isYounger(age) {
-            case true?: return SharpitColor.foreground
+            case true?: return SharpitColor.highlight
             case false?: return SharpitColor.signalCaution
-            case nil: return SharpitColor.primary
+            case nil: return SharpitColor.foreground
             }
         }
-        if mode == .locked { return SharpitColor.primary }
-        return watchCount == 0 ? SharpitColor.foreground : SharpitColor.signalCaution
+        if mode == .locked { return SharpitColor.foreground }
+        return watchCount == 0 ? SharpitColor.highlight : SharpitColor.signalCaution
     }
 
     /// The way to Pro, where the pill would say the gap.
@@ -208,43 +210,6 @@ struct SanteHero: View {
         }
     }
 
-    // MARK: - Halo
-
-    /// Full width, under the navigation bar: the reading's tone at the centre, the brand's
-    /// highlight beside it, both fading to the page.
-    private var halo: some View {
-        GeometryReader { geometry in
-            let size = geometry.size
-            ZStack {
-                // The reading's tone, full and wide behind the number.
-                RadialGradient(
-                    colors: [tone.opacity(0.75), tone.opacity(0.28), .clear],
-                    center: UnitPoint(x: 0.5, y: 0.36),
-                    startRadius: 0,
-                    endRadius: size.width * 0.78
-                )
-                // The brand's highlight drifting in from a corner, so the halo reads as light
-                // rather than a flat disc.
-                RadialGradient(
-                    colors: [SharpitColor.highlight.opacity(0.35), .clear],
-                    center: UnitPoint(x: 0.82, y: 0.18),
-                    startRadius: 0,
-                    endRadius: size.width * 0.6
-                )
-                RadialGradient(
-                    colors: [SharpitColor.primary.opacity(0.25), .clear],
-                    center: UnitPoint(x: 0.12, y: 0.62),
-                    startRadius: 0,
-                    endRadius: size.width * 0.55
-                )
-            }
-            .blur(radius: 24)
-            .frame(width: size.width, height: size.height + 160)
-            .offset(y: -160)
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
 }
 
 /// Ten years either side of the civil age, a tick a year and a longer one every five: the civil

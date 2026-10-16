@@ -3,8 +3,8 @@
 Feature notes, loaded when working in this directory. Repo-wide rules live in the root `CLAUDE.md`.
 
 **Santé.** The athlete's health as a check-up (`SanteView`, SHARPIT ADR-053), ranked by what
-matters most. It opens on `SanteHero`, on the page rather than in a card: the biological age in
-`SharpitTypography.showcaseScore` on a halo in the reading's tone, a pill with the gap to the civil age,
+matters most. It opens on `SanteHero`, the tab's one ink card: the biological age in
+`SharpitTypography.showcaseScore` (lime when younger, caution when older), a pill with the gap to the civil age,
 and a ruler ten years either side of it — or, without the age (below Pro, missing data), how many
 markers sit in their norm with one tick per marker in its tone — then up to three markers that moved.
 Then: « À surveiller » (only when something deserves attention — resting HR up for days, HRV
