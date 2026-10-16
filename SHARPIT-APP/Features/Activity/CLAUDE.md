@@ -17,9 +17,17 @@ redraws the route from start to finish over a faint copy of it, a dot at its hea
 twelve seconds, paused and resumed at will; `RouteReplayPath` cuts the line, heatmap stretches
 included). The points are evenly spaced in time, so the line runs faster where the athlete did.
 
-**History filters.** The server sends the whole history, so Activité filters it in place
-(`ActivityFilter`): the search field on the title and sport, and the bar's filter menu — a sport the
-athlete did (the most frequent first) and a period. Its glyph fills while a filter narrows the list;
+**History.** Activité reads the history a page at a time (`activityPage`, 60 sessions, the server's
+`before` cursor) and the next page when the list's foot comes into view; a refresh asks the newest
+page again and keeps the older ones read. It opens on « Cette semaine », the tab's one ink card
+(sessions, time, distance, the days lit), then Records, then one card per month (`ActivityHistory`:
+months keyed by year and month, each with its count and time), its sessions as rows split by
+hairlines. Months are laid out lazily.
+
+**History filters.** Activité filters what it has read in place (`ActivityFilter`): the search
+field on the title and sport, and the bar's filter menu — a sport the athlete did (the most
+frequent first) and a period; the list's foot keeps reading older pages, and an empty result offers
+« Chercher plus loin » while more waits. Its glyph fills while a filter narrows the list;
 a filter that empties it offers « Tout afficher ».
 
 **Logging and editing a session.** Activité's « + » opens « Saisir une séance »

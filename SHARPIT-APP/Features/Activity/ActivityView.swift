@@ -14,6 +14,9 @@ struct ActivityView: View {
     @State private var records: RecordsStore?
     @State private var isShowingRecords = false
     @State private var loadGate = LoadGate()
+    /// More of the history waits on the server; the list reads it when its end comes into view.
+    @State private var hasMore = false
+    @State private var isLoadingMore = false
     @Environment(ShellRouter.self) private var router: ShellRouter?
     /// Its completion brings older activities in, so the list reloads when it lands.
     @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
@@ -103,8 +106,11 @@ struct ActivityView: View {
                 ContentUnavailableView {
                     Label("Aucune séance", systemImage: "line.3.horizontal.decrease.circle")
                 } description: {
-                    Text("Rien ne correspond à ces filtres.")
+                    Text(hasMore ? "Rien dans ce qui est chargé. Le reste de l’historique arrive en cherchant plus loin." : "Rien ne correspond à ces filtres.")
                 } actions: {
+                    if hasMore {
+                        Button("Chercher plus loin") { Task { await loadMore() } }
+                    }
                     Button("Tout afficher") {
                         SharpitMotion.run(SharpitMotion.selection) { filter = ActivityFilter() }
                     }
@@ -113,9 +119,11 @@ struct ActivityView: View {
             } else {
                 ActivityListContent(
                     activities: shown,
-                    isFiltered: filter.isActive,
+                    week: filter.isActive ? nil : ActivityHistory.week(activities),
+                    hasMore: hasMore,
                     selectedActivity: $selectedActivity,
-                    openRecords: openRecords
+                    openRecords: filter.isActive ? nil : { openRecords() },
+                    loadMore: { _ = Task { await loadMore() } }
                 )
             }
         case .empty:
@@ -153,12 +161,40 @@ struct ActivityView: View {
         isShowingRecords = true
     }
 
+    /// A page holds about two months of training: enough to fill the screen and the week.
+    private static let pageSize = 60
+
+    /// Reads the page before the oldest session shown and adds it under the list.
+    @MainActor
+    private func loadMore() async {
+        guard hasMore, !isLoadingMore, case .loaded(let shown) = phase, let oldest = shown.last?.date else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+        guard let token = try? await tokenProvider(),
+              let page = try? await client.activityPage(before: oldest, limit: Self.pageSize, token: token)
+        else { return }
+        let merged = ActivityHistory.merge(shown, with: page)
+        // A page that adds nothing (a server ignoring the cursor) ends the history instead of
+        // spinning at its foot.
+        hasMore = page.count == Self.pageSize && merged.count > shown.count
+        phase = .loaded(merged)
+    }
+
     @MainActor
     private func load(force: Bool = false) async {
         await loadGate.run(force: force) {
             do {
                 let token = try await tokenProvider()
-                let activities = try await client.activities(forceRefresh: force, token: token)
+                let page = try await client.activityPage(before: nil, limit: Self.pageSize, token: token)
+                hasMore = page.count == Self.pageSize
+                // A refresh keeps the older pages already read: only the newest page is asked again.
+                let activities: [V1ActivityListItem]
+                if case .loaded(let shown) = phase, force {
+                    let oldestFresh = page.last?.date ?? .distantFuture
+                    activities = ActivityHistory.merge(shown.filter { $0.date < oldestFresh }, with: page)
+                } else {
+                    activities = page
+                }
                 WidgetSnapshotPublisher.publish(activities)
                 // Only a list that changed is swapped in. Replacing an identical list while the
                 // pull-to-refresh gesture was ending left the scroll view stuck pulled down.
@@ -207,70 +243,147 @@ private enum ActivityPhase {
     case unauthorized
 }
 
+/// The history, month by month: the week at a glance first, then each month as one card of rows
+/// with what it adds up to. Months are laid out lazily, so years of history cost a screen's worth.
 private struct ActivityListContent: View {
     let activities: [V1ActivityListItem]
-    var isFiltered = false
+    let week: ActivityWeekSummary?
+    let hasMore: Bool
     @Binding var selectedActivity: V1ActivityListItem?
     var openRecords: (() -> Void)?
-
-    private var groupedActivities: [(String, [V1ActivityListItem])] {
-        let groups = Dictionary(grouping: activities) {
-            ActivityFormat.dayLabel(for: $0.date)
-        }
-        return groups.sorted { first, second in
-            (first.value.first?.date ?? .distantPast) > (second.value.first?.date ?? .distantPast)
-        }
-    }
+    let loadMore: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            if !isFiltered {
-                ActivityIntro()
-                if let openRecords {
-                    Button(action: openRecords) {
-                        RecordsEntryTile()
+        LazyVStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            if let week {
+                ActivityWeekCard(week: week)
+            }
+            if let openRecords {
+                Button(action: openRecords) {
+                    RecordsEntryTile()
+                }
+                .buttonStyle(.sharpitPressable)
+            }
+
+            ForEach(ActivityHistory.months(activities)) { month in
+                ActivityMonthSection(month: month, selectedActivity: $selectedActivity)
+            }
+
+            if hasMore {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, SharpitSpacing.md)
+                    // Reaching the end reads the next page.
+                    .onAppear(perform: loadMore)
+                    .accessibilityLabel("Chargement de séances plus anciennes")
+            }
+        }
+        .padding(.top, SharpitSpacing.xs)
+    }
+}
+
+/// Activité's one ink card: the week so far — sessions, time, distance, and its days lit.
+private struct ActivityWeekCard: View {
+    let week: ActivityWeekSummary
+
+    private static let days = ["L", "M", "M", "J", "V", "S", "D"]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            Text("Cette semaine")
+                .font(SharpitTypography.cardTitle)
+                .tracking(SharpitTypography.cardTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.lg) {
+                figure("\(week.count)", unit: week.count == 1 ? "séance" : "séances")
+                figure(week.durationSeconds > 0 ? ActivityHistory.hours(week.durationSeconds) : "0 min", unit: nil)
+                if week.distanceM >= 1_000 {
+                    figure(String(format: "%.0f", week.distanceM / 1_000), unit: "km")
+                }
+            }
+
+            HStack(spacing: 0) {
+                ForEach(0..<7, id: \.self) { index in
+                    VStack(spacing: 6) {
+                        Text(Self.days[index])
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(index == week.todayIndex ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                        Circle()
+                            .fill(week.activeDays[index] ? SharpitColor.highlight : SharpitColor.foreground.opacity(0.12))
+                            .frame(width: 12, height: 12)
+                            .overlay {
+                                if index == week.todayIndex, !week.activeDays[index] {
+                                    Circle().strokeBorder(SharpitColor.foreground.opacity(0.6), lineWidth: 1.5)
+                                }
+                            }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(week.activeDays.filter { $0 }.count) jours actifs cette semaine")
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .environment(\.colorScheme, .dark)
+        .sharpitSurface(.ink)
+    }
+
+    private func figure(_ value: String, unit: String?) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(value)
+                .font(SharpitTypography.gaugeScore)
+                .foregroundStyle(SharpitColor.foreground)
+                .monospacedDigit()
+            if let unit {
+                Text(unit)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            }
+        }
+        .lineLimit(1)
+    }
+}
+
+/// A month: its name and what it adds up to, then its sessions as rows on one card.
+private struct ActivityMonthSection: View {
+    let month: ActivityMonth
+    @Binding var selectedActivity: V1ActivityListItem?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(month.title)
+                    .font(SharpitTypography.cardTitle)
+                    .tracking(SharpitTypography.cardTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: SharpitSpacing.xs)
+                Text(month.summary)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .monospacedDigit()
+            }
+            .padding(.horizontal, SharpitSpacing.xxs)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+
+            VStack(spacing: 0) {
+                ForEach(Array(month.activities.enumerated()), id: \.element.id) { index, activity in
+                    if index > 0 {
+                        Divider().padding(.leading, 104)
+                    }
+                    Button {
+                        selectedActivity = activity
+                    } label: {
+                        ActivityRow(activity: activity)
                     }
                     .buttonStyle(.sharpitPressable)
                 }
             }
-
-            ForEach(groupedActivities, id: \.0) { group in
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    Text(group.0)
-                        .font(SharpitTypography.eyebrow)
-                        .tracking(SharpitTypography.eyebrowTracking)
-                        .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-
-                    ForEach(group.1) { activity in
-                        Button {
-                            selectedActivity = activity
-                        } label: {
-                            ActivityRow(activity: activity)
-                        }
-                        .buttonStyle(.sharpitPressable)
-                    }
-                }
-            }
+            .padding(.vertical, SharpitSpacing.xxs)
+            .sharpitSurface(.panel)
         }
-    }
-}
-
-/// The badge that used to sit here counted the rows the client had fetched — the
-/// request asks for `limit=30`, so it read "30" on every full page regardless of what
-/// the athlete had actually done. An invented metric, and the design law forbids those.
-private struct ActivityIntro: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            Text("Ce que tu as fait")
-                .font(SharpitTypography.pageTitle)
-                .tracking(SharpitTypography.pageTitleTracking)
-            Text("Les dernières séances, sans le bruit du plan.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, SharpitSpacing.xs)
     }
 }
 
@@ -302,37 +415,40 @@ private struct RecordsEntryTile: View {
     }
 }
 
+/// One session in its month: the day, the sport's tile, the title and what it measured.
 private struct ActivityRow: View {
     let activity: V1ActivityListItem
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            SharpitSportBadge(type: activity.type, size: SharpitTokens.tileSize)
+            VStack(spacing: 0) {
+                Text(activity.date.sharpitFormatted(.dateTime.day()))
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .monospacedDigit()
+                Text(activity.date.sharpitFormatted(.dateTime.weekday(.abbreviated)))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .textCase(.lowercase)
+            }
+            .frame(width: 36)
 
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(activity.title ?? activity.type.label)
-                        .font(SharpitTypography.cardTitle)
-                        .tracking(SharpitTypography.cardTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-                    if activity.plannedSession != nil {
-                        SharpitPill("Plan")
-                    }
-                }
-                HStack(spacing: 8) {
-                    Text(activity.type.label)
-                    if let duration = activity.duration {
-                        Text(ActivityFormat.duration(duration))
-                    }
-                    if let metric = ActivityFormat.primaryMetric(activity) {
-                        Text(metric)
-                    }
-                }
-                .font(SharpitTypography.meta)
-                .monospacedDigit()
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(1)
+            SharpitSportBadge(type: activity.type, size: 36)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(activity.title ?? activity.type.label)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+                Text([
+                    activity.type.label,
+                    activity.duration.map(ActivityFormat.duration),
+                    ActivityFormat.primaryMetric(activity),
+                ].compactMap { $0 }.joined(separator: " · "))
+                    .font(SharpitTypography.meta)
+                    .monospacedDigit()
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(1)
             }
 
             Spacer(minLength: 0)
@@ -341,9 +457,8 @@ private struct ActivityRow: View {
                 .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
         }
         .padding(.horizontal, SharpitSpacing.md)
-        .padding(.vertical, SharpitSpacing.sm + 2)
-        .sharpitSurface(.panel)
-        .contentShape(RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
+        .padding(.vertical, SharpitSpacing.sm)
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Ouvrir le détail")
     }

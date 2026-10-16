@@ -17,6 +17,9 @@ enum ActivityClientError: Error, Equatable, LocalizedError {
 protocol ActivityServing: Sendable {
     func activities(token: String) async throws -> [V1ActivityListItem]
     func activities(forceRefresh: Bool, token: String) async throws -> [V1ActivityListItem]
+    /// One page of the history, newest first: up to `limit` sessions started before `before`
+    /// (the most recent ones when nil). Activité reads the history this way, years of it included.
+    func activityPage(before: Date?, limit: Int, token: String) async throws -> [V1ActivityListItem]
     func activity(id: String, token: String) async throws -> V1ActivityDetail
     func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload
     /// A multisport session's sport legs, each with its own recording.
@@ -48,6 +51,11 @@ protocol ActivityMutating: Sendable {
 extension ActivityServing {
     func activities(forceRefresh: Bool, token: String) async throws -> [V1ActivityListItem] {
         try await activities(token: token)
+    }
+    /// Stubs page through their whole list.
+    func activityPage(before: Date?, limit: Int, token: String) async throws -> [V1ActivityListItem] {
+        let all = try await activities(token: token).sorted { $0.date > $1.date }
+        return Array(all.filter { before == nil || $0.date < before! }.prefix(limit))
     }
     /// Most conformers hold no cache, so the default is to have nothing to forget.
     func invalidateActivities() async {}
@@ -96,6 +104,16 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         activitiesCache = activities
         dropDetailsDisagreeing(with: activities)
         return activities
+    }
+
+    func activityPage(before: Date?, limit: Int, token: String) async throws -> [V1ActivityListItem] {
+        var query = [URLQueryItem(name: "limit", value: String(limit))]
+        if let before {
+            query.append(URLQueryItem(name: "before", value: before.ISO8601Format(.iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted))))
+        }
+        let page: [V1ActivityListItem] = try await request(path: "/api/v1/activities", queryItems: query, token: token)
+        dropDetailsDisagreeing(with: page)
+        return page
     }
 
     /// How many recent sessions have their disk copy checked on each list read; older ones are
