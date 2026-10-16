@@ -14,6 +14,9 @@ struct TodayFold: Sendable, Equatable {
     var energyBank: V1TodayEnergyBank? = nil
     /// Day timeline. Callers: TodayView. API: V1TodayResponse.timeline. User: fix all.
     var timeline: [V1DayTimelineEvent] = []
+    /// Painted from the on-disk snapshot, which keeps the verdict only (no health measures):
+    /// sessions and gauges are unknown, not empty, until the network answers.
+    var isPlateOnly = false
 }
 
 struct InkPlateModel: Sendable, Equatable {

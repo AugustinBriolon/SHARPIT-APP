@@ -77,7 +77,8 @@ struct TodaySnapshotCache: Codable, Equatable, Sendable {
             sessions: [],
             gauges: [],
             consistency: nil,
-            weather: nil
+            weather: nil,
+            isPlateOnly: true
         )
     }
 }

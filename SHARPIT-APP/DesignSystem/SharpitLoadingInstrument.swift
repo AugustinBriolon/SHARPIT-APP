@@ -39,7 +39,7 @@ private extension InkPlateModel {
     }
 }
 
-private extension SessionCardModel {
+extension SessionCardModel {
     static var placeholder: SessionCardModel {
         SessionCardModel(
             id: "skeleton",
@@ -57,7 +57,7 @@ private extension SessionCardModel {
     }
 }
 
-private extension OvernightGaugeModel {
+extension OvernightGaugeModel {
     static var placeholders: [OvernightGaugeModel] {
         [
             OvernightGaugeModel(key: .sleep, score: "0", caption: "Nuit dernière"),

@@ -454,9 +454,9 @@ private struct TodayFoldView: View {
                         value: phase.showsSession
                     )
 
-                if !fold.gauges.isEmpty {
+                if !fold.gauges.isEmpty || fold.isPlateOnly {
                     OvernightGaugePair(
-                        gauges: fold.gauges,
+                        gauges: fold.isPlateOnly ? OvernightGaugeModel.placeholders : fold.gauges,
                         sleepOverrideCaption: sleepOverrideCaption,
                         pulseScores: pulseScores,
                         animated: !hasCompletedArrival,
@@ -805,7 +805,12 @@ private struct TodayFoldView: View {
 
     @ViewBuilder
     private var evidenceSection: some View {
-        if fold.sessions.isEmpty {
+        if fold.isPlateOnly {
+            // Unknown yet, not a rest day: hold the session's place until the day arrives.
+            SessionPlate(session: .placeholder)
+                .redacted(reason: .placeholder)
+                .allowsHitTesting(false)
+        } else if fold.sessions.isEmpty {
             RestDayPlate()
         } else {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {

@@ -210,3 +210,10 @@ private struct FailingTodayClient: TodayServing {
     #expect(plist["com.apple.developer.icloud-services"] == nil)
     #expect(plist["com.apple.developer.icloud-container-identifiers"] == nil)
 }
+
+@Test func aSnapshotPaintsThePlateAndLeavesTheRestUnknown() {
+    let fold = TodaySnapshotCache(fold: leaFold(dayId: "2026-10-16")).asFold()
+    // Unknown, not empty: Résumé holds the session's place instead of calling it a rest day.
+    #expect(fold.isPlateOnly)
+    #expect(fold.sessions.isEmpty)
+}
