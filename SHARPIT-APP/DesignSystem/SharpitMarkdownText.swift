@@ -13,7 +13,7 @@ struct SharpitMarkdownText: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { index, block in
                 view(for: block)
                     // A heading opens a new part of the answer: it takes air above, not below.
@@ -42,7 +42,7 @@ struct SharpitMarkdownText: View {
             Text(SharpitMarkdown.inline(text))
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.foreground)
-                .lineSpacing(3)
+                .lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
 
         case .bulleted(let items):
@@ -95,7 +95,7 @@ struct SharpitMarkdownText: View {
         _ items: [String],
         @ViewBuilder marker: @escaping (Int) -> some View
     ) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs + 2) {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                     marker(index)
@@ -103,7 +103,7 @@ struct SharpitMarkdownText: View {
                     Text(SharpitMarkdown.inline(item))
                         .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.foreground)
-                        .lineSpacing(3)
+                        .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

@@ -163,3 +163,11 @@ import Testing
 @Test func aLoneLineOfPipesStaysProse() {
     #expect(SharpitMarkdown.blocks(from: "| pas un tableau |") == [.paragraph("| pas un tableau |")])
 }
+
+@Test func aLoneBoldLineTitlesAPart() {
+    let blocks = SharpitMarkdown.blocks(from: "**Mes conseils pour lundi :**\n1. **Durée** : 20 min.")
+
+    #expect(blocks == [.heading(level: 3, text: "Mes conseils pour lundi"), .numbered(["**Durée** : 20 min."])])
+    // Bold that only opens a sentence stays prose.
+    #expect(SharpitMarkdown.blocks(from: "**Durée** : 20 min.") == [.paragraph("**Durée** : 20 min.")])
+}

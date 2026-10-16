@@ -591,24 +591,8 @@ private struct CoachMessageRow: View {
         }
     }
 
-    @ViewBuilder
     private func coachProse(_ markdown: String) -> some View {
-        if let attributed = try? AttributedString(
-            markdown: markdown,
-            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        ) {
-            Text(attributed)
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-            Text(markdown)
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
+        SharpitMarkdownText(markdown: markdown)
     }
 }
 

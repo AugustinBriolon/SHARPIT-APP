@@ -50,7 +50,8 @@ nonisolated enum SharpitMarkdown {
 
         func flushParagraph() {
             guard !paragraph.isEmpty else { return }
-            blocks.append(.paragraph(paragraph.joined(separator: " ")))
+            let text = paragraph.joined(separator: " ")
+            blocks.append(boldLead(text).map { .heading(level: 3, text: $0) } ?? .paragraph(text))
             paragraph = []
         }
         func flushLists() {
@@ -149,6 +150,14 @@ nonisolated enum SharpitMarkdown {
         }
         flushAll()
         return blocks
+    }
+
+    /// « **Mes conseils pour lundi :** » alone on its line: the model's way of titling a part.
+    private static func boldLead(_ text: String) -> String? {
+        guard text.hasPrefix("**"), text.hasSuffix("**") || text.hasSuffix("**:") || text.hasSuffix(":**") else { return nil }
+        let inner = text.replacingOccurrences(of: "**", with: "").trimmingCharacters(in: .whitespaces)
+        guard !inner.isEmpty, inner.count <= 80, text.components(separatedBy: "**").count == 3 else { return nil }
+        return inner.hasSuffix(":") ? String(inner.dropLast()).trimmingCharacters(in: .whitespaces) : inner
     }
 
     /// `|---|:--:|` — the line under a table's header.
