@@ -236,7 +236,8 @@ final class PlanStore {
 
             let entries = PlanEntryBuilder.entries(
                 planned: try await planned,
-                activities: await recorded ?? [],
+                // Filtered again: a server that ignores the window still answers with the week only.
+                activities: (await recorded ?? []).filter { $0.date >= start && $0.date < nextWeek },
                 calendar: calendar
             )
             withAnimation(SharpitMotion.reveal) {
