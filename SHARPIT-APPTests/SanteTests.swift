@@ -144,3 +144,10 @@ private actor StubHealthClient: HealthOverviewServing {
     #expect(SanteHero.Mode(V1HealthSynthesis(biologicalAge: age)) == .age(age))
     #expect(SanteHero.Mode(V1HealthSynthesis(normed: 3, inNorm: 2)) == .norms)
 }
+
+@Test func stepsPastAThousandReadInThousands() {
+    #expect(SanteReadout.steps(812) == "812")
+    #expect(SanteReadout.steps(3_234) == "3,2 k")
+    #expect(SanteReadout.steps(12_480) == "12 k")
+    #expect(SanteReadout.signedDelta(3_234, for: .steps) == "+3,2 k pas")
+}

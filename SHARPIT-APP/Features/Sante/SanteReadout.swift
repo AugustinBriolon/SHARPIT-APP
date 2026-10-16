@@ -65,7 +65,7 @@ enum SanteReadout {
     static func value(_ marker: V1HealthMarker) -> (text: String, unit: String?) {
         switch marker.key {
         case .sleep: (hoursMinutes(marker.value), nil)
-        case .steps: (number(marker.value, digits: 0), "pas")
+        case .steps: (steps(marker.value), "pas")
         case .restingHr: (number(marker.value, digits: 0), "bpm")
         case .hrv: (number(marker.value, digits: 0), "ms")
         case .vo2max: (number(marker.value, digits: 0), "mL/kg/min")
@@ -138,7 +138,7 @@ enum SanteReadout {
         let magnitude = abs(delta)
         switch key {
         case .sleep: return "\(sign)\(number(magnitude, digits: 0)) min"
-        case .steps: return "\(sign)\(number(magnitude, digits: 0)) pas"
+        case .steps: return "\(sign)\(steps(magnitude)) pas"
         case .restingHr: return "\(sign)\(number(magnitude, digits: 0)) bpm"
         case .hrv: return "\(sign)\(number(magnitude, digits: 0)) ms"
         case .vo2max: return "\(sign)\(number(magnitude, digits: 1))"
@@ -147,6 +147,14 @@ enum SanteReadout {
         case .visceralFat: return "\(sign)\(number(magnitude, digits: 0))"
         case .respiration: return "\(sign)\(number(magnitude, digits: 1))/min"
         }
+    }
+
+    /// « 812 », « 3,2 k », « 12 k »: a step count past a thousand reads in thousands, so it
+    /// fits a tile and a pill.
+    static func steps(_ value: Double) -> String {
+        guard abs(value) >= 1_000 else { return number(value, digits: 0) }
+        let thousands = value / 1_000
+        return "\(number(thousands, digits: abs(thousands) < 10 ? 1 : 0)) k"
     }
 
     static func hoursMinutes(_ minutes: Double) -> String {
