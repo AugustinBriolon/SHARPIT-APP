@@ -269,6 +269,9 @@ Corners nest concentrically (HIG, iOS 26). A container declares its corner
 is the minimum; before iOS 26 it is the corner. Strokes keep a fixed shape (ConcentricRectangle is
 not insettable).
 
+No card in a card. Rows inside a card (`SharpitInsetGroup`, `.sharpitSurface(.row)`) read straight on
+it, split by hairlines as Apple's grouped lists are — no grey group, no white box per row.
+
 Notifications speak as a coach who knows the athlete: « tu », warm and plain (« Ta séance t'attend
 à 18:00 », « Dommage pour hier », « On se retrouve demain pour ton vélo endurance »), one honest
 remark at most, every figure true — never hype, emoji, praise for its own sake or guilt. The server

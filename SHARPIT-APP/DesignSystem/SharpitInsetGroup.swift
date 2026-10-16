@@ -1,18 +1,28 @@
 import SwiftUI
 
-/// The grey group that holds white rows inside a card — exercises, sets, a day's items
-/// (ADR-085). Its rows are separated by air, never by a line.
+/// The rows that sit inside a card — exercises, sets, a day's items. They read straight on the
+/// card, split by hairlines as Apple's grouped lists are, never boxed in a second card.
 struct SharpitInsetGroup<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.rowGap) { content }
-            .padding(SharpitSpacing.insetPadding)
-            .sharpitSurface(.panelAlt)
+        VStack(spacing: 0) {
+            Group(subviews: content) { rows in
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    if index > 0 {
+                        Divider().padding(.horizontal, SharpitSpacing.rowPaddingX)
+                    }
+                    row
+                }
+            }
+        }
+        // Rows pad themselves by rowPaddingX; pulling the group out by as much lines their
+        // words up with the card's header.
+        .padding(.horizontal, -SharpitSpacing.rowPaddingX)
     }
 }
 
-/// One white row in an inset group: leading mark, a title, then a trailing readout.
+/// One row in an inset group: leading mark, a title, then a trailing readout.
 struct SharpitInsetRow<Leading: View, Trailing: View>: View {
     let title: String
     @ViewBuilder var leading: Leading

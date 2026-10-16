@@ -260,11 +260,14 @@ private struct JournalAnalysesRowView: View {
                 Text(row.mediansLabel)
                     .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+                    .fixedSize()
                 Spacer(minLength: SharpitSpacing.xs)
                 Text(JournalAnalysesReadout.sample(row))
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .monospacedDigit()
+                    .multilineTextAlignment(.trailing)
             }
         }
         .padding(.horizontal, SharpitSpacing.rowPaddingX)

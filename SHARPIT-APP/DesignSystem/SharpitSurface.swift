@@ -41,7 +41,8 @@ enum SharpitSurfaceStyle {
         case (.panelAlt, _): SharpitColor.insetGroup
         case (.chip, .base): SharpitColor.chipSurface
         case (.ink, _): SharpitColor.inkSurface
-        case (.row, _): SharpitElevatedColor.row
+        // Rows read straight on their card: no second box inside a card.
+        case (.row, _): .clear
         }
     }
 
