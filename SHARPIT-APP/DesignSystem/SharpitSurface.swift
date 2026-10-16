@@ -93,11 +93,5 @@ extension View {
     func sharpitSurface(_ style: SharpitSurfaceStyle) -> some View {
         modifier(SharpitSurfaceModifier(style: style))
     }
-
-    /// Cards have no border in Ink & Lime (ADR-085).
-    /// shortcut: kept as a no-op so 24 call sites compile; delete with the screen sweep.
-    func sharpitCardSpecularBorder(radius: CGFloat = SharpitRadius.panel) -> some View {
-        self
-    }
 }
 

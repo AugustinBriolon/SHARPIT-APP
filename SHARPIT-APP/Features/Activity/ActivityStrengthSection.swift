@@ -49,57 +49,80 @@ nonisolated struct StrengthExerciseReadout: Equatable, Identifiable, Sendable {
     }
 }
 
+/// The session's exercises as the workout-summary reference card (ADR-085): a header with the
+/// total volume, then one white row per exercise in the grey group — its ordinal, its name and
+/// blocks of sets, its volume.
 struct ActivityStrengthSection: View {
     let exercises: [StrengthExerciseReadout]
 
+    private var totalVolume: Double? {
+        let volumes = exercises.compactMap(\.volumeKg)
+        return volumes.isEmpty ? nil : volumes.reduce(0, +)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Exercices")
-            VStack(spacing: 0) {
-                ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
-                    row(exercise)
-                    if index < exercises.count - 1 {
-                        Rectangle()
-                            .fill(SharpitColor.analysisGrid)
-                            .frame(height: 1)
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            SharpitCardHeader(
+                title: "Exercices",
+                symbol: "dumbbell.fill",
+                subtitle: exercises.count == 1 ? "1 exercice" : "\(exercises.count) exercices",
+                showsChevron: false
+            ) {
+                if let totalVolume {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Volume")
+                            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                        volumeFigure(totalVolume)
                     }
                 }
             }
-            .padding(.horizontal, SharpitSpacing.md)
-            .sharpitSurface(.panel)
-            .sharpitCardSpecularBorder()
+
+            SharpitInsetGroup {
+                ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
+                    row(exercise, number: index + 1)
+                }
+            }
         }
+        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
     }
 
-    private func row(_ exercise: StrengthExerciseReadout) -> some View {
+    private func row(_ exercise: StrengthExerciseReadout, number: Int) -> some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             if let thumb = ExerciseMediaCatalog.thumbURL(name: exercise.exercise) {
-                GuidedExerciseThumbView(url: thumb, size: 44)
+                GuidedExerciseThumbView(url: thumb, size: SharpitTokens.chipSize)
+            } else {
+                SharpitNumberChip(number: number)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(exercise.exercise)
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)
                     .fixedSize(horizontal: false, vertical: true)
-                if let volume = exercise.volumeKg {
-                    Text("Volume \(StrengthExerciseReadout.kilograms(volume))")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
+                Text(exercise.lines.joined(separator: " · "))
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: SharpitSpacing.sm)
-            VStack(alignment: .trailing, spacing: 2) {
-                ForEach(Array(exercise.lines.enumerated()), id: \.offset) { _, line in
-                    Text(line)
-                        .font(SharpitTypography.instrument)
-                        .monospacedDigit()
-                        .foregroundStyle(SharpitColor.foreground)
-                }
+            if let volume = exercise.volumeKg {
+                volumeFigure(volume)
             }
         }
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .padding(.vertical, SharpitSpacing.sm)
+        .frame(minHeight: SharpitSpacing.rowHeight)
+        .sharpitSurface(.row)
         .accessibilityElement(children: .combine)
+    }
+
+    /// « 3 590 kg »: the figure bold, its unit muted, as the references write a load.
+    private func volumeFigure(_ kilograms: Double) -> some View {
+        SharpitRowFigure(
+            value: StrengthExerciseReadout.kilograms(kilograms).replacingOccurrences(of: " kg", with: ""),
+            unit: "kg"
+        )
     }
 }

@@ -350,3 +350,10 @@ private nonisolated let achievementsJSON = """
         #expect(GoalAchievementReadout.value(nil, unit: "km", metricKey: nil) == "—")
     }
 }
+
+@Test func aRecordFigureSplitsItsUnitButNotAClock() {
+    #expect(RecordsReadout.figure("21,4 km") == ("21,4", "km"))
+    #expect(RecordsReadout.figure("265 W") == ("265", "W"))
+    #expect(RecordsReadout.figure("22:14") == ("22:14", nil))
+    #expect(RecordsReadout.figure("4:27 /km") == ("4:27", "/km"))
+}

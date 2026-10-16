@@ -192,3 +192,18 @@ private actor DayRecorder {
     #expect(store.hasData(on: try #require(TrainingDayId.date("2026-09-20"))) == false)
     #expect(store.hasData(on: try #require(TrainingDayId.date("2026-09-01"))) == nil)
 }
+
+@Test func theScoreReadsAgainstTheRecentAverage() {
+    #expect(SleepReadout.scoreDelta(score: 86, average: 78) == "↑ 8 vs moy.")
+    #expect(SleepReadout.scoreDelta(score: 70, average: 73.4) == "↓ 3 vs moy.")
+    #expect(SleepReadout.scoreDelta(score: 80.2, average: 79.8) == nil)
+    #expect(SleepReadout.scoreDelta(score: nil, average: 80) == nil)
+}
+
+@Test func theScoreComponentsAreOnAHundredAndSkipWhatIsMissing() {
+    let parts = SleepReadout.components(
+        V1SleepBreakdown(durationScore: 94, architectureScore: nil, restorativeRatio: 0.88)
+    )
+    #expect(parts.map(\.label) == ["Durée", "Récupération"])
+    #expect(parts.map(\.value) == [94, 88])
+}

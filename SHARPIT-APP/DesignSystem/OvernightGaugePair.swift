@@ -39,10 +39,8 @@ struct OvernightGaugePair: View {
     }
 }
 
-/// One overnight readout, composed with Apple-grade hierarchy and Golden Ratio spatial balance:
-/// - Header: tinted micro-badge icon + uppercase category label + subtle disclosure chevron
-/// - Center: preserved 52-tick gauge arc with nested tabular score and refined sub-label
-/// - Footer: structured telemetry capsule highlighting key metrics (e.g. sleep duration, HRV)
+/// One overnight readout, as the sleep reference card at half width: compact icon-tile header,
+/// the 270° tick dial with the score in its centre, and the night's figure in a chip below.
 private struct OvernightGaugeCell: View {
     let gauge: OvernightGaugeModel
     var overrideCaption: String? = nil
@@ -98,10 +96,8 @@ private struct OvernightGaugeCell: View {
             footCaption
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, SharpitSpacing.sm + 2)
-        .padding(.vertical, SharpitSpacing.sm + 2)
+        .padding(SharpitSpacing.md)
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .onAppear { reveal(to: targetScore) }
@@ -109,18 +105,7 @@ private struct OvernightGaugeCell: View {
     }
 
     private var header: some View {
-        SharpitCardHeader(title: title, symbol: gauge.key.instrumentSymbol, tint: tintColor, showsChevron: opensDetail)
-    }
-
-    private var tintColor: Color {
-        switch gauge.key {
-        case .sleep:
-            SharpitColor.primary
-        case .recovery:
-            SharpitColor.signalRecovery
-        case .effort, .adaptation, .stress:
-            SharpitColor.primary
-        }
+        SharpitCardHeader(title: title, symbol: gauge.key.instrumentSymbol, showsChevron: opensDetail, isCompact: true)
     }
 
     private var dial: some View {
@@ -153,8 +138,8 @@ private struct OvernightGaugeCell: View {
                 .opacity(displayedScore == nil ? 0.45 : (pulse ? 0.55 : 1))
                 .contentTransition(reduceMotion ? .identity : .numericText())
             Text("sur 100")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.85))
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
         }
     }
 

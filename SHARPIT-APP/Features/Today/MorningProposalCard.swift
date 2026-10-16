@@ -14,19 +14,13 @@ struct MorningProposalCard: View {
     private var isEasing: Bool { proposal.direction == .down }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            Label(isEasing ? "Ta nuit propose d'alléger" : "Ta nuit permet d'en faire plus",
-                  systemImage: isEasing ? "moon.zzz" : "bolt.heart")
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(tone)
-
-            Text(proposal.changeSummary)
-                .font(SharpitTypography.cardTitle)
-                .tracking(SharpitTypography.cardTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            SharpitCardHeader(
+                title: proposal.changeSummary,
+                symbol: isEasing ? "moon.zzz.fill" : "bolt.heart.fill",
+                subtitle: isEasing ? "Ta nuit propose d'alléger" : "Ta nuit permet d'en faire plus",
+                showsChevron: false
+            )
 
             Text(proposal.why)
                 .font(SharpitTypography.body)
@@ -47,35 +41,21 @@ struct MorningProposalCard: View {
                 checkInInvitation(onCheckIn)
             }
 
-            HStack(spacing: SharpitSpacing.xs) {
+            HStack(spacing: SharpitSpacing.sm) {
+                SharpitPrimaryButton(title: "Garder le plan", style: .secondary) { onAnswer(false) }
                 SharpitPrimaryButton(title: isEasing ? "Alléger" : "Augmenter") { onAnswer(true) }
-                Button { onAnswer(false) } label: {
-                    Text("Garder le plan")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                        .background(SharpitColor.muted, in: Capsule())
-                }
-                .buttonStyle(.sharpitPressable)
             }
         }
-        .padding(SharpitSpacing.md)
+        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
     }
-
-    private var tone: Color { isEasing ? SharpitColor.signalTempo : SharpitColor.signalRecovery }
 
     /// Read from the night alone so far: the check-in adds how the athlete feels.
     private func checkInInvitation(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "face.smiling")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.primary)
-                    .accessibilityHidden(true)
+                SharpitIconTile(symbol: "face.smiling", size: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Lue sur ta nuit seulement")
                         .font(SharpitTypography.bodyEmphasis)
@@ -92,7 +72,7 @@ struct MorningProposalCard: View {
                     .accessibilityHidden(true)
             }
             .padding(SharpitSpacing.sm)
-            .background(SharpitColor.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
+            .background(SharpitColor.insetGroup, in: RoundedRectangle(cornerRadius: SharpitRadius.row, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.sharpitPressable)
@@ -102,12 +82,10 @@ struct MorningProposalCard: View {
     private func side(_ caption: String, _ side: V1TodayMorningProposal.Side, emphasized: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(caption)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.mutedForeground)
             Text(MorningProposalReadout.headline(side))
-                .font(SharpitTypography.bodyEmphasis)
+                .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
                 .foregroundStyle(emphasized ? SharpitColor.foreground : SharpitColor.mutedForeground)
             if let description = side.description, !description.isEmpty {
                 Text(description)

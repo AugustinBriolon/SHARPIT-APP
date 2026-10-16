@@ -10,15 +10,17 @@ struct SharpitCardHeader<Accessory: View>: View {
     /// shortcut: ignored since ADR-085 (tiles are always ink + lime); drop with the screen sweep.
     var tint: Color = SharpitColor.primary
     var showsChevron = true
+    /// Half-width cards take a smaller tile so the title keeps its room.
+    var isCompact = false
     @ViewBuilder var accessory: () -> Accessory
 
     var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            SharpitIconTile(symbol: symbol)
+        HStack(alignment: .center, spacing: isCompact ? SharpitSpacing.xs : SharpitSpacing.sm) {
+            SharpitIconTile(symbol: symbol, size: isCompact ? 32 : SharpitTokens.tileSize)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(SharpitTypography.cardTitle)
+                    .font(isCompact ? SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline) : SharpitTypography.cardTitle)
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
                 if let subtitle {
@@ -52,9 +54,17 @@ extension SharpitCardHeader where Accessory == EmptyView {
         symbol: String,
         subtitle: String? = nil,
         tint: Color = SharpitColor.primary,
-        showsChevron: Bool = true
+        showsChevron: Bool = true,
+        isCompact: Bool = false
     ) {
-        self.init(title: title, symbol: symbol, subtitle: subtitle, tint: tint, showsChevron: showsChevron) { EmptyView() }
+        self.init(
+            title: title,
+            symbol: symbol,
+            subtitle: subtitle,
+            tint: tint,
+            showsChevron: showsChevron,
+            isCompact: isCompact
+        ) { EmptyView() }
     }
 }
 

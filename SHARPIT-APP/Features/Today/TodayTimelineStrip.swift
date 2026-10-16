@@ -8,27 +8,23 @@ struct TodayTimelineStrip: View {
 
     var body: some View {
         if !events.isEmpty {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow("Fil de la journée")
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+                SharpitCardHeader(title: "Fil de la journée", symbol: "clock", showsChevron: false)
+                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                     ForEach(events) { event in
-                        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+                        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                             Text(clock(event.minuteOfDay))
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                                .frame(width: 44, alignment: .leading)
-                                .monospacedDigit()
-                            Image(systemName: symbol(for: event.kind))
-                                .font(.caption)
-                                .foregroundStyle(SharpitColor.primary)
-                                .frame(width: 16)
+                                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
+                                .foregroundStyle(SharpitColor.foreground)
+                                .frame(width: 48, alignment: .leading)
+                            SharpitIconTile(symbol: symbol(for: event.kind), size: 30)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(event.title)
-                                    .font(SharpitTypography.bodyEmphasis)
+                                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
                                     .foregroundStyle(SharpitColor.foreground)
                                 if let detail = event.detail, !detail.isEmpty {
                                     Text(detail)
-                                        .font(SharpitTypography.meta)
+                                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline))
                                         .foregroundStyle(SharpitColor.mutedForeground)
                                 }
                             }
@@ -37,10 +33,10 @@ struct TodayTimelineStrip: View {
                         .accessibilityElement(children: .combine)
                     }
                 }
-                .padding(SharpitSpacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .sharpitSurface(.panel)
             }
+            .padding(SharpitSpacing.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitSurface(.panel)
         }
     }
 

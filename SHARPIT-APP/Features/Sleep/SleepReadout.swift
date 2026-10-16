@@ -19,6 +19,26 @@ enum SleepReadout {
         return sign + duration(abs(minutes))
     }
 
+    /// « ↑ 8 vs moy. »: the night's score against the recent average. Nil when either is
+    /// unknown or they round to the same point.
+    static func scoreDelta(score: Double?, average: Double?) -> String? {
+        guard let score, let average else { return nil }
+        let delta = Int(score.rounded()) - Int(average.rounded())
+        guard delta != 0 else { return nil }
+        return "\(delta > 0 ? "↑" : "↓") \(abs(delta)) vs moy."
+    }
+
+    /// The three parts of the score, each on 0…100, in the order the night is read.
+    /// The restorative share comes as a ratio and is scaled; a part not measured is left out.
+    static func components(_ breakdown: V1SleepBreakdown) -> [(label: String, value: Double)] {
+        let restorative = breakdown.restorativeRatio.map { $0 <= 1 ? $0 * 100 : $0 }
+        return [
+            ("Durée", breakdown.durationScore),
+            ("Structure", breakdown.architectureScore),
+            ("Récupération", restorative),
+        ].compactMap { label, value in value.map { (label, min(max($0, 0), 100)) } }
+    }
+
     /// Minutes after midnight → "23:10". Values past 24 h wrap, as a bedtime can.
     static func clock(_ minutes: Double?) -> String {
         guard let minutes else { return "—" }
@@ -38,7 +58,7 @@ enum SleepReadout {
 
     static func tone(for insight: V1RecoveryTone) -> Color {
         switch insight {
-        case .good: SharpitColor.signalRecovery
+        case .good: SharpitColor.highlight
         case .moderate: SharpitColor.signalCaution
         case .low: SharpitColor.signalRisk
         case .neutral: SharpitColor.signalNeutral

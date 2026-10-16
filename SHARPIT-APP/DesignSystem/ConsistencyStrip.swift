@@ -2,10 +2,8 @@ import SwiftUI
 
 /// Regularity — the days around today, and what the week holds so far.
 ///
-/// Composed with Apple-grade hierarchy and Golden Ratio spatial balance:
-/// - Header: tinted micro-badge icon + uppercase category label + interactive disclosure chevron
-/// - Rhythm: 8-day tactile day marks with distinct states (trained, today focus, rest, future)
-/// - Footer: structured telemetry capsule with session count and consecutive weeks streak
+/// The card header, the days as marks (lime when trained, today ringed in ink), then the week's
+/// count and the run of weeks in a chip at the foot.
 struct ConsistencyStrip: View {
     let consistency: V1TodayConsistency
     var consecutiveWeeks: Int? = nil
@@ -38,7 +36,6 @@ struct ConsistencyStrip: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(onOpenPlan == nil ? [] : .isButton)
@@ -58,13 +55,14 @@ struct ConsistencyStrip: View {
 
                 if consistency.thisWeekSessionCount > 0 {
                     Text("\(consistency.thisWeekSessionCount)")
-                        .font(SharpitTypography.label)
-                        .fontWeight(.bold)
+                        .font(SharpitTypography.system(size: 15, weight: .bold, relativeTo: .subheadline, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
 
                     Text(consistency.thisWeekSessionCount == 1 ? "séance cette semaine" : "séances cette semaine")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 } else {
                     Text("Aucune séance cette semaine")
                         .font(SharpitTypography.meta)
@@ -77,27 +75,19 @@ struct ConsistencyStrip: View {
             // Number of consecutive weeks with at least 1 activity
             HStack(spacing: 3) {
                 Image(systemName: "bolt.fill")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primary)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(SharpitColor.foreground)
 
                 Text(streakText)
-                    .font(SharpitTypography.label)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(SharpitColor.primary)
+                    .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(1)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, SharpitSpacing.sm)
+        .padding(.vertical, SharpitSpacing.xs)
         .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
-                .fill(SharpitColor.secondary.opacity(0.45))
-                .overlay(
-                    RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
-                        .strokeBorder(SharpitColor.border.opacity(0.06), lineWidth: 0.5)
-                )
-        )
+        .background(SharpitColor.chipSurface, in: RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous))
     }
 
     private var streakText: String {
@@ -135,73 +125,38 @@ private struct ConsistencyDayMark: View {
     var body: some View {
         VStack(spacing: 6) {
             Text(day.weekdayLabel)
-                .font(.system(size: 11, weight: day.isToday ? .bold : .semibold, design: .rounded))
-                .tracking(SharpitTypography.labelTracking)
+                .font(SharpitTypography.system(size: 12, weight: day.isToday ? .bold : .medium, relativeTo: .caption))
                 .foregroundStyle(weekdayColor)
 
             dayCircle
 
             Circle()
-                .fill(day.isToday ? SharpitColor.primary : Color.clear)
-                .frame(width: 3.5, height: 3.5)
+                .fill(day.isToday ? SharpitColor.foreground : Color.clear)
+                .frame(width: 4, height: 4)
         }
         .frame(maxWidth: .infinity)
         .accessibilityHidden(true)
     }
 
     private var weekdayColor: Color {
-        if day.isToday {
-            return SharpitColor.primary
-        }
-        return SharpitColor.mutedForeground.opacity(0.7)
+        day.isToday ? SharpitColor.foreground : SharpitColor.mutedForeground
     }
 
+    /// A trained day is a lime disc, today is ringed in ink, the rest sit on the chip tone.
     @ViewBuilder
     private var dayCircle: some View {
         ZStack {
             if day.hasActivity {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                SharpitColor.primary,
-                                SharpitColor.primary.opacity(0.88)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        Circle()
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.3), Color.white.opacity(0.0)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 0.75
-                            )
-                    )
-                if day.isToday {
-                    Circle()
-                        .strokeBorder(SharpitColor.primary, lineWidth: 2)
-                        .padding(-3)
-                }
-            } else if day.isToday {
-                Circle()
-                    .fill(SharpitColor.primary.opacity(0.08))
-                Circle()
-                    .strokeBorder(SharpitColor.primary, lineWidth: 2)
+                Circle().fill(SharpitColor.highlight)
             } else if day.isFuture {
-                Circle()
-                    .fill(SharpitColor.secondary.opacity(0.35))
+                Circle().fill(SharpitColor.track.opacity(0.5))
             } else {
+                Circle().fill(SharpitColor.chipSurface)
+            }
+            if day.isToday {
                 Circle()
-                    .fill(SharpitColor.secondary.opacity(0.65))
-                    .overlay(
-                        Circle()
-                            .strokeBorder(SharpitColor.border.opacity(0.06), lineWidth: 0.5)
-                    )
+                    .strokeBorder(SharpitColor.foreground, lineWidth: 2)
+                    .padding(day.hasActivity ? -3 : 0)
             }
 
             Text("\(day.dayOfMonth)")
@@ -214,10 +169,10 @@ private struct ConsistencyDayMark: View {
 
     private var numberColor: Color {
         if day.hasActivity {
-            return SharpitColor.primaryForeground
+            return SharpitColor.highlightForeground
         }
         if day.isToday {
-            return SharpitColor.primary
+            return SharpitColor.foreground
         }
         if day.isFuture {
             return SharpitColor.mutedForeground.opacity(0.4)

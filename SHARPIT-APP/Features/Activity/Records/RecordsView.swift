@@ -72,15 +72,9 @@ struct RecordsView: View {
 
     private func loaded(_ records: V1Records) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                Text("Meilleures performances")
-                    .font(SharpitTypography.pageTitle)
-                    .tracking(SharpitTypography.pageTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text(RecordsReadout.summary(records))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
+            Text(RecordsReadout.summary(records))
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
+                .foregroundStyle(SharpitColor.mutedForeground)
 
             SharpitSegmentedControl(
                 selection: $sport,
@@ -89,7 +83,7 @@ struct RecordsView: View {
                 }
             )
 
-            VStack(spacing: SharpitSpacing.sm) {
+            VStack(spacing: SharpitSpacing.md) {
                 ForEach(records.categories(for: sport)) { category in
                     RecordCategoryCard(category: category, sport: sport) { openedActivityId = $0 }
                 }
@@ -114,27 +108,31 @@ struct RecordsView: View {
 
 // MARK: - Category
 
-/// One record kind: the best on its own line, the four behind it under a rule.
+/// One record kind as the PR reference card: the best as the hero figure, « Nouveau record » while
+/// it is fresh, the four behind it as rows in the grey group.
 private struct RecordCategoryCard: View {
     let category: V1RecordCategory
     let sport: RecordSport
     let open: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(
                 title: category.label,
                 symbol: sport.activityType.symbolName,
-                tint: SharpitSportTone.label(for: sport.activityType),
+                subtitle: category.entries.first.map { RecordsReadout.narrative($0.date) },
                 showsChevron: false
-            )
+            ) {
+                if let best = category.entries.first, RecordsReadout.isRecent(best.date) {
+                    SharpitPill("Nouveau PR", style: .lime)
+                }
+            }
 
             if let best = category.entries.first {
                 entryButton(best) { RecordHero(entry: best) }
                 let others = Array(category.entries.dropFirst())
                 if !others.isEmpty {
-                    Divider()
-                    VStack(spacing: 0) {
+                    SharpitInsetGroup {
                         ForEach(others) { entry in
                             entryButton(entry) { RecordRow(entry: entry) }
                         }
@@ -170,32 +168,20 @@ private struct RecordHero: View {
     let entry: V1RecordEntry
 
     var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                Text(entry.displayValue)
-                    .font(SharpitTypography.gaugeScore)
-                    .tracking(SharpitTypography.gaugeScoreTracking)
-                    .foregroundStyle(SharpitColor.recordAccent)
-                    .monospacedDigit()
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                let figure = RecordsReadout.figure(entry.displayValue)
+                SharpitHeroFigure(value: figure.value, unit: figure.unit)
                 Text(RecordsReadout.meta(entry))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .monospacedDigit()
-                Text(RecordsReadout.narrative(entry.date))
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body, digits: true))
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
             Spacer(minLength: SharpitSpacing.xs)
-            VStack(alignment: .trailing, spacing: SharpitSpacing.xs) {
-                if RecordsReadout.isRecent(entry.date) {
-                    SharpitInlineTag("Nouveau")
-                }
-                if entry.activityId != nil {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
-                        .accessibilityHidden(true)
-                }
+            if entry.activityId != nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                    .accessibilityHidden(true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -209,30 +195,22 @@ private struct RecordRow: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            Text("#\(entry.rank)")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .monospacedDigit()
-                .frame(width: 24, alignment: .leading)
+            SharpitNumberChip(number: entry.rank)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.displayValue)
-                    .font(SharpitTypography.instrument)
+                    .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
-                    .monospacedDigit()
                 Text(RecordsReadout.meta(entry))
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .lineLimit(1)
-                    .monospacedDigit()
             }
-            Spacer(minLength: SharpitSpacing.xs)
-            Text(RecordsReadout.narrative(entry.date))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(1)
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .padding(.vertical, SharpitSpacing.xs)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight, alignment: .leading)
+        .sharpitSurface(.row)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
     }
@@ -246,14 +224,14 @@ private struct RunBestsCard: View {
     let open: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(
                 title: "Meilleurs temps",
                 symbol: "stopwatch",
-                tint: SharpitSportTone.label(for: .run),
+                subtitle: "Distances de référence",
                 showsChevron: false
             )
-            VStack(spacing: 0) {
+            SharpitInsetGroup {
                 ForEach(bests) { best in
                     if let entry = best.entries.first {
                         if let activityId = entry.activityId {
@@ -275,26 +253,28 @@ private struct RunBestsCard: View {
     private func row(_ best: V1RunBest, _ entry: V1RecordEntry) -> some View {
         HStack(spacing: SharpitSpacing.sm) {
             Text(best.label)
-                .font(SharpitTypography.bodyEmphasis)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                 .foregroundStyle(SharpitColor.foreground)
                 .frame(width: 72, alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.displayValue)
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .monospacedDigit()
-                Text(RecordsReadout.meta(entry))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
-                    .monospacedDigit()
+            if RecordsReadout.isRecent(entry.date) {
+                SharpitPill("PR", style: .lime)
             }
             Spacer(minLength: SharpitSpacing.xs)
-            if RecordsReadout.isRecent(entry.date) {
-                SharpitInlineTag("Nouveau")
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(entry.displayValue)
+                    .font(SharpitTypography.system(size: 20, weight: .bold, relativeTo: .title3, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+                Text(RecordsReadout.meta(entry))
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .padding(.vertical, SharpitSpacing.xs)
+        .frame(minHeight: SharpitSpacing.rowHeight)
+        .sharpitSurface(.row)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
@@ -314,16 +294,13 @@ private struct PowerCurveCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(
                 title: "Courbe de puissance",
-                symbol: "bolt",
-                tint: SharpitSportTone.label(for: .bike),
+                symbol: "bolt.fill",
+                subtitle: "Puissance moyenne maximale par durée",
                 showsChevron: false
             )
-            Text("Puissance maximale moyenne soutenue par durée.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
 
             chart
 
@@ -345,36 +322,31 @@ private struct PowerCurveCard: View {
     private var chart: some View {
         Chart {
             ForEach(points) { point in
+                AreaMark(x: .value("Durée", point.label), y: .value("Puissance", point.watts))
+                    .interpolationMethod(.monotone)
+                    .foregroundStyle(SharpitChartStyle.area)
                 LineMark(x: .value("Durée", point.label), y: .value("Puissance", point.watts))
                     .interpolationMethod(.monotone)
-                    .foregroundStyle(SharpitColor.recordAccent)
+                    .foregroundStyle(SharpitChartStyle.line)
+                    .lineStyle(StrokeStyle(lineWidth: SharpitChartStyle.lineWidth, lineCap: .round))
                 PointMark(x: .value("Durée", point.label), y: .value("Puissance", point.watts))
-                    .foregroundStyle(SharpitColor.recordAccent)
-                    .symbolSize(22)
+                    .symbol { SharpitChartPoint() }
             }
             if let selected {
                 RuleMark(x: .value("Durée", selected.label))
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
                     .lineStyle(StrokeStyle(lineWidth: 1))
                 PointMark(x: .value("Durée", selected.label), y: .value("Puissance", selected.watts))
-                    .foregroundStyle(SharpitColor.recordAccent)
-                    .symbolSize(90)
+                    .symbol { SharpitChartPoint() }
                     .annotation(position: .top, spacing: 6, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                        Text(RecordsReadout.watts(selected.watts))
-                            .font(SharpitTypography.instrument)
-                            .monospacedDigit()
-                            .foregroundStyle(SharpitColor.foreground)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(SharpitElevatedColor.panelOnSheet, in: RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous))
-                            .sharpitShadow(.control)
+                        SharpitChartBubble(text: RecordsReadout.watts(selected.watts))
                     }
             }
         }
         .chartXSelection(value: $selectedLabel)
         .chartYAxis {
             AxisMarks(position: .leading) { value in
-                AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
+                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.analysisBorder)
                 AxisValueLabel {
                     if let watts = value.as(Double.self) {
                         Text(RecordsReadout.watts(watts))
@@ -384,6 +356,7 @@ private struct PowerCurveCard: View {
         }
         .chartXAxis {
             AxisMarks { _ in
+                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.analysisBorder)
                 AxisValueLabel()
             }
         }

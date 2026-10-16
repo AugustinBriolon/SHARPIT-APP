@@ -85,6 +85,7 @@ struct SharpitPill: View {
             .padding(.vertical, 5)
             .background(background, in: Capsule())
             .lineLimit(1)
+            .fixedSize()
     }
 
     private var foreground: Color {

@@ -54,6 +54,15 @@ final class RecordsStore {
 
 /// How a record reads, in the web's words (`records-panel.tsx`).
 nonisolated enum RecordsReadout {
+    /// « 21,4 km » → (« 21,4 », « km »): the figure and its unit, so the unit can sit muted
+    /// beside it. A value with no trailing word (« 22:14 ») has no unit.
+    static func figure(_ displayValue: String) -> (value: String, unit: String?) {
+        guard let space = displayValue.lastIndex(of: " ") else { return (displayValue, nil) }
+        let unit = String(displayValue[displayValue.index(after: space)...])
+        guard !unit.isEmpty, unit.allSatisfy({ $0.isLetter || $0 == "/" }) else { return (displayValue, nil) }
+        return (String(displayValue[..<space]), unit)
+    }
+
     private static let french = Locale(identifier: "fr_FR")
 
     /// A record set in the last two weeks carries « Nouveau ».
