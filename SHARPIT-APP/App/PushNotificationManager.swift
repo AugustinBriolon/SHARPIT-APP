@@ -189,9 +189,12 @@ final class PushNotificationManager {
     }
 
     /// Path-only (`/plan`) or `https://sharpit.app/…`. Foreign hosts and other schemes are ignored.
+    /// Paths go through `URL.path` so a trailing slash matches Foundation's normalisation.
     nonisolated static func trustedPushPath(_ raw: String) -> String? {
         if raw.hasPrefix("/"), !raw.hasPrefix("//") {
-            return raw
+            guard let url = URL(string: raw) else { return nil }
+            let path = url.path
+            return path.isEmpty ? "/" : path
         }
         guard let url = URL(string: raw),
               url.scheme == "https",
