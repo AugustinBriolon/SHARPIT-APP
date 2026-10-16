@@ -91,7 +91,6 @@ struct MacroPlanSheet: View {
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
-                .sharpitCardSpecularBorder()
 
                 // Weeks by Phase
                 let grouped = groupWeeksByPhase(plan.weeks)
@@ -122,7 +121,6 @@ struct MacroPlanSheet: View {
                         .padding(.horizontal, SharpitSpacing.cardPadding)
                         .padding(.vertical, 4)
                         .sharpitSurface(.panel)
-                        .sharpitCardSpecularBorder()
                     }
                 }
 
@@ -177,7 +175,6 @@ struct MacroPlanSheet: View {
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
-                .sharpitCardSpecularBorder()
 
                 if datedGoals.isEmpty {
                     VStack(spacing: SharpitSpacing.sm) {
@@ -195,7 +192,6 @@ struct MacroPlanSheet: View {
                     .frame(maxWidth: .infinity)
                     .padding(SharpitSpacing.xl)
                     .sharpitSurface(.panel)
-                    .sharpitCardSpecularBorder()
                 } else {
                     VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                         Text("OBJECTIF CIBLÉ")
@@ -244,7 +240,6 @@ struct MacroPlanSheet: View {
                     }
                     .padding(SharpitSpacing.cardPadding)
                     .sharpitSurface(.panel)
-                    .sharpitCardSpecularBorder()
                 }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)

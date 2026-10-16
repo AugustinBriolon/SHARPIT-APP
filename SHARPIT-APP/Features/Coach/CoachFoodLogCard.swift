@@ -302,7 +302,6 @@ struct CoachFoodLogCard: View {
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()

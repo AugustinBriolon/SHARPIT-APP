@@ -292,7 +292,6 @@ private struct NutritionEmptyDayPlate: View {
         .padding(SharpitSpacing.lg)
         .frame(maxWidth: .infinity)
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
     }
 
     private func capsule(_ title: String, symbol: String, tone: Color, action: @escaping () -> Void) -> some View {
@@ -361,7 +360,6 @@ private struct NutritionEnergyPlate: View {
             }
         }
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
     }
 
     private var dial: some View {
@@ -679,7 +677,6 @@ private struct NutritionMealsSection: View {
                 }
             }
             .sharpitSurface(.panel)
-            .sharpitCardSpecularBorder()
         }
     }
 }
@@ -805,7 +802,6 @@ private struct NutritionRegularitySection: View {
             }
             .padding(SharpitSpacing.md)
             .sharpitSurface(.panel)
-            .sharpitCardSpecularBorder()
         }
     }
 

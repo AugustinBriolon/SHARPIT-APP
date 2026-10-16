@@ -28,7 +28,6 @@ struct NutritionMealView: View {
                         }
                     }
                     .sharpitSurface(.panel)
-                    .sharpitCardSpecularBorder()
                 }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
@@ -66,7 +65,6 @@ struct NutritionMealView: View {
         }
         .padding(SharpitSpacing.md)
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
     }
 
     private func macro(_ macro: NutritionReadout.Macro, _ grams: Double) -> some View {

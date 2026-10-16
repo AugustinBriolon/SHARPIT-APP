@@ -131,7 +131,6 @@ private struct PlanTrajectoryTileView: View {
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }

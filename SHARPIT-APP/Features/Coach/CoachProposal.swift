@@ -378,7 +378,6 @@ struct CoachProposalCard: View {
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
-        .sharpitCardSpecularBorder()
     }
 
     /// « Course · 45 min · Seuil · charge 60 » as chips: each figure read on its own.

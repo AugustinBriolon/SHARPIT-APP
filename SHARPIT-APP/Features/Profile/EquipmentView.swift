@@ -171,7 +171,6 @@ struct EquipmentBySport: View {
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
-                .sharpitCardSpecularBorder()
             }
         }
     }

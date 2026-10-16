@@ -17,7 +17,6 @@ struct NutritionTodayCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(SharpitSpacing.cardPadding)
             .sharpitSurface(.panel)
-            .sharpitCardSpecularBorder()
         }
         .buttonStyle(.sharpitPressable)
         .disabled(phase == .loading)
