@@ -20,6 +20,9 @@ protocol ActivityServing: Sendable {
     /// One page of the history, newest first: up to `limit` sessions started before `before`
     /// (the most recent ones when nil). Activité reads the history this way, years of it included.
     func activityPage(before: Date?, limit: Int, token: String) async throws -> [V1ActivityListItem]
+    /// The sessions started in `[from, to)`, either side open when nil — for a screen that reads
+    /// a week or a season, never the whole history.
+    func activities(from: Date?, to: Date?, token: String) async throws -> [V1ActivityListItem]
     func activity(id: String, token: String) async throws -> V1ActivityDetail
     func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload
     /// A multisport session's sport legs, each with its own recording.
@@ -56,6 +59,12 @@ extension ActivityServing {
     func activityPage(before: Date?, limit: Int, token: String) async throws -> [V1ActivityListItem] {
         let all = try await activities(token: token).sorted { $0.date > $1.date }
         return Array(all.filter { before == nil || $0.date < before! }.prefix(limit))
+    }
+    /// Stubs window their whole list.
+    func activities(from: Date?, to: Date?, token: String) async throws -> [V1ActivityListItem] {
+        try await activities(token: token).filter { activity in
+            (from.map { activity.date >= $0 } ?? true) && (to.map { activity.date < $0 } ?? true)
+        }
     }
     /// Most conformers hold no cache, so the default is to have nothing to forget.
     func invalidateActivities() async {}
@@ -109,11 +118,23 @@ actor ActivityClient: ActivityServing, ActivityMutating {
     func activityPage(before: Date?, limit: Int, token: String) async throws -> [V1ActivityListItem] {
         var query = [URLQueryItem(name: "limit", value: String(limit))]
         if let before {
-            query.append(URLQueryItem(name: "before", value: before.ISO8601Format(.iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted))))
+            query.append(URLQueryItem(name: "before", value: Self.instant(before)))
         }
         let page: [V1ActivityListItem] = try await request(path: "/api/v1/activities", queryItems: query, token: token)
         dropDetailsDisagreeing(with: page)
         return page
+    }
+
+    func activities(from: Date?, to: Date?, token: String) async throws -> [V1ActivityListItem] {
+        var query: [URLQueryItem] = []
+        if let from { query.append(URLQueryItem(name: "after", value: Self.instant(from))) }
+        if let to { query.append(URLQueryItem(name: "before", value: Self.instant(to))) }
+        return try await request(path: "/api/v1/activities", queryItems: query, token: token)
+    }
+
+    /// An instant as the server reads it, to the millisecond.
+    private nonisolated static func instant(_ date: Date) -> String {
+        date.ISO8601Format(.iso8601.year().month().day().time(includingFractionalSeconds: true).timeZone(separator: .omitted))
     }
 
     /// How many recent sessions have their disk copy checked on each list read; older ones are

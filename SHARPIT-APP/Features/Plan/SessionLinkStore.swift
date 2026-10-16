@@ -96,7 +96,13 @@ final class SessionLinkStore {
         phase = .loading
         do {
             let token = try await tokenProvider()
-            let all = try await activities.activities(token: token)
+            // Candidates sit a day either side of the session: only those days are read.
+            let day = calendar.startOfDay(for: referenceDate)
+            let all = try await activities.activities(
+                from: calendar.date(byAdding: .day, value: -1, to: day),
+                to: calendar.date(byAdding: .day, value: 2, to: day),
+                token: token
+            )
             candidates = SessionLinkCandidate.candidates(from: all, around: referenceDate, calendar: calendar)
             phase = .ready
         } catch is CancellationError {

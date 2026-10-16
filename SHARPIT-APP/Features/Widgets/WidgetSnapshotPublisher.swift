@@ -217,7 +217,8 @@ enum WidgetSnapshotPublisher {
         async let nutritionRead = try? nutrition.nutrition(trainingDayId: dayId, token: token)
         async let overviewRead = try? body.bodyOverview(token: token)
         async let profileRead = try? profile.athleteProfile(token: token)
-        async let activitiesRead = try? activities.activities(forceRefresh: true, token: token)
+        // The newest page holds the fortnight Training reads and the last route.
+        async let activitiesRead = try? activities.activityPage(before: nil, limit: 60, token: token)
         async let goalsRead = try? goals.goals(token: token)
         let (payload, food, overview, athlete) = await (todayRead, nutritionRead, overviewRead, profileRead)
         let (recorded, races) = await (activitiesRead, goalsRead)

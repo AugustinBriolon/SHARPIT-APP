@@ -187,7 +187,8 @@ final class PlanStore {
         guard let token = try? await tokenProvider() else { return [:] }
         let range = selectableDates
         async let planned = try? client.plannedSessions(from: range.lowerBound, to: range.upperBound, token: token)
-        async let recorded = try? activityClient.activities(token: token)
+        let end = calendar.date(byAdding: .day, value: 1, to: range.upperBound)
+        async let recorded = try? activityClient.activities(from: range.lowerBound, to: end, token: token)
         return Self.calendarMarks(
             planned: (await planned ?? []).map(\.date),
             activities: (await recorded ?? []).map(\.date),
@@ -231,11 +232,11 @@ final class PlanStore {
             // The week's activities carry their own link back to the plan, so the merge
             // needs no extra endpoint. A failure here degrades to the prescription alone
             // rather than emptying the week.
-            async let recorded = try? activityClient.activities(token: token)
+            async let recorded = try? activityClient.activities(from: start, to: nextWeek, token: token)
 
             let entries = PlanEntryBuilder.entries(
                 planned: try await planned,
-                activities: (await recorded ?? []).filter { $0.date >= start && $0.date < nextWeek },
+                activities: await recorded ?? [],
                 calendar: calendar
             )
             withAnimation(SharpitMotion.reveal) {

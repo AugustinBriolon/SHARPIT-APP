@@ -45,3 +45,26 @@ private func day(_ iso: String) -> Date { TrainingDayId.date(iso)! }
     #expect(week.todayIndex == 4)
     #expect(ActivityHistory.hours(week.durationSeconds) == "1 h 38")
 }
+
+private struct WindowStub: ActivityServing {
+    let all: [V1ActivityListItem]
+    func activities(token _: String) async throws -> [V1ActivityListItem] { all }
+    func activity(id _: String, token _: String) async throws -> V1ActivityDetail { throw SharpitAPIError.server }
+    func activityStream(id _: String, token _: String) async throws -> V1ActivityStreamPayload { throw SharpitAPIError.server }
+    func generateNarrative(id _: String, token _: String) async throws -> V1ActivityDetail { throw SharpitAPIError.server }
+    func updateSubjective(id _: String, rpe _: Double?, feeling _: String?, token _: String) async throws {}
+}
+
+@Test func aWindowKeepsItsFirstDayAndLeavesItsEnd() async throws {
+    // A plan week reads Monday 12 up to, not including, Monday 19.
+    let stub = WindowStub(all: [
+        V1ActivityListItem(id: "mon", date: day("2026-10-12")),
+        V1ActivityListItem(id: "sun", date: day("2026-10-18")),
+        V1ActivityListItem(id: "next", date: day("2026-10-19")),
+        V1ActivityListItem(id: "before", date: day("2026-10-11")),
+    ])
+
+    let week = try await stub.activities(from: day("2026-10-12"), to: day("2026-10-19"), token: "")
+
+    #expect(week.map(\.id) == ["mon", "sun"])
+}

@@ -173,7 +173,9 @@ final class GoalStore {
 
     private func fetchActivities(token: String) async -> [V1ActivityListItem] {
         guard let client = activityClient else { return [] }
-        return (try? await client.activities(token: token)) ?? []
+        // The same year back as the planned sessions beside them: what a goal's volume reads.
+        let from = Calendar.current.date(byAdding: .year, value: -1, to: .now)
+        return (try? await client.activities(from: from, to: nil, token: token)) ?? []
     }
 
     func volumeStats(for goal: V1Goal) -> GoalVolumeStats {

@@ -581,7 +581,9 @@ private struct TodayFoldView: View {
 
         // 1. Calculate consecutive active weeks
         let activityClient = ActivityClient()
-        if let activities = try? await activityClient.activities(forceRefresh: true, token: token) {
+        // shortcut: a streak is read over the last 53 weeks, so it tops out at a year; widen the window if streaks that long matter.
+        let streakFrom = Calendar.current.date(byAdding: .weekOfYear, value: -53, to: .now)
+        if let activities = try? await activityClient.activities(from: streakFrom, to: nil, token: token) {
             let streak = ActivityStreakCalculator.consecutiveWeeksWithActivity(
                 activities: activities,
                 referenceDate: .now
