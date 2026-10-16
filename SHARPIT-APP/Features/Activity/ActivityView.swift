@@ -413,7 +413,7 @@ enum ActivityFormat {
     static func primaryMetric(_ activity: V1ActivityListItem) -> String? {
         guard let distanceM = activity.distanceM, distanceM > 0 else { return nil }
         return distanceM >= 10_000
-            ? String(format: "%.1f km", distanceM / 1_000)
+            ? String(format: "%.1f km", distanceM / 1_000).replacingOccurrences(of: ".", with: ",")
             : "\(Int(distanceM.rounded() / 10) * 10) m"
     }
 }

@@ -1102,73 +1102,44 @@ private struct ActivityDetailContent: View {
     }
 
     private var coachAnalysis: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Analyse du coach", systemImage: "sparkles")
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            SharpitCardHeader(
+                title: detail.narrativeAnalysis?.headline ?? "Analyse du coach",
+                symbol: "text.bubble",
+                subtitle: detail.narrativeAnalysis == nil ? "Prête à être générée" : "Analyse du coach",
+                showsChevron: false
+            )
             if let narrative = detail.narrativeAnalysis {
-                Text(narrative.headline)
-                    .font(SharpitTypography.sectionTitle)
-                    .tracking(SharpitTypography.sectionTitleTracking)
-                Text(narrative.narrative).font(.body).lineSpacing(4)
+                Text(narrative.narrative)
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineSpacing(4)
             } else {
-                Label("Ton retour est prêt à être généré", systemImage: "sparkles").font(.headline)
-                Text("SharpIt peut croiser ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")
-                    .font(.body).foregroundStyle(SharpitColor.mutedForeground)
-                Button(action: onGenerateNarrative) {
-                    HStack {
-                        if isGeneratingNarrative { ProgressView().tint(.white) }
-                        Text(isGeneratingNarrative ? "Analyse en cours…" : "Générer l’analyse")
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                    }
-                    .font(SharpitTypography.bodyEmphasis.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, SharpitSpacing.cardPadding)
-                    .padding(.vertical, SharpitSpacing.sm)
-                    .background(tone, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-                .buttonStyle(.sharpitPressable)
+                Text("SharpIt croise ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                SharpitPrimaryButton(
+                    title: isGeneratingNarrative ? "Analyse en cours…" : "Générer l’analyse",
+                    trailingSymbol: isGeneratingNarrative ? nil : "arrow.up.right",
+                    isBusy: isGeneratingNarrative,
+                    action: onGenerateNarrative
+                )
                 .disabled(isGeneratingNarrative)
             }
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(colors: [tone.opacity(0.13), SharpitColor.analysisSurfaceAlt],
-                           startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous)
-        )
+        .sharpitSurface(.panel)
     }
 
     private var sessionSummary: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Lecture de séance")
-            if detail.type == .strength {
-                HStack(spacing: SharpitSpacing.xs) {
-                    SummarySignal(label: "Exercices", value: "\(exerciseCount)", symbol: "figure.strengthtraining.traditional")
-                    SummarySignal(label: "Séries", value: "\(totalStrengthSets)", symbol: "repeat")
-                    if let volume = strengthVolume {
-                        SummarySignal(label: "Volume", value: "\(Int(volume.rounded())) kg", symbol: "scalemass")
-                    }
-                }
-            } else if detail.type == .swim {
-                HStack(spacing: SharpitSpacing.xs) {
-                    if let sets = detail.swimSets {
-                        SummarySignal(label: "Séries", value: "\(Int(sets.rounded()))", symbol: "water.waves")
-                    }
-                    if let swolf = detail.swolf {
-                        SummarySignal(label: "Swolf", value: "\(Int(swolf.rounded()))", symbol: "waveform.path.ecg")
-                    }
-                }
-            } else if detail.type != .triathlon {
-                HStack(spacing: SharpitSpacing.xs) {
-                    if let elevation = detail.elevationM {
-                        SummarySignal(label: "Dénivelé", value: "\(Int(elevation.rounded())) m", symbol: "mountain.2")
-                    }
-                    if let power = detail.avgPower {
-                        SummarySignal(label: "Puissance", value: "\(Int(power.rounded())) W", symbol: "bolt")
-                    }
-                    if let calories = detail.calories {
-                        SummarySignal(label: "Calories", value: "\(Int(calories.rounded()))", symbol: "flame")
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            SharpitCardHeader(title: "Lecture de séance", symbol: "list.bullet.rectangle", showsChevron: false)
+            let signals = summarySignals
+            if !signals.isEmpty {
+                HStack(alignment: .top, spacing: SharpitSpacing.md) {
+                    ForEach(signals, id: \.caption) { signal in
+                        SharpitStatTile(caption: signal.caption, value: signal.value, unit: signal.unit, isFlat: true)
                     }
                 }
             }
@@ -1176,8 +1147,27 @@ private struct ActivityDetailContent: View {
                 Text(notes).font(SharpitTypography.body).foregroundStyle(SharpitColor.mutedForeground)
             }
         }
+        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .opacity(hasSessionSummaryData ? 1 : 0)
+        .sharpitSurface(.panel)
+    }
+
+    /// The session's figures beyond the hero grid, per sport.
+    private var summarySignals: [(caption: String, value: String, unit: String?)] {
+        switch detail.type {
+        case .strength:
+            return [("Exercices", "\(exerciseCount)", nil), ("Séries", "\(totalStrengthSets)", nil)]
+                + (strengthVolume.map { [("Volume", "\(Int($0.rounded()))", "kg")] } ?? [])
+        case .swim:
+            return (detail.swimSets.map { [("Séries", "\(Int($0.rounded()))", nil)] } ?? [])
+                + (detail.swolf.map { [("Swolf", "\(Int($0.rounded()))", nil)] } ?? [])
+        case .triathlon:
+            return []
+        default:
+            return (detail.elevationM.map { [("Dénivelé", "\(Int($0.rounded()))", "m")] } ?? [])
+                + (detail.avgPower.map { [("Puissance", "\(Int($0.rounded()))", "W")] } ?? [])
+                + (detail.calories.map { [("Calories", "\(Int($0.rounded()))", "kcal")] } ?? [])
+        }
     }
 
     private var hasSessionSummaryData: Bool {
@@ -1410,7 +1400,7 @@ struct ActivitySplit: Identifiable, Equatable {
             return ActivitySplit(
                 id: index,
                 distanceLabel: endDistance - startDistance < segmentDistance
-                    ? String(format: "%.1f km", distance / 1_000)
+                    ? String(format: "%.1f km", distance / 1_000).replacingOccurrences(of: ".", with: ",")
                     : "\(Int(endDistance / 1_000)) km",
                 paceSeconds: pace,
                 variation: (pace / overallPace - 1) * 100,
@@ -1442,32 +1432,60 @@ struct ActivitySplitsSection: View {
     let segmentDistance: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(segmentDistance == 5_000 ? "Splits tous les 5 km" : "Splits au kilomètre")
-            Text("Rythme relatif · les barres les plus longues indiquent une allure plus vive")
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.mutedForeground)
-            ForEach(splits) { split in
-                HStack(alignment: .center, spacing: SharpitSpacing.xs) {
-                    Text(split.distanceLabel).font(SharpitTypography.instrument).foregroundStyle(SharpitColor.mutedForeground).lineLimit(1).fixedSize().frame(minWidth: 52, alignment: .leading)
-                    VStack(alignment: .leading, spacing: 7) {
-                        HStack(alignment: .firstTextBaseline, spacing: 7) {
-                            Text(split.figure(segmentDistance: segmentDistance)).font(.headline.monospacedDigit().weight(.semibold))
-                            Text(String(format: "%+.0f%%", split.variation)).font(.caption.weight(.semibold)).foregroundStyle(split.variation <= 0 ? .green : .orange)
-                        }
-                        GeometryReader { proxy in
-                            Capsule().fill(SharpitColor.radialTrack).overlay(alignment: .leading) { Capsule().fill(split.variation <= -5 ? SharpitColor.signalRecovery : tone.opacity(0.72)).frame(width: proxy.size.width * split.progress) }
-                        }.frame(height: 7)
-                    }
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(split.heartRate.map { "\(Int($0.rounded())) bpm" } ?? "—")
-                        Text("+\(Int(split.elevationGain.rounded())) m")
-                    }.font(.caption.monospacedDigit()).foregroundStyle(SharpitColor.mutedForeground).frame(width: 58, alignment: .trailing)
-                }.padding(.vertical, 5)
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            SharpitCardHeader(
+                title: segmentDistance == 5_000 ? "Splits tous les 5 km" : "Splits au kilomètre",
+                symbol: "flag.pattern.checkered",
+                subtitle: "Barre longue, allure vive",
+                showsChevron: false
+            )
+            VStack(spacing: SharpitSpacing.sm) {
+                ForEach(splits) { split in
+                    row(split)
+                }
             }
         }
         .padding(SharpitSpacing.cardPadding)
-        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+    }
+
+    /// Distance, figure and its gap to the session's average, the bar, then heart rate and climb.
+    /// The fastest splits (5 % above the average) fill lime, the rest ink.
+    private func row(_ split: ActivitySplit) -> some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            Text(split.distanceLabel)
+                .font(SharpitTypography.meta.monospacedDigit())
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(width: 52, alignment: .leading)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(split.figure(segmentDistance: segmentDistance))
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text(String(format: "%+.0f %%", split.variation))
+                        .font(SharpitTypography.meta.monospacedDigit())
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+                .lineLimit(1)
+                SharpitBarTrack(
+                    fraction: split.progress,
+                    tone: split.variation <= -5 ? SharpitColor.highlight : SharpitColor.foreground
+                )
+                .frame(height: 6)
+            }
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(split.heartRate.map { "\(Int($0.rounded())) bpm" } ?? "—")
+                Text("+\(Int(split.elevationGain.rounded())) m")
+            }
+            .font(SharpitTypography.meta.monospacedDigit())
+            .foregroundStyle(SharpitColor.mutedForeground)
+            .lineLimit(1)
+            .fixedSize()
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -1497,16 +1515,6 @@ enum ActivityChartMetric: String, CaseIterable, Identifiable {
         case .power: "W"
         case .elevation: "m"
         case .cadence: "SPM"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .heartRate: .red
-        case .pace: .orange
-        case .power: .purple
-        case .elevation: .green
-        case .cadence: .blue
         }
     }
 
@@ -1553,6 +1561,20 @@ struct ActivityChartsSection: View {
     @Binding var selection: [ActivityChartMetric]
     let tone: Color
 
+    /// Monochrome (ADR-085): the first curve ink, the second lime — told apart by position.
+    private func color(for metric: ActivityChartMetric) -> Color {
+        metric == selection.first ? SharpitColor.foreground : SharpitColor.highlight
+    }
+
+    /// Keeps the selection to what this session recorded, so a ride without heart rate opens on
+    /// its first curve instead of an empty chart.
+    private func reconcile(with available: [ActivityChartMetric]) {
+        selection = selection.filter { available.contains($0) }
+        if selection.isEmpty, let first = available.first {
+            selection = [first]
+        }
+    }
+
     private func points(for metric: ActivityChartMetric) -> [ActivityChartPoint] {
         samples.enumerated().compactMap { index, sample in
             guard let value = metric.value(for: sample), value.isFinite else { return nil }
@@ -1581,14 +1603,16 @@ struct ActivityChartsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .firstTextBaseline) {
-                SharpitEyebrow("Courbes")
-                Spacer()
-                HStack(spacing: 8) {
+            SharpitCardHeader(title: "Courbes", symbol: "waveform.path.ecg", showsChevron: false) {
+                // A swatch carries the curve's colour; the unit stays legible in muted ink.
+                HStack(spacing: SharpitSpacing.sm) {
                     ForEach(selection) { metric in
-                        Label(metric.unit, systemImage: "line.diagonal")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(metric.color)
+                        HStack(spacing: 4) {
+                            Capsule().fill(color(for: metric)).frame(width: 12, height: 4)
+                            Text(metric.unit)
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.mutedForeground)
+                        }
                     }
                 }
             }
@@ -1611,17 +1635,13 @@ struct ActivityChartsSection: View {
                     }
                 }
             }
-            .onChange(of: metrics) { _, available in
-                selection = selection.filter { available.contains($0) }
-                if selection.isEmpty, let first = available.first {
-                    selection = [first]
-                }
-            }
+            .onAppear { reconcile(with: metrics) }
+            .onChange(of: metrics) { _, available in reconcile(with: available) }
 
             if selection.contains(where: { points(for: $0).count > 1 }) {
                 HStack(alignment: .top, spacing: 6) {
                     if let first = selection.first {
-                        ActivityChartAxisLabels(values: axisValues(for: first), color: first.color, alignment: .trailing)
+                        ActivityChartAxisLabels(values: axisValues(for: first), alignment: .trailing)
                     }
                     ZStack {
                         if let first = selection.first {
@@ -1631,7 +1651,7 @@ struct ActivityChartsSection: View {
                                 y: .value(first.unit, point.value)
                             )
                             .interpolationMethod(.catmullRom)
-                            .foregroundStyle(first.color)
+                            .foregroundStyle(color(for: first))
                             .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                         }
                         .chartXScale(domain: timeDomain)
@@ -1656,7 +1676,7 @@ struct ActivityChartsSection: View {
                                 y: .value(second.unit, point.value)
                             )
                             .interpolationMethod(.catmullRom)
-                            .foregroundStyle(second.color)
+                            .foregroundStyle(color(for: second))
                             .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                         }
                         .chartXScale(domain: timeDomain)
@@ -1668,7 +1688,7 @@ struct ActivityChartsSection: View {
                     .frame(maxWidth: .infinity)
                     if selection.count > 1 {
                         let second = selection[1]
-                        ActivityChartAxisLabels(values: axisValues(for: second), color: second.color, alignment: .leading)
+                        ActivityChartAxisLabels(values: axisValues(for: second), alignment: .leading)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -1683,14 +1703,12 @@ struct ActivityChartsSection: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
-        .clipped()
+        .sharpitSurface(.panel)
     }
 }
 
 private struct ActivityChartAxisLabels: View {
     let values: [String]
-    let color: Color
     let alignment: HorizontalAlignment
 
     var body: some View {
@@ -1698,7 +1716,7 @@ private struct ActivityChartAxisLabels: View {
             ForEach(values.indices, id: \.self) { index in
                 Text(values[index])
                     .font(.caption2.monospacedDigit())
-                    .foregroundStyle(color)
+                    .foregroundStyle(SharpitColor.mutedForeground)
                     .frame(maxHeight: .infinity, alignment: index == 0 ? .top : index == values.count - 1 ? .bottom : .center)
             }
         }
@@ -1717,7 +1735,7 @@ private struct ActivityMetricToggleLabel: View {
             .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
             .padding(.horizontal, SharpitSpacing.sm)
             .frame(height: SharpitSpacing.minimumTouchTarget)
-            .background(isSelected ? metric.color : Color(uiColor: .tertiarySystemFill), in: Capsule())
+            .background(isSelected ? SharpitColor.primary : SharpitColor.chipSurface, in: Capsule())
     }
 }
 
@@ -1760,7 +1778,7 @@ extension ActivityHeroMetricData {
             if !detail.strengthSets.isEmpty { metrics.append(.init(label: "Séries", value: "\(detail.strengthSetCount)", unit: nil)) }
             if let volume = detail.strengthVolumeKg { metrics.append(.init(label: "Volume", value: "\(Int(volume.rounded()))", unit: "kg")) }
         } else if let distance = distanceM {
-            metrics.append(.init(label: "Distance", value: distance >= 1_000 ? String(format: "%.1f", distance / 1_000) : "\(Int(distance.rounded()))", unit: distance >= 1_000 ? "km" : "m"))
+            metrics.append(.init(label: "Distance", value: distance >= 1_000 ? String(format: "%.1f", distance / 1_000).replacingOccurrences(of: ".", with: ",") : "\(Int(distance.rounded()))", unit: distance >= 1_000 ? "km" : "m"))
         }
         if let elevation = detail.elevationM, detail.type != .swim && detail.type != .strength { metrics.append(.init(label: "Dénivelé", value: "\(Int(elevation.rounded()))", unit: "m")) }
         if detail.type == .swim, let pace = detail.avgPaceSecPer100m {
@@ -1785,65 +1803,25 @@ extension ActivityHeroMetricData {
 
 struct ActivityMetricGrid: View {
     var title = "Résumé de séance"
+    var symbol = "chart.bar"
     let metrics: [ActivityHeroMetricData]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            Text(title)
-                .font(SharpitTypography.bodyEmphasis.weight(.semibold))
-                .foregroundStyle(SharpitColor.mutedForeground)
-            LazyVGrid(columns: [GridItem(.flexible(minimum: 0)), GridItem(.flexible(minimum: 0))], spacing: SharpitSpacing.md) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            SharpitCardHeader(title: title, symbol: symbol, showsChevron: false)
+            LazyVGrid(
+                columns: [GridItem(.flexible(minimum: 0), alignment: .topLeading), GridItem(.flexible(minimum: 0), alignment: .topLeading)],
+                alignment: .leading,
+                spacing: SharpitSpacing.lg
+            ) {
                 ForEach(metrics) { metric in
-                    ActivityHeroMetric(metric: metric)
+                    SharpitStatTile(caption: metric.label, value: metric.value, unit: metric.unit, isFlat: true)
                 }
             }
         }
-        .padding(.horizontal, SharpitSpacing.md)
-        .padding(.vertical, SharpitSpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
-    }
-}
-
-struct ActivityHeroMetric: View {
-    let metric: ActivityHeroMetricData
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(metric.label.uppercased())
-                .font(.caption.weight(.semibold))
-                .tracking(1.1)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(1)
-            Text(metric.value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
-            if let unit = metric.unit { Text(unit).font(.caption).foregroundStyle(SharpitColor.mutedForeground) }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct SummarySignal: View {
-    let label: String
-    let value: String
-    let symbol: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: symbol)
-                .foregroundStyle(SharpitColor.mutedForeground)
-            Text(value)
-                .font(SharpitTypography.bodyEmphasis.weight(.semibold))
-                .lineLimit(1)
-            Text(label)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
-        .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
     }
 }
 

@@ -91,11 +91,8 @@ struct ActivityStrengthSection: View {
 
     private func row(_ exercise: StrengthExerciseReadout, number: Int) -> some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            if let thumb = ExerciseMediaCatalog.thumbURL(name: exercise.exercise) {
-                GuidedExerciseThumbView(url: thumb, size: SharpitTokens.chipSize)
-            } else {
-                SharpitNumberChip(number: number)
-            }
+            // The order always leads, so every row lines up; a picture, when the catalogue has one, trails.
+            SharpitNumberChip(number: number)
             VStack(alignment: .leading, spacing: 2) {
                 Text(exercise.exercise)
                     .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
@@ -109,6 +106,9 @@ struct ActivityStrengthSection: View {
             Spacer(minLength: SharpitSpacing.sm)
             if let volume = exercise.volumeKg {
                 volumeFigure(volume)
+            }
+            if let thumb = ExerciseMediaCatalog.thumbURL(name: exercise.exercise) {
+                GuidedExerciseThumbView(url: thumb, size: 40)
             }
         }
         .padding(.horizontal, SharpitSpacing.rowPaddingX)
