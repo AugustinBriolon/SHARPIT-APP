@@ -190,3 +190,17 @@ struct AuthWipeAndPrivacyTests {
         #expect(PushNotificationManager.destination(for: info) == nil)
     }
 }
+
+/// The server deletes only on `{ "confirmation": "SUPPRIMER" }`: without it every deletion
+/// from the app came back 400 and the account stayed.
+@Test func accountDeletionSendsTheTypedConfirmation() throws {
+    let request = PrivacyConsentClient.deletionRequest(
+        baseURL: URL(string: "https://api.example.test")!,
+        token: "t"
+    )
+    #expect(request.httpMethod == "POST")
+    #expect(request.url?.path() == "/api/v1/privacy/delete")
+    #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+    let body = try JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: String]
+    #expect(body == ["confirmation": "SUPPRIMER"])
+}

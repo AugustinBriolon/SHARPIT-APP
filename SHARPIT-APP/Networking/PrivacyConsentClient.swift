@@ -154,9 +154,23 @@ actor PrivacyConsentClient: PrivacyConsentServing, AccountDeletionServing {
     }
 
     func deleteAccount(token: String) async throws {
+        try await sendDeletion(Self.deletionRequest(baseURL: baseURL, token: token))
+    }
+
+    /// The server deletes only on the typed confirmation it asks for; the app's own
+    /// confirmation dialog stands for it (without it every deletion was a 400).
+    nonisolated static let deletionConfirmation = "SUPPRIMER"
+
+    nonisolated static func deletionRequest(baseURL: URL, token: String) -> URLRequest {
         var request = URLRequest(url: baseURL.appending(path: "/api/v1/privacy/delete"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["confirmation": deletionConfirmation])
+        return request
+    }
+
+    private func sendDeletion(_ request: URLRequest) async throws {
         let response: URLResponse
         do {
             (_, response) = try await session.data(for: request)
