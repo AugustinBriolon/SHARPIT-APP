@@ -20,7 +20,8 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 
 ```bash
 xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' test
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' \
+  -parallel-testing-enabled NO test
 ```
 
 Run a single test — Swift Testing, so filter on the suite or function name:
@@ -28,6 +29,7 @@ Run a single test — Swift Testing, so filter on the suite or function name:
 ```bash
 xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' \
+  -parallel-testing-enabled NO \
   test -only-testing:SHARPIT-APPTests/TodayStoreTests
 ```
 
