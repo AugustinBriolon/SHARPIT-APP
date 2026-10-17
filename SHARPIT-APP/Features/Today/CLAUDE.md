@@ -18,9 +18,9 @@ pick — no explicit save, as on the web. A deadline that has passed is resolved
 `active` server-side on read, so the app never expires one itself. Trips are not modelled:
 the app carries `travelId` back unchanged rather than inventing one.
 
-**Another day.** The date is the large title and a button (iOS 26 `.largeTitle` toolbar item; the
-title menu once it folds inline): « Hier », « Choisir un jour… » (`SharpitCalendarSheet`, no future
-day) and « Aujourd'hui » to come back. `TodayStore.select(day:)` reads that day
+**Another day.** The date heads the page as a button (`dayTitle`, above the chips): it opens
+`SharpitCalendarSheet` (no future day, its « Aujourd'hui » to come back), and a past day shows an
+« Aujourd'hui » pill beside it. Not a toolbar `.largeTitle` item: on iOS 26 that one takes no touch. `TodayStore.select(day:)` reads that day
 (`/api/v1/today?trainingDayId=`), its snapshot cached per day; `selectedDayId` nil follows today,
 midnight included. A past day is read-only: no ressenti, no check-in invitation, and it never
 reaches the widgets. The ressenti opens on its own only from 6 h, once last night's sleep is in

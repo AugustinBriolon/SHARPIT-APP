@@ -129,21 +129,10 @@ struct TodayView: View {
                 }
             }
             .background(SharpitCanvasBackground())
-            // The date as the large title: it folds into the centre of the bar on scroll, as
-            // on Corps. The avatar sits in the bar.
+            // The date heads the page as a button (`dayTitle`): a toolbar large title takes no
+            // touch on iOS 26. The bar keeps only the avatar; the name stays for VoiceOver.
             .navigationTitle(store.navigationTitle)
-            .navigationBarTitleDisplayMode(.large)
-            // The date opens another day, as Plan's and Journal's do (HIG title menu).
-            .toolbarTitleMenu {
-                if !store.isToday {
-                    Button("Aujourd'hui", systemImage: "sun.max") { openDay(.now) }
-                }
-                if let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now),
-                   TrainingDayId.today(now: yesterday) != store.dayId {
-                    Button("Hier", systemImage: "moon") { openDay(yesterday) }
-                }
-                Button("Choisir un jour…", systemImage: "calendar") { showsDayPicker = true }
-            }
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showsDayPicker) {
                 let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
                 SharpitCalendarSheet(
@@ -158,26 +147,7 @@ struct TodayView: View {
             .modifier(LiquidNavChrome())
             .sharpitSyncToast(sync)
             .toolbar {
-                // The large title as a button: the title menu only shows once it folds inline.
-                if #available(iOS 26.0, *) {
-                    ToolbarItem(placement: .largeTitle) {
-                        Button { showsDayPicker = true } label: {
-                            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                                Text(store.navigationTitle)
-                                    .font(SharpitTypography.screenTitle)
-                                    .tracking(SharpitTypography.screenTitleTracking)
-                                Image(systemName: "chevron.down")
-                                    .font(SharpitTypography.sectionTitle)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
-                            }
-                            .foregroundStyle(SharpitColor.foreground)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Choisir un autre jour")
-                    }
-                }
+                ToolbarItem(placement: .principal) { Text("") }
                 ToolbarItem(placement: .topBarTrailing) {
                     AccountAvatarButton { router.openSettings() }
                 }
@@ -284,6 +254,41 @@ extension TodayView {
     /// Mode, Journal and weather, as one row of glass chips.
     @ViewBuilder
     fileprivate var controlsRow: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            dayTitle
+            chips
+        }
+    }
+
+    /// The day read, as the page's title: tapping it opens the calendar to read another one.
+    fileprivate var dayTitle: some View {
+        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+            Button { showsDayPicker = true } label: {
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                    Text(store.navigationTitle)
+                        .font(SharpitTypography.screenTitle)
+                        .tracking(SharpitTypography.screenTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Image(systemName: "chevron.down")
+                        .font(SharpitTypography.sectionTitle)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityHint("Choisir un autre jour")
+            Spacer(minLength: SharpitSpacing.xs)
+            if !store.isToday {
+                Button { openDay(.now) } label: {
+                    SharpitPill("Aujourd'hui", style: .neutral)
+                }
+                .buttonStyle(.sharpitPressable)
+            }
+        }
+    }
+
+    fileprivate var chips: some View {
         SharpitGlassGroup {
             HStack(spacing: SharpitSpacing.xs) {
                 if let activityStatusStore {
