@@ -127,69 +127,9 @@ nonisolated enum V1ThresholdApplyRefusal: String, Sendable {
     }
 }
 
-/// `POST /api/v1/athlete-profile/import-garmin` — what Garmin gave, already written to the
-/// profile by the server (only the fields Garmin returned).
-nonisolated struct V1GarminThresholdImport: Decodable, Sendable, Equatable {
-    var imported: Bool
-    var ftpW: Double?
-    var maxHr: Double?
-    var lthr: Double?
-    var runThresholdPaceSecPerKm: Double?
-    var vo2maxRunning: Double?
-    var vo2maxCycling: Double?
-    /// Garmin endpoints that did not answer: their fields are unknown, not absent.
-    var failedSources: [String]
-
-    init(imported: Bool, failedSources: [String] = []) {
-        self.imported = imported
-        self.failedSources = failedSources
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case imported, ftpW, maxHr, lthr, runThresholdPaceSecPerKm, vo2maxRunning, vo2maxCycling, failedSources
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        imported = (try? container.decodeIfPresent(Bool.self, forKey: .imported)) ?? false
-        ftpW = try? container.decodeIfPresent(Double.self, forKey: .ftpW)
-        maxHr = try? container.decodeIfPresent(Double.self, forKey: .maxHr)
-        lthr = try? container.decodeIfPresent(Double.self, forKey: .lthr)
-        runThresholdPaceSecPerKm = try? container.decodeIfPresent(Double.self, forKey: .runThresholdPaceSecPerKm)
-        vo2maxRunning = try? container.decodeIfPresent(Double.self, forKey: .vo2maxRunning)
-        vo2maxCycling = try? container.decodeIfPresent(Double.self, forKey: .vo2maxCycling)
-        failedSources = (try? container.decodeIfPresent([String].self, forKey: .failedSources)) ?? []
-    }
-
-    /// The line under the button, in the web's words (`buildGarminImportMessage`).
-    var message: String {
-        let failed = failedSources.map(Self.sourceLabel).joined(separator: ", ")
-        if !imported {
-            if !failedSources.isEmpty {
-                return "Garmin n'a pas répondu pour : \(failed). Ces seuils sont inconnus, pas absents : réessaie."
-            }
-            return "Aucun seuil trouvé sur ton compte Garmin."
-        }
-        if !failedSources.isEmpty {
-            return "Import partiel : Garmin n'a pas répondu pour \(failed)."
-        }
-        return "Seuils importés depuis Garmin et enregistrés."
-    }
-
-    static func sourceLabel(_ source: String) -> String {
-        switch source {
-        case "user-settings": "réglages athlète"
-        case "heart-rate-zones": "zones de FC"
-        case "power-zones": "zones de puissance"
-        default: source
-        }
-    }
-}
-
-/// The estimates and the Garmin import, beside the profile they write to.
+/// The estimates, beside the profile they write to.
 nonisolated protocol ThresholdEstimating: Sendable {
     func thresholdPreview(token: String) async throws -> V1ThresholdApplyPreview
     /// Writes the accepted estimates; the server re-checks them against its own proposal.
     func applyThresholdEstimates(fields: [V1ThresholdField], token: String) async throws
-    func importGarminThresholds(token: String) async throws -> V1GarminThresholdImport
 }

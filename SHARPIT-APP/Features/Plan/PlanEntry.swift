@@ -77,7 +77,6 @@ struct PlanBrick: Hashable, Identifiable {
         return loads.isEmpty ? nil : loads.reduce(0, +)
     }
 
-    var isOnWatch: Bool { legs.contains { $0.garminWorkoutId != nil } }
 
     func contains(sessionId: String) -> Bool { legs.contains { $0.id == sessionId } }
 }

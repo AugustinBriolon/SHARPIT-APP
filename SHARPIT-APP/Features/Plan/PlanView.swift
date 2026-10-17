@@ -4,7 +4,6 @@ import SwiftUI
 struct PlanView: View {
     let client: any PlannedSessionServing
     let linker: any PlannedSessionLinking
-    let watchPusher: any PlannedSessionWatchPushing
     let keyMutator: any PlannedSessionMutating
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
@@ -41,13 +40,11 @@ struct PlanView: View {
     init(
         client: any PlannedSessionServing,
         linker: any PlannedSessionLinking,
-        watchPusher: (any PlannedSessionWatchPushing)? = nil,
         activityClient: any ActivityServing,
         tokenProvider: @escaping () async throws -> String
     ) {
         self.client = client
         self.linker = linker
-        self.watchPusher = watchPusher ?? (client as? (any PlannedSessionWatchPushing)) ?? PlannedSessionClient()
         keyMutator = (client as? (any PlannedSessionMutating)) ?? PlannedSessionClient()
         self.activityClient = activityClient
         self.tokenProvider = tokenProvider
@@ -126,7 +123,6 @@ struct PlanView: View {
                     PlannedSessionDrawer(
                         preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
                         linking: linkContext(on: session.date),
-                        watchPush: watchPushContext(on: session.date),
                         editing: editingContext(for: session),
                         guidedFinish: guidedFinishContext()
                     ) { context in
@@ -136,7 +132,6 @@ struct PlanView: View {
                     BrickSessionDrawer(
                         brick: PlannedBrickPreview(brick: brick, isExpertReading: isExpertReading),
                         linking: linkContext(on: brick.date),
-                        watchPush: watchPushContext(on: brick.date),
                         guidedFinish: guidedFinishContext()
                     ) { context in
                         router.discussWithCoach(about: context)
@@ -372,16 +367,6 @@ extension PlanView {
                     autoDismissAfter: 3.0
                 )
                 Task { await store.loadAroundSelection() }
-            }
-        )
-    }
-
-    fileprivate func watchPushContext(on date: Date) -> SessionWatchPushContext {
-        SessionWatchPushContext(
-            pusher: watchPusher,
-            tokenProvider: tokenProvider,
-            onPushed: { _ in
-                Task { await store.reload(around: date) }
             }
         )
     }
@@ -626,14 +611,6 @@ private struct PlanFocusSession: View {
         }
     }
 
-    private var isOnWatch: Bool {
-        switch focus {
-        case .session(let session): session.garminWorkoutId != nil
-        case .brick(let brick): brick.isOnWatch
-        case .doneBrick: false
-        }
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(alignment: .firstTextBaseline) {
@@ -643,12 +620,6 @@ private struct PlanFocusSession: View {
                     .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.mutedForeground)
                 Spacer()
-                if isOnWatch {
-                    Image(systemName: "applewatch.side.right")
-                        .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.primary)
-                        .accessibilityLabel("Sur la montre Garmin")
-                }
                 PlanSportChain(symbolNames: symbolNames, font: .title3.weight(.semibold))
             }
             Text(title)
@@ -939,12 +910,6 @@ private struct PlanSessionCard: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
             }
             Spacer(minLength: 0)
-            if session.garminWorkoutId != nil {
-                Image(systemName: "applewatch.side.right")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.primary)
-                    .accessibilityLabel("Sur la montre Garmin")
-            }
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.label)
                 .foregroundStyle(SharpitColor.mutedForeground)
@@ -992,12 +957,6 @@ private struct PlanBrickCard: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
             }
             Spacer(minLength: 0)
-            if brick.isOnWatch {
-                Image(systemName: "applewatch.side.right")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.primary)
-                    .accessibilityLabel("Sur la montre Garmin")
-            }
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.label)
                 .foregroundStyle(SharpitColor.mutedForeground)

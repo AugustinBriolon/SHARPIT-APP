@@ -176,24 +176,6 @@ private nonisolated func decodedPreview() throws -> V1ThresholdApplyPreview {
         let invalid = Data(#"{ "error": "Sélection invalide" }"#.utf8)
         #expect(AthleteProfileClient.applyRefusal(in: invalid) == "Sélection invalide")
     }
-
-    @Test func theGarminImportSpeaksAsTheWebDoes() throws {
-        let full = try JSONDecoder().decode(
-            V1GarminThresholdImport.self,
-            from: Data(#"{ "imported": true, "ftpW": 260, "maxHr": 188, "lthr": null, "runThresholdPaceSecPerKm": null, "vo2maxRunning": 55, "vo2maxCycling": null, "failedSources": [] }"#.utf8)
-        )
-        #expect(full.message == "Seuils importés depuis Garmin et enregistrés.")
-        #expect(full.ftpW == 260)
-
-        let partial = V1GarminThresholdImport(imported: true, failedSources: ["power-zones"])
-        #expect(partial.message == "Import partiel : Garmin n'a pas répondu pour zones de puissance.")
-
-        let nothing = V1GarminThresholdImport(imported: false)
-        #expect(nothing.message == "Aucun seuil trouvé sur ton compte Garmin.")
-
-        let unknown = V1GarminThresholdImport(imported: false, failedSources: ["user-settings", "heart-rate-zones"])
-        #expect(unknown.message.hasPrefix("Garmin n'a pas répondu pour : réglages athlète, zones de FC."))
-    }
 }
 
 private actor StubThresholdClient: AthleteProfileServing, ThresholdEstimating {
@@ -225,10 +207,6 @@ private actor StubThresholdClient: AthleteProfileServing, ThresholdEstimating {
         appliedFields.append(fields)
         if refuses { throw SharpitAPIError.message("Tes seuils sont déjà à jour.") }
         stored = stored.applying(preview.patch(for: Set(fields)))
-    }
-
-    func importGarminThresholds(token _: String) async throws -> V1GarminThresholdImport {
-        V1GarminThresholdImport(imported: true)
     }
 
     func recordedFields() -> [[V1ThresholdField]] { appliedFields }
@@ -271,19 +249,6 @@ private actor StubThresholdClient: AthleteProfileServing, ThresholdEstimating {
 
     #expect(failures.latest?.message == "Tes seuils sont déjà à jour.")
     #expect(profile.profile.ftpW == 250)
-}
-
-@MainActor
-@Test func aGarminImportReadsTheProfileBack() async throws {
-    let client = StubThresholdClient(V1AthleteProfile(ftpW: 250), preview: V1ThresholdApplyPreview())
-    let profile = AthleteProfileStore(client: client, tokenProvider: { "t" })
-    let suggestions = ThresholdSuggestionStore(client: client, tokenProvider: { "t" })
-
-    await suggestions.importFromGarmin(into: profile)
-
-    #expect(suggestions.importState == .done("Seuils importés depuis Garmin et enregistrés."))
-    #expect(profile.phase == .loaded)
-    #expect(suggestions.revision == 1)
 }
 
 // MARK: - Goal achievements

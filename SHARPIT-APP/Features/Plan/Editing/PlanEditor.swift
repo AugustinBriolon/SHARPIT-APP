@@ -121,9 +121,6 @@ extension V1PlannedSessionItem {
             activityId: activityId,
             activity: activity,
             breakdown: sportChanged ? nil : breakdown,
-            garminWorkoutId: garminWorkoutId,
-            garminWorkoutScheduledDate: garminWorkoutScheduledDate,
-            garminWorkoutPushedAt: garminWorkoutPushedAt,
             brickGroupId: brickGroupId,
             brickOrder: brickOrder,
             isKey: isKey

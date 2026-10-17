@@ -599,7 +599,6 @@ private struct TodayFoldView: View {
             PlannedSessionDrawer(
                 preview: preview,
                 linking: linkContext,
-                watchPush: watchPushContext,
                 guidedFinish: guidedFinishContext,
                 loadBreakdown: breakdownLoader(for: preview),
                 loadStrengthPrescription: strengthPrescriptionLoader(for: preview),
@@ -615,7 +614,6 @@ private struct TodayFoldView: View {
             BrickSessionDrawer(
                 brick: brick,
                 linking: linkContext,
-                watchPush: watchPushContext,
                 guidedFinish: guidedFinishContext,
                 loadLegs: brickLoader(for: brick)
             ) { context in
@@ -856,14 +854,6 @@ private struct TodayFoldView: View {
                 )
                 onSessionLinked()
             }
-        )
-    }
-
-    private var watchPushContext: SessionWatchPushContext? {
-        guard let tokenProvider else { return nil }
-        return SessionWatchPushContext(
-            pusher: PlannedSessionClient(),
-            tokenProvider: tokenProvider
         )
     }
 

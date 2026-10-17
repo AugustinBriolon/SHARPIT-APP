@@ -38,7 +38,6 @@ struct OnboardingDemoHost: View {
                     tokenProvider: { "demo" }
                 ),
                 appleHealth: AppleHealthSource(reader: HealthKitReader(), client: SharpitClient()),
-                syncClient: DemoSyncClient(),
                 tokenProvider: { "demo" }
             ) {
                 finished = true
@@ -141,15 +140,5 @@ private struct DemoPlanClient: CoachPlanServing {
 
 private struct DemoPhysicalNoteClient: PhysicalNoteCreating {
     func createNote(_ input: CreatePhysicalNoteInput, token: String) async throws {}
-}
-
-private struct DemoSyncClient: SyncServing {
-    func syncStatus(token: String) async throws -> V1SyncStatus {
-        V1SyncStatus(lastSyncAt: nil, providers: [])
-    }
-
-    func sync(token: String) async throws -> V1SyncStatus {
-        V1SyncStatus(lastSyncAt: nil, providers: [])
-    }
 }
 #endif

@@ -7,11 +7,6 @@ struct IncomingLinkTests {
         IncomingLink.parse(URL(string: raw)!)
     }
 
-    @Test func garminCallbackOnTheApexCarriesItsStatus() {
-        #expect(link("https://sharpit.app/connect/garmin/callback?garmin=connected") == .garminCallback(status: "connected"))
-        #expect(link("https://sharpit.app/connect/garmin/callback") == .garminCallback(status: nil))
-    }
-
     @Test func oauthCallbacksOnTheApexCarryTheirStatus() {
         #expect(link("https://sharpit.app/connect/strava/callback?strava=connected") == .oauthCallback(provider: "strava", status: "connected"))
         #expect(link("https://sharpit.app/connect/google/callback?google=denied") == .oauthCallback(provider: "google", status: "denied"))
@@ -19,11 +14,11 @@ struct IncomingLinkTests {
     }
 
     @Test(arguments: [
-        "https://api.sharpit.app/connect/garmin/callback?garmin=connected",
-        "https://web.sharpit.app/connect/garmin/callback?garmin=connected",
-        "https://sharpit.app.evil.example/connect/garmin/callback?garmin=connected",
-        "http://sharpit.app/connect/garmin/callback?garmin=connected",
-        "app.sharpit.ios://connect/garmin/callback?garmin=connected",
+        "https://api.sharpit.app/connect/strava/callback?strava=connected",
+        "https://web.sharpit.app/connect/strava/callback?strava=connected",
+        "https://sharpit.app.evil.example/connect/strava/callback?strava=connected",
+        "http://sharpit.app/connect/strava/callback?strava=connected",
+        "app.sharpit.ios://connect/strava/callback?strava=connected",
     ])
     func linksOffTheApexAreIgnored(raw: String) {
         #expect(link(raw) == nil)

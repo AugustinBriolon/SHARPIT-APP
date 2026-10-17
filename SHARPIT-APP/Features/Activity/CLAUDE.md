@@ -35,8 +35,8 @@ a filter that empties it offers « Tout afficher ».
 km, in metres for a swim; elevation; average heart rate), the strength exercises (the plan's own
 `StrengthExercisesEditor`), effort, feeling and notes — `POST /api/v1/activities`, the web's
 `createActivitySchema`. A done session's « … » (`ActivityActionsMenu`, among the page's floating
-controls) edits it in the same sheet (PATCH, only what moved), sends a strength session to the
-Garmin watch (`/api/v1/garmin/workouts/from-activity`, Pro) and deletes it after a confirmation.
+controls) edits it in the same sheet (PATCH, only what moved), links it to a goal and deletes it
+after a confirmation.
 Both forms wait for the server, whose figures the page shows; every change bumps
 `ShellRouter.activitiesRevision` (and the calendar's), so the list and the plan read again. The
 compliance sheet's « … » adds « Réanalyser » (`/api/v1/planned-sessions/[id]/analyze`): the

@@ -9,7 +9,6 @@ import SwiftUI
 struct OnboardingView: View {
     @State private var store: OnboardingStore
     let appleHealth: AppleHealthSource
-    let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
     /// Called once the bootstrap beat is over — the gate then shows Résumé.
     let onFinished: () -> Void
@@ -17,13 +16,11 @@ struct OnboardingView: View {
     init(
         store: OnboardingStore,
         appleHealth: AppleHealthSource,
-        syncClient: any SyncServing,
         tokenProvider: @escaping () async throws -> String,
         onFinished: @escaping () -> Void
     ) {
         _store = State(initialValue: store)
         self.appleHealth = appleHealth
-        self.syncClient = syncClient
         self.tokenProvider = tokenProvider
         self.onFinished = onFinished
     }
@@ -93,7 +90,6 @@ struct OnboardingView: View {
         case .sources:
             OnboardingSourcesStep(
                 appleHealth: appleHealth,
-                syncClient: syncClient,
                 tokenProvider: tokenProvider
             )
         case .firstWeek: OnboardingFirstWeekStep(store: store)

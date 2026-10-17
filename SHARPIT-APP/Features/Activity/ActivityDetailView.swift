@@ -338,10 +338,8 @@ struct ActivityDetailView: View {
                     }
                     if !isMapExpanded, let mutator = client as? any ActivityMutating {
                         ActivityActionsMenu(
-                            canSendToWatch: detail.type == .strength && !detail.strengthSets.isEmpty,
                             isLinkedToGoal: detail.goal != nil,
                             onEdit: { editing = ActivityEditing(id: detail.id, draft: ActivityDraft(detail: detail), mutator: mutator) },
-                            onSendToWatch: { Task { await sendToWatch(detail) } },
                             onPickGoal: { isPickingGoal = true },
                             onUnlinkGoal: { link(goal: nil, detail: detail, mutator: mutator) },
                             onDelete: { isConfirmingDeletion = true }
@@ -685,22 +683,6 @@ struct ActivityDetailView: View {
             } catch {
                 SharpitWriteFailures.shared.report("La séance n’a pas pu être supprimée. Réessaie dans un instant.")
             }
-        }
-    }
-
-    /// Sends the session as a workout to the Garmin watch, to do again. The server says why it
-    /// cannot (no Garmin, below Pro) and the alert carries its words.
-    private func sendToWatch(_ detail: V1ActivityDetail) async {
-        do {
-            let message = try await SharpitRetry.run {
-                guard let mutator = client as? any ActivityMutating else { throw SharpitAPIError.server }
-                return try await mutator.pushActivityToWatch(id: detail.id, token: try await tokenProvider())
-            }
-            notice = ActivityNotice(title: "Montre", message: message)
-        } catch let SharpitAPIError.message(reason) {
-            notice = ActivityNotice(title: "Montre", message: reason)
-        } catch {
-            notice = ActivityNotice(title: "Montre", message: "L’entraînement n’a pas pu être envoyé. Réessaie dans un instant.")
         }
     }
 

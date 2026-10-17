@@ -29,25 +29,11 @@ nonisolated struct HealthWorkoutUploadResult: Decodable, Equatable, Sendable {
     let imported: Int
 }
 
-/// Pulls a provider's whole history once — every activity Garmin holds, with no date bound.
-nonisolated protocol GarminHistoryImporting: Sendable {
-    /// Returns how many activities were new to SHARPIT.
-    func importFullGarminHistory(token: String) async throws -> Int
-}
-
-/// The page the app opens in an in-app authentication session to connect Garmin (SHARPIT
-/// ADR-047). It carries a one-time sign-in ticket, so it is a credential: never log it.
-nonisolated protocol GarminHandoffServing: Sendable {
-    func garminHandoffURL(token: String) async throws -> URL
-}
-
-/// Same ticket handoff for Strava / Google / Withings (`POST /api/v1/<source>/handoff`).
+/// The page the app opens in an in-app authentication session to connect Strava / Google /
+/// Withings (`POST /api/v1/<source>/handoff`, SHARPIT ADR-047). It carries a one-time sign-in
+/// ticket, so it is a credential: never log it.
 nonisolated protocol ProviderOAuthHandoffServing: Sendable {
     func providerHandoffURL(_ source: DisconnectableSource, token: String) async throws -> URL
-}
-
-nonisolated struct V1GarminHandoff: Decodable, Sendable {
-    let url: URL
 }
 
 nonisolated struct V1ProviderOAuthHandoff: Decodable, Sendable {
@@ -60,7 +46,7 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
     func unregisterDeviceToken(_ deviceToken: String, token: String) async throws
 }
 
-actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, RecoveryServing, EffortServing, AdaptationServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, GarminHistoryImporting, GarminHandoffServing, ProviderOAuthHandoffServing, SourcePrefsServing, AppleHealthLinking, AppleCalendarLinking, AppleCalendarBusyServing {
+actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, RecoveryServing, EffortServing, AdaptationServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, ProviderOAuthHandoffServing, SourcePrefsServing, AppleHealthLinking, AppleCalendarLinking, AppleCalendarBusyServing {
     private let session: URLSession
     private let baseURL: URL
 
@@ -133,25 +119,6 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
     /// would give up on a request the server is still honouring.
     func sync(token: String) async throws -> V1SyncStatus {
         try await send(V1SyncStatus.self, path: "/api/v1/sync", method: "POST", token: token, timeout: 240)
-    }
-
-    /// `/api/v1/garmin/sync` with `full: true`: the web's own full-history mode, which walks every
-    /// page Garmin serves instead of starting from the last pull. The server allows it five
-    /// minutes, so the request waits as long.
-    func importFullGarminHistory(token: String) async throws -> Int {
-        let body = try JSONSerialization.data(withJSONObject: ["full": true])
-        return try await send(
-            GarminFullSyncResult.self,
-            path: "/api/v1/garmin/sync",
-            method: "POST",
-            token: token,
-            timeout: 310,
-            body: body
-        ).activities.imported
-    }
-
-    func garminHandoffURL(token: String) async throws -> URL {
-        try await send(V1GarminHandoff.self, path: "/api/v1/garmin/handoff", method: "POST", token: token).url
     }
 
     func providerHandoffURL(_ source: DisconnectableSource, token: String) async throws -> URL {
@@ -367,14 +334,6 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
             throw SharpitAPIError.server
         }
     }
-}
-
-private nonisolated struct GarminFullSyncResult: Decodable {
-    nonisolated struct Activities: Decodable {
-        let imported: Int
-    }
-
-    let activities: Activities
 }
 
 private nonisolated struct HealthUpload: Encodable {

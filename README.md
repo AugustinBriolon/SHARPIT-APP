@@ -101,11 +101,10 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
 - Freshness: Today starts a provider pull on launch, foreground and pull-to-refresh
   (`/api/v1/sync`), and Moi can switch on Apple Health as a gap-filling source, with a
   diagnostic of what Apple Health holds ([ADR 0005](docs/adr/0005-app-started-sync-and-apple-health.md))
-- Garmin is DEBUG-only (`ProviderAvailability.garminInApp`): its access is unofficial and its
-  developer program takes no new applications, so no connect row, onboarding card, history import
-  or workout push in TestFlight or App Store builds. Only Xcode DEBUG keeps it. A Garmin watch
-  reaches SHARPIT through Apple Health; an account already linked on the web keeps syncing
-  server-side
+- No Garmin in the app ([ADR 0013](docs/adr/0013-remove-garmin-from-the-ios-app.md)): its access
+  is unofficial and its developer program takes no new applications (App Review 5.2.2), so the app
+  has no connect, history import, threshold import or workout push. A Garmin watch reaches SHARPIT
+  through Apple Health; an account already linked on the web keeps syncing server-side
 - Journal: the day's signals via `/api/day-journal`, and what it asks for via
   `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
   render — the nutrition panel, thresholds — survive a save from the phone.

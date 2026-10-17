@@ -23,10 +23,10 @@ next seven days — towards the goal just created — while the athlete links th
 à mon plan » sends the week back whole to `/api/v1/coach/plan/insert`, which stores it through the
 web generator's own mapping (the coach's strength and endurance prescriptions included) or refuses
 it before writing anything; Plan's generator uses the same route. Then `/api/v1/onboarding/complete`
-finishes the wizard. Without AI consent the step says so and finishes without a week. Sources links
-Garmin in-app through `GarminConnect` (SHARPIT ADR-047), switches Apple Health on — a switch per
-Clerk account (`AppleHealthSource.bind(userId:)`), so a new account on the same iPhone starts off
-— and offers nothing for MyFitnessPal, which the app never links (`docs/adr/0010`). Debug builds open the wizard on in-memory
+finishes the wizard. Without AI consent the step says so and finishes without a week. Sources switches
+Apple Health on — a switch per Clerk account (`AppleHealthSource.bind(userId:)`), so a new account
+on the same iPhone starts off — and offers nothing for Garmin or MyFitnessPal, which the app never
+links (`docs/adr/0013`, `docs/adr/0010`). Debug builds open the wizard on in-memory
 services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`).
 
 The page is one page: the header's tick dial (`SharpitTickGauge`, animatable, so it sweeps from step

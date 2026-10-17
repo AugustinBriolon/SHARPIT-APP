@@ -23,13 +23,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     let activityId: String?
     let activity: V1PlannedSessionActivitySummary?
     /// What to actually do, with endurance targets already resolved against the athlete's
-    /// thresholds. Server-side, so the app cannot promise a band a watch push would not
-    /// send. Absent on payloads written before the field existed.
+    /// thresholds. Server-side, so the app never resolves a band itself. Absent on payloads written before the field existed.
     let breakdown: V1PlannedSessionBreakdown?
-    /// Last Garmin Connect workout created from this session.
-    let garminWorkoutId: String?
-    let garminWorkoutScheduledDate: String?
-    let garminWorkoutPushedAt: Date?
     /// Shared by the legs of one brick — a multisport chain done without a break.
     let brickGroupId: String?
     /// The leg's place in its brick, 0 first.
@@ -44,7 +39,6 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         case id, date, startTime, title, type, durationMin, intensity, load, notes, breakdown
         case description, strengthPrescription, endurancePrescription
         case goalId, completed, activityId, activity, brickGroupId, brickOrder, isKey, rationale
-        case garminWorkoutId, garminWorkoutScheduledDate, garminWorkoutPushedAt
     }
 
     init(
@@ -65,9 +59,6 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         activityId: String? = nil,
         activity: V1PlannedSessionActivitySummary? = nil,
         breakdown: V1PlannedSessionBreakdown? = nil,
-        garminWorkoutId: String? = nil,
-        garminWorkoutScheduledDate: String? = nil,
-        garminWorkoutPushedAt: Date? = nil,
         brickGroupId: String? = nil,
         brickOrder: Int? = nil,
         isKey: Bool = false,
@@ -90,9 +81,6 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         self.activityId = activityId
         self.activity = activity
         self.breakdown = breakdown
-        self.garminWorkoutId = garminWorkoutId
-        self.garminWorkoutScheduledDate = garminWorkoutScheduledDate
-        self.garminWorkoutPushedAt = garminWorkoutPushedAt
         self.brickGroupId = brickGroupId
         self.brickOrder = brickOrder
         self.isKey = isKey
@@ -121,56 +109,10 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
             V1PlannedSessionBreakdown.self,
             forKey: .breakdown
         )
-        if let stringId = try? container.decodeIfPresent(String.self, forKey: .garminWorkoutId) {
-            garminWorkoutId = stringId
-        } else if let intId = try? container.decodeIfPresent(Int.self, forKey: .garminWorkoutId) {
-            garminWorkoutId = String(intId)
-        } else {
-            garminWorkoutId = nil
-        }
-        garminWorkoutScheduledDate = try container.decodeIfPresent(String.self, forKey: .garminWorkoutScheduledDate)
-        if let pushedString = try container.decodeIfPresent(String.self, forKey: .garminWorkoutPushedAt) {
-            garminWorkoutPushedAt = try? Date.fromPlannedAPI(pushedString)
-        } else {
-            garminWorkoutPushedAt = nil
-        }
         brickGroupId = try container.decodeIfPresent(String.self, forKey: .brickGroupId)
         brickOrder = try container.decodeIfPresent(Int.self, forKey: .brickOrder)
         isKey = (try? container.decodeIfPresent(Bool.self, forKey: .isKey)) ?? false
         rationale = try container.decodeIfPresent(String.self, forKey: .rationale)
-    }
-
-    func withGarminPush(
-        workoutId: String?,
-        scheduledDate: String?,
-        pushedAt: Date?
-    ) -> V1PlannedSessionItem {
-        V1PlannedSessionItem(
-            id: id,
-            date: date,
-            startTime: startTime,
-            title: title,
-            type: type,
-            durationMin: durationMin,
-            intensity: intensity,
-            load: load,
-            notes: notes,
-            description: description,
-            strengthPrescription: strengthPrescription,
-            endurancePrescription: endurancePrescription,
-            goalId: goalId,
-            completed: completed,
-            activityId: activityId,
-            activity: activity,
-            breakdown: breakdown,
-            garminWorkoutId: workoutId ?? garminWorkoutId,
-            garminWorkoutScheduledDate: scheduledDate ?? garminWorkoutScheduledDate,
-            garminWorkoutPushedAt: pushedAt ?? garminWorkoutPushedAt,
-            brickGroupId: brickGroupId,
-            brickOrder: brickOrder,
-            isKey: isKey,
-            rationale: rationale
-        )
     }
 
     /// A JSON `null` read as absent, so « has a prescription » is one nil check.

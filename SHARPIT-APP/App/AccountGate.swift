@@ -169,7 +169,6 @@ struct AccountGate<Content: View>: View {
                     OnboardingView(
                         store: store,
                         appleHealth: appleHealth,
-                        syncClient: SharpitClient(),
                         tokenProvider: liveToken
                     ) {
                         model.onboardingFinished()

@@ -269,14 +269,12 @@ struct ActivityEditing: Identifiable {
     let mutator: any ActivityMutating
 }
 
-/// A done session's « … », in the page's floating controls: Modifier, the watch for a strength
-/// session, then Supprimer apart, as the system's menus put a destructive action.
+/// A done session's « … », in the page's floating controls: Modifier, the goal, then Supprimer
+/// apart, as the system's menus put a destructive action.
 struct ActivityActionsMenu: View {
-    let canSendToWatch: Bool
     /// Whether the session is raced for a goal: « Lier à un objectif », or change and « Délier ».
     var isLinkedToGoal = false
     let onEdit: () -> Void
-    let onSendToWatch: () -> Void
     var onPickGoal: () -> Void = {}
     var onUnlinkGoal: () -> Void = {}
     let onDelete: () -> Void
@@ -284,9 +282,6 @@ struct ActivityActionsMenu: View {
     var body: some View {
         Menu {
             Button("Modifier", systemImage: "pencil", action: onEdit)
-            if canSendToWatch {
-                Button("Envoyer à la montre", systemImage: "applewatch.radiowaves.left.and.right", action: onSendToWatch)
-            }
             if isLinkedToGoal {
                 Button("Changer d’objectif", systemImage: "flag", action: onPickGoal)
                 Button("Délier l’objectif", systemImage: "flag.slash", action: onUnlinkGoal)

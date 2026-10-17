@@ -7,7 +7,6 @@ import Observation
 /// link on any other host — `api.`, `web.`, or a look-alike — is not ours to act on. The
 /// custom scheme belongs to Clerk's OAuth redirects and is not a navigation link.
 enum IncomingLink: Equatable {
-    case garminCallback(status: String?)
     /// Strava / Google / Withings handoff outcome (`?strava=` / `?google=` / `?withings=`).
     case oauthCallback(provider: String, status: String?)
     case tab(ShellTab)
@@ -31,10 +30,6 @@ enum IncomingLink: Equatable {
               components.host == trustedHost
         else { return nil }
 
-        if components.path == "/connect/garmin/callback" {
-            let status = components.queryItems?.first(where: { $0.name == "garmin" })?.value
-            return .garminCallback(status: status)
-        }
         for provider in ["strava", "google", "withings"] {
             if components.path == "/connect/\(provider)/callback" {
                 let status = components.queryItems?.first(where: { $0.name == provider })?.value

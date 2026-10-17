@@ -29,9 +29,6 @@ struct RootView: View {
     @State private var toastCenter = SharpitToastCenter()
     /// Push notification manager for Moment 1 (Wake / Morning verdict) APNs registration and routing.
     @State private var pushManager = PushNotificationManager.shared
-    /// Brings in every Garmin activity once — the regular pull only reaches back so far.
-    @State private var historyImport = GarminHistoryImport(client: SharpitClient(), statusClient: SharpitClient())
-    @State private var historyToast: UUID?
     /// SharpIt Pro: the tier as the web states it, and every App Store transaction handed to
     /// the web to verify — listened to for as long as the app runs.
     @State private var pro: ProStore?
@@ -149,7 +146,6 @@ struct RootView: View {
         // rather than the profile (ADR 0006).
         .environment(\.displayMode, displayMode)
         .environment(\.features, features)
-        .environment(historyImport)
         .environment(pro)
         .task {
             let store = pro ?? ProStore(tokenProvider: liveToken)
@@ -157,7 +153,6 @@ struct RootView: View {
             await store.load()
             await store.listenForTransactions()
         }
-        // Once per athlete; a run cut off is picked up again on the next foreground.
         .task(id: clerk.user?.id) {
             appleHealth.bind(userId: clerk.user?.id)
             appleCalendar.bind(userId: clerk.user?.id)
@@ -168,17 +163,14 @@ struct RootView: View {
                ) {
                 appleCalendar.adoptLegacyMigration()
             }
-            await runHistoryImport()
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             pushManager.clearIconBadge()
-            Task { await runHistoryImport() }
             Task { await refreshSessionReminders() }
             Task { await refreshDayCheckIns() }
             Task { await pro?.drainUnfinished() }
         }
-        .onChange(of: historyImport.state) { _, state in showHistoryToast(for: state) }
         .task {
             // Open a cold-launch tap before any network work — otherwise the athlete sits on
             // the default tab while prefs load and thinks the notification did nothing.
@@ -261,41 +253,6 @@ struct RootView: View {
         )
     }
 
-    private func runHistoryImport() async {
-        await historyImport.runIfNeeded(userId: clerk.user?.id, tokenProvider: liveToken)
-    }
-
-    private func showHistoryToast(for state: GarminHistoryImport.State) {
-        if let historyToast { toastCenter.dismiss(historyToast) }
-        historyToast = nil
-        switch state {
-        case .importing:
-            historyToast = toastCenter.show(
-                "Import de tout ton historique Garmin…",
-                symbol: "clock.arrow.circlepath",
-                autoDismissAfter: nil
-            )
-        case .finished(let imported):
-            historyToast = toastCenter.show(
-                imported == 0
-                    ? "Historique Garmin à jour"
-                    : "Historique importé · \(imported) activité\(imported > 1 ? "s" : "")",
-                symbol: "checkmark.circle.fill",
-                tone: .success,
-                autoDismissAfter: 4
-            )
-        case .failed:
-            historyToast = toastCenter.show(
-                "Import de l'historique Garmin interrompu",
-                symbol: "exclamationmark.triangle",
-                tone: .error,
-                autoDismissAfter: 5
-            )
-        case .idle:
-            break
-        }
-    }
-
     private func openPendingNotificationIfNeeded() {
         if let destination = pushManager.consumePendingDestination() {
             router.open(destination)
@@ -304,8 +261,6 @@ struct RootView: View {
 
     private func handleIncomingURL(_ url: URL) {
         switch IncomingLink.parse(url) {
-        case .garminCallback(let status):
-            handleGarminCallback(status: status)
         case .oauthCallback(let provider, let status):
             handleOAuthCallback(provider: provider, status: status)
         case .tab(let tab):
@@ -322,32 +277,6 @@ struct RootView: View {
             router.openToday(page)
         case nil:
             break
-        }
-    }
-
-    private func handleGarminCallback(status: String?) {
-        let outcome = GarminConnectOutcome(status: status)
-        toastCenter.show(
-            outcome.message,
-            symbol: outcome.symbol,
-            tone: outcome.tone,
-            autoDismissAfter: outcome.toastDuration
-        )
-        guard outcome == .connected else { return }
-        Task {
-            do {
-                let token = try await liveToken()
-                _ = try await sharpitClient.sync(token: token)
-            } catch {
-                toastCenter.show(
-                    SharpitErrorGuidance.message(for: error, subject: "La synchronisation"),
-                    symbol: "exclamationmark.triangle",
-                    tone: .error,
-                    autoDismissAfter: 4
-                )
-            }
-            // A new connection brings its whole history, not just recent weeks.
-            await runHistoryImport()
         }
     }
 

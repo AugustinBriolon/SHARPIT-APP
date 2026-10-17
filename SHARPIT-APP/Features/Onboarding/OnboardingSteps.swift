@@ -624,40 +624,14 @@ struct OnboardingFirstWeekStep: View {
 
 // MARK: - Sources
 
-/// Where the readings come from: Apple Health is switched on here (Garmin only when `ProviderAvailability` offers it).
+/// Where the readings come from: Apple Health is switched on here.
 /// Connecting nothing is a valid path: Finaliser is never held back by this step.
 struct OnboardingSourcesStep: View {
     let appleHealth: AppleHealthSource
-    let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
-    var garminClient: any GarminHandoffServing = SharpitClient()
-
-    @State private var status: V1SyncStatus?
-    @State private var isConnectingGarmin = false
-    /// The last connection's outcome when it did not link Garmin, said under the card: the
-    /// onboarding sits before the shell and its toasts.
-    @State private var garminFailure: GarminConnectOutcome?
-    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            if ProviderAvailability.garminInApp {
-                OnboardingSourceCard(
-                    provider: .garmin,
-                    title: "Garmin Connect",
-                    detail: "Activités GPS, fréquence cardiaque, sommeil et charge."
-                ) {
-                    connectButton(isConnected: isConnected("garmin"), isBusy: isConnectingGarmin) {
-                        Task { await connectGarmin() }
-                    }
-                }
-            }
-            if let garminFailure {
-                Text(garminFailure.message)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(garminFailure.tone == .error ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
-                    .padding(.horizontal, SharpitSpacing.xxs)
-            }
             OnboardingSourceCard(
                 provider: .appleHealth,
                 title: "Apple Santé",
@@ -665,7 +639,6 @@ struct OnboardingSourcesStep: View {
             ) {
                 Toggle("Apple Santé", isOn: appleHealthBinding)
                     .labelsHidden()
-                    .tint(SharpitColor.primary)
                     .disabled(!appleHealth.isAvailable)
             }
             Text("Tout est optionnel et se règle plus tard dans Paramètres › Sources.")
@@ -674,43 +647,11 @@ struct OnboardingSourcesStep: View {
                 .padding(.horizontal, SharpitSpacing.xxs)
                 .padding(.top, SharpitSpacing.xxs)
         }
-        .task { await loadStatus() }
-    }
-
-    private func isConnected(_ key: String) -> Bool {
-        status?.providers.contains(where: { $0.key == key }) ?? false
     }
 
     private var appleHealthDetail: String {
         let line = ConnectionsReadout.appleHealthSubtitle(isAvailable: appleHealth.isAvailable, state: appleHealth.state)
-        return appleHealth.isAvailable && !line.isProblem ? "Séances, sommeil, VFC et poids — y compris ceux de ta montre Garmin." : line.text
-    }
-
-    @ViewBuilder
-    private func connectButton(isConnected: Bool, isBusy: Bool, action: @escaping () -> Void) -> some View {
-        if isConnected {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(SharpitColor.primary)
-                .transition(.symbolEffect(.appear))
-                .accessibilityLabel("Connecté")
-        } else {
-            Button {
-                action()
-            } label: {
-                if isBusy {
-                    ProgressView().tint(SharpitColor.primaryForeground)
-                } else {
-                    Text("Connecter")
-                        .font(SharpitTypography.meta.weight(.semibold))
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                }
-            }
-            .sharpitGlassButton(prominent: true)
-            .tint(SharpitColor.primary)
-            .controlSize(.small)
-            .disabled(isBusy)
-        }
+        return appleHealth.isAvailable && !line.isProblem ? "Séances, sommeil, VFC et poids — ceux de ta montre aussi." : line.text
     }
 
     private var appleHealthBinding: Binding<Bool> {
@@ -724,28 +665,6 @@ struct OnboardingSourcesStep: View {
                 }
             }
         )
-    }
-
-    /// Garmin opens in an in-app sheet (SHARPIT ADR-047). The history import starts once the
-    /// shell sees Garmin connected, so the step only reads the sources again.
-    private func connectGarmin() async {
-        guard !isConnectingGarmin else { return }
-        isConnectingGarmin = true
-        defer { isConnectingGarmin = false }
-        let outcome = await GarminConnect.run(
-            client: garminClient,
-            tokenProvider: tokenProvider,
-            authenticate: webAuthenticationSession.garminConnect
-        )
-        garminFailure = outcome.isLinked ? nil : outcome
-        if outcome.isLinked {
-            await loadStatus()
-        }
-    }
-
-    private func loadStatus() async {
-        guard let token = try? await tokenProvider() else { return }
-        status = try? await syncClient.syncStatus(token: token)
     }
 }
 

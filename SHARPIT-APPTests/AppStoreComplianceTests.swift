@@ -32,17 +32,6 @@ import Testing
     #expect(plist["com.apple.developer.healthkit.access"] == nil)
 }
 
-/// Garmin's access is unofficial: only DEBUG builds offer it (5.2.2). TestFlight and App Store
-/// stay off so external beta and Review never see an in-app Garmin connect.
-@Suite struct GarminAvailabilityTests {
-    @Test func theAppStoreBuildDoesNotOfferGarmin() {
-        #expect(ProviderAvailability.garminInApp(debug: false, testFlight: false) == false)
-        #expect(ProviderAvailability.garminInApp(debug: true, testFlight: false))
-        #expect(ProviderAvailability.garminInApp(debug: false, testFlight: true) == false)
-        #expect(ProviderAvailability.garminInApp(debug: true, testFlight: true))
-    }
-}
-
 /// MyFitnessPal was withdrawn (SHARPIT ADR-073): nothing in the app target may call link, sync or import routes.
 @Test func theAppNeverLinksMyFitnessPal() throws {
     let sources = URL(filePath: #filePath)
@@ -54,6 +43,22 @@ import Testing
         #expect(!text.contains("/api/v1/myfitnesspal"), "\(file.lastPathComponent) calls a MyFitnessPal link route")
         #expect(!text.contains("import/myfitnesspal"), "\(file.lastPathComponent) calls a MyFitnessPal import route")
         #expect(!text.contains("myfitnesspal.com"), "\(file.lastPathComponent) opens MyFitnessPal's site")
+    }
+}
+
+/// Garmin's access is unofficial and its developer program closed (App Review 5.2.2): the app
+/// target never links it, pushes to it nor imports from it. Its data reaches SHARPIT through
+/// Apple Health or an account linked on the web.
+@Test func theAppNeverLinksGarmin() throws {
+    let sources = URL(filePath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .appending(path: "SHARPIT-APP")
+    let files = try #require(FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil))
+    for case let file as URL in files where file.pathExtension == "swift" {
+        let text = try String(contentsOf: file, encoding: .utf8)
+        #expect(!text.contains("/api/v1/garmin"), "\(file.lastPathComponent) calls a Garmin route")
+        #expect(!text.contains("import-garmin"), "\(file.lastPathComponent) imports from Garmin")
+        #expect(!text.contains("connect/garmin"), "\(file.lastPathComponent) handles a Garmin connection")
     }
 }
 

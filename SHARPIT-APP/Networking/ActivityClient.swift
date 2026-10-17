@@ -46,9 +46,6 @@ protocol ActivityMutating: Sendable {
     /// Only the fields named: an absent key leaves a field, `null` clears it.
     func updateActivity(id: String, fields: [String: JSONValue], token: String) async throws
     func deleteActivity(id: String, token: String) async throws
-    /// Sends a strength session to the Garmin watch as a workout to do again, scheduled today;
-    /// returns what to tell the athlete. Refusals (no Garmin, below Pro) carry the server's words.
-    func pushActivityToWatch(id: String, token: String) async throws -> String
 }
 
 extension ActivityServing {
@@ -302,13 +299,6 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         disk?.remove(.stream, id: id)
         streamCache[id] = nil
         activitiesCache = nil
-    }
-
-    func pushActivityToWatch(id: String, token: String) async throws -> String {
-        let body = try JSONEncoder().encode(["activityId": JSONValue.string(id), "schedule": .bool(true)])
-        _ = try await write(path: "/api/v1/garmin/workouts/from-activity", method: "POST", body: body, token: token)
-        return "La séance est sur ta montre Garmin, prévue aujourd’hui."
-
     }
 
     /// A write: a refusal carries the server's own field message, a 5xx is `.server` so

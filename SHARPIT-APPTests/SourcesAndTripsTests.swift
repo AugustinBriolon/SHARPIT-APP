@@ -17,7 +17,6 @@ private var utcCalendar: Calendar {
 // MARK: - Disconnecting a source
 
 @Test func eachDisconnectableSourcePostsToItsOwnV1Route() {
-    #expect(DisconnectableSource.garmin.path == "/api/v1/garmin/disconnect")
     #expect(DisconnectableSource.strava.path == "/api/v1/strava/disconnect")
     #expect(DisconnectableSource.withings.path == "/api/v1/withings/disconnect")
     #expect(DisconnectableSource.google.path == "/api/v1/google/disconnect")
@@ -46,7 +45,7 @@ private var utcCalendar: Calendar {
 @Test func aFailedDisconnectionSaysTheServersReasonOrTheFix() {
     #expect(ConnectionsReadout.disconnectFailure(.withings, error: SharpitAPIError.message("Déconnexion échouée")) == "Déconnexion échouée")
     #expect(ConnectionsReadout.disconnectFailure(.google, error: SharpitAPIError.transport).contains("Google Agenda est toujours relié"))
-    #expect(ConnectionsReadout.disconnectFailure(.garmin, error: SharpitAPIError.server).hasPrefix("Déconnexion de Garmin impossible"))
+    #expect(ConnectionsReadout.disconnectFailure(.strava, error: SharpitAPIError.server).hasPrefix("Déconnexion de Strava impossible"))
 }
 
 private nonisolated final class SourcesStubURLProtocol: URLProtocol, @unchecked Sendable {

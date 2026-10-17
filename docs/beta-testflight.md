@@ -50,9 +50,9 @@ report on demand).
 > Les notifications (verdict du matin, séance faite, séance manquée, rappels) se règlent dans
 > Paramètres › Notifications.
 
-In-app Garmin is DEBUG-only (`ProviderAvailability.garminInApp`). External TestFlight and App
-Store builds never show a Garmin connect row, history import, or workout push (App Review 5.2.2).
-Garmin watches still reach SHARPIT when the athlete enables Garmin → Apple Health.
+The app has no Garmin integration at all (`docs/adr/0013`): no connect, history import, threshold
+import or workout push (App Review 5.2.2). Garmin watches reach SHARPIT when the athlete enables
+Garmin → Apple Health.
 
 ## Invitation message
 

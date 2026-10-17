@@ -18,8 +18,6 @@ struct ActivityView: View {
     @State private var hasMore = false
     @State private var isLoadingMore = false
     @Environment(ShellRouter.self) private var router: ShellRouter?
-    /// Its completion brings older activities in, so the list reloads when it lands.
-    @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
 
     var body: some View {
         NavigationStack {
@@ -85,9 +83,6 @@ struct ActivityView: View {
                 router?.pendingActivityId = nil
                 selectedActivity = nil
                 openedActivityId = id
-            }
-            .onChange(of: historyImport?.completedAt) { _, _ in
-                Task { await load(force: true) }
             }
             .onChange(of: router?.activitiesRevision) { _, _ in
                 Task { await load(force: true) }

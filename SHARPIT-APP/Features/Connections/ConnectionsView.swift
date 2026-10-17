@@ -1,9 +1,8 @@
 import AuthenticationServices
-import ClerkKit
 import SwiftUI
 
 /// Paramètres → Sources de données: every source the iPhone app links — Apple Health, Apple
-/// Calendar, Garmin when `ProviderAvailability` offers it, and Strava / Withings / Google via
+/// Calendar, and Strava / Withings / Google via
 /// an in-app OAuth handoff. A connected row asks before disconnect (`DisconnectableSource`),
 /// then `/api/v1/<source>/disconnect`.
 ///
@@ -15,19 +14,14 @@ struct ConnectionsView: View {
     let appleCalendar: AppleCalendarSource
     let syncClient: any SyncServing
     let tokenProvider: () async throws -> String
-    var garminClient: any GarminHandoffServing = SharpitClient()
     var oauthHandoffClient: any ProviderOAuthHandoffServing = SharpitClient()
     var disconnectClient: any SourceDisconnecting = SourceDisconnectClient()
     var sourcePrefsClient: any SourcePrefsServing = SharpitClient()
 
     @Environment(SharpitToastCenter.self) private var toastCenter
-    @Environment(Clerk.self) private var clerk
-    /// Owned by `RootView`, which shows its progress and result as toasts wherever the athlete is.
-    @Environment(GarminHistoryImport.self) private var historyImport: GarminHistoryImport?
     @State private var status: V1SyncStatus?
     @State private var appleHealthToastToken: UUID?
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
-    @State private var isConnectingGarmin = false
     @State private var connectingOAuth: DisconnectableSource?
     @State private var confirmingDisconnect: DisconnectableSource?
     @State private var disconnecting: DisconnectableSource?
@@ -35,11 +29,6 @@ struct ConnectionsView: View {
     var body: some View {
         List {
             Section(eyebrow: "Sources", footer: ConnectionsReadout.sourcesFooter) {
-                // Offer Garmin to link in debug builds; keep the row when already linked so
-                // a production build can still disconnect it.
-                if ProviderAvailability.garminInApp || isGarminConnected {
-                    garminRow
-                }
                 appleHealthRow
                 appleCalendarRow
                 ForEach(DisconnectableSource.oauthConnectable) { source in
@@ -66,15 +55,6 @@ struct ConnectionsView: View {
             }
             .sharpitListRows()
 
-            if ProviderAvailability.garminInApp, isGarminConnected, historyImport != nil {
-                Section(
-                    eyebrow: "Garmin",
-                    footer: "Toutes tes activités Garmin, depuis la première. Celles déjà présentes ne sont pas dupliquées ; l'import peut prendre quelques minutes."
-                ) {
-                    historyRow
-                }
-                .sharpitListRows()
-            }
         }
         .sharpitGroupedList()
         .navigationTitle("Sources de données")
@@ -117,43 +97,6 @@ struct ConnectionsView: View {
                 appleHealthToastToken = nil
             }
         }
-    }
-
-    private var garminRow: some View {
-        let badge = ConnectionsReadout.garmin(status: status)
-        return Button {
-            if isGarminConnected {
-                confirmingDisconnect = .garmin
-            } else {
-                Task { await connectGarmin() }
-            }
-        } label: {
-            HStack(spacing: SharpitSpacing.sm) {
-                ProviderLogo(provider: .garmin)
-                sourceTitle("Garmin", status: badge.text, tone: badge.tone.color)
-                Spacer(minLength: SharpitSpacing.xs)
-                if disconnecting == .garmin {
-                    ProgressView()
-                } else if isGarminConnected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(SharpitColor.primary)
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                        .accessibilityHidden(true)
-                }
-            }
-            .contentShape(.rect)
-        }
-        .foregroundStyle(SharpitColor.foreground)
-        .disabled(disconnecting == .garmin)
-        .accessibilityHint(
-            isGarminConnected
-                ? "Propose de déconnecter Garmin"
-                : "Connecter Garmin directement dans l'application"
-        )
     }
 
     private func isOAuthConnected(_ source: DisconnectableSource) -> Bool {
@@ -201,38 +144,6 @@ struct ConnectionsView: View {
         )
     }
 
-    private var isGarminConnected: Bool {
-        status?.providers.contains(where: { $0.key == "garmin" }) ?? false
-    }
-
-    private var historyRow: some View {
-        let isImporting = historyImport?.state == .importing
-        return Button {
-            Task { await historyImport?.importAll(userId: clerk.user?.id, tokenProvider: tokenProvider) }
-        } label: {
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(SharpitColor.primary)
-                    .frame(width: 28)
-                sourceTitle(
-                    "Importer tout l'historique",
-                    status: ConnectionsReadout.garminHistory(historyImport?.state ?? .idle),
-                    tone: historyImport?.state == .failed ? SharpitColor.signalRisk : SharpitColor.mutedForeground
-                )
-                Spacer(minLength: SharpitSpacing.xs)
-                if isImporting {
-                    ProgressView()
-                }
-            }
-            .contentShape(.rect)
-        }
-        .foregroundStyle(SharpitColor.foreground)
-        .disabled(isImporting)
-    }
-
-    /// No "Activé" beside the switch: the switch already says it. The second line says what
-    /// the source is for, and turns into the reason only when the switch alone would mislead.
     private var appleHealthRow: some View {
         let line = ConnectionsReadout.appleHealthSubtitle(
             isAvailable: appleHealth.isAvailable,
@@ -335,41 +246,6 @@ struct ConnectionsView: View {
         }
     }
 
-    /// Garmin opens in an in-app sheet (SHARPIT ADR-047); a new link is synced and its whole
-    /// history imported, as the universal-link return does.
-    private func connectGarmin() async {
-        guard !isConnectingGarmin else { return }
-        isConnectingGarmin = true
-        defer { isConnectingGarmin = false }
-        let outcome = await GarminConnect.run(
-            client: garminClient,
-            tokenProvider: tokenProvider,
-            authenticate: webAuthenticationSession.garminConnect
-        )
-        if outcome.isLinked {
-            await loadStatus()
-        }
-        toastCenter.show(
-            outcome.message,
-            symbol: outcome.symbol,
-            tone: outcome.tone,
-            autoDismissAfter: outcome.toastDuration
-        )
-        guard outcome == .connected else { return }
-        do {
-            let token = try await tokenProvider()
-            status = try await syncClient.sync(token: token)
-            await historyImport?.runIfNeeded(userId: clerk.user?.id, tokenProvider: tokenProvider)
-        } catch {
-            toastCenter.show(
-                SharpitErrorGuidance.message(for: error, subject: "La synchronisation"),
-                symbol: "exclamationmark.triangle",
-                tone: .error,
-                autoDismissAfter: 4
-            )
-        }
-    }
-
     /// Waits for the server — a disconnection revokes access at the provider, so the row only
     /// changes once it is done — retried through `SharpitRetry`, then the list is read again.
     private func disconnect(_ source: DisconnectableSource) async {
@@ -399,7 +275,7 @@ struct ConnectionsView: View {
 
     private func loadStatus() async {
         let token = toastCenter.show(
-            "Vérification de Garmin…",
+            "Vérification des sources…",
             symbol: "arrow.triangle.2.circlepath",
             autoDismissAfter: nil
         )

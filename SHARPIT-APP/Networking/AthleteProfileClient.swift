@@ -86,32 +86,6 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing, Thres
         }
     }
 
-    /// Garmin is asked live, so the call is given more than the default minute. The server
-    /// answers a disconnected account with a 500 and its words (« Compte Garmin non connecté »):
-    /// that message is what the athlete reads.
-    func importGarminThresholds(token: String) async throws -> V1GarminThresholdImport {
-        var request = URLRequest(
-            url: baseURL.appending(path: "/api/v1/athlete-profile/import-garmin"),
-            timeoutInterval: 120
-        )
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        let (data, status) = try await exchange(request)
-        switch status {
-        case 200...299:
-            return try decode(V1GarminThresholdImport.self, from: data)
-        case 401, 403:
-            throw SharpitAPIError.unauthorized
-        default:
-            if let message = PlannedSessionClient.refusal(in: data) {
-                throw SharpitAPIError.message(message)
-            }
-            throw SharpitAPIError.server
-        }
-    }
-
     nonisolated static func applyRefusal(in data: Data) -> String {
         let reason = (try? JSONDecoder().decode(JSONValue.self, from: data))?["reason"]?.string
         if let reason, let refusal = V1ThresholdApplyRefusal(rawValue: reason) {

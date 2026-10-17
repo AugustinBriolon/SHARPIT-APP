@@ -67,7 +67,6 @@ extension PlannedBrickPreview {
 struct BrickSessionDrawer: View {
     let brick: PlannedBrickPreview
     var linking: SessionLinkContext?
-    var watchPush: SessionWatchPushContext?
     var guidedFinish: GuidedStrengthFinishContext?
     /// Reads the legs from the plan when the preview arrived without their steps.
     var loadLegs: (() async -> PlannedBrickPreview?)?
@@ -105,7 +104,6 @@ struct BrickSessionDrawer: View {
                 PlannedSessionDrawer(
                     preview: leg,
                     linking: linking,
-                    watchPush: watchPush,
                     guidedFinish: guidedFinish,
                     isEmbedded: true
                 ) { context in

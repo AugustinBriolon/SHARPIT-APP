@@ -9,7 +9,7 @@ struct ThresholdsView: View {
     @State private var form = ProfileFormState()
     @State private var autoSaveTask: Task<Void, Never>?
     @State private var hasLoaded = false
-    /// The records' estimates and the Garmin import; nil for a client that offers neither.
+    /// The records' estimates; nil for a client that offers none.
     @State private var suggestions: ThresholdSuggestionStore?
 
     init(
@@ -71,7 +71,7 @@ struct ThresholdsView: View {
             await store.loadHistory()
             await suggestions?.loadPreview()
         }
-        // The server's profile after an apply or an import: the form takes the stored values,
+        // The server's profile after an apply: the form takes the stored values,
         // even where the server wrote them differently from what was shown.
         .onChange(of: suggestions?.revision) { _, _ in
             form = ProfileFormState(profile: store.profile)
@@ -91,7 +91,6 @@ struct ThresholdsView: View {
     private var confidenceCard: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             confidenceHeader
-            garminImport
         }
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panel)
@@ -109,7 +108,7 @@ struct ThresholdsView: View {
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(store.profile.thresholdsSyncedAt != nil ? "Synchronisé avec Garmin" : "Calibrations manuelles")
+                Text(store.profile.thresholdsSyncedAt != nil ? "Synchronisé depuis ta montre" : "Calibrations manuelles")
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
 
@@ -123,49 +122,9 @@ struct ThresholdsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// « Importer depuis Garmin », as the web's calibration editor offers it: Garmin's FTP, FC
-    /// max, LTHR, threshold pace and VO₂max, written by the server where Garmin has them.
-    @ViewBuilder
-    private var garminImport: some View {
-        if let suggestions {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                Button {
-                    Task { await importFromGarmin(suggestions) }
-                } label: {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        if suggestions.isImporting {
-                            ProgressView()
-                        } else {
-                            Image(systemName: "arrow.down.circle")
-                        }
-                        Text(suggestions.isImporting ? "Import…" : "Importer depuis Garmin")
-                            .font(SharpitTypography.bodyEmphasis)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .tint(SharpitColor.primary)
-                .disabled(suggestions.isImporting)
-
-                switch suggestions.importState {
-                case .done(let message):
-                    Text(message)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                case .failed(let message):
-                    Text(message)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.signalRisk)
-                case .idle, .importing:
-                    EmptyView()
-                }
-            }
-        }
-    }
-
     private var confidenceSubtitle: String {
         if let syncedAt = store.profile.thresholdsSyncedAt {
-            return "Importé " + SyncReadout.age(of: syncedAt, now: .now) + " · Se règle sur Garmin"
+            return "Importé " + SyncReadout.age(of: syncedAt, now: .now) + " · Se règle sur la montre"
         }
         return "Ces repères personnalisés orientent les intensités et les zones d'effort."
     }
@@ -384,7 +343,7 @@ struct ThresholdsView: View {
                         .font(SharpitTypography.sectionTitle)
                         .foregroundStyle(SharpitColor.foreground)
 
-                    Text("Estimé par ta montre Garmin. Se règle sur Garmin, pas ici.")
+                    Text("Estimé par ta montre. Se règle sur la montre, pas ici.")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
@@ -413,7 +372,7 @@ struct ThresholdsView: View {
                         .foregroundStyle(color)
                 }
                 Spacer()
-                Text("Garmin")
+                Text("Montre")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .padding(.horizontal, 6)
@@ -572,7 +531,7 @@ struct ThresholdsView: View {
         }
     }
 
-    // MARK: - Estimates & Garmin
+    // MARK: - Estimates
 
     /// The kept proposals show in the fields on the tap; a value being typed is saved first,
     /// so the estimate is written after it rather than raced by it.
@@ -582,12 +541,6 @@ struct ThresholdsView: View {
         performAutoSave()
         suggestions.apply(to: store)
         form = ProfileFormState(profile: store.profile)
-    }
-
-    private func importFromGarmin(_ suggestions: ThresholdSuggestionStore) async {
-        autoSaveTask?.cancel()
-        performAutoSave()
-        await suggestions.importFromGarmin(into: store)
     }
 }
 

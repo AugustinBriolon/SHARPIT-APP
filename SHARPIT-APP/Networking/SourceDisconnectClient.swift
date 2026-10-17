@@ -5,7 +5,6 @@ import Foundation
 /// grant at the provider where it can (Withings, Google), forgets the account and takes the
 /// source out of the per-category priorities. What was already imported stays.
 nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Sendable {
-    case garmin
     case strava
     case withings
     case google
@@ -20,7 +19,6 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
 
     var name: String {
         switch self {
-        case .garmin: "Garmin"
         case .strava: "Strava"
         case .withings: "Withings"
         case .google: "Google Agenda"
@@ -29,7 +27,6 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
 
     var logo: ProviderLogo.Provider {
         switch self {
-        case .garmin: .garmin
         case .strava: .strava
         case .withings: .withings
         case .google: .google
@@ -39,7 +36,6 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
     /// What the source brings, on its row's second line once connected.
     var purpose: String {
         switch self {
-        case .garmin: "Séances, sommeil et récupération"
         case .strava: "Séances et activités"
         case .withings: "Poids et composition corporelle"
         case .google: "Planning et disponibilités"
@@ -52,8 +48,6 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
     /// What stops, then what stays — the athlete decides on facts, never on a warning tone.
     var confirmationMessage: String {
         switch self {
-        case .garmin:
-            "SharpIt ne recevra plus tes séances, ton sommeil ni ta récupération depuis Garmin. Ce qui est déjà importé est conservé."
         case .strava:
             "SharpIt ne recevra plus tes activités Strava et l'accès est révoqué chez Strava. Ce qui est déjà importé est conservé."
         case .withings:
@@ -74,8 +68,7 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
         return allCases.filter { keys.contains($0.statusKey) }
     }
 
-    /// OAuth sources the phone can connect itself (Garmin stays on its own SSO handoff).
-    /// Same order as the web Compte → Sources list (after Garmin).
+    /// The sources the phone connects itself, in the web's Compte → Sources order.
     static let oauthConnectable: [DisconnectableSource] = [.withings, .google, .strava]
 
     var connectsViaOAuthHandoff: Bool { Self.oauthConnectable.contains(self) }
@@ -85,7 +78,7 @@ nonisolated protocol SourceDisconnecting: Sendable {
     func disconnect(_ source: DisconnectableSource, token: String) async throws
 }
 
-/// `POST /api/v1/{garmin,strava,withings,google}/disconnect`.
+/// `POST /api/v1/{strava,withings,google}/disconnect`.
 actor SourceDisconnectClient: SourceDisconnecting {
     private let session: URLSession
     private let baseURL: URL

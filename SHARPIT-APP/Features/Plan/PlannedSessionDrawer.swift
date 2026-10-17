@@ -24,9 +24,6 @@ struct PlannedSessionPreview: Identifiable, Hashable {
     /// True when the breakdown was inferred from duration and intensity rather than
     /// written — worth saying, because the athlete did not choose it.
     let stepsAreDerived: Bool
-    let garminWorkoutId: String?
-    let garminWorkoutScheduledDate: String?
-    let garminWorkoutPushedAt: Date?
     /// STRENGTH / mobilité prescription — drives « Lancer la séance ».
     let strengthPrescription: JSONValue?
 
@@ -52,9 +49,6 @@ struct PlannedSessionPreview: Identifiable, Hashable {
         rationale: String? = nil,
         steps: [V1PlannedSessionStep],
         stepsAreDerived: Bool,
-        garminWorkoutId: String? = nil,
-        garminWorkoutScheduledDate: String? = nil,
-        garminWorkoutPushedAt: Date? = nil,
         strengthPrescription: JSONValue? = nil,
         isKey: Bool = false
     ) {
@@ -70,9 +64,6 @@ struct PlannedSessionPreview: Identifiable, Hashable {
         self.rationale = rationale
         self.steps = steps
         self.stepsAreDerived = stepsAreDerived
-        self.garminWorkoutId = garminWorkoutId
-        self.garminWorkoutScheduledDate = garminWorkoutScheduledDate
-        self.garminWorkoutPushedAt = garminWorkoutPushedAt
         self.strengthPrescription = strengthPrescription
     }
 }
@@ -85,23 +76,6 @@ struct SessionEditingContext {
     let onSaved: (V1PlannedSessionItem) -> Void
     /// The session is gone; the drawer closes.
     let onDeleted: () -> Void
-}
-
-/// What a screen hands the drawer so it can push its prescription to the watch.
-struct SessionWatchPushContext: Sendable {
-    let pusher: any PlannedSessionWatchPushing
-    let tokenProvider: () async throws -> String
-    let onPushed: @Sendable (PlannedSessionWatchPushResult) -> Void
-
-    init(
-        pusher: any PlannedSessionWatchPushing,
-        tokenProvider: @escaping () async throws -> String,
-        onPushed: @escaping @Sendable (PlannedSessionWatchPushResult) -> Void = { _ in }
-    ) {
-        self.pusher = pusher
-        self.tokenProvider = tokenProvider
-        self.onPushed = onPushed
-    }
 }
 
 struct PlannedSessionMetric: Hashable {
@@ -142,9 +116,6 @@ extension PlannedSessionPreview {
             rationale: session.rationale,
             steps: session.breakdown?.steps ?? [],
             stepsAreDerived: session.breakdown?.derived ?? false,
-            garminWorkoutId: session.garminWorkoutId,
-            garminWorkoutScheduledDate: session.garminWorkoutScheduledDate,
-            garminWorkoutPushedAt: session.garminWorkoutPushedAt,
             strengthPrescription: session.strengthPrescription,
             isKey: session.isKey
         )
@@ -229,8 +200,6 @@ struct PlannedSessionDrawer: View {
     let preview: PlannedSessionPreview
     /// Nil where the screen cannot link, so the action is absent rather than dead.
     var linking: SessionLinkContext?
-    /// Nil where the screen cannot push to watch.
-    var watchPush: SessionWatchPushContext?
     /// Lets the athlete edit, move or delete the session; nil where the plan cannot be changed.
     var editing: SessionEditingContext?
     /// Creates the STRENGTH activity after a phone-guided follow; nil where the screen cannot write.
@@ -251,11 +220,6 @@ struct PlannedSessionDrawer: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var showingLinkPicker = false
-    @State private var showingReplaceConfirmation = false
-    @State private var isPushingToWatch = false
-    @State private var showingPro = false
-    @Environment(ProStore.self) private var pro: ProStore?
-    @State private var localWatchPush: PlannedSessionWatchPushResult?
     @State private var loadedBreakdown: V1PlannedSessionBreakdown?
     @State private var isLoadingBreakdown = false
     @State private var loadedPrescription: JSONValue?
@@ -277,22 +241,6 @@ struct PlannedSessionDrawer: View {
 
     private var stepsAreDerived: Bool {
         preview.steps.isEmpty ? loadedBreakdown?.derived ?? false : preview.stepsAreDerived
-    }
-
-    private var currentWorkoutId: String? {
-        localWatchPush?.workoutId ?? preview.garminWorkoutId
-    }
-
-    private var currentScheduledDate: String? {
-        localWatchPush?.scheduledDate ?? preview.garminWorkoutScheduledDate
-    }
-
-    private var currentPushedAt: Date? {
-        localWatchPush?.pushedAt ?? preview.garminWorkoutPushedAt
-    }
-
-    private var isAlreadyOnWatch: Bool {
-        currentWorkoutId != nil
     }
 
     var body: some View {
@@ -330,9 +278,7 @@ struct PlannedSessionDrawer: View {
                         }
                         Button("Annuler", role: .cancel) {}
                     } message: {
-                        Text(isAlreadyOnWatch
-                            ? "Elle disparaît de ton plan. L’entraînement déjà envoyé reste sur ta montre Garmin."
-                            : "Elle disparaît de ton plan.")
+                        Text("Elle disparaît de ton plan.")
                     }
             }
             .presentationDetents([.medium, .large])
@@ -383,9 +329,6 @@ struct PlannedSessionDrawer: View {
                         showingLinkPicker = true
                     }
                 }
-                if ProviderAvailability.garminInApp, preview.sessionId != nil, let watchPush {
-                    watchActionSection(context: watchPush)
-                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(SharpitSpacing.pageInset)
@@ -396,12 +339,6 @@ struct PlannedSessionDrawer: View {
         .task { await fetchBreakdownIfMissing() }
         .navigationTitle(isEmbedded ? preview.sport : "Séance prévue")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingPro) {
-            if let pro {
-                NavigationStack { ProView(store: pro) }
-                    .sharpitSheet()
-            }
-        }
         .sheet(isPresented: $showingLinkPicker) {
             if let sessionId = preview.sessionId, let linking {
                 SessionLinkPicker(sessionId: sessionId, context: linking) {
@@ -415,132 +352,6 @@ struct PlannedSessionDrawer: View {
                 GuidedStrengthWorkoutView(session: guided, finish: guidedFinish)
             }
         }
-        .confirmationDialog(
-            "Renvoyer cette séance à la montre ?",
-            isPresented: $showingReplaceConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Remplacer sur la montre", role: .destructive) {
-                if let watchPush {
-                    Task { await handleWatchPush(force: true, context: watchPush) }
-                }
-            }
-            Button("Annuler", role: .cancel) {}
-        } message: {
-            Text("Cette séance est déjà présente sur votre montre Garmin. Renvoyer remplacera le workout existant.")
-        }
-    }
-
-    @ViewBuilder
-    private func watchActionSection(context: SessionWatchPushContext) -> some View {
-        if isAlreadyOnWatch {
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "applewatch.side.right")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.primary)
-                    .frame(width: 28, height: 28)
-                    .background(SharpitColor.chipSurface, in: Circle())
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        Text("Sur la montre Garmin")
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.foreground)
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(SharpitTypography.label)
-                            .foregroundStyle(SharpitColor.primary)
-                    }
-                    if let currentScheduledDate {
-                        Text("Prévue le \(currentScheduledDate)")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-                }
-
-                Spacer(minLength: 0)
-
-                Button {
-                    showingReplaceConfirmation = true
-                } label: {
-                    HStack(spacing: 4) {
-                        if isPushingToWatch {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                                .font(SharpitTypography.meta)
-                        }
-                        Text("Renvoyer")
-                            .font(SharpitTypography.label)
-                    }
-                    .padding(.horizontal, SharpitSpacing.sm)
-                    .padding(.vertical, SharpitSpacing.xs)
-                    .background(SharpitColor.chipSurface, in: Capsule())
-                    .foregroundStyle(SharpitColor.primary)
-                }
-                .buttonStyle(.plain)
-                .disabled(isPushingToWatch)
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
-        } else {
-            DrawerActionRow(
-                symbolName: "applewatch.side.right",
-                title: isPushingToWatch ? "Envoi vers la montre…" : "Envoyer à la montre",
-                subtitle: watchPushSubtitle
-            ) {
-                guard !isPushingToWatch else { return }
-                // The server decides; below Pro the athlete is shown Pro instead of a failure.
-                if let pro, pro.phase == .loaded, !pro.isPro {
-                    showingPro = true
-                    return
-                }
-                Task { await handleWatchPush(force: false, context: context) }
-            }
-            .disabled(isPushingToWatch)
-        }
-    }
-
-    private var watchPushSubtitle: String {
-        if isPushingToWatch { return "Transfert vers Garmin Connect en cours" }
-        if let pro, pro.phase == .loaded, !pro.isPro { return "Réservé à SharpIt Pro" }
-        return "Programme la séance dans Garmin Connect"
-    }
-
-    private func handleWatchPush(force: Bool, context: SessionWatchPushContext) async {
-        guard let sessionId = preview.sessionId else { return }
-        isPushingToWatch = true
-        do {
-            let token = try await context.tokenProvider()
-            let result = try await context.pusher.pushToWatch(sessionId: sessionId, force: force, token: token)
-            localWatchPush = result
-            context.onPushed(result)
-            toastCenter?.show(
-                force ? "Workout renvoyé à la montre" : "Workout envoyé à la montre Garmin",
-                symbol: "applewatch.side.right",
-                tone: .success
-            )
-        } catch let error as PlannedSessionWatchPushError {
-            switch error {
-            case .alreadyPushed:
-                showingReplaceConfirmation = true
-            case .notConnected(let message):
-                toastCenter?.show(message, symbol: "exclamationmark.triangle", tone: .error)
-            case .proRequired:
-                showingPro = true
-            case .unsupported(let message), .failed(let message):
-                toastCenter?.show(message, symbol: "exclamationmark.triangle", tone: .error)
-            }
-        } catch {
-            toastCenter?.show(
-                error.localizedDescription,
-                symbol: "exclamationmark.triangle",
-                tone: .error
-            )
-        }
-        isPushingToWatch = false
     }
 
     private func fetchBreakdownIfMissing() async {
