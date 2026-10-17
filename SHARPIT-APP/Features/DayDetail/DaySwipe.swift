@@ -6,10 +6,10 @@ import UIKit
 /// right) or the day after (to the left). iOS 26 pops from anywhere on the screen, so these
 /// screens keep its edge gesture only.
 ///
-/// The page follows the finger and dims as it goes, holds back where no day lies (after today),
-/// then fades a short step further while the next day fades in from its side of time — later
-/// from the right, earlier from the left —, swiped or picked alike. Never a whole page width:
-/// that left the canvas blank between two days. With Reduce Motion, the day only fades in.
+/// The days turn as pages do: the day before and the day after sit right against the page, the
+/// finger drags all three, and a turn brings the one beside into place — no fade, no blank canvas
+/// between days. Past today the page holds back. A day picked in the strip or the calendar nudges
+/// in from its side of time. With Reduce Motion, the day simply changes.
 ///
 /// A finger that starts on a row or a button and slides sideways turns the day without opening
 /// what it touched: the turn is a UIKit pan that refuses vertical drags (the scroll keeps them)
@@ -96,65 +96,68 @@ nonisolated enum DaySwipe {
         return target
     }
 
-    /// How faint a day gets while the next replaces it: never gone, so the screen never blinks.
-    static let handoverOpacity: Double = 0.35
-
-    /// The page dims as the finger pulls it, to half at a full width: the day is going.
-    static func pullOpacity(for offset: CGFloat, width: CGFloat) -> Double {
-        1 - min(abs(offset) / max(width, 1), 1) * 0.5
-    }
-
     /// The day after comes in from the right (the trailing side), the day before from the left.
     static func entrySign(_ step: Step) -> CGFloat { step == .next ? 1 : -1 }
+
+    /// Where the pager rests to show the day a step lands on: the page beside, one width away.
+    static func pageOffset(for step: Step, width: CGFloat) -> CGFloat {
+        -entrySign(step) * width
+    }
 }
 
-/// Where a new day's page starts before it settles.
-nonisolated private struct DayArrival: Equatable {
-    var offset: CGFloat = 0
-    var opacity: Double = 1
-}
-
-private struct DaySwipeModifier: ViewModifier {
+private struct DaySwipeModifier<Neighbor: View>: ViewModifier {
     let day: Date
     let onSelect: (Date) -> Void
+    let neighbor: (Date) -> Neighbor
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Where the finger holds the page while it drags.
+    /// Where the finger holds the pager while it drags.
     @State private var dragOffset: CGFloat = 0
-    /// Where the page rests once the finger is gone: home, or aside while it leaves.
+    /// Where the pager rests once the finger is gone: home, or on the page beside.
     @State private var restingOffset: CGFloat = 0
     @State private var width: CGFloat = 390
     /// The step a swipe committed to, until the day it asked for shows.
     @State private var pendingStep: DaySwipe.Step?
-    @State private var arrival = DayArrival()
-    @State private var arrivals = 0
-    /// The page fades as it is pulled and as it leaves, so no blank screen ever sits between days.
-    @State private var leavingOpacity: Double = 1
+    /// A day picked in the strip or the calendar: a short nudge from its side of time.
+    @State private var pickNudge: CGFloat = 0
+    @State private var picks = 0
 
     func body(content: Content) -> some View {
-        let arrival = arrival
-        return content
-            .contentShape(.rect)
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-            .keyframeAnimator(initialValue: DayArrival(), trigger: arrivals) { page, value in
-                page
-                    .offset(x: value.offset)
-                    .opacity(value.opacity)
-            } keyframes: { _ in
-                KeyframeTrack(\.offset) {
-                    MoveKeyframe(arrival.offset)
-                    SpringKeyframe(0, duration: 0.42, spring: .snappy)
+        let offset = restingOffset + dragOffset
+        let nudge = pickNudge
+        return ZStack {
+            // The days on either side sit right against the page, as a pager's pages do, so a
+            // swipe brings the next one in with no blank canvas between them.
+            if offset != 0 {
+                if let previous = DaySwipe.day(after: .previous, from: day) {
+                    neighbor(previous)
+                        .offset(x: offset - width)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
                 }
-                KeyframeTrack(\.opacity) {
-                    MoveKeyframe(arrival.opacity)
-                    LinearKeyframe(1, duration: 0.22)
+                if let next = DaySwipe.day(after: .next, from: day) {
+                    neighbor(next)
+                        .offset(x: offset + width)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
                 }
             }
-            .offset(x: restingOffset + dragOffset)
-            .opacity(leavingOpacity * DaySwipe.pullOpacity(for: dragOffset, width: width))
-            .gesture(DayTurnGesture(onChange: follow, onEnd: end, onCancel: settle))
-            .onChange(of: day) { old, new in arrive(from: old, to: new) }
-            .background(EdgeOnlyPopGesture())
+            content
+                .contentShape(.rect)
+                .keyframeAnimator(initialValue: CGFloat.zero, trigger: picks) { page, value in
+                    page.offset(x: value)
+                } keyframes: { _ in
+                    KeyframeTrack {
+                        MoveKeyframe(nudge)
+                        SpringKeyframe(0, duration: 0.42, spring: .snappy)
+                    }
+                }
+                .offset(x: offset)
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .gesture(DayTurnGesture(onChange: follow, onEnd: end, onCancel: settle))
+        .onChange(of: day) { old, new in arrive(from: old, to: new) }
+        .background(EdgeOnlyPopGesture())
     }
 
     private var canTurnNext: Bool { DaySwipe.day(after: .next, from: day) != nil }
@@ -173,7 +176,7 @@ private struct DaySwipeModifier: ViewModifier {
     }
 
     private func end(_ release: DayTurnRelease) {
-        // Pick the page up where the finger left it.
+        // Pick the pager up where the finger left it.
         let released = dragOffset
         dragOffset = 0
         guard pendingStep == nil else { return }
@@ -192,12 +195,13 @@ private struct DaySwipeModifier: ViewModifier {
         }
 
         pendingStep = step
-        // The page goes on a little the way it was pushed and fades: a short step, never a
-        // whole page width, which left the canvas blank until the next day came in.
-        leavingOpacity = DaySwipe.pullOpacity(for: released, width: width)
-        withAnimation(.easeOut(duration: 0.14)) {
-            restingOffset = released - DaySwipe.entrySign(step) * DaySwipe.pickTravel
-            leavingOpacity = DaySwipe.handoverOpacity
+        // The page beside comes the rest of the way at the finger's speed.
+        let destination = DaySwipe.pageOffset(for: step, width: width)
+        let remaining = abs(destination - released)
+        let speed = max(abs(release.velocity.width), 900)
+        let duration = min(max(remaining / speed, 0.16), 0.3)
+        withAnimation(.easeOut(duration: duration)) {
+            restingOffset = destination
         } completion: {
             onSelect(target)
             Task {
@@ -205,10 +209,7 @@ private struct DaySwipeModifier: ViewModifier {
                 try? await Task.sleep(for: .milliseconds(800))
                 guard pendingStep == step else { return }
                 pendingStep = nil
-                withAnimation(SharpitMotion.reveal) {
-                    restingOffset = 0
-                    leavingOpacity = 1
-                }
+                withAnimation(SharpitMotion.reveal) { restingOffset = 0 }
             }
         }
     }
@@ -216,27 +217,25 @@ private struct DaySwipeModifier: ViewModifier {
     private func arrive(from old: Date, to new: Date) {
         let swiped = pendingStep
         pendingStep = nil
-        guard let step = swiped ?? DaySwipe.step(from: old, to: new) else { return }
+        // Swiped: the page beside is already in place — it becomes the page, nothing moves.
         var still = Transaction()
         still.disablesAnimations = true
-        withTransaction(still) {
-            restingOffset = 0
-            leavingOpacity = 1
-        }
-        // Swiped or picked, the new day fades in from a short step on its side of time.
-        arrival = reduceMotion
-            ? DayArrival(offset: 0, opacity: 0)
-            : DayArrival(offset: DaySwipe.entrySign(step) * DaySwipe.pickTravel, opacity: DaySwipe.handoverOpacity)
-
-        arrivals += 1
+        withTransaction(still) { restingOffset = 0 }
+        guard swiped == nil, !reduceMotion, let step = DaySwipe.step(from: old, to: new) else { return }
+        pickNudge = DaySwipe.entrySign(step) * DaySwipe.pickTravel
+        picks += 1
     }
 }
 
 extension View {
     /// Swipe right for the day before, left for the day after; back stays on the left edge.
-    /// Every change of `day`, swiped or picked, slides the new day in from its side.
-    func daySwipe(day: Date, onSelect: @escaping (Date) -> Void) -> some View {
-        modifier(DaySwipeModifier(day: day, onSelect: onSelect))
+    /// `neighbor` draws the days on either side, right against the page, while it moves.
+    func daySwipe<Neighbor: View>(
+        day: Date,
+        onSelect: @escaping (Date) -> Void,
+        @ViewBuilder neighbor: @escaping (Date) -> Neighbor
+    ) -> some View {
+        modifier(DaySwipeModifier(day: day, onSelect: onSelect, neighbor: neighbor))
     }
 }
 

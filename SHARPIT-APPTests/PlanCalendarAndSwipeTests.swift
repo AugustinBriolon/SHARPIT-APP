@@ -204,10 +204,10 @@ import Testing
         #expect(DaySwipe.offset(for: -2000, canTurn: false, width: 390) > -390)
     }
 
-    @Test func thePulledPageDimsButNeverVanishesUnderTheFinger() {
-        #expect(DaySwipe.pullOpacity(for: 0, width: 390) == 1)
-        #expect(DaySwipe.pullOpacity(for: -195, width: 390) == 0.75)
-        #expect(DaySwipe.pullOpacity(for: 2000, width: 390) == 0.5)
+    @Test func aTurnRestsOnThePageBesideOneWidthAway() {
+        // The day before sits on the left: the pager moves right to show it, and the reverse.
+        #expect(DaySwipe.pageOffset(for: .previous, width: 390) == 390)
+        #expect(DaySwipe.pageOffset(for: .next, width: 390) == -390)
     }
 
     @Test func aVerticalOrEdgeDragIsNotATurn() {

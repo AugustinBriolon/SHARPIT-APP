@@ -32,7 +32,9 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                 // hidden until they arrive — never the old day's numbers under the new date.
                 .redacted(reason: store.isSwitchingDay ? .placeholder : [])
                 .animation(SharpitMotion.fade, value: store.isSwitchingDay)
-                .daySwipe(day: store.selectedDay) { day in Task { await store.select(day) } }
+                .daySwipe(day: store.selectedDay) { day in Task { await store.select(day) } } neighbor: { day in
+                    neighborPage(day)
+                }
                 // A new day's figures move to their values rather than jumping.
                 .animation(SharpitMotion.reveal, value: store.phase)
         }
@@ -42,22 +44,40 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
         .task { await store.load() }
     }
 
+    /// The day beside the page while a swipe moves it: as read, or in its loading shape.
+    @ViewBuilder
+    private func neighborPage(_ day: Date) -> some View {
+        if let payload = store.knownPayload(on: day), payload.empty == nil {
+            ScrollView {
+                content(payload)
+                    .padding(.top, SharpitSpacing.md)
+            }
+            .scrollDisabled(true)
+        } else {
+            loadingPage
+        }
+    }
+
+    private var loadingPage: some View {
+        ScrollView {
+            if let loadingPlaceholder {
+                content(loadingPlaceholder)
+                    .padding(.top, SharpitSpacing.md)
+                    .redacted(reason: .placeholder)
+                    .allowsHitTesting(false)
+                    .accessibilityLabel("Chargement")
+            } else {
+                DayDetailSkeleton()
+                    .padding(.top, SharpitSpacing.md)
+            }
+        }
+    }
+
     @ViewBuilder
     private var phaseView: some View {
         switch store.phase {
         case .loading:
-            ScrollView {
-                if let loadingPlaceholder {
-                    content(loadingPlaceholder)
-                        .padding(.top, SharpitSpacing.md)
-                        .redacted(reason: .placeholder)
-                        .allowsHitTesting(false)
-                        .accessibilityLabel("Chargement")
-                } else {
-                    DayDetailSkeleton()
-                        .padding(.top, SharpitSpacing.md)
-                }
-            }
+            loadingPage
         case .loaded(let payload):
             ScrollView {
                 content(payload)

@@ -94,6 +94,7 @@ final class DayResourceStore<Payload: V1DayResource> {
         await load(keepingDayOnFailure: true)
         await marker?.ensure(around: selectedDay)
         prefetchRecentDays()
+        await prefetchNeighbors()
     }
 
     /// Pull-to-refresh: the day on screen is read from the server again, even a past one.
@@ -126,11 +127,12 @@ final class DayResourceStore<Payload: V1DayResource> {
         if let cached = known(trainingDayId) {
             show(cached)
             await load(keepingDayOnFailure: true)
-            return
+        } else {
+            isSwitchingDay = true
+            await load(keepingDayOnFailure: false)
+            isSwitchingDay = false
         }
-        isSwitchingDay = true
-        defer { isSwitchingDay = false }
-        await load(keepingDayOnFailure: false)
+        await prefetchNeighbors()
     }
 
     /// The cause and what to do for a network or session failure; the screen's own words otherwise.
@@ -143,6 +145,11 @@ final class DayResourceStore<Payload: V1DayResource> {
 
     private func show(_ payload: Payload) {
         phase = payload.empty.map(Phase.empty) ?? .loaded(payload)
+    }
+
+    /// A day already read, for the page drawn beside this one while a swipe moves it.
+    func knownPayload(on day: Date) -> Payload? {
+        known(TrainingDayId.today(now: day))
     }
 
     /// Read on this screen, or anywhere in the app this launch.
@@ -171,6 +178,20 @@ final class DayResourceStore<Payload: V1DayResource> {
             guard requestedDay == trainingDayId else { return }
             if keepingDayOnFailure, case .loaded = phase { return }
             phase = .failed(Self.failure(error, fallback: failureMessage))
+        }
+    }
+
+    /// Reads the days on either side of the one shown, so a swipe brings in a page already filled.
+    private func prefetchNeighbors() async {
+        let around = [DaySwipe.Step.previous, .next]
+            .compactMap { DaySwipe.day(after: $0, from: selectedDay) }
+            .map { TrainingDayId.today(now: $0) }
+            .filter { known($0) == nil }
+        for dayId in around {
+            guard let token = try? await tokenProvider(),
+                  let payload = try? await fetch(dayId, token)
+            else { continue }
+            cache[dayId] = payload
         }
     }
 

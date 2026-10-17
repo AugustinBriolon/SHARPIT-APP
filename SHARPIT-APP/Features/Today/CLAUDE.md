@@ -23,10 +23,11 @@ loading, empty and failed states so another day is always one tap away): it open
 `SharpitCalendarSheet` (no future day, its « Aujourd'hui » to come back; each past day marked as on
 the day screens — filled for a night or a session, muted for none: `DataDaysMarker` over the
 `sleep` and `effort` data-days, `SharpitCalendarMark.dataMarks`). A swipe turns the day as on the
-day screens (`daySwipe`: right for the day before, left for the day after, never past today; a swipe
-that starts on a card never opens it). Not a toolbar `.largeTitle` item: on iOS 26 that one takes no
-touch. `TodayStore.select(day:)` names the page at once and keeps the day on screen, dimmed, until
-the new one arrives (`/api/v1/today?trainingDayId=`, snapshot cached per day; any day read this launch,
+day screens (`daySwipe`: the days beside are drawn against the page — `TodayStore.knownFold`, read
+ahead after each load — right for the day before, left for the day after, never past today; a swipe
+that starts on a card never opens it). A day not read yet shows its loading shape under its date. Not a toolbar `.largeTitle` item: on iOS 26 that one takes no
+touch. `TodayStore.select(day:)` names the page at once; the new day arrives from
+(`/api/v1/today?trainingDayId=`, snapshot cached per day; any day read this launch,
 today included, opens at once from `DayReadCache` while the server answers behind, and a past day is
 not asked for again until a write or a pull-to-refresh); `selectedDayId` nil
 follows today, midnight included. A past day is read-only: no ressenti, no check-in invitation, and it never

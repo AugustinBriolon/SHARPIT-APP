@@ -33,6 +33,8 @@ final class TodayStore {
     private let tokenProvider: (() async throws -> String)?
     private let modelContext: ModelContext?
     private let dayReads: DayReadCache
+    /// Folds already mapped for the page drawn beside this one while a swipe moves it.
+    @ObservationIgnored private var neighborFolds: [String: TodayFold] = [:]
     /// Tab `.task` re-fires on every return; skip the network while the day is still fresh.
     private let networkGate = LoadGate()
 
@@ -164,9 +166,39 @@ final class TodayStore {
 
     private func applyNetworkToday(dayId: String, token: String) async throws -> Bool {
         let payload = try await client.today(trainingDayId: dayId, token: token)
+        dayReads.keep(payload, day: dayId)
+        neighborFolds[dayId] = nil
+        // A late answer for a day left since must not replace the one now asked for.
+        guard dayId == self.dayId else { return false }
         apply(payload, animated: true)
         persistSnapshot(payload)
+        Task { await prefetchNeighbors(token: token) }
         return true
+    }
+
+    /// A day already read, as the page drawn beside this one while a swipe moves it.
+    func knownFold(on day: Date) -> TodayFold? {
+        let dayId = TrainingDayId.today(now: day)
+        if let fold = neighborFolds[dayId] { return fold }
+        guard let payload = dayReads.lastKnown(V1TodayResponse.self, day: dayId),
+              case .loaded(let response) = TodayModel.state(from: payload)
+        else { return nil }
+        let fold = TodayFoldMapper.map(response)
+        neighborFolds[dayId] = fold
+        return fold
+    }
+
+    /// Reads the days on either side of the one shown, so a swipe brings in a filled page.
+    private func prefetchNeighbors(token: String) async {
+        guard let shown = TrainingDayId.date(dayId) else { return }
+        for step in [DaySwipe.Step.previous, .next] {
+            guard let day = DaySwipe.day(after: step, from: shown) else { continue }
+            let dayId = TrainingDayId.today(now: day)
+            guard dayReads.lastKnown(V1TodayResponse.self, day: dayId) == nil,
+                  let payload = try? await client.today(trainingDayId: dayId, token: token)
+            else { continue }
+            dayReads.keep(payload, day: dayId)
+        }
     }
 
     private func keepOrFail(hadCache: Bool, error: Error) -> Bool {

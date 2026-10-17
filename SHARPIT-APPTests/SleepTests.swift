@@ -155,7 +155,11 @@ private actor DayRecorder {
     await store.load()
     await store.select(try #require(TrainingDayId.date("2026-09-18")))
 
-    #expect(await recorder.requested == ["2026-09-21", "2026-09-18"])
+    let requested = await recorder.requested
+    #expect(requested.first == "2026-09-21")
+    #expect(requested.contains("2026-09-18"))
+    // The days beside the one picked are read ahead, so a swipe brings in a filled page.
+    #expect(requested.contains("2026-09-17") && requested.contains("2026-09-19"))
     #expect(store.isSwitchingDay == false)
 }
 

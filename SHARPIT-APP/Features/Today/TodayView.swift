@@ -95,6 +95,10 @@ struct TodayView: View {
                 case .loading:
                     SharpitLoadingInstrument()
                         .safeAreaInset(edge: .top) { pinnedDayTitle }
+                case .loaded(let fold) where fold.trainingDayId != store.dayId:
+                    // The day asked for is not read yet: its loading shape, under its own date.
+                    SharpitLoadingInstrument()
+                        .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .loaded(let fold):
                     TodayFoldView(
                         fold: fold,
@@ -120,9 +124,6 @@ struct TodayView: View {
                         controls: AnyView(controlsRow),
                         activityStatusStore: activityStatusStore
                     )
-                    // The day asked for is not here yet: the one shown stays, quieter, until it is.
-                    .opacity(fold.trainingDayId == store.dayId ? 1 : 0.45)
-                    .animation(SharpitMotion.reveal, value: fold.trainingDayId == store.dayId)
                 case .empty(let empty):
                     TodayEmptyView(empty: empty)
                         .safeAreaInset(edge: .top) { pinnedDayTitle }
@@ -147,7 +148,9 @@ struct TodayView: View {
             }
             // Right for the day before, left for the day after, never past today. A swipe that
             // starts on a card turns the day without opening it (`DaySwipe`).
-            .daySwipe(day: TrainingDayId.date(store.dayId) ?? .now) { openDay($0) }
+            .daySwipe(day: TrainingDayId.date(store.dayId) ?? .now) { openDay($0) } neighbor: { day in
+                neighborPage(day)
+            }
             .background(SharpitCanvasBackground())
             // The date heads the page as a button (`dayTitle`): a toolbar large title takes no
             // touch on iOS 26. The bar keeps only the avatar; the name stays for VoiceOver.
@@ -293,21 +296,51 @@ extension TodayView {
     /// The day read, as the page's title: tapping it opens the calendar to read another one.
     fileprivate var dayTitle: some View {
         Button { showsDayPicker = true } label: {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                Text(store.navigationTitle)
-                    .font(SharpitTypography.screenTitle)
-                    .tracking(SharpitTypography.screenTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .contentTransition(.numericText())
-                Image(systemName: "chevron.down")
-                    .font(SharpitTypography.sectionTitle)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            .contentShape(.rect)
+            dayTitleLabel(store.navigationTitle)
+                .contentShape(.rect)
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityAddTraits(.isHeader)
         .accessibilityHint("Choisir un autre jour, ou glisser pour la veille")
+    }
+
+    fileprivate func dayTitleLabel(_ title: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+            Text(title)
+                .font(SharpitTypography.screenTitle)
+                .tracking(SharpitTypography.screenTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .contentTransition(.numericText())
+            Image(systemName: "chevron.down")
+                .font(SharpitTypography.sectionTitle)
+                .foregroundStyle(SharpitColor.mutedForeground)
+        }
+    }
+
+    /// The day beside the page while a swipe moves it, laid out as it will be once it is the
+    /// page: its fold if already read, its loading shape otherwise — always under its own date.
+    @ViewBuilder
+    fileprivate func neighborPage(_ day: Date) -> some View {
+        let title = dayTitleLabel(TrainingDayId.displayName(TrainingDayId.today(now: day)))
+        if let fold = store.knownFold(on: day) {
+            TodayFoldView(
+                fold: fold,
+                hasCompletedArrival: true,
+                controls: AnyView(VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                    title
+                    chips
+                }),
+                activityStatusStore: activityStatusStore
+            )
+        } else {
+            SharpitLoadingInstrument()
+                .safeAreaInset(edge: .top) {
+                    title
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, SharpitSpacing.pageInset)
+                        .padding(.vertical, SharpitSpacing.xs)
+                }
+        }
     }
 
     /// The date over a page that has no fold to carry it — loading, empty or failed — so the

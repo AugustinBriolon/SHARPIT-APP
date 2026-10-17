@@ -175,7 +175,16 @@ struct JournalView: View {
             }
             .scrollDisabled(store.phase == .loading)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } }
+            .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } } neighbor: { _ in
+                // The day beside, in its loading shape: its answers are read once it is the page.
+                ScrollView {
+                    JournalLoadingRows()
+                        .padding(.horizontal, SharpitSpacing.pageInset)
+                        .padding(.top, SharpitSpacing.section)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .scrollDisabled(true)
+            }
         }
     }
 

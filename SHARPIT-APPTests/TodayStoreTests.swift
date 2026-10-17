@@ -102,7 +102,9 @@ private struct RecordingTodayClient: TodayServing {
 
     await store.select(day: .now)
     #expect(store.isToday)
-    #expect(await days.ids == [TrainingDayId.today(now: yesterday), TrainingDayId.today()])
+    // Neighbours are read ahead behind; the two days shown are read in the order picked.
+    let shown = [TrainingDayId.today(now: yesterday), TrainingDayId.today()]
+    #expect(await days.ids.filter(shown.contains).prefix(2) == shown[...])
 }
 
 @MainActor
