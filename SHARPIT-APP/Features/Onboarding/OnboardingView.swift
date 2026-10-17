@@ -146,6 +146,7 @@ private struct OnboardingPage<Content: View>: View {
 /// Back, the dial that fills as the coach is built, and Passer where a step can be skipped.
 private struct OnboardingHeader: View {
     let store: OnboardingStore
+    private static let sideWidth: CGFloat = 64
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
@@ -160,6 +161,8 @@ private struct OnboardingHeader: View {
             .opacity(store.canGoBack ? 1 : 0)
             .disabled(!store.canGoBack || store.isBusy)
             .accessibilityLabel("Étape précédente")
+            // As wide as « Passer » opposite, so the dial sits on the screen's centre.
+            .frame(width: Self.sideWidth, alignment: .leading)
 
             Spacer(minLength: 0)
 
@@ -184,7 +187,7 @@ private struct OnboardingHeader: View {
             Button("Passer") { [step = store.step] in Task { await store.skip(from: step) } }
                 .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(SharpitColor.mutedForeground)
-                .frame(width: 64, height: 40)
+                .frame(width: Self.sideWidth, height: 40)
                 .opacity(store.step.allowsSkip ? 1 : 0)
                 .disabled(!store.step.allowsSkip || store.isBusy)
                 .accessibilityLabel("Passer cette étape")
