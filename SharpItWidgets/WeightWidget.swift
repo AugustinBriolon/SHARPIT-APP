@@ -29,7 +29,8 @@ struct WeightWidgetView: View {
 
     var body: some View {
         if entry.features.isOn(.health) {
-            content
+            // Health values: redacted on a locked device.
+            content.privacySensitive()
         } else {
             WidgetFeatureOff(feature: .health)
         }

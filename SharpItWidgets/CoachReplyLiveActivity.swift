@@ -41,6 +41,7 @@ struct CoachReplyLiveActivity: Widget {
                             .font(.system(size: 15))
                             .foregroundStyle(.white.opacity(0.7))
                             .lineLimit(2)
+                            .privacySensitive()
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 4)
                     }
@@ -100,6 +101,8 @@ private struct CoachReplyLockScreen: View {
                         .font(.system(size: 15))
                         .foregroundStyle(LiveActivityStyle.ink.opacity(0.7))
                         .lineLimit(2)
+                        // The reply quotes the athlete's health context: hidden on a locked screen.
+                        .privacySensitive()
                 }
             }
             Spacer(minLength: 8)

@@ -28,27 +28,31 @@ struct SleepWidgetView: View {
     private var sleep: WidgetSnapshot.Sleep? { entry.day?.sleep }
 
     var body: some View {
-        switch family {
-        case .accessoryCircular:
-            Gauge(value: Double(sleep?.score ?? 0), in: 0...100) {
-                Image(systemName: "moon.zzz")
-            } currentValueLabel: {
-                Text(sleep?.score.map(String.init) ?? "—").monospacedDigit()
-            }
-            .gaugeStyle(.accessoryCircular)
-        case .accessoryRectangular:
-            VStack(alignment: .leading, spacing: 1) {
-                Label("Sommeil \(sleep?.score.map(String.init) ?? "—")", systemImage: "moon.zzz")
-                    .font(.headline)
-                    .widgetAccentable()
-                if let caption = sleep?.caption {
-                    Text(caption).font(.caption).lineLimit(1)
+        // Health values: redacted on a locked device.
+        Group {
+            switch family {
+            case .accessoryCircular:
+                Gauge(value: Double(sleep?.score ?? 0), in: 0...100) {
+                    Image(systemName: "moon.zzz")
+                } currentValueLabel: {
+                    Text(sleep?.score.map(String.init) ?? "—").monospacedDigit()
                 }
+                .gaugeStyle(.accessoryCircular)
+            case .accessoryRectangular:
+                VStack(alignment: .leading, spacing: 1) {
+                    Label("Sommeil \(sleep?.score.map(String.init) ?? "—")", systemImage: "moon.zzz")
+                        .font(.headline)
+                        .widgetAccentable()
+                    if let caption = sleep?.caption {
+                        Text(caption).font(.caption).lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            default:
+                SleepSmall(sleep: sleep, hasDay: entry.day != nil)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        default:
-            SleepSmall(sleep: sleep, hasDay: entry.day != nil)
         }
+        .privacySensitive()
     }
 }
 

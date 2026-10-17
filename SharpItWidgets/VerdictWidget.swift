@@ -23,12 +23,16 @@ struct VerdictView: View {
     fileprivate var verdict: WidgetSnapshot.Verdict? { entry.day?.verdict }
 
     var body: some View {
-        switch family {
-        case .accessoryCircular: circular
-        case .accessoryInline: inline
-        case .accessoryRectangular: rectangular
-        default: VerdictSmall(verdict: verdict)
+        // Health values: redacted on a locked device.
+        Group {
+            switch family {
+            case .accessoryCircular: circular
+            case .accessoryInline: inline
+            case .accessoryRectangular: rectangular
+            default: VerdictSmall(verdict: verdict)
+            }
         }
+        .privacySensitive()
     }
 }
 

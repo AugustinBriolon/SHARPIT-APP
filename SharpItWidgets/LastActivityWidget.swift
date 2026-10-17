@@ -23,12 +23,16 @@ struct LastActivityView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        switch family {
-        case .accessoryInline: inline
-        case .accessoryRectangular: rectangular
-        case .systemMedium: medium
-        default: small
+        // Health values: redacted on a locked device.
+        Group {
+            switch family {
+            case .accessoryInline: inline
+            case .accessoryRectangular: rectangular
+            case .systemMedium: medium
+            default: small
+            }
         }
+        .privacySensitive()
     }
 
     private var activity: WidgetSnapshot.LastActivity? {

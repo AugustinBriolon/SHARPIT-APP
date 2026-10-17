@@ -32,27 +32,31 @@ struct EnergyBankWidgetView: View {
     private var energy: WidgetSnapshot.EnergyBank? { entry.day?.energyBank }
 
     var body: some View {
-        switch family {
-        case .accessoryCircular:
-            Gauge(value: Double(energy?.score ?? 0), in: 0...100) {
-                Image(systemName: "battery.100")
-            } currentValueLabel: {
-                Text(energy?.score.map(String.init) ?? "—").monospacedDigit()
-            }
-            .gaugeStyle(.accessoryCircular)
-        case .accessoryRectangular:
-            VStack(alignment: .leading, spacing: 1) {
-                Label("Réserve \(energy?.score.map(String.init) ?? "—")", systemImage: "battery.100")
-                    .font(.headline)
-                    .widgetAccentable()
-                if let caption = energy?.caption {
-                    Text(caption).font(.caption).lineLimit(1)
+        // Health values: redacted on a locked device.
+        Group {
+            switch family {
+            case .accessoryCircular:
+                Gauge(value: Double(energy?.score ?? 0), in: 0...100) {
+                    Image(systemName: "battery.100")
+                } currentValueLabel: {
+                    Text(energy?.score.map(String.init) ?? "—").monospacedDigit()
                 }
+                .gaugeStyle(.accessoryCircular)
+            case .accessoryRectangular:
+                VStack(alignment: .leading, spacing: 1) {
+                    Label("Réserve \(energy?.score.map(String.init) ?? "—")", systemImage: "battery.100")
+                        .font(.headline)
+                        .widgetAccentable()
+                    if let caption = energy?.caption {
+                        Text(caption).font(.caption).lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            default:
+                EnergyBankSmall(energy: energy, hasDay: entry.day != nil)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        default:
-            EnergyBankSmall(energy: energy, hasDay: entry.day != nil)
         }
+        .privacySensitive()
     }
 }
 
