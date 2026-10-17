@@ -87,6 +87,7 @@ struct SleepSections: View {
 // MARK: - Score, time in bed, time asleep
 
 private struct SleepHero: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let sleep: V1SleepResponse
 
     var body: some View {
@@ -99,6 +100,10 @@ private struct SleepHero: View {
             )
 
             dial
+            // At the accessibility sizes the pill sits under the ring: inside, it ran over the scale.
+            if dynamicTypeSize.isAccessibilitySize {
+                averagePill.frame(maxWidth: .infinity)
+            }
 
             Text(sleep.adequacy.label)
                 .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
@@ -161,13 +166,17 @@ private struct SleepHero: View {
                 Text("sur 100")
                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                     .foregroundStyle(SharpitColor.mutedForeground)
-                if let delta = SleepReadout.scoreDelta(score: sleep.score, average: sleep.averages.score) {
-                    SharpitPill(delta, style: (sleep.score ?? 0) >= (sleep.averages.score ?? 0) ? .limeSoft : .neutral)
-                }
+                if !dynamicTypeSize.isAccessibilitySize { averagePill }
             }
         }
         .padding(.horizontal, SharpitSpacing.xl)
         .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder private var averagePill: some View {
+        if let delta = SleepReadout.scoreDelta(score: sleep.score, average: sleep.averages.score) {
+            SharpitPill(delta, style: (sleep.score ?? 0) >= (sleep.averages.score ?? 0) ? .limeSoft : .neutral)
+        }
     }
 
     private func breakdownRow(_ label: String, _ value: Double) -> some View {
