@@ -1006,10 +1006,12 @@ private struct ActivityDetailContent: View {
                     .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 3)), value: appeared)
             }
 
-            coachAnalysis
-                .opacity(appeared ? 1 : 0)
-                .offset(y: appeared ? 0 : 12)
-                .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 4)), value: appeared)
+            if detail.narrativeAnalysis != nil || detail.type.supportsCoachAnalysis {
+                coachAnalysis
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 12)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 4)), value: appeared)
+            }
 
             if hasSessionSummaryData {
                 sessionSummary
@@ -1289,6 +1291,16 @@ extension V1ActivityType {
 
     /// Metres per split: a ride is read every 5 km.
     var splitDistance: Double { self == .bike ? 5_000 : 1_000 }
+
+    /// The sports the coach can read on request — the server answers 422 for the others.
+    var supportsCoachAnalysis: Bool {
+        switch self {
+        case .run, .bike, .swim, .triathlon, .strength:
+            true
+        case .hike, .other:
+            false
+        }
+    }
 }
 
 /// The goal a session was raced for, read against it: the goal, its format, and the final time
