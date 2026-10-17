@@ -27,10 +27,9 @@ enum SportsReadout {
         return sportId == "strength" ? "\(venue.title) · \(base)" : base
     }
 
-    /// SHARPIT plans on endurance: the last endurance sport cannot be removed.
+    /// A plan needs something to stand on: the sport that keeps the selection plannable stays.
     static func canRemove(_ sportId: String, from sports: Set<String>) -> Bool {
-        let remaining = sports.subtracting([sportId])
-        return PracticedSportCatalog.hasEnduranceSport(remaining) || !PracticedSportCatalog.hasEnduranceSport([sportId])
+        PracticedSportCatalog.isPlannable(sports.subtracting([sportId]))
     }
 
     /// Sports not yet practiced, in catalog order — what the « + » sheet offers.

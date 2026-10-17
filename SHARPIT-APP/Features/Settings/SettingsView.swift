@@ -107,8 +107,11 @@ struct SettingsView: View {
                         SharpitSettingsLabel(symbol: "figure.run.square.stack", title: "Sports & équipement", detail: sportsDetail)
                     }
                     // They calibrate training, not health: here rather than in Santé (SHARPIT ADR-053).
-                    NavigationLink(value: SettingsRoute.thresholds) {
-                        SharpitSettingsLabel(symbol: "gauge.with.dots.needle.67percent", title: "Seuils d'entraînement", detail: "FTP, FC, allure, CSS")
+                    // Endurance thresholds mean nothing to a strength-only athlete.
+                    if !PracticedSportCatalog.isStrengthOnly(profile.profile.practicedSports?.sports ?? []) {
+                        NavigationLink(value: SettingsRoute.thresholds) {
+                            SharpitSettingsLabel(symbol: "gauge.with.dots.needle.67percent", title: "Seuils d'entraînement", detail: "FTP, FC, allure, CSS")
+                        }
                     }
                 }
                 .sharpitListRows()

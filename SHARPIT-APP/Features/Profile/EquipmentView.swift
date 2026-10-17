@@ -27,9 +27,19 @@ enum PracticedSportCatalog {
     /// Catalog order — the order the web stores (`uniqueOrdered` in `practiced-sports/catalog.ts`).
     static let all: [PracticedSportItem] = endurance + complementary
 
-    /// SHARPIT is built for endurance: a selection needs at least one of these.
     static func hasEnduranceSport(_ sports: some Collection<String>) -> Bool {
         endurance.contains { sports.contains($0.id) }
+    }
+
+    /// What a plan can be built on: an endurance sport, or strength alone (SHARPIT ADR-086).
+    /// Mobility or stretching alone is not a programme.
+    static func isPlannable(_ sports: some Collection<String>) -> Bool {
+        hasEnduranceSport(sports) || sports.contains("strength")
+    }
+
+    /// Strength without endurance: no race, no thresholds.
+    static func isStrengthOnly(_ sports: some Collection<String>) -> Bool {
+        !hasEnduranceSport(sports) && sports.contains("strength")
     }
 
     /// Known ids only, deduplicated, in catalog order.

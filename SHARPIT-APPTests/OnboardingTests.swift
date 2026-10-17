@@ -354,20 +354,36 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 // MARK: - Store
 
 @MainActor
-@Test func sportsRefuseAComplementOnly() async {
+@Test func sportsRefuseMobilityAlone() async {
     let profile = RecordingProfileClient()
     let store = makeStore(profile: profile)
     await store.load()
     store.identity.firstName = "Zoé"
     await store.advance()
 
-    store.toggleSport("strength")
+    store.toggleSport("mobility")
     await store.advance()
 
     #expect(store.step == .sports)
     #expect(!store.canAdvance)
     await store.flushWrites()
     #expect(await profile.patches.isEmpty)
+}
+
+/// Strength alone is a real programme (SHARPIT ADR-086): it goes on, with a palier for goal.
+@MainActor
+@Test func strengthAloneGoesOnWithAPalierGoal() async {
+    let store = makeStore(profile: RecordingProfileClient())
+    await store.load()
+    store.identity.firstName = "Zoé"
+    await store.advance()
+
+    store.toggleSport("strength")
+    #expect(store.isStrengthOnly)
+    await store.advance()
+
+    #expect(store.step == .equipment)
+    #expect(store.intention.kind == .metric)
 }
 
 @MainActor
@@ -786,8 +802,10 @@ private func makeGate(
     #expect(gate.onboardingStore === wizard)
 }
 
+/// A new account whose first read fails is never let into empty tabs: nothing would reopen
+/// the wizard. It is told why and retries.
 @MainActor
-@Test func aFailedReadLetsTheAthleteInWithoutRememberingIt() async throws {
+@Test func aFailedFirstReadHoldsANewAccountUntilRetried() async throws {
     let defaults = try freshDefaults("account-gate-offline")
     let offline = makeGate(
         consents: StubConsentClient(fails: true),
@@ -796,11 +814,38 @@ private func makeGate(
     )
 
     await offline.resolve(userId: "user_2") { "t" }
-    #expect(offline.status == .ready)
+    guard case .unreachable = offline.status else {
+        Issue.record("expected unreachable, got \(offline.status)")
+        return
+    }
 
     let online = makeGate(profile: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)), defaults: defaults)
     await online.resolve(userId: "user_2") { "t" }
     #expect(online.status == .onboarding)
+}
+
+/// Right after sign-up Clerk may hand out no token yet: the gate waits for one instead of
+/// opening the tabs without the wizard.
+@MainActor
+@Test func aTokenNotReadyYetStillOpensTheWizard() async throws {
+    let gate = makeGate(
+        profile: RecordingProfileClient(V1AthleteProfile(needsOnboarding: true)),
+        defaults: try freshDefaults("account-gate-token")
+    )
+    var asks = 0
+    await gate.resolve(userId: "user_9") {
+        asks += 1
+        if asks < 3 { throw SharpitAPIError.unauthorized }
+        return "t"
+    }
+    #expect(asks == 3)
+    #expect(gate.status == .onboarding)
+}
+
+@Test func theGateRetriesRefusalsButNotBadInput() {
+    #expect(AccountGateModel.isWorthRetrying(SharpitAPIError.unauthorized))
+    #expect(AccountGateModel.isWorthRetrying(SharpitAPIError.transport))
+    #expect(!AccountGateModel.isWorthRetrying(SharpitAPIError.badRequest))
 }
 
 /// A new account's very first read can come before its row exists: the profile says nothing

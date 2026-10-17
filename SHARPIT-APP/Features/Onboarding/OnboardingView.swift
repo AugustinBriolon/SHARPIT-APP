@@ -84,7 +84,7 @@ struct OnboardingView: View {
         case .sports: OnboardingSportsStep(store: store)
         case .equipment: OnboardingEquipmentStep(store: store)
         case .week: OnboardingWeekStep(store: store)
-        case .goal: OnboardingGoalStep(draft: $store.intention, isTriathlete: store.sports.contains("triathlon"))
+        case .goal: OnboardingGoalStep(draft: $store.intention, isTriathlete: store.sports.contains("triathlon"), isStrengthOnly: store.isStrengthOnly)
         case .injuries: OnboardingInjuriesStep(store: store)
         case .privacy: OnboardingPrivacyStep(consents: $store.consents)
         case .sources:
@@ -246,7 +246,7 @@ private struct OnboardingActionBar: View {
 
     private var hint: String? {
         switch store.step {
-        case .sports where !store.canContinueFromSports: "Choisis au moins un sport d'endurance."
+        case .sports where !store.canContinueFromSports: "Choisis un sport d'endurance, ou la musculation."
         case .privacy where !store.consents.requiredAccepted: "Les deux documents et les données de santé sont nécessaires."
         default: nil
         }

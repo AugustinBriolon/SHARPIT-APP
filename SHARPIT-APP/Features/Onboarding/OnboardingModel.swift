@@ -53,7 +53,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
         case .identity:
             "Quelques repères sur toi : le coach règle charges, allures et récupération à partir d'eux."
         case .sports:
-            "Touche tes disciplines. Au moins un sport d'endurance."
+            "Touche tes disciplines. Un sport d'endurance, ou la musculation seule."
         case .equipment:
             "Seulement ce qui sert à tes sports, pour des séances que tu peux vraiment faire."
         case .week:

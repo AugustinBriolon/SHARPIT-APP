@@ -224,6 +224,8 @@ struct OnboardingGoalStep: View {
     @Binding var draft: OnboardingIntentionDraft
     /// A triathlete picks the distance: the plan of a sprint and of an Ironman share little.
     var isTriathlete = false
+    /// Strength alone has no race: the palier is the only kind.
+    var isStrengthOnly = false
 
     private var weeksLeft: Int {
         max(Calendar.current.dateComponents([.weekOfYear], from: .now, to: draft.raceDate).weekOfYear ?? 0, 0)
@@ -231,9 +233,11 @@ struct OnboardingGoalStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            HStack(spacing: SharpitSpacing.sm) {
-                kindCard(.race, title: "Une course", symbol: "flag.checkered")
-                kindCard(.metric, title: "Un palier", symbol: "gauge.with.needle")
+            if !isStrengthOnly {
+                HStack(spacing: SharpitSpacing.sm) {
+                    kindCard(.race, title: "Une course", symbol: "flag.checkered")
+                    kindCard(.metric, title: "Un palier", symbol: "gauge.with.needle")
+                }
             }
 
             switch draft.kind {
@@ -273,10 +277,14 @@ struct OnboardingGoalStep: View {
                 SharpitFormField("Objectif visé (optionnel)", placeholder: "Terminer, sub 5 h…", text: $draft.targetPerformance)
                 OnboardingPlaceField(title: "Lieu (optionnel)", text: $draft.raceLocation)
             case .metric:
-                SharpitFormField("Ce que tu veux atteindre", placeholder: "FTP, VMA, allure 10 km…", text: $draft.metricTitle)
+                SharpitFormField(
+                    "Ce que tu veux atteindre",
+                    placeholder: isStrengthOnly ? "Squat, développé couché, tractions…" : "FTP, VMA, allure 10 km…",
+                    text: $draft.metricTitle
+                )
                 HStack(spacing: SharpitSpacing.sm) {
-                    SharpitFormField("Valeur", placeholder: "280", text: $draft.metricTargetText, keyboard: .decimalPad)
-                    SharpitFormField("Unité", placeholder: "W, km/h…", text: $draft.metricUnit)
+                    SharpitFormField("Valeur", placeholder: isStrengthOnly ? "100" : "280", text: $draft.metricTargetText, keyboard: .decimalPad)
+                    SharpitFormField("Unité", placeholder: isStrengthOnly ? "kg, reps…" : "W, km/h…", text: $draft.metricUnit)
                 }
             }
         }

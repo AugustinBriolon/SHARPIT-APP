@@ -23,10 +23,13 @@ import Testing
     #expect(summary.hasPrefix("Salle · "))
 }
 
-@Test func theLastEnduranceSportCannotLeave() {
-    #expect(!SportsReadout.canRemove("run", from: ["run", "strength"]))
+/// Strength alone is plannable (SHARPIT ADR-086); mobility alone is not.
+@Test func theLastSportThatMakesAPlanCannotLeave() {
+    #expect(SportsReadout.canRemove("run", from: ["run", "strength"]))
     #expect(SportsReadout.canRemove("run", from: ["run", "bike"]))
     #expect(SportsReadout.canRemove("strength", from: ["run", "strength"]))
+    #expect(!SportsReadout.canRemove("strength", from: ["strength", "mobility"]))
+    #expect(!SportsReadout.canRemove("run", from: ["run", "mobility"]))
 }
 
 @Test func thePlusOffersOnlyTheSportsNotYetPracticed() {

@@ -6,8 +6,13 @@ Feature notes, loaded when working in this directory. Repo-wide rules live in th
 name, sex, height, birth date) → Sports → Matériel → Ta semaine → Objectif → Blessures →
 Confidentialité (only when owed) → Sources → Première semaine (`OnboardingStep`). The server
 decides who owes it (`onboardingCompletedAt` present and `null` on `/api/v1/athlete-profile`); the
-phone only remembers a "done" per Clerk user, so a finished athlete never waits on a profile read,
-and a read that fails lets the athlete in without remembering anything. `AccountGateModel` owns the
+phone only remembers a "done" per Clerk user, so a finished athlete never waits on a profile read.
+The gate's read is retried, a refusal included (right after sign-up Clerk can hand out no token
+yet); if it still fails, a finished athlete is let in offline, a new one sees « Réessayer »
+(`AccountGateModel.Status.unreachable`) — let in, nothing would ever reopen the wizard.
+Sports accepts an endurance sport or strength alone (SHARPIT ADR-086,
+`PracticedSportCatalog.isPlannable`); a strength-only athlete gets a palier goal only and no
+Seuils row in Paramètres. `AccountGateModel` owns the
 `OnboardingStore`, so a session refresh that resolves the gate again never rebuilds the wizard, and
 `OnboardingStepMemory` reopens the step reached after a quit. Each step is written as the athlete
 leaves it: the first name on the Clerk user, the body, practiced sports, equipment,

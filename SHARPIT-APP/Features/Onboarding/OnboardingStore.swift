@@ -91,7 +91,10 @@ final class OnboardingStore {
         identity.firstName = firstName ?? ""
     }
 
-    var canContinueFromSports: Bool { PracticedSportCatalog.hasEnduranceSport(sports) }
+    var canContinueFromSports: Bool { PracticedSportCatalog.isPlannable(sports) }
+
+    /// No race to aim at: the goal step offers a palier only.
+    var isStrengthOnly: Bool { PracticedSportCatalog.isStrengthOnly(sports) }
 
     var equipmentSports: [EquipmentSport] {
         PracticedSportCatalog.equipmentSports(for: Set(sports))
@@ -277,6 +280,7 @@ final class OnboardingStore {
         var patch = AthleteProfilePatch()
         patch.setPracticedSports(V1AthletePracticedSports(sports: sports))
         enqueue(patch, failure: "Impossible d'enregistrer tes sports.")
+        if isStrengthOnly { intention.kind = .metric }
         moveNext()
     }
 
