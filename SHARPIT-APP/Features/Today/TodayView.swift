@@ -94,6 +94,7 @@ struct TodayView: View {
                 switch store.phase {
                 case .loading:
                     SharpitLoadingInstrument()
+                        .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .loaded(let fold):
                     TodayFoldView(
                         fold: fold,
@@ -119,8 +120,12 @@ struct TodayView: View {
                         controls: AnyView(controlsRow),
                         activityStatusStore: activityStatusStore
                     )
+                    // The day asked for is not here yet: the one shown stays, quieter, until it is.
+                    .opacity(fold.trainingDayId == store.dayId ? 1 : 0.45)
+                    .animation(SharpitMotion.reveal, value: fold.trainingDayId == store.dayId)
                 case .empty(let empty):
                     TodayEmptyView(empty: empty)
+                        .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .failed(let message):
                     ContentUnavailableView {
                         Label("Résumé indisponible", systemImage: "wifi.slash")
@@ -131,6 +136,7 @@ struct TodayView: View {
                             Task { await store.load(resetToLoading: true) }
                         }
                     }
+                    .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .unauthorized:
                     ContentUnavailableView {
                         Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
@@ -139,6 +145,9 @@ struct TodayView: View {
                     }
                 }
             }
+            // Right for the day before, left for the day after, never past today. A swipe that
+            // starts on a card turns the day without opening it (`DaySwipe`).
+            .daySwipe(day: TrainingDayId.date(store.dayId) ?? .now) { openDay($0) }
             .background(SharpitCanvasBackground())
             // The date heads the page as a button (`dayTitle`): a toolbar large title takes no
             // touch on iOS 26. The bar keeps only the avatar; the name stays for VoiceOver.
@@ -283,30 +292,31 @@ extension TodayView {
 
     /// The day read, as the page's title: tapping it opens the calendar to read another one.
     fileprivate var dayTitle: some View {
-        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-            Button { showsDayPicker = true } label: {
-                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                    Text(store.navigationTitle)
-                        .font(SharpitTypography.screenTitle)
-                        .tracking(SharpitTypography.screenTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Image(systemName: "chevron.down")
-                        .font(SharpitTypography.sectionTitle)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-                .contentShape(.rect)
+        Button { showsDayPicker = true } label: {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Text(store.navigationTitle)
+                    .font(SharpitTypography.screenTitle)
+                    .tracking(SharpitTypography.screenTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .contentTransition(.numericText())
+                Image(systemName: "chevron.down")
+                    .font(SharpitTypography.sectionTitle)
+                    .foregroundStyle(SharpitColor.mutedForeground)
             }
-            .buttonStyle(.sharpitPressable)
-            .accessibilityAddTraits(.isHeader)
-            .accessibilityHint("Choisir un autre jour")
-            Spacer(minLength: SharpitSpacing.xs)
-            if !store.isToday {
-                Button { openDay(.now) } label: {
-                    SharpitPill("Aujourd'hui", style: .neutral)
-                }
-                .buttonStyle(.sharpitPressable)
-            }
+            .contentShape(.rect)
         }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityHint("Choisir un autre jour, ou glisser pour la veille")
+    }
+
+    /// The date over a page that has no fold to carry it — loading, empty or failed — so the
+    /// athlete can always pick another day.
+    fileprivate var pinnedDayTitle: some View {
+        dayTitle
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.vertical, SharpitSpacing.xs)
     }
 
     fileprivate var chips: some View {

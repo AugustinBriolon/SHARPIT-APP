@@ -18,13 +18,16 @@ pick — no explicit save, as on the web. A deadline that has passed is resolved
 `active` server-side on read, so the app never expires one itself. Trips are not modelled:
 the app carries `travelId` back unchanged rather than inventing one.
 
-**Another day.** The date heads the page as a button (`dayTitle`, above the chips): it opens
+**Another day.** The date heads the page as a button (`dayTitle`, above the chips; pinned over the
+loading, empty and failed states so another day is always one tap away): it opens
 `SharpitCalendarSheet` (no future day, its « Aujourd'hui » to come back; each past day marked as on
 the day screens — filled for a night or a session, muted for none: `DataDaysMarker` over the
-`sleep` and `effort` data-days, `SharpitCalendarMark.dataMarks`), and a past day shows an
-« Aujourd'hui » pill beside it. Not a toolbar `.largeTitle` item: on iOS 26 that one takes no touch. `TodayStore.select(day:)` reads that day
-(`/api/v1/today?trainingDayId=`), its snapshot cached per day; `selectedDayId` nil follows today,
-midnight included. A past day is read-only: no ressenti, no check-in invitation, and it never
+`sleep` and `effort` data-days, `SharpitCalendarMark.dataMarks`). A swipe turns the day as on the
+day screens (`daySwipe`: right for the day before, left for the day after, never past today; a swipe
+that starts on a card never opens it). Not a toolbar `.largeTitle` item: on iOS 26 that one takes no
+touch. `TodayStore.select(day:)` names the page at once and keeps the day on screen, dimmed, until
+the new one arrives (`/api/v1/today?trainingDayId=`, snapshot cached per day); `selectedDayId` nil
+follows today, midnight included. A past day is read-only: no ressenti, no check-in invitation, and it never
 reaches the widgets. The ressenti opens on its own only from 6 h, once last night's sleep is in
 or from 10 h (`RessentiPromptTiming`).
 

@@ -89,10 +89,9 @@ final class TodayStore {
     }
 
     var navigationTitle: String {
-        if case .loaded(let fold) = phase {
-            return TrainingDayId.displayName(fold.trainingDayId)
-        }
-        return "Résumé"
+        if case .loading = phase, selectedDayId == nil { return "Résumé" }
+        // The day asked for, at once, even while the one before is still on screen.
+        return TrainingDayId.displayName(dayId)
     }
 
     /// Reads another day; today's date goes back to following today.
@@ -101,7 +100,8 @@ final class TodayStore {
         let next = picked == TrainingDayId.today() ? nil : picked
         guard next != selectedDayId else { return }
         selectedDayId = next
-        await load(resetToLoading: true, force: true)
+        // The day on screen stays until the new one arrives, so the page never blanks.
+        await load(resetToLoading: false, force: true)
     }
 
     func load(resetToLoading: Bool, force: Bool = false) async {

@@ -104,3 +104,15 @@ private struct RecordingTodayClient: TodayServing {
     #expect(store.isToday)
     #expect(await days.ids == [TrainingDayId.today(now: yesterday), TrainingDayId.today()])
 }
+
+@MainActor
+@Test func thePickedDayNamesThePageAtOnceAndNeverBlanksIt() async throws {
+    let store = TodayStore(client: StubTodayClient(mode: .success), tokenProvider: { "token" })
+    await store.load(resetToLoading: true)
+    let yesterday = try #require(Calendar.current.date(byAdding: .day, value: -1, to: .now))
+
+    await store.select(day: yesterday)
+
+    #expect(store.navigationTitle == TrainingDayId.displayName(TrainingDayId.today(now: yesterday)))
+    if case .loaded = store.phase {} else { Issue.record("a picked day must not blank the page") }
+}
