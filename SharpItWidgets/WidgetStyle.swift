@@ -1,19 +1,26 @@
 import SwiftUI
 import WidgetKit
 
-/// The app's card behind a widget: white on light, the card tone on dark (ADR-085). A widget is
-/// itself a card, so it takes the card surface, not the page canvas, and no texture or halo.
+/// The ink plate behind a widget, as the app's lead card and the Live Activities (ADR-085): lime
+/// glyphs and white figures on ink read from across the Home Screen, in light and dark alike.
 ///
 /// Clipped to `ContainerRelativeShape` so the fill follows Apple's continuous widget corner —
 /// the same radius Weather and Calendar use — instead of reading as a tighter card inside it.
+/// A tinted or clear Home Screen removes it, as it removes every container background.
 struct WidgetCanvas: View {
-    /// shortcut: kept so call sites compile; the halo is gone, delete with the widget sweep.
-    var stateTone: Color?
-
     var body: some View {
-        SharpitColor.card
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(ContainerRelativeShape())
+        SharpitColor.inkSurface
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipShape(ContainerRelativeShape())
+    }
+}
+
+extension View {
+    /// Every widget's chrome: the ink plate, and the content read as on a dark surface so the
+    /// tokens resolve to white figures and muted captions on it.
+    func sharpitWidgetChrome() -> some View {
+        environment(\.colorScheme, .dark)
+            .containerBackground(for: .widget) { WidgetCanvas() }
     }
 }
 
@@ -58,7 +65,7 @@ struct DoneSeal: View {
     var body: some View {
         Image(systemName: "checkmark.circle.fill")
             .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(SharpitColor.primary)
+            .foregroundStyle(SharpitColor.inkAccent)
             .widgetAccentable()
             .accessibilityLabel("Faite")
     }
@@ -192,7 +199,7 @@ struct WidgetAwaitingData: View {
         VStack(alignment: .leading, spacing: 6) {
             Image(systemName: "circle.hexagonpath.fill")
                 .font(.system(size: 20))
-                .foregroundStyle(SharpitColor.primary)
+                .foregroundStyle(SharpitColor.inkAccent)
             WidgetCaption(text: text, lines: 3)
         }
     }

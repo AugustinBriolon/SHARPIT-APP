@@ -7,7 +7,7 @@ struct TodaySessionWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "TodaySession", provider: SnapshotProvider()) { entry in
             TodaySessionView(entry: entry)
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
         }
         .configurationDisplayName("Séance du jour")
         .description("La séance prévue, puis ce que tu as fait.")
@@ -140,7 +140,7 @@ private struct SessionHero: View {
     var body: some View {
         WidgetFrame(title: eyebrow) {
             if session.isDone {
-                WidgetGlyph(symbol: "checkmark.circle.fill", tint: SharpitColor.primary)
+                WidgetGlyph(symbol: "checkmark.circle.fill", tint: SharpitColor.inkAccent)
             } else {
                 WidgetGlyph(symbol: session.sport.symbolName, tint: SharpitColor.foreground)
             }

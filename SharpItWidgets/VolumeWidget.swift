@@ -89,7 +89,7 @@ struct VolumeWidget: Widget {
                     WidgetProLocked(title: "Volume de la semaine", symbol: "chart.bar")
                 }
             }
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
                 .widgetURL(WidgetSnapshot.link("/activity", unlocked: entry.isUnlocked))
         }
         .configurationDisplayName("Volume de la semaine")

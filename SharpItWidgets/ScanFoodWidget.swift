@@ -9,7 +9,7 @@ struct ScanFoodWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "ScanFood", provider: SnapshotProvider()) { entry in
             ScanFoodWidgetView(entry: entry)
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
                 .widgetURL(entry.link("/nutrition/scan", feature: .nutrition))
         }
         .configurationDisplayName("Scanner un produit")
@@ -42,10 +42,10 @@ struct ScanFoodWidgetView: View {
             }
             .accessibilityLabel("Scanner un produit")
         default:
-            WidgetFrame("Nutrition", symbol: "fork.knife", tint: SharpitColor.primary) {
+            WidgetFrame("Nutrition", symbol: "fork.knife", tint: SharpitColor.inkAccent) {
                 Image(systemName: "barcode.viewfinder")
                     .font(.system(size: 34, weight: .regular))
-                    .foregroundStyle(SharpitColor.primary)
+                    .foregroundStyle(SharpitColor.inkAccent)
                     .widgetAccentable()
                     .padding(.bottom, 6)
                 WidgetTitle(text: "Scanner un produit")

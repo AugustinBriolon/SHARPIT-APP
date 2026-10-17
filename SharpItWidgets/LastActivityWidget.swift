@@ -10,7 +10,7 @@ struct LastActivityWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "LastActivity", provider: SnapshotProvider()) { entry in
             LastActivityView(entry: entry)
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
         }
         .configurationDisplayName("Dernière activité")
         .description("Ta dernière séance GPS : distance, durée, allure.")

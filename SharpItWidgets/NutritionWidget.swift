@@ -7,7 +7,7 @@ struct NutritionWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Nutrition", provider: SnapshotProvider()) { entry in
             NutritionWidgetView(entry: entry)
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
                 .widgetURL(entry.link("/nutrition", feature: .nutrition))
         }
         .configurationDisplayName("Nutrition")

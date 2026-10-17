@@ -29,8 +29,10 @@ of another day shows as stale, never as today; signing out or a new account eras
 Every home-screen widget is built on `WidgetFrame` (`WidgetStyle.swift`): one header — its name
 and one glyph, same height and gap on every widget — then the body anchored to the bottom, with one
 type scale (`WidgetHero` for the main number, `WidgetTitle`, `WidgetCaption`) and `WidgetMetrics`;
-a widget never lays out its own header. A widget is a card: it draws the card surface (white on light,
-`#161618` on dark; ADR-085), no texture or halo, and speaks the app's SF Pro ramp. A session opens itself: `https://sharpit.app/activity/<id>` once done (Activité pushes its
+a widget never lays out its own header. A widget is an ink plate (`sharpitWidgetChrome()`: `inkSurface` behind, the content read in dark so
+figures are white and captions muted), glyphs and marks in lime (`inkAccent`), as the app's lead card
+and the Live Activities; no texture or halo, and the app's SF Pro ramp. A tinted or clear Home Screen
+drops the plate and tints what is `widgetAccentable()`. A session opens itself: `https://sharpit.app/activity/<id>` once done (Activité pushes its
 detail), `/plan/session/<id>` before (Plan opens today's week and the session's drawer).
 `SharpItShared/` is compiled into both targets: the generated tokens (`yarn tokens:ios` writes
 there), the typography (SF Pro), `V1ActivityType` with its identity colour (ink, since ADR-085), `V1TodayPosture` with its tone, and the snapshot.

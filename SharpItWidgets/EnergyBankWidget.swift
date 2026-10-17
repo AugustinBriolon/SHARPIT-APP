@@ -16,7 +16,7 @@ struct EnergyBankWidget: Widget {
                     WidgetProLocked(title: "Réserve", symbol: "battery.100")
                 }
             }
-            .containerBackground(for: .widget) { WidgetCanvas() }
+            .sharpitWidgetChrome()
             .widgetURL(entry.extraLink("/"))
         }
         .configurationDisplayName("Réserve")

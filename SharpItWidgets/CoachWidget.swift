@@ -8,7 +8,7 @@ struct CoachWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "AskCoach", provider: SnapshotProvider()) { _ in
             CoachWidgetView()
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
                 .widgetURL(WidgetSnapshot.link("/coach"))
         }
         .configurationDisplayName("Demander au coach")
@@ -31,7 +31,7 @@ struct CoachWidgetView: View {
             }
             .accessibilityLabel("Demander au coach")
         default:
-            WidgetFrame("Coach", symbol: "bubble.left.and.text.bubble.right", tint: SharpitColor.primary) {
+            WidgetFrame("Coach", symbol: "bubble.left.and.text.bubble.right", tint: SharpitColor.inkAccent) {
                 WidgetTitle(text: "Demander au coach")
                     .padding(.bottom, 10)
                 HStack(spacing: 6) {
@@ -60,9 +60,9 @@ private struct SendMark: View {
         if renderingMode == .fullColor {
             Image(systemName: "arrow.up")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(SharpitColor.primaryForeground)
+                .foregroundStyle(SharpitColor.highlightForeground)
                 .frame(width: 22, height: 22)
-                .background(SharpitColor.primary, in: Circle())
+                .background(SharpitColor.inkAccent, in: Circle())
         } else {
             Image(systemName: "arrow.up.circle.fill")
                 .font(.system(size: 22))

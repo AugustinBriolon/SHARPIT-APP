@@ -7,7 +7,7 @@ struct VerdictWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Verdict", provider: SnapshotProvider()) { entry in
             VerdictView(entry: entry)
-                .containerBackground(for: .widget) { WidgetCanvas(stateTone: entry.day?.verdict?.posture.tone) }
+                .sharpitWidgetChrome()
                 .widgetURL(WidgetSnapshot.link("/today"))
         }
         .configurationDisplayName("Verdict du jour")

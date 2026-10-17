@@ -12,7 +12,7 @@ struct SleepWidget: Widget {
                     WidgetProLocked(title: "Nuit dernière", symbol: "moon.zzz")
                 }
             }
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
                 .widgetURL(entry.extraLink("/sleep"))
         }
         .configurationDisplayName("Sommeil")

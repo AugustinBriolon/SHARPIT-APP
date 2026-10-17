@@ -13,7 +13,7 @@ struct RegularityWidget: Widget {
                     WidgetProLocked(title: "Régularité", symbol: "calendar")
                 }
             }
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
                 .widgetURL(entry.extraLink("/plan", feature: .regularity))
         }
         .configurationDisplayName("Régularité")
@@ -128,9 +128,9 @@ struct RegularityMarks: View {
     @ViewBuilder
     private func mark(_ day: WidgetSnapshot.RegularityDay) -> some View {
         if day.hasActivity {
-            Circle().fill(SharpitColor.primary).widgetAccentable()
+            Circle().fill(SharpitColor.inkAccent).widgetAccentable()
         } else if day.isToday {
-            Circle().strokeBorder(SharpitColor.primary, lineWidth: 1.5)
+            Circle().strokeBorder(SharpitColor.inkAccent, lineWidth: 1.5)
         } else {
             Circle().fill(SharpitColor.mutedForeground.opacity(day.isFuture ? 0.12 : 0.28))
         }

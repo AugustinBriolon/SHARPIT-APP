@@ -13,7 +13,7 @@ struct NextGoalWidget: Widget {
                     WidgetProLocked(title: "Prochain objectif", symbol: "flag.checkered")
                 }
             }
-                .containerBackground(for: .widget) { WidgetCanvas() }
+                .sharpitWidgetChrome()
                 .widgetURL(entry.extraLink("/goals"))
         }
         .configurationDisplayName("Prochain objectif")
@@ -60,14 +60,14 @@ struct NextGoalBody: View {
     let showsContext: Bool
 
     var body: some View {
-        WidgetFrame(showsContext ? "Prochain objectif" : "Objectif", symbol: "flag.checkered", tint: SharpitColor.primary) {
+        WidgetFrame(showsContext ? "Prochain objectif" : "Objectif", symbol: "flag.checkered", tint: SharpitColor.inkAccent) {
             if let goal {
                 let days = goal.daysLeft(from: date)
                 WidgetHero(value: days == 0 ? "Jour J" : "\(days)", unit: days == 0 ? nil : (days == 1 ? "jour" : "jours"))
                 WidgetTitle(text: goal.title, lines: 1)
                 WidgetCaption(text: goal.dateLine)
                 if showsContext, let context = goal.contextLine {
-                    WidgetCaption(text: context, tint: SharpitColor.primary)
+                    WidgetCaption(text: context, tint: SharpitColor.inkAccent)
                         .padding(.top, 2)
                 }
             } else {
