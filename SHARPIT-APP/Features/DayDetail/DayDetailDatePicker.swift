@@ -93,20 +93,7 @@ struct DayDetailDatePicker: View {
     /// The strip's marks, for every day the calendar can show — only days already read say
     /// anything, as under the strip.
     private var calendarMarks: [Date: SharpitCalendarMark] {
-        let calendar = weeks.calendar
-        let today = calendar.startOfDay(for: .now)
-        var marks: [Date: SharpitCalendarMark] = [:]
-        var day = calendar.startOfDay(for: weeks.selectableDates.lowerBound)
-        while day <= today {
-            switch hasData(day) {
-            case true?: marks[day] = .filled
-            case false?: marks[day] = .muted
-            case nil: break
-            }
-            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
-            day = next
-        }
-        return marks
+        SharpitCalendarMark.dataMarks(in: weeks, hasData: hasData)
     }
 
     private func accessibilityLabel(for day: Date, isFuture: Bool) -> String {

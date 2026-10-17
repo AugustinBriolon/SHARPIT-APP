@@ -122,6 +122,25 @@ nonisolated enum SharpitCalendarMark: Equatable, Sendable {
     case ring
     /// Expected and not done, or read and empty.
     case muted
+
+    /// A history calendar's marks, today back to the first selectable day: filled where the day
+    /// holds data, muted where it was read and holds none, nothing while unknown.
+    @MainActor static func dataMarks(in weeks: SharpitWeeks, now: Date = .now, hasData: (Date) -> Bool?) -> [Date: SharpitCalendarMark] {
+        let calendar = weeks.calendar
+        let today = calendar.startOfDay(for: now)
+        var marks: [Date: SharpitCalendarMark] = [:]
+        var day = calendar.startOfDay(for: weeks.selectableDates.lowerBound)
+        while day <= today {
+            switch hasData(day) {
+            case true?: marks[day] = .filled
+            case false?: marks[day] = .muted
+            case nil: break
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+        return marks
+    }
 }
 
 /// A month, to jump to any day a strip holds.

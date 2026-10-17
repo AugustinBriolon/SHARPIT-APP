@@ -26,6 +26,8 @@ struct TodayView: View {
     @State private var nutrition: NutritionTodayStore?
     @State private var showsCheckIn = false
     @State private var showsDayPicker = false
+    /// Which past days hold a night or a session, marked in the calendar as on the day screens.
+    @State private var dayMarks: DataDaysMarker?
     /// True while an optimistic Ressenti save waits on the server — blocks re-prompting.
     @State private var ressentiPendingConfirmation = false
     /// Shown when the sheet reopens after a failed optimistic save.
@@ -48,9 +50,18 @@ struct TodayView: View {
         signalClient: (any SleepServing & RecoveryServing)? = nil,
         nutritionClient: (any NutritionServing)? = nil,
         syncClient: (any SyncServing)? = nil,
-        appleHealth: AppleHealthSource? = nil
+        appleHealth: AppleHealthSource? = nil,
+        dataDaysClient: any DataDaysServing = SharpitClient()
     ) {
         self.appleHealth = tokenProvider == nil ? nil : appleHealth
+        _dayMarks = State(initialValue: tokenProvider.map { tokenProvider in
+            DataDaysMarker(tokenProvider: tokenProvider) { from, to, token in
+                // A Résumé day holds data when it has a night or a session to read.
+                async let nights = dataDaysClient.dataDays(domain: .sleep, from: from, to: to, token: token)
+                async let sessions = dataDaysClient.dataDays(domain: .effort, from: from, to: to, token: token)
+                return Array(Set(try await nights + sessions))
+            }
+        })
         self.modelContext = modelContext
         _sync = State(initialValue: syncClient.flatMap { client in
             tokenProvider.map { ProviderSyncStore(client: client, tokenProvider: $0) }
@@ -133,17 +144,7 @@ struct TodayView: View {
             // touch on iOS 26. The bar keeps only the avatar; the name stays for VoiceOver.
             .navigationTitle(store.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showsDayPicker) {
-                let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
-                SharpitCalendarSheet(
-                    title: "Résumé",
-                    initial: TrainingDayId.date(store.dayId) ?? .now,
-                    weeks: weeks,
-                    range: weeks.selectableDates.lowerBound...Date.now,
-                    onPick: openDay,
-                    onToday: { openDay(.now) }
-                )
-            }
+            .sheet(isPresented: $showsDayPicker) { dayPicker }
             .modifier(LiquidNavChrome())
             .sharpitSyncToast(sync)
             .toolbar {
@@ -258,6 +259,26 @@ extension TodayView {
             dayTitle
             chips
         }
+    }
+
+    /// The month calendar, each past day marked when it holds a night or a session.
+    fileprivate var dayPicker: some View {
+        let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
+        let shown = TrainingDayId.date(store.dayId) ?? .now
+        let marks = SharpitCalendarMark.dataMarks(in: weeks) { day in
+            dayMarks?[TrainingDayId.today(now: day)]
+        }
+        return SharpitCalendarSheet(
+            title: "Résumé",
+            initial: shown,
+            weeks: weeks,
+            range: weeks.selectableDates.lowerBound...Date.now,
+            marks: marks,
+            legend: [(.filled, "Nuit ou séance"), (.muted, "Aucune donnée")],
+            onPick: openDay,
+            onToday: { openDay(.now) }
+        )
+        .task { await dayMarks?.ensure(around: shown) }
     }
 
     /// The day read, as the page's title: tapping it opens the calendar to read another one.
