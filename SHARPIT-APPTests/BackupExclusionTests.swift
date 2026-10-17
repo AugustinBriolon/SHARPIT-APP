@@ -29,6 +29,14 @@ struct BackupExclusionTests {
         #expect(BackupExclusion.isExcluded(url))
     }
 
+    @Test func widgetSnapshotStaysExcludedAcrossRewrites() throws {
+        let directory = try temporaryDirectory()
+        try WidgetSnapshotStore.write(WidgetSnapshot(), to: directory)
+        WidgetSnapshotStore.update(in: directory) { $0.isPro = true }
+
+        #expect(BackupExclusion.isExcluded(directory.appending(path: WidgetSnapshotStore.fileName)))
+    }
+
     @Test func storeAndItsJournalFilesAreExcluded() throws {
         let store = try temporaryDirectory().appending(path: "default.store")
         let files = ["", "-wal", "-shm"].map { URL(filePath: store.path(percentEncoded: false) + $0) }

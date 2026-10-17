@@ -85,10 +85,10 @@ enum ActivityRouteMapImage {
         }
 
         guard let data = image.pngData() else { return }
-        try? data.write(
-            to: directory.appending(path: WidgetSnapshotStore.lastActivityMapFileName),
-            options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
-        )
+        let url = directory.appending(path: WidgetSnapshotStore.lastActivityMapFileName)
+        try? data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        // Where the athlete trains: kept out of backups like the snapshot beside it.
+        BackupExclusion.exclude(url)
     }
 
     static func erase(in directory: URL? = WidgetSnapshotStore.containerURL) {

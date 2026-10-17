@@ -302,6 +302,8 @@ nonisolated enum WidgetSnapshotStore {
     static func write(_ snapshot: WidgetSnapshot, to directory: URL? = containerURL) throws {
         guard let url = directory?.appending(path: fileName) else { return }
         try encoder.encode(snapshot).write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        // Health figures, rebuilt from /api on the next refresh: kept out of backups (docs/adr/0017).
+        BackupExclusion.exclude(url)
     }
 
     /// Changes one section and keeps the others. Returns whether anything changed.
