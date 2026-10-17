@@ -42,6 +42,7 @@ nonisolated enum SharpitRetry {
     static func run<T>(
         attempts: Int = attempts,
         sleep: (Duration) async throws -> Void = defaultSleep,
+        retryingOn shouldRetry: (any Error) -> Bool = isTransient,
         _ operation: () async throws -> T
     ) async throws -> T {
         var retry = 0
@@ -50,7 +51,7 @@ nonisolated enum SharpitRetry {
                 return try await operation()
             } catch {
                 retry += 1
-                guard retry < attempts, isTransient(error), !Task.isCancelled else { throw error }
+                guard retry < attempts, shouldRetry(error), !Task.isCancelled else { throw error }
                 try await sleep(pause(beforeRetry: retry))
             }
         }

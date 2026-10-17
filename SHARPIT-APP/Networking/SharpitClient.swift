@@ -296,7 +296,9 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
             // (`SharpitRetry`) where a message would read as a refusal.
             if statusCode >= 500 { throw SharpitAPIError.server }
 
-            if statusCode == 401 || statusCode == 403 {
+            // Only a 401 means the session is gone. A 403 is a refusal for this athlete (consents
+            // owed, Pro, a coach quota): signing out on it logged new accounts out mid-onboarding.
+            if statusCode == 401 {
                 if allowingAuthRetry, let refreshed = await AuthSession.shared.refreshTokenOnce() {
                     return try await send(
                         Payload.self,
@@ -329,6 +331,8 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
             switch statusCode {
             case 400:
                 throw SharpitAPIError.badRequest
+            case 403:
+                throw SharpitAPIError.message("Cette action n'est pas ouverte à ton compte pour l'instant.")
             case 404:
                 throw SharpitAPIError.message("Route introuvable sur le serveur (404)")
             default:

@@ -24,6 +24,9 @@ final class AccountGateModel {
         case consent(V1PrivacyConsents.WallReason)
         case onboarding
         case ready
+        /// A new account whose first read failed for good: never let in without the wizard,
+        /// which nothing would reopen. Says why, with a retry.
+        case unreachable(String)
     }
 
     private(set) var status: Status = .checking
@@ -64,14 +67,17 @@ final class AccountGateModel {
         if onboarded { status = .ready }
 
         do {
-            let token = try await tokenProvider()
-            async let consentsRead = consentClient.consents(token: token)
-            // Read even when remembered: the server is the truth. A new account's very first read
-            // can come before its row exists, and the phone once remembered « done » from it.
-            async let profileRead = profileClient.athleteProfile(token: token)
-            let consents = try await consentsRead
+            // Right after sign-up Clerk can hand out no token, or one the server does not take
+            // yet: a refusal is tried again here, unlike a write.
+            let (consents, profile) = try await SharpitRetry.run(retryingOn: Self.isWorthRetrying) {
+                let token = try await tokenProvider()
+                async let consentsRead = consentClient.consents(token: token)
+                // Read even when remembered: the server is the truth. A new account's very first
+                // read can come before its row exists, and the phone once remembered « done » from it.
+                async let profileRead = profileClient.athleteProfile(token: token)
+                return try await (consentsRead, profileRead)
+            }
             self.consents = consents
-            let profile = try await profileRead
             if profile.needsOnboarding {
                 onboardingStore = makeOnboardingStore(consents.wallReason != nil, consents, userId)
                 move(to: .onboarding)
@@ -86,8 +92,26 @@ final class AccountGateModel {
             if profile.onboardingCompletedAt != nil { remember(userId) }
             move(to: .ready)
         } catch {
-            move(to: .ready)
+            // A finished athlete works offline; a new one would land in empty tabs for good.
+            move(to: onboarded ? .ready : .unreachable(Self.message(for: error)))
         }
+    }
+
+    /// « Réessayer » from the unreachable screen.
+    func retry(tokenProvider: () async throws -> String) async {
+        move(to: .checking)
+        await resolve(userId: userId, tokenProvider: tokenProvider)
+    }
+
+    nonisolated static func isWorthRetrying(_ error: any Error) -> Bool {
+        SharpitRetry.isTransient(error) || (error as? SharpitAPIError) == .unauthorized
+    }
+
+    nonisolated static func message(for error: any Error) -> String {
+        if (error as? SharpitAPIError) == .unauthorized {
+            return "Ta session n'est pas encore prête. Réessaie, ou reconnecte-toi."
+        }
+        return SharpitErrorGuidance.message(for: error, subject: "Ton profil")
     }
 
     /// The wall was accepted: carry on to the wizard, or to the app.
@@ -175,6 +199,19 @@ struct AccountGate<Content: View>: View {
                     }
                     .transition(.opacity)
                 }
+            case .unreachable(let message):
+                SharpitStateMessage.failed(message) {
+                    Task { await model.retry(tokenProvider: liveToken) }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    Button("Se déconnecter") {
+                        Task { try? await clerk.auth.signOut() }
+                    }
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .padding(.bottom, SharpitSpacing.lg)
+                }
+                .transition(.opacity)
             case .ready:
                 content()
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
