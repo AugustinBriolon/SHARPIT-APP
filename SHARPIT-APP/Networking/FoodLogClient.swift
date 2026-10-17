@@ -295,7 +295,7 @@ actor FoodLogClient: FoodLogServing {
             throw SharpitAPIError.transport
         }
         // A food entry changes that day's nutrition and Résumé, past days included.
-        if request.httpMethod != "GET" { SettledDayCache.shared.forgetAll() }
+        if request.httpMethod != "GET" { DayReadCache.shared.expireAll() }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if readsRefusal, status == 400, let refusal = Self.refusal(in: data) {
             throw SharpitAPIError.message(refusal)

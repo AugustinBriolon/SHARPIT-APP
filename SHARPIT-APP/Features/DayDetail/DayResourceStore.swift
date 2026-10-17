@@ -98,7 +98,7 @@ final class DayResourceStore<Payload: V1DayResource> {
 
     /// Pull-to-refresh: the day on screen is read from the server again, even a past one.
     func refresh() async {
-        SettledDayCache.shared.forget(day: trainingDayId)
+        DayReadCache.shared.expire(day: trainingDayId)
         await load()
     }
 
@@ -123,7 +123,7 @@ final class DayResourceStore<Payload: V1DayResource> {
     func select(_ day: Date) async {
         guard !Calendar.current.isDate(day, inSameDayAs: selectedDay) else { return }
         selectedDay = day
-        if let cached = cache[trainingDayId] {
+        if let cached = known(trainingDayId) {
             show(cached)
             await load(keepingDayOnFailure: true)
             return
@@ -145,8 +145,15 @@ final class DayResourceStore<Payload: V1DayResource> {
         phase = payload.empty.map(Phase.empty) ?? .loaded(payload)
     }
 
+    /// Read on this screen, or anywhere in the app this launch.
+    private func known(_ dayId: String) -> Payload? {
+        cache[dayId] ?? DayReadCache.shared.lastKnown(Payload.self, day: dayId)
+    }
+
     private func load(keepingDayOnFailure: Bool) async {
         let requestedDay = trainingDayId
+        // A screen opening on a day already read paints it at once; the server answers behind.
+        if case .loading = phase, let known = known(requestedDay) { show(known) }
         do {
             let token = try await tokenProvider()
             let payload = try await fetch(requestedDay, token)
@@ -171,7 +178,7 @@ final class DayResourceStore<Payload: V1DayResource> {
     private func prefetchRecentDays() {
         guard prefetchTask == nil else { return }
         let ahead = dataByDay
-            .filter { $0.value && cache[$0.key] == nil }
+            .filter { $0.value && known($0.key) == nil }
             .map(\.key)
             .sorted(by: >)
             .prefix(Self.prefetchCount)

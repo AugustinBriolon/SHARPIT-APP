@@ -32,6 +32,7 @@ final class TodayStore {
     private let proposals: any MorningProposalServing
     private let tokenProvider: (() async throws -> String)?
     private let modelContext: ModelContext?
+    private let dayReads: DayReadCache
     /// Tab `.task` re-fires on every return; skip the network while the day is still fresh.
     private let networkGate = LoadGate()
 
@@ -39,12 +40,14 @@ final class TodayStore {
         client: any TodayServing = FixtureTodayClient(),
         proposals: any MorningProposalServing = SharpitClient(),
         tokenProvider: (() async throws -> String)? = nil,
-        modelContext: ModelContext? = nil
+        modelContext: ModelContext? = nil,
+        dayReads: DayReadCache = .shared
     ) {
         self.client = client
         self.proposals = proposals
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
+        self.dayReads = dayReads
     }
 
     /// Answers the night's proposal. The card leaves on the tap; it comes back with the failure
@@ -174,7 +177,7 @@ final class TodayStore {
     }
 
     func refresh() async {
-        SettledDayCache.shared.forget(day: dayId)
+        dayReads.expire(day: dayId)
         await load(resetToLoading: false, force: true)
         if case .loaded(let fold) = phase {
             flashScores()
@@ -196,6 +199,11 @@ final class TodayStore {
         // with that stub or the résumé blanks until pull-to-refresh forces the network.
         if case .loaded(let fold) = phase, fold.trainingDayId == dayId {
             return true
+        }
+        // The day as last read this launch, whole, while the network reads it again.
+        if let known = dayReads.lastKnown(V1TodayResponse.self, day: dayId) {
+            apply(known)
+            if case .loaded = phase { return true }
         }
         guard let modelContext else {
             if resetToLoading { phase = .loading }

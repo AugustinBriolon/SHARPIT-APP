@@ -85,7 +85,7 @@ private func leaFold(dayId: String = TrainingDayId.today()) -> TodayFold {
     try TodaySnapshotRepository.save(fold, context: context)
 
     let client = FailingTodayClient()
-    let store = TodayStore(client: client, modelContext: context)
+    let store = TodayStore(client: client, modelContext: context, dayReads: DayReadCache())
     await store.load(resetToLoading: true)
 
     guard case .loaded(let cached) = store.phase else {

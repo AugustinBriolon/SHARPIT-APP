@@ -116,3 +116,23 @@ private struct RecordingTodayClient: TodayServing {
     #expect(store.navigationTitle == TrainingDayId.displayName(TrainingDayId.today(now: yesterday)))
     if case .loaded = store.phase {} else { Issue.record("a picked day must not blank the page") }
 }
+
+private struct OfflineTodayClient: TodayServing {
+    func today(trainingDayId _: String, token _: String) async throws -> V1TodayResponse {
+        throw SharpitAPIError.transport
+    }
+}
+
+@MainActor
+@Test func aDayReadThisLaunchOpensAtOnceWhileTheServerAnswersBehind() async throws {
+    let day = try #require(Calendar.current.date(from: DateComponents(year: 2001, month: 2, day: 3)))
+    let dayId = TrainingDayId.today(now: day)
+    let known = try await FixtureTodayClient().today(trainingDayId: dayId, token: "fixture")
+    let dayReads = DayReadCache()
+    dayReads.keep(known, day: dayId)
+    let store = TodayStore(client: OfflineTodayClient(), tokenProvider: { "token" }, dayReads: dayReads)
+
+    await store.select(day: day)
+
+    if case .loaded = store.phase {} else { Issue.record("a day already read must not wait on the network") }
+}

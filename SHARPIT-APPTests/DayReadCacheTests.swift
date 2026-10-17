@@ -23,8 +23,8 @@ private nonisolated final class CountingURLProtocol: URLProtocol, @unchecked Sen
 }
 
 @Suite(.serialized)
-struct SettledDayCacheTests {
-    private let cache = SettledDayCache(today: { "2026-10-17" })
+struct DayReadCacheTests {
+    private let cache = DayReadCache(today: { "2026-10-17" })
 
     private func client() -> SharpitClient {
         let configuration = URLSessionConfiguration.ephemeral
@@ -32,7 +32,7 @@ struct SettledDayCacheTests {
         return SharpitClient(
             session: URLSession(configuration: configuration),
             baseURL: URL(string: "https://sharpit.app")!,
-            settledDays: cache
+            dayReads: cache
         )
     }
 
@@ -53,20 +53,28 @@ struct SettledDayCacheTests {
         #expect(CountingURLProtocol.hits == 2)
     }
 
-    @Test func aWriteForgetsEveryPastDay() async throws {
+    @Test func aWriteMakesPastDaysStaleButStillKnown() async throws {
         CountingURLProtocol.hits = 0
         let client = client()
         _ = try await client.trainingLoad(trainingDayId: "2026-10-12", token: "t")
         _ = try? await client.sync(token: "t")
+        #expect(cache.lastKnown(V1TrainingLoad.self, day: "2026-10-12") != nil)
         _ = try await client.trainingLoad(trainingDayId: "2026-10-12", token: "t")
         #expect(CountingURLProtocol.hits == 3)
     }
 
-    @Test func forgettingADayKeepsTheOthers() {
-        cache.keep(1, path: "/a", day: "2026-10-12")
-        cache.keep(2, path: "/a", day: "2026-10-11")
-        cache.forget(day: "2026-10-12")
-        #expect(cache.payload(Int.self, path: "/a", day: "2026-10-12") == nil)
-        #expect(cache.payload(Int.self, path: "/a", day: "2026-10-11") == 2)
+    @Test func todayIsKnownForTheNextScreenButNeverSettled() {
+        cache.keep(1, day: "2026-10-17")
+        #expect(cache.settled(Int.self, day: "2026-10-17") == nil)
+        #expect(cache.lastKnown(Int.self, day: "2026-10-17") == 1)
+    }
+
+    @Test func expiringADayKeepsTheOthersFresh() {
+        cache.keep(1, day: "2026-10-12")
+        cache.keep(2, day: "2026-10-11")
+        cache.expire(day: "2026-10-12")
+        #expect(cache.settled(Int.self, day: "2026-10-12") == nil)
+        #expect(cache.lastKnown(Int.self, day: "2026-10-12") == 1)
+        #expect(cache.settled(Int.self, day: "2026-10-11") == 2)
     }
 }
