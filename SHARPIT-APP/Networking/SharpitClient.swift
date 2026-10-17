@@ -49,10 +49,16 @@ nonisolated protocol PushDeviceTokenServing: Sendable {
 actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, RecoveryServing, EffortServing, AdaptationServing, TrainingLoadServing, NutritionServing, DataDaysServing, SyncServing, HealthUploadServing, PushDeviceTokenServing, ProviderOAuthHandoffServing, SourcePrefsServing, AppleHealthLinking, AppleCalendarLinking, AppleCalendarBusyServing {
     private let session: URLSession
     private let baseURL: URL
+    private let settledDays: SettledDayCache
 
-    init(session: URLSession = .shared, baseURL: URL = APIConfiguration.baseURL) {
+    init(
+        session: URLSession = .shared,
+        baseURL: URL = APIConfiguration.baseURL,
+        settledDays: SettledDayCache = .shared
+    ) {
         self.session = session
         self.baseURL = baseURL
+        self.settledDays = settledDays
     }
 
     func today(trainingDayId: String, token: String) async throws -> V1TodayResponse {
@@ -220,19 +226,22 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
     }
 
     /// Every v1 read so far is one training day of one resource.
-    private func day<Payload: Decodable>(
+    private func day<Payload: Decodable & Sendable>(
         _ type: Payload.Type,
         path: String,
         trainingDayId: String,
         token: String
     ) async throws -> Payload {
-        try await send(
+        if let kept = settledDays.payload(type, path: path, day: trainingDayId) { return kept }
+        let payload = try await send(
             type,
             path: path,
             method: "GET",
             query: [URLQueryItem(name: "trainingDayId", value: trainingDayId)],
             token: token
         )
+        settledDays.keep(payload, path: path, day: trainingDayId)
+        return payload
     }
 
     private func send<Payload: Decodable>(
@@ -270,6 +279,8 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
         } catch {
             throw SharpitAPIError.transport
         }
+        // A write may have changed a past day: a sync, a Health upload, an answer.
+        if method != "GET" { settledDays.forgetAll() }
 
         let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
         if !(200...299).contains(statusCode) {

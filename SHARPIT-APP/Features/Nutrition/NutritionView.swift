@@ -68,7 +68,7 @@ struct NutritionView: View {
                 )
             },
             refresh: {
-                await store.load()
+                await store.refresh()
                 await foodLog.load(trainingDayId: selectedDayId)
             },
             loadingPlaceholder: NutritionReadout.placeholderResponse

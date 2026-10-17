@@ -69,6 +69,7 @@ final class ShellRouter {
     private(set) var calendarRevision = 0
 
     func noteCalendarChanged() {
+        SettledDayCache.shared.forgetAll()
         calendarRevision += 1
     }
 
@@ -77,6 +78,7 @@ final class ShellRouter {
     private(set) var activitiesRevision = 0
 
     func noteActivitiesChanged() {
+        SettledDayCache.shared.forgetAll()
         activitiesRevision += 1
         calendarRevision += 1
     }
@@ -86,6 +88,7 @@ final class ShellRouter {
     private(set) var checkInRevision = 0
 
     func noteMorningCheckIn() {
+        SettledDayCache.shared.forgetAll()
         checkInRevision += 1
     }
 

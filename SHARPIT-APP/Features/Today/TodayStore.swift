@@ -174,6 +174,7 @@ final class TodayStore {
     }
 
     func refresh() async {
+        SettledDayCache.shared.forget(day: dayId)
         await load(resetToLoading: false, force: true)
         if case .loaded(let fold) = phase {
             flashScores()

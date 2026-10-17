@@ -96,6 +96,12 @@ final class DayResourceStore<Payload: V1DayResource> {
         prefetchRecentDays()
     }
 
+    /// Pull-to-refresh: the day on screen is read from the server again, even a past one.
+    func refresh() async {
+        SettledDayCache.shared.forget(day: trainingDayId)
+        await load()
+    }
+
     /// Reads the marks of the weeks the strip or the calendar is about to show.
     func markDays(around day: Date) async {
         await marker?.ensure(around: day)

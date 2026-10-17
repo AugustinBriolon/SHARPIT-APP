@@ -9,7 +9,7 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     let unavailableTitle: String
     let store: DayResourceStore<Payload>
     @ViewBuilder let content: (Payload) -> Content
-    /// What pull-to-refresh does; by default it reads the day again.
+    /// What pull-to-refresh does; by default it reads the day again from the server.
     var refresh: (() async -> Void)?
     /// A way out of an empty day — never a dead end.
     var emptyAction: (title: String, run: () async -> Void)?
@@ -65,7 +65,7 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
             }
             .modifier(ScrollUnderGlass())
             .refreshable {
-                if let refresh { await refresh() } else { await store.load() }
+                if let refresh { await refresh() } else { await store.refresh() }
             }
         case .empty(let empty):
             ContentUnavailableView {

@@ -7,7 +7,9 @@ nutrition card (`NutritionTodayCard`, below Régularité), Effort and Adaptation
 `DayResourceStore` inside `DayDetailScaffold`, which pins the day picker
 (`DayDetailDatePicker`, built on the Plan's `SharpitWeekStrip`) above the content; a new
 day's drill-down is a v1 resource plus a sections view, not a new store. The store keeps every day it
-read for the life of the screen (a day seen again appears at once and refreshes behind), marks the
+read for the life of the screen (a day seen again appears at once and refreshes behind; a past day
+is read from the server once per launch — `SettledDayCache` inside `SharpitClient`'s day reads, forgotten on
+every write and on pull-to-refresh, which reads the day on screen again), marks the
 picker's history (`SharpitWeeks.history`, three years — Plan, Journal and the day screens share it) from `/api/v1/data-days` through `DataDaysMarker` (so a logged day is marked before it is
 opened), and reads the six most recent days with data ahead of the athlete. A swipe on the content
 turns the day (`DaySwipe`: right for the day before, left for the day after, never past today — the

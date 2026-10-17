@@ -26,7 +26,8 @@ the day screens — filled for a night or a session, muted for none: `DataDaysMa
 day screens (`daySwipe`: right for the day before, left for the day after, never past today; a swipe
 that starts on a card never opens it). Not a toolbar `.largeTitle` item: on iOS 26 that one takes no
 touch. `TodayStore.select(day:)` names the page at once and keeps the day on screen, dimmed, until
-the new one arrives (`/api/v1/today?trainingDayId=`, snapshot cached per day); `selectedDayId` nil
+the new one arrives (`/api/v1/today?trainingDayId=`, snapshot cached per day; a past day is asked
+for once per launch, `SettledDayCache`, until a write or a pull-to-refresh); `selectedDayId` nil
 follows today, midnight included. A past day is read-only: no ressenti, no check-in invitation, and it never
 reaches the widgets. The ressenti opens on its own only from 6 h, once last night's sleep is in
 or from 10 h (`RessentiPromptTiming`).
