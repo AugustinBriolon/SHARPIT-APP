@@ -45,7 +45,7 @@ struct ConnectionsView: View {
                         Text("Priorités par catégorie")
                             .font(SharpitTypography.bodyEmphasis)
                     } icon: {
-                        SharpitRowIcon(symbol: "list.number")
+                        SharpitRowIcon.tile("list.number")
                     }
                 }
             } footer: {

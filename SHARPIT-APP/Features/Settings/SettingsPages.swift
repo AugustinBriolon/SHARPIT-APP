@@ -262,7 +262,7 @@ struct NotificationPrefsView: View {
                         Text("Autoriser les notifications")
                             .font(SharpitTypography.bodyEmphasis)
                     } icon: {
-                        SharpitRowIcon(symbol: "bell.badge")
+                        SharpitRowIcon.tile("bell.badge")
                     }
                 }
                 .tint(SharpitColor.primary)
@@ -377,7 +377,7 @@ struct NotificationPrefsView: View {
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
                 } icon: {
-                    SharpitRowIcon(symbol: "lock.iphone")
+                    SharpitRowIcon.tile("lock.iphone")
                 }
             }
             .tint(SharpitColor.primary)
@@ -394,7 +394,7 @@ struct NotificationPrefsView: View {
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
                 } icon: {
-                    SharpitRowIcon(symbol: "timer")
+                    SharpitRowIcon.tile("timer")
                 }
             }
             .tint(SharpitColor.primary)
@@ -411,7 +411,7 @@ struct NotificationPrefsView: View {
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
                 } icon: {
-                    SharpitRowIcon(symbol: "heart.fill")
+                    SharpitRowIcon.tile("heart.fill")
                 }
             }
             .tint(SharpitColor.primary)
@@ -445,7 +445,7 @@ struct NotificationPrefsView: View {
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
             } icon: {
-                SharpitRowIcon(symbol: symbol)
+                SharpitRowIcon.tile(symbol)
             }
         }
         .tint(SharpitColor.primary)

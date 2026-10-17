@@ -20,7 +20,7 @@ struct FeaturesView: View {
                             Label {
                                 Text(feature.title).font(SharpitTypography.bodyEmphasis)
                             } icon: {
-                                SharpitRowIcon(symbol: feature.symbolName)
+                                SharpitRowIcon.tile(feature.symbolName)
                             }
                         }
                     }

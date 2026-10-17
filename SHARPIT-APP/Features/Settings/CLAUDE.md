@@ -12,7 +12,10 @@ holds the choice, saved to the account (`featurePrefs` on the profile, merged se
 `notificationPrefs`), applied at once and put back if the save fails; the last choice is kept in the
 widget snapshot so the app opens with the right tabs.
 
-**Paramètres.** A page of cards: the account and tier, the SharpIt Pro plate, then the one setting
+**Paramètres.** The grouped list, as every settings page (`docs/adr/0008`), in the brand's dress:
+each row's label is `SharpitSettingsLabel` (the ink tile with its lime glyph, the title, what it holds
+now), switches are lime (`SharpitSwitchStyle`, set once for the app). The account and tier first,
+SharpIt Pro on the page's one ink row, then the one setting
 answered in place — Apparence (`AppearancePreference`, per iPhone, applied to every window's
 `overrideUserInterfaceStyle` so open sheets switch at once) — then Notifications, a page
 (`NotificationPrefsView`: the switch, `PushNotificationManager.setEnabled`, where off unregisters

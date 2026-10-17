@@ -185,7 +185,7 @@ struct PrivacySettingsView: View {
                             .font(SharpitTypography.bodyEmphasis)
                             .foregroundStyle(SharpitColor.foreground)
                     } icon: {
-                        SharpitRowIcon(symbol: "square.and.arrow.up")
+                        SharpitRowIcon.tile("square.and.arrow.up")
                     }
                     Spacer(minLength: 0)
                     if isExporting { ProgressView().controlSize(.small) }
@@ -262,7 +262,7 @@ struct PrivacySettingsView: View {
                                     .font(SharpitTypography.bodyEmphasis)
                                     .foregroundStyle(SharpitColor.foreground)
                             } icon: {
-                                SharpitRowIcon(symbol: document.symbol)
+                                SharpitRowIcon.tile(document.symbol)
                             }
                             Spacer(minLength: 0)
                             Image(systemName: "chevron.right")

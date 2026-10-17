@@ -129,7 +129,7 @@ struct DisplayModeView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         } icon: {
-            SharpitRowIcon(symbol: symbol)
+            SharpitRowIcon.tile(symbol)
         }
         .padding(.vertical, SharpitSpacing.xxs)
     }

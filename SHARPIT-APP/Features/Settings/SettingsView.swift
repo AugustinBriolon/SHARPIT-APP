@@ -6,9 +6,9 @@ import UserNotifications
 
 /// Paramètres, opened as a sheet from the avatar in Résumé and Corps.
 ///
-/// A page of cards rather than a grouped list: who the athlete is and their tier first, then
-/// the two settings answered in place — appearance and notifications — and only then the pages
-/// worth opening, each row saying its state before it is opened. The reading density is one of
+/// The system's grouped list in the brand's dress (`docs/adr/0008`): who the athlete is and their
+/// tier first, SharpIt Pro on the page's one ink row, the setting answered in place — appearance —
+/// and only then the pages worth opening, each row saying its state before it is opened. The reading density is one of
 /// those pages: the choice needs its explanation. What used to live in Moi and belongs elsewhere moved: the body to Corps, goals to
 /// Plan, the coach's memory to Coach.
 struct SettingsView: View {
@@ -62,100 +62,92 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            List {
+                Section {
                     NavigationLink(value: SettingsRoute.account) {
-                        AccountCard(isPro: isPro)
+                        AccountRow(isPro: isPro)
                     }
-                    .buttonStyle(.sharpitPressable)
+                }
+                .sharpitListRows()
 
+                // The page's one ink plate, as the verdict is on Résumé.
+                Section {
                     NavigationLink(value: SettingsRoute.pro) {
-                        ProCard(isPro: isPro)
+                        ProRow(isPro: isPro)
                     }
-                    .buttonStyle(.sharpitPressable)
+                    .environment(\.colorScheme, .dark)
+                    .listRowBackground(SharpitColor.inkSurface)
+                }
 
-                    SettingsGroup(title: "Réglages rapides") {
-                        appearanceControl
+                Section(eyebrow: "Apparence", footer: "Propre à cet iPhone.") {
+                    SharpitSegmentedControl(
+                        selection: $appearance,
+                        options: AppearancePreference.allCases.map {
+                            SharpitSegmentedControl<AppearancePreference>.Option(value: $0, label: $0.label, symbol: $0.symbol)
+                        }
+                    )
+                    .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: SharpitSpacing.sm, bottom: SharpitSpacing.sm, trailing: SharpitSpacing.sm))
+                }
+                .sharpitListRows()
+
+                Section(eyebrow: "Données") {
+                    NavigationLink(value: SettingsRoute.sources) {
+                        SharpitSettingsLabel(symbol: "link", title: "Sources de données", detail: sourcesDetail)
                     }
-
                     // A page, not a quick setting: the switch and the kinds it sends are one
                     // decision, and iOS may have the last word on it.
-                    SettingsGroup(title: "Notifications") {
-                        NavigationLink(value: SettingsRoute.notifications) {
-                            SettingsRow(symbol: "bell.badge.fill", tint: SettingsTone.notifications, title: "Notifications", detail: notificationsDetail)
+                    NavigationLink(value: SettingsRoute.notifications) {
+                        SharpitSettingsLabel(symbol: "bell.badge", title: "Notifications", detail: notificationsDetail)
+                    }
+                }
+                .sharpitListRows()
+
+                Section(eyebrow: "Entraînement") {
+                    NavigationLink(value: SettingsRoute.equipment) {
+                        SharpitSettingsLabel(symbol: "figure.run.square.stack", title: "Sports & équipement", detail: sportsDetail)
+                    }
+                    // They calibrate training, not health: here rather than in Santé (SHARPIT ADR-053).
+                    NavigationLink(value: SettingsRoute.thresholds) {
+                        SharpitSettingsLabel(symbol: "gauge.with.dots.needle.67percent", title: "Seuils d'entraînement", detail: "FTP, FC, allure, CSS")
+                    }
+                }
+                .sharpitListRows()
+
+                Section(eyebrow: "Affichage") {
+                    NavigationLink(value: SettingsRoute.features) {
+                        SharpitSettingsLabel(symbol: "square.grid.2x2", title: "Pages et widgets", detail: featuresDetail)
+                    }
+                    NavigationLink(value: SettingsRoute.density) {
+                        SharpitSettingsLabel(symbol: "eye", title: "Densité de lecture", detail: displayMode.isExpert ? "Expert" : "Essentiel")
+                    }
+                }
+                .sharpitListRows()
+
+                // Hidden with the Nutrition page: switched off, it shows nowhere.
+                if features.isOn(.nutrition) {
+                    Section(eyebrow: "Nutrition") {
+                        NavigationLink(value: SettingsRoute.ownFoods) {
+                            SharpitSettingsLabel(symbol: "fork.knife", title: "Mes aliments", detail: "Créer, modifier, supprimer")
                         }
                     }
-                    .buttonStyle(.sharpitPressable)
+                    .sharpitListRows()
+                }
 
-                    SettingsGroup(title: "Données") {
-                        NavigationLink(value: SettingsRoute.sources) {
-                            SettingsRow(symbol: "link", tint: SettingsTone.sources, title: "Sources de données", detail: sourcesDetail)
-                        }
+                Section {
+                    NavigationLink(value: SettingsRoute.feedback) {
+                        SharpitSettingsLabel(symbol: "bubble.left.and.text.bubble.right", title: "Donner un avis", detail: "Un bug, une idée : je lis tout")
                     }
-                    .buttonStyle(.sharpitPressable)
-
-                    SettingsGroup(title: "Entraînement") {
-                        NavigationLink(value: SettingsRoute.equipment) {
-                            SettingsRow(symbol: "figure.run.square.stack", tint: SettingsTone.gear, title: "Sports & équipement", detail: sportsDetail)
-                        }
-                        SettingsDivider()
-                        // They calibrate training, not health: here rather than in Santé (SHARPIT ADR-053).
-                        NavigationLink(value: SettingsRoute.thresholds) {
-                            SettingsRow(symbol: "gauge.with.dots.needle.67percent", tint: SettingsTone.gear, title: "Seuils d'entraînement", detail: "FTP, FC, allure, CSS")
-                        }
-                        SettingsDivider()
-                        NavigationLink(value: SettingsRoute.features) {
-                            SettingsRow(
-                                symbol: "square.grid.2x2.fill",
-                                tint: SettingsTone.density,
-                                title: "Pages et widgets",
-                                detail: featuresDetail
-                            )
-                        }
-                        SettingsDivider()
-                        NavigationLink(value: SettingsRoute.density) {
-                            SettingsRow(
-                                symbol: "eye.fill",
-                                tint: SettingsTone.density,
-                                title: "Densité de lecture",
-                                detail: displayMode.isExpert ? "Expert" : "Essentiel"
-                            )
-                        }
+                    NavigationLink(value: SettingsRoute.privacy) {
+                        SharpitSettingsLabel(symbol: "hand.raised", title: "Confidentialité & conditions", detail: "Consentements, CGU, données, compte")
                     }
-                    .buttonStyle(.sharpitPressable)
-
-                    // Hidden with the Nutrition page: switched off, it shows nowhere.
-                    if features.isOn(.nutrition) {
-                        SettingsGroup(title: "Nutrition") {
-                            NavigationLink(value: SettingsRoute.ownFoods) {
-                                SettingsRow(symbol: "fork.knife", tint: SettingsTone.nutrition, title: "Mes aliments", detail: "Créer, modifier, supprimer")
-                            }
-                        }
-                        .buttonStyle(.sharpitPressable)
-                    }
-
-                    SettingsGroup(title: "Aide") {
-                        NavigationLink(value: SettingsRoute.feedback) {
-                            SettingsRow(symbol: "bubble.left.and.text.bubble.right.fill", tint: SettingsTone.feedback, title: "Donner un avis", detail: "Un bug, une idée : je lis tout")
-                        }
-                    }
-                    .buttonStyle(.sharpitPressable)
-
-                    SettingsGroup(title: "Confidentialité") {
-                        NavigationLink(value: SettingsRoute.privacy) {
-                            SettingsRow(symbol: "hand.raised.fill", tint: SettingsTone.privacy, title: "Confidentialité & conditions", detail: "Consentements, CGU, politique")
-                        }
-                    }
-                    .buttonStyle(.sharpitPressable)
-
+                } header: {
+                    SharpitEyebrow("Aide")
+                } footer: {
                     footer
                 }
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.top, SharpitSpacing.xs)
-                .padding(.bottom, SharpitSpacing.xl)
+                .sharpitListRows()
             }
-            .scrollIndicators(.hidden)
-            .background(SharpitCanvasBackground())
+            .sharpitGroupedList()
             .navigationTitle("Paramètres")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -173,20 +165,6 @@ struct SettingsView: View {
     /// The web's word on the tier once `/api/v1/pro` answered, else the profile's.
     private var isPro: Bool {
         pro?.pro?.isPro ?? profile.profile.isPro
-    }
-
-    // MARK: - Quick settings
-
-    private var appearanceControl: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SettingsRow(symbol: "circle.lefthalf.filled", tint: SettingsTone.appearance, title: "Apparence", detail: "Propre à cet appareil", showsChevron: false)
-            SharpitSegmentedControl(
-                selection: $appearance,
-                options: AppearancePreference.allCases.map {
-                    SharpitSegmentedControl<AppearancePreference>.Option(value: $0, label: $0.label, symbol: $0.symbol)
-                }
-            )
-        }
     }
 
     private func refreshNotificationStatus() async {
@@ -239,7 +217,7 @@ struct SettingsView: View {
                 .foregroundStyle(SharpitColor.mutedForeground.opacity(0.7))
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, SharpitSpacing.sm)
+        .padding(.top, SharpitSpacing.lg)
     }
 
     // MARK: - Destinations
@@ -306,16 +284,16 @@ private extension String {
 // MARK: - Building blocks
 
 /// The athlete, as the page opens: face, name, e-mail, tier.
-private struct AccountCard: View {
+private struct AccountRow: View {
     let isPro: Bool
 
     @Environment(Clerk.self) private var clerk
-    @ScaledMetric(relativeTo: .title2) private var avatarSize: CGFloat = 60
+    @ScaledMetric(relativeTo: .title2) private var avatarSize: CGFloat = 56
 
     var body: some View {
         HStack(spacing: SharpitSpacing.md) {
             AccountAvatar(size: avatarSize)
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(name)
                     .font(SharpitTypography.sectionTitle)
                     .tracking(SharpitTypography.sectionTitleTracking)
@@ -327,24 +305,11 @@ private struct AccountCard: View {
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .lineLimit(1)
                 }
-                Text(isPro ? "PRO" : "GRATUIT")
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(isPro ? SharpitColor.highlightForeground : SharpitColor.mutedForeground)
-                    .padding(.horizontal, SharpitSpacing.xs)
-                    .padding(.vertical, 3)
-                    .background(isPro ? SharpitColor.highlight : SharpitColor.analysisGrid.opacity(0.6), in: Capsule())
-                    .padding(.top, 2)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+            SharpitPill(isPro ? "Pro" : "Gratuit", style: isPro ? .lime : .neutral)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+        .padding(.vertical, SharpitSpacing.xs)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Ouvre ton compte")
     }
@@ -357,112 +322,29 @@ private struct AccountCard: View {
     }
 }
 
-/// SharpIt Pro on the ink surface — the one dark plate of the page, as the verdict is on Résumé.
-private struct ProCard: View {
+/// SharpIt Pro on the ink row: what it is, and what tapping does.
+private struct ProRow: View {
     let isPro: Bool
 
     var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.md) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                SharpitEyebrow(isPro ? "Ton abonnement" : "Abonnement", systemImage: "sparkle")
+        HStack(spacing: SharpitSpacing.md) {
+            SharpitIconTile(symbol: "sparkle")
+            VStack(alignment: .leading, spacing: 2) {
                 Text("SharpIt Pro")
-                    .font(SharpitTypography.verdict)
-                    .tracking(SharpitTypography.verdictTracking)
+                    .font(SharpitTypography.cardTitle)
+                    .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                Text(isPro ? "Tout SharpIt est ouvert pour toi." : "Bilan hebdomadaire, analyse de séance, lecture coach du journal.")
+                Text(isPro ? "Tout SharpIt est ouvert pour toi." : "Bilan hebdo, analyse de séance, lecture coach du journal.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                    .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
-            Text(isPro ? "Gérer" : "Découvrir")
-                .font(SharpitTypography.meta.weight(.semibold))
-                .foregroundStyle(SharpitColor.highlightForeground)
-                .padding(.horizontal, SharpitSpacing.sm)
-                .padding(.vertical, SharpitSpacing.xs)
-                .background(SharpitColor.highlight, in: Capsule())
+            if !isPro {
+                SharpitPill("Découvrir", style: .lime)
+            }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        .padding(.vertical, SharpitSpacing.xs)
         .accessibilityElement(children: .combine)
     }
-}
-
-/// A titled card of rows.
-private struct SettingsGroup<Content: View>: View {
-    let title: String
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(title)
-                .padding(.leading, SharpitSpacing.xxs)
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                content
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
-        }
-    }
-}
-
-private struct SettingsDivider: View {
-    var body: some View {
-        Rectangle()
-            .fill(SharpitColor.analysisGrid.opacity(0.7))
-            .frame(height: 1)
-            .padding(.leading, 44)
-    }
-}
-
-/// One row: a tinted symbol in a soft well, its name, and what it holds right now.
-private struct SettingsRow: View {
-    let symbol: String
-    let tint: Color
-    let title: String
-    var detail: String?
-    var showsChevron = true
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 32, height: 32)
-                .sharpitConcentricBackground(tint.opacity(0.14), minimum: 9)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                if let detail {
-                    Text(detail)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(1)
-                        .contentTransition(.opacity)
-                }
-            }
-            Spacer(minLength: 0)
-            if showsChevron {
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                    .accessibilityHidden(true)
-            }
-        }
-        .contentShape(.rect)
-    }
-}
-
-private enum SettingsTone {
-    static let appearance = Color(red: 0.34, green: 0.44, blue: 0.86)
-    static let notifications = Color(red: 0.90, green: 0.36, blue: 0.40)
-    static let sources = Color(red: 0.12, green: 0.62, blue: 0.56)
-    static let gear = SharpitColor.primary
-    static let density = Color(red: 0.55, green: 0.36, blue: 0.86)
-    static let privacy = Color(red: 0.44, green: 0.50, blue: 0.58)
-    static let nutrition = Color(red: 0.92, green: 0.52, blue: 0.20)
-    static let feedback = Color(red: 0.20, green: 0.56, blue: 0.86)
 }

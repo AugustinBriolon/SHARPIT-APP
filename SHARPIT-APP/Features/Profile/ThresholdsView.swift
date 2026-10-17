@@ -98,14 +98,7 @@ struct ThresholdsView: View {
 
     private var confidenceHeader: some View {
         HStack(spacing: SharpitSpacing.md) {
-            ZStack {
-                Circle()
-                    .fill((store.profile.thresholdsSyncedAt != nil ? SharpitColor.signalRecovery : SharpitColor.primary).opacity(0.14))
-                    .frame(width: 44, height: 44)
-                Image(systemName: store.profile.thresholdsSyncedAt != nil ? "arrow.triangle.2.circlepath" : "person.badge.shield.checkmark.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(store.profile.thresholdsSyncedAt != nil ? SharpitColor.signalRecovery : SharpitColor.primary)
-            }
+            SharpitIconTile(symbol: store.profile.thresholdsSyncedAt != nil ? "arrow.triangle.2.circlepath" : "person.badge.shield.checkmark")
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(store.profile.thresholdsSyncedAt != nil ? "Synchronisé depuis ta montre" : "Calibrations manuelles")
@@ -350,27 +343,20 @@ struct ThresholdsView: View {
 
                 HStack(spacing: SharpitSpacing.sm) {
                     if let running {
-                        vo2maxCard(title: "VO₂max course", value: running, icon: "figure.run", color: SharpitColor.foreground)
+                        vo2maxCard(title: "VO₂max course", value: running, icon: "figure.run")
                     }
                     if let cycling {
-                        vo2maxCard(title: "VO₂max vélo", value: cycling, icon: "bicycle", color: SharpitColor.foreground)
+                        vo2maxCard(title: "VO₂max vélo", value: cycling, icon: "bicycle")
                     }
                 }
             }
         }
     }
 
-    private func vo2maxCard(title: String, value: Int, icon: String, color: Color) -> some View {
+    private func vo2maxCard(title: String, value: Int, icon: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(color.opacity(0.15))
-                        .frame(width: 28, height: 28)
-                    Image(systemName: icon)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(color)
-                }
+                SharpitIconTile(symbol: icon, size: 28)
                 Spacer()
                 Text("Montre")
                     .font(.system(size: 10, weight: .bold))
