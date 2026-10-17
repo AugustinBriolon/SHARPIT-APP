@@ -177,7 +177,8 @@ actor CoachChatClient: CoachChatServing {
                 var body = Data()
                 for try await byte in bytes.prefix(4096) { body.append(byte) }
                 let message = Self.errorMessage(inBody: body)
-                Self.log.error("coach chat refused: \(http.statusCode) \(String(decoding: body, as: UTF8.self), privacy: .public)")
+                // Status only: the body can echo the athlete's question or health context.
+                Self.log.error("coach chat refused: \(http.statusCode, privacy: .public)")
                 throw CoachChatError.refused(status: http.statusCode, message: message)
             }
         }
@@ -189,7 +190,7 @@ actor CoachChatClient: CoachChatServing {
                     for try await line in bytes.lines {
                         guard let chunk = Self.chunk(inEventLine: line) else { continue }
                         if case .error(let text) = Self.event(from: chunk) {
-                            Self.log.error("coach stream error: \(text, privacy: .public)")
+                            Self.log.error("coach stream error")  // The text may quote the athlete's data.
                             throw CoachChatError.streamFailed(text)
                         }
                         if let kind = chunk["type"]?.string, kinds.last != kind { kinds.append(kind) }
