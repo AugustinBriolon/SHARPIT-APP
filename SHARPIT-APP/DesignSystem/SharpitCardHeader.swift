@@ -23,8 +23,10 @@ struct SharpitCardHeader<Accessory: View>: View {
                     .font(isCompact ? SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline) : SharpitTypography.cardTitle)
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(1)
+                    // A second line before any truncation: a 375 pt screen beside a pill cannot hold « Plus longue sortie ».
+                    .lineLimit(2)
                     .minimumScaleFactor(isCompact ? 0.75 : 0.8)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let subtitle {
                     Text(subtitle)
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))

@@ -71,7 +71,9 @@ struct OnboardingChoiceChip: View {
                 Text(title)
                     .font(SharpitTypography.meta.weight(.semibold))
                     .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                    .lineLimit(1)
+                    // A third of a 375 pt screen cannot hold « Tendon d'Achille » on one line.
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.85)
                 if symbol != nil { Spacer(minLength: 0) }
             }
@@ -303,6 +305,8 @@ struct OnboardingGoalStep: View {
                 Text(title)
                     .font(SharpitTypography.cardTitle)
                     .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
             }
             .padding(SharpitSpacing.md)

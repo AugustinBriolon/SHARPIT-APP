@@ -30,8 +30,9 @@ struct SharpitStatTile: View {
             Text(caption)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.mutedForeground)
-                .lineLimit(1)
+                .lineLimit(2)
                 .minimumScaleFactor(0.8)
+                .fixedSize(horizontal: false, vertical: true)
             if let note {
                 Text(note)
                     .font(SharpitTypography.meta)

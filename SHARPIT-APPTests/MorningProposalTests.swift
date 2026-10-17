@@ -101,6 +101,12 @@ private func loadedProposal(_ store: TodayStore) -> V1TodayMorningProposal? {
     #expect(MorningProposalReadout.headline(.init(intensityLabel: nil, durationMin: nil, description: nil)) == "Séance")
 }
 
+@Test func aNarrowColumnBreaksTheHeadlineBetweenIntensityAndDuration() {
+    #expect(MorningProposalReadout.headlineParts(proposal.from) == ["Seuil", "40 min"])
+    #expect(MorningProposalReadout.headlineParts(.init(intensityLabel: nil, durationMin: 30, description: nil)) == ["30 min"])
+    #expect(MorningProposalReadout.headlineParts(.init(intensityLabel: nil, durationMin: nil, description: nil)) == ["Séance"])
+}
+
 @Test func aProposalReadFromTheNightAloneSaysTheCheckInIsToDo() throws {
     let json = """
     { "checkInDone": false, "decisionId": "d1", "sessionId": "s1", "direction": "DOWN",

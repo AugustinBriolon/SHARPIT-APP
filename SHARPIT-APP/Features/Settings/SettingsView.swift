@@ -333,18 +333,22 @@ private struct ProRow: View {
         HStack(spacing: SharpitSpacing.md) {
             SharpitIconTile(symbol: "sparkle")
             VStack(alignment: .leading, spacing: 2) {
-                Text("SharpIt Pro")
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                // The pill rides the title line, so the description keeps the row's full width.
+                HStack(spacing: SharpitSpacing.xs) {
+                    Text("SharpIt Pro")
+                        .font(SharpitTypography.cardTitle)
+                        .tracking(SharpitTypography.cardTitleTracking)
+                        .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    if !isPro {
+                        SharpitPill("Découvrir", style: .lime)
+                    }
+                }
                 Text(isPro ? "Tout SharpIt est ouvert pour toi." : "Bilan hebdo, analyse de séance, lecture coach du journal.")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
-            if !isPro {
-                SharpitPill("Découvrir", style: .lime)
             }
         }
         .padding(.vertical, SharpitSpacing.xs)

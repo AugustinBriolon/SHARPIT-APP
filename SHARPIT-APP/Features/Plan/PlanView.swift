@@ -801,6 +801,20 @@ private struct PlanEntryRow: View {
 private struct PlanExecutedCard: View {
     let entry: PlanExecutedEntry
 
+    private func summary(showsPlanned: Bool) -> some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            Text(entry.activity.type.label)
+            if let duration = entry.activity.duration {
+                Text("\(Int((duration / 60).rounded())) min")
+            }
+            if showsPlanned, let plannedTitle = entry.plannedTitle {
+                Text("·")
+                Text("Prévu : \(plannedTitle)")
+            }
+        }
+        .lineLimit(1)
+    }
+
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
             SharpitSportBadge(type: entry.activity.type, size: 34)
@@ -810,16 +824,10 @@ private struct PlanExecutedCard: View {
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(2)
-                HStack(spacing: SharpitSpacing.xs) {
-                    Text(entry.activity.type.label)
-                    if let duration = entry.activity.duration {
-                        Text("\(Int((duration / 60).rounded())) min")
-                    }
-                    if let plannedTitle = entry.plannedTitle {
-                        Text("·")
-                        Text("Prévu : \(plannedTitle)")
-                            .lineLimit(1)
-                    }
+                // A narrow row (iPhone mini) drops the planned title rather than break the sport and duration.
+                ViewThatFits(in: .horizontal) {
+                    summary(showsPlanned: true)
+                    summary(showsPlanned: false)
                 }
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)

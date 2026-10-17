@@ -58,11 +58,15 @@ struct ConsistencyStrip: View {
                         .font(SharpitTypography.system(size: 15, weight: .bold, relativeTo: .subheadline, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
 
-                    Text(consistency.thisWeekSessionCount == 1 ? "séance cette semaine" : "séances cette semaine")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    let noun = consistency.thisWeekSessionCount == 1 ? "séance" : "séances"
+                    // The week is implied by the strip above, so a narrow card drops it rather than truncate.
+                    ViewThatFits(in: .horizontal) {
+                        Text("\(noun) cette semaine")
+                        Text(noun)
+                    }
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(1)
                 } else {
                     Text("Aucune séance cette semaine")
                         .font(SharpitTypography.meta)

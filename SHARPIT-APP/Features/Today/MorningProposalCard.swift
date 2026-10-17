@@ -84,9 +84,15 @@ struct MorningProposalCard: View {
             Text(caption)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.mutedForeground)
-            Text(MorningProposalReadout.headline(side))
-                .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
-                .foregroundStyle(emphasized ? SharpitColor.foreground : SharpitColor.mutedForeground)
+            // A narrow column (iPhone mini) breaks between intensity and duration, never inside them.
+            ViewThatFits(in: .horizontal) {
+                Text(MorningProposalReadout.headline(side)).lineLimit(1)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(MorningProposalReadout.headlineParts(side), id: \.self) { Text($0) }
+                }
+            }
+            .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
+            .foregroundStyle(emphasized ? SharpitColor.foreground : SharpitColor.mutedForeground)
             if let description = side.description, !description.isEmpty {
                 Text(description)
                     .font(SharpitTypography.meta)
@@ -102,7 +108,12 @@ struct MorningProposalCard: View {
 enum MorningProposalReadout {
     /// « Endurance · 35 min », either half alone, or « Séance » when the server sent neither.
     static func headline(_ side: V1TodayMorningProposal.Side) -> String {
+        headlineParts(side).joined(separator: " · ")
+    }
+
+    /// The headline's halves, for a column too narrow to hold them on one line.
+    static func headlineParts(_ side: V1TodayMorningProposal.Side) -> [String] {
         let parts = [side.intensityLabel, side.durationMin.map { "\($0) min" }].compactMap { $0 }
-        return parts.isEmpty ? "Séance" : parts.joined(separator: " · ")
+        return parts.isEmpty ? ["Séance"] : parts
     }
 }
