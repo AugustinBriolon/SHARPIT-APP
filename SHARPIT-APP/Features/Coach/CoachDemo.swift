@@ -14,9 +14,16 @@ struct CoachDemoHost: View {
     @State private var router = ShellRouter()
 
     var body: some View {
-        var view = CoachView(client: DemoCoachClient(), conversations: DemoConversations(), tokenProvider: { "demo" })
+        var view = CoachView(client: DemoCoachClient(), conversations: DemoConversations(), quota: DemoQuota(), tokenProvider: { "demo" })
         view.demoQuestions = ["Comment était ma nuit ?", "Et pour jeudi, je fais quoi ?"]
         return view.environment(router)
+    }
+}
+
+/// A Free budget a third spent, so « Consommation » has something to show.
+private struct DemoQuota: CoachQuotaServing {
+    func quota(token: String) async throws -> V1CoachQuota {
+        V1CoachQuota(isPro: false, dailyQuestions: 6, remainingQuestions: 4, usedRatio: 0.34, retryAfterSeconds: nil)
     }
 }
 

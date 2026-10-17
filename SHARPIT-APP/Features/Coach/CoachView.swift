@@ -15,6 +15,8 @@ struct CoachView: View {
     /// What the coach keeps about the athlete — free context, trips, constraints — moved here
     /// from Moi, beside the conversation that reads it.
     @State private var showingMemory = false
+    /// The coach budget in full — the composer's gauge only shows past half.
+    @State private var showingUsage = false
     @FocusState private var composerIsFocused: Bool
     @State private var showsJumpToLatest = false
     /// The quota card, closed by the athlete; it comes back with the next question typed.
@@ -73,18 +75,27 @@ struct CoachView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         composerIsFocused = false
-                        showingHistory = true
+                        showingMemory = true
                     } label: {
-                        Label("Historique", systemImage: "clock.arrow.circlepath")
+                        Label("Mémoire", systemImage: "brain.head.profile")
                     }
                     .disabled(tokenProvider == nil)
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         composerIsFocused = false
-                        showingMemory = true
+                        showingUsage = true
                     } label: {
-                        Label("Mémoire", systemImage: "brain.head.profile")
+                        Label("Consommation", systemImage: "gauge.with.dots.needle.33percent")
+                    }
+                    .disabled(tokenProvider == nil)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        composerIsFocused = false
+                        showingHistory = true
+                    } label: {
+                        Label("Historique", systemImage: "clock.arrow.circlepath")
                     }
                     .disabled(tokenProvider == nil)
                 }
@@ -113,6 +124,13 @@ struct CoachView: View {
                     .presentationDragIndicator(.visible)
                     .sharpitSheet()
                 }
+            }
+            .sheet(isPresented: $showingUsage) {
+                CoachUsageSheet(quota: store.quota) {
+                    showingUsage = false
+                    router.openSettings(on: .pro)
+                }
+                .task { await store.refreshQuota(force: true) }
             }
             .sheet(isPresented: $showingHistory) {
                 if let tokenProvider {

@@ -27,6 +27,25 @@ nonisolated enum CoachQuotaReadout {
         !quota.isPro && line(quota) != nil
     }
 
+    /// « 38 % » of the budget spent, for the Consommation sheet.
+    static func usedPercent(_ quota: V1CoachQuota) -> String {
+        "\(Int((min(max(quota.usedRatio, 0), 1) * 100).rounded())) %"
+    }
+
+    /// « 4 sur 6 » questions left — the web counts the token budget in questions (ADR-077).
+    static func questionsLeft(_ quota: V1CoachQuota) -> String {
+        "\(max(0, quota.remainingQuestions)) sur \(quota.dailyQuestions)"
+    }
+
+    /// When the budget comes back. The window is rolling, so there is no fixed reset date: only a
+    /// spent budget has a time, the server's wait.
+    static func resetLine(_ quota: V1CoachQuota, now: Date = .now) -> String {
+        guard let wait = quota.retryAfterSeconds else {
+            return "Au fil de l'eau : chaque échange compte 24 h"
+        }
+        return "De nouveau \(eta(wait, now: now))"
+    }
+
     /// « dans 12 min », or the clock time past an hour: a relative wait goes stale on a screen
     /// left open, as the web's `formatBudgetRetryEta` says.
     static func eta(_ seconds: Int, now: Date = .now) -> String {

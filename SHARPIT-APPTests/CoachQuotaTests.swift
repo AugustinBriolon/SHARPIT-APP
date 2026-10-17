@@ -76,3 +76,16 @@ private struct StubQuota: CoachQuotaServing {
     #expect(!CoachQuotaReadout.isSpent(quota(remaining: 2, usedRatio: 0.7), readAt: readAt, now: readAt))
     #expect(!CoachQuotaReadout.isSpent(nil, readAt: nil))
 }
+
+@Test func theUsageSheetReadsSpentShareAndQuestionsLeft() {
+    #expect(CoachQuotaReadout.usedPercent(quota(remaining: 4, usedRatio: 0.384)) == "38 %")
+    #expect(CoachQuotaReadout.usedPercent(quota(remaining: 0, usedRatio: 1.2)) == "100 %")
+    #expect(CoachQuotaReadout.questionsLeft(quota(remaining: 4, usedRatio: 0.3)) == "4 sur 6")
+    #expect(CoachQuotaReadout.questionsLeft(quota(remaining: -1, usedRatio: 1)) == "0 sur 6")
+}
+
+@Test func theUsageSheetGivesATimeOnlyOnceTheBudgetIsSpent() {
+    let now = Date(timeIntervalSince1970: 0)
+    #expect(CoachQuotaReadout.resetLine(quota(remaining: 3, usedRatio: 0.5), now: now) == "Au fil de l'eau : chaque échange compte 24 h")
+    #expect(CoachQuotaReadout.resetLine(quota(remaining: 0, usedRatio: 1, retryAfter: 600), now: now) == "De nouveau dans 10 min")
+}
