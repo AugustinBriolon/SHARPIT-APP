@@ -25,3 +25,9 @@ day) and « Aujourd'hui » to come back. `TodayStore.select(day:)` reads that da
 midnight included. A past day is read-only: no ressenti, no check-in invitation, and it never
 reaches the widgets. The ressenti opens on its own only from 6 h, once last night's sleep is in
 or from 10 h (`RessentiPromptTiming`).
+
+**Ressenti du jour.** The half-sheet (`RessentiDuJourSheet`) asks one thing: five named steps
+(`RessentiStepPicker`, « Très mal » … « Très bien », the chosen one lime, no hue per step). Energy,
+body, stress and a note for the coach wait under « Ajouter un détail », in the same picker with their
+own words (`WellnessDimension.label`). The button says « Choisis ton ressenti » until there is an
+answer; « Plus tard » is the bar's cancel action.
