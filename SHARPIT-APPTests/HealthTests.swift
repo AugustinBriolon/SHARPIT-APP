@@ -131,12 +131,17 @@ private actor UploadRecorder: HealthUploadServing, AppleHealthLinking {
         return days.count
     }
     func fail(with error: SharpitAPIError) { self.error = error }
+    func recover() { error = nil }
 }
 
 @MainActor
-private func source(_ reader: StubReader, _ recorder: UploadRecorder) -> AppleHealthSource {
+private func source(
+    _ reader: StubReader,
+    _ recorder: UploadRecorder,
+    resumeDelay: Duration = .seconds(120)
+) -> AppleHealthSource {
     let defaults = UserDefaults(suiteName: "HealthTests-\(UUID().uuidString)")!
-    let apple = AppleHealthSource(reader: reader, client: recorder, defaults: defaults)
+    let apple = AppleHealthSource(reader: reader, client: recorder, defaults: defaults, resumeDelay: resumeDelay)
     apple.bind(userId: "user_1")
     return apple
 }
@@ -198,6 +203,22 @@ private func source(_ reader: StubReader, _ recorder: UploadRecorder) -> AppleHe
     let apple = source(StubReader(), recorder)
     await apple.enable(token: { "t" })
     #expect(apple.state == .idle)
+}
+
+/// A first import stopped by the server's limit picks up on its own once the window has room,
+/// rather than waiting for the next Health sample or visit to Résumé.
+@MainActor
+@Test func aRateLimitedImportResumesOnItsOwn() async {
+    let recorder = UploadRecorder()
+    await recorder.fail(with: .rateLimited)
+    let apple = source(StubReader(), recorder, resumeDelay: .milliseconds(10))
+    await apple.enable(token: { "t" })
+    #expect(apple.resume != nil)
+
+    await recorder.recover()
+    let resumed = await apple.resume?.value
+    #expect(resumed == true)
+    #expect(apple.lastSentAt != nil)
 }
 
 // MARK: - Workouts

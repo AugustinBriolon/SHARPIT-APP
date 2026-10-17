@@ -32,6 +32,10 @@ final class AppleHealthSource {
     private(set) var isEnabled: Bool
     private(set) var state: State = .idle
     private(set) var lastSentAt: Date?
+    /// The send a refusal for this window put off: a first import stopped by the server's limit
+    /// used to wait for the next Health sample or the next visit to Résumé, sometimes for days.
+    private(set) var resume: Task<Bool, Never>?
+    private let resumeDelay: Duration
 
     private let reader: any HealthReading
     private let client: any HealthUploadServing & AppleHealthLinking
@@ -46,12 +50,14 @@ final class AppleHealthSource {
         reader: any HealthReading,
         client: any HealthUploadServing & AppleHealthLinking,
         defaults: UserDefaults = .standard,
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        resumeDelay: Duration = .seconds(120)
     ) {
         self.reader = reader
         self.client = client
         self.defaults = defaults
         self.now = now
+        self.resumeDelay = resumeDelay
         isEnabled = false
     }
 
@@ -127,12 +133,24 @@ final class AppleHealthSource {
             state = .idle
             return daysChanged || workoutsChanged
         } catch let error as SharpitAPIError where error == .rateLimited {
-            // The rest goes with the next send.
+            // The markers hold what went out; the rest goes once the window has room again.
             state = .idle
+            scheduleResume(token: token)
             return false
         } catch {
             state = .failed("Envoi Apple Santé impossible.")
             return false
+        }
+    }
+
+    private func scheduleResume(token: @escaping () async throws -> String) {
+        guard resume == nil else { return }
+        let delay = resumeDelay
+        resume = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard let self, !Task.isCancelled else { return false }
+            self.resume = nil
+            return await self.send(token: token)
         }
     }
 
