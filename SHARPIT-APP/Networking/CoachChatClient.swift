@@ -75,7 +75,18 @@ nonisolated enum CoachChatError: Error, Equatable, LocalizedError {
         switch self {
         case .streamFailed(let text): text
         case .refused(let status, let message):
-            message ?? (status == 429 ? "Trop de messages d'affilée. Réessaie dans un instant." : "Le coach est indisponible (\(status)).")
+            message ?? Self.fallback(status: status)
+        }
+    }
+}
+
+extension CoachChatError {
+    /// Words for a refusal whose body said nothing readable.
+    static func fallback(status: Int) -> String {
+        switch status {
+        case 413: "Cette conversation est trop longue pour le coach. Ouvre une nouvelle conversation."
+        case 429: "Trop de messages d'affilée. Réessaie dans un instant."
+        default: "Le coach est indisponible (\(status))."
         }
     }
 }

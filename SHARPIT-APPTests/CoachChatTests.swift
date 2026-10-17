@@ -233,6 +233,8 @@ private func store(_ client: StubCoachClient = StubCoachClient(deltas: ["Oui"]))
     let body = Data(#"{"error":"Active le traitement IA dans Confidentialité.","code":"ai_processing_consent_required"}"#.utf8)
     #expect(CoachChatClient.errorMessage(inBody: body) == "Active le traitement IA dans Confidentialité.")
     #expect(CoachChatError.refused(status: 429, message: nil).errorDescription == "Trop de messages d'affilée. Réessaie dans un instant.")
+    // A thread past the server's cap (SHARPIT ADR-089) says what to do, even without a body.
+    #expect(CoachChatError.refused(status: 413, message: nil).errorDescription == "Cette conversation est trop longue pour le coach. Ouvre une nouvelle conversation.")
 }
 
 // MARK: - Server-owned conversation
