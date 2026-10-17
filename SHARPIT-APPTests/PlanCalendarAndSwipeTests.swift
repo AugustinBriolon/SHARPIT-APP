@@ -204,6 +204,12 @@ import Testing
         #expect(DaySwipe.offset(for: -2000, canTurn: false, width: 390) > -390)
     }
 
+    @Test func thePulledPageDimsButNeverVanishesUnderTheFinger() {
+        #expect(DaySwipe.pullOpacity(for: 0, width: 390) == 1)
+        #expect(DaySwipe.pullOpacity(for: -195, width: 390) == 0.75)
+        #expect(DaySwipe.pullOpacity(for: 2000, width: 390) == 0.5)
+    }
+
     @Test func aVerticalOrEdgeDragIsNotATurn() {
         #expect(DaySwipe.axis(startX: 180, translation: CGSize(width: 30, height: 40)) == .vertical)
         #expect(DaySwipe.axis(startX: 10, translation: CGSize(width: 80, height: 0)) == .vertical)

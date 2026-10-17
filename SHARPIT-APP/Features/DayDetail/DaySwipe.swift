@@ -6,10 +6,10 @@ import UIKit
 /// right) or the day after (to the left). iOS 26 pops from anywhere on the screen, so these
 /// screens keep its edge gesture only.
 ///
-/// The day turns as Apple's own day views do: the page follows the finger, holds back where no
-/// day lies (after today), and leaves on the side it was pushed to while the next day comes in
-/// from the other. A day picked in the strip or the calendar comes in from its side of time —
-/// later from the right, earlier from the left. With Reduce Motion, the day only fades in.
+/// The page follows the finger and dims as it goes, holds back where no day lies (after today),
+/// then fades a short step further while the next day fades in from its side of time — later
+/// from the right, earlier from the left —, swiped or picked alike. Never a whole page width:
+/// that left the canvas blank between two days. With Reduce Motion, the day only fades in.
 ///
 /// A finger that starts on a row or a button and slides sideways turns the day without opening
 /// what it touched: the turn is a UIKit pan that refuses vertical drags (the scroll keeps them)
@@ -96,6 +96,11 @@ nonisolated enum DaySwipe {
         return target
     }
 
+    /// The page dims as the finger pulls it, to half at a full width: the day is going.
+    static func pullOpacity(for offset: CGFloat, width: CGFloat) -> Double {
+        1 - min(abs(offset) / max(width, 1), 1) * 0.5
+    }
+
     /// The day after comes in from the right (the trailing side), the day before from the left.
     static func entrySign(_ step: Step) -> CGFloat { step == .next ? 1 : -1 }
 }
@@ -120,6 +125,8 @@ private struct DaySwipeModifier: ViewModifier {
     @State private var pendingStep: DaySwipe.Step?
     @State private var arrival = DayArrival()
     @State private var arrivals = 0
+    /// The page fades as it is pulled and as it leaves, so no blank screen ever sits between days.
+    @State private var leavingOpacity: Double = 1
 
     func body(content: Content) -> some View {
         let arrival = arrival
@@ -141,6 +148,7 @@ private struct DaySwipeModifier: ViewModifier {
                 }
             }
             .offset(x: restingOffset + dragOffset)
+            .opacity(leavingOpacity * DaySwipe.pullOpacity(for: dragOffset, width: width))
             .gesture(DayTurnGesture(onChange: follow, onEnd: end, onCancel: settle))
             .onChange(of: day) { old, new in arrive(from: old, to: new) }
             .background(EdgeOnlyPopGesture())
@@ -181,12 +189,12 @@ private struct DaySwipeModifier: ViewModifier {
         }
 
         pendingStep = step
-        // The page keeps the finger's speed on its way out.
-        let exit = -DaySwipe.entrySign(step) * width
-        let speed = max(abs(release.velocity.width), 900)
-        let duration = min(max(abs(exit - released) / speed, 0.12), 0.24)
-        withAnimation(.easeOut(duration: duration)) {
-            restingOffset = exit
+        // The page goes on a little the way it was pushed and fades: a short step, never a
+        // whole page width, which left the canvas blank until the next day came in.
+        leavingOpacity = DaySwipe.pullOpacity(for: released, width: width)
+        withAnimation(.easeOut(duration: 0.14)) {
+            restingOffset = released - DaySwipe.entrySign(step) * DaySwipe.pickTravel
+            leavingOpacity = 0
         } completion: {
             onSelect(target)
             Task {
@@ -194,7 +202,10 @@ private struct DaySwipeModifier: ViewModifier {
                 try? await Task.sleep(for: .milliseconds(800))
                 guard pendingStep == step else { return }
                 pendingStep = nil
-                withAnimation(SharpitMotion.reveal) { restingOffset = 0 }
+                withAnimation(SharpitMotion.reveal) {
+                    restingOffset = 0
+                    leavingOpacity = 1
+                }
             }
         }
     }
@@ -205,15 +216,15 @@ private struct DaySwipeModifier: ViewModifier {
         guard let step = swiped ?? DaySwipe.step(from: old, to: new) else { return }
         var still = Transaction()
         still.disablesAnimations = true
-        withTransaction(still) { restingOffset = 0 }
-        if reduceMotion {
-            arrival = DayArrival(offset: 0, opacity: 0)
-        } else if swiped != nil {
-            // The whole page, from the side the finger pulled it from.
-            arrival = DayArrival(offset: DaySwipe.entrySign(step) * width, opacity: 1)
-        } else {
-            arrival = DayArrival(offset: DaySwipe.entrySign(step) * DaySwipe.pickTravel, opacity: 0)
+        withTransaction(still) {
+            restingOffset = 0
+            leavingOpacity = 1
         }
+        // Swiped or picked, the new day fades in from a short step on its side of time.
+        arrival = reduceMotion
+            ? DayArrival(offset: 0, opacity: 0)
+            : DayArrival(offset: DaySwipe.entrySign(step) * DaySwipe.pickTravel, opacity: 0)
+
         arrivals += 1
     }
 }

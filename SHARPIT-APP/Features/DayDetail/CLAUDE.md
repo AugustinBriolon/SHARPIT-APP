@@ -14,8 +14,9 @@ again. It marks the
 picker's history (`SharpitWeeks.history`, three years — Plan, Journal and the day screens share it) from `/api/v1/data-days` through `DataDaysMarker` (so a logged day is marked before it is
 opened), and reads the six most recent days with data ahead of the athlete. A swipe on the content
 turns the day (`DaySwipe`: right for the day before, left for the day after, never past today — the
-page follows the finger, resists where no day lies, and the new day slides in from its side; a day
-picked in the strip or the calendar comes in from its side of time, the title's date rolls the same
+page follows the finger dimming, resists where no day lies, fades a short step on, and the new day
+fades in from its side of time, swiped or picked — never a page width, which left a blank screen
+between days; the title's date rolls the same
 way, a day not read yet shows redacted in its shape, Reduce Motion only fades; a swipe that
 starts on a row or a button never opens it — the turn is an exclusive UIKit pan that fails on
 vertical drags, so the scroll keeps those) and
