@@ -50,6 +50,22 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Why linking it is worth it, in what the coach does with it.
+    var benefit: String {
+        switch self {
+        case .appleHealth:
+            "Le coach lit tes séances, ton sommeil et ton cœur au repos pour mesurer ta récupération et ajuster ton plan, sans rien saisir."
+        case .appleCalendar:
+            "Tes séances apparaissent dans ton agenda et le coach évite tes créneaux déjà pris en construisant ta semaine."
+        case .withings:
+            "Ta balance envoie poids et composition corporelle : le coach suit ta tendance plutôt qu'une pesée isolée."
+        case .google:
+            "Le coach voit tes créneaux libres dans Google Agenda et place tes séances quand tu es disponible."
+        case .strava:
+            "Tes sorties Strava rejoignent ton historique : le coach compte toute ta charge, même hors montre."
+        }
+    }
+
     var disconnectTitle: String { "Déconnecter \(name) ?" }
 
     var disconnectLabel: String { "Déconnecter \(name)" }

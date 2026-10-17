@@ -10,33 +10,34 @@ struct SourceManageSheet: View {
     @State private var confirming = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             HStack(spacing: SharpitSpacing.sm) {
                 ProviderLogo(provider: source.logo)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(source.name)
-                        .font(SharpitTypography.cardTitle)
+                        .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.foreground)
                     Text(status.text)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(status.isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
                 }
             }
-            Text(source.purpose)
-                .font(SharpitTypography.body)
+            Text(source.benefit)
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
-            Spacer(minLength: 0)
+                .fixedSize(horizontal: false, vertical: true)
             SharpitPrimaryButton(title: source.disconnectLabel, style: .secondary) { confirming = true }
         }
-        .padding(SharpitSpacing.pageInset)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.top, SharpitSpacing.lg)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .confirmationDialog(source.disconnectTitle, isPresented: $confirming, titleVisibility: .visible) {
             Button(source.disconnectLabel, role: .destructive, action: onDisconnect)
             Button("Annuler", role: .cancel) {}
         } message: {
             Text(source.disconnectMessage)
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.height(250)])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
