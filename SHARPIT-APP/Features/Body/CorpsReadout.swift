@@ -87,7 +87,7 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
         case .weight:
             "Chaque point est une pesée. Une variation d'un jour à l'autre est surtout de l'eau."
         case .hrv:
-            "Variabilité de la fréquence cardiaque mesurée la nuit par ta montre. La bande est ta plage habituelle selon Garmin."
+            "Variabilité de la fréquence cardiaque mesurée la nuit par ta montre. La bande est ta plage habituelle selon ta montre."
         case .restingHr:
             "Fréquence cardiaque la plus basse de la nuit. Une hausse durable accompagne souvent la fatigue ou la maladie."
         case .vo2maxRun, .vo2maxBike:
@@ -105,7 +105,7 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
         case .vascularAge:
             "Estimé par ta balance à partir de la vitesse de l'onde de pouls. Une indication, pas un diagnostic."
         case .ftp, .lthr, .runThresholdPace, .swimCss:
-            "Chaque point est une valeur enregistrée — importée de Garmin, estimée ou saisie."
+            "Chaque point est une valeur enregistrée — importée de ta montre, estimée ou saisie."
         case .maxHr:
             "La fréquence la plus haute que ton cœur atteint. Elle sert à caler tes zones."
         }
@@ -144,7 +144,7 @@ nonisolated struct CorpsMetric: Identifiable, Equatable, Sendable {
     let source: String?
     /// Oldest first, as a time axis reads them.
     let series: [CorpsPoint]
-    /// The athlete's usual band, when the source defines one (Garmin's HRV baseline).
+    /// The athlete's usual band, when the source defines one (the watch's HRV baseline).
     let baseline: ClosedRange<Double>?
     /// A short reading beside the value — a change or where it sits in the band.
     let note: String?
@@ -195,10 +195,10 @@ nonisolated enum CorpsReadout {
         scale(.weight) { $0.weightKg }
         recoveryMetrics(recovery).forEach { metrics.append($0) }
         if let run = profile?.vo2maxRunning {
-            metrics.append(single(.vo2maxRun, Double(run), source: "Garmin"))
+            metrics.append(single(.vo2maxRun, Double(run), source: "Ta montre"))
         }
         if let bike = profile?.vo2maxCycling {
-            metrics.append(single(.vo2maxBike, Double(bike), source: "Garmin"))
+            metrics.append(single(.vo2maxBike, Double(bike), source: "Ta montre"))
         }
         scale(.bodyFatPct) { $0.bodyFatPct }
         scale(.leanMassKg) { m in
@@ -285,7 +285,7 @@ nonisolated enum CorpsReadout {
     static func sourceLabel(_ source: String) -> String? {
         switch source.lowercased() {
         case "withings": "Withings"
-        case "garmin": "Garmin"
+        case "garmin": "Ta montre"
         case "renpho": "Renpho"
         case "apple_health", "apple-health": "Apple Santé"
         case "profile", "manual": "Saisi"
@@ -336,7 +336,7 @@ nonisolated enum CorpsReadout {
                 key: .hrv,
                 value: last.value,
                 measuredAt: last.date,
-                source: "Garmin",
+                source: "Ta montre",
                 series: hrvSeries,
                 baseline: band,
                 note: band.map { "plage \(Int($0.lowerBound.rounded()))–\(Int($0.upperBound.rounded()))" },
@@ -351,7 +351,7 @@ nonisolated enum CorpsReadout {
                 key: .restingHr,
                 value: last.value,
                 measuredAt: last.date,
-                source: "Garmin",
+                source: "Ta montre",
                 series: rhrSeries,
                 baseline: nil,
                 note: mean(rhrSeries).map { "moyenne \(Int($0.rounded())) bpm" },

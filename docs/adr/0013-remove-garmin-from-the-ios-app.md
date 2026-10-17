@@ -30,9 +30,11 @@ the workout push from Plan and from a done strength session, the « Sur la montr
 the `garminWorkout*` fields of planned sessions. `theAppNeverLinksGarmin` fails the build's tests if
 a Garmin route comes back into the app target.
 
-Data that came from Garmin through the server is still shown with its source when the payload
-names it (a body metric « Garmin », the HRV band « selon Garmin »): that is a fact about the data,
-not an integration. Threshold wording no longer names Garmin (« Synchronisé depuis ta montre »).
+Data that came from Garmin through the server is still shown, but never under the Garmin name: a
+body metric reads « Ta montre », a scale « Ta balance », a threshold « Importé de ta montre », the
+HRV band « selon ta montre ». The Garmin mark is gone from the asset catalog and the Sources list
+draws no logo for a Garmin id the server sends. Threshold wording no longer names Garmin
+(« Synchronisé depuis ta montre »). `theAppShowsNoGarminMark` keeps the logo out.
 
 ## Options considered
 
@@ -65,7 +67,8 @@ still does both).
 ### Neutral
 - Supersedes the DEBUG-only part of `docs/adr/0005` and the `ProviderAvailability` reference in
   `docs/adr/0010`.
-- The `Provider/Garmin` logo stays for source labels the server sends.
+- The `Provider/Garmin` logo is deleted; the provider name the server sends in the priority list
+  (a web-linked account only) is the one place « Garmin » can still be read.
 
 ## References
 - App Review Guidelines 5.2.2

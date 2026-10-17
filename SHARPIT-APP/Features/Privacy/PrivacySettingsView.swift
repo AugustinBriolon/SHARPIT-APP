@@ -206,7 +206,7 @@ struct PrivacySettingsView: View {
     private var renewsSubscription: Bool { pro?.hasRenewingSubscription ?? false }
 
     private var deletionMessage: String {
-        let erased = "Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Garmin, Strava et autres sont révoquées. C'est irréversible."
+        let erased = "Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Strava, Withings et autres sont révoquées. C'est irréversible."
         guard renewsSubscription else { return erased }
         return erased + "\n\nTon abonnement SharpIt Pro continue de se renouveler : supprimer ton compte ne l'arrête pas. Annule-le d'abord pour ne plus être facturé."
     }

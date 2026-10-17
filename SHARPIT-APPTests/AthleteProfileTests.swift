@@ -165,7 +165,7 @@ import Testing
 
     let snapshots = try JSONDecoder().decode([V1ThresholdSnapshot].self, from: json)
 
-    #expect(snapshots.map(\.sourceLabel) == ["Importé de Garmin", "Estimé", "Saisi à la main"])
+    #expect(snapshots.map(\.sourceLabel) == ["Importé de ta montre", "Estimé", "Saisi à la main"])
 }
 
 // MARK: - Field formats
@@ -410,7 +410,7 @@ private func weighIn(_ daysAgo: Int, _ weightKg: Double) -> V1BodyMeasurement {
 
 @Test func anUnknownScaleIsNotNamed() {
     #expect(BodyCompositionReadout.scaleLabel("WITHINGS") == "Withings")
-    #expect(BodyCompositionReadout.scaleLabel("garmin") == "Garmin")
+    #expect(BodyCompositionReadout.scaleLabel("garmin") == "Ta balance")
     #expect(BodyCompositionReadout.scaleLabel("some-new-provider") == nil)
     #expect(BodyCompositionReadout.scaleLabel(nil) == nil)
 }

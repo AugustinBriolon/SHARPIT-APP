@@ -42,7 +42,7 @@ nonisolated enum BodyCompositionReadout {
         switch source?.uppercased() {
         case "WITHINGS": "Withings"
         case "RENPHO": "Renpho"
-        case "GARMIN": "Garmin"
+        case "GARMIN": "Ta balance"
         default: nil
         }
     }

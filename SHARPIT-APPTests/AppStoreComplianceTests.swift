@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UIKit
 @testable import Sharpit
 
 /// Only HTTPS through Apple's own stack: exempt, so App Store Connect stops asking at upload.
@@ -60,6 +61,13 @@ import Testing
         #expect(!text.contains("import-garmin"), "\(file.lastPathComponent) imports from Garmin")
         #expect(!text.contains("connect/garmin"), "\(file.lastPathComponent) handles a Garmin connection")
     }
+}
+
+/// A Garmin logo or label in the UI is a trademark claim like a Garmin connection (5.2.2): the
+/// logo set has no Garmin, and a Garmin id from the server draws no mark.
+@Test func theAppShowsNoGarminMark() {
+    #expect(ProviderLogo.Provider(integrationId: "garmin") == nil)
+    #expect(UIImage(named: "Provider/Garmin") == nil)
 }
 
 /// The barcode scanner opens the camera: App Review refuses a build that asks without saying why.

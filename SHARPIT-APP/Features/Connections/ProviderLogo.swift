@@ -3,12 +3,11 @@ import UIKit
 
 /// A data source's own mark, at the size and corner iOS uses for an app icon in a list row.
 ///
-/// The artwork comes from the asset catalog (`Provider/Garmin`, `Provider/AppleHealth`…),
+/// The artwork comes from the asset catalog (`Provider/AppleHealth`, `Provider/Strava`…),
 /// the same files Compte → Sources uses on the web — SHARPIT never redraws a brand. Until
 /// an asset is added the row shows a neutral tile with a system symbol.
 struct ProviderLogo: View {
     enum Provider {
-        case garmin
         case appleHealth
         case sharpit
         case strava
@@ -17,10 +16,9 @@ struct ProviderLogo: View {
         case google
         case appleCalendar
 
-        /// The web's integration id (`garmin`, `apple-health`…), for lists the web sends.
+        /// The web's integration id (`strava`, `apple-health`…), for lists the web sends.
         init?(integrationId: String) {
             switch integrationId {
-            case "garmin": self = .garmin
             case "apple-health": self = .appleHealth
             case "apple-calendar": self = .appleCalendar
             case "sharpit": self = .sharpit
@@ -34,7 +32,6 @@ struct ProviderLogo: View {
 
         var assetName: String {
             switch self {
-            case .garmin: "Provider/Garmin"
             case .appleHealth: "Provider/AppleHealth"
             case .sharpit: "Provider/Sharpit"
             case .strava: "Provider/Strava"
@@ -47,7 +44,6 @@ struct ProviderLogo: View {
 
         var fallbackSymbol: String {
             switch self {
-            case .garmin: "applewatch.side.right"
             case .appleHealth: "heart.fill"
             case .appleCalendar: "calendar"
             case .sharpit: "fork.knife"
