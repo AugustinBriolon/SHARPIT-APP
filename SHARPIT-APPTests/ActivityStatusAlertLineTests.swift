@@ -17,7 +17,8 @@ import Testing
     #expect(ActivityStatusId.injured.tone == SharpitColor.signalRisk)
     #expect(ActivityStatusId.sick.tone == SharpitColor.signalCaution)
     #expect(ActivityStatusId.paused.tone == SharpitColor.signalNeutral)
-    #expect(ActivityStatusId.active.tone == SharpitColor.signalRecovery)
+    // The normal state reads in the text's colour, as the label beside it.
+    #expect(ActivityStatusId.active.tone == SharpitColor.foreground)
 }
 
 @Test func alertLineReusesStatusSymbol() {

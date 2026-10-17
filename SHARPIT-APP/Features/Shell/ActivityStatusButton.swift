@@ -1,11 +1,11 @@
 import SwiftUI
 
 extension ActivityStatusId {
-    /// Colour carries the mode's meaning, so it stays semantic: only `active` is a
-    /// green light, and the two medical modes read as caution and risk.
+    /// Colour carries the mode's meaning, so it stays semantic: `active` is the normal
+    /// state and reads in the text's colour; the others are alerts.
     var tone: Color {
         switch self {
-        case .active: SharpitColor.signalRecovery
+        case .active: SharpitColor.foreground
         case .paused: SharpitColor.signalNeutral
         case .injured: SharpitColor.signalRisk
         case .sick: SharpitColor.signalCaution
