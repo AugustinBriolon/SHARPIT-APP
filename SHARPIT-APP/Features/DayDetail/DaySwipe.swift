@@ -96,6 +96,9 @@ nonisolated enum DaySwipe {
         return target
     }
 
+    /// How faint a day gets while the next replaces it: never gone, so the screen never blinks.
+    static let handoverOpacity: Double = 0.35
+
     /// The page dims as the finger pulls it, to half at a full width: the day is going.
     static func pullOpacity(for offset: CGFloat, width: CGFloat) -> Double {
         1 - min(abs(offset) / max(width, 1), 1) * 0.5
@@ -194,7 +197,7 @@ private struct DaySwipeModifier: ViewModifier {
         leavingOpacity = DaySwipe.pullOpacity(for: released, width: width)
         withAnimation(.easeOut(duration: 0.14)) {
             restingOffset = released - DaySwipe.entrySign(step) * DaySwipe.pickTravel
-            leavingOpacity = 0
+            leavingOpacity = DaySwipe.handoverOpacity
         } completion: {
             onSelect(target)
             Task {
@@ -223,7 +226,7 @@ private struct DaySwipeModifier: ViewModifier {
         // Swiped or picked, the new day fades in from a short step on its side of time.
         arrival = reduceMotion
             ? DayArrival(offset: 0, opacity: 0)
-            : DayArrival(offset: DaySwipe.entrySign(step) * DaySwipe.pickTravel, opacity: 0)
+            : DayArrival(offset: DaySwipe.entrySign(step) * DaySwipe.pickTravel, opacity: DaySwipe.handoverOpacity)
 
         arrivals += 1
     }
