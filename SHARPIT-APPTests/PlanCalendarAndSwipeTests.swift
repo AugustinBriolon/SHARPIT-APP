@@ -162,6 +162,20 @@ import Testing
 }
 
 @Suite struct DaySwipeTests {
+    /// Two quick swipes the same way: the first turn's late fallback must not pull the second
+    /// page back home mid-flight.
+    @Test func aTurnsFallbackNeverActsOnTheNextTurn() {
+        var ledger = DaySwipe.TurnLedger()
+        let first = ledger.commit()
+        ledger.arrived()
+        let second = ledger.commit()
+
+        #expect(!ledger.isPending(first))
+        #expect(ledger.isPending(second))
+        ledger.arrived()
+        #expect(!ledger.isPending(second))
+    }
+
     @Test func theLeftEdgeStaysBack() {
         #expect(DaySwipe.step(startX: 10, translation: CGSize(width: 200, height: 0)) == nil)
     }

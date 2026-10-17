@@ -96,6 +96,25 @@ nonisolated enum DaySwipe {
         return target
     }
 
+    /// Each committed turn gets its own number, so a turn's late fallback never acts on the next
+    /// one: two quick swipes the same way share a step, and matching on the step let the first
+    /// turn's fallback pull the second page back mid-flight.
+    struct TurnLedger: Equatable {
+        private(set) var current = 0
+        private(set) var pending: Int?
+
+        mutating func commit() -> Int {
+            current += 1
+            pending = current
+            return current
+        }
+
+        mutating func arrived() { pending = nil }
+
+        /// Whether a fallback started for `turn` still owns the page.
+        func isPending(_ turn: Int) -> Bool { pending == turn }
+    }
+
     /// The day after comes in from the right (the trailing side), the day before from the left.
     static func entrySign(_ step: Step) -> CGFloat { step == .next ? 1 : -1 }
 
@@ -118,6 +137,7 @@ private struct DaySwipeModifier<Neighbor: View>: ViewModifier {
     @State private var width: CGFloat = 390
     /// The step a swipe committed to, until the day it asked for shows.
     @State private var pendingStep: DaySwipe.Step?
+    @State private var turns = DaySwipe.TurnLedger()
     /// A day picked in the strip or the calendar: a short nudge from its side of time.
     @State private var pickNudge: CGFloat = 0
     @State private var picks = 0
@@ -195,6 +215,7 @@ private struct DaySwipeModifier<Neighbor: View>: ViewModifier {
         }
 
         pendingStep = step
+        let turn = turns.commit()
         // The page beside comes the rest of the way at the finger's speed.
         let destination = DaySwipe.pageOffset(for: step, width: width)
         let remaining = abs(destination - released)
@@ -207,7 +228,8 @@ private struct DaySwipeModifier<Neighbor: View>: ViewModifier {
             Task {
                 // A day that never comes (refused, or the screen moved on) gives the page back.
                 try? await Task.sleep(for: .milliseconds(800))
-                guard pendingStep == step else { return }
+                guard turns.isPending(turn) else { return }
+                turns.arrived()
                 pendingStep = nil
                 withAnimation(SharpitMotion.reveal) { restingOffset = 0 }
             }
@@ -217,6 +239,7 @@ private struct DaySwipeModifier<Neighbor: View>: ViewModifier {
     private func arrive(from old: Date, to new: Date) {
         let swiped = pendingStep
         pendingStep = nil
+        turns.arrived()
         // Swiped: the page beside is already in place — it becomes the page, nothing moves.
         var still = Transaction()
         still.disablesAnimations = true
