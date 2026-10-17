@@ -36,6 +36,8 @@ nonisolated struct ActivityDiskCache: Sendable {
 
     func write(_ data: Data, _ kind: Kind, id: String) {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        // On the directory, so atomic writes inside it stay excluded.
+        BackupExclusion.exclude(directory)
         // UntilFirstUserAuthentication — Complete would blank locked-screen widgets.
         try? data.write(
             to: fileURL(kind, id: id),

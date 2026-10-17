@@ -89,9 +89,12 @@ enum SharpitPersistence {
     /// Never iCloud: every model holds health-derived data — sleep, weight, recovery, the
     /// athlete's own journal answers — and Apple forbids storing HealthKit data in iCloud
     /// (`docs/adr/0009`). The cache is only a cache: every write goes to `/api`, and the
-    /// server's echo overwrites it.
+    /// server's echo overwrites it. Nor the device backup, for the same reason (`docs/adr/0017`).
     static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
-        try ModelContainer(for: schema, configurations: [configuration(inMemory: inMemory)])
+        let configuration = configuration(inMemory: inMemory)
+        let container = try ModelContainer(for: schema, configurations: [configuration])
+        if !inMemory { BackupExclusion.excludeStore(at: configuration.url) }
+        return container
     }
 
     static let schema = Schema([TodayDaySnapshot.self, JournalDaySnapshot.self, CachedResponse.self])

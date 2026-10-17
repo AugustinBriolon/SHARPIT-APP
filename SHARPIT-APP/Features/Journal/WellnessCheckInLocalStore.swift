@@ -3,7 +3,8 @@ import Foundation
 /// Draft + « Plus tard » dismissal for the Résumé « Ressenti du jour » half-sheet.
 ///
 /// Stored in Application Support with
-/// `FileProtectionType.completeUntilFirstUserAuthentication` — never UserDefaults.
+/// `FileProtectionType.completeUntilFirstUserAuthentication`, excluded from backups — never
+/// UserDefaults.
 /// Cleared after a successful save and on sign-out (`LocalAccountData.erase`).
 nonisolated struct WellnessCheckInLocalStore: Sendable {
     struct Draft: Codable, Equatable, Sendable {
@@ -93,6 +94,7 @@ nonisolated struct WellnessCheckInLocalStore: Sendable {
                 to: fileURL,
                 options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
             )
+            BackupExclusion.exclude(fileURL)
         } catch {
             // Local convenience only — a failed write must never block the sheet.
         }
