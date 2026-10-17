@@ -68,16 +68,11 @@ import Testing
         #expect(!defaults.bool(forKey: AppleCalendarSync.legacyMigrationDoneKey))
     }
 
-    @Test func writeRunsOnlyWhenAppleCalendarIsPrimary() {
-        let connected = ["google", "apple-calendar"]
-        let primaryApple = V1SourcePrefs(classes: [
-            "calendar": V1ClassSources(primary: "apple-calendar", enabled: ["google", "apple-calendar"]),
-        ])
-        let primaryGoogle = V1SourcePrefs(classes: [
-            "calendar": V1ClassSources(primary: "google", enabled: ["google", "apple-calendar"]),
-        ])
-        #expect(AppleCalendarSync.shouldWrite(prefs: primaryApple, connected: connected))
-        #expect(!AppleCalendarSync.shouldWrite(prefs: primaryGoogle, connected: connected))
+    @Test func writeRunsAsSoonAsAppleCalendarIsLinked() {
+        #expect(AppleCalendarSync.shouldWrite(connected: ["apple-calendar"]))
+        #expect(AppleCalendarSync.shouldWrite(connected: ["google", "apple-calendar"]))
+        #expect(!AppleCalendarSync.shouldWrite(connected: ["google"]))
+        #expect(!AppleCalendarSync.shouldWrite(connected: []))
     }
 
     @Test func busyUploadRunsWhenAppleCalendarEnabledNotOnlyWhenPrimary() {
@@ -85,7 +80,6 @@ import Testing
         let primaryGoogle = V1SourcePrefs(classes: [
             "calendar": V1ClassSources(primary: "google", enabled: ["google", "apple-calendar"]),
         ])
-        #expect(!AppleCalendarSync.shouldWrite(prefs: primaryGoogle, connected: connected))
         #expect(AppleCalendarSync.shouldUploadBusy(prefs: primaryGoogle, connected: connected))
         #expect(!AppleCalendarSync.shouldUploadBusy(
             prefs: V1SourcePrefs(classes: [

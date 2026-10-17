@@ -13,6 +13,8 @@ final class AppleCalendarSource {
 
     private(set) var isLinked: Bool = false
     private(set) var state: State = .idle
+    /// Bumped each time the server took a link, so the app writes the plan right away.
+    private(set) var linkRevision = 0
 
     private let sync: AppleCalendarSync
     private let client: any AppleCalendarLinking
@@ -51,6 +53,7 @@ final class AppleCalendarSource {
         state = .idle
         do {
             try await link(true, token: token)
+            linkRevision += 1
         } catch {
             setLinked(false)
             state = .failed("Connexion Calendrier Apple impossible.")
@@ -92,5 +95,6 @@ final class AppleCalendarSource {
     /// After one-time migration from Paramètres › Calendrier de l'iPhone.
     func adoptLegacyMigration() {
         setLinked(true)
+        linkRevision += 1
     }
 }

@@ -4,7 +4,7 @@ Date: 2026-10-05
 
 ## Status
 
-Accepted
+Accepted — calendar part superseded by [0016](0016-the-calendar-copy-is-free-once-apple-calendar-is-linked.md)
 
 ## Context
 

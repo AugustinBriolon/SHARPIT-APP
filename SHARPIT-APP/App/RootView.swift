@@ -194,6 +194,8 @@ struct RootView: View {
         }
         // The plan changed elsewhere (a coach proposal carried out): the reminders follow it.
         .onChange(of: router.calendarRevision) { _, _ in Task { await refreshSessionReminders() } }
+        // Just linked: the plan lands in the calendar now, not at the next return to the app.
+        .onChange(of: appleCalendar.linkRevision) { _, _ in Task { await refreshAppleCalendar() } }
         .onChange(of: pushManager.deviceToken) { _, newToken in
             if newToken != nil {
                 Task {
@@ -232,9 +234,12 @@ struct RootView: View {
             plan: plannedSessionClient,
             tokenProvider: liveToken
         )
-        // Apple Calendar: busy when enabled; EventKit write when Pro and primary.
+        await refreshAppleCalendar()
+    }
+
+    /// Apple Calendar: busy when enabled; plan sessions written as soon as it is linked (ADR 0016).
+    private func refreshAppleCalendar() async {
         await AppleCalendarSync.shared.refresh(
-            isPro: pro?.isPro ?? false,
             plan: plannedSessionClient,
             tokenProvider: liveToken,
             sourcePrefsClient: sharpitClient,

@@ -61,4 +61,28 @@ import Testing
         #expect(!source.isLinked)
         #expect(source.state == .idle)
     }
+
+    @Test @MainActor func linkBumpsRevisionOnlyWhenTheServerTookIt() async throws {
+        let suite = "apple-calendar-link-revision"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+
+        final class FlakyLink: AppleCalendarLinking, @unchecked Sendable {
+            var fails = false
+            func linkAppleCalendar(_ linked: Bool, token: String) async throws {
+                if fails { throw URLError(.badServerResponse) }
+            }
+        }
+        let client = FlakyLink()
+        let sync = AppleCalendarSync(defaults: defaults, accessRequest: { true })
+        let source = AppleCalendarSource(sync: sync, client: client, defaults: defaults)
+        source.bind(userId: "u1")
+
+        await source.enable(token: { "tok" })
+        #expect(source.linkRevision == 1)
+
+        client.fails = true
+        await source.enable(token: { "tok" })
+        #expect(source.linkRevision == 1)
+    }
 }

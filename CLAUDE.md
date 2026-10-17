@@ -140,9 +140,10 @@ fields it had not been given once wiped an athlete's thresholds on a one-field s
 never the athlete's own data, with one exception the athlete chose (`docs/adr/0011`): the extra
 widgets (Sommeil, Poids, Volume, Régularité, Prochain objectif) are Pro — `ProStore` writes the tier
 into the snapshot, a locked widget draws `WidgetProLocked`. The plan's copy into the iPhone's
-Calendar is Pro too (`PlanCalendarSync`, Paramètres › Calendrier de l'iPhone: a « SharpIt »
-calendar made equal to the next 21 days of the plan on the reminders' beats, events keyed by
-`sharpit://plan/session/<id>`, the calendar removed when turned off). `SharpitProTeaser` stands where such a feature would sit below Pro
+Calendar is free (`docs/adr/0016`, superseding 0011's calendar part): once Apple Calendar is linked,
+`AppleCalendarSync` makes the chosen calendar equal to the next 21 days of the plan — on link and on
+the reminders' beats (launch, foreground, `calendarRevision`), events keyed by
+`sharpit://plan/session/<id>`, the « SharpIt » calendar removed on unlink. `SharpitProTeaser` stands where such a feature would sit below Pro
 and opens `ProView`; the server decides, the app only reflects `pro_required`.
 
 **Native never calls `/api/presentation/*`** — see SHARPIT ADR-040. The web presentation

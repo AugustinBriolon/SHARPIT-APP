@@ -56,7 +56,7 @@ nonisolated enum PlanCalendarPlanner {
     }
 }
 
-/// Apple Calendar: busy upload when enabled; EventKit write when Pro and apple-calendar is primary.
+/// Apple Calendar: busy upload when enabled; EventKit write as soon as it is linked, for every athlete (ADR 0016).
 @MainActor
 final class AppleCalendarSync {
     static let shared = AppleCalendarSync()
@@ -163,7 +163,6 @@ final class AppleCalendarSync {
     }
 
     func refresh(
-        isPro: Bool,
         plan: any PlannedSessionServing,
         tokenProvider: () async throws -> String,
         sourcePrefsClient: any SourcePrefsServing = SharpitClient(),
@@ -181,8 +180,7 @@ final class AppleCalendarSync {
             if Self.shouldUploadBusy(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) {
                 await uploadBusy(from: start, to: end, client: busyClient, token: token)
             }
-            guard isPro else { return }
-            guard Self.shouldWrite(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) else { return }
+            guard Self.shouldWrite(connected: prefsAnswer.connected) else { return }
             guard let sessionWriter else { return }
             _ = try? await calendarLinker?.linkAppleCalendar(true, token: token)
             var sessions = try await plan.plannedSessions(from: start, to: end, token: token)
@@ -221,11 +219,9 @@ final class AppleCalendarSync {
         }
     }
 
-    static func shouldWrite(prefs: V1SourcePrefs, connected: [String]) -> Bool {
-        guard connected.contains(providerId) else { return false }
-        let slot = prefs.sources(for: calendarClassId)
-        guard slot.enabled.contains(providerId) else { return false }
-        return slot.primary == providerId
+    /// Linked is enough: no Pro, no primary — the plan is the athlete's own data (ADR 0016).
+    static func shouldWrite(connected: [String]) -> Bool {
+        connected.contains(providerId)
     }
 
     static func shouldUploadBusy(prefs: V1SourcePrefs, connected: [String]) -> Bool {
