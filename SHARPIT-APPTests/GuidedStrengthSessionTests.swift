@@ -266,3 +266,10 @@ import Testing
     #expect(draft.exercises[0].weightKg == nil)
     #expect(draft.exercises[0].reps == 0)
 }
+
+@Test func theVolumeTemplateIsAsWideAsAnyFiveDigitVolume() {
+    let template = GuidedStrengthSetTarget.volumeFigureTemplate
+    #expect(template.count == GuidedStrengthSetTarget.volumeFigure(12_345).count)
+    #expect(GuidedStrengthSetTarget.volumeFigure(640).count < template.count)
+    #expect(GuidedStrengthSetTarget.volumeFigure(3_200).count < template.count)
+}

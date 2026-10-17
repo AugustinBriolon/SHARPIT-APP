@@ -72,6 +72,9 @@ struct GuidedStrengthSetTarget: Identifiable, Equatable, Sendable {
         formatter.maximumFractionDigits = 0
         return formatter.string(from: NSNumber(value: value.rounded())) ?? "\(Int(value.rounded()))"
     }
+
+    /// Widest volume a session reaches (5 digits); the views reserve its width so the column holds.
+    static let volumeFigureTemplate = volumeFigure(88_888)
 }
 
 /// One exercise block in the session overview / detail card.

@@ -17,7 +17,8 @@ struct GuidedStrengthWorkoutView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var phase: Phase = .overview
-    @State private var focusedExercise: String?
+    /// Pushed pages over the overview — the system push/pop and its edge swipe.
+    @State private var path: [Route] = []
     @State private var restEndsAt: Date?
     @State private var restTotal = 0
     @State private var restPaused = false
@@ -33,8 +34,6 @@ struct GuidedStrengthWorkoutView: View {
     @State private var weightDraft: [UUID: String] = [:]
     @State private var durationDraft: [UUID: String] = [:]
     @FocusState private var focusedField: FieldFocus?
-    /// Interactive-pop drag from the leading edge (exercise / rest → overview).
-    @State private var edgeBackOffset: CGFloat = 0
     @StateObject private var heartRate = GuidedHeartRateMonitor()
     @State private var showingHeartRatePicker = false
 
@@ -46,14 +45,20 @@ struct GuidedStrengthWorkoutView: View {
 
     private enum Phase: Equatable {
         case overview
-        case exercise
-        case resting
         case summary
     }
 
-    private var canEdgePopBack: Bool {
-        phase == .exercise || phase == .resting
+    private enum Route: Hashable {
+        case exercise(String)
+        case rest
     }
+
+    private var focusedExercise: String? {
+        guard case let .exercise(name) = path.last else { return nil }
+        return name
+    }
+
+    private var isResting: Bool { path.last == .rest }
 
     init(session: GuidedStrengthSession, finish: GuidedStrengthFinishContext) {
         _session = State(initialValue: session)
@@ -61,39 +66,33 @@ struct GuidedStrengthWorkoutView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 switch phase {
                 case .overview:
                     overviewPage
-                        .transition(Self.overviewTransition)
-                case .exercise:
-                    if let name = focusedExercise {
-                        exercisePage(name: name)
-                            .id(name)
-                            .transition(Self.exerciseTransition)
-                    } else {
-                        overviewPage
-                            .transition(Self.overviewTransition)
-                    }
-                case .resting:
-                    restPage
-                        .transition(Self.exerciseTransition)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
                 case .summary:
                     summaryPage
                         .transition(.opacity)
                 }
             }
-            .offset(x: canEdgePopBack ? edgeBackOffset : 0)
             .animation(SharpitMotion.reveal, value: phase)
-            .animation(SharpitMotion.reveal, value: focusedExercise)
             .background(SharpitCanvasBackground())
-            .navigationTitle(phase == .overview || phase == .summary ? session.title : "")
+            .navigationTitle(session.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
-            .overlay(alignment: .leading) {
-                if canEdgePopBack {
-                    edgeBackStrip
+            .navigationDestination(for: Route.self) { route in
+                Group {
+                    switch route {
+                    case let .exercise(name): exercisePage(name: name)
+                    case .rest: restPage
+                    }
+                }
+                .background(SharpitCanvasBackground())
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .principal) { sessionStatus }
                 }
             }
         }
@@ -122,7 +121,13 @@ struct GuidedStrengthWorkoutView: View {
             }
         }
         .onChange(of: phase) { _, _ in publishLiveActivityIfNeeded() }
-        .onChange(of: focusedExercise) { _, _ in publishLiveActivityIfNeeded() }
+        .onChange(of: path) { old, new in
+            // Back from the rest page (button or edge swipe) ends the rest, as before.
+            if old.last == .rest, new.last != .rest, restEndsAt != nil || restPaused {
+                stopRest()
+            }
+            publishLiveActivityIfNeeded()
+        }
     }
 
     /// Absolute rest end → displayed seconds (paused freezes the value).
@@ -135,36 +140,22 @@ struct GuidedStrengthWorkoutView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            if phase == .exercise || phase == .resting {
-                Button {
-                    goBackToOverview()
-                } label: {
-                    Label("Séance", systemImage: "chevron.backward")
-                        .labelStyle(.titleAndIcon)
-                }
-            } else {
-                // Menu (not confirmationDialog): opens from Quitter instead of page center.
-                Menu {
-                    Section("Les séries cochées ne seront pas enregistrées") {
-                        Button("Quitter sans enregistrer", role: .destructive) {
-                            stopTimers()
-                            dismiss()
-                        }
+            // Menu (not confirmationDialog): opens from Quitter instead of page center.
+            Menu {
+                Section("Les séries cochées ne seront pas enregistrées") {
+                    Button("Quitter sans enregistrer", role: .destructive) {
+                        stopTimers()
+                        dismiss()
                     }
-                } label: {
-                    Text("Quitter")
                 }
-                .tint(SharpitColor.destructive)
-                .disabled(isSaving)
+            } label: {
+                Text("Quitter")
             }
+            .tint(SharpitColor.destructive)
+            .disabled(isSaving)
         }
-        if phase == .overview || phase == .exercise || phase == .resting {
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: SharpitSpacing.sm) {
-                    sessionHeartRateChip
-                    sessionElapsedClock
-                }
-            }
+        if phase == .overview {
+            ToolbarItem(placement: .principal) { sessionStatus }
         }
         // Only on the session overview — never on a single exercise's sets.
         if phase == .overview {
@@ -175,6 +166,13 @@ struct GuidedStrengthWorkoutView: View {
                 }
                 .disabled(session.completedCount == 0)
             }
+        }
+    }
+
+    private var sessionStatus: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            sessionHeartRateChip
+            sessionElapsedClock
         }
     }
 
@@ -314,12 +312,7 @@ struct GuidedStrengthWorkoutView: View {
         let done = group.doneCount(in: session.targets)
         let total = group.indices.count
         let volume = group.volumeKg(in: session.targets)
-        return Button {
-            SharpitMotion.run {
-                focusedExercise = group.name
-                phase = .exercise
-            }
-        } label: {
+        return NavigationLink(value: Route.exercise(group.name)) {
             HStack(spacing: SharpitSpacing.sm) {
                 if let thumb = ExerciseMediaCatalog.thumbURL(
                     catalogId: group.exerciseCatalogId,
@@ -347,7 +340,7 @@ struct GuidedStrengthWorkoutView: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize()
                 if volume > 0 {
-                    SharpitRowFigure(value: GuidedStrengthSetTarget.volumeFigure(volume), unit: "kg")
+                    volumeFigure(volume)
                 }
             }
             .padding(.horizontal, SharpitSpacing.rowPaddingX)
@@ -358,16 +351,21 @@ struct GuidedStrengthWorkoutView: View {
         .buttonStyle(.sharpitPressable)
     }
 
-    // MARK: - Exercise card (image 1)
+    /// Trailing volume, width reserved for the widest figure so 3–5 digits never move the row.
+    private func volumeFigure(_ volume: Double) -> some View {
+        ZStack(alignment: .trailing) {
+            SharpitRowFigure(value: GuidedStrengthSetTarget.volumeFigureTemplate, unit: "kg")
+                .hidden()
+            SharpitRowFigure(
+                value: volume > 0 ? GuidedStrengthSetTarget.volumeFigure(volume) : "—",
+                unit: volume > 0 ? "kg" : nil
+            )
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kilogrammes" : "Aucun volume")
+    }
 
-    private static let overviewTransition = AnyTransition.asymmetric(
-        insertion: .move(edge: .leading).combined(with: .opacity),
-        removal: .move(edge: .leading).combined(with: .opacity)
-    )
-    private static let exerciseTransition = AnyTransition.asymmetric(
-        insertion: .move(edge: .trailing).combined(with: .opacity),
-        removal: .move(edge: .trailing).combined(with: .opacity)
-    )
+    // MARK: - Exercise card (image 1)
 
     private func exercisePage(name: String) -> some View {
         let group = session.exerciseGroups.first { $0.name == name }
@@ -409,10 +407,7 @@ struct GuidedStrengthWorkoutView: View {
                             Text("Volume")
                                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                                 .foregroundStyle(SharpitColor.mutedForeground)
-                            SharpitRowFigure(
-                                value: volume > 0 ? GuidedStrengthSetTarget.volumeFigure(volume) : "—",
-                                unit: volume > 0 ? "kg" : nil
-                            )
+                            volumeFigure(volume)
                         }
                     }
                 }
@@ -693,7 +688,7 @@ struct GuidedStrengthWorkoutView: View {
                                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
                                     .foregroundStyle(SharpitColor.mutedForeground)
                                 if volume > 0 {
-                                    SharpitRowFigure(value: GuidedStrengthSetTarget.volumeFigure(volume), unit: "kg")
+                                    volumeFigure(volume)
                                 }
                             }
                         }
@@ -745,42 +740,6 @@ struct GuidedStrengthWorkoutView: View {
                 .frame(height: SharpitTokens.barThickness)
             // Full-width ticks — finger tracks 1:1 across the scale (Apple direct manipulation).
             GuidedRPEScale(value: $rpe)
-        }
-    }
-
-    /// Leading-edge strip — same idea as iOS interactive pop, without fighting the set List.
-    private var edgeBackStrip: some View {
-        Color.clear
-            .frame(width: 22)
-            .frame(maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .highPriorityGesture(
-                DragGesture(minimumDistance: 8, coordinateSpace: .global)
-                    .onChanged { value in
-                        let dx = max(0, value.translation.width)
-                        // Soft rubber past ~120pt so the page resists instead of flying off.
-                        edgeBackOffset = dx < 120 ? dx : 120 + (dx - 120) * 0.25
-                    }
-                    .onEnded { value in
-                        let projected = value.translation.width + value.predictedEndTranslation.width * 0.35
-                        let shouldPop = value.translation.width > 72 || projected > 140
-                        if shouldPop {
-                            edgeBackOffset = 0
-                            goBackToOverview()
-                        } else {
-                            withAnimation(SharpitMotion.selection) { edgeBackOffset = 0 }
-                        }
-                    }
-            )
-            .accessibilityHidden(true)
-    }
-
-    private func goBackToOverview() {
-        SharpitMotion.run {
-            focusedExercise = nil
-            stopRest()
-            phase = .overview
-            edgeBackOffset = 0
         }
     }
 
@@ -889,13 +848,13 @@ struct GuidedStrengthWorkoutView: View {
     }
 
     private func syncRestIfExpired() {
-        guard phase == .resting, !restPaused else { return }
+        guard isResting, !restPaused else { return }
         guard let endsAt = restEndsAt, endsAt.timeIntervalSinceNow <= 0 else { return }
         finishRestCountdown()
     }
 
     private func finishRestCountdown() {
-        guard phase == .resting else { return }
+        guard isResting else { return }
         AudioServicesPlaySystemSound(1005)
         SharpitHaptics.play(.notch(major: true))
         endRest()
@@ -903,14 +862,7 @@ struct GuidedStrengthWorkoutView: View {
 
     private func endRest() {
         stopRest()
-        SharpitMotion.run {
-            if let current = session.current {
-                focusedExercise = current.exerciseName
-                phase = .exercise
-            } else {
-                phase = .overview
-            }
-        }
+        path = session.current.map { [.exercise($0.exerciseName)] } ?? []
     }
 
     private func stopRest(keepingLiveActivity: Bool = true) {
@@ -931,8 +883,8 @@ struct GuidedStrengthWorkoutView: View {
     }
 
     private func publishLiveActivityIfNeeded(forceActive: Bool = false) {
-        guard phase == .overview || phase == .exercise || phase == .resting else { return }
-        if phase == .resting, !forceActive, restEndsAt != nil || restPaused { return }
+        guard phase == .overview else { return }
+        if isResting, !forceActive, restEndsAt != nil || restPaused { return }
 
         let focus = focusedExercise
         let current = session.current
