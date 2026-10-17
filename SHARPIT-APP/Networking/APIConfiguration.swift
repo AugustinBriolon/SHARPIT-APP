@@ -4,7 +4,7 @@ enum APIConfiguration {
     /// Environment variable read at launch, so the origin can be switched from the Xcode
     /// scheme (Run → Arguments → Environment Variables) without editing or rebuilding.
     ///
-    /// It only exists when Xcode launches the app. A build opened from the home screen or
+    /// Debug builds only. It only exists when Xcode launches the app. A build opened from the home screen or
     /// from TestFlight has no such variable, which is why the build carries its own origin.
     private nonisolated static let originVariable = "SHARPIT_API_ORIGIN"
 
@@ -48,11 +48,25 @@ enum APIConfiguration {
         bundleValue.flatMap(origin(from:))
     }
 
-    /// The scheme override wins, then the build's own origin. A value that is not a usable
-    /// origin is skipped rather than trusted, so a typo in the scheme falls back to the
-    /// build instead of aiming every request at nothing.
-    nonisolated static func resolve(environment: [String: String], bundleValue: String?) -> URL? {
-        [environment[originVariable], bundleValue]
+    /// Only a Debug build honours the scheme override: a Release binary must never be pointed
+    /// at another origin — and handed the athlete's session token — by its launch environment.
+    nonisolated static let honoursOriginOverride: Bool = {
+        #if DEBUG
+        true
+        #else
+        false
+        #endif
+    }()
+
+    /// The scheme override wins (Debug only), then the build's own origin. A value that is not
+    /// a usable origin is skipped rather than trusted, so a typo in the scheme falls back to
+    /// the build instead of aiming every request at nothing.
+    nonisolated static func resolve(
+        environment: [String: String],
+        bundleValue: String?,
+        honoursOverride: Bool = honoursOriginOverride
+    ) -> URL? {
+        [honoursOverride ? environment[originVariable] : nil, bundleValue]
             .compactMap { $0 }
             .lazy
             .compactMap(origin(from:))

@@ -13,6 +13,15 @@ struct APIConfigurationTests {
         #expect(url?.absoluteString == "https://preview.example.app")
     }
 
+    @Test func releaseIgnoresTheSchemeOverride() {
+        let url = APIConfiguration.resolve(
+            environment: [scheme: "https://attacker.example"],
+            bundleValue: "https://sharpit.app",
+            honoursOverride: false
+        )
+        #expect(url?.absoluteString == "https://sharpit.app")
+    }
+
     @Test func buildOriginIsUsedWhenNothingOverridesIt() {
         let url = APIConfiguration.resolve(environment: [:], bundleValue: "https://sharpit.app")
         #expect(url?.absoluteString == "https://sharpit.app")
