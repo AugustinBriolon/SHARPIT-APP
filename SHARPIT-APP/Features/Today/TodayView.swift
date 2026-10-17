@@ -25,6 +25,7 @@ struct TodayView: View {
     /// Today's food log for the nutrition card. Nil without a token or a client.
     @State private var nutrition: NutritionTodayStore?
     @State private var showsCheckIn = false
+    @State private var showsDayPicker = false
     /// True while an optimistic Ressenti save waits on the server — blocks re-prompting.
     @State private var ressentiPendingConfirmation = false
     /// Shown when the sheet reopens after a failed optimistic save.
@@ -103,7 +104,7 @@ struct TodayView: View {
                                 }
                             }
                         },
-                        onCheckIn: (wellnessClient != nil && tokenProvider != nil) ? { showsCheckIn = true } : nil,
+                        onCheckIn: (wellnessClient != nil && tokenProvider != nil && store.isToday) ? { showsCheckIn = true } : nil,
                         controls: AnyView(controlsRow),
                         activityStatusStore: activityStatusStore
                     )
@@ -132,16 +133,58 @@ struct TodayView: View {
             // on Corps. The avatar sits in the bar.
             .navigationTitle(store.navigationTitle)
             .navigationBarTitleDisplayMode(.large)
+            // The date opens another day, as Plan's and Journal's do (HIG title menu).
+            .toolbarTitleMenu {
+                if !store.isToday {
+                    Button("Aujourd'hui", systemImage: "sun.max") { openDay(.now) }
+                }
+                if let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now),
+                   TrainingDayId.today(now: yesterday) != store.dayId {
+                    Button("Hier", systemImage: "moon") { openDay(yesterday) }
+                }
+                Button("Choisir un jour…", systemImage: "calendar") { showsDayPicker = true }
+            }
+            .sheet(isPresented: $showsDayPicker) {
+                let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
+                SharpitCalendarSheet(
+                    title: "Résumé",
+                    initial: TrainingDayId.date(store.dayId) ?? .now,
+                    weeks: weeks,
+                    range: weeks.selectableDates.lowerBound...Date.now,
+                    onPick: openDay,
+                    onToday: { openDay(.now) }
+                )
+            }
             .modifier(LiquidNavChrome())
             .sharpitSyncToast(sync)
             .toolbar {
+                // The large title as a button: the title menu only shows once it folds inline.
+                if #available(iOS 26.0, *) {
+                    ToolbarItem(placement: .largeTitle) {
+                        Button { showsDayPicker = true } label: {
+                            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                                Text(store.navigationTitle)
+                                    .font(SharpitTypography.screenTitle)
+                                    .tracking(SharpitTypography.screenTitleTracking)
+                                Image(systemName: "chevron.down")
+                                    .font(SharpitTypography.sectionTitle)
+                                    .foregroundStyle(SharpitColor.mutedForeground)
+                            }
+                            .foregroundStyle(SharpitColor.foreground)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Choisir un autre jour")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     AccountAvatarButton { router.openSettings() }
                 }
             }
             .refreshable {
                 await store.refresh()
-                await nutrition?.load(trainingDayId: TrainingDayId.today(now: .now))
+                await nutrition?.load(trainingDayId: store.dayId)
                 weather.start()
                 // The pull can take a minute; the gesture ends on what the server has now,
                 // and the screen reloads once the providers have answered.
@@ -222,7 +265,7 @@ struct TodayView: View {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
                 // The food log is read alongside today rather than once the fold is drawn, so
                 // the nutrition card no longer waits on the whole day before asking for its own.
-                async let nutritionRead: Void? = nutrition?.load(trainingDayId: TrainingDayId.today(now: .now))
+                async let nutritionRead: Void? = nutrition?.load(trainingDayId: store.dayId)
                 await store.load(resetToLoading: shouldReset)
                 Task { await pullProviders(force: false) }
                 weather.start()
@@ -269,6 +312,14 @@ extension TodayView {
 
     /// Server is the source of truth: present the half-sheet only when today's check-in
     /// is missing and the athlete has not dismissed it for this local day.
+    fileprivate func openDay(_ day: Date) {
+        showsDayPicker = false
+        Task {
+            await store.select(day: day)
+            await nutrition?.load(trainingDayId: store.dayId)
+        }
+    }
+
     fileprivate var overnightGauges: [OvernightGaugeModel] {
         if case .loaded(let fold) = store.phase { return fold.gauges }
         return []
@@ -276,7 +327,7 @@ extension TodayView {
 
     @MainActor
     fileprivate func evaluateRessentiPrompt() async {
-        guard !showsCheckIn, !ressentiPendingConfirmation else { return }
+        guard !showsCheckIn, !ressentiPendingConfirmation, store.isToday else { return }
         guard RessentiPromptTiming.isDue(now: .now, hasLastNightSleep: RessentiPromptTiming.hasLastNightSleep(overnightGauges)) else { return }
         guard let wellnessClient, let tokenProvider, let athleteId = localAthleteId else { return }
         do {
@@ -332,7 +383,7 @@ extension TodayView {
         if pulled {
             await store.refresh()
             // The food log came in with the pull: the nutrition card reads it only now.
-            await nutrition?.load(trainingDayId: TrainingDayId.today(now: .now))
+            await nutrition?.load(trainingDayId: store.dayId)
         }
     }
 }

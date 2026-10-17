@@ -75,3 +75,32 @@ private struct StubTodayClient: TodayServing {
         return
     }
 }
+
+private actor RequestedDays {
+    var ids: [String] = []
+    func note(_ id: String) { ids.append(id) }
+}
+
+private struct RecordingTodayClient: TodayServing {
+    let days: RequestedDays
+
+    func today(trainingDayId: String, token: String) async throws -> V1TodayResponse {
+        await days.note(trainingDayId)
+        return try await FixtureTodayClient().today(trainingDayId: trainingDayId, token: token)
+    }
+}
+
+@MainActor
+@Test func aPickedDayIsReadThenTodayFollowsTodayAgain() async throws {
+    let days = RequestedDays()
+    let store = TodayStore(client: RecordingTodayClient(days: days), tokenProvider: { "token" })
+    let yesterday = try #require(Calendar.current.date(byAdding: .day, value: -1, to: .now))
+
+    await store.select(day: yesterday)
+    #expect(!store.isToday)
+    #expect(store.dayId == TrainingDayId.today(now: yesterday))
+
+    await store.select(day: .now)
+    #expect(store.isToday)
+    #expect(await days.ids == [TrainingDayId.today(now: yesterday), TrainingDayId.today()])
+}

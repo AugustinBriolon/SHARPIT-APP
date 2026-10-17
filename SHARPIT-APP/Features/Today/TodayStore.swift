@@ -18,6 +18,11 @@ final class TodayStore {
     var pulseScores = false
     var sessionDoneCelebrations: Set<String> = []
     var hasCompletedArrival = false
+    /// A past day the athlete opened from the title; nil follows today, midnight included.
+    private(set) var selectedDayId: String?
+
+    var dayId: String { selectedDayId ?? TrainingDayId.today() }
+    var isToday: Bool { selectedDayId == nil }
 
     func markArrivalCompleted() {
         hasCompletedArrival = true
@@ -90,8 +95,17 @@ final class TodayStore {
         return "Résumé"
     }
 
+    /// Reads another day; today's date goes back to following today.
+    func select(day: Date) async {
+        let picked = TrainingDayId.today(now: day)
+        let next = picked == TrainingDayId.today() ? nil : picked
+        guard next != selectedDayId else { return }
+        selectedDayId = next
+        await load(resetToLoading: true, force: true)
+    }
+
     func load(resetToLoading: Bool, force: Bool = false) async {
-        let dayId = TrainingDayId.today()
+        let dayId = self.dayId
         let hadCache = hydrateFromSnapshotIfNeeded(dayId: dayId, resetToLoading: resetToLoading)
 
         // Never send `Authorization: Bearer ` with an empty token. Without a provider the
@@ -212,7 +226,10 @@ final class TodayStore {
             } else {
                 phase = .loaded(fold)
             }
-            WidgetSnapshotPublisher.publish(fold)
+            // A past day opened from the title is not what the widgets show.
+            if fold.trainingDayId == TrainingDayId.today() {
+                WidgetSnapshotPublisher.publish(fold)
+            }
         case .empty(let empty):
             phase = .empty(empty)
         case .failed(let message):
