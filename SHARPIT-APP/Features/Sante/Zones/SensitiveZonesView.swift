@@ -546,6 +546,8 @@ private struct ZoneSeverityChart: View {
 
 /// Every point, newest first: readings, and the status changes between them.
 private struct ZoneTimeline: View {
+    /// Grows with the text: a fixed 64 pt broke the date inside its words at the largest sizes.
+    @ScaledMetric(relativeTo: .footnote) private var dateWidth: CGFloat = 64
     let entries: [V1ZoneTimelineEntry]
     @State private var showsAll = false
 
@@ -583,7 +585,7 @@ private struct ZoneTimeline: View {
                 .font(SharpitTypography.meta)
                 .monospacedDigit()
                 .foregroundStyle(SharpitColor.mutedForeground)
-                .frame(width: 64, alignment: .leading)
+                .frame(width: dateWidth, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.label)
                     .font(entry.kind == .status ? SharpitTypography.bodyEmphasis : SharpitTypography.body)

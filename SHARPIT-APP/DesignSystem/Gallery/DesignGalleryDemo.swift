@@ -307,6 +307,31 @@ struct ScreenDemoHost: View {
                         )
                     )
                 }
+            case "stress":
+                NavigationStack {
+                    ScrollView { StressDemo.cards }
+                        .background(SharpitCanvasBackground())
+                        .navigationTitle("Valeurs extrêmes")
+                }
+            case "stress-sleep":
+                if let sleep = StressDemo.sleep {
+                    NavigationStack {
+                        ScrollView { SleepSections(sleep: sleep) }
+                            .background(SharpitCanvasBackground())
+                            .navigationTitle("Sommeil")
+                    }
+                }
+            case "stress-strength":
+                if let session = StressDemo.strengthSession {
+                    GuidedStrengthWorkoutView(
+                        session: session,
+                        finish: GuidedStrengthFinishContext(
+                            client: ActivityClient(),
+                            linker: PlannedSessionClient(),
+                            tokenProvider: { "demo" }
+                        )
+                    )
+                }
             default:
                 TabView {
                     Tab("Résumé", systemImage: "sun.max") { TodayView() }
@@ -362,6 +387,103 @@ struct ScreenDemoHost: View {
         )
     }
 }
+/// The figures and words no screen was drawn for — a six-figure volume, a name that runs two
+/// lines, a night of 23 h, a streak of 999 weeks — to check in the simulator (iPhone mini, the
+/// largest Dynamic Type, dark) that nothing clips, overlaps or traps.
+/// `defaults write app.sharpit.ios SharpitScreenDemo stress|stress-sleep|stress-strength`.
+private enum StressDemo {
+    static let longName = "Développé couché prise serrée sur banc incliné à 30° avec chaînes et élastiques"
+
+    @MainActor static var cards: some View {
+        VStack(spacing: SharpitSpacing.md) {
+            ActivityStrengthSection(exercises: StrengthExerciseReadout.exercises(from: [
+                V1ActivityStrengthSet(exercise: longName, sets: 12, reps: 30, durationSec: nil, weightKg: 287.5),
+                V1ActivityStrengthSet(exercise: "Squat", sets: 10, reps: 10, durationSec: nil, weightKg: 1_250),
+                V1ActivityStrengthSet(exercise: "Gainage", sets: 99, reps: 0, durationSec: 5_400, weightKg: nil),
+                V1ActivityStrengthSet(exercise: "Tractions", sets: 3, reps: 12, durationSec: nil, weightKg: nil),
+            ]))
+            MorningProposalCard(
+                proposal: V1TodayMorningProposal(
+                    checkInDone: false,
+                    decisionId: "d", sessionId: "s", direction: .down,
+                    changeSummary: "Seuil raccourci de 2 h 30 à 45 min et passé en endurance fondamentale stricte",
+                    why: String(repeating: "Ta VFC est très sous ta moyenne, la nuit a été courte et ta charge aiguë dépasse ta charge chronique. ", count: 4),
+                    from: .init(intensityLabel: "Seuil anaérobie lactique", durationMin: 1_439, description: nil),
+                    to: .init(intensityLabel: "Endurance fondamentale", durationMin: 0, description: nil)
+                ),
+                onCheckIn: {},
+                onAnswer: { _ in }
+            )
+            ConsistencyStrip(
+                consistency: V1TodayConsistency(
+                    days: (0..<7).map { index in
+                        V1TodayConsistencyDay(
+                            date: "2026-10-\(13 + index)",
+                            weekdayLabel: ["L", "M", "M", "J", "V", "S", "D"][index],
+                            dayOfMonth: 13 + index,
+                            hasActivity: true,
+                            isToday: index == 6,
+                            isFuture: false
+                        )
+                    },
+                    thisWeekSessionCount: 99
+                ),
+                consecutiveWeeks: 999
+            ) {}
+            TodayTimelineStrip(events: [
+                V1DayTimelineEvent(kind: "wake", minuteOfDay: 0, title: "Réveil", detail: "23 h 59 de sommeil"),
+                V1DayTimelineEvent(kind: "session", minuteOfDay: 1, title: longName, detail: longName),
+                V1DayTimelineEvent(kind: "session", minuteOfDay: 1_439, title: "Fin de journée", detail: nil),
+            ])
+        }
+        .padding(SharpitSpacing.pageInset)
+    }
+
+    static var sleep: V1SleepResponse? {
+        let nights = (1...14).map { day in
+            #"{ "date": "2026-10-\#(String(format: "%02d", day))", "minutes": \#(day.isMultiple(of: 2) ? 0 : 1_439) }"#
+        }.joined(separator: ",")
+        let json = #"""
+        {
+          "apiVersion": 1, "trainingDayId": "2026-10-14", "nightStatus": "present", "empty": null,
+          "score": 100, "adequacy": { "key": "EXCELLENT", "label": "\#(longName)" },
+          "durationMin": 1439, "targetMin": 480, "targetDeltaMin": 959, "delta7dMin": -1200,
+          "stages": { "deepMin": 600, "remMin": 500, "lightMin": 300, "awakeMin": 39 },
+          "bedtimeMin": 0, "wakeMin": 1439,
+          "breakdown": { "durationScore": 100, "architectureScore": 0, "restorativeRatio": 1 },
+          "averages": { "score": 3, "durationMin": 1439, "deepPct": 99.9, "remPct": 0, "nights": 999 },
+          "regularityMin": 720, "recommendedBedtimeMin": 1439, "recommendedDurationMin": 1439,
+          "debt7Min": 9999, "debt14Min": 99999, "recoveryNote": "\#(longName)",
+          "history": [\#(nights)],
+          "insights": [{ "tone": "good", "title": "\#(longName)", "detail": "\#(longName) \#(longName)" }],
+          "confidencePct": 100
+        }
+        """#
+        return try? JSONDecoder().decode(V1SleepResponse.self, from: Data(json.utf8))
+    }
+
+    static var strengthSession: GuidedStrengthSession? {
+        func exercise(_ name: String, sets: Int, reps: Int, kg: Double, order: Int) -> JSONValue {
+            .object([
+                "exercise": .string(name), "sets": .number(Double(sets)), "reps": .number(Double(reps)),
+                "weightKg": .number(kg), "restSec": .number(600), "order": .number(Double(order)),
+            ])
+        }
+        return GuidedStrengthSession.make(
+            title: longName,
+            plannedSessionId: nil,
+            prescription: .object([
+                "version": .number(1),
+                "sets": .array([
+                    exercise(longName, sets: 12, reps: 100, kg: 287.5, order: 0),
+                    exercise("Squat", sets: 10, reps: 50, kg: 1_250, order: 1),
+                    exercise("Curl", sets: 1, reps: 1, kg: 0.5, order: 2),
+                ]),
+            ])
+        )
+    }
+}
+
 /// Records as the server would send them, dated around now so « Nouveau record » shows.
 private struct DemoRecords: RecordsServing {
     func records(token: String) async throws -> V1Records {

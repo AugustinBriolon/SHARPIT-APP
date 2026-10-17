@@ -275,6 +275,16 @@ Corners nest concentrically (HIG, iOS 26). A container declares its corner
 is the minimum; before iOS 26 it is the corner. Strokes keep a fixed shape (ConcentricRectangle is
 not insettable).
 
+Text sizes. `SharpitTypography` scales its fonts through `UIFontMetrics`, so `.dynamicTypeSize(...)`
+caps do not reach them: a layout that cannot grow adapts instead. At the accessibility sizes
+(`dynamicTypeSize.isAccessibilitySize`) side-by-side rows stack — `SharpitCardHeader` puts its
+accessory on its own line and drops the tile, the strength rows, the morning proposal, the wellness
+row and Régularité's foot go vertical — fixed text columns are `@ScaledMetric`, and
+`SharpitRowFigure` and the dial centre shrink to fit. Formatters read NaN, ∞ or a value beyond `Int`
+as « — » (`Int(exactly:)`), never trap. The Debug screen demo carries `stress`, `stress-sleep` and
+`stress-strength` (six-figure volumes, two-line names, a 23 h 59 night) to check it on iPhone mini
+with `xcrun simctl ui booted content_size accessibility-extra-extra-extra-large`.
+
 No card in a card. Rows inside a card (`SharpitInsetGroup`, `.sharpitSurface(.row)`) read straight on
 it, split by hairlines as Apple's grouped lists are — no grey group, no white box per row.
 

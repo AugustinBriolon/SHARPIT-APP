@@ -52,6 +52,7 @@ nonisolated struct StrengthExerciseReadout: Equatable, Identifiable, Sendable {
 /// blocks of sets, its volume.
 struct ActivityStrengthSection: View {
     let exercises: [StrengthExerciseReadout]
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var totalVolume: Double? {
         let volumes = exercises.compactMap(\.volumeKg)
@@ -87,8 +88,16 @@ struct ActivityStrengthSection: View {
         .sharpitSurface(.panel)
     }
 
+    /// The ordinal beside the exercise; above it at the accessibility sizes, where beside it the
+    /// name broke inside its words.
+    private var rowLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: SharpitSpacing.xs))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: SharpitSpacing.sm))
+    }
+
     private func row(_ exercise: StrengthExerciseReadout, number: Int) -> some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+        rowLayout {
             // The order always leads, so every row lines up; a picture, when the catalogue has one, trails.
             SharpitNumberChip(number: number)
             VStack(alignment: .leading, spacing: 2) {
@@ -100,13 +109,14 @@ struct ActivityStrengthSection: View {
                     .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
+                // At the accessibility sizes the volume goes under the sets, with the rest of the row.
+                if dynamicTypeSize.isAccessibilitySize {
+                    HStack(spacing: SharpitSpacing.sm) { trailing(exercise) }
+                }
             }
-            Spacer(minLength: SharpitSpacing.sm)
-            if let volume = exercise.volumeKg {
-                volumeFigure(volume)
-            }
-            if let thumb = ExerciseMediaCatalog.thumbURL(name: exercise.exercise) {
-                GuidedExerciseThumbView(url: thumb, size: 40)
+            if !dynamicTypeSize.isAccessibilitySize {
+                Spacer(minLength: SharpitSpacing.sm)
+                trailing(exercise)
             }
         }
         .padding(.horizontal, SharpitSpacing.rowPaddingX)
@@ -116,10 +126,19 @@ struct ActivityStrengthSection: View {
         .accessibilityElement(children: .combine)
     }
 
+    @ViewBuilder private func trailing(_ exercise: StrengthExerciseReadout) -> some View {
+        if let volume = exercise.volumeKg {
+            volumeFigure(volume)
+        }
+        if let thumb = ExerciseMediaCatalog.thumbURL(name: exercise.exercise) {
+            GuidedExerciseThumbView(url: thumb, size: 40)
+        }
+    }
+
     /// « 3 590 kg »: the figure bold, its unit muted, as the references write a load.
     private func volumeFigure(_ kilograms: Double) -> some View {
         SharpitRowFigure(
-            value: StrengthExerciseReadout.kilograms(kilograms).replacingOccurrences(of: " kg", with: ""),
+            value: GuidedStrengthSetTarget.volumeFigure(kilograms),
             unit: "kg"
         )
     }

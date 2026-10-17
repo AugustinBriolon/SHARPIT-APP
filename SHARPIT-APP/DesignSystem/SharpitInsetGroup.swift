@@ -51,6 +51,7 @@ struct SharpitInsetRow<Leading: View, Trailing: View>: View {
 struct SharpitRowFigure: View {
     let value: String
     var unit: String?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
@@ -64,6 +65,9 @@ struct SharpitRowFigure: View {
             }
         }
         .lineLimit(1)
-        .fixedSize()
+        // At the accessibility sizes a six-figure load is wider than the screen: it shrinks
+        // rather than push its card off the edge.
+        .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 0.5 : 1)
+        .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: true)
     }
 }

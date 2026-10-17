@@ -13,6 +13,15 @@ struct MorningProposalCard: View {
 
     private var isEasing: Bool { proposal.direction == .down }
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// Side by side, the plan and the proposal ran off the screen at the accessibility sizes.
+    private var pairLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: SharpitSpacing.sm))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: SharpitSpacing.sm))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(
@@ -27,12 +36,12 @@ struct MorningProposalCard: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+            pairLayout {
                 side("Prévu", proposal.from, emphasized: false)
-                Image(systemName: "arrow.right")
+                Image(systemName: dynamicTypeSize.isAccessibilitySize ? "arrow.down" : "arrow.right")
                     .font(SharpitTypography.label)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                    .padding(.top, 18)
+                    .padding(.top, dynamicTypeSize.isAccessibilitySize ? 0 : 18)
                     .accessibilityHidden(true)
                 side("Proposé", proposal.to, emphasized: true)
             }
@@ -41,7 +50,7 @@ struct MorningProposalCard: View {
                 checkInInvitation(onCheckIn)
             }
 
-            HStack(spacing: SharpitSpacing.sm) {
+            pairLayout {
                 SharpitPrimaryButton(title: "Garder le plan", style: .secondary) { onAnswer(false) }
                 SharpitPrimaryButton(title: isEasing ? "Alléger" : "Augmenter") { onAnswer(true) }
             }

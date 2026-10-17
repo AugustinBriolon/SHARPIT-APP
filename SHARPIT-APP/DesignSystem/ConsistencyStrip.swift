@@ -46,8 +46,18 @@ struct ConsistencyStrip: View {
         SharpitCardHeader(title: "Régularité", symbol: "calendar", showsChevron: onOpenPlan != nil)
     }
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// The week's count and the streak, side by side; one above the other at the accessibility
+    /// sizes, where on one line they pushed the card off the screen.
+    private var footLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: SharpitSpacing.xxs))
+            : AnyLayout(HStackLayout(spacing: SharpitSpacing.xs))
+    }
+
     private var footSummary: some View {
-        HStack(spacing: SharpitSpacing.xs) {
+        footLayout {
             HStack(spacing: 6) {
                 Image(systemName: consistency.thisWeekSessionCount > 0 ? "flame.fill" : "moon.zzz")
                     .font(.system(size: 11, weight: .semibold))
@@ -74,7 +84,9 @@ struct ConsistencyStrip: View {
                 }
             }
 
-            Spacer(minLength: 4)
+            if !dynamicTypeSize.isAccessibilitySize {
+                Spacer(minLength: 4)
+            }
 
             // Number of consecutive weeks with at least 1 activity
             HStack(spacing: 3) {
@@ -90,7 +102,7 @@ struct ConsistencyStrip: View {
         }
         .padding(.horizontal, SharpitSpacing.sm)
         .padding(.vertical, SharpitSpacing.xs)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitSpacing.chipRadius)
     }
 

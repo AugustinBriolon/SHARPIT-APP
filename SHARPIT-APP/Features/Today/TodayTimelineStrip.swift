@@ -5,6 +5,8 @@ import SwiftUI
 /// User: "fix all" — go-all P2 day timeline.
 struct TodayTimelineStrip: View {
     let events: [V1DayTimelineEvent]
+    /// Grows with the text: a fixed 42 pt broke « 23:59 » a character per line at the largest sizes.
+    @ScaledMetric(relativeTo: .footnote) private var clockWidth: CGFloat = 42
 
     var body: some View {
         if !events.isEmpty {
@@ -37,7 +39,7 @@ struct TodayTimelineStrip: View {
             Text(event.minuteOfDay == nil ? "" : clock(event.minuteOfDay))
                 .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .footnote, digits: true))
                 .foregroundStyle(SharpitColor.mutedForeground)
-                .frame(width: 42, alignment: .leading)
+                .frame(width: clockWidth, alignment: .leading)
                 .padding(.top, 2)
 
             VStack(spacing: 0) {

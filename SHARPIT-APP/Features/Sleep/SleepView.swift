@@ -181,7 +181,9 @@ private struct SleepHero: View {
             Text("\(Int(value.rounded()))")
                 .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
-                .frame(width: 32, alignment: .trailing)
+                // A full 100 broke onto two lines in a 32 pt slot.
+                .fixedSize()
+                .frame(minWidth: 32, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
     }

@@ -121,6 +121,7 @@ struct MorningWellnessSheet: View {
 
 private struct WellnessDimensionRow: View {
     let dimension: WellnessDimension
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let selected: WellnessScore?
     let onPick: (WellnessScore) -> Void
 
@@ -134,51 +135,69 @@ private struct WellnessDimensionRow: View {
     }
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            JournalRowIcon(symbolName: iconName)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(dimension.title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-
-                Text(selected.map { dimension.label(for: $0) } ?? "Choisir")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(selected != nil ? SharpitColor.foreground : SharpitColor.mutedForeground)
-                    .lineLimit(1)
-            }
-            .frame(width: 72, alignment: .leading)
-
-            Spacer(minLength: SharpitSpacing.xxs)
-
-            HStack(spacing: 6) {
-                ForEach(WellnessScore.allCases) { score in
-                    let isSelected = selected == score
-                    Button {
-                        onPick(score)
-                    } label: {
-                        Text("\(score.rawValue)")
-                            .font(.system(size: 15, weight: isSelected ? .bold : .medium, design: .rounded))
-                            .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                            .frame(width: 35, height: 35)
-                            .background(
-                                isSelected ? SharpitColor.primary : SharpitColor.secondary.opacity(0.4),
-                                in: Circle()
-                            )
-                            .overlay(
-                                Circle()
-                                    .strokeBorder(isSelected ? Color.white.opacity(0.2) : SharpitColor.analysisBorder.opacity(0.5), lineWidth: 0.5)
-                            )
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                // At the accessibility sizes the scores go under the title: beside it, the 72 pt
+                // title column broke words and the five scores ran off the screen.
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    HStack(spacing: SharpitSpacing.sm) {
+                        JournalRowIcon(symbolName: iconName)
+                        titles
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(dimension.title) \(score.rawValue) sur 5, \(dimension.label(for: score))")
-                    .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+                    scores
+                }
+            } else {
+                HStack(spacing: SharpitSpacing.sm) {
+                    JournalRowIcon(symbolName: iconName)
+                    titles.frame(width: 72, alignment: .leading)
+                    Spacer(minLength: SharpitSpacing.xxs)
+                    scores
                 }
             }
         }
         .padding(.horizontal, SharpitSpacing.cardPadding)
         .padding(.vertical, 10)
         .sharpitSurface(.panel)
+    }
+
+    private var titles: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(dimension.title)
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+
+            Text(selected.map { dimension.label(for: $0) } ?? "Choisir")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(selected != nil ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .lineLimit(1)
+        }
+    }
+
+    private var scores: some View {
+        HStack(spacing: 6) {
+            ForEach(WellnessScore.allCases) { score in
+                let isSelected = selected == score
+                Button {
+                    onPick(score)
+                } label: {
+                    Text("\(score.rawValue)")
+                        .font(.system(size: 15, weight: isSelected ? .bold : .medium, design: .rounded))
+                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                        .frame(width: 35, height: 35)
+                        .background(
+                            isSelected ? SharpitColor.primary : SharpitColor.secondary.opacity(0.4),
+                            in: Circle()
+                        )
+                        .overlay(
+                            Circle()
+                                .strokeBorder(isSelected ? Color.white.opacity(0.2) : SharpitColor.analysisBorder.opacity(0.5), lineWidth: 0.5)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(dimension.title) \(score.rawValue) sur 5, \(dimension.label(for: score))")
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            }
+        }
     }
 }
 

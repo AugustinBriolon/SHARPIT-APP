@@ -45,6 +45,16 @@ reference cards rebuilt from the components without an account, run a Debug buil
 xcrun simctl spawn booted defaults write app.sharpit.ios SharpitDesignGallery -bool YES
 ```
 
+To check the screens against extreme values (six-figure volumes, very long names, a 23 h 59
+night), open a stress screen and set the largest text size:
+
+```bash
+xcrun simctl spawn booted defaults write app.sharpit.ios SharpitScreenDemo stress
+xcrun simctl ui booted content_size accessibility-extra-extra-extra-large
+```
+
+`stress-sleep` and `stress-strength` cover the sleep page and the guided workout.
+
 ## Pointing at a server
 
 The app speaks to the web app over `/api`, never to the database — the domain logic, the

@@ -14,41 +14,62 @@ struct SharpitCardHeader<Accessory: View>: View {
     var isCompact = false
     @ViewBuilder var accessory: () -> Accessory
 
-    var body: some View {
-        HStack(alignment: .center, spacing: isCompact ? SharpitSpacing.xxs + 2 : SharpitSpacing.sm) {
-            SharpitIconTile(symbol: symbol, size: isCompact ? 30 : SharpitTokens.tileSize)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(isCompact ? SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline) : SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    // A second line before any truncation: a 375 pt screen beside a pill cannot hold « Plus longue sortie ».
-                    .lineLimit(2)
-                    .minimumScaleFactor(isCompact ? 0.75 : 0.8)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+    var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                // At the accessibility sizes the accessory takes its own line and the tile, only an
+                // ornament, gives way: beside them the title was squeezed to a letter per line.
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                        titles
+                        Spacer(minLength: SharpitSpacing.xs)
+                        chevron
+                    }
+                    accessory()
+                }
+            } else {
+                HStack(alignment: .center, spacing: isCompact ? SharpitSpacing.xxs + 2 : SharpitSpacing.sm) {
+                    SharpitIconTile(symbol: symbol, size: isCompact ? 30 : SharpitTokens.tileSize)
+                    titles
+                    Spacer(minLength: isCompact ? 2 : SharpitSpacing.xs)
+                    accessory()
+                    chevron
                 }
             }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
 
-            Spacer(minLength: isCompact ? 2 : SharpitSpacing.xs)
-
-            accessory()
-
-            if showsChevron {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
-                    .accessibilityHidden(true)
+    private var titles: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(isCompact ? SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline) : SharpitTypography.cardTitle)
+                .tracking(SharpitTypography.cardTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                // A second line before any truncation: a 375 pt screen beside a pill cannot hold « Plus longue sortie ».
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                .minimumScaleFactor(isCompact ? 0.75 : 0.8)
+                .fixedSize(horizontal: false, vertical: true)
+            if let subtitle {
+                Text(subtitle)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private var chevron: some View {
+        if showsChevron {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                .accessibilityHidden(true)
+        }
     }
 }
 

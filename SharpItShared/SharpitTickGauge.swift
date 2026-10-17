@@ -151,7 +151,11 @@ extension View {
         return overlay {
             GeometryReader { proxy in
                 content
-                    .frame(maxWidth: proxy.size.width * 0.66)
+                    // The ring is drawn at a fixed size: at the largest text sizes its figure ran
+                    // through the ticks and truncated (« 1… »), so the centre shrinks to stay inside.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.3)
+                    .frame(maxWidth: proxy.size.width * 0.66, maxHeight: proxy.size.height * 0.62)
                     .position(
                         x: proxy.size.width * SharpitTickGaugeGeometry.centreFraction.x,
                         y: proxy.size.height * SharpitTickGaugeGeometry.centreFraction.y
