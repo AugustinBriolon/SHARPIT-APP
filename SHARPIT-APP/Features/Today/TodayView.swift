@@ -154,6 +154,11 @@ struct TodayView: View {
                     await evaluateRessentiPrompt()
                 }
             }
+            // The night syncs after the screen opened: its sleep may make the prompt due.
+            .onChange(of: RessentiPromptTiming.hasLastNightSleep(overnightGauges)) { _, hasSleep in
+                guard hasSleep else { return }
+                Task { await evaluateRessentiPrompt() }
+            }
             .onChange(of: router.calendarRevision) { _, _ in
                 Task { await store.refresh() }
             }
@@ -264,9 +269,15 @@ extension TodayView {
 
     /// Server is the source of truth: present the half-sheet only when today's check-in
     /// is missing and the athlete has not dismissed it for this local day.
+    fileprivate var overnightGauges: [OvernightGaugeModel] {
+        if case .loaded(let fold) = store.phase { return fold.gauges }
+        return []
+    }
+
     @MainActor
     fileprivate func evaluateRessentiPrompt() async {
         guard !showsCheckIn, !ressentiPendingConfirmation else { return }
+        guard RessentiPromptTiming.isDue(now: .now, hasLastNightSleep: RessentiPromptTiming.hasLastNightSleep(overnightGauges)) else { return }
         guard let wellnessClient, let tokenProvider, let athleteId = localAthleteId else { return }
         do {
             let token = try await tokenProvider()
