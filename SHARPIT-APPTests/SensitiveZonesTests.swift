@@ -95,6 +95,28 @@ private nonisolated func decodedZones() throws -> V1SensitiveZones {
         #expect(draft.createInput.bodyPart == "Plexus")
     }
 
+    /// The server refuses longer text (SHARPIT ADR-089), so the fields stop at its limits.
+    @Test func stopsTextAtTheServersLimits() {
+        var draft = SensitiveZoneDraft()
+        draft.title = String(repeating: "a", count: 500)
+        draft.customBodyPart = String(repeating: "b", count: 500)
+        draft.description = String(repeating: "c", count: 5_000)
+        #expect(draft.title.count == 120)
+        #expect(draft.customBodyPart.count == 80)
+        #expect(draft.description.count == 2_000)
+
+        var checkin = ZoneCheckinDraft()
+        checkin.comment = String(repeating: "d", count: 1_500)
+        #expect(checkin.comment.count == 1_000)
+    }
+
+    /// JavaScript counts an emoji as two units: a clamp never leaves a server-side overflow.
+    @Test func countsLimitsInUTF16Units() {
+        let clamped = PhysicalNoteLimits.clamp(String(repeating: "🦵", count: 100), to: 120)
+        #expect(clamped.utf16.count == 120)
+        #expect(clamped.count == 60)
+    }
+
     @Test func patchesOnlyWhatChanged() throws {
         let zone = try #require(try decodedZones().zones.first)
         var draft = SensitiveZoneDraft(zone: zone, offered: ["Ischio"])

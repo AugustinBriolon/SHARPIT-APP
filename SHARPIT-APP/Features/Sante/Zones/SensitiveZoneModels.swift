@@ -43,17 +43,38 @@ nonisolated enum SensitiveZoneOptions {
     }
 }
 
+/// The server's text limits on a physical note and its check-ins (SHARPIT ADR-089), counted
+/// in UTF-16 units as JavaScript counts them: the fields stop there instead of the save being
+/// refused.
+nonisolated enum PhysicalNoteLimits {
+    static let title = 120
+    static let bodyPart = 80
+    static let description = 2_000
+    static let comment = 1_000
+
+    static func clamp(_ text: String, to limit: Int) -> String {
+        guard text.utf16.count > limit else { return text }
+        var clamped = String(text.prefix(limit))
+        while clamped.utf16.count > limit { clamped.removeLast() }
+        return clamped
+    }
+}
+
 /// A zone being declared or edited.
 nonisolated struct SensitiveZoneDraft: Equatable, Sendable {
     var category = "PAIN"
-    var title = ""
+    var title = "" { didSet { title = PhysicalNoteLimits.clamp(title, to: PhysicalNoteLimits.title) } }
     /// One of the offered body parts, or nil when the athlete writes their own.
     var bodyPart: String?
-    var customBodyPart = ""
+    var customBodyPart = "" {
+        didSet { customBodyPart = PhysicalNoteLimits.clamp(customBodyPart, to: PhysicalNoteLimits.bodyPart) }
+    }
     var side = "NA"
     var severity = 3
     var functionalImpact: String?
-    var description = ""
+    var description = "" {
+        didSet { description = PhysicalNoteLimits.clamp(description, to: PhysicalNoteLimits.description) }
+    }
     var affectsTraining = true
 
     init() {}
@@ -126,7 +147,7 @@ nonisolated struct SensitiveZoneDraft: Equatable, Sendable {
 nonisolated struct ZoneCheckinDraft: Equatable, Sendable {
     var severity: Int?
     var functionalImpact: String?
-    var comment = ""
+    var comment = "" { didSet { comment = PhysicalNoteLimits.clamp(comment, to: PhysicalNoteLimits.comment) } }
 
     var isComplete: Bool { severity != nil }
 
