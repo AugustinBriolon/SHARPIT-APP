@@ -189,6 +189,8 @@ struct AccountGate<Content: View>: View {
         // Moi → Confidentialité reports a withdrawn health consent through this.
         .environment(model)
         .environment(\.locale, Locale(identifier: "fr_FR"))
+        // Every switch from the consent wall on, the tabs and their sheets included, is lime.
+        .toggleStyle(.sharpitSwitch)
     }
 
     /// The wizard on the live services. Its token comes from Clerk's shared instance, as the

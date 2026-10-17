@@ -119,6 +119,8 @@ private struct SharpitSheetModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(\.sharpitElevation, .sheet)
+            // A sheet does not inherit the presenter's toggle style: set again here.
+            .toggleStyle(.sharpitSwitch)
             .sharpitRegularColumn()
             .presentationBackground(SharpitElevatedColor.sheet)
     }
@@ -131,7 +133,8 @@ extension View {
         modifier(SharpitShadowModifier(style: style))
     }
 
-    /// Every sheet goes through here: elevated canvas, and a phone column on a wide window.
+    /// Every sheet goes through here: elevated canvas, lime switches, and a phone column on a wide
+    /// window.
     func sharpitSheet() -> some View {
         modifier(SharpitSheetModifier())
     }

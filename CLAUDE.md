@@ -211,6 +211,9 @@ docked actions of the onboarding and the consent wall; `sharpitGlassControl`,
 (`SharpitCalendarSheet`) so a day can carry a mark: filled for an activity or data, a ring for
 a session ahead, muted for one missed or a day read empty.
 
+Switches are lime on every page (`SharpitSwitchStyle`, set at the app's root): the app tint is
+`primary`, near-white in dark mode, which left a white knob on a white track.
+
 Elevation: surfaces have no hairline border; on light a card lifts with one soft, wide shadow
 (`sharpitShadow(.panel)`), on dark by luminosity only. Inside a card, rows sit white in a grey
 `SharpitInsetGroup`, separated by air. Every sheet uses `.sharpitSheet()` so none falls back to system black, and
