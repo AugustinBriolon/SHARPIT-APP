@@ -38,12 +38,12 @@ enum ConnectionsReadout {
     static func appleHealthSubtitle(isAvailable: Bool, state: AppleHealthSource.State) -> Line {
         guard isAvailable else { return Line(text: "Indisponible sur cet appareil", isProblem: false) }
         if case .failed(let message) = state { return Line(text: message, isProblem: true) }
-        return Line(text: "Séances, sommeil et cœur de ta montre", isProblem: false)
+        return Line(text: ManagedSource.appleHealth.purpose, isProblem: false)
     }
 
     static func appleCalendarSubtitle(state: AppleCalendarSource.State) -> Line {
         if case .failed(let message) = state { return Line(text: message, isProblem: true) }
-        return Line(text: "Séances planifiées et créneaux occupés", isProblem: false)
+        return Line(text: ManagedSource.appleCalendar.purpose, isProblem: false)
     }
 
     /// A source linked, read as connected: what it brings, in the positive tone.
@@ -56,7 +56,21 @@ enum ConnectionsReadout {
     }
 
     static let sourcesFooter =
-        "Touche une source pour la connecter. Une source reliée se déconnecte d’un second toucher."
+        "Touche une source pour la gérer ou la déconnecter. Le + en ajoute une."
+
+    /// Connected sources first, then the ones the « + » sheet offers — each in the screen's order.
+    /// A source the device cannot run (Apple Health on an iPad) is never offered.
+    static func split(
+        linked: Set<ManagedSource>,
+        unavailable: Set<ManagedSource> = []
+    ) -> (connected: [ManagedSource], available: [ManagedSource]) {
+        let connected = ManagedSource.allCases.filter { linked.contains($0) }
+        let available = ManagedSource.allCases.filter { !linked.contains($0) && !unavailable.contains($0) }
+        return (connected, available)
+    }
+
+    /// Choosing between sources only matters from two on.
+    static func offersPriorities(connectedCount: Int) -> Bool { connectedCount >= 2 }
 
     /// A disconnection that failed for good: the cause when the server gave one, else the fix.
     static func disconnectFailure(_ source: DisconnectableSource, error: any Error) -> String {

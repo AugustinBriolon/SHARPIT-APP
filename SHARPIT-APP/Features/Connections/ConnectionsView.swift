@@ -1,10 +1,10 @@
 import AuthenticationServices
 import SwiftUI
 
-/// Paramètres → Sources de données: every source the iPhone app links — Apple Health, Apple
-/// Calendar, and Strava / Withings / Google via
-/// an in-app OAuth handoff. A connected row asks before disconnect (`DisconnectableSource`),
-/// then `/api/v1/<source>/disconnect`.
+/// Paramètres → Sources de données: the sources that are linked, each opening a sheet to manage
+/// or disconnect it, and a « + » that offers the rest (`docs/adr/0014`). Apple Health and Apple
+/// Calendar are the iPhone's own; Strava / Withings / Google go through an in-app OAuth handoff,
+/// and a disconnection asks first, then `/api/v1/<source>/disconnect`.
 ///
 /// Each source is one two-line row — its own mark, its name, one short status — so the rows
 /// keep the same height whatever the status says. Recency surfaces on the toast shown while a
@@ -23,59 +23,77 @@ struct ConnectionsView: View {
     @State private var appleHealthToastToken: UUID?
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var connectingOAuth: DisconnectableSource?
-    @State private var confirmingDisconnect: DisconnectableSource?
     @State private var disconnecting: DisconnectableSource?
+    @State private var managing: ManagedSource?
+    @State private var showingAdd = false
+
+    private var linked: Set<ManagedSource> {
+        var sources = Set(ManagedSource.allCases.filter { source in
+            source.oauth.map(isOAuthConnected) ?? false
+        })
+        if appleHealth.isEnabled { sources.insert(.appleHealth) }
+        if appleCalendar.isLinked { sources.insert(.appleCalendar) }
+        return sources
+    }
+
+    private var sourceLists: (connected: [ManagedSource], available: [ManagedSource]) {
+        ConnectionsReadout.split(linked: linked, unavailable: appleHealth.isAvailable ? [] : [.appleHealth])
+    }
 
     var body: some View {
+        let lists = sourceLists
         List {
-            Section(eyebrow: "Sources", footer: ConnectionsReadout.sourcesFooter) {
-                appleHealthRow
-                appleCalendarRow
-                ForEach(DisconnectableSource.oauthConnectable) { source in
-                    oauthSourceRow(source)
+            Section(eyebrow: "Connectées", footer: ConnectionsReadout.sourcesFooter) {
+                if lists.connected.isEmpty {
+                    emptyRow
+                } else {
+                    ForEach(lists.connected) { connectedRow($0) }
                 }
             }
             .sharpitListRows()
 
-            Section {
-                NavigationLink {
-                    SourcePrioritiesView(tokenProvider: tokenProvider, appleCalendar: appleCalendar)
-                } label: {
-                    Label {
-                        Text("Priorités par catégorie")
-                            .font(SharpitTypography.bodyEmphasis)
-                    } icon: {
-                        SharpitRowIcon.tile("list.number")
+            if ConnectionsReadout.offersPriorities(connectedCount: lists.connected.count) {
+                Section {
+                    NavigationLink {
+                        SourcePrioritiesView(tokenProvider: tokenProvider, appleCalendar: appleCalendar)
+                    } label: {
+                        Label {
+                            Text("Priorités par catégorie")
+                                .font(SharpitTypography.bodyEmphasis)
+                        } icon: {
+                            SharpitRowIcon.tile("list.number")
+                        }
                     }
+                } footer: {
+                    SharpitListFooter(
+                        "Quand deux sources mesurent la même chose, choisis celle qui fait foi. L’Agenda Google (créneaux) n’est pas le calendrier des séances Sharpit dans Plan."
+                    )
                 }
-            } footer: {
-                SharpitListFooter(
-                    "Quand deux sources mesurent la même chose, choisis celle qui fait foi. L’Agenda Google (créneaux) n’est pas le calendrier des séances Sharpit dans Plan."
-                )
+                .sharpitListRows()
             }
-            .sharpitListRows()
-
         }
         .sharpitGroupedList()
         .navigationTitle("Sources de données")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showingAdd = true } label: { Image(systemName: "plus") }
+                    .accessibilityLabel("Ajouter une source")
+            }
+        }
         .task { await loadStatus() }
         .refreshable { await loadStatus() }
-        .confirmationDialog(
-            confirmingDisconnect?.confirmationTitle ?? "",
-            isPresented: Binding(
-                get: { confirmingDisconnect != nil },
-                set: { if !$0 { confirmingDisconnect = nil } }
-            ),
-            titleVisibility: .visible,
-            presenting: confirmingDisconnect
-        ) { source in
-            Button(source.confirmLabel, role: .destructive) {
-                Task { await disconnect(source) }
+        .sheet(item: $managing) { source in
+            SourceManageSheet(source: source, status: statusLine(source)) {
+                managing = nil
+                Task { await disconnectSource(source) }
             }
-            Button("Annuler", role: .cancel) {}
-        } message: { source in
-            Text(source.confirmationMessage)
+        }
+        .sheet(isPresented: $showingAdd) {
+            SourceAddSheet(sources: lists.available) { source in
+                showingAdd = false
+                Task { await connect(source) }
+            }
         }
         .onChange(of: appleHealth.state) { _, state in
             switch state {
@@ -103,29 +121,35 @@ struct ConnectionsView: View {
         status?.providers.contains(where: { $0.key == source.statusKey }) ?? false
     }
 
-    /// Strava / Withings / Google: connect in-app, or ask before disconnect once linked.
-    private func oauthSourceRow(_ source: DisconnectableSource) -> some View {
-        let linked = isOAuthConnected(source)
-        let badge = linked
-            ? ConnectionsReadout.connected(source)
-            : ConnectionsReadout.disconnected(source)
-        return Button {
-            if linked {
-                confirmingDisconnect = source
-            } else {
-                Task { await connectOAuth(source) }
-            }
-        } label: {
+    private var emptyRow: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            Text("Aucune source connectée")
+                .font(SharpitTypography.bodyEmphasis)
+            Text("Relie Apple Santé, Strava ou une balance pour que le coach lise tes données.")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+            Button("Ajouter une source") { showingAdd = true }
+                .font(SharpitTypography.bodyEmphasis)
+                .padding(.top, SharpitSpacing.xs)
+        }
+    }
+
+    private func connectedRow(_ source: ManagedSource) -> some View {
+        let line = statusLine(source)
+        let isBusy = source.oauth.map { disconnecting == $0 || connectingOAuth == $0 } ?? false
+        return Button { managing = source } label: {
             HStack(spacing: SharpitSpacing.sm) {
                 ProviderLogo(provider: source.logo)
-                sourceTitle(source.name, status: badge.text, tone: badge.tone.color)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(source.name)
+                    Text(line.text)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(line.isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                }
                 Spacer(minLength: SharpitSpacing.xs)
-                if disconnecting == source || connectingOAuth == source {
+                if isBusy {
                     ProgressView()
-                } else if linked {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(SharpitColor.primary)
                 } else {
                     Image(systemName: "chevron.right")
                         .font(.footnote.weight(.semibold))
@@ -136,82 +160,45 @@ struct ConnectionsView: View {
             .contentShape(.rect)
         }
         .foregroundStyle(SharpitColor.foreground)
-        .disabled(disconnecting == source || connectingOAuth != nil)
-        .accessibilityHint(
-            linked
-                ? "Propose de déconnecter \(source.name)"
-                : "Connecter \(source.name) dans l'application"
-        )
+        .disabled(isBusy)
+        .accessibilityHint("Gérer ou déconnecter \(source.name)")
     }
 
-    private var appleHealthRow: some View {
-        let line = ConnectionsReadout.appleHealthSubtitle(
-            isAvailable: appleHealth.isAvailable,
-            state: appleHealth.state
-        )
-        return Toggle(isOn: appleHealthBinding) {
-            HStack(spacing: SharpitSpacing.sm) {
-                ProviderLogo(provider: .appleHealth)
-                sourceTitle(
-                    "Apple Santé",
-                    status: line.text,
-                    tone: line.isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground
-                )
-            }
-        }
-        .tint(SharpitColor.primary)
-        .disabled(!appleHealth.isAvailable)
-    }
-
-    private func sourceTitle(_ name: String, status: String, tone: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(name)
-            Text(status)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(tone)
-                .lineLimit(1)
+    private func statusLine(_ source: ManagedSource) -> ConnectionsReadout.Line {
+        switch source {
+        case .appleHealth:
+            ConnectionsReadout.appleHealthSubtitle(isAvailable: appleHealth.isAvailable, state: appleHealth.state)
+        case .appleCalendar:
+            ConnectionsReadout.appleCalendarSubtitle(state: appleCalendar.state)
+        case .withings, .google, .strava:
+            ConnectionsReadout.Line(text: source.purpose, isProblem: false)
         }
     }
 
-    private var appleHealthBinding: Binding<Bool> {
-        Binding(
-            get: { appleHealth.isEnabled },
-            set: { on in
-                if on {
-                    Task { await appleHealth.enable(token: tokenProvider) }
-                } else {
-                    Task { await appleHealth.disable(token: tokenProvider) }
-                }
-            }
-        )
-    }
-
-    private var appleCalendarRow: some View {
-        let line = ConnectionsReadout.appleCalendarSubtitle(state: appleCalendar.state)
-        return Toggle(isOn: appleCalendarBinding) {
-            HStack(spacing: SharpitSpacing.sm) {
-                ProviderLogo(provider: .appleCalendar)
-                sourceTitle(
-                    "Calendrier Apple",
-                    status: line.text,
-                    tone: line.isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground
-                )
-            }
+    /// The sheet is gone before a web authentication session is asked to present over the page.
+    private func connect(_ source: ManagedSource) async {
+        switch source {
+        case .appleHealth:
+            await appleHealth.enable(token: tokenProvider)
+        case .appleCalendar:
+            await appleCalendar.enable(token: tokenProvider)
+        case .withings, .google, .strava:
+            guard let oauth = source.oauth else { return }
+            try? await Task.sleep(for: .milliseconds(400))
+            await connectOAuth(oauth)
         }
-        .tint(SharpitColor.primary)
     }
 
-    private var appleCalendarBinding: Binding<Bool> {
-        Binding(
-            get: { appleCalendar.isLinked },
-            set: { on in
-                if on {
-                    Task { await appleCalendar.enable(token: tokenProvider) }
-                } else {
-                    Task { await appleCalendar.disable(token: tokenProvider) }
-                }
-            }
-        )
+    private func disconnectSource(_ source: ManagedSource) async {
+        switch source {
+        case .appleHealth:
+            await appleHealth.disable(token: tokenProvider)
+        case .appleCalendar:
+            await appleCalendar.disable(token: tokenProvider)
+        case .withings, .google, .strava:
+            guard let oauth = source.oauth else { return }
+            await disconnect(oauth)
+        }
     }
 
     private func connectOAuth(_ source: DisconnectableSource) async {
