@@ -4,8 +4,7 @@ import SwiftUI
 enum SleepReadout {
     /// "7 h 32", "45 min".
     static func duration(_ minutes: Double?) -> String {
-        guard let minutes else { return "—" }
-        let total = Int(minutes.rounded())
+        guard let minutes, let total = Int(exactly: minutes.rounded()) else { return "—" }
         let hours = total / 60
         let rest = total % 60
         if hours == 0 { return "\(rest) min" }
@@ -14,7 +13,7 @@ enum SleepReadout {
 
     /// "+18 min", "−1 h 05". Nil and zero read as nothing to say.
     static func delta(_ minutes: Double?) -> String? {
-        guard let minutes, Int(minutes.rounded()) != 0 else { return nil }
+        guard let minutes, let whole = Int(exactly: minutes.rounded()), whole != 0 else { return nil }
         let sign = minutes > 0 ? "+" : "−"
         return sign + duration(abs(minutes))
     }
@@ -22,8 +21,9 @@ enum SleepReadout {
     /// « ↑ 8 vs moy. »: the night's score against the recent average. Nil when either is
     /// unknown or they round to the same point.
     static func scoreDelta(score: Double?, average: Double?) -> String? {
-        guard let score, let average else { return nil }
-        let delta = Int(score.rounded()) - Int(average.rounded())
+        guard let score = score.flatMap({ Int(exactly: $0.rounded()) }),
+              let average = average.flatMap({ Int(exactly: $0.rounded()) }) else { return nil }
+        let delta = score - average
         guard delta != 0 else { return nil }
         return "\(delta > 0 ? "↑" : "↓") \(abs(delta)) vs moy."
     }

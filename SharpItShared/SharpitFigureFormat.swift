@@ -9,16 +9,14 @@ nonisolated enum SharpitFigureFormat {
     /// allows: in the monospaced readout face the thin space took a full digit's width
     /// (« 1  328 »). Grouped from five digits on.
     static func kcal(_ value: Double?) -> String {
-        guard let value else { return "—" }
-        let whole = Int(value.rounded())
+        guard let value, let whole = Int(exactly: value.rounded()) else { return "—" }
         guard abs(whole) >= 10_000 else { return "\(whole)" }
         return whole.formatted(.number.locale(french))
     }
 
     /// What the remaining calories say: left to eat, or past the goal.
     static func remainingKcal(_ remaining: Double?) -> String? {
-        guard let remaining else { return nil }
-        let rounded = Int(remaining.rounded())
+        guard let remaining, let rounded = Int(exactly: remaining.rounded()) else { return nil }
         if rounded >= 0 { return "Reste \(kcal(Double(rounded))) kcal" }
         return "\(kcal(Double(-rounded))) kcal au-delà"
     }
@@ -30,8 +28,8 @@ nonisolated enum SharpitFigureFormat {
 
     /// `70 kg`, `68,5 kg` — a target: no trailing `,0`.
     static func target(_ value: Double) -> String {
-        let whole = value.rounded() == value
-        return (whole ? Int(value).formatted(.number.locale(french)) : kilograms(value)) + " kg"
+        guard let whole = Int(exactly: value.rounded()) else { return "— kg" }
+        return (value.rounded() == value ? whole.formatted(.number.locale(french)) : kilograms(value)) + " kg"
     }
 
     /// `−0,6 kg` — a change, signed, a true minus.
@@ -43,14 +41,15 @@ nonisolated enum SharpitFigureFormat {
 
     /// `32,4` — kilometres, one decimal below a hundred, whole above.
     static func kilometers(_ value: Double) -> String {
-        value >= 100
-            ? Int(value.rounded()).formatted(.number.locale(french))
+        guard let whole = Int(exactly: value.rounded()) else { return "—" }
+        return value >= 100
+            ? whole.formatted(.number.locale(french))
             : value.formatted(.number.precision(.fractionLength(1)).locale(french))
     }
 
     /// `3 h 10`, `45 min` — a length of time.
     static func duration(minutes: Double) -> String {
-        let total = Int(minutes.rounded())
+        guard let total = Int(exactly: minutes.rounded()) else { return "—" }
         guard total >= 60 else { return "\(total) min" }
         let rest = total % 60
         return rest == 0 ? "\(total / 60) h" : "\(total / 60) h \(String(format: "%02d", rest))"

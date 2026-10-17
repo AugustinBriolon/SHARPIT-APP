@@ -39,9 +39,7 @@ nonisolated struct StrengthExerciseReadout: Equatable, Identifiable, Sendable {
     }
 
     static func kilograms(_ value: Double) -> String {
-        let rounded = (value * 10).rounded() / 10
-        let text = rounded == rounded.rounded() ? "\(Int(rounded))" : String(format: "%.1f", rounded).replacingOccurrences(of: ".", with: ",")
-        return "\(text) kg"
+        GuidedStrengthSetTarget.kilograms(value)
     }
 
     private static func seconds(_ value: Int) -> String {

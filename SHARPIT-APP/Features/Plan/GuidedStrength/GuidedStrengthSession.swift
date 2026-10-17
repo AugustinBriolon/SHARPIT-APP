@@ -58,9 +58,10 @@ struct GuidedStrengthSetTarget: Identifiable, Equatable, Sendable {
         (durationSec ?? 0) > 0 && reps == 0
     }
 
-    static func kilograms(_ value: Double) -> String {
+    nonisolated static func kilograms(_ value: Double) -> String {
         let rounded = (value * 10).rounded() / 10
-        if rounded == rounded.rounded() { return "\(Int(rounded)) kg" }
+        guard rounded.isFinite else { return "— kg" }
+        if rounded == rounded.rounded() { return Int(exactly: rounded).map { "\($0) kg" } ?? "— kg" }
         return String(format: "%.1f kg", rounded).replacingOccurrences(of: ".", with: ",")
     }
 

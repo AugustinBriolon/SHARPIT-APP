@@ -491,7 +491,8 @@ enum ActivityFormat {
     }
 
     static func duration(_ seconds: Double) -> String {
-        let minutes = Int(seconds / 60)
+        // A corrupt or computed figure (∞, NaN, beyond Int) reads as missing rather than trapping.
+        guard let minutes = Int(exactly: (seconds / 60).rounded(.towardZero)), minutes >= 0 else { return "—" }
         return minutes >= 60 ? "\(minutes / 60) h \(minutes % 60) min" : "\(minutes) min"
     }
 
@@ -501,12 +502,14 @@ enum ActivityFormat {
 
     /// « 27,4 » — a ride's average speed in km/h, without its unit.
     static func speedKmh(distanceM: Double, duration: Double) -> String {
-        String(format: "%.1f", distanceM / duration * 3.6).replacingOccurrences(of: ".", with: ",")
+        let kmh = distanceM / duration * 3.6
+        guard duration > 0, kmh >= 0, Int(exactly: kmh.rounded()) != nil else { return "—" }
+        return String(format: "%.1f", kmh).replacingOccurrences(of: ".", with: ",")
     }
 
     /// « 1'46" » — a pace without its unit, for a readout that sets the unit apart (/km, /100 m).
     static func paceClock(_ seconds: Double) -> String {
-        let rounded = Int(seconds.rounded())
+        guard let rounded = Int(exactly: seconds.rounded()), rounded >= 0 else { return "—" }
         return "\(rounded / 60)'\(String(format: "%02d", rounded % 60))\""
     }
 
@@ -516,7 +519,7 @@ enum ActivityFormat {
     /// essential reading keeps the number and calls it « charge », exactly as the web's
     /// `formatTrainingLoad` does.
     static func trainingLoad(_ load: Double, isExpertReading: Bool) -> String {
-        let rounded = Int(load.rounded())
+        let rounded = Int(exactly: load.rounded()) ?? 0
         return isExpertReading ? "\(rounded) TSS" : "charge \(rounded)"
     }
 
