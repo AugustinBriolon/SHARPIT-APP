@@ -25,8 +25,8 @@ We hold one loading screen, `SharpitLaunchSplash`, over the whole app on a cold 
 controlled by `LaunchCurtain` (owned by `SharpitApp`, one per process, passed through the
 environment).
 
-- The curtain lifts once the landing screen can be drawn whole: Résumé out of `.loading` (the
-  cached snapshot counts), or the sign-in screen, the consent wall, the onboarding wizard, the
+- The curtain lifts once the landing screen can be drawn whole: Résumé's read answered (success
+  or failure), or the sign-in screen, the consent wall, the onboarding wizard, the
   gate's failure screen, or another tab opened by a link or a notification. Each of these
   surfaces calls `markReady()`.
 - It stays up at least 0.6 s (none under Reduce Motion), so a fast launch does not flicker, and
@@ -35,6 +35,14 @@ environment).
   `SharpitMotion.run`, so Reduce Motion swaps it without animation. Résumé's arrival
   (`TodayArrivalDirector`) waits for the lift, so it plays during the hand-over.
 - A return from the background never shows it again.
+- The cached snapshot does not lift it: it holds the verdict plate without sessions or gauges, so
+  lifting on it showed a half-filled Résumé. It still paints Résumé when the ceiling is reached.
+- The system launch screen (`UILaunchScreen`) draws the same mark on the canvas colour
+  (`LaunchMark`, rendered on iOS from `SharpitLaunchSplash.mark`; `LaunchBackground`), and the
+  splash centres its mark on the screen rather than the safe area, so the hand-over from iOS to
+  the app shows the mark without a blank or a jump. The mark is visible from the splash's first
+  frame: a cold Debug launch keeps the main thread busy for about 2 s, which froze a fade-in at
+  zero opacity.
 
 ## Options considered
 
@@ -50,25 +58,27 @@ on the splash indefinitely, while the cache could have painted the day at once.
 
 ### Option C — One splash gated on readiness, with a floor and a ceiling (chosen)
 
-One continuous loading screen and one transition. The cache counts as ready, and the 3.5 s
-ceiling bounds the worst case: past it, Résumé's own loading or failure state takes over. Costs a
+One continuous loading screen and one transition. The 3.5 s ceiling bounds the worst case: past
+it, Résumé shows the cached day, or its own loading or failure state. Costs a
 small observable model and a `markReady()` call in each surface that can be the landing screen.
 
 ## Consequences
 
 ### Positive
-- A cold launch with a cached day goes splash → Résumé in one transition, with no skeleton frame.
-- The worst-case wait on the splash is 3.5 s; offline launches with a cache are not slowed.
+- A cold launch goes launch screen → splash → a complete Résumé, with no blank and no skeleton frame.
+- The worst-case wait on the splash is 3.5 s; offline, the cached day shows then.
 - The readiness rules live in one testable type (`LaunchCurtainTests`).
 
 ### Negative
 - A fast launch now waits at least 0.6 s on the splash.
 - A new screen that can be the landing screen must call `markReady()`, or the launch waits for
   the 3.5 s ceiling.
+- An offline launch waits the full 3.5 s ceiling unless the read fails sooner.
+- `LaunchMark` is a rendered copy of an SF Symbol: a change to the mark means re-rendering it.
 
 ### Neutral
 - `SharpitLaunchMark` stays for the gate's later checks (a retry) and the wizard's first read.
-- The system launch screen is still the generated one; its colour is not matched to the canvas.
+- The launch screen follows the system appearance, not the in-app appearance setting.
 
 ## References
 - `SHARPIT-APP/App/LaunchCurtain.swift`, `SHARPIT-APP/DesignSystem/SharpitLaunchSplash.swift`
