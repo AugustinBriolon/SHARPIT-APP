@@ -31,8 +31,10 @@ environment).
   surfaces calls `markReady()`.
 - It stays up at least 0.6 s (none under Reduce Motion), so a fast launch does not flicker, and
   at most 3.5 s, after which it lifts whatever the network is doing.
-- It leaves with a fade and a 6 % grow (`AnyTransition.sharpitLaunchExit`), through
-  `SharpitMotion.run`, so Reduce Motion swaps it without animation. Résumé's arrival
+- While up, the mark only breathes; no spinner. It leaves with a fade and an 8 % grow
+  (`AnyTransition.sharpitLaunchExit`) on a critically damped spring (response 0.35 s), through
+  `SharpitMotion.run`, so Reduce Motion swaps it without animation. An orbiting-dots loader
+  that closed into a dot and burst open onto Résumé was tried and dropped as too busy. Résumé's arrival
   (`TodayArrivalDirector`) waits for the lift, so it plays during the hand-over.
 - A return from the background never shows it again.
 - The cached snapshot does not lift it: it holds the verdict plate without sessions or gauges, so

@@ -236,10 +236,10 @@ arriving; `staggerDelay(index:)` is capped, so use it instead of hard-coded dela
 The brand mark is the app icon's (`SharpIt.icon`: six dots on a hexagon, `circle.hexagonpath.fill`
 in `SharpitColor.brandMarkGradient`); `SharpitLaunchMark` shows it while a screen cannot be drawn
 yet. The web's favicons and PWA icons carry the same mark. A cold launch shows one loading screen,
-`SharpitLaunchSplash` (the mark breathing, a lime arc once the wait passes 0.45 s), held by
+`SharpitLaunchSplash` (the mark breathing, nothing else), held by
 `LaunchCurtain` until the landing screen can be drawn whole — Résumé's read answered (the snapshot
 alone is the plate without its sessions, so it only shows at the ceiling), or the sign-in, the wall,
-the wizard or another tab — for at least 0.6 s and at most 3.5 s; it leaves growing as it fades, and
+the wizard or another tab — for at least 0.6 s and at most 3.5 s; it leaves growing as it fades on a critically damped spring, and
 Résumé's arrival waits for it so it plays on the hand-over. The system launch screen draws the same
 mark (`LaunchMark`, rendered from `SharpitLaunchSplash.mark`; `LaunchBackground` is the canvas) at the
 screen's centre, where the splash puts it, so the hand-over from iOS shows no jump; re-render the
