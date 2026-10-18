@@ -564,7 +564,8 @@ private struct PlanWeekContent: View {
                 .padding(.bottom, SharpitSpacing.lg)
             }
             .modifier(ScrollUnderGlass())
-            .refreshable { await store.load(offset: offset, force: true) }
+            // No pull-to-refresh: nested in the horizontal pager, a fast fling to the top
+            // fired it and the spinner shoved the week down. Plan reloads on each visit and edit.
             // Only the visible page answers: the strip belongs to the selected week, and
             // a neighbour scrolling in the dark would be wasted work.
             .onChange(of: store.scrollTarget) { _, target in
