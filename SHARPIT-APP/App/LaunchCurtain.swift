@@ -4,8 +4,8 @@ import Observation
 /// The cold launch's one loading screen: up from the first frame until the screen the athlete
 /// lands on can be drawn whole, so Résumé never shows its own loading shape on launch.
 ///
-/// It lifts once something has said « ready » (Résumé read, from the network or the cached
-/// snapshot; the sign-in, the legal wall, the wizard or another tab shown instead) and the mark
+/// It lifts once something has said « ready » (Résumé's read answered; the sign-in, the legal
+/// wall, the wizard or another tab shown instead) and the mark
 /// has been seen for `minimum` — a lift any sooner reads as a flicker. Past `timeout` it lifts
 /// whatever the network is doing: a slow or failed read then shows on Résumé itself.
 @MainActor

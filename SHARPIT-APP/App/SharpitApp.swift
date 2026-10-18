@@ -12,7 +12,8 @@ struct SharpitApp: App {
     @State private var linkInbox = IncomingLinkInbox()
     /// One per process: a return from the background never shows the splash again.
     @State private var launchCurtain = LaunchCurtain { lift in
-        SharpitMotion.run(.easeInOut(duration: 0.5), lift)
+        // Critically damped: it settles without a bounce, quick enough not to hold Résumé back.
+        SharpitMotion.run(.spring(response: 0.35, dampingFraction: 1), lift)
     }
 
     init() {
