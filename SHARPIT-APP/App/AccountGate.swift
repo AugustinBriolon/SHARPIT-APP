@@ -165,6 +165,7 @@ struct AccountGate<Content: View>: View {
     /// Held here rather than built in `body`, so the Sources step keeps observing one source.
     /// Its switch is stored in UserDefaults, so the tabs' own instance reads what was chosen.
     @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
+    @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -215,6 +216,13 @@ struct AccountGate<Content: View>: View {
             case .ready:
                 content()
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
+        }
+        // The wall, the wizard or a failure is the screen: the splash may go. Ready waits on Résumé.
+        .onChange(of: model.status, initial: true) { _, status in
+            switch status {
+            case .consent, .onboarding, .unreachable: launchCurtain?.markReady()
+            case .checking, .ready: break
             }
         }
         // Keyed by the athlete, so signing out and in as someone else asks again.

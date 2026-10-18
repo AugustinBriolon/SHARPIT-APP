@@ -10,6 +10,7 @@ struct TodayView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(ShellRouter.self) private var router
     @Environment(\.features) private var features
+    @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
 
     /// Kept so an activity opened from here can load itself. Nil in previews and
     /// fixtures, where a done session has nothing to fetch.
@@ -243,6 +244,10 @@ struct TodayView: View {
                         }
                     )
                 }
+            }
+            // Résumé can be drawn whole — read, or painted from the snapshot: the splash may go.
+            .onChange(of: store.phaseIdentity, initial: true) { _, identity in
+                if identity != "loading" { launchCurtain?.markReady() }
             }
             .task {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
@@ -497,6 +502,8 @@ private struct TodayFoldView: View {
     /// Arrival phase drives the staggered reveal of each section.
     @State private var phase: TodayArrivalPhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Up on a cold launch: the arrival waits for it, so it plays as the splash leaves.
+    @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
 
     init(
         fold: TodayFold,
@@ -689,7 +696,8 @@ private struct TodayFoldView: View {
                 router.discussWithCoach(about: context)
             }
         }
-        .task {
+        .task(id: launchCurtain?.isUp ?? false) {
+            guard launchCurtain?.isUp != true else { return }
             if !hasCompletedArrival {
                 onArrival()
                 await TodayArrivalDirector.run(

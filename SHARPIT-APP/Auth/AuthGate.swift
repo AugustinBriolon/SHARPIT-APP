@@ -13,6 +13,7 @@ struct AuthGate<SignedIn: View>: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var authIsPresented = false
     @State private var authSession = AuthSession.shared
+    @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
     var signedIn: () -> SignedIn
 
     var body: some View {
@@ -34,6 +35,8 @@ struct AuthGate<SignedIn: View>: View {
             }
         }
         .task {
+            // Signed out: the welcome screen is drawn at once, and plays its own entrance.
+            if clerk.user == nil { launchCurtain?.markReady() }
             AuthSession.shared.bind(context: modelContext)
             if let userId = clerk.user?.id {
                 AuthSession.shared.clearExpiredNotice()

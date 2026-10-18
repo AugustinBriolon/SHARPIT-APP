@@ -10,6 +10,10 @@ struct SharpitApp: App {
     /// cannot-start screen instead of crashing via `try!`.
     private let modelContainer: ModelContainer?
     @State private var linkInbox = IncomingLinkInbox()
+    /// One per process: a return from the background never shows the splash again.
+    @State private var launchCurtain = LaunchCurtain { lift in
+        SharpitMotion.run(.easeInOut(duration: 0.5), lift)
+    }
 
     init() {
         // First, so a crash anywhere in launch is reported.
@@ -73,11 +77,23 @@ struct SharpitApp: App {
     }
 
     private var app: some View {
-        AuthGate {
-            // The legal wall, then the web's onboarding, before a new account sees the tabs.
-            AccountGate {
-                RootView()
+        ZStack {
+            AuthGate {
+                // The legal wall, then the web's onboarding, before a new account sees the tabs.
+                AccountGate {
+                    RootView()
+                }
             }
+            if launchCurtain.isUp {
+                SharpitLaunchSplash()
+                    .transition(.sharpitLaunchExit)
+                    .zIndex(1)
+            }
+        }
+        .environment(launchCurtain)
+        .task {
+            // Without motion there is nothing to see through, so no floor on the wait.
+            await launchCurtain.run(minimum: SharpitMotion.reduceMotion ? .zero : LaunchCurtain.minimum)
         }
         .environment(Clerk.shared)
         .environment(linkInbox)

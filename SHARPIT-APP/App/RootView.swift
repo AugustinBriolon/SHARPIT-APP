@@ -35,6 +35,7 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     /// Nil in previews and demo hosts, which open no links.
     @Environment(IncomingLinkInbox.self) private var linkInbox: IncomingLinkInbox?
+    @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -110,6 +111,8 @@ struct RootView: View {
         // A tab turned off while showing, or a link to it, lands on Résumé.
         .onChange(of: router.selectedTab, initial: true) { _, tab in
             if tab == .body, !features.isOn(.health) { router.select(.today) }
+            // A link or a notification opened another tab: Résumé is not what the splash waits on.
+            if tab != .today { launchCurtain?.markReady() }
         }
         .onChange(of: features.prefs) { _, _ in
             if router.selectedTab == .body, !features.isOn(.health) { router.select(.today) }
