@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// The cold launch's loading screen (`LaunchCurtain`): the app icon's mark settles in and
-/// breathes; a fine lime arc circles it only once the wait is long enough to need saying, so a
-/// fast launch shows the mark alone. It leaves by growing slightly as it fades, onto Résumé.
+/// The cold launch's loading screen (`LaunchCurtain`): the app icon's mark, drawn from the first
+/// frame exactly where the system launch screen put it (`LaunchMark`, screen centre), breathes;
+/// a fine lime arc circles it only once the wait is long enough to need saying, so a fast launch
+/// shows the mark alone. It leaves by growing slightly as it fades, onto Résumé.
 struct SharpitLaunchSplash: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var markIsIn = false
     @State private var arcIsIn = false
 
     private static let markSize: CGFloat = 52
@@ -21,17 +21,23 @@ struct SharpitLaunchSplash: View {
             ZStack {
                 arc
                     .opacity(arcIsIn ? 1 : 0)
-                Image(systemName: "circle.hexagonpath.fill")
-                    .font(.system(size: Self.markSize, weight: .regular))
-                    .foregroundStyle(SharpitColor.brandMarkGradient)
+                Self.mark
                     .symbolEffect(.breathe, isActive: !reduceMotion)
-                    .scaleEffect(markIsIn ? 1 : 0.9)
-                    .opacity(markIsIn ? 1 : 0)
             }
         }
+        // The screen's centre, not the safe area's: the launch screen's image sits there.
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Chargement")
         .task { await arrive() }
+    }
+
+    /// Also rendered into the `LaunchMark` asset, so the system launch screen draws the same pixels.
+    static var mark: some View {
+        Image(systemName: "circle.hexagonpath.fill")
+            .font(.system(size: markSize, weight: .regular))
+            .foregroundStyle(SharpitColor.brandMarkGradient)
     }
 
     /// A short lime arc on a hairline track, turning steadily — the only motion that says « wait ».
@@ -52,11 +58,7 @@ struct SharpitLaunchSplash: View {
     }
 
     private func arrive() async {
-        guard !reduceMotion else {
-            markIsIn = true
-            return
-        }
-        SharpitMotion.run { markIsIn = true }
+        guard !reduceMotion else { return }
         try? await Task.sleep(for: Self.arcDelay)
         guard !Task.isCancelled else { return }
         SharpitMotion.run(SharpitMotion.fade) { arcIsIn = true }

@@ -245,16 +245,16 @@ struct TodayView: View {
                     )
                 }
             }
-            // Résumé can be drawn whole — read, or painted from the snapshot: the splash may go.
-            .onChange(of: store.phaseIdentity, initial: true) { _, identity in
-                if identity != "loading" { launchCurtain?.markReady() }
-            }
             .task {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
                 // The food log is read alongside today rather than once the fold is drawn, so
                 // the nutrition card no longer waits on the whole day before asking for its own.
                 async let nutritionRead: Void? = nutrition?.load(trainingDayId: store.dayId)
                 await store.load(resetToLoading: shouldReset)
+                // The server has answered, or refused: Résumé is drawn whole, and the splash may
+                // go. The snapshot alone is the plate without its sessions, so it waits for the
+                // curtain's ceiling instead.
+                launchCurtain?.markReady()
                 Task { await pullProviders(force: false) }
                 weather.start()
                 _ = await nutritionRead
