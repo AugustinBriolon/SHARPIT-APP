@@ -21,6 +21,14 @@ nonisolated struct V1TodayResponse: Codable, Sendable, Equatable {
     var targetBand: V1TodayTargetBand? = nil
     /// Chronological day events. Callers: TodayTimelineStrip. API: GET /api/v1/today. User: fix all.
     var timeline: [V1DayTimelineEvent]? = nil
+    /// A week SharpIt wrote because the plan was running out, waiting to be looked at (ADR-095).
+    var planHorizon: V1TodayPlanHorizon? = nil
+}
+
+nonisolated struct V1TodayPlanHorizon: Codable, Sendable, Equatable {
+    /// First day of the week written, yyyy-MM-dd.
+    var startDate: String
+    var sessionCount: Int
 }
 
 nonisolated struct V1DayTimelineEvent: Codable, Sendable, Equatable, Identifiable {

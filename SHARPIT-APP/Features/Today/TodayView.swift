@@ -583,6 +583,10 @@ private struct TodayFoldView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
+                if let horizon = fold.planHorizon {
+                    PlanHorizonCard(horizon: horizon) { router.open(.planGenerator) }
+                }
+
                 evidenceSection
                     .opacity(phase.showsSession ? 1 : 0)
                     .offset(y: phase.showsSession ? 0 : 18)
