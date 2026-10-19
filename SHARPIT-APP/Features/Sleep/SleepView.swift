@@ -22,7 +22,7 @@ struct SleepView: View {
         self.tokenProvider = tokenProvider
         self.profileClient = profileClient
         _store = State(initialValue: DayResourceStore(
-            failureMessage: "Ton sommeil n'a pas pu être chargé.",
+            failureMessage: String(localized: "Ton sommeil n'a pas pu être chargé."),
             tokenProvider: tokenProvider,
             dataDays: { try await dataDaysClient.dataDays(domain: .sleep, from: $0, to: $1, token: $2) },
             fetch: { try await client.sleep(trainingDayId: $0, token: $1) }
@@ -39,12 +39,12 @@ struct SleepView: View {
 
     var body: some View {
         DayDetailScaffold(
-            title: "Sommeil",
+            title: String(localized: "Sommeil"),
             emptySymbol: "moon.zzz",
-            unavailableTitle: "Sommeil indisponible",
+            unavailableTitle: String(localized: "Sommeil indisponible"),
             store: store,
             content: { sleep in SleepSections(sleep: sleep) },
-            emptyAction: (title: "Synchroniser maintenant", run: syncAndReload)
+            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload)
         )
         // The sleep targets, set where they are read — right of the title, beside « Aujourd'hui ».
         .toolbar {
@@ -93,7 +93,7 @@ private struct SleepHero: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(
-                title: "Score de sommeil",
+                title: String(localized: "Score de sommeil"),
                 symbol: "moon.fill",
                 subtitle: subtitle,
                 showsChevron: false
@@ -115,7 +115,7 @@ private struct SleepHero: View {
                 Divider().overlay(SharpitColor.border)
                 HStack(alignment: .top, spacing: SharpitSpacing.md) {
                     SharpitStatTile(
-                        caption: "Au lit · \(SleepReadout.clock(sleep.bedtimeMin)) → \(SleepReadout.clock(sleep.wakeMin))",
+                        caption: String(localized: "Au lit · \(SleepReadout.clock(sleep.bedtimeMin)) → \(SleepReadout.clock(sleep.wakeMin))"),
                         value: SleepReadout.duration(
                             SleepReadout.timeInBed(bedtime: sleep.bedtimeMin, wake: sleep.wakeMin)
                         ),
@@ -131,7 +131,7 @@ private struct SleepHero: View {
                 let parts = SleepReadout.components(sleep.breakdown)
                 if !parts.isEmpty {
                     Divider().overlay(SharpitColor.border)
-                    SharpitEyebrow("Ce qui l'a façonné")
+                    SharpitEyebrow(String(localized: "Ce qui l'a façonné"))
                     VStack(spacing: SharpitSpacing.md) {
                         ForEach(parts, id: \.label) { part in
                             breakdownRow(part.label, part.value)
@@ -140,8 +140,8 @@ private struct SleepHero: View {
                 }
             } else {
                 Text(sleep.nightStatus == .pending
-                     ? "La nuit n'est pas encore synchronisée."
-                     : "Aucune nuit enregistrée pour ce jour.")
+                     ? String(localized: "La nuit n'est pas encore synchronisée.")
+                     : String(localized: "Aucune nuit enregistrée pour ce jour."))
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
@@ -151,8 +151,8 @@ private struct SleepHero: View {
     }
 
     private var subtitle: String {
-        guard sleep.nightStatus == .present else { return "Cette nuit" }
-        return "Cette nuit · \(SleepReadout.duration(sleep.durationMin))"
+        guard sleep.nightStatus == .present else { return String(localized: "Cette nuit") }
+        return String(localized: "Cette nuit · \(SleepReadout.duration(sleep.durationMin))")
     }
 
     private var dial: some View {
@@ -199,8 +199,8 @@ private struct SleepHero: View {
 
     private var durationNote: String {
         let target = SleepReadout.duration(sleep.targetMin)
-        guard let delta = SleepReadout.delta(sleep.targetDeltaMin) else { return "Endormi · sur \(target)" }
-        return "Endormi · \(delta) vs \(target)"
+        guard let delta = SleepReadout.delta(sleep.targetDeltaMin) else { return String(localized: "Endormi · sur \(target)") }
+        return String(localized: "Endormi · \(delta) vs \(target)")
     }
 }
 
@@ -214,7 +214,7 @@ private struct SleepCoachCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: "Coach du sommeil", symbol: "bed.double.fill", subtitle: "Ce soir", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Coach du sommeil"), symbol: "bed.double.fill", subtitle: String(localized: "Ce soir"), showsChevron: false)
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if let bedtime = sleep.recommendedBedtimeMin {
                     HStack(spacing: SharpitSpacing.md) {
@@ -249,11 +249,11 @@ private struct SleepCoachCard: View {
                     if let contributors = sleep.sleepNeededContributors {
                         let bits = [
                             contributors.debtBoostMin > 0
-                                ? "dette +\(Int(contributors.debtBoostMin)) min" : nil,
+                                ? String(localized: "dette +\(Int(contributors.debtBoostMin)) min") : nil,
                             contributors.strainBoostMin > 0
-                                ? "effort +\(Int(contributors.strainBoostMin)) min" : nil,
+                                ? String(localized: "effort +\(Int(contributors.strainBoostMin)) min") : nil,
                             contributors.efficiencyBoostMin > 0
-                                ? "efficacité +\(Int(contributors.efficiencyBoostMin)) min" : nil,
+                                ? String(localized: "efficacité +\(Int(contributors.efficiencyBoostMin)) min") : nil,
                         ].compactMap { $0 }
                         if !bits.isEmpty {
                             Text(bits.joined(separator: " · "))
@@ -282,7 +282,7 @@ private struct SleepCoachCard: View {
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
 
-                CoachDiscussButton(title: "Discuter de mon sommeil") {
+                CoachDiscussButton(title: String(localized: "Discuter de mon sommeil")) {
                     router.discussWithCoach(about: CoachDiscuss.describe(.today))
                 }
             }
@@ -301,7 +301,7 @@ private struct SleepStructureSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: "Structure du sommeil", symbol: "chart.bar.xaxis", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Structure du sommeil"), symbol: "chart.bar.xaxis", showsChevron: false)
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 GeometryReader { geo in
                     HStack(spacing: 2) {
@@ -364,7 +364,7 @@ private struct SleepBankSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: "Banque de sommeil", symbol: "banknote", subtitle: "7 et 14 derniers jours", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Banque de sommeil"), symbol: "banknote", subtitle: String(localized: "7 et 14 derniers jours"), showsChevron: false)
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -389,17 +389,17 @@ private struct SleepBankSection: View {
                 Divider().overlay(SharpitColor.border)
                 HStack {
                     bankFact(
-                        caption: "Moyenne 7 j",
+                        caption: String(localized: "Moyenne 7 j"),
                         value: SleepReadout.duration(sleep.averages.durationMin)
                     )
                     Spacer(minLength: 0)
                     bankFact(
-                        caption: "Régularité",
-                        value: sleep.regularityMin.map { "± \(Int($0.rounded())) min" } ?? "—"
+                        caption: String(localized: "Régularité"),
+                        value: sleep.regularityMin.map { String(localized: "± \(Int($0.rounded())) min") } ?? "—"
                     )
                     Spacer(minLength: 0)
                     bankFact(
-                        caption: "Score moyen",
+                        caption: String(localized: "Score moyen"),
                         value: sleep.averages.score.map { "\(Int($0.rounded()))" } ?? "—"
                     )
                 }
@@ -438,17 +438,17 @@ private struct SleepHistorySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: "Tendances", symbol: "chart.bar.fill", subtitle: "\(history.count) dernières nuits", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Tendances"), symbol: "chart.bar.fill", subtitle: String(localized: "\(history.count) dernières nuits"), showsChevron: false)
             Chart {
                 ForEach(nights, id: \.date) { night in
                     BarMark(
-                        x: .value("Nuit", night.date, unit: .day),
-                        y: .value("Heures", night.minutes / 60)
+                        x: .value(String(localized: "Nuit"), night.date, unit: .day),
+                        y: .value(String(localized: "Heures"), night.minutes / 60)
                     )
                     .foregroundStyle(night.minutes >= targetMin ? SharpitColor.foreground : SharpitColor.signalCaution)
                     .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 }
-                RuleMark(y: .value("Cible", targetMin / 60))
+                RuleMark(y: .value(String(localized: "Cible"), targetMin / 60))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
                     .annotation(position: .top, alignment: .trailing) {

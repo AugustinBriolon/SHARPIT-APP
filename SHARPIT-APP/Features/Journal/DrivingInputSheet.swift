@@ -27,17 +27,17 @@ struct DrivingInputSheet: View {
                 .padding(.top, SharpitSpacing.xs)
 
                 HStack(spacing: SharpitSpacing.md) {
-                    stepButton("minus", delta: -15, label: "Retirer 15 minutes")
+                    stepButton("minus", delta: -15, label: String(localized: "Retirer 15 minutes"))
                         .disabled(minutes <= 0)
                     Text("± 15 min")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .frame(minWidth: 70)
-                    stepButton("plus", delta: 15, label: "Ajouter 15 minutes")
+                    stepButton("plus", delta: 15, label: String(localized: "Ajouter 15 minutes"))
                 }
 
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    SharpitFieldLabel("Durée")
+                    SharpitFieldLabel(String(localized: "Durée"))
                     LazyVGrid(
                         columns: Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3),
                         spacing: SharpitSpacing.xs

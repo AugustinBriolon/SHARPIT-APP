@@ -161,7 +161,7 @@ enum JournalClientError: Error, Equatable, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .decoding: "Réponse du journal incompatible"
+        case .decoding: String(localized: "Réponse du journal incompatible")
         }
     }
 }

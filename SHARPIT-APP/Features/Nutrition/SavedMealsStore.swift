@@ -32,7 +32,7 @@ final class SavedMealsStore {
         } catch is CancellationError {
         } catch {
             guard phase != .ready else { return }
-            phase = .failed(SharpitErrorGuidance.message(for: error, subject: "Tes repas enregistrés"))
+            phase = .failed(SharpitErrorGuidance.message(for: error, subject: String(localized: "Tes repas enregistrés")))
         }
     }
 
@@ -49,7 +49,7 @@ final class SavedMealsStore {
             // Already gone on the server: what the athlete asked for is true.
         } catch {
             meals.insert(meal, at: min(index, meals.count))
-            failure = FoodLogStore.failureMessage(error, action: "Repas non supprimé")
+            failure = FoodLogStore.failureMessage(error, action: String(localized: "Repas non supprimé"))
         }
     }
 }

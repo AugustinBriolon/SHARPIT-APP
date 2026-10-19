@@ -42,7 +42,7 @@ struct VerdictSmall: View {
 
     var body: some View {
         if let verdict {
-            WidgetFrame("Verdict", symbol: verdict.posture.symbolName, tint: verdict.posture.tone) {
+            WidgetFrame(String(localized: "Verdict"), symbol: verdict.posture.symbolName, tint: verdict.posture.tone) {
                 WidgetEyebrow(text: verdict.status, tint: verdict.posture.tone)
                 WidgetTitle(text: verdict.headline, lines: 3)
                     .padding(.top, 2)
@@ -52,7 +52,7 @@ struct VerdictSmall: View {
                 }
             }
         } else {
-            WidgetAwaitingDay(eyebrow: "Verdict", symbol: "questionmark.circle")
+            WidgetAwaitingDay(eyebrow: String(localized: "Verdict"), symbol: "questionmark.circle")
         }
     }
 }

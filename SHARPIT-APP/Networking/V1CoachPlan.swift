@@ -38,7 +38,7 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
         let rawType = try container.decodeIfPresent(String.self, forKey: .type) ?? "OTHER"
         type = V1ActivityType(rawValue: rawType) ?? .other
         intensity = try container.decodeIfPresent(String.self, forKey: .intensity) ?? "ENDURANCE"
-        title = try container.decodeIfPresent(String.self, forKey: .title) ?? "Séance"
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? String(localized: "Séance")
         description = try container.decodeIfPresent(String.self, forKey: .description) ?? ""
         durationMin = try container.decodeIfPresent(Double.self, forKey: .durationMin) ?? 0
         load = try container.decodeIfPresent(Double.self, forKey: .load) ?? 0
@@ -82,7 +82,7 @@ nonisolated struct V1GeneratedSession: Identifiable, Codable, Sendable, Hashable
 
     /// Whether a session streamed mid-generation is far enough along to show: its day and its
     /// title are written.
-    var isDrafted: Bool { !date.isEmpty && !title.isEmpty && title != "Séance" }
+    var isDrafted: Bool { !date.isEmpty && !title.isEmpty && title != String(localized: "Séance") }
 
     /// What `/api/v1/coach/plan/insert` receives for this session.
     var insertBody: JSONValue {
@@ -170,9 +170,9 @@ nonisolated enum V1AdaptAction: String, Codable, Sendable {
 
     var label: String {
         switch self {
-        case .add: "Ajouter"
-        case .modify: "Modifier"
-        case .remove: "Supprimer"
+        case .add: String(localized: "Ajouter")
+        case .modify: String(localized: "Modifier")
+        case .remove: String(localized: "Supprimer")
         }
     }
 }

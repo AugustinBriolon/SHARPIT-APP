@@ -124,7 +124,7 @@ private struct RecordCategoryCard: View {
                 showsChevron: false
             ) {
                 if let best = category.entries.first, RecordsReadout.isRecent(best.date) {
-                    SharpitPill("Nouveau PR", style: .lime)
+                    SharpitPill(String(localized: "Nouveau PR"), style: .lime)
                 }
             }
 
@@ -226,9 +226,9 @@ private struct RunBestsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(
-                title: "Meilleurs temps",
+                title: String(localized: "Meilleurs temps"),
                 symbol: "stopwatch",
-                subtitle: "Distances de référence",
+                subtitle: String(localized: "Distances de référence"),
                 showsChevron: false
             )
             SharpitInsetGroup {
@@ -296,9 +296,9 @@ private struct PowerCurveCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(
-                title: "Courbe de puissance",
+                title: String(localized: "Courbe de puissance"),
                 symbol: "bolt.fill",
-                subtitle: "Puissance moyenne maximale par durée",
+                subtitle: String(localized: "Puissance moyenne maximale par durée"),
                 showsChevron: false
             )
 
@@ -322,21 +322,21 @@ private struct PowerCurveCard: View {
     private var chart: some View {
         Chart {
             ForEach(points) { point in
-                AreaMark(x: .value("Durée", point.label), y: .value("Puissance", point.watts))
+                AreaMark(x: .value(String(localized: "Durée"), point.label), y: .value(String(localized: "Puissance"), point.watts))
                     .interpolationMethod(.monotone)
                     .foregroundStyle(SharpitChartStyle.area)
-                LineMark(x: .value("Durée", point.label), y: .value("Puissance", point.watts))
+                LineMark(x: .value(String(localized: "Durée"), point.label), y: .value(String(localized: "Puissance"), point.watts))
                     .interpolationMethod(.monotone)
                     .foregroundStyle(SharpitChartStyle.line)
                     .lineStyle(StrokeStyle(lineWidth: SharpitChartStyle.lineWidth, lineCap: .round))
-                PointMark(x: .value("Durée", point.label), y: .value("Puissance", point.watts))
+                PointMark(x: .value(String(localized: "Durée"), point.label), y: .value(String(localized: "Puissance"), point.watts))
                     .symbol { SharpitChartPoint() }
             }
             if let selected {
-                RuleMark(x: .value("Durée", selected.label))
+                RuleMark(x: .value(String(localized: "Durée"), selected.label))
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
                     .lineStyle(StrokeStyle(lineWidth: 1))
-                PointMark(x: .value("Durée", selected.label), y: .value("Puissance", selected.watts))
+                PointMark(x: .value(String(localized: "Durée"), selected.label), y: .value(String(localized: "Puissance"), selected.watts))
                     .symbol { SharpitChartPoint() }
                     .annotation(position: .top, spacing: 6, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                         SharpitChartBubble(text: RecordsReadout.watts(selected.watts))

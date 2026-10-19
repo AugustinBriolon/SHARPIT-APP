@@ -299,10 +299,10 @@ nonisolated enum TrainingDayId {
 
     static func displayName(_ trainingDayId: String) -> String {
         guard let date = date(trainingDayId) else {
-            return "Résumé"
+            return String(localized: "Résumé")
         }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = AppLanguage.locale
         formatter.setLocalizedDateFormatFromTemplate("dMMM")
         return formatter.string(from: date)
     }

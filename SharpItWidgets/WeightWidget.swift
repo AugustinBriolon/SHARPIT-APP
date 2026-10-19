@@ -11,7 +11,7 @@ struct WeightWidget: Widget {
                 if entry.unlocksExtraWidgets {
                     WeightWidgetView(entry: entry)
                 } else {
-                    WidgetProLocked(title: "Poids", symbol: "scalemass")
+                    WidgetProLocked(title: String(localized: "Poids"), symbol: "scalemass")
                 }
             }
                 .sharpitWidgetChrome()
@@ -69,7 +69,7 @@ struct WeightSmall: View {
     let weight: WidgetSnapshot.Weight?
 
     var body: some View {
-        WidgetFrame("Poids", symbol: "scalemass") {
+        WidgetFrame(String(localized: "Poids"), symbol: "scalemass") {
             if let weight {
                 WidgetHero(value: SharpitFigureFormat.kilograms(weight.kilograms), unit: "kg")
                 if let changeLine = weight.changeLine {
@@ -80,7 +80,7 @@ struct WeightSmall: View {
                         .padding(.top, WidgetMetrics.lineGap)
                 }
             } else {
-                WidgetAwaitingData(text: "Aucune pesée pour l'instant.")
+                WidgetAwaitingData(text: String(localized: "Aucune pesée pour l'instant."))
             }
         }
     }

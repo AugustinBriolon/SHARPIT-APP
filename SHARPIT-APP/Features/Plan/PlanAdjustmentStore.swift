@@ -83,6 +83,6 @@ final class PlanAdjustmentStore {
 
     private static func message(for error: Error) -> String {
         if case CoachPlanError.custom(let message) = error { return message }
-        return SharpitErrorGuidance.message(for: error, subject: "L'ajustement")
+        return SharpitErrorGuidance.message(for: error, subject: String(localized: "L'ajustement"))
     }
 }

@@ -14,16 +14,16 @@ struct ActivityTechnicalRow: Equatable, Identifiable {
 enum ActivityTechnicalReadout {
     static func rows(_ analysis: V1ActivityAnalysis) -> [ActivityTechnicalRow] {
         var rows: [ActivityTechnicalRow] = []
-        let french = Locale(identifier: "fr_FR")
+        let locale = AppLanguage.locale
         func decimal(_ value: Double) -> String {
-            value.formatted(.number.precision(.fractionLength(2)).locale(french))
+            value.formatted(.number.precision(.fractionLength(2)).locale(locale))
         }
 
         if let power = analysis.power, let normalized = power.normalized {
             rows.append(ActivityTechnicalRow(
                 label: "NP",
                 value: "\(Int(normalized.rounded())) W",
-                note: power.avg.map { "moy \(Int($0.rounded())) W" }
+                note: power.avg.map { String(localized: "moy \(Int($0.rounded())) W") }
             ))
         }
         if let intensityFactor = analysis.load?.intensityFactor {
@@ -33,7 +33,7 @@ enum ActivityTechnicalReadout {
             rows.append(ActivityTechnicalRow(
                 label: "VI",
                 value: decimal(variability),
-                note: variability > 1.1 ? "effort variable" : "effort régulier"
+                note: variability > 1.1 ? String(localized: "effort variable") : String(localized: "effort régulier")
             ))
         }
         if let tss = analysis.load?.tss {
@@ -41,23 +41,23 @@ enum ActivityTechnicalReadout {
         }
         if let efficiency = analysis.hr?.efficiencyFactor {
             rows.append(ActivityTechnicalRow(
-                label: analysis.hr?.efficiencyLabel ?? "Facteur d'efficacité",
-                value: efficiency.formatted(.number.locale(french))
+                label: analysis.hr?.efficiencyLabel ?? String(localized: "Facteur d'efficacité"),
+                value: efficiency.formatted(.number.locale(locale))
             ))
         }
         if let decoupling = analysis.hr?.decouplingPct {
             let sign = decoupling > 0 ? "+" : ""
             rows.append(ActivityTechnicalRow(
-                label: "Découplage",
-                value: "\(sign)\(decoupling.formatted(.number.precision(.fractionLength(0...1)).locale(french))) %",
+                label: String(localized: "Découplage"),
+                value: "\(sign)\(decoupling.formatted(.number.precision(.fractionLength(0...1)).locale(locale))) %",
                 note: decouplingNote(abs(decoupling))
             ))
         }
         if let paceVariability = analysis.run?.paceVariabilityPct {
             rows.append(ActivityTechnicalRow(
-                label: "Variabilité allure",
-                value: "\(paceVariability.formatted(.number.precision(.fractionLength(0...1)).locale(french))) %",
-                note: "écart-type / moyenne"
+                label: String(localized: "Variabilité allure"),
+                value: "\(paceVariability.formatted(.number.precision(.fractionLength(0...1)).locale(locale))) %",
+                note: String(localized: "écart-type / moyenne")
             ))
         }
         return rows
@@ -68,11 +68,11 @@ enum ActivityTechnicalReadout {
         guard let thresholds = analysis.thresholds else { return nil }
         let parts = [
             thresholds.ftp.map { "FTP \(Int($0.rounded())) W" },
-            thresholds.lthr.map { "LTHR \(Int($0.rounded())) bpm" },
-            thresholds.maxHr.map { "FC max \(Int($0.rounded())) bpm" },
+            thresholds.lthr.map { String(localized: "LTHR \(Int($0.rounded())) bpm") },
+            thresholds.maxHr.map { String(localized: "FC max \(Int($0.rounded())) bpm") },
         ].compactMap { $0 }
         guard !parts.isEmpty else { return nil }
-        let origin = thresholds.source == "estimate" ? "seuils estimés" : "seuils du profil"
+        let origin = thresholds.source == "estimate" ? String(localized: "seuils estimés") : String(localized: "seuils du profil")
         return (parts + [origin]).joined(separator: " · ")
     }
 
@@ -86,13 +86,13 @@ enum ActivityTechnicalReadout {
         if analysis.load?.method == "power" {
             return analysis.thresholds?.ftp.map { "FTP \(Int($0.rounded())) W" }
         }
-        return analysis.thresholds?.lthr.map { "LTHR \(Int($0.rounded())) bpm" }
+        return analysis.thresholds?.lthr.map { String(localized: "LTHR \(Int($0.rounded())) bpm") }
     }
 
     static func decouplingNote(_ magnitude: Double) -> String {
-        if magnitude < 5 { return "Peu de dérive cardiaque" }
-        if magnitude < 10 { return "Correct pour une sortie longue" }
-        return "Dérive élevée : chaleur, fatigue ou endurance"
+        if magnitude < 5 { return String(localized: "Peu de dérive cardiaque") }
+        if magnitude < 10 { return String(localized: "Correct pour une sortie longue") }
+        return String(localized: "Dérive élevée : chaleur, fatigue ou endurance")
     }
 }
 
@@ -110,15 +110,15 @@ struct ActivityTechnicalSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitEyebrow("Analyse technique")
+            SharpitEyebrow(String(localized: "Analyse technique"))
             if !rows.isEmpty {
                 ActivityTechnicalGrid(rows: rows)
             }
             if !heartZones.isEmpty {
-                ZoneDistribution(title: "Zones cardiaques", zones: heartZones)
+                ZoneDistribution(title: String(localized: "Zones cardiaques"), zones: heartZones)
             }
             if !powerZones.isEmpty {
-                ZoneDistribution(title: "Zones de puissance", zones: powerZones)
+                ZoneDistribution(title: String(localized: "Zones de puissance"), zones: powerZones)
             }
             if let line = ActivityTechnicalReadout.thresholdsLine(analysis) {
                 Text(line)

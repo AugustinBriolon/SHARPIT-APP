@@ -247,13 +247,13 @@ struct GuidedStrengthWorkoutView: View {
 
     private var heartRateAccessibilityLabel: String {
         if let bpm = heartRate.bpm, heartRate.status == .connected {
-            return "Fréquence cardiaque \(bpm) battements par minute"
+            return String(localized: "Fréquence cardiaque \(bpm) battements par minute")
         }
         switch heartRate.status {
-        case .scanning, .connecting: return "Recherche du capteur cardiaque"
-        case .unauthorized, .unavailable: return "Capteur cardiaque indisponible"
-        case .connected: return "Capteur cardiaque connecté"
-        default: return "Connecter un capteur cardiaque"
+        case .scanning, .connecting: return String(localized: "Recherche du capteur cardiaque")
+        case .unauthorized, .unavailable: return String(localized: "Capteur cardiaque indisponible")
+        case .connected: return String(localized: "Capteur cardiaque connecté")
+        default: return String(localized: "Connecter un capteur cardiaque")
         }
     }
 
@@ -284,12 +284,12 @@ struct GuidedStrengthWorkoutView: View {
                 }
 
                 SharpitProgressBar(
-                    label: "Séries faites",
+                    label: String(localized: "Séries faites"),
                     value: "\(session.completedCount) / \(session.targets.count)",
                     fraction: session.targets.isEmpty ? 0 : Double(session.completedCount) / Double(session.targets.count)
                 )
 
-                SharpitPrimaryButton(title: session.completedCount == 0 ? "Aucune série encore" : "Terminer la séance") {
+                SharpitPrimaryButton(title: session.completedCount == 0 ? String(localized: "Aucune série encore") : String(localized: "Terminer la séance")) {
                     stopTimers()
                     SharpitMotion.run { phase = .summary }
                 }
@@ -329,7 +329,7 @@ struct GuidedStrengthWorkoutView: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .multilineTextAlignment(.leading)
                     if done == total, total > 0 {
-                        SharpitPill("Terminé", style: .lime)
+                        SharpitPill(String(localized: "Terminé"), style: .lime)
                     }
                 }
 
@@ -362,7 +362,7 @@ struct GuidedStrengthWorkoutView: View {
             )
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kilogrammes" : "Aucun volume")
+        .accessibilityLabel(volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kilogrammes" : String(localized: "Aucun volume"))
     }
 
     // MARK: - Exercise card (image 1)
@@ -396,7 +396,7 @@ struct GuidedStrengthWorkoutView: View {
                                 .font(SharpitTypography.cardTitle)
                                 .tracking(SharpitTypography.cardTitleTracking)
                                 .foregroundStyle(SharpitColor.foreground)
-                            Text(group?.notes.flatMap { $0.isEmpty ? nil : $0 } ?? "Séries prescrites")
+                            Text(group?.notes.flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Séries prescrites"))
                                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                                 .foregroundStyle(SharpitColor.mutedForeground)
                         }
@@ -441,7 +441,7 @@ struct GuidedStrengthWorkoutView: View {
                             }
                 }
 
-                SharpitDashedAddButton(title: "Ajouter une série") {
+                SharpitDashedAddButton(title: String(localized: "Ajouter une série")) {
                     session.addSet(toExercise: name)
                 }
                 .listRowInsets(EdgeInsets(
@@ -478,7 +478,7 @@ struct GuidedStrengthWorkoutView: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .focused($focusedField, equals: .duration(set.id))
                         .frame(minWidth: 44, maxWidth: 72, alignment: .leading)
-                        .accessibilityLabel(set.durationUsesMinutes ? "Durée en minutes" : "Durée en secondes")
+                        .accessibilityLabel(set.durationUsesMinutes ? String(localized: "Durée en minutes") : String(localized: "Durée en secondes"))
                     Button {
                         session.setUsesDuration(id: set.id, false)
                         focusedField = nil
@@ -552,7 +552,7 @@ struct GuidedStrengthWorkoutView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(set.isDone ? "Série faite" : "Marquer la série")
+                .accessibilityLabel(set.isDone ? String(localized: "Série faite") : String(localized: "Marquer la série"))
             }
             .padding(.leading, SharpitSpacing.rowPaddingX)
             .padding(.trailing, SharpitSpacing.xs)
@@ -603,9 +603,9 @@ struct GuidedStrengthWorkoutView: View {
                 }
 
                 HStack {
-                    restLine("Dernière", last?.readoutLine)
+                    restLine(String(localized: "Dernière"), last?.readoutLine)
                     Spacer(minLength: SharpitSpacing.sm)
-                    restLine("Prochaine", next?.readoutLine)
+                    restLine(String(localized: "Prochaine"), next?.readoutLine)
                 }
 
                 HStack(spacing: SharpitSpacing.sm) {
@@ -613,13 +613,13 @@ struct GuidedStrengthWorkoutView: View {
                         extendRest(by: 15)
                     }
                     SharpitPrimaryButton(
-                        title: restPaused ? "Reprendre" : "Pause",
+                        title: restPaused ? String(localized: "Reprendre") : String(localized: "Pause"),
                         style: .accent,
                         trailingSymbol: restPaused ? "play.circle.fill" : "pause.circle.fill"
                     ) {
                         toggleRestPause()
                     }
-                    SharpitPrimaryButton(title: "Passer", trailingSymbol: "forward.circle.fill") {
+                    SharpitPrimaryButton(title: String(localized: "Passer"), trailingSymbol: "forward.circle.fill") {
                         endRest()
                     }
                 }
@@ -647,8 +647,8 @@ struct GuidedStrengthWorkoutView: View {
     }
 
     private func restSubtitle(next: GuidedStrengthSetTarget?) -> String {
-        guard let next else { return "Dernière série terminée" }
-        return "\(next.exerciseName) · série \(next.setNumber) sur \(next.setCount)"
+        guard let next else { return String(localized: "Dernière série terminée") }
+        return String(localized: "\(next.exerciseName) · série \(next.setNumber) sur \(next.setCount)")
     }
 
     private var lastCompletedSet: GuidedStrengthSetTarget? {
@@ -702,7 +702,7 @@ struct GuidedStrengthWorkoutView: View {
                 }
 
                 SharpitPrimaryButton(
-                    title: session.completedCount == 0 ? "Fermer" : "Enregistrer la séance",
+                    title: session.completedCount == 0 ? String(localized: "Fermer") : String(localized: "Enregistrer la séance"),
                     isBusy: isSaving
                 ) {
                     Task { await save() }
@@ -718,7 +718,7 @@ struct GuidedStrengthWorkoutView: View {
     private var feedbackPanel: some View {
         // Flat: it sits inside the summary card.
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitEyebrow("Comment c’était ?")
+            SharpitEyebrow(String(localized: "Comment c’était ?"))
             rpePicker
             feelingPicker
         }
@@ -745,7 +745,7 @@ struct GuidedStrengthWorkoutView: View {
 
     private var feelingPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitFieldLabel("Ressenti")
+            SharpitFieldLabel(String(localized: "Ressenti"))
             HStack(spacing: SharpitSpacing.xs) {
                 ForEach(SessionFeeling.allCases) { option in
                     let selected = feeling == option
@@ -801,7 +801,7 @@ struct GuidedStrengthWorkoutView: View {
             startedAt: session.startedAt,
             endsAt: endsAt,
             nextExercise: nextSet?.exerciseName ?? "",
-            nextSetLine: nextSet.map { "série \($0.setNumber) · \($0.readoutLine)" } ?? ""
+            nextSetLine: nextSet.map { String(localized: "série \($0.setNumber) · \($0.readoutLine)") } ?? ""
         )
         scheduleRestWake(at: endsAt)
     }
@@ -891,14 +891,14 @@ struct GuidedStrengthWorkoutView: View {
         let exercise = focus ?? current?.exerciseName ?? ""
         let detail: String = {
             if let current, current.exerciseName == exercise {
-                return "série \(current.setNumber) · \(current.readoutLine)"
+                return String(localized: "série \(current.setNumber) · \(current.readoutLine)")
             }
             if let focus,
                let group = session.exerciseGroups.first(where: { $0.name == focus }) {
                 let done = group.doneCount(in: session.targets)
-                return "\(done)/\(group.indices.count) séries"
+                return String(localized: "\(done)/\(group.indices.count) séries")
             }
-            return "\(session.completedCount) série\(session.completedCount == 1 ? "" : "s")"
+            return String(localized: "\(session.completedCount) série\(session.completedCount == 1 ? "" : "s")")
         }()
 
         if forceActive {
@@ -941,7 +941,7 @@ struct GuidedStrengthWorkoutView: View {
         } catch let SharpitAPIError.message(reason) {
             failure = reason
         } catch {
-            failure = SharpitErrorGuidance.message(for: error, subject: "La séance")
+            failure = SharpitErrorGuidance.message(for: error, subject: String(localized: "La séance"))
         }
     }
 
@@ -1051,7 +1051,7 @@ private struct GuidedRPEScale: View {
                 )
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Effort perçu")
-                .accessibilityValue(value.map { "\($0) RPE" } ?? "Non renseigné")
+                .accessibilityValue(value.map { "\($0) RPE" } ?? String(localized: "Non renseigné"))
                 .accessibilityAdjustableAction { direction in
                     let current = value ?? 5
                     let next = direction == .increment ? current + 1 : current - 1

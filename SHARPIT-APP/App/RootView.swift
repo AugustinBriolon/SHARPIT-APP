@@ -184,12 +184,13 @@ struct RootView: View {
             let pushEnabled = pushManager.isEnabledByAthlete
             async let modeLoad: () = displayMode.load(tokenProvider: liveToken)
             async let featuresLoad: () = features.load(tokenProvider: liveToken)
+            async let languageSync: () = AppLanguage.syncToProfile(client: AthleteProfileClient(), tokenProvider: liveToken)
             async let pushSetup: () = {
                 guard pushEnabled else { return }
                 _ = await pushManager.requestAuthorization()
                 await pushManager.syncDeviceTokenIfNeeded(tokenProvider: liveToken, client: sharpitClient)
             }()
-            _ = await (modeLoad, featuresLoad, pushSetup)
+            _ = await (modeLoad, featuresLoad, languageSync, pushSetup)
 
             openPendingNotificationIfNeeded()
             await refreshSessionReminders()
@@ -214,9 +215,9 @@ struct RootView: View {
         .onChange(of: linkInbox?.pending, initial: true) { _, _ in
             if let url = linkInbox?.take() { handleIncomingURL(url) }
         }
-        // Every string in this app is French, and so is the web's. Left to the device
-        // locale the date strips rendered "M T W T F S S" under French copy.
-        .environment(\.locale, Locale(identifier: "fr_FR"))
+        // Dates follow the app's language, not the device's: left to the device locale the
+        // date strips rendered "M T W T F S S" under French copy.
+        .environment(\.locale, AppLanguage.locale)
         .modifier(LiquidTabBarModifier())
     }
 
@@ -307,7 +308,7 @@ struct RootView: View {
                 _ = try await sharpitClient.sync(token: token)
             } catch {
                 toastCenter.show(
-                    SharpitErrorGuidance.message(for: error, subject: "La synchronisation"),
+                    SharpitErrorGuidance.message(for: error, subject: String(localized: "La synchronisation")),
                     symbol: "exclamationmark.triangle",
                     tone: .error,
                     autoDismissAfter: 4

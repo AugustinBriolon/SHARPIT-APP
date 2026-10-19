@@ -48,9 +48,9 @@ nonisolated struct GoalDraft: Equatable, Sendable {
 
     /// What keeps the form from being sent, worded for the athlete; nil when it can go.
     var missingRequirement: String? {
-        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Donne un nom à ton objectif." }
-        if !targetValueText.isEmpty, Self.parse(targetValueText) == nil { return "La valeur cible n’est pas un nombre." }
-        if !currentValueText.isEmpty, Self.parse(currentValueText) == nil { return "La valeur actuelle n’est pas un nombre." }
+        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return String(localized: "Donne un nom à ton objectif.") }
+        if !targetValueText.isEmpty, Self.parse(targetValueText) == nil { return String(localized: "La valeur cible n’est pas un nombre.") }
+        if !currentValueText.isEmpty, Self.parse(currentValueText) == nil { return String(localized: "La valeur actuelle n’est pas un nombre.") }
         return nil
     }
 

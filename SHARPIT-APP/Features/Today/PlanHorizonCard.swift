@@ -10,7 +10,7 @@ struct PlanHorizonCard: View {
     var body: some View {
         Button(action: onOpen) {
             SharpitCardHeader(
-                title: "Ta semaine est prête",
+                title: String(localized: "Ta semaine est prête"),
                 symbol: "calendar.badge.plus",
                 subtitle: PlanHorizonReadout.subtitle(horizon)
             )
@@ -26,11 +26,11 @@ struct PlanHorizonCard: View {
 enum PlanHorizonReadout {
     /// « 4 séances dès lundi 27 oct. — garde celles qui te vont ».
     static func subtitle(_ horizon: V1TodayPlanHorizon) -> String {
-        let count = "\(horizon.sessionCount) séance\(horizon.sessionCount > 1 ? "s" : "")"
+        let count = String(localized: "\(horizon.sessionCount) séance\(horizon.sessionCount > 1 ? "s" : "")")
         guard let day = TrainingDayId.date(horizon.startDate) else {
-            return "\(count) — garde celles qui te vont"
+            return String(localized: "\(count) — garde celles qui te vont")
         }
-        let label = day.formatted(.dateTime.weekday(.wide).day().month(.abbreviated).locale(SharpitLocale.french))
-        return "\(count) dès \(label) — garde celles qui te vont"
+        let label = day.formatted(.dateTime.weekday(.wide).day().month(.abbreviated).locale(SharpitLocale.current))
+        return String(localized: "\(count) dès \(label) — garde celles qui te vont")
     }
 }

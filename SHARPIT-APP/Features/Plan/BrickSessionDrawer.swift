@@ -84,7 +84,7 @@ struct BrickSessionDrawer: View {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                     header
                     if let firstLeg = current.legs.first?.sessionId {
-                        CoachDiscussButton(title: "Discuter de cet enchaînement") {
+                        CoachDiscussButton(title: String(localized: "Discuter de cet enchaînement")) {
                             onDiscussWithCoach(
                                 CoachDiscuss.describe(.plannedSession(sessionId: firstLeg), name: "Brick \(current.chain)")
                             )
@@ -120,7 +120,7 @@ struct BrickSessionDrawer: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(spacing: SharpitSpacing.xs) {
-                SharpitEyebrow("Brick · \(current.legs.count) étapes")
+                SharpitEyebrow(String(localized: "Brick · \(current.legs.count) étapes"))
                 Spacer(minLength: 0)
                 if let date = current.date {
                     Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))
@@ -282,17 +282,17 @@ private struct BrickTransition: View {
             date: date,
             legs: [
                 PlannedSessionPreview(session: V1PlannedSessionItem(
-                    id: "bike", date: date, title: "Vélo tempo", type: "BIKE", durationMin: 60,
+                    id: "bike", date: date, title: String(localized: "Vélo tempo"), type: "BIKE", durationMin: 60,
                     breakdown: V1PlannedSessionBreakdown(steps: [
-                        V1PlannedSessionStep(key: "0-0", label: "Échauffement", detail: "15 min", group: "0"),
-                        V1PlannedSessionStep(key: "1-0", label: "Bloc", detail: "8 min", target: "210–225 W", group: "1", repeatCount: 3),
-                        V1PlannedSessionStep(key: "1-1", label: "Récup", detail: "3 min", group: "1", repeatCount: 3),
+                        V1PlannedSessionStep(key: "0-0", label: String(localized: "Échauffement"), detail: String(localized: "15 min"), group: "0"),
+                        V1PlannedSessionStep(key: "1-0", label: String(localized: "Bloc"), detail: String(localized: "8 min"), target: "210–225 W", group: "1", repeatCount: 3),
+                        V1PlannedSessionStep(key: "1-1", label: String(localized: "Récup"), detail: String(localized: "3 min"), group: "1", repeatCount: 3),
                     ])
                 )),
                 PlannedSessionPreview(session: V1PlannedSessionItem(
-                    id: "run", date: date, title: "Course enchaînée", type: "RUN", durationMin: 20,
+                    id: "run", date: date, title: String(localized: "Course enchaînée"), type: "RUN", durationMin: 20,
                     breakdown: V1PlannedSessionBreakdown(steps: [
-                        V1PlannedSessionStep(key: "0-0", label: "Bloc", detail: "20 min", target: "4:30 – 4:45 /km", group: "0"),
+                        V1PlannedSessionStep(key: "0-0", label: String(localized: "Bloc"), detail: String(localized: "20 min"), target: "4:30 – 4:45 /km", group: "0"),
                     ])
                 )),
             ]

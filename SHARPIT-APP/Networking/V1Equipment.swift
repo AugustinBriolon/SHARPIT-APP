@@ -17,10 +17,10 @@ nonisolated struct V1AthleteEquipment: Codable, Sendable, Equatable {
 
         var title: String {
             switch self {
-            case .gym: "Salle"
-            case .home: "Maison"
-            case .both: "Les deux"
-            case .bodyweight: "Poids du corps"
+            case .gym: String(localized: "Salle")
+            case .home: String(localized: "Maison")
+            case .both: String(localized: "Les deux")
+            case .bodyweight: String(localized: "Poids du corps")
             }
         }
 
@@ -35,10 +35,10 @@ nonisolated struct V1AthleteEquipment: Codable, Sendable, Equatable {
 
         var description: String {
             switch self {
-            case .gym: "Inscription en salle — machines, racks et câbles."
-            case .home: "Matériel à domicile uniquement."
-            case .both: "Salle + matériel à la maison."
-            case .bodyweight: "Séances au poids du corps uniquement."
+            case .gym: String(localized: "Inscription en salle — machines, racks et câbles.")
+            case .home: String(localized: "Matériel à domicile uniquement.")
+            case .both: String(localized: "Salle + matériel à la maison.")
+            case .bodyweight: String(localized: "Séances au poids du corps uniquement.")
             }
         }
     }
@@ -55,11 +55,11 @@ nonisolated enum EquipmentSport: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .run: "Course"
-        case .bike: "Vélo"
-        case .swim: "Natation"
-        case .strength: "Musculation"
-        case .mobility: "Mobilité"
+        case .run: String(localized: "Course")
+        case .bike: String(localized: "Vélo")
+        case .swim: String(localized: "Natation")
+        case .strength: String(localized: "Musculation")
+        case .mobility: String(localized: "Mobilité")
         }
     }
 
@@ -89,22 +89,22 @@ nonisolated enum EquipmentCatalog {
         EquipmentCatalogItem(
             id: "run_treadmill",
             sport: .run,
-            label: "Tapis de course",
-            impact: "Séances indoor structurées par mauvais temps ou le soir.",
+            label: String(localized: "Tapis de course"),
+            impact: String(localized: "Séances indoor structurées par mauvais temps ou le soir."),
             symbolName: "figure.walk"
         ),
         EquipmentCatalogItem(
             id: "run_track",
             sport: .run,
-            label: "Accès piste",
-            impact: "Fractions chronométrées et travail de vitesse précis.",
+            label: String(localized: "Accès piste"),
+            impact: String(localized: "Fractions chronométrées et travail de vitesse précis."),
             symbolName: "stopwatch"
         ),
         EquipmentCatalogItem(
             id: "run_trail",
             sport: .run,
-            label: "Trail possible",
-            impact: "Séances dénivelé et terrain technique.",
+            label: String(localized: "Trail possible"),
+            impact: String(localized: "Séances dénivelé et terrain technique."),
             symbolName: "mountain.2"
         ),
 
@@ -112,22 +112,22 @@ nonisolated enum EquipmentCatalog {
         EquipmentCatalogItem(
             id: "bike_home_trainer",
             sport: .bike,
-            label: "Home trainer",
-            impact: "Séances indoor structurées (pluie, soir, plan B météo).",
+            label: String(localized: "Home trainer"),
+            impact: String(localized: "Séances indoor structurées (pluie, soir, plan B météo)."),
             symbolName: "figure.indoor.cycle"
         ),
         EquipmentCatalogItem(
             id: "bike_power_meter",
             sport: .bike,
-            label: "Capteur de puissance",
-            impact: "Prescriptions précises en watts.",
+            label: String(localized: "Capteur de puissance"),
+            impact: String(localized: "Prescriptions précises en watts."),
             symbolName: "bolt"
         ),
         EquipmentCatalogItem(
             id: "bike_outdoor",
             sport: .bike,
-            label: "Vélo outdoor",
-            impact: "Sorties route ou endurance longue dehors.",
+            label: String(localized: "Vélo outdoor"),
+            impact: String(localized: "Sorties route ou endurance longue dehors."),
             symbolName: "bicycle"
         ),
 
@@ -135,29 +135,29 @@ nonisolated enum EquipmentCatalog {
         EquipmentCatalogItem(
             id: "swim_pool",
             sport: .swim,
-            label: "Accès piscine",
-            impact: "Séances natation structurées.",
+            label: String(localized: "Accès piscine"),
+            impact: String(localized: "Séances natation structurées."),
             symbolName: "figure.pool.swim"
         ),
         EquipmentCatalogItem(
             id: "swim_fins",
             sport: .swim,
-            label: "Palmes",
-            impact: "Travail technique jambes et endurance spécifique.",
+            label: String(localized: "Palmes"),
+            impact: String(localized: "Travail technique jambes et endurance spécifique."),
             symbolName: "water.waves.and.arrow.down"
         ),
         EquipmentCatalogItem(
             id: "swim_paddles",
             sport: .swim,
-            label: "Plaquettes",
-            impact: "Renforcement bras et technique de traction.",
+            label: String(localized: "Plaquettes"),
+            impact: String(localized: "Renforcement bras et technique de traction."),
             symbolName: "hand.raised.square"
         ),
         EquipmentCatalogItem(
             id: "swim_pull_buoy",
             sport: .swim,
-            label: "Pull buoy",
-            impact: "Focus haut du corps sans battements.",
+            label: String(localized: "Pull buoy"),
+            impact: String(localized: "Focus haut du corps sans battements."),
             symbolName: "capsule.portrait.fill"
         ),
 
@@ -165,40 +165,40 @@ nonisolated enum EquipmentCatalog {
         EquipmentCatalogItem(
             id: "strength_dumbbells",
             sport: .strength,
-            label: "Haltères / kettlebell",
-            impact: "Charge libre à domicile pour le renfo.",
+            label: String(localized: "Haltères / kettlebell"),
+            impact: String(localized: "Charge libre à domicile pour le renfo."),
             symbolName: "dumbbell",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
             id: "strength_barbell",
             sport: .strength,
-            label: "Barre + disques",
-            impact: "Mouvements composés chargés à domicile.",
+            label: String(localized: "Barre + disques"),
+            impact: String(localized: "Mouvements composés chargés à domicile."),
             symbolName: "circle.circle",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
             id: "strength_bench",
             sport: .strength,
-            label: "Banc",
-            impact: "Développés et variations allongées.",
+            label: String(localized: "Banc"),
+            impact: String(localized: "Développés et variations allongées."),
             symbolName: "table.furniture.fill",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
             id: "strength_pullup_bar",
             sport: .strength,
-            label: "Barre de traction",
-            impact: "Tractions et gainage vertical.",
+            label: String(localized: "Barre de traction"),
+            impact: String(localized: "Tractions et gainage vertical."),
             symbolName: "figure.strengthtraining.traditional",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
             id: "strength_bands",
             sport: .strength,
-            label: "Élastiques",
-            impact: "Activation, assistance et charge progressive.",
+            label: String(localized: "Élastiques"),
+            impact: String(localized: "Activation, assistance et charge progressive."),
             symbolName: "lines.measurement.horizontal",
             requiresHomeStrength: true
         ),
@@ -206,31 +206,31 @@ nonisolated enum EquipmentCatalog {
             id: "strength_trx",
             sport: .strength,
             label: "TRX / sangles",
-            impact: "Renfo en suspension au poids du corps.",
+            impact: String(localized: "Renfo en suspension au poids du corps."),
             symbolName: "figure.gymnastics",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
             id: "strength_rings",
             sport: .strength,
-            label: "Anneaux de gymnastique",
-            impact: "Tirage et poussée instables.",
+            label: String(localized: "Anneaux de gymnastique"),
+            impact: String(localized: "Tirage et poussée instables."),
             symbolName: "circle",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
             id: "strength_dip_bars",
             sport: .strength,
-            label: "Barres de dips",
-            impact: "Poussée verticale lestable.",
+            label: String(localized: "Barres de dips"),
+            impact: String(localized: "Poussée verticale lestable."),
             symbolName: "pause",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
             id: "strength_weighted_vest",
             sport: .strength,
-            label: "Gilet lesté",
-            impact: "Lest portable (tractions, pompes, côtes).",
+            label: String(localized: "Gilet lesté"),
+            impact: String(localized: "Lest portable (tractions, pompes, côtes)."),
             symbolName: "tshirt"
         ),
 
@@ -239,28 +239,28 @@ nonisolated enum EquipmentCatalog {
             id: "mobility_foam_roller",
             sport: .mobility,
             label: "Foam roller / stick",
-            impact: "Récupération et mobilité ciblée.",
+            impact: String(localized: "Récupération et mobilité ciblée."),
             symbolName: "cylinder"
         ),
         EquipmentCatalogItem(
             id: "mobility_bands",
             sport: .mobility,
-            label: "Élastiques mobilité",
-            impact: "Épaules, hanches et activation douce.",
+            label: String(localized: "Élastiques mobilité"),
+            impact: String(localized: "Épaules, hanches et activation douce."),
             symbolName: "lines.measurement.horizontal"
         ),
         EquipmentCatalogItem(
             id: "mobility_tennis_ball",
             sport: .mobility,
-            label: "Balle de massage",
-            impact: "Points gâchettes, pieds, fessiers.",
+            label: String(localized: "Balle de massage"),
+            impact: String(localized: "Points gâchettes, pieds, fessiers."),
             symbolName: "circle.fill"
         ),
         EquipmentCatalogItem(
             id: "mobility_yoga_block",
             sport: .mobility,
-            label: "Brique de yoga",
-            impact: "Amplitude assistée et étirements soutenus.",
+            label: String(localized: "Brique de yoga"),
+            impact: String(localized: "Amplitude assistée et étirements soutenus."),
             symbolName: "square"
         ),
     ]

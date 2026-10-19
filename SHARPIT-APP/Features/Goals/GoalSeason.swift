@@ -88,7 +88,7 @@ nonisolated enum GoalSeason {
 
     /// « dans 5 mois », « dans 3 semaines », « dans 4 jours ».
     static func until(days: Int) -> String {
-        days <= 0 ? "aujourd’hui" : "dans \(span(days: days))"
+        days <= 0 ? String(localized: "aujourd’hui") : "dans \(span(days: days))"
     }
 
     /// « 5 mois », « 3 semaines », « 4 jours ».
@@ -98,7 +98,7 @@ nonisolated enum GoalSeason {
             return "\(months) mois"
         }
         if days >= 14 { return "\(Int((Double(days) / 7).rounded())) semaines" }
-        return days == 1 ? "1 jour" : "\(days) jours"
+        return days == 1 ? String(localized: "1 jour") : "\(days) jours"
     }
 
     /// How long a format is, for « the longest race » only: an order, never a distance.

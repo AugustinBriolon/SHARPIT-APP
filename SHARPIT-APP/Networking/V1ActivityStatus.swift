@@ -10,29 +10,29 @@ nonisolated enum ActivityStatusId: String, Codable, CaseIterable, Sendable {
 
     var label: String {
         switch self {
-        case .active: "Actif"
-        case .paused: "En pause"
-        case .injured: "Blessé"
-        case .sick: "Malade"
+        case .active: String(localized: "Actif")
+        case .paused: String(localized: "En pause")
+        case .injured: String(localized: "Blessé")
+        case .sick: String(localized: "Malade")
         }
     }
 
     var hint: String {
         switch self {
-        case .active: "En routine d'entraînement"
-        case .paused: "Pause dans l'entraînement"
-        case .injured: "En convalescence après une blessure"
-        case .sick: "Repos pour cause de maladie"
+        case .active: String(localized: "En routine d'entraînement")
+        case .paused: String(localized: "Pause dans l'entraînement")
+        case .injured: String(localized: "En convalescence après une blessure")
+        case .sick: String(localized: "Repos pour cause de maladie")
         }
     }
 
     /// How planning and the coach bias while the mode is on, in the web's words.
     var planningImpact: String {
         switch self {
-        case .active: "Charge et séances suivent le plan."
-        case .paused: "Pas de charge volontaire — plan en veille jusqu'à reprise."
-        case .injured: "Priorité sécurité — adapter ou reporter les séances à risque."
-        case .sick: "Repos avant la charge — reprendre seulement quand le corps suit."
+        case .active: String(localized: "Charge et séances suivent le plan.")
+        case .paused: String(localized: "Pas de charge volontaire — plan en veille jusqu'à reprise.")
+        case .injured: String(localized: "Priorité sécurité — adapter ou reporter les séances à risque.")
+        case .sick: String(localized: "Repos avant la charge — reprendre seulement quand le corps suit.")
         }
     }
 
@@ -41,9 +41,9 @@ nonisolated enum ActivityStatusId: String, Codable, CaseIterable, Sendable {
     var alertLine: String {
         switch self {
         case .active: ""
-        case .paused: "En pause — le plan est en veille jusqu'à reprise."
-        case .injured: "Blessé — priorité sécurité, les séances à risque sont adaptées ou reportées."
-        case .sick: "Repos — reprenez quand le corps suit."
+        case .paused: String(localized: "En pause — le plan est en veille jusqu'à reprise.")
+        case .injured: String(localized: "Blessé — priorité sécurité, les séances à risque sont adaptées ou reportées.")
+        case .sick: String(localized: "Repos — reprenez quand le corps suit.")
         }
     }
 

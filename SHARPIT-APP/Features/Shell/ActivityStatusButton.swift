@@ -69,7 +69,7 @@ private struct ActivityStatusDrawer: View {
                             .foregroundStyle(SharpitColor.signalCaution)
                     }
 
-                    SharpitEyebrow("Mode d'entraînement")
+                    SharpitEyebrow(String(localized: "Mode d'entraînement"))
                     VStack(spacing: SharpitSpacing.xs) {
                         ForEach(ActivityStatusId.allCases, id: \.self) { status in
                             ActivityStatusOptionRow(
@@ -106,7 +106,7 @@ private struct ActivityStatusDrawer: View {
 
     private var deadlineSection: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Durée")
+            SharpitEyebrow(String(localized: "Durée"))
             Toggle("Jusqu'à une date", isOn: $usesDeadline)
                 .font(SharpitTypography.bodyEmphasis)
                 .tint(SharpitColor.primary)
@@ -116,7 +116,7 @@ private struct ActivityStatusDrawer: View {
 
             if usesDeadline {
                 DatePicker(
-                    "Reprise prévue",
+                    String(localized: "Reprise prévue"),
                     selection: $untilDate,
                     in: Date.now...,
                     displayedComponents: .date

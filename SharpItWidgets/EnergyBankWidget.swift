@@ -13,7 +13,7 @@ struct EnergyBankWidget: Widget {
                 if entry.unlocksExtraWidgets {
                     EnergyBankWidgetView(entry: entry)
                 } else {
-                    WidgetProLocked(title: "Réserve", symbol: "battery.100")
+                    WidgetProLocked(title: String(localized: "Réserve"), symbol: "battery.100")
                 }
             }
             .sharpitWidgetChrome()
@@ -65,16 +65,16 @@ struct EnergyBankSmall: View {
     let hasDay: Bool
 
     var body: some View {
-        WidgetFrame("Réserve", symbol: "battery.100") {
+        WidgetFrame(String(localized: "Réserve"), symbol: "battery.100") {
             if let energy, let score = energy.score {
                 DialReadout(score: CGFloat(score), figure: "\(score)")
-                WidgetCaption(text: energy.caption ?? "Énergie du jour")
+                WidgetCaption(text: energy.caption ?? String(localized: "Énergie du jour"))
                     .frame(maxWidth: .infinity)
             } else {
                 WidgetAwaitingData(
                     text: hasDay
-                        ? "Pas encore de réserve calculée."
-                        : "Ouvre SharpIt pour charger ta journée."
+                        ? String(localized: "Pas encore de réserve calculée.")
+                        : String(localized: "Ouvre SharpIt pour charger ta journée.")
                 )
             }
         }

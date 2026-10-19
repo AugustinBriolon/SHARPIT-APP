@@ -5,12 +5,12 @@ enum SyncReadout {
     static func caption(state: ProviderSyncStore.State, lastSyncAt: Date?, now: Date = .now) -> String? {
         switch state {
         case .syncing:
-            return "Synchronisation…"
+            return String(localized: "Synchronisation…")
         case .failed:
-            return "Synchronisation impossible"
+            return String(localized: "Synchronisation impossible")
         case .idle:
             guard let lastSyncAt else { return nil }
-            return "Synchronisé " + age(of: lastSyncAt, now: now)
+            return String(localized: "Synchronisé ") + age(of: lastSyncAt, now: now)
         }
     }
 
@@ -18,11 +18,11 @@ enum SyncReadout {
         let seconds = max(now.timeIntervalSince(date), 0)
         switch seconds {
         case ..<60:
-            return "à l'instant"
+            return String(localized: "à l'instant")
         case ..<3_600:
-            return "il y a \(Int(seconds / 60)) min"
+            return String(localized: "il y a \(Int(seconds / 60)) min")
         case ..<86_400:
-            return "il y a \(Int(seconds / 3_600)) h"
+            return String(localized: "il y a \(Int(seconds / 3_600)) h")
         default:
             return "le " + date.sharpitFormatted(.dateTime.day().month(.abbreviated))
         }

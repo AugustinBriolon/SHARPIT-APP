@@ -84,7 +84,7 @@ final class GoalStore {
             await load()
         } catch {
             if let idx = goals.firstIndex(where: { $0.id == goal.id }) { goals[idx] = previous }
-            SharpitWriteFailures.shared.report("La séance n’a pas pu être liée à la course. Réessaie dans un instant.")
+            SharpitWriteFailures.shared.report(String(localized: "La séance n’a pas pu être liée à la course. Réessaie dans un instant."))
         }
     }
 
@@ -148,9 +148,9 @@ final class GoalStore {
             // A history that failed to read keeps what was shown: it is never the page's error.
             if let reached = await fetchedAchievements { self.achievements = reached }
         } catch SharpitAPIError.unauthorized {
-            errorMessage = "Session expirée"
+            errorMessage = String(localized: "Session expirée")
         } catch {
-            errorMessage = "Impossible de charger les objectifs"
+            errorMessage = String(localized: "Impossible de charger les objectifs")
         }
     }
 
@@ -198,7 +198,7 @@ final class GoalStore {
             await refreshGoals()
             return true
         } catch {
-            errorMessage = "Impossible de créer l'objectif"
+            errorMessage = String(localized: "Impossible de créer l'objectif")
             return false
         }
     }
@@ -219,9 +219,9 @@ final class GoalStore {
             } catch {
                 if let idx = goals.firstIndex(where: { $0.id == goal.id }) { goals[idx] = previous }
                 if case SharpitAPIError.message(let reason) = error {
-                    SharpitWriteFailures.shared.report("Objectif non modifié : \(reason)")
+                    SharpitWriteFailures.shared.report(String(localized: "Objectif non modifié : \(reason)"))
                 } else {
-                    SharpitWriteFailures.shared.report("Objectif non modifié.")
+                    SharpitWriteFailures.shared.report(String(localized: "Objectif non modifié."))
                 }
             }
         }
@@ -253,7 +253,7 @@ final class GoalStore {
             if let idx = goals.firstIndex(where: { $0.id == goal.id }) {
                 goals[idx].achieved = !newAchieved
             }
-            errorMessage = "Mise à jour impossible"
+            errorMessage = String(localized: "Mise à jour impossible")
         }
     }
 
@@ -266,7 +266,7 @@ final class GoalStore {
             }
         } catch {
             goals = backup
-            errorMessage = "Suppression impossible"
+            errorMessage = String(localized: "Suppression impossible")
         }
     }
 }

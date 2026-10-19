@@ -10,7 +10,7 @@ struct RegularityWidget: Widget {
                 if entry.unlocksExtraWidgets {
                     RegularityWidgetView(entry: entry)
                 } else {
-                    WidgetProLocked(title: "Régularité", symbol: "calendar")
+                    WidgetProLocked(title: String(localized: "Régularité"), symbol: "calendar")
                 }
             }
                 .sharpitWidgetChrome()
@@ -39,7 +39,7 @@ struct RegularityWidgetView: View {
         switch family {
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: 3) {
-                Text(entry.regularity.map(\.weekLine) ?? "Régularité")
+                Text(entry.regularity.map(\.weekLine) ?? String(localized: "Régularité"))
                     .font(.headline)
                     .widgetAccentable()
                 if let regularity = entry.regularity {
@@ -60,7 +60,7 @@ struct RegularityMedium: View {
     let regularity: WidgetSnapshot.Regularity?
 
     var body: some View {
-        WidgetFrame("Régularité", symbol: "calendar") {
+        WidgetFrame(String(localized: "Régularité"), symbol: "calendar") {
             if let regularity {
                 HStack(alignment: .bottom, spacing: 16) {
                     VStack(alignment: .leading, spacing: 0) {
@@ -72,7 +72,7 @@ struct RegularityMedium: View {
                         .frame(width: 184)
                 }
             } else {
-                WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
+                WidgetAwaitingData(text: String(localized: "Ouvre SharpIt pour charger ta journée."))
             }
         }
     }
@@ -84,14 +84,14 @@ struct RegularityBody: View {
     let showsLabels: Bool
 
     var body: some View {
-        WidgetFrame("Régularité", symbol: "calendar") {
+        WidgetFrame(String(localized: "Régularité"), symbol: "calendar") {
             if let regularity {
                 WidgetHero(value: "\(regularity.weekSessionCount)")
                 WidgetCaption(text: regularity.weekCaption)
                     .padding(.bottom, 10)
                 RegularityMarks(days: regularity.days, size: markSize, showsLabels: showsLabels)
             } else {
-                WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
+                WidgetAwaitingData(text: String(localized: "Ouvre SharpIt pour charger ta journée."))
             }
         }
     }
@@ -139,7 +139,7 @@ struct RegularityMarks: View {
 
 extension WidgetSnapshot.Regularity {
     /// What the count counts, under it.
-    var weekCaption: String { weekSessionCount == 1 ? "séance cette semaine" : "séances cette semaine" }
+    var weekCaption: String { weekSessionCount == 1 ? String(localized: "séance cette semaine") : String(localized: "séances cette semaine") }
 
-    var weekLine: String { weekSessionCount == 1 ? "1 séance cette semaine" : "\(weekSessionCount) séances cette semaine" }
+    var weekLine: String { weekSessionCount == 1 ? String(localized: "1 séance cette semaine") : String(localized: "\(weekSessionCount) séances cette semaine") }
 }

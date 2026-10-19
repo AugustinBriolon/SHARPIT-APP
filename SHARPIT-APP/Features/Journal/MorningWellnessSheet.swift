@@ -104,7 +104,7 @@ struct MorningWellnessSheet: View {
             .scrollBounceBehavior(.basedOnSize)
             // Docked, so « Enregistrer » is never cut by the sheet's height.
             .safeAreaInset(edge: .bottom) {
-                SharpitPrimaryButton(title: "Enregistrer", trailingSymbol: "checkmark") {
+                SharpitPrimaryButton(title: String(localized: "Enregistrer"), trailingSymbol: "checkmark") {
                     guard let label = store.submit() else { return }
                     onCompleted(label)
                     dismiss()
@@ -166,7 +166,7 @@ private struct WellnessDimensionRow: View {
                 .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(SharpitColor.foreground)
 
-            Text(selected.map { dimension.label(for: $0) } ?? "Choisir")
+            Text(selected.map { dimension.label(for: $0) } ?? String(localized: "Choisir"))
                 .font(SharpitTypography.meta)
                 .foregroundStyle(selected != nil ? SharpitColor.foreground : SharpitColor.mutedForeground)
                 .lineLimit(1)

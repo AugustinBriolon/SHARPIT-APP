@@ -20,7 +20,7 @@ struct RaceDayCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
-        .accessibilityHint(opensSession ? "Revoir la course" : "")
+        .accessibilityHint(opensSession ? String(localized: "Revoir la course") : "")
     }
 
     private var raceDay: some View {
@@ -90,25 +90,25 @@ struct RaceDayCard: View {
 
 #Preview("Jour J") {
     RaceDayCard(race: RaceMomentModel(
-        goalId: "g", eyebrow: "Jour J", title: "Triathlon de Paris", formatLine: "Triathlon M",
-        targetLine: "Objectif · Sub 2h30", coachLine: "Le travail est fait. Pars à ton allure, le reste suit."
+        goalId: "g", eyebrow: String(localized: "Jour J"), title: String(localized: "Triathlon de Paris"), formatLine: String(localized: "Triathlon M"),
+        targetLine: String(localized: "Objectif · Sub 2h30"), coachLine: String(localized: "Le travail est fait. Pars à ton allure, le reste suit.")
     ))
     .padding()
 }
 
 #Preview("Course terminée") {
     let legs = [
-        V1MultisportLeg(kind: "swim", label: "Natation", durationSec: 1_710, movingDurationSec: nil, distanceM: 1_500, avgHr: nil, avgSpeedMs: nil, elevationM: nil, calories: nil, transitionIndex: nil),
+        V1MultisportLeg(kind: "swim", label: String(localized: "Natation"), durationSec: 1_710, movingDurationSec: nil, distanceM: 1_500, avgHr: nil, avgSpeedMs: nil, elevationM: nil, calories: nil, transitionIndex: nil),
         V1MultisportLeg(kind: "transition", label: "T1", durationSec: 150, movingDurationSec: nil, distanceM: nil, avgHr: nil, avgSpeedMs: nil, elevationM: nil, calories: nil, transitionIndex: 1),
-        V1MultisportLeg(kind: "bike", label: "Vélo", durationSec: 4_380, movingDurationSec: nil, distanceM: 40_000, avgHr: nil, avgSpeedMs: nil, elevationM: nil, calories: nil, transitionIndex: nil),
+        V1MultisportLeg(kind: "bike", label: String(localized: "Vélo"), durationSec: 4_380, movingDurationSec: nil, distanceM: 40_000, avgHr: nil, avgSpeedMs: nil, elevationM: nil, calories: nil, transitionIndex: nil),
         V1MultisportLeg(kind: "transition", label: "T2", durationSec: 90, movingDurationSec: nil, distanceM: nil, avgHr: nil, avgSpeedMs: nil, elevationM: nil, calories: nil, transitionIndex: 2),
-        V1MultisportLeg(kind: "run", label: "Course", durationSec: 2_640, movingDurationSec: nil, distanceM: 10_000, avgHr: nil, avgSpeedMs: nil, elevationM: nil, calories: nil, transitionIndex: nil),
+        V1MultisportLeg(kind: "run", label: String(localized: "Course"), durationSec: 2_640, movingDurationSec: nil, distanceM: 10_000, avgHr: nil, avgSpeedMs: nil, elevationM: nil, calories: nil, transitionIndex: nil),
     ]
     RaceDayCard(
         race: RaceMomentModel(
-            goalId: "g", eyebrow: "Hier · Course terminée", title: "Triathlon de Paris", formatLine: "Triathlon M",
-            targetLine: nil, coachLine: "Reviens sur ta course : ce qui a marché, où tu peux progresser.",
-            result: RaceResultModel.make(durationSec: nil, legs: legs, targetPerformance: "Sub 2h30"),
+            goalId: "g", eyebrow: String(localized: "Hier · Course terminée"), title: String(localized: "Triathlon de Paris"), formatLine: String(localized: "Triathlon M"),
+            targetLine: nil, coachLine: String(localized: "Reviens sur ta course : ce qui a marché, où tu peux progresser."),
+            result: RaceResultModel.make(durationSec: nil, legs: legs, targetPerformance: String(localized: "Sub 2h30")),
             activityId: "a"
         ),
         opensSession: true

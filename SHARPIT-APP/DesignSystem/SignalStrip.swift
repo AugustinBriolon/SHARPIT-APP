@@ -93,11 +93,11 @@ struct SignalTrack: View {
 extension V1TodaySignalKey {
     var instrumentLabel: String {
         switch self {
-        case .sleep: "Nuit"
-        case .recovery: "Récup"
-        case .effort: "Effort"
+        case .sleep: String(localized: "Nuit")
+        case .recovery: String(localized: "Récup")
+        case .effort: String(localized: "Effort")
         case .adaptation: "Adapt."
-        case .stress: "Stress" // ADR-079. Callers: OvernightGaugePair. User: Bevel gaps plan.
+        case .stress: String(localized: "Stress") // ADR-079. Callers: OvernightGaugePair. User: Bevel gaps plan.
         }
     }
 

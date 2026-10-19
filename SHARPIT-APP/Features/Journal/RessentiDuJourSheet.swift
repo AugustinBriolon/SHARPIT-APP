@@ -148,7 +148,7 @@ struct RessentiDuJourSheet: View {
                 .sharpitSurface(.panel)
             }
             .buttonStyle(.sharpitPressable)
-            .accessibilityValue(store.detailsExpanded ? "Ouvert" : "Fermé")
+            .accessibilityValue(store.detailsExpanded ? String(localized: "Ouvert") : String(localized: "Fermé"))
 
             if store.detailsExpanded {
                 ForEach([WellnessDimension.energy, .soreness, .stress], id: \.self) { dimension in
@@ -203,14 +203,14 @@ struct RessentiDuJourSheet: View {
 
     private var saveBar: some View {
         SharpitPrimaryButton(
-            title: store.canSubmit ? "Enregistrer" : "Choisis ton ressenti",
+            title: store.canSubmit ? String(localized: "Enregistrer") : String(localized: "Choisis ton ressenti"),
             isBusy: store.phase == .submitting
         ) {
             save()
         }
         .disabled(!store.canSubmit)
         .opacity(store.canSubmit ? 1 : 0.4)
-        .accessibilityHint(store.canSubmit ? "Enregistre ton ressenti du matin" : "Choisis d'abord comment tu te sens")
+        .accessibilityHint(store.canSubmit ? String(localized: "Enregistre ton ressenti du matin") : String(localized: "Choisis d'abord comment tu te sens"))
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.vertical, SharpitSpacing.sm)
     }
@@ -221,7 +221,7 @@ struct RessentiDuJourSheet: View {
             onConfirmed: { verdict in
                 onSaved(verdict)
                 toastCenter?.show(
-                    "Ressenti noté ✓",
+                    String(localized: "Ressenti noté ✓"),
                     symbol: "checkmark.circle.fill",
                     tone: .success,
                     autoDismissAfter: 2.5

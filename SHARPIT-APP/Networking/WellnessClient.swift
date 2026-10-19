@@ -121,7 +121,7 @@ enum WellnessClientError: Error, Equatable, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .decoding: "Réponse du ressenti incompatible"
+        case .decoding: String(localized: "Réponse du ressenti incompatible")
         }
     }
 }

@@ -11,11 +11,11 @@ nonisolated enum CoachMemoryType: String, Codable, CaseIterable, Identifiable, S
 
     var label: String {
         switch self {
-        case .travel: "Déplacement / voyage"
-        case .constraint: "Contrainte"
-        case .injury: "Blessure / gène"
-        case .preference: "Préférence"
-        case .note: "Note"
+        case .travel: String(localized: "Déplacement / voyage")
+        case .constraint: String(localized: "Contrainte")
+        case .injury: String(localized: "Blessure / gène")
+        case .preference: String(localized: "Préférence")
+        case .note: String(localized: "Note")
         }
     }
 
@@ -38,19 +38,19 @@ nonisolated enum TravelTrainingConstraint: String, Codable, CaseIterable, Identi
 
     var label: String {
         switch self {
-        case .full: "Entraînement normal"
-        case .reduced: "Charge allégée"
-        case .mobilityOnly: "Mobilité seule"
-        case .none: "Pause complète"
+        case .full: String(localized: "Entraînement normal")
+        case .reduced: String(localized: "Charge allégée")
+        case .mobilityOnly: String(localized: "Mobilité seule")
+        case .none: String(localized: "Pause complète")
         }
     }
 
     var badgeText: String {
         switch self {
-        case .full: "Normal"
-        case .reduced: "Allégé"
-        case .mobilityOnly: "Mobilité"
-        case .none: "Pause"
+        case .full: String(localized: "Normal")
+        case .reduced: String(localized: "Allégé")
+        case .mobilityOnly: String(localized: "Mobilité")
+        case .none: String(localized: "Pause")
         }
     }
 }
@@ -135,10 +135,10 @@ nonisolated struct CoachMemoryEntry: Identifiable, Codable, Sendable, Equatable 
     var formattedDateRange: String {
         if type.isOpenEnded {
             let year = Calendar.current.component(.year, from: endDate)
-            if year >= 2099 { return "Durable" }
+            if year >= 2099 { return String(localized: "Durable") }
         }
         let fmt = DateFormatter()
-        fmt.locale = Locale(identifier: "fr_FR")
+        fmt.locale = AppLanguage.locale
         fmt.dateFormat = "d MMM"
         let startStr = fmt.string(from: startDate)
         let endStr = fmt.string(from: endDate)

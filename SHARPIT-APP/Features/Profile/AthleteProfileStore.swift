@@ -60,9 +60,9 @@ final class AthleteProfileStore {
             phase = .unauthorized
         } catch {
             if hadCache {
-                refreshFailure = "Profil non actualisé."
+                refreshFailure = String(localized: "Profil non actualisé.")
             } else {
-                phase = .failed("Chargement du profil impossible.")
+                phase = .failed(String(localized: "Chargement du profil impossible."))
             }
         }
     }
@@ -151,9 +151,9 @@ final class AthleteProfileStore {
 
     private static func failureMessage(for error: any Error) -> String {
         if let apiError = error as? SharpitAPIError, apiError == .unauthorized {
-            return "Session expirée. Reconnecte-toi."
+            return String(localized: "Session expirée. Reconnecte-toi.")
         }
-        return "Profil non enregistré. Réessaie plus tard."
+        return String(localized: "Profil non enregistré. Réessaie plus tard.")
     }
 
     /// Switches the reading density. Its own method because it saves on the tap, with no

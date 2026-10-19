@@ -15,7 +15,7 @@ struct CoachDemoHost: View {
 
     var body: some View {
         var view = CoachView(client: DemoCoachClient(), conversations: DemoConversations(), quota: DemoQuota(), tokenProvider: { "demo" })
-        view.demoQuestions = ["Comment était ma nuit ?", "Et pour jeudi, je fais quoi ?"]
+        view.demoQuestions = [String(localized: "Comment était ma nuit ?"), String(localized: "Et pour jeudi, je fais quoi ?")]
         return view.environment(router)
     }
 }
@@ -29,7 +29,7 @@ private struct DemoQuota: CoachQuotaServing {
 
 /// Writes a long answer word by word, at a reading pace.
 private struct DemoCoachClient: CoachChatServing {
-    private static let answer = """
+    private static let answer = String(localized: """
     Ta nuit était courte, 6 h 10, et ta VFC est sous ta moyenne de la semaine. \
     Rien d'alarmant, mais c'est un signal à écouter avant une séance intense. \
     Voici ce que je te propose pour aujourd'hui. D'abord, garde la sortie vélo mais en endurance \
@@ -41,7 +41,7 @@ private struct DemoCoachClient: CoachChatServing {
     23 h : une bonne nuit fera plus pour ta forme de jeudi que n'importe quelle séance. \
     Pour la suite de la semaine, on garde le plan : seuil jeudi, repos vendredi, sortie longue \
     samedi. Je reverrai tout ça demain matin avec ta nuit.
-    """
+    """)
 
     func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error> {
         AsyncThrowingStream { continuation in

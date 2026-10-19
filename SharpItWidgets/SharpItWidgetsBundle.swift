@@ -3,6 +3,10 @@ import WidgetKit
 
 @main
 struct SharpItWidgetsBundle: WidgetBundle {
+    init() {
+        AppLanguage.adoptAppLanguage()
+    }
+
     var body: some Widget {
         TodaySessionWidget()
         LastActivityWidget()

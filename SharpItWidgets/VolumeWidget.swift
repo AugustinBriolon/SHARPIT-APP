@@ -86,7 +86,7 @@ struct VolumeWidget: Widget {
                 if entry.isUnlocked {
                     VolumeWidgetView(entry: entry)
                 } else {
-                    WidgetProLocked(title: "Volume de la semaine", symbol: "chart.bar")
+                    WidgetProLocked(title: String(localized: "Volume de la semaine"), symbol: "chart.bar")
                 }
             }
                 .sharpitWidgetChrome()
@@ -135,7 +135,7 @@ struct VolumeSmall: View {
                     .padding(.bottom, 8)
                 WeekBars(volume: volume, tone: entry.sport.tone, height: 22, showsInitials: false)
             } else {
-                WidgetAwaitingData(text: "Ouvre Activité pour charger ta semaine.")
+                WidgetAwaitingData(text: String(localized: "Ouvre Activité pour charger ta semaine."))
             }
         }
     }
@@ -159,7 +159,7 @@ struct VolumeMedium: View {
                         .frame(width: 136)
                 }
             } else {
-                WidgetAwaitingData(text: "Ouvre Activité pour charger ta semaine.")
+                WidgetAwaitingData(text: String(localized: "Ouvre Activité pour charger ta semaine."))
             }
         }
     }
@@ -212,17 +212,17 @@ private struct WeekBars: View {
 extension VolumeSport {
     var title: String {
         switch self {
-        case .all: "Semaine"
-        case .run: "Course · semaine"
-        case .bike: "Vélo · semaine"
-        case .swim: "Natation · semaine"
-        case .hike: "Rando · semaine"
-        case .strength: "Force · semaine"
+        case .all: String(localized: "Semaine")
+        case .run: String(localized: "Course · semaine")
+        case .bike: String(localized: "Vélo · semaine")
+        case .swim: String(localized: "Natation · semaine")
+        case .hike: String(localized: "Rando · semaine")
+        case .strength: String(localized: "Force · semaine")
         }
     }
 
     /// The small widget's header: the sport alone, the week being said by the bars.
-    var shortTitle: String { activityType?.label ?? "Tous sports" }
+    var shortTitle: String { activityType?.label ?? String(localized: "Tous sports") }
 
     var symbolName: String { activityType?.symbolName ?? "figure.mixed.cardio" }
 

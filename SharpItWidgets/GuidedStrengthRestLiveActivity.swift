@@ -87,7 +87,7 @@ private enum GuidedStrengthLiveReadout {
             nextExercise: state.nextExercise,
             nextSetLine: state.nextSetLine
         )
-        return line == "Séance en cours" || line.isEmpty ? nil : line
+        return line == String(localized: "Séance en cours") || line.isEmpty ? nil : line
     }
 
     /// The rest's span when it is running and its start is known.
@@ -187,7 +187,7 @@ private struct GuidedStrengthSessionLockScreen: View {
                 LiveActivityTile(symbol: GuidedStrengthLiveReadout.symbol(state.kind))
                 VStack(alignment: .leading, spacing: 2) {
                     LiveActivityEyebrow(text: state.isPaused
-                        ? "Repos en pause"
+                        ? String(localized: "Repos en pause")
                         : GuidedStrengthRestLiveActivityCopy.eyebrow(kind: state.kind))
                     Text(GuidedStrengthLiveReadout.headline(title: title, kind: state.kind))
                         .font(.system(size: 17, weight: .semibold))

@@ -14,11 +14,11 @@ struct HydrationInputSheet: View {
     }
 
     private let presets: [Preset] = [
-        Preset(id: "glass", label: "Verre d'eau", delta: 250, icon: "drop"),
-        Preset(id: "mug", label: "Grande tasse", delta: 350, icon: "mug"),
-        Preset(id: "small_bottle", label: "Petite bouteille", delta: 500, icon: "waterbottle"),
-        Preset(id: "flask", label: "Gourde sport", delta: 750, icon: "waterbottle.fill"),
-        Preset(id: "liter", label: "Bouteille 1 L", delta: 1000, icon: "drop.fill")
+        Preset(id: "glass", label: String(localized: "Verre d'eau"), delta: 250, icon: "drop"),
+        Preset(id: "mug", label: String(localized: "Grande tasse"), delta: 350, icon: "mug"),
+        Preset(id: "small_bottle", label: String(localized: "Petite bouteille"), delta: 500, icon: "waterbottle"),
+        Preset(id: "flask", label: String(localized: "Gourde sport"), delta: 750, icon: "waterbottle.fill"),
+        Preset(id: "liter", label: String(localized: "Bouteille 1 L"), delta: 1000, icon: "drop.fill")
     ]
 
     private var currentMl: Int {
@@ -83,7 +83,7 @@ struct HydrationInputSheet: View {
 
                     // Quick add presets grid
                     VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        SharpitEyebrow("Ajouts rapides")
+                        SharpitEyebrow(String(localized: "Ajouts rapides"))
 
                         LazyVGrid(
                             columns: [

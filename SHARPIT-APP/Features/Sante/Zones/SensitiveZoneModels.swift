@@ -10,27 +10,27 @@ nonisolated enum SensitiveZoneOptions {
     }
 
     static let categories = [
-        Choice(value: "PAIN", label: "Douleur"),
-        Choice(value: "INJURY", label: "Blessure"),
-        Choice(value: "MOBILITY", label: "Mobilité"),
-        Choice(value: "POSTURE", label: "Posture"),
-        Choice(value: "OTHER", label: "Autre"),
+        Choice(value: "PAIN", label: String(localized: "Douleur")),
+        Choice(value: "INJURY", label: String(localized: "Blessure")),
+        Choice(value: "MOBILITY", label: String(localized: "Mobilité")),
+        Choice(value: "POSTURE", label: String(localized: "Posture")),
+        Choice(value: "OTHER", label: String(localized: "Autre")),
     ]
 
     static let sides = [
-        Choice(value: "NA", label: "Sans objet"),
-        Choice(value: "LEFT", label: "Gauche"),
-        Choice(value: "RIGHT", label: "Droite"),
-        Choice(value: "BILATERAL", label: "Les deux"),
+        Choice(value: "NA", label: String(localized: "Sans objet")),
+        Choice(value: "LEFT", label: String(localized: "Gauche")),
+        Choice(value: "RIGHT", label: String(localized: "Droite")),
+        Choice(value: "BILATERAL", label: String(localized: "Les deux")),
     ]
 
     /// What the athlete can still do — the web reads it with the severity to grade the plan.
     static let impacts = [
-        Choice(value: "NONE", label: "Aucune gêne"),
-        Choice(value: "MILD", label: "Gêne légère"),
-        Choice(value: "MODERATE", label: "Gêne modérée"),
-        Choice(value: "LIMITING", label: "Limite l'entraînement"),
-        Choice(value: "STOPPED", label: "Empêche de s'entraîner"),
+        Choice(value: "NONE", label: String(localized: "Aucune gêne")),
+        Choice(value: "MILD", label: String(localized: "Gêne légère")),
+        Choice(value: "MODERATE", label: String(localized: "Gêne modérée")),
+        Choice(value: "LIMITING", label: String(localized: "Limite l'entraînement")),
+        Choice(value: "STOPPED", label: String(localized: "Empêche de s'entraîner")),
     ]
 
     /// Posture and mobility are worked on, not avoided: their impact question reads differently.
@@ -172,9 +172,9 @@ nonisolated enum ZoneStatusAction: String, CaseIterable, Identifiable, Sendable 
 
     var label: String {
         switch self {
-        case .monitor: "Passer sous surveillance"
-        case .resume: "Remettre en cours"
-        case .resolve: "Marquer résolue"
+        case .monitor: String(localized: "Passer sous surveillance")
+        case .resume: String(localized: "Remettre en cours")
+        case .resolve: String(localized: "Marquer résolue")
         }
     }
 
@@ -203,15 +203,15 @@ nonisolated enum SensitiveZoneReadout {
         let open = zones.filter { !$0.isResolved }
         guard !open.isEmpty else { return nil }
         let groups: [(V1SensitiveZone.Strategy, String)] = [
-            (.protect, "à protéger"),
-            (.progressive, "en reprise"),
-            (.correct, "à corriger"),
+            (.protect, String(localized: "à protéger")),
+            (.progressive, String(localized: "en reprise")),
+            (.correct, String(localized: "à corriger")),
         ]
         let parts = groups.compactMap { strategy, words -> String? in
             let count = open.filter { $0.strategy == strategy }.count
             return count > 0 ? "\(count) \(words)" : nil
         }
-        return parts.isEmpty ? plural(open.count, "zone suivie", "zones suivies") : parts.joined(separator: " · ")
+        return parts.isEmpty ? plural(open.count, String(localized: "zone suivie"), String(localized: "zones suivies")) : parts.joined(separator: " · ")
     }
 
     /// The question that leads Santé's card, when one is owed.
@@ -219,8 +219,8 @@ nonisolated enum SensitiveZoneReadout {
         let suggested = zones.filter(\.resolutionSuggested)
         if let first = suggested.first {
             return suggested.count == 1
-                ? "« \(first.title) » ne fait plus mal : c'est résolu ?"
-                : "\(suggested.count) zones ne font plus mal : à clore ?"
+                ? String(localized: "« \(first.title) » ne fait plus mal : c'est résolu ?")
+                : String(localized: "\(suggested.count) zones ne font plus mal : à clore ?")
         }
         return zones.first { $0.followUpQuestion != nil }?.followUpQuestion
     }
@@ -232,15 +232,15 @@ nonisolated enum SensitiveZoneReadout {
     static func upcoming(_ count: Int) -> String? {
         switch count {
         case 0: nil
-        case 1: "1 séance à venir la sollicite"
-        default: "\(count) séances à venir la sollicitent"
+        case 1: String(localized: "1 séance à venir la sollicite")
+        default: String(localized: "\(count) séances à venir la sollicitent")
         }
     }
 
     static func relapses(_ count: Int) -> String? {
         switch count {
         case 0: nil
-        case 1: "1 rechute"
+        case 1: String(localized: "1 rechute")
         default: "\(count) rechutes"
         }
     }

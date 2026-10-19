@@ -3,7 +3,7 @@ import Foundation
 /// Figures as the app writes them, French-grouped: shared with the widgets so a kilocalorie or a
 /// kilogram reads the same on the home screen as in the app.
 nonisolated enum SharpitFigureFormat {
-    private static let french = Locale(identifier: "fr_FR")
+    private static let locale = AppLanguage.locale
 
     /// `2140` — whole kilocalories. A four-digit figure stays whole, as French typography
     /// allows: in the monospaced readout face the thin space took a full digit's width
@@ -11,25 +11,25 @@ nonisolated enum SharpitFigureFormat {
     static func kcal(_ value: Double?) -> String {
         guard let value, let whole = Int(exactly: value.rounded()) else { return "—" }
         guard abs(whole) >= 10_000 else { return "\(whole)" }
-        return whole.formatted(.number.locale(french))
+        return whole.formatted(.number.locale(locale))
     }
 
     /// What the remaining calories say: left to eat, or past the goal.
     static func remainingKcal(_ remaining: Double?) -> String? {
         guard let remaining, let rounded = Int(exactly: remaining.rounded()) else { return nil }
-        if rounded >= 0 { return "Reste \(kcal(Double(rounded))) kcal" }
-        return "\(kcal(Double(-rounded))) kcal au-delà"
+        if rounded >= 0 { return String(localized: "Reste \(kcal(Double(rounded))) kcal") }
+        return String(localized: "\(kcal(Double(-rounded))) kcal au-delà")
     }
 
     /// `72,4` — one decimal.
     static func kilograms(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(1)).locale(french))
+        value.formatted(.number.precision(.fractionLength(1)).locale(locale))
     }
 
     /// `70 kg`, `68,5 kg` — a target: no trailing `,0`.
     static func target(_ value: Double) -> String {
-        guard let whole = Int(exactly: value.rounded()) else { return "— kg" }
-        return (value.rounded() == value ? whole.formatted(.number.locale(french)) : kilograms(value)) + " kg"
+        guard let whole = Int(exactly: value.rounded()) else { return String(localized: "— kg") }
+        return (value.rounded() == value ? whole.formatted(.number.locale(locale)) : kilograms(value)) + " kg"
     }
 
     /// `−0,6 kg` — a change, signed, a true minus.
@@ -43,8 +43,8 @@ nonisolated enum SharpitFigureFormat {
     static func kilometers(_ value: Double) -> String {
         guard let whole = Int(exactly: value.rounded()) else { return "—" }
         return value >= 100
-            ? whole.formatted(.number.locale(french))
-            : value.formatted(.number.precision(.fractionLength(1)).locale(french))
+            ? whole.formatted(.number.locale(locale))
+            : value.formatted(.number.precision(.fractionLength(1)).locale(locale))
     }
 
     /// `3 h 10`, `45 min` — a length of time.

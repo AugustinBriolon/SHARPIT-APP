@@ -102,17 +102,17 @@ struct ThresholdsView: View {
 
     private var sourceText: String {
         if let syncedAt = store.profile.thresholdsSyncedAt {
-            return "Importés de ta montre " + SyncReadout.age(of: syncedAt, now: .now) + " — ils s'y règlent aussi."
+            return String(localized: "Importés de ta montre ") + SyncReadout.age(of: syncedAt, now: .now) + String(localized: " — ils s'y règlent aussi.")
         }
-        return "Saisis à la main. Ils règlent tes zones et la charge de chaque séance."
+        return String(localized: "Saisis à la main. Ils règlent tes zones et la charge de chaque séance.")
     }
 
     // MARK: - Disciplines
 
     private var cardioSection: some View {
-        disciplineCard(title: "Cardio", symbol: "heart") {
+        disciplineCard(title: String(localized: "Cardio"), symbol: "heart") {
             ThresholdRow(
-                label: "FC max",
+                label: String(localized: "FC max"),
                 text: $form.maxHr,
                 placeholder: "190",
                 unit: "bpm",
@@ -122,7 +122,7 @@ struct ThresholdsView: View {
                 onChange: scheduleAutoSave
             )
             ThresholdRow(
-                label: "Seuil lactique",
+                label: String(localized: "Seuil lactique"),
                 text: $form.lthr,
                 placeholder: "168",
                 unit: "bpm",
@@ -139,11 +139,11 @@ struct ThresholdsView: View {
               let maxHr = ProfileFieldFormat.parseInteger(form.maxHr), maxHr > 0
         else { return "LTHR" }
         let pct = Int((Double(lthr) / Double(maxHr) * 100).rounded())
-        return "LTHR · \(pct) % de la FC max"
+        return String(localized: "LTHR · \(pct) % de la FC max")
     }
 
     private var bikeSection: some View {
-        disciplineCard(title: "Vélo", symbol: "bicycle") {
+        disciplineCard(title: String(localized: "Vélo"), symbol: "bicycle") {
             ThresholdRow(
                 label: "FTP",
                 text: $form.ftpW,
@@ -160,14 +160,14 @@ struct ThresholdsView: View {
     private var ftpHint: String {
         guard let w = ProfileFieldFormat.parseInteger(form.ftpW),
               let weight = store.profile.targetWeightKg, weight > 0
-        else { return "Puissance tenue une heure" }
+        else { return String(localized: "Puissance tenue une heure") }
         return Self.oneDecimal(Double(w) / weight) + " W/kg"
     }
 
     private var runSection: some View {
-        disciplineCard(title: "Course à pied", symbol: "figure.run") {
+        disciplineCard(title: String(localized: "Course à pied"), symbol: "figure.run") {
             ThresholdRow(
-                label: "Allure seuil",
+                label: String(localized: "Allure seuil"),
                 text: $form.runThresholdPace,
                 placeholder: "4:15",
                 unit: "/km",
@@ -177,7 +177,7 @@ struct ThresholdsView: View {
                 onChange: scheduleAutoSave
             )
             ThresholdRow(
-                label: "Allure endurance",
+                label: String(localized: "Allure endurance"),
                 text: $form.runEasyPace,
                 placeholder: derivedEasyPacePlaceholder,
                 unit: "/km",
@@ -201,7 +201,7 @@ struct ThresholdsView: View {
         if let hint = paceHint(form.runEasyPace) { return "Z2 · " + hint }
         if form.runEasyPace.trimmingCharacters(in: .whitespaces).isEmpty,
            ProfileFieldFormat.parsePace(form.runThresholdPace) != nil {
-            return "Z2 · vide, déduite du seuil"
+            return String(localized: "Z2 · vide, déduite du seuil")
         }
         return "Z2"
     }
@@ -213,19 +213,19 @@ struct ThresholdsView: View {
 
     /// « 2,6 », « 10,8 »: the comma the rest of the app reads.
     private static func oneDecimal(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(1)).locale(SharpitLocale.french))
+        value.formatted(.number.precision(.fractionLength(1)).locale(SharpitLocale.current))
     }
 
     private var swimSection: some View {
-        disciplineCard(title: "Natation", symbol: "figure.pool.swim") {
+        disciplineCard(title: String(localized: "Natation"), symbol: "figure.pool.swim") {
             ThresholdRow(
-                label: "Vitesse critique",
+                label: String(localized: "Vitesse critique"),
                 text: $form.swimCss,
                 placeholder: "1:38",
                 unit: "/100 m",
                 keyboard: .numbersAndPunctuation,
                 error: form.error(for: .swimCss),
-                hint: "CSS · allure seuil en continu",
+                hint: String(localized: "CSS · allure seuil en continu"),
                 onChange: scheduleAutoSave
             )
             poolLengthRow
@@ -258,9 +258,9 @@ struct ThresholdsView: View {
         let running = store.profile.vo2maxRunning
         let cycling = store.profile.vo2maxCycling
         if running != nil || cycling != nil {
-            disciplineCard(title: "Mesuré par ta montre", symbol: "applewatch", subtitle: "Se règle sur la montre") {
-                if let running { measuredRow("VO₂max course", value: running) }
-                if let cycling { measuredRow("VO₂max vélo", value: cycling) }
+            disciplineCard(title: String(localized: "Mesuré par ta montre"), symbol: "applewatch", subtitle: String(localized: "Se règle sur la montre")) {
+                if let running { measuredRow(String(localized: "VO₂max course"), value: running) }
+                if let cycling { measuredRow(String(localized: "VO₂max vélo"), value: cycling) }
             }
         }
     }
@@ -283,7 +283,7 @@ struct ThresholdsView: View {
     @ViewBuilder
     private var historySection: some View {
         if !store.history.isEmpty {
-            disciplineCard(title: "Historique", symbol: "clock.arrow.circlepath") {
+            disciplineCard(title: String(localized: "Historique"), symbol: "clock.arrow.circlepath") {
                 ForEach(store.history) { snapshot in
                     historyRow(snapshot)
                 }

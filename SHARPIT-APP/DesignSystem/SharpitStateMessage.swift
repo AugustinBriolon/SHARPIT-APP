@@ -33,15 +33,15 @@ extension SharpitStateMessage {
     /// The token was refused: only signing in again helps, so there is nothing to retry.
     static func sessionExpired() -> SharpitStateMessage {
         SharpitStateMessage(
-            title: "Session expirée",
+            title: String(localized: "Session expirée"),
             symbol: "person.crop.circle.badge.exclamationmark",
-            detail: "Reconnecte-toi pour continuer."
+            detail: String(localized: "Reconnecte-toi pour continuer.")
         )
     }
 
     static func failed(_ message: String, retry: (() -> Void)? = nil) -> SharpitStateMessage {
         SharpitStateMessage(
-            title: "Lecture impossible",
+            title: String(localized: "Lecture impossible"),
             symbol: "exclamationmark.triangle",
             detail: message,
             retry: retry

@@ -8,7 +8,7 @@ nonisolated struct PainReassessment: Identifiable, Equatable, Sendable {
     let zone: V1SensitiveZone
     var id: String { zone.id }
 
-    var question: String { "Comment va « \(zone.title) » après cette séance ?" }
+    var question: String { String(localized: "Comment va « \(zone.title) » après cette séance ?") }
 
     static let followedCategories: Set<String> = ["PAIN", "INJURY"]
     static let followedStatuses: Set<String> = ["ACTIVE", "MONITORING"]
@@ -37,7 +37,7 @@ struct PainReassessmentSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Réévaluer une douleur")
+            SharpitEyebrow(String(localized: "Réévaluer une douleur"))
             ForEach(items) { item in
                 Button { onAnswer(item) } label: {
                     HStack(spacing: SharpitSpacing.sm) {

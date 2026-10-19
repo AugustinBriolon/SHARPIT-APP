@@ -27,7 +27,7 @@ nonisolated struct WeeklyReviewSections: Equatable, Sendable {
             case .bulleted(let items), .numbered(let items):
                 append(items.map(Self.plain), under: heading)
             case .paragraph(let text):
-                let title = heading.isEmpty ? "Bilan" : heading
+                let title = heading.isEmpty ? String(localized: "Bilan") : heading
                 if let index = narrative.firstIndex(where: { $0.title == title }) {
                     narrative[index].text += "\n\n" + text
                 } else {
@@ -41,11 +41,12 @@ nonisolated struct WeeklyReviewSections: Equatable, Sendable {
 
     private mutating func append(_ items: [String], under heading: String) {
         let key = heading.lowercased()
-        if key.contains("bien marché") {
+        // The coach writes these headings in the athlete's language (French or English).
+        if key.contains("bien marché") || key.contains("went well") {
             wins += items
-        } else if key.contains("surveiller") {
+        } else if key.contains("surveiller") || key.contains("watch") {
             watch += items
-        } else if key.contains("semaine prochaine") {
+        } else if key.contains("semaine prochaine") || key.contains("next week") {
             nextWeek += items
         } else {
             mixed += items

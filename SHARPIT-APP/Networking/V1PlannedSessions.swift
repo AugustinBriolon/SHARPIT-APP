@@ -123,13 +123,13 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
 
     var displayType: String {
         switch type?.uppercased() {
-        case "RUN": "Course"
-        case "BIKE": "Vélo"
-        case "SWIM": "Natation"
-        case "STRENGTH": "Force"
-        case "HIKE": "Randonnée"
-        case "TRIATHLON": "Triathlon"
-        default: type?.capitalized ?? "Séance"
+        case "RUN": String(localized: "Course")
+        case "BIKE": String(localized: "Vélo")
+        case "SWIM": String(localized: "Natation")
+        case "STRENGTH": String(localized: "Force")
+        case "HIKE": String(localized: "Randonnée")
+        case "TRIATHLON": String(localized: "Triathlon")
+        default: type?.capitalized ?? String(localized: "Séance")
         }
     }
 

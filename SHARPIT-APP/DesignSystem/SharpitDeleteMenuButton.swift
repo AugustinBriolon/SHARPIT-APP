@@ -4,7 +4,7 @@ import SwiftUI
 /// icons as templates in the app's tint and ignores any SwiftUI colour, so the glyph goes in
 /// already tinted (`alwaysOriginal`).
 struct SharpitDeleteMenuButton: View {
-    var title: String = "Supprimer"
+    var title: String = String(localized: "Supprimer")
     let action: () -> Void
 
     var body: some View {
@@ -26,7 +26,7 @@ struct SharpitDeleteMenuButton: View {
 /// Destructive list swipe. Same RootView tint leak paints the trash green on a non-red chip;
 /// pinning `.tint(destructive)` restores white glyph on red background.
 struct SharpitSwipeDeleteButton: View {
-    var title: String = "Supprimer"
+    var title: String = String(localized: "Supprimer")
     var systemImage: String = "trash"
     let action: () -> Void
 

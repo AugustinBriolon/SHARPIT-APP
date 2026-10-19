@@ -12,11 +12,11 @@ struct PlanAdapterSheet: View {
 
     /// What the coach reads before proposing anything, in order.
     static let readingSteps = [
-        "Lecture de tes séances récentes",
-        "Comparaison prévu et réalisé",
-        "Lecture de ta forme",
-        "Prise en compte des blessures",
-        "Choix des ajustements",
+        String(localized: "Lecture de tes séances récentes"),
+        String(localized: "Comparaison prévu et réalisé"),
+        String(localized: "Lecture de ta forme"),
+        String(localized: "Prise en compte des blessures"),
+        String(localized: "Choix des ajustements"),
     ]
 
     var body: some View {
@@ -51,7 +51,7 @@ struct PlanAdapterSheet: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 CoachWorkingHeader(
                     readingSteps: Self.readingSteps,
-                    readingDetail: "Il part de ce que tu as vraiment fait, pas du plan seul."
+                    readingDetail: String(localized: "Il part de ce que tu as vraiment fait, pas du plan seul.")
                 )
                 VStack(spacing: SharpitSpacing.xs) {
                     ForEach(0..<3, id: \.self) { index in
@@ -73,8 +73,8 @@ struct PlanAdapterSheet: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             SharpitFormField(
-                "Ce qui a changé (optionnel)",
-                placeholder: "Fatigue, douleur, déplacement…",
+                String(localized: "Ce qui a changé (optionnel)"),
+                placeholder: String(localized: "Fatigue, douleur, déplacement…"),
                 text: $store.focus
             )
             if let error {
@@ -95,7 +95,7 @@ struct PlanAdapterSheet: View {
             }
             if result.changes.isEmpty {
                 ContentUnavailableView(
-                    "Rien à changer",
+                    String(localized: "Rien à changer"),
                     systemImage: "checkmark.circle",
                     description: Text("Tes séances prévues tiennent compte de ce que tu as fait.")
                 )
@@ -121,7 +121,7 @@ struct PlanAdapterSheet: View {
         switch store.phase {
         case .idle, .failed:
             SharpitActionDock {
-                SharpitPrimaryButton(title: "Proposer des ajustements") {
+                SharpitPrimaryButton(title: String(localized: "Proposer des ajustements")) {
                     Task { await store.start() }
                 }
             }
@@ -131,13 +131,13 @@ struct PlanAdapterSheet: View {
             let busy = if case .applying = store.phase { true } else { false }
             SharpitActionDock {
                 if result.changes.isEmpty {
-                    SharpitPrimaryButton(title: "Terminé") {
+                    SharpitPrimaryButton(title: String(localized: "Terminé")) {
                         store.reset()
                         dismiss()
                     }
                 } else {
                     SharpitPrimaryButton(
-                        title: busy ? "Application…" : "Appliquer \(selected.count) modification\(selected.count > 1 ? "s" : "")",
+                        title: busy ? String(localized: "Application…") : String(localized: "Appliquer \(selected.count) modification\(selected.count > 1 ? "s" : "")"),
                         isBusy: busy
                     ) {
                         Task { await apply() }
@@ -157,7 +157,7 @@ struct PlanAdapterSheet: View {
             return
         }
         toastCenter?.show(
-            "\(count) modification\(count > 1 ? "s" : "") appliquée\(count > 1 ? "s" : "")",
+            String(localized: "\(count) modification\(count > 1 ? "s" : "") appliquée\(count > 1 ? "s" : "")"),
             symbol: "slider.horizontal.3",
             tone: .success,
             autoDismissAfter: 3.0
@@ -188,7 +188,7 @@ private struct AdjustmentRow: View {
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
                     .foregroundStyle(change.action == .remove ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
-                Text(change.title ?? "Séance prévue")
+                Text(change.title ?? String(localized: "Séance prévue"))
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
                     .strikethrough(change.action == .remove)
@@ -221,16 +221,16 @@ private extension V1AdaptAction {
     /// The change as a heading: what happens to the session.
     var verb: String {
         switch self {
-        case .add: "Ajout"
-        case .modify: "Modification"
-        case .remove: "Suppression"
+        case .add: String(localized: "Ajout")
+        case .modify: String(localized: "Modification")
+        case .remove: String(localized: "Suppression")
         }
     }
 }
 
 private extension V1AdaptChange {
     static let placeholder = V1AdaptChange(
-        action: .modify, date: "2026-01-05", type: .run, title: "Séance en cours d'ajustement",
-        durationMin: 45, reason: "Le coach relit ta semaine."
+        action: .modify, date: "2026-01-05", type: .run, title: String(localized: "Séance en cours d'ajustement"),
+        durationMin: 45, reason: String(localized: "Le coach relit ta semaine.")
     )
 }

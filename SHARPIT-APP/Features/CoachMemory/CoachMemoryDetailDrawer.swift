@@ -17,21 +17,21 @@ struct CoachMemoryDetailDrawer: View {
 
                     VStack(spacing: SharpitSpacing.sm) {
                         detailRow(
-                            title: "Dates",
+                            title: String(localized: "Dates"),
                             value: entry.formattedDateRange,
                             symbol: "calendar"
                         )
 
                         if let loc = entry.locationLabel, !loc.isEmpty {
                             detailRow(
-                                title: "Lieu",
+                                title: String(localized: "Lieu"),
                                 value: loc,
                                 symbol: "mappin.and.ellipse"
                             )
                         }
 
                         detailRow(
-                            title: "Impact entraînement",
+                            title: String(localized: "Impact entraînement"),
                             value: entry.trainingConstraint.label,
                             symbol: "figure.run",
                             badgeText: entry.trainingConstraint.badgeText,
@@ -53,7 +53,7 @@ struct CoachMemoryDetailDrawer: View {
                 .padding(.vertical, SharpitSpacing.md)
             }
             .background(SharpitCanvasBackground())
-            .navigationTitle(entry.type == .travel ? "Déplacement" : "Contrainte")
+            .navigationTitle(entry.type == .travel ? String(localized: "Déplacement") : String(localized: "Contrainte"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -62,7 +62,7 @@ struct CoachMemoryDetailDrawer: View {
                 }
             }
             .confirmationDialog(
-                "Supprimer cette entrée ?",
+                String(localized: "Supprimer cette entrée ?"),
                 isPresented: $showingDeleteConfirmation,
                 titleVisibility: .visible
             ) {

@@ -70,7 +70,7 @@ struct PrivacyConsentWallView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(reason == .healthWithdrawn ? "Données de santé" : "Avant de commencer", systemImage: "hand.raised.fill")
+            SharpitEyebrow(reason == .healthWithdrawn ? String(localized: "Données de santé") : String(localized: "Avant de commencer"), systemImage: "hand.raised.fill")
             Text(title)
                 .font(SharpitTypography.pageTitle)
                 .tracking(SharpitTypography.pageTitleTracking)
@@ -172,20 +172,20 @@ struct PrivacyConsentWallView: View {
     // MARK: - Copy (the web's `consentWallCopy`)
 
     private var title: String {
-        reason == .healthWithdrawn ? "Consentement santé retiré" : "Confidentialité & conditions"
+        reason == .healthWithdrawn ? String(localized: "Consentement santé retiré") : String(localized: "Confidentialité & conditions")
     }
 
     private var description: String {
         switch reason {
         case .healthWithdrawn:
-            "Tu as retiré ton consentement pour les données de santé. Résumé et les traitements physiologiques restent bloqués tant que tu ne le réactives pas."
+            String(localized: "Tu as retiré ton consentement pour les données de santé. Résumé et les traitements physiologiques restent bloqués tant que tu ne le réactives pas.")
         case .documents:
-            "Avant d'utiliser SharpIt, accepte les documents légaux et le traitement des données de santé."
+            String(localized: "Avant d'utiliser SharpIt, accepte les documents légaux et le traitement des données de santé.")
         }
     }
 
-    private var cta: String { reason == .healthWithdrawn ? "Réactiver et continuer" : "Continuer" }
-    private var ctaBusy: String { reason == .healthWithdrawn ? "Réactivation…" : "Enregistrement…" }
+    private var cta: String { reason == .healthWithdrawn ? String(localized: "Réactiver et continuer") : String(localized: "Continuer") }
+    private var ctaBusy: String { reason == .healthWithdrawn ? String(localized: "Réactivation…") : String(localized: "Enregistrement…") }
 
     // MARK: - Save
 
@@ -202,9 +202,9 @@ struct PrivacyConsentWallView: View {
             )
             await onAccepted(saved)
         } catch SharpitAPIError.unauthorized {
-            self.error = "Session expirée. Reconnecte-toi."
+            self.error = String(localized: "Session expirée. Reconnecte-toi.")
         } catch {
-            self.error = "Enregistrement impossible. Réessaie."
+            self.error = String(localized: "Enregistrement impossible. Réessaie.")
         }
     }
 }
@@ -212,7 +212,7 @@ struct PrivacyConsentWallView: View {
 /// Copy shared by the wall and Moi → Confidentialité, in the web's words.
 enum PrivacyCopy {
     static let healthDisclaimer =
-        "SharpIt est un outil d'aide à l'entraînement. Ce n'est pas un dispositif médical et ça ne remplace pas un avis médical. Les signaux (récupération, fatigue, risques) sont des estimations d'entraînement, pas un diagnostic."
+        String(localized: "SharpIt est un outil d'aide à l'entraînement. Ce n'est pas un dispositif médical et ça ne remplace pas un avis médical. Les signaux (récupération, fatigue, risques) sont des estimations d'entraînement, pas un diagnostic.")
 }
 
 /// A checkbox row: the whole row toggles, and a document it names opens with « Lire » without

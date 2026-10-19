@@ -84,9 +84,9 @@ extension CoachChatError {
     /// Words for a refusal whose body said nothing readable.
     static func fallback(status: Int) -> String {
         switch status {
-        case 413: "Cette conversation est trop longue pour le coach. Ouvre une nouvelle conversation."
-        case 429: "Trop de messages d'affilée. Réessaie dans un instant."
-        default: "Le coach est indisponible (\(status))."
+        case 413: String(localized: "Cette conversation est trop longue pour le coach. Ouvre une nouvelle conversation.")
+        case 429: String(localized: "Trop de messages d'affilée. Réessaie dans un instant.")
+        default: String(localized: "Le coach est indisponible (\(status)).")
         }
     }
 }
@@ -279,7 +279,7 @@ actor CoachChatClient: CoachChatServing {
         case "error":
             // The AI SDK masks server details as "An error occurred." unless the route says more.
             let text = chunk["errorText"]?.string ?? ""
-            return .error(text.isEmpty || text == "An error occurred." ? "Le coach a rencontré une erreur. Réessaie." : text)
+            return .error(text.isEmpty || text == "An error occurred." ? String(localized: "Le coach a rencontré une erreur. Réessaie.") : text)
         case "tool-approval-request":
             return .approvalRequest
         default:

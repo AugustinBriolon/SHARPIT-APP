@@ -106,7 +106,7 @@ final class CorpsStore {
             return
         }
         if outcomes.allSatisfy({ $0 == .failed }) {
-            if metrics.isEmpty { phase = .failed("Lecture de ton corps impossible.") }
+            if metrics.isEmpty { phase = .failed(String(localized: "Lecture de ton corps impossible.")) }
             return
         }
 

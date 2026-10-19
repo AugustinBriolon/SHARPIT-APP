@@ -123,7 +123,7 @@ struct InkVerdictPlate: View {
     private func confidenceBar(_ confidence: Int) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(alignment: .firstTextBaseline) {
-                Text(plate.confidenceLabel ?? "Confiance")
+                Text(plate.confidenceLabel ?? String(localized: "Confiance"))
                     .foregroundStyle(ink.opacity(0.6))
                 Spacer(minLength: SharpitSpacing.xs)
                 Text("\(confidence) %")
@@ -163,20 +163,20 @@ struct InkVerdictPlate: View {
 #Preview("Repos · light") {
     InkVerdictPlate(
         plate: InkPlateModel(
-            statusLabel: "Repos",
-            headline: "Priorité au repos",
-            actionLine: "Privilégie le repos ou une marche très légère.",
+            statusLabel: String(localized: "Repos"),
+            headline: String(localized: "Priorité au repos"),
+            actionLine: String(localized: "Privilégie le repos ou une marche très légère."),
             limitingCause: nil,
             confidencePct: 55,
-            confidenceLabel: "Estimation partielle",
+            confidenceLabel: String(localized: "Estimation partielle"),
             packTier: .partial,
-            estimationGaps: ["Baseline HRV partielle (moins de 14 j)"],
+            estimationGaps: [String(localized: "Baseline HRV partielle (moins de 14 j)")],
             posture: .protect,
-            explanationEssential: "Ta forme ressentie est bonne, mais ton corps n’a pas encore récupéré et ta nuit a été trop courte. Un vrai repos aujourd’hui.",
-            explanationExpert: "VFC basse.",
-            instruction: "Privilégie le repos ou une marche très légère.",
+            explanationEssential: String(localized: "Ta forme ressentie est bonne, mais ton corps n’a pas encore récupéré et ta nuit a été trop courte. Un vrai repos aujourd’hui."),
+            explanationExpert: String(localized: "VFC basse."),
+            instruction: String(localized: "Privilégie le repos ou une marche très légère."),
             limiterSignals: [.hrvLow, .sleepShort],
-            vsYesterdayLabel: "Changé depuis hier",
+            vsYesterdayLabel: String(localized: "Changé depuis hier"),
             showHeadline: false,
             stateCode: .recover
         )
@@ -189,20 +189,20 @@ struct InkVerdictPlate: View {
 #Preview("Repos · dark") {
     InkVerdictPlate(
         plate: InkPlateModel(
-            statusLabel: "Repos",
-            headline: "Priorité au repos",
-            actionLine: "Privilégie le repos ou une marche très légère.",
+            statusLabel: String(localized: "Repos"),
+            headline: String(localized: "Priorité au repos"),
+            actionLine: String(localized: "Privilégie le repos ou une marche très légère."),
             limitingCause: nil,
             confidencePct: 55,
-            confidenceLabel: "Estimation partielle",
+            confidenceLabel: String(localized: "Estimation partielle"),
             packTier: .partial,
             estimationGaps: [],
             posture: .protect,
-            explanationEssential: "Ta forme ressentie est bonne, mais ton corps n’a pas encore récupéré et ta nuit a été trop courte. Un vrai repos aujourd’hui.",
-            explanationExpert: "VFC basse.",
-            instruction: "Privilégie le repos ou une marche très légère.",
+            explanationEssential: String(localized: "Ta forme ressentie est bonne, mais ton corps n’a pas encore récupéré et ta nuit a été trop courte. Un vrai repos aujourd’hui."),
+            explanationExpert: String(localized: "VFC basse."),
+            instruction: String(localized: "Privilégie le repos ou une marche très légère."),
             limiterSignals: [.hrvLow, .sleepShort],
-            vsYesterdayLabel: "Changé depuis hier",
+            vsYesterdayLabel: String(localized: "Changé depuis hier"),
             showHeadline: false,
             stateCode: .recover
         )

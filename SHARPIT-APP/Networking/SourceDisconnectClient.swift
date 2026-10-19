@@ -19,9 +19,9 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
 
     var name: String {
         switch self {
-        case .strava: "Strava"
-        case .withings: "Withings"
-        case .google: "Google Agenda"
+        case .strava: String(localized: "Strava")
+        case .withings: String(localized: "Withings")
+        case .google: String(localized: "Google Agenda")
         }
     }
 
@@ -36,30 +36,30 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
     /// What the source brings, on its row's second line once connected.
     var purpose: String {
         switch self {
-        case .strava: "Séances et activités"
-        case .withings: "Poids et composition corporelle"
-        case .google: "Planning et disponibilités"
+        case .strava: String(localized: "Séances et activités")
+        case .withings: String(localized: "Poids et composition corporelle")
+        case .google: String(localized: "Planning et disponibilités")
         }
     }
 
     /// The web's confirmation title (`modal-content-*.tsx`).
-    var confirmationTitle: String { "Déconnecter \(name) ?" }
+    var confirmationTitle: String { String(localized: "Déconnecter \(name) ?") }
 
     /// What stops, then what stays — the athlete decides on facts, never on a warning tone.
     var confirmationMessage: String {
         switch self {
         case .strava:
-            "SharpIt ne recevra plus tes activités Strava et l'accès est révoqué chez Strava. Ce qui est déjà importé est conservé."
+            String(localized: "SharpIt ne recevra plus tes activités Strava et l'accès est révoqué chez Strava. Ce qui est déjà importé est conservé.")
         case .withings:
-            "SharpIt ne recevra plus tes pesées ni ta composition corporelle, et l'accès est révoqué chez Withings. Les mesures importées sont conservées."
+            String(localized: "SharpIt ne recevra plus tes pesées ni ta composition corporelle, et l'accès est révoqué chez Withings. Les mesures importées sont conservées.")
         case .google:
-            "Tes séances ne seront plus écrites dans ton agenda et le coach ne lira plus tes disponibilités ; l'accès est révoqué chez Google. Les événements déjà créés restent dans l'agenda."
+            String(localized: "Tes séances ne seront plus écrites dans ton agenda et le coach ne lira plus tes disponibilités ; l'accès est révoqué chez Google. Les événements déjà créés restent dans l'agenda.")
         }
     }
 
-    var confirmLabel: String { "Déconnecter \(name)" }
+    var confirmLabel: String { String(localized: "Déconnecter \(name)") }
 
-    var disconnectedMessage: String { "\(name) déconnecté" }
+    var disconnectedMessage: String { String(localized: "\(name) déconnecté") }
 
     /// The sources that read as connected in a sync status, in the screen's order.
     static func connected(in status: V1SyncStatus?) -> [DisconnectableSource] {

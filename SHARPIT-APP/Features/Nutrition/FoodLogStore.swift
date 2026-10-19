@@ -122,7 +122,7 @@ final class FoodLogStore {
                 return false
             } catch {
                 guard dayId == self.trainingDayId, self.phase != .ready else { return false }
-                self.phase = .failed(SharpitErrorGuidance.message(for: error, subject: "Ton journal alimentaire"))
+                self.phase = .failed(SharpitErrorGuidance.message(for: error, subject: String(localized: "Ton journal alimentaire")))
                 return false
             }
         }
@@ -146,7 +146,7 @@ final class FoodLogStore {
             await mirrorNutritionToAppleHealth()
         } catch {
             entries.removeAll { $0.id == pending.id }
-            reportFailure(Self.failureMessage(error, action: "Aliment non ajouté"))
+            reportFailure(Self.failureMessage(error, action: String(localized: "Aliment non ajouté")))
         }
     }
 
@@ -180,7 +180,7 @@ final class FoodLogStore {
             await mirrorNutritionToAppleHealth()
         } catch {
             entries.removeAll { pendingIds.contains($0.id) }
-            reportFailure(Self.failureMessage(error, action: "Aliments non ajoutés"))
+            reportFailure(Self.failureMessage(error, action: String(localized: "Aliments non ajoutés")))
         }
     }
 
@@ -198,7 +198,7 @@ final class FoodLogStore {
             await mirrorNutritionToAppleHealth()
         } catch {
             replace(entry.id, with: original)
-            reportFailure(Self.failureMessage(error, action: "Modification non enregistrée"))
+            reportFailure(Self.failureMessage(error, action: String(localized: "Modification non enregistrée")))
         }
     }
 
@@ -219,7 +219,7 @@ final class FoodLogStore {
             await mirrorNutritionToAppleHealth()
         } catch {
             entries.insert(entry, at: min(index, entries.count))
-            reportFailure(Self.failureMessage(error, action: "Aliment non supprimé"))
+            reportFailure(Self.failureMessage(error, action: String(localized: "Aliment non supprimé")))
         }
     }
 
@@ -233,7 +233,7 @@ final class FoodLogStore {
             await onChange()
         } catch {
             targets = previous
-            reportFailure(Self.failureMessage(error, action: "Objectifs non enregistrés"))
+            reportFailure(Self.failureMessage(error, action: String(localized: "Objectifs non enregistrés")))
         }
     }
 
@@ -261,7 +261,7 @@ final class FoodLogStore {
             }
             guard dayId == trainingDayId else { return }
             guard !copied.isEmpty else {
-                reportFailure(meal == nil ? "Rien de noté la veille : rien à copier." : "Ce repas était vide la veille : rien à copier.")
+                reportFailure(meal == nil ? String(localized: "Rien de noté la veille : rien à copier.") : String(localized: "Ce repas était vide la veille : rien à copier."))
                 return
             }
             entries.append(contentsOf: copied)
@@ -269,7 +269,7 @@ final class FoodLogStore {
             await refreshHealth()
             await mirrorNutritionToAppleHealth()
         } catch {
-            reportFailure(Self.failureMessage(error, action: "Repas non copié"))
+            reportFailure(Self.failureMessage(error, action: String(localized: "Repas non copié")))
         }
     }
 
@@ -291,7 +291,7 @@ final class FoodLogStore {
             await mirrorNutritionToAppleHealth()
         } catch {
             entries.removeAll { pendingIds.contains($0.id) }
-            reportFailure(Self.failureMessage(error, action: "Repas non ajouté"))
+            reportFailure(Self.failureMessage(error, action: String(localized: "Repas non ajouté")))
         }
     }
 
@@ -304,7 +304,7 @@ final class FoodLogStore {
                 try await client.saveMeal(name: name, trainingDayId: dayId, meal: meal, token: try await tokenProvider())
             }
         } catch {
-            reportFailure(Self.failureMessage(error, action: "Repas non enregistré"))
+            reportFailure(Self.failureMessage(error, action: String(localized: "Repas non enregistré")))
             return nil
         }
     }
@@ -427,13 +427,13 @@ final class FoodLogStore {
     nonisolated static func failureMessage(_ error: Error, action: String) -> String {
         switch error {
         case let error as SharpitAPIError where error == .unauthorized:
-            "\(action) : ta session a expiré."
+            String(localized: "\(action) : ta session a expiré.")
         case let error as SharpitAPIError where error == .transport:
-            "\(action) : pas de connexion internet."
+            String(localized: "\(action) : pas de connexion internet.")
         case FoodLogError.notFound:
-            "\(action) : cet aliment n'existe plus."
+            String(localized: "\(action) : cet aliment n'existe plus.")
         default:
-            "\(action). Réessaie dans un instant."
+            String(localized: "\(action). Réessaie dans un instant.")
         }
     }
 }

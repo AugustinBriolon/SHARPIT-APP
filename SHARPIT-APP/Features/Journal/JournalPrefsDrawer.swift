@@ -85,7 +85,7 @@ struct JournalPrefsDrawer: View {
     private var filterChips: some View {
         ScrollView(.horizontal) {
             HStack(spacing: SharpitSpacing.xs) {
-                JournalFilterChip(label: "Tous", isSelected: filter == nil) { filter = nil }
+                JournalFilterChip(label: String(localized: "Tous"), isSelected: filter == nil) { filter = nil }
                 ForEach(JournalCategory.allCases) { category in
                     JournalFilterChip(label: category.label, isSelected: filter == category) {
                         filter = category
@@ -98,7 +98,7 @@ struct JournalPrefsDrawer: View {
     }
 
     private var customSection: some View {
-        JournalPrefsSection(title: "Personnalisé") {
+        JournalPrefsSection(title: String(localized: "Personnalisé")) {
             if store.isPro {
                 HStack(spacing: SharpitSpacing.xs) {
                     TextField("Ajouter un suivi", text: $newCustomLabel)

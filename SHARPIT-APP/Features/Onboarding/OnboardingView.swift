@@ -250,8 +250,8 @@ private struct OnboardingActionBar: View {
 
     private var hint: String? {
         switch store.step {
-        case .sports where !store.canContinueFromSports: "Choisis un sport d'endurance, ou la musculation."
-        case .privacy where !store.consents.requiredAccepted: "Les deux documents et les données de santé sont nécessaires."
+        case .sports where !store.canContinueFromSports: String(localized: "Choisis un sport d'endurance, ou la musculation.")
+        case .privacy where !store.consents.requiredAccepted: String(localized: "Les deux documents et les données de santé sont nécessaires.")
         default: nil
         }
     }
@@ -266,16 +266,16 @@ private struct OnboardingActionBar: View {
 
     private var primaryLabel: String {
         switch store.step {
-        case .identity: store.isBusy ? "Enregistrement…" : "Commencer"
-        case .injuries where store.injuries.isEmpty: "Aucune blessure"
-        case .privacy: "Accepter et continuer"
+        case .identity: store.isBusy ? String(localized: "Enregistrement…") : String(localized: "Commencer")
+        case .injuries where store.injuries.isEmpty: String(localized: "Aucune blessure")
+        case .privacy: String(localized: "Accepter et continuer")
         case .firstWeek:
             switch store.firstWeek {
-            case .generating: "Le coach prépare ta semaine…"
-            case .ready: store.isBusy ? "Ajout au plan…" : "Ajouter à mon plan"
-            default: "Terminer"
+            case .generating: String(localized: "Le coach prépare ta semaine…")
+            case .ready: store.isBusy ? String(localized: "Ajout au plan…") : String(localized: "Ajouter à mon plan")
+            default: String(localized: "Terminer")
             }
-        default: store.isBusy ? "Enregistrement…" : "Continuer"
+        default: store.isBusy ? String(localized: "Enregistrement…") : String(localized: "Continuer")
         }
     }
 }
@@ -287,10 +287,10 @@ private struct OnboardingActionBar: View {
 /// a check, so the wizard ends on something finished rather than on a spinner.
 struct OnboardingBootstrapView: View {
     static let lines = [
-        "Onboarding terminé…",
-        "Ton Twin se met en place…",
-        "Première lecture en cours…",
-        "Bienvenue sur Résumé…",
+        String(localized: "Onboarding terminé…"),
+        String(localized: "Ton Twin se met en place…"),
+        String(localized: "Première lecture en cours…"),
+        String(localized: "Bienvenue sur Résumé…"),
     ]
 
     let onDone: () -> Void

@@ -4,9 +4,9 @@ import SwiftUI
 struct RestDayPlate: View {
     var body: some View {
         SharpitCardHeader(
-            title: "Repos",
+            title: String(localized: "Repos"),
             symbol: "moon.zzz.fill",
-            subtitle: "Le Twin valide la récupération — pas de séance prévue.",
+            subtitle: String(localized: "Le Twin valide la récupération — pas de séance prévue."),
             showsChevron: false
         )
         .padding(SharpitSpacing.cardPadding)

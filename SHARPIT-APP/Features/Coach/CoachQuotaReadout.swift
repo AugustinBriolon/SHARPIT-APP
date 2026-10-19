@@ -5,13 +5,13 @@ import Foundation
 nonisolated enum CoachQuotaReadout {
     static func line(_ quota: V1CoachQuota, now: Date = .now) -> String? {
         if let wait = quota.retryAfterSeconds {
-            return "Plus d'échange pour l'instant · de nouveau \(eta(wait, now: now))"
+            return String(localized: "Plus d'échange pour l'instant · de nouveau \(eta(wait, now: now))")
         }
         guard quota.usedRatio >= 0.5 else { return nil }
         switch quota.remainingQuestions {
-        case 0: return "Moins d'un échange restant sur 24 h"
-        case 1: return "Environ 1 échange restant sur 24 h"
-        case let count: return "Environ \(count) échanges restants sur 24 h"
+        case 0: return String(localized: "Moins d'un échange restant sur 24 h")
+        case 1: return String(localized: "Environ 1 échange restant sur 24 h")
+        case let count: return String(localized: "Environ \(count) échanges restants sur 24 h")
         }
     }
 
@@ -41,16 +41,16 @@ nonisolated enum CoachQuotaReadout {
     /// spent budget has a time, the server's wait.
     static func resetLine(_ quota: V1CoachQuota, now: Date = .now) -> String {
         guard let wait = quota.retryAfterSeconds else {
-            return "Au fil de l'eau : chaque échange compte 24 h"
+            return String(localized: "Au fil de l'eau : chaque échange compte 24 h")
         }
-        return "De nouveau \(eta(wait, now: now))"
+        return String(localized: "De nouveau \(eta(wait, now: now))")
     }
 
     /// « dans 12 min », or the clock time past an hour: a relative wait goes stale on a screen
     /// left open, as the web's `formatBudgetRetryEta` says.
     static func eta(_ seconds: Int, now: Date = .now) -> String {
         if seconds < 3600 {
-            return "dans \(max(1, Int((Double(seconds) / 60).rounded(.up)))) min"
+            return String(localized: "dans \(max(1, Int((Double(seconds) / 60).rounded(.up)))) min")
         }
         let time = now.addingTimeInterval(TimeInterval(seconds))
         return "à \(time.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)))"

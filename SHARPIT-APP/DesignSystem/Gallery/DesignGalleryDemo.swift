@@ -32,36 +32,36 @@ struct DesignGalleryHost: View {
 
     private var strengthCard: some View {
         GalleryCard {
-            SharpitCardHeader(title: "Force", symbol: "dumbbell.fill", subtitle: "Développé couché · cette semaine", showsChevron: false) {
+            SharpitCardHeader(title: String(localized: "Force"), symbol: "dumbbell.fill", subtitle: String(localized: "Développé couché · cette semaine"), showsChevron: false) {
                 SharpitPill("NOUVEAU PR", style: .lime)
             }
-            SharpitHeroFigure(value: "102,5", unit: "kg", delta: "+5 kg")
+            SharpitHeroFigure(value: "102,5", unit: "kg", delta: String(localized: "+5 kg"))
             Text("Ton précédent record était 97,5 kg")
                 .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
                 .foregroundStyle(SharpitColor.mutedForeground)
-            SharpitProgressBar(label: "Prochain palier", value: "102,5 / 110 kg", fraction: 0.9)
+            SharpitProgressBar(label: String(localized: "Prochain palier"), value: "102,5 / 110 kg", fraction: 0.9)
         }
     }
 
     private var cardioCard: some View {
         GalleryCard {
-            SharpitCardHeader(title: "Cardio", symbol: "bolt.fill", subtitle: "5 km le plus rapide · cette semaine", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Cardio"), symbol: "bolt.fill", subtitle: String(localized: "5 km le plus rapide · cette semaine"), showsChevron: false)
             SharpitHeroFigure(value: "22:14", unit: "minutes")
             SharpitGoalTrack(
                 fraction: SharpitProgressMath.fraction(start: 1382, current: 1334, goal: 1260),
                 nowLabel: "now",
                 nowValue: "22:14",
                 startValue: "23:02",
-                startLabel: "Record précédent",
+                startLabel: String(localized: "Record précédent"),
                 goalValue: "21:00",
-                goalLabel: "Prochain objectif"
+                goalLabel: String(localized: "Prochain objectif")
             )
         }
     }
 
     private var sleepCard: some View {
         GalleryCard {
-            SharpitCardHeader(title: "Score de sommeil", symbol: "moon.fill", subtitle: "Cette nuit · 7 h 32", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Score de sommeil"), symbol: "moon.fill", subtitle: String(localized: "Cette nuit · 7 h 32"), showsChevron: false)
             ZStack {
                 SharpitTickGauge(score: 86, showsScale: true)
                 VStack(spacing: SharpitSpacing.xxs) {
@@ -71,18 +71,18 @@ struct DesignGalleryHost: View {
                     Text("sur 100")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                         .foregroundStyle(SharpitColor.mutedForeground)
-                    SharpitPill("↑ 8 vs moy.", style: .limeSoft)
+                    SharpitPill(String(localized: "↑ 8 vs moy."), style: .limeSoft)
                 }
                 .offset(y: 10)
             }
             .padding(.horizontal, SharpitSpacing.xl)
             Divider().overlay(SharpitColor.border)
-            SharpitEyebrow("Ce qui l'a façonné")
+            SharpitEyebrow(String(localized: "Ce qui l'a façonné"))
             VStack(spacing: SharpitSpacing.md) {
-                breakdown("Durée", 94)
-                breakdown("Sommeil profond", 91)
-                breakdown("Récupération", 88)
-                breakdown("Régularité", 72)
+                breakdown(String(localized: "Durée"), 94)
+                breakdown(String(localized: "Sommeil profond"), 91)
+                breakdown(String(localized: "Récupération"), 88)
+                breakdown(String(localized: "Régularité"), 72)
             }
         }
     }
@@ -122,8 +122,8 @@ struct DesignGalleryHost: View {
             .frame(maxWidth: .infinity)
             HStack(spacing: SharpitSpacing.sm) {
                 SharpitPrimaryButton(title: "+15 s", style: .secondary) {}
-                SharpitPrimaryButton(title: "Pause", style: .accent, trailingSymbol: "pause.circle.fill") {}
-                SharpitPrimaryButton(title: "Passer", trailingSymbol: "forward.circle.fill") {}
+                SharpitPrimaryButton(title: String(localized: "Pause"), style: .accent, trailingSymbol: "pause.circle.fill") {}
+                SharpitPrimaryButton(title: String(localized: "Passer"), trailingSymbol: "forward.circle.fill") {}
             }
         }
     }
@@ -147,16 +147,16 @@ struct DesignGalleryHost: View {
             SharpitHeroFigure(value: "102,5", unit: "kg")
             Divider().overlay(SharpitColor.border)
             HStack {
-                SharpitStatTile(caption: "Meilleure série", value: "102,5×6", isFlat: true)
-                SharpitStatTile(caption: "Volume", value: "3 590", unit: "kg", isFlat: true)
-                SharpitStatTile(caption: "Séances", value: "14", isFlat: true)
+                SharpitStatTile(caption: String(localized: "Meilleure série"), value: "102,5×6", isFlat: true)
+                SharpitStatTile(caption: String(localized: "Volume"), value: "3 590", unit: "kg", isFlat: true)
+                SharpitStatTile(caption: String(localized: "Séances"), value: "14", isFlat: true)
             }
         }
     }
 
     private var setsCard: some View {
         GalleryCard {
-            SharpitCardHeader(title: "Développé couché", symbol: "dumbbell.fill", subtitle: "Barre · Pectoraux", showsChevron: false) {
+            SharpitCardHeader(title: String(localized: "Développé couché"), symbol: "dumbbell.fill", subtitle: String(localized: "Barre · Pectoraux"), showsChevron: false) {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Volume")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
@@ -176,7 +176,7 @@ struct DesignGalleryHost: View {
                         }
                     }
                 }
-                SharpitDashedAddButton(title: "Ajouter une série") {}
+                SharpitDashedAddButton(title: String(localized: "Ajouter une série")) {}
             }
         }
     }
@@ -190,20 +190,20 @@ struct DesignGalleryHost: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
             SharpitInsetGroup {
-                SharpitInsetRow(title: "Développé couché") {
+                SharpitInsetRow(title: String(localized: "Développé couché")) {
                     SharpitNumberChip(number: 1)
                 } trailing: {
                     SharpitPill("PR", style: .lime)
                     SharpitRowFigure(value: "3 590", unit: "kg")
                 }
-                SharpitInsetRow(title: "Écarté poulie") {
+                SharpitInsetRow(title: String(localized: "Écarté poulie")) {
                     SharpitNumberChip(number: 2)
                 } trailing: {
                     SharpitRowFigure(value: "1 460", unit: "kg")
                 }
             }
-            SharpitProgressBar(label: "Effort", value: "RPE 8,5", fraction: 0.9)
-            SharpitPrimaryButton(title: "Enregistrer la séance") {}
+            SharpitProgressBar(label: String(localized: "Effort"), value: "RPE 8,5", fraction: 0.9)
+            SharpitPrimaryButton(title: String(localized: "Enregistrer la séance")) {}
         }
     }
 }
@@ -263,10 +263,10 @@ struct ScreenDemoHost: View {
                             proposal: V1TodayMorningProposal(
                                 checkInDone: false,
                                 decisionId: "d", sessionId: "s", direction: .down,
-                                changeSummary: "Seuil raccourci à 30 min",
-                                why: "Ta VFC est sous ta moyenne et la nuit a été courte.",
-                                from: .init(intensityLabel: "Seuil", durationMin: 40, description: nil),
-                                to: .init(intensityLabel: "Endurance", durationMin: 30, description: nil)
+                                changeSummary: String(localized: "Seuil raccourci à 30 min"),
+                                why: String(localized: "Ta VFC est sous ta moyenne et la nuit a été courte."),
+                                from: .init(intensityLabel: String(localized: "Seuil"), durationMin: 40, description: nil),
+                                to: .init(intensityLabel: String(localized: "Endurance"), durationMin: 30, description: nil)
                             ),
                             onCheckIn: {},
                             onAnswer: { _ in }
@@ -288,9 +288,9 @@ struct ScreenDemoHost: View {
                             consecutiveWeeks: 6
                         ) {}
                         TodayTimelineStrip(events: [
-                            V1DayTimelineEvent(kind: "wake", minuteOfDay: 422, title: "Réveil", detail: "7 h 32 de sommeil"),
-                            V1DayTimelineEvent(kind: "checkin", minuteOfDay: 450, title: "Check-in du matin", detail: nil),
-                            V1DayTimelineEvent(kind: "session", minuteOfDay: 1080, title: "Seuil 40 min", detail: "Prévue"),
+                            V1DayTimelineEvent(kind: "wake", minuteOfDay: 422, title: String(localized: "Réveil"), detail: String(localized: "7 h 32 de sommeil")),
+                            V1DayTimelineEvent(kind: "checkin", minuteOfDay: 450, title: String(localized: "Check-in du matin"), detail: nil),
+                            V1DayTimelineEvent(kind: "session", minuteOfDay: 1080, title: String(localized: "Seuil 40 min"), detail: String(localized: "Prévue")),
                         ])
                     }
                     .padding(SharpitSpacing.pageInset)
@@ -374,14 +374,14 @@ struct ScreenDemoHost: View {
             ])
         }
         return GuidedStrengthSession.make(
-            title: "Push day",
+            title: String(localized: "Push day"),
             plannedSessionId: nil,
             prescription: .object([
                 "version": .number(1),
                 "sets": .array([
-                    exercise("Développé couché", sets: 4, reps: 8, kg: 100, order: 0),
-                    exercise("Développé militaire", sets: 4, reps: 8, kg: 60, order: 1),
-                    exercise("Écarté poulie", sets: 3, reps: 12, kg: 20, order: 2),
+                    exercise(String(localized: "Développé couché"), sets: 4, reps: 8, kg: 100, order: 0),
+                    exercise(String(localized: "Développé militaire"), sets: 4, reps: 8, kg: 60, order: 1),
+                    exercise(String(localized: "Écarté poulie"), sets: 3, reps: 12, kg: 20, order: 2),
                 ]),
             ])
         )
@@ -392,24 +392,24 @@ struct ScreenDemoHost: View {
 /// largest Dynamic Type, dark) that nothing clips, overlaps or traps.
 /// `defaults write app.sharpit.ios SharpitScreenDemo stress|stress-sleep|stress-strength`.
 private enum StressDemo {
-    static let longName = "Développé couché prise serrée sur banc incliné à 30° avec chaînes et élastiques"
+    static let longName = String(localized: "Développé couché prise serrée sur banc incliné à 30° avec chaînes et élastiques")
 
     @MainActor static var cards: some View {
         VStack(spacing: SharpitSpacing.md) {
             ActivityStrengthSection(exercises: StrengthExerciseReadout.exercises(from: [
                 V1ActivityStrengthSet(exercise: longName, sets: 12, reps: 30, durationSec: nil, weightKg: 287.5),
-                V1ActivityStrengthSet(exercise: "Squat", sets: 10, reps: 10, durationSec: nil, weightKg: 1_250),
-                V1ActivityStrengthSet(exercise: "Gainage", sets: 99, reps: 0, durationSec: 5_400, weightKg: nil),
-                V1ActivityStrengthSet(exercise: "Tractions", sets: 3, reps: 12, durationSec: nil, weightKg: nil),
+                V1ActivityStrengthSet(exercise: String(localized: "Squat"), sets: 10, reps: 10, durationSec: nil, weightKg: 1_250),
+                V1ActivityStrengthSet(exercise: String(localized: "Gainage"), sets: 99, reps: 0, durationSec: 5_400, weightKg: nil),
+                V1ActivityStrengthSet(exercise: String(localized: "Tractions"), sets: 3, reps: 12, durationSec: nil, weightKg: nil),
             ]))
             MorningProposalCard(
                 proposal: V1TodayMorningProposal(
                     checkInDone: false,
                     decisionId: "d", sessionId: "s", direction: .down,
-                    changeSummary: "Seuil raccourci de 2 h 30 à 45 min et passé en endurance fondamentale stricte",
-                    why: String(repeating: "Ta VFC est très sous ta moyenne, la nuit a été courte et ta charge aiguë dépasse ta charge chronique. ", count: 4),
-                    from: .init(intensityLabel: "Seuil anaérobie lactique", durationMin: 1_439, description: nil),
-                    to: .init(intensityLabel: "Endurance fondamentale", durationMin: 0, description: nil)
+                    changeSummary: String(localized: "Seuil raccourci de 2 h 30 à 45 min et passé en endurance fondamentale stricte"),
+                    why: String(repeating: String(localized: "Ta VFC est très sous ta moyenne, la nuit a été courte et ta charge aiguë dépasse ta charge chronique. "), count: 4),
+                    from: .init(intensityLabel: String(localized: "Seuil anaérobie lactique"), durationMin: 1_439, description: nil),
+                    to: .init(intensityLabel: String(localized: "Endurance fondamentale"), durationMin: 0, description: nil)
                 ),
                 onCheckIn: {},
                 onAnswer: { _ in }
@@ -431,9 +431,9 @@ private enum StressDemo {
                 consecutiveWeeks: 999
             ) {}
             TodayTimelineStrip(events: [
-                V1DayTimelineEvent(kind: "wake", minuteOfDay: 0, title: "Réveil", detail: "23 h 59 de sommeil"),
+                V1DayTimelineEvent(kind: "wake", minuteOfDay: 0, title: String(localized: "Réveil"), detail: String(localized: "23 h 59 de sommeil")),
                 V1DayTimelineEvent(kind: "session", minuteOfDay: 1, title: longName, detail: longName),
-                V1DayTimelineEvent(kind: "session", minuteOfDay: 1_439, title: "Fin de journée", detail: nil),
+                V1DayTimelineEvent(kind: "session", minuteOfDay: 1_439, title: String(localized: "Fin de journée"), detail: nil),
             ])
         }
         .padding(SharpitSpacing.pageInset)
@@ -476,8 +476,8 @@ private enum StressDemo {
                 "version": .number(1),
                 "sets": .array([
                     exercise(longName, sets: 12, reps: 100, kg: 287.5, order: 0),
-                    exercise("Squat", sets: 10, reps: 50, kg: 1_250, order: 1),
-                    exercise("Curl", sets: 1, reps: 1, kg: 0.5, order: 2),
+                    exercise(String(localized: "Squat"), sets: 10, reps: 50, kg: 1_250, order: 1),
+                    exercise(String(localized: "Curl"), sets: 1, reps: 1, kg: 0.5, order: 2),
                 ]),
             ])
         )

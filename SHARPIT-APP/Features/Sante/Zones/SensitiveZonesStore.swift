@@ -59,14 +59,14 @@ final class SensitiveZonesStore {
             phase = .unauthorized
         } catch {
             if zones == nil {
-                phase = .failed("Lecture de tes zones impossible.")
+                phase = .failed(String(localized: "Lecture de tes zones impossible."))
             }
         }
     }
 
     @discardableResult
     func declare(_ draft: SensitiveZoneDraft) async -> Bool {
-        await perform("La zone n'a pas pu être enregistrée.") { token in
+        await perform(String(localized: "La zone n'a pas pu être enregistrée.")) { token in
             try await client.createNote(draft.createInput, token: token)
         }
     }
@@ -75,14 +75,14 @@ final class SensitiveZonesStore {
     func update(_ zone: V1SensitiveZone, with draft: SensitiveZoneDraft) async -> Bool {
         let patch = draft.patch(from: zone)
         guard patch != PhysicalNotePatch() else { return true }
-        return await perform("La modification n'a pas pu être enregistrée.") { token in
+        return await perform(String(localized: "La modification n'a pas pu être enregistrée.")) { token in
             try await client.updateNote(id: zone.id, patch: patch, token: token)
         }
     }
 
     @discardableResult
     func setStatus(_ zone: V1SensitiveZone, to status: String) async -> Bool {
-        await perform("Le statut n'a pas pu être changé.") { token in
+        await perform(String(localized: "Le statut n'a pas pu être changé.")) { token in
             try await client.updateNote(id: zone.id, patch: PhysicalNotePatch(status: status), token: token)
         }
     }
@@ -90,7 +90,7 @@ final class SensitiveZonesStore {
     @discardableResult
     func checkin(_ zone: V1SensitiveZone, _ draft: ZoneCheckinDraft) async -> Bool {
         guard let input = draft.input else { return false }
-        return await perform("Le point n'a pas pu être enregistré.") { token in
+        return await perform(String(localized: "Le point n'a pas pu être enregistré.")) { token in
             try await client.addCheckin(noteId: zone.id, input: input, token: token)
         }
     }

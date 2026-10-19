@@ -9,11 +9,11 @@ enum V1PlanPhase: String, Codable, Sendable, CaseIterable {
 
     var label: String {
         switch self {
-        case .base: "Base"
-        case .build: "Développement"
-        case .peak: "Spécifique"
-        case .taper: "Affûtage"
-        case .race: "Course"
+        case .base: String(localized: "Base")
+        case .build: String(localized: "Développement")
+        case .peak: String(localized: "Spécifique")
+        case .taper: String(localized: "Affûtage")
+        case .race: String(localized: "Course")
         }
     }
 
@@ -29,11 +29,11 @@ enum V1PlanPhase: String, Codable, Sendable, CaseIterable {
 
     var shortLabel: String {
         switch self {
-        case .base: "Base"
+        case .base: String(localized: "Base")
         case .build: "Dév."
         case .peak: "Spéc."
         case .taper: "Affût."
-        case .race: "Course"
+        case .race: String(localized: "Course")
         }
     }
 }

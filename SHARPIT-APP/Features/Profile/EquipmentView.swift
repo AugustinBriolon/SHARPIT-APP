@@ -12,16 +12,16 @@ struct PracticedSportItem: Identifiable, Sendable {
 
 enum PracticedSportCatalog {
     static let endurance: [PracticedSportItem] = [
-        PracticedSportItem(id: "run", label: "Course à pied", subtitle: "Route, trail et piste", symbolName: "figure.run"),
-        PracticedSportItem(id: "bike", label: "Cyclisme / Vélo", subtitle: "Route, gravel et home-trainer", symbolName: "bicycle"),
-        PracticedSportItem(id: "swim", label: "Natation", subtitle: "Bassin et eau libre", symbolName: "figure.pool.swim"),
-        PracticedSportItem(id: "triathlon", label: "Triathlon", subtitle: "Enchaînements multi-disciplines", symbolName: SharpitCustomSymbol.triathlon)
+        PracticedSportItem(id: "run", label: String(localized: "Course à pied"), subtitle: String(localized: "Route, trail et piste"), symbolName: "figure.run"),
+        PracticedSportItem(id: "bike", label: String(localized: "Cyclisme / Vélo"), subtitle: String(localized: "Route, gravel et home-trainer"), symbolName: "bicycle"),
+        PracticedSportItem(id: "swim", label: String(localized: "Natation"), subtitle: String(localized: "Bassin et eau libre"), symbolName: "figure.pool.swim"),
+        PracticedSportItem(id: "triathlon", label: String(localized: "Triathlon"), subtitle: String(localized: "Enchaînements multi-disciplines"), symbolName: SharpitCustomSymbol.triathlon)
     ]
 
     static let complementary: [PracticedSportItem] = [
-        PracticedSportItem(id: "strength", label: "Musculation", subtitle: "Force, PPG et gainage", symbolName: "figure.strengthtraining.traditional"),
-        PracticedSportItem(id: "mobility", label: "Mobilité", subtitle: "Amplitude articulaire", symbolName: "figure.yoga"),
-        PracticedSportItem(id: "stretching", label: "Étirements", subtitle: "Souplesse et récupération", symbolName: "figure.cooldown")
+        PracticedSportItem(id: "strength", label: String(localized: "Musculation"), subtitle: String(localized: "Force, PPG et gainage"), symbolName: "figure.strengthtraining.traditional"),
+        PracticedSportItem(id: "mobility", label: String(localized: "Mobilité"), subtitle: String(localized: "Amplitude articulaire"), symbolName: "figure.yoga"),
+        PracticedSportItem(id: "stretching", label: String(localized: "Étirements"), subtitle: String(localized: "Souplesse et récupération"), symbolName: "figure.cooldown")
     ]
 
     /// Catalog order — the order the web stores (`uniqueOrdered` in `practiced-sports/catalog.ts`).
@@ -71,8 +71,8 @@ struct SportChoiceGroups: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            group(title: "Endurance", items: PracticedSportCatalog.endurance)
-            group(title: "En complément", items: PracticedSportCatalog.complementary)
+            group(title: String(localized: "Endurance"), items: PracticedSportCatalog.endurance)
+            group(title: String(localized: "En complément"), items: PracticedSportCatalog.complementary)
         }
     }
 
@@ -300,7 +300,7 @@ struct EquipmentView: View {
                     }
                 }
             } header: {
-                SharpitEyebrow("Mes sports")
+                SharpitEyebrow(String(localized: "Mes sports"))
             } footer: {
                 footer
             }
@@ -333,7 +333,7 @@ struct EquipmentView: View {
     @ViewBuilder
     private var footer: some View {
         if hasEndurance {
-            SharpitListFooter("Touche un sport pour régler son matériel. Le coach adapte les séances à ce que tu possèdes.")
+            SharpitListFooter(String(localized: "Touche un sport pour régler son matériel. Le coach adapte les séances à ce que tu possèdes."))
         } else {
             Label("Garde au moins un sport d'endurance : SharpIt construit tes plans dessus.", systemImage: "exclamationmark.circle")
                 .font(SharpitTypography.meta)
@@ -442,7 +442,7 @@ struct SportEquipmentView: View {
                     onToggle: toggle
                 )
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    SharpitPrimaryButton(title: "Retirer \(sport.label)", style: .secondary) {
+                    SharpitPrimaryButton(title: String(localized: "Retirer \(sport.label)"), style: .secondary) {
                         confirmingRemoval = true
                     }
                     .disabled(!canRemove)
@@ -488,7 +488,7 @@ struct SportAddSheet: View {
             Group {
                 if sports.isEmpty {
                     ContentUnavailableView(
-                        "Tous les sports sont ajoutés",
+                        String(localized: "Tous les sports sont ajoutés"),
                         systemImage: "checkmark.circle",
                         description: Text("Tu pratiques déjà tous les sports que SharpIt connaît.")
                     )

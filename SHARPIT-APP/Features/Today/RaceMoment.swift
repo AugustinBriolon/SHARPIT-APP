@@ -29,21 +29,21 @@ enum RaceMomentMapper {
             eyebrow: eyebrow(race: race, finished: result != nil, trainingDayId: trainingDayId),
             title: race.title,
             formatLine: race.raceFormat?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
-            targetLine: result == nil ? target?.nilIfEmpty.map { "Objectif · \($0)" } : nil,
+            targetLine: result == nil ? target?.nilIfEmpty.map { String(localized: "Objectif · \($0)") } : nil,
             coachLine: result == nil
-                ? "Le travail est fait. Pars à ton allure, le reste suit."
-                : "Reviens sur ta course : ce qui a marché, où tu peux progresser.",
+                ? String(localized: "Le travail est fait. Pars à ton allure, le reste suit.")
+                : String(localized: "Reviens sur ta course : ce qui a marché, où tu peux progresser."),
             result: result,
             activityId: race.activity?.id
         )
     }
 
     private static func eyebrow(race: V1TodayRace, finished: Bool, trainingDayId: String) -> String {
-        guard finished else { return "Jour J" }
+        guard finished else { return String(localized: "Jour J") }
         switch daysSinceRace(race.targetDate, today: trainingDayId) {
-        case 0: return "Aujourd’hui · Course terminée"
-        case 1: return "Hier · Course terminée"
-        default: return "Course terminée"
+        case 0: return String(localized: "Aujourd’hui · Course terminée")
+        case 1: return String(localized: "Hier · Course terminée")
+        default: return String(localized: "Course terminée")
         }
     }
 

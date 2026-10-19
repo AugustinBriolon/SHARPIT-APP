@@ -36,15 +36,15 @@ enum AdaptationReadout {
 
     /// « Neutre » inside ±0,5 %, else « ×0,90 » — the web's marker.
     static func loadMultiplier(_ value: Double) -> String {
-        if abs(value - 1) < 0.005 { return "Neutre" }
-        return "×" + value.formatted(.number.precision(.fractionLength(2)).locale(Locale(identifier: "fr_FR")))
+        if abs(value - 1) < 0.005 { return String(localized: "Neutre") }
+        return "×" + value.formatted(.number.precision(.fractionLength(2)).locale(AppLanguage.locale))
     }
 
     /// What the multiplier does to the next block, in the web's explanation's words.
     static func loadMultiplierNote(_ value: Double) -> String {
-        if value < 0.95 { return "Volume réduit pour laisser l'adaptation rattraper" }
-        if value > 1.05 { return "Plus de charge possible" }
-        return "Ne change rien"
+        if value < 0.95 { return String(localized: "Volume réduit pour laisser l'adaptation rattraper") }
+        if value > 1.05 { return String(localized: "Plus de charge possible") }
+        return String(localized: "Ne change rien")
     }
 
     /// The trend under the index; nil when none is read.
@@ -56,6 +56,6 @@ enum AdaptationReadout {
     /// « 42 jours d'historique ».
     static func history(_ days: Double) -> String {
         let count = Int(days.rounded())
-        return "\(count) jour\(count > 1 ? "s" : "") d'historique"
+        return String(localized: "\(count) jour\(count > 1 ? "s" : "") d'historique")
     }
 }

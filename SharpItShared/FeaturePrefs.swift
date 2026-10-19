@@ -37,20 +37,20 @@ nonisolated enum SharpitFeature: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .journal: "Journal"
-        case .nutrition: "Nutrition"
-        case .health: "Santé"
-        case .regularity: "Régularité"
+        case .journal: String(localized: "Journal")
+        case .nutrition: String(localized: "Nutrition")
+        case .health: String(localized: "Santé")
+        case .regularity: String(localized: "Régularité")
         }
     }
 
     /// What disappears when it is off, said exactly.
     var detail: String {
         switch self {
-        case .journal: "Le bouton Journal de Résumé et la page du journal."
-        case .nutrition: "La carte Nutrition de Résumé, la page Nutrition et le widget Nutrition."
-        case .health: "L'onglet Santé et le widget Poids."
-        case .regularity: "La carte Régularité de Résumé et le widget Régularité."
+        case .journal: String(localized: "Le bouton Journal de Résumé et la page du journal.")
+        case .nutrition: String(localized: "La carte Nutrition de Résumé, la page Nutrition et le widget Nutrition.")
+        case .health: String(localized: "L'onglet Santé et le widget Poids.")
+        case .regularity: String(localized: "La carte Régularité de Résumé et le widget Régularité.")
         }
     }
 
@@ -59,23 +59,23 @@ nonisolated enum SharpitFeature: String, CaseIterable, Identifiable, Sendable {
     var why: String {
         switch self {
         case .journal:
-            "Ce que tes montres ne voient pas : l'alcool, les écrans tard, un repas lourd, ton humeur au réveil. Noté jour après jour, SharpIt rapproche ces habitudes de ta nuit et de ta récupération, et te montre celles qui comptent vraiment pour toi."
+            String(localized: "Ce que tes montres ne voient pas : l'alcool, les écrans tard, un repas lourd, ton humeur au réveil. Noté jour après jour, SharpIt rapproche ces habitudes de ta nuit et de ta récupération, et te montre celles qui comptent vraiment pour toi.")
         case .nutrition:
-            "Ce que tu manges face à ce que tu dépenses. Noté dans ton journal, SharpIt compare ton énergie et tes macros à ta charge du jour, et signale quand le carburant manque avant une séance exigeante."
+            String(localized: "Ce que tu manges face à ce que tu dépenses. Noté dans ton journal, SharpIt compare ton énergie et tes macros à ta charge du jour, et signale quand le carburant manque avant une séance exigeante.")
         case .health:
-            "Un bilan de ta santé : cœur au repos, VFC, sommeil, VO₂max, composition. Chaque repère est situé face à une norme publiée et face à ton propre mois, et SharpIt te signale ce qui mérite ton attention."
+            String(localized: "Un bilan de ta santé : cœur au repos, VFC, sommeil, VO₂max, composition. Chaque repère est situé face à une norme publiée et face à ton propre mois, et SharpIt te signale ce qui mérite ton attention.")
         case .regularity:
-            "Les jours où tu t'es entraîné autour d'aujourd'hui, et tes séances de la semaine. Un coup d'œil sur ton rythme, sans série à entretenir ni compteur à ne pas casser."
+            String(localized: "Les jours où tu t'es entraîné autour d'aujourd'hui, et tes séances de la semaine. Un coup d'œil sur ton rythme, sans série à entretenir ni compteur à ne pas casser.")
         }
     }
 
     /// Where it shows, one place per line.
     var places: [String] {
         switch self {
-        case .journal: ["Le bouton Journal dans Résumé", "La page du journal et ses enseignements"]
-        case .nutrition: ["La carte Nutrition dans Résumé", "La page Nutrition du jour", "Le widget Nutrition"]
-        case .health: ["L'onglet Santé", "Le widget Poids"]
-        case .regularity: ["La carte Régularité dans Résumé", "Le widget Régularité"]
+        case .journal: [String(localized: "Le bouton Journal dans Résumé"), String(localized: "La page du journal et ses enseignements")]
+        case .nutrition: [String(localized: "La carte Nutrition dans Résumé"), String(localized: "La page Nutrition du jour"), String(localized: "Le widget Nutrition")]
+        case .health: [String(localized: "L'onglet Santé"), String(localized: "Le widget Poids")]
+        case .regularity: [String(localized: "La carte Régularité dans Résumé"), String(localized: "Le widget Régularité")]
         }
     }
 

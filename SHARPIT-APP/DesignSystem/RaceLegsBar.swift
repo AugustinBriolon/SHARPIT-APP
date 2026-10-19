@@ -74,7 +74,7 @@ struct RaceLegsBar: View {
         let legs = segments
             .map { "\($0.label) \(RaceTime.spoken($0.durationSec))" }
             .joined(separator: ", ")
-        return "Enchaînement : \(legs)"
+        return String(localized: "Enchaînement : \(legs)")
     }
 }
 

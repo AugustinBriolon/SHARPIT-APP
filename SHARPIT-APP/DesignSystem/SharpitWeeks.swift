@@ -22,7 +22,7 @@ struct SharpitWeeks: Sendable {
         self.offsets = offsets
         self.now = now
         var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = SharpitLocale.french
+        calendar.locale = SharpitLocale.current
         calendar.firstWeekday = 2
         self.calendar = calendar
     }

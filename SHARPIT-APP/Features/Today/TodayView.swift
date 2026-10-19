@@ -286,12 +286,12 @@ extension TodayView {
             dayMarks?[TrainingDayId.today(now: day)]
         }
         return SharpitCalendarSheet(
-            title: "Résumé",
+            title: String(localized: "Résumé"),
             initial: shown,
             weeks: weeks,
             range: weeks.selectableDates.lowerBound...Date.now,
             marks: marks,
-            legend: [(.filled, "Nuit ou séance"), (.muted, "Aucune donnée")],
+            legend: [(.filled, String(localized: "Nuit ou séance")), (.muted, String(localized: "Aucune donnée"))],
             onPick: openDay,
             onToday: { openDay(.now) }
         )
@@ -738,9 +738,9 @@ private struct TodayFoldView: View {
             let delta = sleep.targetDeltaMin ?? (sleep.durationMin.map { $0 - sleep.targetMin })
             if let delta {
                 if delta < -0.5 {
-                    sleepOverrideCaption = "Manque · \(SleepReadout.duration(abs(delta)))"
+                    sleepOverrideCaption = String(localized: "Manque · \(SleepReadout.duration(abs(delta)))")
                 } else {
-                    sleepOverrideCaption = "Objectif · Atteint"
+                    sleepOverrideCaption = String(localized: "Objectif · Atteint")
                 }
             }
         } else if let profile = try? await AthleteProfileClient().athleteProfile(token: token),
@@ -750,9 +750,9 @@ private struct TodayFoldView: View {
                   let durationMin = parseDurationMinutes(from: caption) {
             let delta = Double(durationMin - targetMin)
             if delta < -0.5 {
-                sleepOverrideCaption = "Manque · \(SleepReadout.duration(abs(delta)))"
+                sleepOverrideCaption = String(localized: "Manque · \(SleepReadout.duration(abs(delta)))")
             } else {
-                sleepOverrideCaption = "Objectif · Atteint"
+                sleepOverrideCaption = String(localized: "Objectif · Atteint")
             }
         }
     }
@@ -887,7 +887,7 @@ private struct TodayFoldView: View {
                 selectedPreview = nil
                 selectedBrick = nil
                 toastCenter?.show(
-                    "Séance muscu enregistrée",
+                    String(localized: "Séance muscu enregistrée"),
                     symbol: "checkmark.circle.fill",
                     tone: .success,
                     autoDismissAfter: 3.0
@@ -928,7 +928,7 @@ private struct TodayFoldView: View {
             onLinked: {
                 selectedPreview = nil
                 toastCenter?.show(
-                    "Séance liée avec succès",
+                    String(localized: "Séance liée avec succès"),
                     symbol: "link",
                     tone: .success,
                     autoDismissAfter: 3.0

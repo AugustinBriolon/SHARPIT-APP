@@ -165,7 +165,7 @@ final class GuidedStrengthRestLiveActivityController {
         guard delay > 0.5 else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Repos terminé"
+        content.title = String(localized: "Repos terminé")
         content.body = GuidedStrengthRestLiveActivityCopy.subtitle(
             nextExercise: nextExercise,
             nextSetLine: nextSetLine

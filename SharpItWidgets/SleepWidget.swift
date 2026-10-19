@@ -9,7 +9,7 @@ struct SleepWidget: Widget {
                 if entry.unlocksExtraWidgets {
                     SleepWidgetView(entry: entry)
                 } else {
-                    WidgetProLocked(title: "Nuit dernière", symbol: "moon.zzz")
+                    WidgetProLocked(title: String(localized: "Nuit dernière"), symbol: "moon.zzz")
                 }
             }
                 .sharpitWidgetChrome()
@@ -61,13 +61,13 @@ struct SleepSmall: View {
     let hasDay: Bool
 
     var body: some View {
-        WidgetFrame("Nuit dernière", symbol: "moon.zzz") {
+        WidgetFrame(String(localized: "Nuit dernière"), symbol: "moon.zzz") {
             if let sleep, let score = sleep.score {
                 DialReadout(score: CGFloat(score), figure: "\(score)")
-                WidgetCaption(text: sleep.caption ?? "Score de sommeil")
+                WidgetCaption(text: sleep.caption ?? String(localized: "Score de sommeil"))
                     .frame(maxWidth: .infinity)
             } else {
-                WidgetAwaitingData(text: hasDay ? "Pas encore de nuit synchronisée." : "Ouvre SharpIt pour charger ta journée.")
+                WidgetAwaitingData(text: hasDay ? String(localized: "Pas encore de nuit synchronisée.") : String(localized: "Ouvre SharpIt pour charger ta journée."))
             }
         }
     }

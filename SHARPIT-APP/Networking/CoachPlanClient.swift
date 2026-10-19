@@ -279,7 +279,7 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
                         finalResult = try JSONDecoder().decode(T.self, from: valueData)
                     }
                 case "error":
-                    let message = event["message"] as? String ?? "La génération a échoué."
+                    let message = event["message"] as? String ?? String(localized: "La génération a échoué.")
                     throw CoachPlanError.custom(message)
                 default:
                     break

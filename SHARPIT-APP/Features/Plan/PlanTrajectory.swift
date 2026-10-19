@@ -33,7 +33,7 @@ nonisolated struct PlanTrajectoryTile: Equatable, Sendable {
         let score = effort.strain.score
         return PlanTrajectoryTile(
             value: score.map {
-                $0.formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "fr_FR")))
+                $0.formatted(.number.precision(.fractionLength(1)).locale(AppLanguage.locale))
             } ?? "—",
             unit: score == nil ? nil : "/21",
             headline: effort.strain.label,
@@ -66,11 +66,11 @@ struct PlanTrajectoryCards: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Trajectoire")
+            SharpitEyebrow(String(localized: "Trajectoire"))
             HStack(alignment: .top, spacing: SharpitSpacing.sm) {
                 Button { onOpen(.effort) } label: {
                     PlanTrajectoryTileView(
-                        title: "Effort",
+                        title: String(localized: "Effort"),
                         symbol: "bolt",
                         tile: .effort(trajectory.effort)
                     )
@@ -79,7 +79,7 @@ struct PlanTrajectoryCards: View {
 
                 Button { onOpen(.adaptation) } label: {
                     PlanTrajectoryTileView(
-                        title: "Adaptation",
+                        title: String(localized: "Adaptation"),
                         symbol: "arrow.triangle.2.circlepath",
                         tile: .adaptation(trajectory.adaptation)
                     )

@@ -95,12 +95,12 @@ nonisolated enum PlannedSessionIntensity: String, CaseIterable, Identifiable, Se
 
     var label: String {
         switch self {
-        case .recovery: "Récupération"
-        case .endurance: "Endurance"
-        case .tempo: "Tempo"
-        case .threshold: "Seuil"
+        case .recovery: String(localized: "Récupération")
+        case .endurance: String(localized: "Endurance")
+        case .tempo: String(localized: "Tempo")
+        case .threshold: String(localized: "Seuil")
         case .vo2max: "VO2max"
-        case .race: "Compétition"
+        case .race: String(localized: "Compétition")
         }
     }
 }

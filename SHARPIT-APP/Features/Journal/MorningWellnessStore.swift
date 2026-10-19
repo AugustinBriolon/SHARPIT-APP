@@ -83,7 +83,7 @@ final class MorningWellnessStore {
             phase = .ready
         } catch is CancellationError {
         } catch {
-            phase = .failed(Self.message(for: error, fallback: "Ton ressenti n'a pas pu être chargé."))
+            phase = .failed(Self.message(for: error, fallback: String(localized: "Ton ressenti n'a pas pu être chargé.")))
         }
     }
 
@@ -134,7 +134,7 @@ final class MorningWellnessStore {
                 onSaved()
             } catch {
                 SharpitWriteFailures.shared.report(
-                    Self.message(for: error, fallback: "Ton ressenti n'a pas pu être enregistré.")
+                    Self.message(for: error, fallback: String(localized: "Ton ressenti n'a pas pu être enregistré."))
                 )
             }
         }
@@ -143,7 +143,7 @@ final class MorningWellnessStore {
 
     private static func message(for error: Error, fallback: String) -> String {
         if let apiError = error as? SharpitAPIError, apiError == .unauthorized {
-            return "Session expirée. Reconnecte-toi."
+            return String(localized: "Session expirée. Reconnecte-toi.")
         }
         return fallback
     }

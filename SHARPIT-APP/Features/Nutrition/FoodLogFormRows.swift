@@ -34,8 +34,8 @@ struct FoodPortionPreview: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            "\(NutritionReadout.kcal(nutrients.kcal)) kilocalories, protéines \(FoodPortion.figure(nutrients.protein)) g, "
-                + "glucides \(FoodPortion.figure(nutrients.carbs)) g, lipides \(FoodPortion.figure(nutrients.fat)) g"
+            String(localized: "\(NutritionReadout.kcal(nutrients.kcal)) kilocalories, protéines \(FoodPortion.figure(nutrients.protein)) g, ")
+                + String(localized: "glucides \(FoodPortion.figure(nutrients.carbs)) g, lipides \(FoodPortion.figure(nutrients.fat)) g")
         )
     }
 

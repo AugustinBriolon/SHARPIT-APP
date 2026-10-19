@@ -44,9 +44,9 @@ struct FeatureShowcase: View {
                 .sharpitGlassChip()
                 .padding(.bottom, SharpitSpacing.xs)
             JournalRowsCard {
-                JournalMetricRow(label: "Humeur", symbolName: "face.smiling", value: "Bien") {}
-                JournalFactorRow(label: "Alcool", symbolName: "wineglass", state: .no) { _ in }
-                JournalFactorRow(label: "Écrans tard", symbolName: "iphone", state: .yes) { _ in }
+                JournalMetricRow(label: String(localized: "Humeur"), symbolName: "face.smiling", value: String(localized: "Bien")) {}
+                JournalFactorRow(label: String(localized: "Alcool"), symbolName: "wineglass", state: .no) { _ in }
+                JournalFactorRow(label: String(localized: "Écrans tard"), symbolName: "iphone", state: .yes) { _ in }
             }
         }
     }
@@ -63,10 +63,10 @@ struct FeatureShowcase: View {
             columns: [GridItem(.flexible(), spacing: SharpitSpacing.sm), GridItem(.flexible(), spacing: SharpitSpacing.sm)],
             spacing: SharpitSpacing.sm
         ) {
-            SanteMarkerTile(marker: Self.marker(.restingHr, 47, from: 50, norm: ("Niveau athlète", .good), trend: .good)) {}
-            SanteMarkerTile(marker: Self.marker(.hrv, 61, from: 57, norm: ("Dans ta plage habituelle", .good), trend: .good)) {}
-            SanteMarkerTile(marker: Self.marker(.sleep, 412, from: 440, norm: ("Un peu court", .neutral), trend: .watch)) {}
-            SanteMarkerTile(marker: Self.marker(.vo2max, 54, from: 53, norm: ("Bien au-dessus de ton âge", .good), trend: nil)) {}
+            SanteMarkerTile(marker: Self.marker(.restingHr, 47, from: 50, norm: (String(localized: "Niveau athlète"), .good), trend: .good)) {}
+            SanteMarkerTile(marker: Self.marker(.hrv, 61, from: 57, norm: (String(localized: "Dans ta plage habituelle"), .good), trend: .good)) {}
+            SanteMarkerTile(marker: Self.marker(.sleep, 412, from: 440, norm: (String(localized: "Un peu court"), .neutral), trend: .watch)) {}
+            SanteMarkerTile(marker: Self.marker(.vo2max, 54, from: 53, norm: (String(localized: "Bien au-dessus de ton âge"), .good), trend: nil)) {}
         }
     }
 

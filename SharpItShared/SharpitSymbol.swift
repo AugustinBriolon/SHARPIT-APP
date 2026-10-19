@@ -7,7 +7,7 @@ nonisolated enum SharpitCustomSymbol {
     static let triathlon = "triathlon.circles"
 
     /// VoiceOver label per custom symbol; a name absent here is an SF Symbol.
-    static let accessibilityLabels = [triathlon: "Triathlon"]
+    static let accessibilityLabels = [triathlon: String(localized: "Triathlon")]
 }
 
 extension Image {

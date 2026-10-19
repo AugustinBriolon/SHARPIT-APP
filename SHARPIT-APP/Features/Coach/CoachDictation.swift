@@ -35,10 +35,10 @@ enum CoachComposerAction: Equatable {
 
     var accessibilityLabel: String {
         switch self {
-        case .dictate: "Dicter un message"
-        case .stopDictation: "Arrêter la dictée"
-        case .send: "Envoyer"
-        case .waiting: "Arrêter la réponse"
+        case .dictate: String(localized: "Dicter un message")
+        case .stopDictation: String(localized: "Arrêter la dictée")
+        case .send: String(localized: "Envoyer")
+        case .waiting: String(localized: "Arrêter la réponse")
         }
     }
 
@@ -91,11 +91,11 @@ final class CoachDictation {
         guard !isListening else { return }
         failure = nil
         guard await Self.authorized() else {
-            failure = "Autorise le micro et la reconnaissance vocale dans Réglages pour dicter."
+            failure = String(localized: "Autorise le micro et la reconnaissance vocale dans Réglages pour dicter.")
             return
         }
         guard let recognizer, recognizer.isAvailable else {
-            failure = "La dictée n'est pas disponible pour le moment."
+            failure = String(localized: "La dictée n'est pas disponible pour le moment.")
             return
         }
         do {
@@ -103,7 +103,7 @@ final class CoachDictation {
             isListening = true
         } catch {
             stop()
-            failure = "La dictée n'a pas pu démarrer."
+            failure = String(localized: "La dictée n'a pas pu démarrer.")
         }
     }
 

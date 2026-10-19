@@ -35,19 +35,19 @@ struct CoachUsageSheet: View {
     private func usage(_ quota: V1CoachQuota) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(
-                title: quota.isPro ? "Coach Pro" : "Coach gratuit",
+                title: quota.isPro ? String(localized: "Coach Pro") : String(localized: "Coach gratuit"),
                 symbol: "gauge.with.dots.needle.33percent",
-                subtitle: "Sur 24 h glissantes",
+                subtitle: String(localized: "Sur 24 h glissantes"),
                 showsChevron: false
             )
             SharpitProgressBar(
-                label: "Utilisé",
+                label: String(localized: "Utilisé"),
                 value: CoachQuotaReadout.usedPercent(quota),
                 fraction: quota.usedRatio,
                 style: .ink
             )
-            row("Échanges restants", CoachQuotaReadout.questionsLeft(quota))
-            row("Renouvellement", CoachQuotaReadout.resetLine(quota))
+            row(String(localized: "Échanges restants"), CoachQuotaReadout.questionsLeft(quota))
+            row(String(localized: "Renouvellement"), CoachQuotaReadout.resetLine(quota))
             if !quota.isPro {
                 Button("Passer Pro") { onUpgrade() }
                     .font(SharpitTypography.meta.weight(.semibold))

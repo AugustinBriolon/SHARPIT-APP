@@ -77,7 +77,7 @@ actor GoogleCalendarsClient: GoogleCalendarsServing {
             let googleError = try? JSONDecoder().decode(V1GoogleAPIError.self, from: data)
             if status == 401, googleError?.needsReconnect == true {
                 let message = googleError?.error
-                    ?? "Session Google expirée ou révoquée. Reconnecte Google Calendar dans les paramètres."
+                    ?? String(localized: "Session Google expirée ou révoquée. Reconnecte Google Calendar dans les paramètres.")
                 throw SharpitAPIError.googleNeedsReconnect(message)
             }
             if status == 401 || status == 403 { throw SharpitAPIError.unauthorized }

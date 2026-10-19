@@ -14,7 +14,7 @@ struct FeaturesView: View {
                         FeatureDetailView(feature: feature, store: store, tokenProvider: tokenProvider)
                     } label: {
                         LabeledContent {
-                            Text(store.isOn(feature) ? "Affiché" : "Masqué")
+                            Text(store.isOn(feature) ? String(localized: "Affiché") : String(localized: "Masqué"))
                                 .foregroundStyle(store.isOn(feature) ? SharpitColor.mutedForeground : SharpitColor.signalCaution)
                         } label: {
                             Label {
@@ -26,7 +26,7 @@ struct FeaturesView: View {
                     }
                 }
             } footer: {
-                SharpitListFooter("Masque ce que tu n'utilises pas. Tes données restent enregistrées : tout revient tel quel quand tu réactives.")
+                SharpitListFooter(String(localized: "Masque ce que tu n'utilises pas. Tes données restent enregistrées : tout revient tel quel quand tu réactives."))
             }
             .sharpitListRows()
         }
@@ -58,7 +58,7 @@ struct FeatureDetailView: View {
                         Text("Afficher \(feature.title)")
                             .font(SharpitTypography.bodyEmphasis)
                             .foregroundStyle(SharpitColor.foreground)
-                        Text(store.isOn(feature) ? "Visible dans l'app et ses widgets." : "Masqué partout. Tes données sont gardées.")
+                        Text(store.isOn(feature) ? String(localized: "Visible dans l'app et ses widgets.") : String(localized: "Masqué partout. Tes données sont gardées."))
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
@@ -68,7 +68,7 @@ struct FeatureDetailView: View {
                 .sharpitSurface(.panel)
 
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    SharpitEyebrow("Pourquoi le suivre")
+                    SharpitEyebrow(String(localized: "Pourquoi le suivre"))
                     Text(feature.why)
                         .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.foreground)
@@ -76,7 +76,7 @@ struct FeatureDetailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    SharpitEyebrow("Où il apparaît")
+                    SharpitEyebrow(String(localized: "Où il apparaît"))
                     ForEach(feature.places, id: \.self) { place in
                         Label(place, systemImage: "checkmark")
                             .font(SharpitTypography.body)

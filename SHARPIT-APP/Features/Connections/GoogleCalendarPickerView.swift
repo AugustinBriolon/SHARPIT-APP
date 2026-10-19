@@ -65,7 +65,7 @@ struct GoogleCalendarPickerView: View {
                 }
             } footer: {
                 SharpitListFooter(
-                    "SHARPIT écrit tes créneaux planifiés dans ce calendrier Google. Tu peux le changer à tout moment."
+                    String(localized: "SHARPIT écrit tes créneaux planifiés dans ce calendrier Google. Tu peux le changer à tout moment.")
                 )
             }
             .sharpitListRows()
@@ -106,7 +106,7 @@ struct GoogleCalendarPickerView: View {
             Text(message)
         } actions: {
             Link(
-                "Relier sur sharpit.app",
+                String(localized: "Relier sur sharpit.app"),
                 destination: APIConfiguration.webOrigin.appending(path: PushNotificationManager.sourcesPath)
             )
             Button("Réessayer") { Task { await store.load() } }
@@ -119,6 +119,6 @@ struct GoogleCalendarPickerView: View {
 
 private extension V1GoogleCalendar {
     static let placeholders: [V1GoogleCalendar] = (0..<3).map { index in
-        V1GoogleCalendar(id: "placeholder-\(index)", summary: "Mon agenda", primary: index == 0, isTarget: index == 0)
+        V1GoogleCalendar(id: "placeholder-\(index)", summary: String(localized: "Mon agenda"), primary: index == 0, isTarget: index == 0)
     }
 }

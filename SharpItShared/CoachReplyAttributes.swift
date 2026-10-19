@@ -43,14 +43,14 @@ nonisolated enum CoachReplyPreview {
 
 /// French copy on the Live Activity surfaces.
 nonisolated enum CoachReplyLiveActivityCopy {
-    static let title = "Coach"
+    static let title = String(localized: "Coach")
 
     /// The state in a few words; the reply's first line, when there is one, sits under it.
     static func headline(phase: CoachReplyAttributes.Phase) -> String {
         switch phase {
-        case .replying: "Te répond…"
-        case .ready: "Réponse prête"
-        case .failed: "Réponse interrompue"
+        case .replying: String(localized: "Te répond…")
+        case .ready: String(localized: "Réponse prête")
+        case .failed: String(localized: "Réponse interrompue")
         }
     }
 
@@ -59,7 +59,7 @@ nonisolated enum CoachReplyLiveActivityCopy {
         switch phase {
         case .replying: nil
         case .ready: preview.isEmpty ? nil : preview
-        case .failed: "Rouvre SharpIt pour la reprendre."
+        case .failed: String(localized: "Rouvre SharpIt pour la reprendre.")
         }
     }
 }

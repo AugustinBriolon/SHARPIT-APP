@@ -46,7 +46,7 @@ final class FeatureStore {
             adopt(profile.featurePrefs ?? next)
         } catch {
             adopt(previous)
-            SharpitWriteFailures.shared.report("\(feature.title) : choix non enregistré.")
+            SharpitWriteFailures.shared.report(String(localized: "\(feature.title) : choix non enregistré."))
         }
     }
 

@@ -203,7 +203,7 @@ final class CoachStore {
 
         guard let tokenProvider else {
             dropEmptyAnswer()
-            failure = "Connecte-toi pour parler au coach."
+            failure = String(localized: "Connecte-toi pour parler au coach.")
             return
         }
 
@@ -233,7 +233,7 @@ final class CoachStore {
             // read as the coach having nothing to say.
             if !CoachUIParts.hasContent(assembler.parts) {
                 dropEmptyAnswer()
-                failure = "Le coach n'a pas répondu. Réessaie."
+                failure = String(localized: "Le coach n'a pas répondu. Réessaie.")
                 CoachReplyLiveActivityController.shared.markFailed()
             } else {
                 CoachReplyLiveActivityController.shared.markReady(
@@ -247,25 +247,25 @@ final class CoachStore {
             // Keep any words already shown; do not pull a fuller answer the athlete cancelled.
             dropEmptyAnswer()
             if userStoppedReply {
-                failure = "Réponse arrêtée."
+                failure = String(localized: "Réponse arrêtée.")
             }
             userStoppedReply = false
             CoachReplyLiveActivityController.shared.end()
         } catch let error as SharpitAPIError where error == .unauthorized {
-            markContinuationFailed(id: id, message: "Session expirée. Reconnecte-toi.")
+            markContinuationFailed(id: id, message: String(localized: "Session expirée. Reconnecte-toi."))
             dropEmptyAnswer()
-            failure = "Session expirée. Reconnecte-toi."
+            failure = String(localized: "Session expirée. Reconnecte-toi.")
             CoachReplyLiveActivityController.shared.markFailed()
         } catch let error as CoachChatError {
-            let message = error.errorDescription ?? "La réponse n'a pas abouti. Réessaie."
+            let message = error.errorDescription ?? String(localized: "La réponse n'a pas abouti. Réessaie.")
             markContinuationFailed(id: id, message: message)
             dropEmptyAnswer()
             failure = error.errorDescription
             CoachReplyLiveActivityController.shared.markFailed()
         } catch {
-            markContinuationFailed(id: id, message: "La réponse n'a pas abouti. Réessaie.")
+            markContinuationFailed(id: id, message: String(localized: "La réponse n'a pas abouti. Réessaie."))
             dropEmptyAnswer()
-            failure = "La réponse n'a pas abouti. Réessaie."
+            failure = String(localized: "La réponse n'a pas abouti. Réessaie.")
             CoachReplyLiveActivityController.shared.markFailed()
         }
     }
@@ -310,7 +310,7 @@ final class CoachStore {
             endAnchorRevision += 1
             return true
         } catch {
-            failure = "Cette conversation n'a pas pu être ouverte."
+            failure = String(localized: "Cette conversation n'a pas pu être ouverte.")
             return false
         }
     }

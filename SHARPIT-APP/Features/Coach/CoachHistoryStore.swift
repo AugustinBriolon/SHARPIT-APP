@@ -35,9 +35,9 @@ final class CoachHistoryStore {
             phase = .loaded(try await conversations.conversations(token: try await tokenProvider()))
         } catch is CancellationError {
         } catch let error as SharpitAPIError where error == .unauthorized {
-            phase = .failed("Session expirée. Reconnecte-toi.")
+            phase = .failed(String(localized: "Session expirée. Reconnecte-toi."))
         } catch {
-            phase = .failed("L'historique n'a pas pu être chargé.")
+            phase = .failed(String(localized: "L'historique n'a pas pu être chargé."))
         }
     }
 
@@ -53,7 +53,7 @@ final class CoachHistoryStore {
             onDeleted(summary.id)
         } catch {
             phase = .loaded(list)
-            deletionFailure = "La conversation n'a pas pu être supprimée."
+            deletionFailure = String(localized: "La conversation n'a pas pu être supprimée.")
         }
     }
 }

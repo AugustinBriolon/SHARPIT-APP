@@ -208,7 +208,7 @@ struct SharpitRulerPicker: View {
             SharpitHaptics.play(.notch(major: mark % majorEvery == 0))
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityValue(value.map { "\($0) \(unit)" } ?? "Non renseigné")
+        .accessibilityValue(value.map { "\($0) \(unit)" } ?? String(localized: "Non renseigné"))
         .accessibilityAdjustableAction { direction in
             let current = value ?? resting
             let next = direction == .increment ? current + 1 : current - 1
@@ -259,7 +259,7 @@ struct SharpitDateField: View {
                 isOpen = true
             } label: {
                 HStack {
-                    Text(date.map { $0.sharpitFormatted(.dateTime.day().month(.wide).year()) } ?? "Choisir")
+                    Text(date.map { $0.sharpitFormatted(.dateTime.day().month(.wide).year()) } ?? String(localized: "Choisir"))
                         .font(SharpitTypography.body)
                         .foregroundStyle(date == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
                     Spacer()
@@ -296,7 +296,7 @@ struct SharpitDateField: View {
                     .labelsHidden()
                     // Neutral: the band is the system's, not the brand's green.
                     .tint(SharpitColor.foreground)
-                    .environment(\.locale, Locale(identifier: "fr_FR"))
+                    .environment(\.locale, AppLanguage.locale)
             }
             .padding(SharpitSpacing.pageInset)
             .presentationDetents([.height(320)])

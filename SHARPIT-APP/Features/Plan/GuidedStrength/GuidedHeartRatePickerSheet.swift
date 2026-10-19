@@ -16,8 +16,8 @@ struct GuidedHeartRatePickerSheet: View {
                                     .font(SharpitTypography.bodyEmphasis)
                                 Text(
                                     monitor.status == .unauthorized
-                                        ? "Autorise Bluetooth pour SharpIt dans Réglages."
-                                        : "Active Bluetooth, puis réessaie."
+                                        ? String(localized: "Autorise Bluetooth pour SharpIt dans Réglages.")
+                                        : String(localized: "Active Bluetooth, puis réessaie.")
                                 )
                                 .font(SharpitTypography.meta)
                                 .foregroundStyle(SharpitColor.mutedForeground)
@@ -66,7 +66,7 @@ struct GuidedHeartRatePickerSheet: View {
                         Text("Appareils")
                     } footer: {
                         SharpitListFooter(
-                            "Ceinture, brassard ou montre qui diffuse la FC en Bluetooth (profil Heart Rate)."
+                            String(localized: "Ceinture, brassard ou montre qui diffuse la FC en Bluetooth (profil Heart Rate).")
                         )
                     }
                     .sharpitListRows()
@@ -91,7 +91,7 @@ struct GuidedHeartRatePickerSheet: View {
             Image(systemName: "heart.fill")
                 .foregroundStyle(SharpitColor.destructive)
             VStack(alignment: .leading, spacing: 2) {
-                Text(monitor.peripheralName ?? "Capteur")
+                Text(monitor.peripheralName ?? String(localized: "Capteur"))
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
                 if let bpm = monitor.bpm {

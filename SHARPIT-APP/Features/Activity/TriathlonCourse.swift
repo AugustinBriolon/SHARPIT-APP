@@ -56,7 +56,7 @@ nonisolated enum TriathlonCourse {
 
     /// « Tout », then each leg in race order: « Natation · T1 · Vélo · T2 · Course ».
     static func options(_ tracks: [TriathlonLegTrack]) -> [(value: TriathlonSelection, label: String)] {
-        [(.overview, "Tout")] + tracks.map { (.leg($0.id), $0.segment.label) }
+        [(.overview, String(localized: "Tout"))] + tracks.map { (.leg($0.id), $0.segment.label) }
     }
 
     static func track(for selection: TriathlonSelection, in tracks: [TriathlonLegTrack]) -> TriathlonLegTrack? {

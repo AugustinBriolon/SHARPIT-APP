@@ -101,7 +101,7 @@ private extension View {
     /// which one the plan tapers for — nothing changes without the athlete's word.
     func principalConflictConfirmation(_ other: Binding<V1Goal?>, store: GoalStore, save: @escaping () -> Void) -> some View {
         confirmationDialog(
-            "Déjà un objectif principal cette saison",
+            String(localized: "Déjà un objectif principal cette saison"),
             isPresented: Binding(get: { other.wrappedValue != nil }, set: { if !$0 { other.wrappedValue = nil } }),
             titleVisibility: .visible,
             presenting: other.wrappedValue
@@ -135,7 +135,7 @@ private struct GoalFormFields: View {
                 .pickerStyle(.segmented)
             }
 
-            Section(eyebrow: "Détails") {
+            Section(eyebrow: String(localized: "Détails")) {
                 TextField("Nom de l’objectif", text: $draft.title)
                     .textInputAutocapitalization(.sentences)
 
@@ -160,7 +160,7 @@ private struct GoalFormFields: View {
             }
 
             if draft.kind == .race {
-                Section(eyebrow: "Place dans la saison") {
+                Section(eyebrow: String(localized: "Place dans la saison")) {
                     Picker("Place dans la saison", selection: rolePick) {
                         ForEach(GoalRole.allCases) { role in
                             VStack(alignment: .leading, spacing: 2) {

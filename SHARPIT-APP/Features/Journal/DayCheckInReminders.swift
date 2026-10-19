@@ -18,20 +18,20 @@ enum DayCheckInReminderPlanner {
         DayCheckInReminder(
             id: identifierPrefix + "hydration",
             hour: 10, minute: 0,
-            title: "Hydratation",
-            body: "Note ton eau du matin dans le journal."
+            title: String(localized: "Hydratation"),
+            body: String(localized: "Note ton eau du matin dans le journal.")
         ),
         DayCheckInReminder(
             id: identifierPrefix + "mood",
             hour: 14, minute: 0,
-            title: "Humeur",
-            body: "Un mot sur ton état — ça affine la lecture du Twin."
+            title: String(localized: "Humeur"),
+            body: String(localized: "Un mot sur ton état — ça affine la lecture du Twin.")
         ),
         DayCheckInReminder(
             id: identifierPrefix + "caffeine",
             hour: 16, minute: 0,
-            title: "Caféine",
-            body: "Dernière caféine ? Note-la avant le soir."
+            title: String(localized: "Caféine"),
+            body: String(localized: "Dernière caféine ? Note-la avant le soir.")
         ),
     ]
 }

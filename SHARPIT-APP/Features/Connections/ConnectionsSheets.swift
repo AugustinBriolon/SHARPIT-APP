@@ -80,7 +80,7 @@ struct SourceAddSheet: View {
             Group {
                 if sources.isEmpty {
                     ContentUnavailableView(
-                        "Tout est connecté",
+                        String(localized: "Tout est connecté"),
                         systemImage: "checkmark.circle",
                         description: Text("Toutes les sources disponibles sont déjà reliées à SharpIt.")
                     )
@@ -100,7 +100,7 @@ struct SourceAddSheet: View {
                                                 .foregroundStyle(SharpitColor.mutedForeground)
                                         }
                                         Spacer(minLength: SharpitSpacing.xs)
-                                        SharpitPill("Connecter", style: .neutral)
+                                        SharpitPill(String(localized: "Connecter"), style: .neutral)
                                     }
                                     .contentShape(.rect)
                                 }

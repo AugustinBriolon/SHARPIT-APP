@@ -118,9 +118,9 @@ nonisolated struct V1ThresholdSnapshot: Decodable, Sendable, Equatable, Identifi
     /// Who set it, in the athlete's words.
     var sourceLabel: String {
         switch source {
-        case "garmin": "Importé de ta montre"
-        case "estimated": "Estimé"
-        default: "Saisi à la main"
+        case "garmin": String(localized: "Importé de ta montre")
+        case "estimated": String(localized: "Estimé")
+        default: String(localized: "Saisi à la main")
         }
     }
 }

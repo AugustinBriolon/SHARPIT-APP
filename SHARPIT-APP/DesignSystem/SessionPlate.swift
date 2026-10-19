@@ -76,7 +76,7 @@ struct SessionPlate: View {
     }
 
     private var subtitle: String? {
-        let sport = session.brickLegs == nil ? session.sport : "Brick"
+        let sport = session.brickLegs == nil ? session.sport : String(localized: "Brick")
         var parts: [String] = []
         for part in [sport, objectiveText].compactMap({ $0 }) where !part.isEmpty {
             // An objective that only repeats the sport adds nothing.
@@ -91,14 +91,14 @@ struct SessionPlate: View {
     private var statusPills: some View {
         HStack(spacing: SharpitSpacing.xxs + 2) {
             if showPriorityTag {
-                SharpitPill("Prioritaire", style: .limeSoft)
+                SharpitPill(String(localized: "Prioritaire"), style: .limeSoft)
             }
             // A session still to do that carries the week; once done, « Faite » says enough.
             if session.isKey, session.kind != .done {
-                SharpitPill("Clé", style: .lime)
+                SharpitPill(String(localized: "Clé"), style: .lime)
             }
             if session.kind == .done {
-                SharpitPill("Faite", style: .lime)
+                SharpitPill(String(localized: "Faite"), style: .lime)
                     .scaleEffect(checkSettled ? 1.0 : 0.86)
                     .opacity(checkSettled ? 1.0 : 0.4)
                 // How closely it followed the plan, once the analysis has run.
@@ -106,7 +106,7 @@ struct SessionPlate: View {
                     SharpitPill("\(score)", style: .ink)
                 }
             } else {
-                SharpitPill("Prévue", style: .neutral)
+                SharpitPill(String(localized: "Prévue"), style: .neutral)
             }
         }
         .accessibilityHidden(true)
@@ -167,12 +167,12 @@ struct SessionPlate: View {
     }
 
     private var accessibilityLabel: String {
-        let status = session.kind == .done ? "Faite" : "Prévue"
+        let status = session.kind == .done ? String(localized: "Faite") : String(localized: "Prévue")
         let metrics = session.metrics.map { "\($0.label) \($0.value)\($0.unit)" }.joined(separator: ", ")
         return [
-            session.brickLegs == nil ? session.sport : "Brick",
-            showPriorityTag ? "Prioritaire" : nil,
-            session.isKey && session.kind != .done ? "Séance clé" : nil,
+            session.brickLegs == nil ? session.sport : String(localized: "Brick"),
+            showPriorityTag ? String(localized: "Prioritaire") : nil,
+            session.isKey && session.kind != .done ? String(localized: "Séance clé") : nil,
             session.brickChain ?? session.title,
             objectiveText != nil ? "Objectif: \(objectiveText!)" : nil,
             status,
@@ -205,7 +205,7 @@ extension SessionCardModel {
         }
         let durations = legs.compactMap(\.durationMin)
         guard durations.count == legs.count else { return legMetrics }
-        return legMetrics + [V1TodayMetric(label: "Total", value: "\(durations.reduce(0, +))", unit: "min")]
+        return legMetrics + [V1TodayMetric(label: String(localized: "Total"), value: "\(durations.reduce(0, +))", unit: "min")]
     }
 }
 

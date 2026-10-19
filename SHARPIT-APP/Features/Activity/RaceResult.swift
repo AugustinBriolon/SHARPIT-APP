@@ -13,7 +13,7 @@ nonisolated struct RaceResultModel: Sendable, Equatable {
     }
 
     var spokenSummary: String {
-        ["Temps final \(RaceTime.spoken(durationSec))", delta?.spokenLabel].compactMap { $0 }.joined(separator: ", ")
+        [String(localized: "Temps final \(RaceTime.spoken(durationSec))"), delta?.spokenLabel].compactMap { $0 }.joined(separator: ", ")
     }
 
     /// Nil without a time to show: the legs' sum stands in when the session carries none.
@@ -38,11 +38,11 @@ nonisolated struct RaceDelta: Sendable, Equatable {
 
     /// « −3:12 vs objectif », « +1:05 vs objectif ».
     var label: String {
-        "\(isAhead ? "−" : "+")\(RaceTime.clock(abs(seconds))) vs objectif"
+        String(localized: "\(isAhead ? "−" : "+")\(RaceTime.clock(abs(seconds))) vs objectif")
     }
 
     var spokenLabel: String {
-        "\(RaceTime.spoken(abs(seconds))) \(isAhead ? "sous" : "au-dessus de") l’objectif"
+        String(localized: "\(RaceTime.spoken(abs(seconds))) \(isAhead ? "sous" : "au-dessus de") l’objectif")
     }
 }
 
@@ -113,7 +113,7 @@ nonisolated enum RaceTime {
     static func spoken(_ seconds: Double) -> String {
         Duration.seconds(Int(seconds.rounded())).formatted(
             .units(allowed: [.hours, .minutes, .seconds], width: .wide)
-                .locale(Locale(identifier: "fr_FR"))
+                .locale(AppLanguage.locale)
         )
     }
 

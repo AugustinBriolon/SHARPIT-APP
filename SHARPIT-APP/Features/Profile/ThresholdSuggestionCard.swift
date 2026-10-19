@@ -96,20 +96,20 @@ private struct ThresholdChangeRow: View {
 nonisolated enum ThresholdSuggestionReadout {
     /// « Capacité démontrée sur 120 jours — pas le record de toujours. »
     static func window(_ days: Int?) -> String {
-        guard let days, days > 0 else { return "Capacité démontrée récemment — pas le record de toujours." }
-        return "Capacité démontrée sur \(days) jours — pas le record de toujours."
+        guard let days, days > 0 else { return String(localized: "Capacité démontrée récemment — pas le record de toujours.") }
+        return String(localized: "Capacité démontrée sur \(days) jours — pas le record de toujours.")
     }
 
     /// « Appliquer », or « Appliquer (2) » when some proposals were left out.
     static func applyLabel(accepted: Int, offered: Int) -> String {
-        accepted > 0 && accepted < offered ? "Appliquer (\(accepted))" : "Appliquer"
+        accepted > 0 && accepted < offered ? String(localized: "Appliquer (\(accepted))") : String(localized: "Appliquer")
     }
 
     static func directionLabel(_ direction: V1ThresholdDirection) -> String {
         switch direction {
-        case .up: "Hausse"
-        case .down: "Baisse"
-        case .set: "Nouveau"
+        case .up: String(localized: "Hausse")
+        case .down: String(localized: "Baisse")
+        case .set: String(localized: "Nouveau")
         }
     }
 }

@@ -64,12 +64,12 @@ nonisolated enum FoodHealthPresentation {
         let watch = health.watchPoints.count
         let strengths = health.strengths.count
         switch (watch, strengths) {
-        case (0, 0): return "Rien de marquant dans sa composition"
-        case (0, _): return strengths == 1 ? "1 point fort, rien à surveiller" : "\(strengths) points forts, rien à surveiller"
-        case (_, 0): return watch == 1 ? "1 point à surveiller" : "\(watch) points à surveiller"
+        case (0, 0): return String(localized: "Rien de marquant dans sa composition")
+        case (0, _): return strengths == 1 ? String(localized: "1 point fort, rien à surveiller") : String(localized: "\(strengths) points forts, rien à surveiller")
+        case (_, 0): return watch == 1 ? String(localized: "1 point à surveiller") : String(localized: "\(watch) points à surveiller")
         default:
-            let watchText = watch == 1 ? "1 point à surveiller" : "\(watch) points à surveiller"
-            let strengthText = strengths == 1 ? "1 point fort" : "\(strengths) points forts"
+            let watchText = watch == 1 ? String(localized: "1 point à surveiller") : String(localized: "\(watch) points à surveiller")
+            let strengthText = strengths == 1 ? String(localized: "1 point fort") : String(localized: "\(strengths) points forts")
             return "\(watchText)\n\(strengthText)"
         }
     }
@@ -78,7 +78,7 @@ nonisolated enum FoodHealthPresentation {
     static func sources(_ health: V1FoodHealth) -> String? {
         var parts: [String] = []
         if let letter = health.nutriScore?.uppercased() {
-            parts.append(health.nutriScoreEstimated ? "Nutri-Score \(letter) (estimé)" : "Nutri-Score \(letter)")
+            parts.append(health.nutriScoreEstimated ? String(localized: "Nutri-Score \(letter) (estimé)") : "Nutri-Score \(letter)")
         }
         if let nova = health.nova { parts.append("NOVA \(nova)") }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
@@ -91,16 +91,16 @@ nonisolated enum FoodHealthPresentation {
             return nil
         case .count:
             let count = health.additiveCount ?? 0
-            let counted = count == 1 ? "1 additif" : "\(count) additifs"
-            return isCompleting ? "\(counted), lecture du détail…" : "\(counted), détail indisponible"
+            let counted = count == 1 ? String(localized: "1 additif") : "\(count) additifs"
+            return isCompleting ? String(localized: "\(counted), lecture du détail…") : String(localized: "\(counted), détail indisponible")
         case .unknown:
-            return "Ingrédients non renseignés : additifs inconnus"
+            return String(localized: "Ingrédients non renseignés : additifs inconnus")
         }
     }
 
-    static let method = "Nutrition 60 % (Nutri-Score), transformation 20 % (NOVA), additifs 20 %. Un additif à risque plafonne la note à 49. Une information manquante compte pour moitié."
-    static let partialMethod = "Aliment saisi à la main : seule l'étiquette nutritionnelle est notée."
-    static let disclaimer = "Indicateur Sharpit, pas un avis médical."
+    static let method = String(localized: "Nutrition 60 % (Nutri-Score), transformation 20 % (NOVA), additifs 20 %. Un additif à risque plafonne la note à 49. Une information manquante compte pour moitié.")
+    static let partialMethod = String(localized: "Aliment saisi à la main : seule l'étiquette nutritionnelle est notée.")
+    static let disclaimer = String(localized: "Indicateur Sharpit, pas un avis médical.")
 }
 
 /// Compact Sharpit score for lists: the number when known, a dash when the product has none.
@@ -152,9 +152,9 @@ struct FoodHealthBadge: View {
 
     private var accessibility: String {
         if let score, let grade {
-            return "Score Sharpit \(score), \(grade.label)"
+            return String(localized: "Score Sharpit \(score), \(grade.label)")
         }
-        return "Score Sharpit indisponible"
+        return String(localized: "Score Sharpit indisponible")
     }
 }
 
@@ -166,7 +166,7 @@ struct MealHealthSection: View {
         Section {
             HStack(spacing: SharpitSpacing.sm) {
                 FoodHealthBadge(meal: health)
-                Text(health.grade?.label ?? "Non noté")
+                Text(health.grade?.label ?? String(localized: "Non noté"))
                     .font(SharpitTypography.cardTitle)
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(FoodHealthPresentation.gradeTone(health.grade))
@@ -175,9 +175,9 @@ struct MealHealthSection: View {
             .accessibilityElement(children: .combine)
             ForEach(health.highlights) { FoodHighlightRow(highlight: $0) }
         } header: {
-            SharpitEyebrow("Note du repas")
+            SharpitEyebrow(String(localized: "Note du repas"))
         } footer: {
-            SharpitListFooter("Moyenne des scores des aliments, pondérée par leur énergie. \(FoodHealthPresentation.disclaimer)")
+            SharpitListFooter(String(localized: "Moyenne des scores des aliments, pondérée par leur énergie. \(FoodHealthPresentation.disclaimer)"))
         }
         .sharpitListRows()
     }
@@ -190,7 +190,7 @@ struct FoodDietConflictLine: View {
     var body: some View {
         if let conflicts = health?.incompatibleDiets, !conflicts.isEmpty {
             Label(
-                "Hors régime : \(conflicts.map(\.label).joined(separator: ", "))",
+                String(localized: "Hors régime : \(conflicts.map(\.label).joined(separator: ", "))"),
                 systemImage: "xmark.circle"
             )
             .font(SharpitTypography.meta)
@@ -215,7 +215,7 @@ struct FoodHealthSections: View {
                 if showsScoreHeader { FoodHealthScoreHeader(health: health) }
                 ForEach(health.notes) { FoodHighlightRow(highlight: $0) }
             } header: {
-                SharpitEyebrow("Score Sharpit")
+                SharpitEyebrow(String(localized: "Score Sharpit"))
             }
             .sharpitListRows()
         }
@@ -224,7 +224,7 @@ struct FoodHealthSections: View {
             Section {
                 ForEach(health.dietFit) { FoodDietFitRow(fit: $0) }
             } header: {
-                SharpitEyebrow("Mon régime")
+                SharpitEyebrow(String(localized: "Mon régime"))
             }
             .sharpitListRows()
         }
@@ -233,7 +233,7 @@ struct FoodHealthSections: View {
             Section {
                 ForEach(health.watchPoints) { FoodHighlightRow(highlight: $0) }
             } header: {
-                SharpitEyebrow("À surveiller")
+                SharpitEyebrow(String(localized: "À surveiller"))
             }
             .sharpitListRows()
         }
@@ -242,7 +242,7 @@ struct FoodHealthSections: View {
             Section {
                 ForEach(health.strengths) { FoodHighlightRow(highlight: $0) }
             } header: {
-                SharpitEyebrow("Points forts")
+                SharpitEyebrow(String(localized: "Points forts"))
             }
             .sharpitListRows()
         }
@@ -277,7 +277,7 @@ struct FoodHealthScoreHeader: View {
             .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(health.grade?.label ?? "Non noté")
+                Text(health.grade?.label ?? String(localized: "Non noté"))
                     .font(SharpitTypography.cardTitle)
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(FoodHealthPresentation.gradeTone(health.grade))
@@ -299,7 +299,7 @@ struct FoodHealthScoreHeader: View {
     }
 
     private var accessibility: String {
-        let score = health.score.map { "Score Sharpit \($0) sur 100" } ?? "Score Sharpit indisponible"
+        let score = health.score.map { String(localized: "Score Sharpit \($0) sur 100") } ?? String(localized: "Score Sharpit indisponible")
         let grade = health.grade.map { ", \($0.label)" } ?? ""
         return "\(score)\(grade). \(FoodHealthPresentation.verdict(health))"
     }
@@ -407,7 +407,7 @@ private struct FoodAdditivesRow: View {
                 }
             } label: {
                 Label(
-                    health.additives.count == 1 ? "1 additif" : "\(health.additives.count) additifs",
+                    health.additives.count == 1 ? String(localized: "1 additif") : "\(health.additives.count) additifs",
                     systemImage: "flask"
                 )
                 .font(SharpitTypography.body)

@@ -23,7 +23,7 @@ private struct DemoReviewClient: WeeklyReviewServing {
         V1WeeklyReview(
             id: "demo",
             weekStart: "2026-09-21",
-            content: """
+            content: String(localized: """
             ## Bilan d'entraînement
             Tu as bouclé **4 séances sur 5**, pour une charge en hausse de 12 %.
 
@@ -40,7 +40,7 @@ private struct DemoReviewClient: WeeklyReviewServing {
             ## Plan pour la semaine prochaine
             - Une sortie longue de 1 h 30 en endurance
             - Garder le renforcement du mardi
-            """,
+            """),
             stats: V1WeeklyStats(
                 weekStart: "2026-09-21",
                 dailyLoad: [45, nil, 72, 40, nil, 95, 60],

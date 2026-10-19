@@ -83,7 +83,7 @@ struct SessionLinkPicker: View {
             }
         case .ready where store.candidates.isEmpty:
             ContentUnavailableView(
-                "Rien à rapprocher",
+                String(localized: "Rien à rapprocher"),
                 systemImage: "tray",
                 description: Text("Aucune séance réalisée sans séance prévue la veille, ce jour-là ou le lendemain.")
             )
@@ -95,7 +95,7 @@ struct SessionLinkPicker: View {
     private func rows(_ candidates: [SessionLinkCandidate]) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow("Choisis la séance qui l'a réalisée")
+                SharpitEyebrow(String(localized: "Choisis la séance qui l'a réalisée"))
                 ForEach(candidates) { candidate in
                     SessionLinkCandidateRow(candidate: candidate)
                 }
@@ -108,7 +108,7 @@ struct SessionLinkPicker: View {
     private var list: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow("Choisis la séance qui l'a réalisée")
+                SharpitEyebrow(String(localized: "Choisis la séance qui l'a réalisée"))
                 ForEach(store.candidates) { candidate in
                     Button {
                         Task {
@@ -166,10 +166,10 @@ private extension SessionLinkCandidate {
     static let placeholders: [SessionLinkCandidate] = (0..<3).map { index in
         SessionLinkCandidate(
             id: "skeleton-\(index)",
-            title: "Sortie longue endurance",
+            title: String(localized: "Sortie longue endurance"),
             sport: "RUN",
             symbolName: "figure.run",
-            dayLabel: "Même jour",
+            dayLabel: String(localized: "Même jour"),
             durationLabel: "1 h 05"
         )
     }

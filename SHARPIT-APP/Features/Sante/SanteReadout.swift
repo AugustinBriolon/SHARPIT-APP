@@ -7,16 +7,16 @@ import SwiftUI
 enum SanteReadout {
     static func title(_ key: V1HealthMarker.Key) -> String {
         switch key {
-        case .restingHr: "FC de repos"
+        case .restingHr: String(localized: "FC de repos")
         case .hrv: "VFC"
-        case .sleep: "Sommeil"
+        case .sleep: String(localized: "Sommeil")
         case .vo2max: "VO₂max"
-        case .weight: "Poids"
-        case .bodyFatPct: "Masse grasse"
-        case .visceralFat: "Graisse viscérale"
-        case .musclePct: "Muscle"
-        case .steps: "Pas"
-        case .respiration: "Respiration"
+        case .weight: String(localized: "Poids")
+        case .bodyFatPct: String(localized: "Masse grasse")
+        case .visceralFat: String(localized: "Graisse viscérale")
+        case .musclePct: String(localized: "Muscle")
+        case .steps: String(localized: "Pas")
+        case .respiration: String(localized: "Respiration")
         }
     }
 
@@ -39,25 +39,25 @@ enum SanteReadout {
     static func explanation(_ key: V1HealthMarker.Key) -> String {
         switch key {
         case .restingHr:
-            "Ton cœur au repos. Plus il est bas, plus il travaille peu pour les mêmes besoins : il baisse avec l'endurance et monte avec la fatigue, le stress ou une maladie qui couve."
+            String(localized: "Ton cœur au repos. Plus il est bas, plus il travaille peu pour les mêmes besoins : il baisse avec l'endurance et monte avec la fatigue, le stress ou une maladie qui couve.")
         case .hrv:
-            "La variabilité entre deux battements. Elle reflète la récupération de ton système nerveux : haute quand tu es reposé, basse quand le corps est sollicité. Elle se lit contre ta propre plage, pas contre celle des autres."
+            String(localized: "La variabilité entre deux battements. Elle reflète la récupération de ton système nerveux : haute quand tu es reposé, basse quand le corps est sollicité. Elle se lit contre ta propre plage, pas contre celle des autres.")
         case .sleep:
-            "La durée moyenne de tes nuits. C'est pendant le sommeil que le corps répare ce que l'entraînement abîme."
+            String(localized: "La durée moyenne de tes nuits. C'est pendant le sommeil que le corps répare ce que l'entraînement abîme.")
         case .vo2max:
-            "Ta capacité cardio-respiratoire maximale. C'est l'un des marqueurs les plus liés à la longévité, et il se travaille."
+            String(localized: "Ta capacité cardio-respiratoire maximale. C'est l'un des marqueurs les plus liés à la longévité, et il se travaille.")
         case .weight:
-            "Ton poids, à lire sur la durée : d'un jour à l'autre, l'eau et les repas le font varier sans rien dire de ta forme."
+            String(localized: "Ton poids, à lire sur la durée : d'un jour à l'autre, l'eau et les repas le font varier sans rien dire de ta forme.")
         case .bodyFatPct:
-            "La part de graisse dans ton poids. Une valeur trop basse est aussi un signal : les hormones et l'immunité en ont besoin."
+            String(localized: "La part de graisse dans ton poids. Une valeur trop basse est aussi un signal : les hormones et l'immunité en ont besoin.")
         case .visceralFat:
-            "La graisse autour des organes, la plus liée aux risques cardio-métaboliques. Mesurée par ta balance."
+            String(localized: "La graisse autour des organes, la plus liée aux risques cardio-métaboliques. Mesurée par ta balance.")
         case .musclePct:
-            "La part de muscle dans ton poids, selon ta balance. Elle protège les articulations et le métabolisme."
+            String(localized: "La part de muscle dans ton poids, selon ta balance. Elle protège les articulations et le métabolisme.")
         case .steps:
-            "Ton activité en dehors de l'entraînement. Bouger dans la journée compte, même les jours sans séance."
+            String(localized: "Ton activité en dehors de l'entraînement. Bouger dans la journée compte, même les jours sans séance.")
         case .respiration:
-            "Ton rythme respiratoire pendant le sommeil. Une hausse inhabituelle accompagne souvent une infection qui commence."
+            String(localized: "Ton rythme respiratoire pendant le sommeil. Une hausse inhabituelle accompagne souvent une infection qui commence.")
         }
     }
 
@@ -79,9 +79,9 @@ enum SanteReadout {
     /// « moyenne 7 jours » or the day of the reading.
     static func basis(_ marker: V1HealthMarker) -> String {
         switch marker.basis {
-        case .average7: return "moyenne 7 jours"
+        case .average7: return String(localized: "moyenne 7 jours")
         case .latest:
-            guard let date = marker.measuredAt else { return "dernière mesure" }
+            guard let date = marker.measuredAt else { return String(localized: "dernière mesure") }
             return date.sharpitFormatted(.dateTime.day().month(.abbreviated))
         }
     }
@@ -90,8 +90,8 @@ enum SanteReadout {
     static func trend(_ marker: V1HealthMarker) -> String? {
         guard let trend = marker.trend else { return nil }
         // The web already weighed the change against the marker's everyday noise.
-        if trend.stable { return "Stable sur le mois" }
-        return "\(signedDelta(trend.delta, for: marker.key)) sur le mois"
+        if trend.stable { return String(localized: "Stable sur le mois") }
+        return String(localized: "\(signedDelta(trend.delta, for: marker.key)) sur le mois")
     }
 
     /// « Tes 7 derniers jours : 47 bpm · le mois d'avant : 50 bpm ».
@@ -99,8 +99,8 @@ enum SanteReadout {
         let recent = value(V1HealthMarker(key: marker.key, value: trend.recent))
         let before = value(V1HealthMarker(key: marker.key, value: trend.baseline))
         let unit = recent.unit.map { " \($0)" } ?? ""
-        let span = marker.basis == .average7 ? "Tes 7 derniers jours" : "Ta dernière période"
-        return "\(span) : \(recent.text)\(unit) · le mois d'avant : \(before.text)\(unit)"
+        let span = marker.basis == .average7 ? String(localized: "Tes 7 derniers jours") : String(localized: "Ta dernière période")
+        return String(localized: "\(span) : \(recent.text)\(unit) · le mois d'avant : \(before.text)\(unit)")
     }
 
     /// « FC de repos −3 bpm » — a highlight of the synthesis.
@@ -112,9 +112,9 @@ enum SanteReadout {
     static func synthesis(_ synthesis: V1HealthSynthesis) -> String? {
         guard synthesis.normed > 0 else { return nil }
         if synthesis.inNorm == synthesis.normed {
-            return synthesis.normed == 1 ? "Ton repère est dans sa norme" : "Tes \(synthesis.normed) repères sont dans leur norme"
+            return synthesis.normed == 1 ? String(localized: "Ton repère est dans sa norme") : String(localized: "Tes \(synthesis.normed) repères sont dans leur norme")
         }
-        return "\(synthesis.inNorm) repères sur \(synthesis.normed) dans leur norme"
+        return String(localized: "\(synthesis.inNorm) repères sur \(synthesis.normed) dans leur norme")
     }
 
     /// The Corps metric whose longer history the web keeps, for the sheet's ranges.
@@ -166,7 +166,7 @@ enum SanteReadout {
         value.formatted(
             .number
                 .precision(.fractionLength(0...digits))
-                .locale(Locale(identifier: "fr_FR"))
+                .locale(AppLanguage.locale)
         )
     }
 }

@@ -14,9 +14,9 @@ nonisolated enum AppearancePreference: String, CaseIterable, Identifiable, Senda
 
     var label: String {
         switch self {
-        case .system: "Système"
-        case .light: "Clair"
-        case .dark: "Sombre"
+        case .system: String(localized: "Système")
+        case .light: String(localized: "Clair")
+        case .dark: String(localized: "Sombre")
         }
     }
 

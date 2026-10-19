@@ -379,7 +379,7 @@ struct CoachView: View {
                 } else {
                     HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
                         TextField(
-                            store.hasPendingApproval ? "Réponds à la proposition, ou écris pour l'ignorer" : "Pose ta question",
+                            store.hasPendingApproval ? String(localized: "Réponds à la proposition, ou écris pour l'ignorer") : String(localized: "Pose ta question"),
                             text: $store.draft,
                             axis: .vertical
                         )
@@ -429,7 +429,7 @@ struct CoachView: View {
                     .foregroundStyle(SharpitColor.primary)
                     .symbolEffect(.variableColor.iterative, isActive: true)
                 Text(store.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                     ? "Écoute…"
+                     ? String(localized: "Écoute…")
                      : store.draft)
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
@@ -558,7 +558,7 @@ private struct CoachMessageRow: View {
         switch message.role {
         case .user:
             VStack(alignment: .trailing, spacing: SharpitSpacing.xxs) {
-                SharpitEyebrow("Moi")
+                SharpitEyebrow(String(localized: "Moi"))
                 if let context = message.context {
                     CoachContextTag(context: context)
                 }
@@ -580,7 +580,7 @@ private struct CoachMessageRow: View {
 
         case .assistant:
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitEyebrow("Coach")
+                SharpitEyebrow(String(localized: "Coach"))
                 ForEach(CoachSegment.segments(of: message)) { segment in
                     switch segment {
                     case .text(_, let text):
@@ -638,7 +638,7 @@ private struct CoachCopyButton: View {
         }
         .buttonStyle(.plain)
         .padding(.top, -SharpitSpacing.xs)
-        .accessibilityLabel(copied ? "Copié" : "Copier la réponse")
+        .accessibilityLabel(copied ? String(localized: "Copié") : String(localized: "Copier la réponse"))
     }
 }
 
@@ -657,7 +657,7 @@ enum CoachMessageCopy {
     }
 
     static func roleLabel(for message: CoachMessage) -> String {
-        message.role == .user ? "Moi" : "Coach"
+        message.role == .user ? String(localized: "Moi") : String(localized: "Coach")
     }
 
     /// « Coach\n… » / « Moi\n… » — what selection and long-press put on the pasteboard.
@@ -781,10 +781,10 @@ private struct CoachEmptyState: View {
                 .tracking(SharpitTypography.sectionTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
             Text(
-                """
+                String(localized: """
                 Une séance, ta semaine, un signal du jour. \
                 Depuis un écran, le bouton « discuter » joint le sujet à ta question.
-                """
+                """)
             )
             .font(SharpitTypography.body)
             .foregroundStyle(SharpitColor.mutedForeground)

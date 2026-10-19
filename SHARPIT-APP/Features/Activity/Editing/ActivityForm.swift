@@ -50,7 +50,7 @@ struct ActivityFormSheet: View {
     var body: some View {
         NavigationStack {
             ActivityFormContent(draft: $draft, requirement: draft.missingRequirement, failure: failure)
-                .navigationTitle(isCreating ? "Saisir une séance" : "Modifier la séance")
+                .navigationTitle(isCreating ? String(localized: "Saisir une séance") : String(localized: "Modifier la séance"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -60,7 +60,7 @@ struct ActivityFormSheet: View {
                         if isSaving {
                             ProgressView()
                         } else {
-                            Button(isCreating ? "Ajouter" : "Enregistrer") { Task { await save() } }
+                            Button(isCreating ? String(localized: "Ajouter") : String(localized: "Enregistrer")) { Task { await save() } }
                                 .disabled(!canSave)
                         }
                     }
@@ -96,11 +96,11 @@ struct ActivityFormSheet: View {
         } catch let SharpitAPIError.message(reason) {
             failure = reason
         } catch let error as SharpitAPIError where [.transport, .rateLimited, .unauthorized].contains(error) {
-            failure = SharpitErrorGuidance.message(for: error, subject: "La séance")
+            failure = SharpitErrorGuidance.message(for: error, subject: String(localized: "La séance"))
         } catch {
             failure = isCreating
-                ? "La séance n’a pas pu être ajoutée. Réessaie dans un instant."
-                : "La séance n’a pas pu être modifiée. Réessaie dans un instant."
+                ? String(localized: "La séance n’a pas pu être ajoutée. Réessaie dans un instant.")
+                : String(localized: "La séance n’a pas pu être modifiée. Réessaie dans un instant.")
         }
     }
 }
@@ -119,7 +119,7 @@ private struct ActivityFormContent: View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                 sportPicker
-                SharpitFormField("Titre (facultatif)", placeholder: draft.sport.label, text: $draft.title)
+                SharpitFormField(String(localized: "Titre (facultatif)"), placeholder: draft.sport.label, text: $draft.title)
                 whenField
                 durationField
                 if draft.isStrength {
@@ -141,7 +141,7 @@ private struct ActivityFormContent: View {
 
     private var sportPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Sport")
+            SharpitFieldLabel(String(localized: "Sport"))
             LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
                 ForEach(ActivityDraft.sports, id: \.self) { sport in
                     OnboardingChoiceChip(title: sport.label, symbol: sport.symbolName, isSelected: draft.sport == sport) {
@@ -154,20 +154,20 @@ private struct ActivityFormContent: View {
 
     private var whenField: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Quand")
+            SharpitFieldLabel(String(localized: "Quand"))
             DatePicker("Début", selection: $draft.date, in: ...Date.now, displayedComponents: [.date, .hourAndMinute])
                 .font(SharpitTypography.body)
                 .sharpitFieldWell()
         }
         .tint(SharpitColor.primary)
-        .environment(\.locale, Locale(identifier: "fr_FR"))
+        .environment(\.locale, AppLanguage.locale)
     }
 
     private var durationField: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Durée")
+            SharpitFieldLabel(String(localized: "Durée"))
             Stepper(value: duration, in: 5...1440, step: 5) {
-                Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? "Non précisée")
+                Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? String(localized: "Non précisée"))
                     .font(SharpitTypography.body)
                     .monospacedDigit()
                     .foregroundStyle(draft.durationMin == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
@@ -181,17 +181,17 @@ private struct ActivityFormContent: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             if draft.measuresDistance {
                 SharpitFormField(
-                    "Distance (\(draft.distanceUnit))",
+                    String(localized: "Distance (\(draft.distanceUnit))"),
                     placeholder: draft.sport == .swim ? "1500" : "10,0",
                     text: $draft.distanceText,
                     keyboard: .decimalPad
                 )
             }
             if draft.measuresElevation {
-                SharpitFormField("Dénivelé positif (m)", placeholder: "120", text: $draft.elevationText, keyboard: .numberPad)
+                SharpitFormField(String(localized: "Dénivelé positif (m)"), placeholder: "120", text: $draft.elevationText, keyboard: .numberPad)
             }
             if draft.measuresHeartRate {
-                SharpitFormField("FC moyenne (bpm)", placeholder: "145", text: $draft.avgHrText, keyboard: .numberPad)
+                SharpitFormField(String(localized: "FC moyenne (bpm)"), placeholder: "145", text: $draft.avgHrText, keyboard: .numberPad)
             }
         }
         .transition(.opacity)
@@ -199,7 +199,7 @@ private struct ActivityFormContent: View {
 
     private var rpePicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Effort perçu (RPE)")
+            SharpitFieldLabel(String(localized: "Effort perçu (RPE)"))
             LazyVGrid(columns: rpeGrid, spacing: SharpitSpacing.xxs) {
                 ForEach(1...10, id: \.self) { value in
                     OnboardingChoiceChip(title: "\(value)", isSelected: draft.rpe == value) {
@@ -214,7 +214,7 @@ private struct ActivityFormContent: View {
 
     private var feelingPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Ressenti")
+            SharpitFieldLabel(String(localized: "Ressenti"))
             LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
                 ForEach(SessionFeeling.allCases) { feeling in
                     OnboardingChoiceChip(title: feeling.storedValue, isSelected: draft.feeling == feeling) {
@@ -234,7 +234,7 @@ private struct ActivityFormContent: View {
 
     private var notesField: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Notes")
+            SharpitFieldLabel(String(localized: "Notes"))
             TextField("Ce qu’il faut retenir de la séance", text: $draft.notes, axis: .vertical)
                 .font(SharpitTypography.body)
                 .lineLimit(3...8)

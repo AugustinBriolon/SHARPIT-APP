@@ -31,13 +31,13 @@ enum ProviderOAuthConnectOutcome: Equatable {
 
     func message(for source: DisconnectableSource) -> String {
         switch self {
-        case .connected: "\(source.name) connecté — synchronisation en cours…"
-        case .alreadyConnected: "\(source.name) est déjà connecté"
-        case .cancelled: "Connexion \(source.name) annulée"
-        case .consentRequired: "Autorisation requise pour \(source.name)"
-        case .invalidState: "Session \(source.name) expirée"
-        case .denied: "Connexion \(source.name) refusée"
-        case .failed: "Connexion \(source.name) impossible"
+        case .connected: String(localized: "\(source.name) connecté — synchronisation en cours…")
+        case .alreadyConnected: String(localized: "\(source.name) est déjà connecté")
+        case .cancelled: String(localized: "Connexion \(source.name) annulée")
+        case .consentRequired: String(localized: "Autorisation requise pour \(source.name)")
+        case .invalidState: String(localized: "Session \(source.name) expirée")
+        case .denied: String(localized: "Connexion \(source.name) refusée")
+        case .failed: String(localized: "Connexion \(source.name) impossible")
         }
     }
 

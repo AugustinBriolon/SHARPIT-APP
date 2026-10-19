@@ -41,22 +41,22 @@ struct RaceProjectionReadout: Sendable, Equatable {
 
     var confidenceLabel: String? {
         switch projection.confidence {
-        case .low?: "fiabilité faible"
-        case .medium?: "fiabilité moyenne"
-        case .high?: "fiabilité bonne"
+        case .low?: String(localized: "fiabilité faible")
+        case .medium?: String(localized: "fiabilité moyenne")
+        case .high?: String(localized: "fiabilité bonne")
         case nil: nil
         }
     }
 
     /// « Si c'était aujourd'hui : 5h52 »
     var todayLine: String? {
-        projection.todaySec.map { "Si c'était aujourd'hui : \(GoalAnalyticsEngine.formatDuration($0))" }
+        projection.todaySec.map { String(localized: "Si c'était aujourd'hui : \(GoalAnalyticsEngine.formatDuration($0))") }
     }
 
     /// « Régularité : 82 % des séances faites · fiabilité moyenne »: how far to trust the range.
     var confidenceLine: String? {
         let regularity = projection.regularity.map { value in
-            "Régularité : \(Int((min(max(value, 0), 1) * 100).rounded())) % des séances faites"
+            String(localized: "Régularité : \(Int((min(max(value, 0), 1) * 100).rounded())) % des séances faites")
         }
         let parts = [regularity, confidenceLabel].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
@@ -75,10 +75,10 @@ struct RaceProjectionReadout: Sendable, Equatable {
         guard let first = trajectory.first, let last = trajectory.last else { return nil }
         let weeks = Int((last.date.timeIntervalSince(first.date) / 604_800).rounded())
         guard weeks >= 1 else { return nil }
-        let span = weeks == 1 ? "1 semaine" : "\(weeks) semaines"
+        let span = weeks == 1 ? String(localized: "1 semaine") : "\(weeks) semaines"
         let change = last.finishSec - first.finishSec
         let minutes = Int((abs(change) / 60).rounded())
-        guard minutes > 0 else { return "stable en \(span)" }
+        guard minutes > 0 else { return String(localized: "stable en \(span)") }
         let amount = minutes < 60 ? "\(minutes) min" : GoalAnalyticsEngine.formatDuration(abs(change))
         return "\(change < 0 ? "−" : "+")\(amount) en \(span)"
     }
@@ -106,8 +106,8 @@ struct RaceProjectionReadout: Sendable, Equatable {
     /// « Prévu 6h05 · Réalisé 5h40 » against a frozen pre-race projection; « Prévu (recalculé) »
     /// when the server re-projected after the race, so the comparison stays honest.
     func plannedVsActual(actualSeconds: Double) -> String {
-        let planned = projection.frozenAt == nil ? "Prévu (recalculé)" : "Prévu"
-        return "\(planned) \(GoalAnalyticsEngine.formatDuration(projection.finishSec)) · Réalisé \(GoalAnalyticsEngine.formatDuration(actualSeconds))"
+        let planned = projection.frozenAt == nil ? String(localized: "Prévu (recalculé)") : String(localized: "Prévu")
+        return String(localized: "\(planned) \(GoalAnalyticsEngine.formatDuration(projection.finishSec)) · Réalisé \(GoalAnalyticsEngine.formatDuration(actualSeconds))")
     }
 
     private static func sport(_ kind: V1RaceProjection.LegKind) -> V1ActivityType? {
@@ -121,10 +121,10 @@ struct RaceProjectionReadout: Sendable, Equatable {
 
     private static func sourceLabel(_ source: V1RaceProjection.LegSource) -> String {
         switch source {
-        case .history: "d'après ton historique"
-        case .recent: "d'après tes courses récentes"
-        case .profile: "valeur du profil"
-        case .default: "valeur par défaut"
+        case .history: String(localized: "d'après ton historique")
+        case .recent: String(localized: "d'après tes courses récentes")
+        case .profile: String(localized: "valeur du profil")
+        case .default: String(localized: "valeur par défaut")
         }
     }
 }

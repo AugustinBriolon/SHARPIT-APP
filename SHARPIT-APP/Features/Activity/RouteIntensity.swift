@@ -10,8 +10,8 @@ nonisolated struct RouteIntensity: Equatable, Sendable {
 
         var label: String {
             switch self {
-            case .heartRate: "Fréquence cardiaque"
-            case .speed: "Vitesse"
+            case .heartRate: String(localized: "Fréquence cardiaque")
+            case .speed: String(localized: "Vitesse")
             }
         }
     }

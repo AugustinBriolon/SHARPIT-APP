@@ -56,7 +56,7 @@ struct SharpitCheckBox: View {
                         .foregroundStyle(SharpitColor.highlightForeground)
                 }
             }
-            .accessibilityLabel(isOn ? "Fait" : "À faire")
+            .accessibilityLabel(isOn ? String(localized: "Fait") : String(localized: "À faire"))
     }
 }
 

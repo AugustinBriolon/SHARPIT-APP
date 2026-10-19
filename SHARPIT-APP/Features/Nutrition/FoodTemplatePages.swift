@@ -33,7 +33,7 @@ struct SavedMealsPage: View {
             default:
                 if store.meals.isEmpty {
                     Section {} footer: {
-                        SharpitListFooter("Aucun repas enregistré. Depuis un repas de ta journée, « Enregistrer ce repas » le garde ici pour le noter d'un geste.")
+                        SharpitListFooter(String(localized: "Aucun repas enregistré. Depuis un repas de ta journée, « Enregistrer ce repas » le garde ici pour le noter d'un geste."))
                     }
                 } else {
                     mealsSection
@@ -46,7 +46,7 @@ struct SavedMealsPage: View {
         .task { await store.load() }
         .refreshable { await store.load() }
         .confirmationDialog(
-            pendingDelete.map { "Supprimer « \($0.name) » ?" } ?? "",
+            pendingDelete.map { String(localized: "Supprimer « \($0.name) » ?") } ?? "",
             isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
             titleVisibility: .visible,
             presenting: pendingDelete
@@ -117,7 +117,7 @@ private struct SavedMealRow: View {
     }
 
     private var detail: String {
-        let count = saved.items.count == 1 ? "1 aliment" : "\(saved.items.count) aliments"
+        let count = saved.items.count == 1 ? String(localized: "1 aliment") : "\(saved.items.count) aliments"
         return "\(count) · P \(Int(saved.protein.rounded())) · G \(Int(saved.carbs.rounded())) · L \(Int(saved.fat.rounded())) g"
     }
 }
@@ -154,7 +154,7 @@ struct FoodRecipePage: View {
 
     var body: some View {
         List {
-            Section(eyebrow: "Recette") {
+            Section(eyebrow: String(localized: "Recette")) {
                 TextField("Nom (ex. Bolognaise maison)", text: $builder.name)
                     .textInputAutocapitalization(.sentences)
             }
@@ -173,22 +173,22 @@ struct FoodRecipePage: View {
                 ForEach($builder.lines) { $line in
                     FoodNumberRow(title: line.ingredient.name, unit: "g", text: $line.gramsText)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            SharpitSwipeDeleteButton(title: "Retirer", systemImage: "minus.circle") {
+                            SharpitSwipeDeleteButton(title: String(localized: "Retirer"), systemImage: "minus.circle") {
                                 builder.remove(line.id)
                             }
                         }
                 }
             } header: {
-                SharpitEyebrow("Ingrédients, pesés crus")
+                SharpitEyebrow(String(localized: "Ingrédients, pesés crus"))
             }
             .sharpitListRows()
 
             Section(
-                eyebrow: "Plat",
-                footer: "Pèse le plat une fois cuit : la cuisson fait perdre de l'eau et concentre le reste. Sans poids cuit, la recette pèse ses ingrédients."
+                eyebrow: String(localized: "Plat"),
+                footer: String(localized: "Pèse le plat une fois cuit : la cuisson fait perdre de l'eau et concentre le reste. Sans poids cuit, la recette pèse ses ingrédients.")
             ) {
-                FoodNumberRow(title: "Poids cuit", unit: "g", placeholder: "Optionnel", text: $builder.cookedGramsText)
-                FoodNumberRow(title: "Parts", unit: "", placeholder: "Optionnel", text: $builder.servingsText)
+                FoodNumberRow(title: String(localized: "Poids cuit"), unit: "g", placeholder: String(localized: "Optionnel"), text: $builder.cookedGramsText)
+                FoodNumberRow(title: String(localized: "Parts"), unit: "", placeholder: String(localized: "Optionnel"), text: $builder.servingsText)
             }
             .sharpitListRows()
 
@@ -199,7 +199,7 @@ struct FoodRecipePage: View {
                         carbs: label.carbsPer100g, fat: label.fatPer100g
                     ))
                 } header: {
-                    SharpitEyebrow("Pour 100 g")
+                    SharpitEyebrow(String(localized: "Pour 100 g"))
                 } footer: {
                     SharpitListFooter(Self.servingLine(label))
                 }
@@ -210,7 +210,7 @@ struct FoodRecipePage: View {
         .searchable(
             text: $query,
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: "Ajouter un ingrédient"
+            prompt: String(localized: "Ajouter un ingrédient")
         )
         .autocorrectionDisabled()
         .onChange(of: query) { _, text in search.setQuery(text) }
@@ -223,12 +223,12 @@ struct FoodRecipePage: View {
                             .foregroundStyle(failure == nil ? SharpitColor.mutedForeground : SharpitColor.signalRisk)
                             .multilineTextAlignment(.center)
                     }
-                    SharpitPrimaryButton(title: recipe == nil ? "Créer la recette" : "Enregistrer") { save() }
+                    SharpitPrimaryButton(title: recipe == nil ? String(localized: "Créer la recette") : String(localized: "Enregistrer")) { save() }
                         .disabled(builder.draft == nil || isSaving)
                 }
             }
         }
-        .navigationTitle(recipe == nil ? "Créer une recette" : "Modifier la recette")
+        .navigationTitle(recipe == nil ? String(localized: "Créer une recette") : String(localized: "Modifier la recette"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -240,7 +240,7 @@ struct FoodRecipePage: View {
                 Label(message, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(SharpitColor.signalCaution)
             } else if hits.isEmpty {
-                Text(search.isSearching ? "Recherche…" : "Aucun aliment pour « \(query) ».")
+                Text(search.isSearching ? String(localized: "Recherche…") : String(localized: "Aucun aliment pour « \(query) »."))
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
             ForEach(hits) { product in
@@ -253,7 +253,7 @@ struct FoodRecipePage: View {
                 .buttonStyle(.plain)
             }
         } header: {
-            SharpitEyebrow("Résultats")
+            SharpitEyebrow(String(localized: "Résultats"))
         } footer: {
             FoodSourcesAttribution(products: hits)
         }
@@ -268,7 +268,7 @@ struct FoodRecipePage: View {
             do {
                 onSaved(try await onSave(draft))
             } catch {
-                failure = FoodLogStore.failureMessage(error, action: "Recette non enregistrée")
+                failure = FoodLogStore.failureMessage(error, action: String(localized: "Recette non enregistrée"))
             }
             isSaving = false
         }
@@ -282,9 +282,9 @@ struct FoodRecipePage: View {
     }
 
     static func servingLine(_ label: FoodRecipeLabel) -> String {
-        let total = "\(FoodPortion.gramsLabel(label.totalGrams)) en tout"
+        let total = String(localized: "\(FoodPortion.gramsLabel(label.totalGrams)) en tout")
         guard let serving = label.servingGrams else { return total }
         let kcal = NutritionReadout.kcal(label.kcalPer100g * serving / 100)
-        return "\(total) · 1 part · \(FoodPortion.gramsLabel(serving)) · \(kcal) kcal"
+        return String(localized: "\(total) · 1 part · \(FoodPortion.gramsLabel(serving)) · \(kcal) kcal")
     }
 }

@@ -49,12 +49,12 @@ nonisolated enum LimiterSignalCode: Equatable, Hashable, Sendable {
     /// Essential / expert pair — nil for unknown.
     func labels() -> (essential: String, expert: String)? {
         switch self {
-        case .hrvLow: ("Corps pas encore récupéré", "VFC basse")
-        case .rhrHigh: ("Cœur plus rapide au repos", "FC repos haute")
-        case .sleepShort: ("Nuit trop courte", "Sommeil court")
-        case .sleepPoor: ("Nuit agitée", "Sommeil agité")
-        case .subjectiveLow: ("Fatigue ressentie", "Ressenti bas")
-        case .loadElevated: ("Grosse semaine d’entraînement", "Charge élevée")
+        case .hrvLow: (String(localized: "Corps pas encore récupéré"), String(localized: "VFC basse"))
+        case .rhrHigh: (String(localized: "Cœur plus rapide au repos"), String(localized: "FC repos haute"))
+        case .sleepShort: (String(localized: "Nuit trop courte"), String(localized: "Sommeil court"))
+        case .sleepPoor: (String(localized: "Nuit agitée"), String(localized: "Sommeil agité"))
+        case .subjectiveLow: (String(localized: "Fatigue ressentie"), String(localized: "Ressenti bas"))
+        case .loadElevated: (String(localized: "Grosse semaine d’entraînement"), String(localized: "Charge élevée"))
         case .unknown: nil
         }
     }
@@ -86,7 +86,7 @@ extension LimiterSignalCode: Codable {
 
 /// Frein chip copy for the verdict plate — density-aware, never jargon defaults.
 nonisolated enum LimiterChipCopy {
-    static let prefix = "Frein"
+    static let prefix = String(localized: "Frein")
 
     /// Nil when there is nothing known to show (empty, null, or only unknown codes).
     static func text(codes: [LimiterSignalCode], isExpert: Bool) -> String? {
@@ -100,6 +100,6 @@ nonisolated enum LimiterChipCopy {
             guard !joined.isEmpty else { return nil }
             return "\(prefix) · \(joined)"
         }
-        return "\(prefix) · \(known.count) signaux"
+        return String(localized: "\(prefix) · \(known.count) signaux")
     }
 }

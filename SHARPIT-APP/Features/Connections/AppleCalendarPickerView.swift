@@ -79,7 +79,7 @@ struct AppleCalendarPickerView: View {
                 }
             } footer: {
                 SharpitListFooter(
-                    "SHARPIT écrit tes séances planifiées dans ce calendrier quand Calendrier Apple est la source principale."
+                    String(localized: "SHARPIT écrit tes séances planifiées dans ce calendrier quand Calendrier Apple est la source principale.")
                 )
             }
             .sharpitListRows()

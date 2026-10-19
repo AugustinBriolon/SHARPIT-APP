@@ -62,9 +62,9 @@ struct ActivityStrengthSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(
-                title: "Exercices",
+                title: String(localized: "Exercices"),
                 symbol: "dumbbell.fill",
-                subtitle: exercises.count == 1 ? "1 exercice" : "\(exercises.count) exercices",
+                subtitle: exercises.count == 1 ? String(localized: "1 exercice") : "\(exercises.count) exercices",
                 showsChevron: false
             ) {
                 if let totalVolume {

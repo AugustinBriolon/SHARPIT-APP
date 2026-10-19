@@ -14,10 +14,10 @@ enum ShellDestination: String, CaseIterable, Sendable {
 
     var title: String {
         switch self {
-        case .plan: "Plan"
-        case .coach: "Coach"
-        case .activity: "Activité"
-        case .body: "Santé"
+        case .plan: String(localized: "Plan")
+        case .coach: String(localized: "Coach")
+        case .activity: String(localized: "Activité")
+        case .body: String(localized: "Santé")
         }
     }
 
@@ -34,9 +34,9 @@ enum ShellDestination: String, CaseIterable, Sendable {
     var horizonCue: String {
         switch self {
         case .plan: "7–14 j"
-        case .coach: "Maintenant"
-        case .activity: "Passé"
-        case .body: "Toi"
+        case .coach: String(localized: "Maintenant")
+        case .activity: String(localized: "Passé")
+        case .body: String(localized: "Toi")
         }
     }
 
@@ -44,27 +44,27 @@ enum ShellDestination: String, CaseIterable, Sendable {
         switch self {
         case .plan:
             [
-                ShellSurfaceMark(symbolName: "calendar.day.timeline.left", label: "Semaine"),
-                ShellSurfaceMark(symbolName: "chart.line.uptrend.xyaxis", label: "Bilan"),
-                ShellSurfaceMark(symbolName: "wand.and.stars", label: "Objectif"),
+                ShellSurfaceMark(symbolName: "calendar.day.timeline.left", label: String(localized: "Semaine")),
+                ShellSurfaceMark(symbolName: "chart.line.uptrend.xyaxis", label: String(localized: "Bilan")),
+                ShellSurfaceMark(symbolName: "wand.and.stars", label: String(localized: "Objectif")),
             ]
         case .coach:
             [
-                ShellSurfaceMark(symbolName: "text.bubble", label: "Libre"),
-                ShellSurfaceMark(symbolName: "link", label: "Contexte"),
-                ShellSurfaceMark(symbolName: "brain.head.profile", label: "Mémoire"),
+                ShellSurfaceMark(symbolName: "text.bubble", label: String(localized: "Libre")),
+                ShellSurfaceMark(symbolName: "link", label: String(localized: "Contexte")),
+                ShellSurfaceMark(symbolName: "brain.head.profile", label: String(localized: "Mémoire")),
             ]
         case .activity:
             [
-                ShellSurfaceMark(symbolName: "list.bullet.rectangle", label: "Historique"),
-                ShellSurfaceMark(symbolName: "map", label: "Séjours"),
-                ShellSurfaceMark(symbolName: "plus.circle", label: "Saisie"),
+                ShellSurfaceMark(symbolName: "list.bullet.rectangle", label: String(localized: "Historique")),
+                ShellSurfaceMark(symbolName: "map", label: String(localized: "Séjours")),
+                ShellSurfaceMark(symbolName: "plus.circle", label: String(localized: "Saisie")),
             ]
         case .body:
             [
-                ShellSurfaceMark(symbolName: "heart", label: "Signes vitaux"),
-                ShellSurfaceMark(symbolName: "scalemass", label: "Corps"),
-                ShellSurfaceMark(symbolName: "figure.walk", label: "Au quotidien"),
+                ShellSurfaceMark(symbolName: "heart", label: String(localized: "Signes vitaux")),
+                ShellSurfaceMark(symbolName: "scalemass", label: String(localized: "Corps")),
+                ShellSurfaceMark(symbolName: "figure.walk", label: String(localized: "Au quotidien")),
             ]
         }
     }

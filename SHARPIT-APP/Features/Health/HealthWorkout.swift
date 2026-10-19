@@ -86,16 +86,16 @@ extension HealthWorkout.Sport {
     /// Apple Health gives a workout no name; the activity list shows this one.
     nonisolated func title(for activityType: HKWorkoutActivityType) -> String {
         switch activityType {
-        case .running: "Course à pied"
-        case .cycling, .handCycling: "Vélo"
-        case .swimming: "Natation"
-        case .walking: "Marche"
-        case .hiking: "Randonnée"
-        case .yoga: "Yoga"
-        case .swimBikeRun: "Triathlon"
-        case .traditionalStrengthTraining, .functionalStrengthTraining, .coreTraining: "Renforcement"
-        case .crossTraining, .highIntensityIntervalTraining: "Entraînement fractionné"
-        default: "Séance"
+        case .running: String(localized: "Course à pied")
+        case .cycling, .handCycling: String(localized: "Vélo")
+        case .swimming: String(localized: "Natation")
+        case .walking: String(localized: "Marche")
+        case .hiking: String(localized: "Randonnée")
+        case .yoga: String(localized: "Yoga")
+        case .swimBikeRun: String(localized: "Triathlon")
+        case .traditionalStrengthTraining, .functionalStrengthTraining, .coreTraining: String(localized: "Renforcement")
+        case .crossTraining, .highIntensityIntervalTraining: String(localized: "Entraînement fractionné")
+        default: String(localized: "Séance")
         }
     }
 

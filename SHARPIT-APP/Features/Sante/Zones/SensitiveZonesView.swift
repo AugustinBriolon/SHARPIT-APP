@@ -36,11 +36,11 @@ enum ZoneSeverityTint {
 
     static func caption(_ severity: Int) -> String {
         switch severity {
-        case 0: "Aucune douleur"
-        case 1...3: "Légère"
-        case 4...6: "Modérée"
-        case 7...9: "Forte"
-        default: "Insupportable"
+        case 0: String(localized: "Aucune douleur")
+        case 1...3: String(localized: "Légère")
+        case 4...6: String(localized: "Modérée")
+        case 7...9: String(localized: "Forte")
+        default: String(localized: "Insupportable")
         }
     }
 }
@@ -56,7 +56,7 @@ struct SensitiveZonesCard: View {
             SensitiveZonesView(store: store)
         } label: {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitCardHeader(title: "Zones sensibles", symbol: "figure.walk.motion")
+                SharpitCardHeader(title: String(localized: "Zones sensibles"), symbol: "figure.walk.motion")
                 if let zones = store.zones?.zones, let summary = SensitiveZoneReadout.summary(zones) {
                     Text(summary)
                         .font(SharpitTypography.bodyEmphasis)
@@ -134,8 +134,8 @@ struct SensitiveZonesView: View {
                 if zones.zones.isEmpty {
                     emptyState
                 } else {
-                    group("En cours", zones.open)
-                    group("Résolues", zones.resolved)
+                    group(String(localized: "En cours"), zones.open)
+                    group(String(localized: "Résolues"), zones.resolved)
                 }
                 Text("Indicateur Sharpit pour adapter tes séances, pas un avis médical.")
                     .font(SharpitTypography.meta)
@@ -246,8 +246,8 @@ private struct SensitiveZoneRow: View {
     }
 
     private var resolvedLine: String {
-        guard let resolvedAt = zone.resolvedAt else { return "Résolue" }
-        return "Résolue le \(resolvedAt.formatted(.dateTime.day().month(.wide).locale(SharpitLocale.french)))"
+        guard let resolvedAt = zone.resolvedAt else { return String(localized: "Résolue") }
+        return String(localized: "Résolue le \(resolvedAt.formatted(.dateTime.day().month(.wide).locale(SharpitLocale.current)))")
     }
 }
 
@@ -269,9 +269,9 @@ struct SensitiveZoneDetailView: View {
                 detail(zone)
             } else {
                 SharpitStateMessage(
-                    title: "Zone introuvable",
+                    title: String(localized: "Zone introuvable"),
                     symbol: "questionmark.circle",
-                    detail: "Elle a peut-être été supprimée."
+                    detail: String(localized: "Elle a peut-être été supprimée.")
                 )
             }
         }
@@ -299,7 +299,7 @@ struct SensitiveZoneDetailView: View {
                 }
                 if let description = zone.description, !description.isEmpty {
                     VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        SharpitEyebrow("Notes")
+                        SharpitEyebrow(String(localized: "Notes"))
                         Text(description)
                             .font(SharpitTypography.body)
                             .foregroundStyle(SharpitColor.foreground)
@@ -332,7 +332,7 @@ struct SensitiveZoneDetailView: View {
             }
         }
         .confirmationDialog(
-            "Marquer « \(zone.title) » comme résolue ?",
+            String(localized: "Marquer « \(zone.title) » comme résolue ?"),
             isPresented: $confirmsResolution,
             titleVisibility: .visible
         ) {
@@ -348,7 +348,7 @@ struct SensitiveZoneDetailView: View {
     private func prompt(_ zone: V1SensitiveZone) -> some View {
         if zone.resolutionSuggested {
             ZonePromptCard(
-                text: "Aucune douleur depuis au moins deux semaines. C'est derrière toi ?",
+                text: String(localized: "Aucune douleur depuis au moins deux semaines. C'est derrière toi ?"),
                 tint: SharpitColor.signalRecovery
             ) {
                 Button("Oui, c'est résolu") { Task { await store.setStatus(zone, to: "RESOLVED") } }
@@ -451,9 +451,9 @@ private struct ZoneHeader: View {
     }
 
     private var sinceLine: String {
-        let since = zone.startDate.formatted(.dateTime.day().month(.wide).year().locale(SharpitLocale.french))
+        let since = zone.startDate.formatted(.dateTime.day().month(.wide).year().locale(SharpitLocale.current))
         let relapses = SensitiveZoneReadout.relapses(zone.recurrenceCount).map { " · \($0)" } ?? ""
-        return "Depuis le \(since)\(relapses)"
+        return String(localized: "Depuis le \(since)\(relapses)")
     }
 }
 
@@ -483,11 +483,11 @@ private struct ZoneTrainingEffect: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Dans ton plan")
+            SharpitEyebrow(String(localized: "Dans ton plan"))
             Label(zone.strategyLabel, systemImage: zone.strategy.symbol)
                 .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(zone.strategy.tint)
-            Text(zone.affectsTraining ? zone.strategyDetail : "Tenue à l'écart de la génération des séances.")
+            Text(zone.affectsTraining ? zone.strategyDetail : String(localized: "Tenue à l'écart de la génération des séances."))
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -515,12 +515,12 @@ private struct ZoneSeverityChart: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Évolution")
+            SharpitEyebrow(String(localized: "Évolution"))
             Chart(readings) { entry in
-                LineMark(x: .value("Date", entry.date), y: .value("Douleur", entry.severity ?? 0))
+                LineMark(x: .value(String(localized: "Date"), entry.date), y: .value(String(localized: "Douleur"), entry.severity ?? 0))
                     .interpolationMethod(.monotone)
                     .foregroundStyle(SharpitColor.primary)
-                PointMark(x: .value("Date", entry.date), y: .value("Douleur", entry.severity ?? 0))
+                PointMark(x: .value(String(localized: "Date"), entry.date), y: .value(String(localized: "Douleur"), entry.severity ?? 0))
                     .foregroundStyle(ZoneSeverityTint.color(entry.severity))
                     .symbolSize(28)
             }
@@ -533,7 +533,7 @@ private struct ZoneSeverityChart: View {
             }
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                    AxisValueLabel(format: .dateTime.day().month(.abbreviated).locale(SharpitLocale.french))
+                    AxisValueLabel(format: .dateTime.day().month(.abbreviated).locale(SharpitLocale.current))
                 }
             }
             .frame(height: 160)
@@ -555,7 +555,7 @@ private struct ZoneTimeline: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Historique")
+            SharpitEyebrow(String(localized: "Historique"))
             VStack(spacing: 0) {
                 ForEach(shown) { entry in
                     row(entry)
@@ -581,7 +581,7 @@ private struct ZoneTimeline: View {
 
     private func row(_ entry: V1ZoneTimelineEntry) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-            Text(entry.date.formatted(.dateTime.day().month(.abbreviated).locale(SharpitLocale.french)))
+            Text(entry.date.formatted(.dateTime.day().month(.abbreviated).locale(SharpitLocale.current)))
                 .font(SharpitTypography.meta)
                 .monospacedDigit()
                 .foregroundStyle(SharpitColor.mutedForeground)

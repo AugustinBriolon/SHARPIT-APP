@@ -29,10 +29,10 @@ struct PlannedSessionSummary<Actions: View>: View {
                 }
             }
             if let notes = preview.notes, !notes.isEmpty {
-                textPanel("Consigne", notes)
+                textPanel(String(localized: "Consigne"), notes)
             }
             if let rationale = preview.rationale, !rationale.isEmpty {
-                textPanel("Pourquoi cette séance", rationale)
+                textPanel(String(localized: "Pourquoi cette séance"), rationale)
             }
         }
     }
@@ -50,7 +50,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .lineLimit(1)
                 if preview.isKey {
-                    SharpitInlineTag("Clé")
+                    SharpitInlineTag(String(localized: "Clé"))
                 }
                 Spacer(minLength: 0)
                 if let date = preview.date {

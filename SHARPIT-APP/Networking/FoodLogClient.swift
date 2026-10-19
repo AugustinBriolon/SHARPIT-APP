@@ -8,8 +8,8 @@ nonisolated enum FoodLogError: Error, Equatable, LocalizedError {
     case openFoodFactsUnavailable
     var errorDescription: String? {
         switch self {
-        case .notFound: "Cet aliment n'existe plus."
-        case .openFoodFactsUnavailable: "Open Food Facts ne répond pas. Réessaie dans un instant."
+        case .notFound: String(localized: "Cet aliment n'existe plus.")
+        case .openFoodFactsUnavailable: String(localized: "Open Food Facts ne répond pas. Réessaie dans un instant.")
         }
     }
 }

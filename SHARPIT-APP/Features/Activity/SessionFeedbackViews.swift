@@ -63,7 +63,7 @@ struct SessionFeedbackTile: View {
     let action: () -> Void
 
     var body: some View {
-        ReadoutTile(caption: "Effort · Ressenti", action: action) {
+        ReadoutTile(caption: String(localized: "Effort · Ressenti"), action: action) {
             if rpe == nil && feeling == nil {
                 Label("Noter", systemImage: "plus.circle.fill")
                     .font(SharpitTypography.bodyEmphasis)
@@ -109,7 +109,7 @@ struct ComplianceTile: View {
     }
 
     var body: some View {
-        ReadoutTile(caption: "Conformité", action: action) {
+        ReadoutTile(caption: String(localized: "Conformité"), action: action) {
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
@@ -135,7 +135,7 @@ struct ComplianceTile: View {
 struct CompliancePendingTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            ReadoutTileCaption("Conformité") {
+            ReadoutTileCaption(String(localized: "Conformité")) {
                 Image(systemName: "hourglass")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(SharpitColor.mutedForeground)
@@ -178,10 +178,10 @@ struct SubjectiveEditorSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                     SubjectiveScale(
-                        title: "Effort perçu",
+                        title: String(localized: "Effort perçu"),
                         value: store.rpe,
                         outOf: 10,
-                        caption: "1 très facile · 10 maximal",
+                        caption: String(localized: "1 très facile · 10 maximal"),
                         tone: store.rpe.map(SessionFeedbackTone.effort)
                     ) {
                         RatingGrid(
@@ -192,10 +192,10 @@ struct SubjectiveEditorSheet: View {
                     }
 
                     SubjectiveScale(
-                        title: "Ressenti",
+                        title: String(localized: "Ressenti"),
                         value: store.feeling?.rawValue,
                         outOf: 5,
-                        caption: store.feeling?.hint ?? "1 très mal · 5 très bien",
+                        caption: store.feeling?.hint ?? String(localized: "1 très mal · 5 très bien"),
                         tone: store.feeling.map(SessionFeedbackTone.feeling)
                     ) {
                         RatingGrid(
@@ -320,7 +320,7 @@ struct RatingGrid: View {
                 }
                 .buttonStyle(.sharpitPressable)
                 .accessibilityLabel("\(value) sur \(values.count)")
-                .accessibilityValue(isSelected ? "Sélectionné" : "Non sélectionné")
+                .accessibilityValue(isSelected ? String(localized: "Sélectionné") : String(localized: "Non sélectionné"))
                 .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             }
         }
@@ -359,11 +359,11 @@ struct ComplianceDetailSheet: View {
                     }
 
                     if let strengths = analysis.strengths, !strengths.isEmpty {
-                        AnalysisBulletBlock(title: "Forces", items: strengths, tone: SharpitColor.foreground)
+                        AnalysisBulletBlock(title: String(localized: "Forces"), items: strengths, tone: SharpitColor.foreground)
                     }
 
                     if let improvements = analysis.improvements, !improvements.isEmpty {
-                        AnalysisBulletBlock(title: "À travailler", items: improvements, tone: SharpitColor.signalCaution)
+                        AnalysisBulletBlock(title: String(localized: "À travailler"), items: improvements, tone: SharpitColor.signalCaution)
                     }
 
                     if let tags = analysis.scoreTags, !tags.isEmpty {
@@ -374,7 +374,7 @@ struct ComplianceDetailSheet: View {
 
                     if let remarks = analysis.remarks, !remarks.isEmpty {
                         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                            SharpitEyebrow("Ce que montrent les données")
+                            SharpitEyebrow(String(localized: "Ce que montrent les données"))
                             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                                 ForEach(remarks, id: \.self) { remark in
                                     HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
@@ -400,7 +400,7 @@ struct ComplianceDetailSheet: View {
                                 .font(.title3)
                                 .foregroundStyle(SharpitColor.primary)
                             VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                                SharpitEyebrow("Pour la suite")
+                                SharpitEyebrow(String(localized: "Pour la suite"))
                                 Text(recommendation)
                                     .font(SharpitTypography.body)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -417,7 +417,7 @@ struct ComplianceDetailSheet: View {
 
                     if let reassessments = analysis.physicalReassessments, !reassessments.isEmpty {
                         AnalysisBulletBlock(
-                            title: "Zones à réévaluer",
+                            title: String(localized: "Zones à réévaluer"),
                             items: reassessments.map { item in
                                 "\(item.noteTitle) — \(item.question)"
                             },
@@ -453,7 +453,7 @@ struct ComplianceDetailSheet: View {
                 }
             }
             .confirmationDialog(
-                "Délier cette activité ?",
+                String(localized: "Délier cette activité ?"),
                 isPresented: $isConfirmingUnlink,
                 titleVisibility: .visible
             ) {
@@ -534,14 +534,14 @@ private struct AnalysisBulletBlock: View {
 private enum SessionAnalysisScoreTagLabel {
     static func fr(_ raw: String) -> String {
         switch raw {
-        case "PACING": return "Allure"
-        case "INTENSITY": return "Intensité"
-        case "VOLUME": return "Volume"
-        case "EXECUTION": return "Exécution"
-        case "RECOVERY": return "Récupération"
-        case "TECHNIQUE": return "Technique"
-        case "FUELING": return "Nutrition"
-        case "CONSISTENCY": return "Régularité"
+        case "PACING": return String(localized: "Allure")
+        case "INTENSITY": return String(localized: "Intensité")
+        case "VOLUME": return String(localized: "Volume")
+        case "EXECUTION": return String(localized: "Exécution")
+        case "RECOVERY": return String(localized: "Récupération")
+        case "TECHNIQUE": return String(localized: "Technique")
+        case "FUELING": return String(localized: "Nutrition")
+        case "CONSISTENCY": return String(localized: "Régularité")
         default: return raw
         }
     }

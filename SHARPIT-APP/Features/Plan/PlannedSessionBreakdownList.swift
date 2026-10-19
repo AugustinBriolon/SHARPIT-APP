@@ -12,7 +12,7 @@ struct PlannedSessionBreakdownList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(spacing: SharpitSpacing.xs) {
-                SharpitEyebrow("Déroulé")
+                SharpitEyebrow(String(localized: "Déroulé"))
                 Spacer(minLength: 0)
                 if derived {
                     PlannedStepsEstimatedTag()
@@ -132,7 +132,7 @@ private struct RepeatedSet: View {
             .sharpitConcentricBackground(SharpitColor.analysisSurfaceAlt, minimum: SharpitRadius.small)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(set.repeatCount) fois : " + set.steps.map(\.spokenLabel).joined(separator: ", puis "))
+        .accessibilityLabel("\(set.repeatCount) fois : " + set.steps.map(\.spokenLabel).joined(separator: String(localized: ", puis ")))
     }
 }
 
@@ -190,17 +190,17 @@ private extension V1PlannedSessionStep {
 #Preview("Endurance") {
     PlannedSessionBreakdownList(
         steps: [
-            V1PlannedSessionStep(key: "0-0", label: "Échauffement", detail: "15 min", group: "0"),
+            V1PlannedSessionStep(key: "0-0", label: String(localized: "Échauffement"), detail: String(localized: "15 min"), group: "0"),
             V1PlannedSessionStep(
                 key: "1-0",
-                label: "Bloc",
-                detail: "3 min",
+                label: String(localized: "Bloc"),
+                detail: String(localized: "3 min"),
                 target: "4:05 – 4:20 /km",
                 group: "1",
                 repeatCount: 5
             ),
-            V1PlannedSessionStep(key: "1-1", label: "Récup", detail: "90 s", group: "1", repeatCount: 5),
-            V1PlannedSessionStep(key: "2-0", label: "Retour au calme", detail: "10 min", group: "2"),
+            V1PlannedSessionStep(key: "1-1", label: String(localized: "Récup"), detail: "90 s", group: "1", repeatCount: 5),
+            V1PlannedSessionStep(key: "2-0", label: String(localized: "Retour au calme"), detail: String(localized: "10 min"), group: "2"),
         ],
         derived: false
     )
@@ -213,14 +213,14 @@ private extension V1PlannedSessionStep {
         steps: [
             V1PlannedSessionStep(
                 key: "strength-0",
-                label: "Étirements dynamiques hanches et ischio-jambiers unilatéraux",
+                label: String(localized: "Étirements dynamiques hanches et ischio-jambiers unilatéraux"),
                 detail: "3 × 45 s"
             ),
             V1PlannedSessionStep(
                 key: "strength-1",
-                label: "Rotation externe d'épaule à la bande élastique",
+                label: String(localized: "Rotation externe d'épaule à la bande élastique"),
                 detail: "3 × 12",
-                target: "Bande légère"
+                target: String(localized: "Bande légère")
             ),
         ],
         derived: false

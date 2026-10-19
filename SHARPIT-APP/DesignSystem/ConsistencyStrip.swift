@@ -39,11 +39,11 @@ struct ConsistencyStrip: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(onOpenPlan == nil ? [] : .isButton)
-        .accessibilityHint(onOpenPlan == nil ? "" : "Ouvre le plan de la semaine")
+        .accessibilityHint(onOpenPlan == nil ? "" : String(localized: "Ouvre le plan de la semaine"))
     }
 
     private var header: some View {
-        SharpitCardHeader(title: "Régularité", symbol: "calendar", showsChevron: onOpenPlan != nil)
+        SharpitCardHeader(title: String(localized: "Régularité"), symbol: "calendar", showsChevron: onOpenPlan != nil)
     }
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -68,7 +68,7 @@ struct ConsistencyStrip: View {
                         .font(SharpitTypography.system(size: 15, weight: .bold, relativeTo: .subheadline, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
 
-                    let noun = consistency.thisWeekSessionCount == 1 ? "séance" : "séances"
+                    let noun = consistency.thisWeekSessionCount == 1 ? String(localized: "séance") : String(localized: "séances")
                     // The week is implied by the strip above, so a narrow card drops it rather than truncate.
                     ViewThatFits(in: .horizontal) {
                         Text("\(noun) cette semaine")
@@ -108,16 +108,16 @@ struct ConsistencyStrip: View {
 
     private var streakText: String {
         let count = consecutiveWeeks ?? (consistency.thisWeekSessionCount > 0 ? 1 : 0)
-        return "\(count) sem. d'affilée"
+        return String(localized: "\(count) sem. d'affilée")
     }
 
     /// Plain counting, no encouragement: the design law rules out motivational micro-copy,
     /// and a quiet week is information rather than a failure to soften.
     private var weekSummary: String {
         switch consistency.thisWeekSessionCount {
-        case 0: "Aucune séance cette semaine"
-        case 1: "1 séance cette semaine"
-        default: "\(consistency.thisWeekSessionCount) séances cette semaine"
+        case 0: String(localized: "Aucune séance cette semaine")
+        case 1: String(localized: "1 séance cette semaine")
+        default: String(localized: "\(consistency.thisWeekSessionCount) séances cette semaine")
         }
     }
 
@@ -130,8 +130,8 @@ struct ConsistencyStrip: View {
 
         let streakDesc = "\(streakText)."
         return trained.isEmpty
-            ? "Régularité. \(weekSummary). \(streakDesc)"
-            : "Régularité. \(weekSummary). Séances les \(trained). \(streakDesc)"
+            ? String(localized: "Régularité. \(weekSummary). \(streakDesc)")
+            : String(localized: "Régularité. \(weekSummary). Séances les \(trained). \(streakDesc)")
     }
 }
 

@@ -94,7 +94,7 @@ final class TodayStore {
     }
 
     var navigationTitle: String {
-        if case .loading = phase, selectedDayId == nil { return "Résumé" }
+        if case .loading = phase, selectedDayId == nil { return String(localized: "Résumé") }
         // The day asked for, at once, even while the one before is still on screen.
         return TrainingDayId.displayName(dayId)
     }
@@ -323,24 +323,24 @@ final class TodayStore {
     static func proposalFailureMessage(for error: Error) -> String {
         if case .message(let text)? = error as? SharpitAPIError { return text }
         if case .googleNeedsReconnect(let text)? = error as? SharpitAPIError { return text }
-        return "Réponse non enregistrée. Réessaie dans un instant."
+        return String(localized: "Réponse non enregistrée. Réessaie dans un instant.")
     }
 
     private static func failureMessage(for error: Error) -> String {
         guard let apiError = error as? SharpitAPIError else {
-            return "Impossible de charger le résumé"
+            return String(localized: "Impossible de charger le résumé")
         }
         switch apiError {
         case .badRequest:
-            return "Requête invalide"
+            return String(localized: "Requête invalide")
         case .server:
-            return "Le serveur n'a pas pu produire le résumé"
+            return String(localized: "Le serveur n'a pas pu produire le résumé")
         case .transport:
-            return "Réseau indisponible"
+            return String(localized: "Réseau indisponible")
         case .unauthorized:
-            return "Session expirée"
+            return String(localized: "Session expirée")
         case .rateLimited:
-            return "Trop de requêtes — réessaie dans un instant"
+            return String(localized: "Trop de requêtes — réessaie dans un instant")
         case .message(let text), .googleNeedsReconnect(let text):
             return text
         }

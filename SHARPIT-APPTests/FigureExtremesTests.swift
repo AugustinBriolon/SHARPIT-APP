@@ -34,8 +34,8 @@ private let unreadable: [Double] = [.nan, .infinity, -.infinity, 1e300, -1e300]
         #expect(SharpitFigureFormat.kilometers(value) == "—")
         #expect(SharpitFigureFormat.duration(minutes: value) == "—")
     }
-    #expect(SharpitFigureFormat.kcal(123_456) == 123_456.formatted(.number.locale(Locale(identifier: "fr_FR"))))
-    #expect(SharpitFigureFormat.kilometers(12_345.6) == 12_346.formatted(.number.locale(Locale(identifier: "fr_FR"))))
+    #expect(SharpitFigureFormat.kcal(123_456) == 123_456.formatted(.number.locale(AppLanguage.locale)))
+    #expect(SharpitFigureFormat.kilometers(12_345.6) == 12_346.formatted(.number.locale(AppLanguage.locale)))
 }
 
 @Test func sleepFiguresReadUnreadableValuesAsMissing() {

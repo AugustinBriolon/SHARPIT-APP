@@ -90,8 +90,8 @@ final class ThresholdSuggestionStore {
     static func applyFailure(for error: any Error) -> String {
         switch error as? SharpitAPIError {
         case .message(let reason)?: reason
-        case .unauthorized?: "Session expirée. Reconnecte-toi."
-        default: "Seuils non appliqués. Réessaie plus tard."
+        case .unauthorized?: String(localized: "Session expirée. Reconnecte-toi.")
+        default: String(localized: "Seuils non appliqués. Réessaie plus tard.")
         }
     }
 }

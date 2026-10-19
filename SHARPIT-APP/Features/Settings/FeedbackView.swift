@@ -55,7 +55,7 @@ final class FeedbackStore {
     static func failureMessage(for error: Error) -> String {
         if case SharpitAPIError.message(let text) = error { return text }
         if case SharpitAPIError.rateLimited = error { return "Beaucoup d’avis d’un coup : réessaie dans un moment." }
-        return "Ton avis n’est pas parti. Réessaie dans un instant."
+        return String(localized: "Ton avis n’est pas parti. Réessaie dans un instant.")
     }
 }
 
@@ -109,8 +109,8 @@ struct FeedbackView: View {
     private var form: some View {
         List {
             Section(
-                eyebrow: "Ton avis",
-                footer: "Un truc qui coince, une idée, une envie ? Écris-le comme ça vient : je lis tout. Ton message part avec ton identifiant SharpIt et la version de l’app, rien d’autre."
+                eyebrow: String(localized: "Ton avis"),
+                footer: String(localized: "Un truc qui coince, une idée, une envie ? Écris-le comme ça vient : je lis tout. Ton message part avec ton identifiant SharpIt et la version de l’app, rien d’autre.")
             ) {
                 TextEditor(text: $store.message)
                     .focused($isWriting)

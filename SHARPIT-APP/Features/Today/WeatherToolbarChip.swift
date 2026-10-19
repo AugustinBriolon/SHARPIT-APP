@@ -33,7 +33,7 @@ struct WeatherChip: View {
             .animation(SharpitMotion.reveal, value: reading)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(
-                "\(reading.city), \(reading.temperatureCelsius) degrés, \(reading.condition)"
+                String(localized: "\(reading.city), \(reading.temperatureCelsius) degrés, \(reading.condition)")
             )
             .accessibilityHint("Affiche la source météo")
             .accessibilityAddTraits(.isButton)
@@ -64,7 +64,7 @@ private struct WeatherDetail: View {
             Divider()
             mark
             Link(
-                "Sources des données météo",
+                String(localized: "Sources des données météo"),
                 destination: attribution?.legalPageURL ?? AppleWeatherAttribution.fallbackLegalPageURL
             )
             .font(SharpitTypography.meta)

@@ -139,7 +139,7 @@ final class DayResourceStore<Payload: V1DayResource> {
     static func failure(_ error: Error, fallback: String) -> String {
         switch error as? SharpitAPIError {
         case .transport?, .rateLimited?: SharpitErrorGuidance.message(for: error, subject: "")
-        default: "\(fallback) Réessaie dans un instant."
+        default: String(localized: "\(fallback) Réessaie dans un instant.")
         }
     }
 

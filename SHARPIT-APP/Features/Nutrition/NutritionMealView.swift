@@ -15,7 +15,7 @@ struct NutritionMealView: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                 summary
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    SharpitEyebrow(meal.entries.count == 1 ? "1 aliment" : "\(meal.entries.count) aliments")
+                    SharpitEyebrow(meal.entries.count == 1 ? String(localized: "1 aliment") : "\(meal.entries.count) aliments")
                     VStack(spacing: 0) {
                         ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
                             entryRow(entry)

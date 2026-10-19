@@ -12,8 +12,8 @@ struct PlanCatchUp: Equatable, Sendable {
 
     /// What the coach is told the athlete asks for.
     func focus(now: Date = .now, calendar: Calendar = .current) -> String {
-        "J'ai raté « \(label) » \(dayText(now: now, calendar: calendar)). "
-            + "Réorganise la suite de ma semaine sans surcharge, en gardant les séances clés."
+        String(localized: "J'ai raté « \(label) » \(dayText(now: now, calendar: calendar)). ")
+            + String(localized: "Réorganise la suite de ma semaine sans surcharge, en gardant les séances clés.")
     }
 
     static func offer(for entry: PlanEntry, now: Date = .now, calendar: Calendar = .current) -> PlanCatchUp? {
@@ -21,7 +21,7 @@ struct PlanCatchUp: Equatable, Sendable {
         case .missed(let session):
             PlanCatchUp(label: session.title ?? session.displayType, date: session.date)
         case .brick(let brick) where brick.isMissed:
-            PlanCatchUp(label: "Brick \(brick.chain)", date: brick.date)
+            PlanCatchUp(label: String(localized: "Brick \(brick.chain)"), date: brick.date)
         default:
             nil
         }

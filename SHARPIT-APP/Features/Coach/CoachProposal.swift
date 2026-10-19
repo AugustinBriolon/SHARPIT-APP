@@ -27,10 +27,10 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
     var isDelete: Bool { toolType == "tool-deletePlannedSession" }
 
     /// « Ajouter une séance », « Modifier une séance »…
-    var proposal: String { Self.proposalLabels[toolType] ?? "Proposition" }
+    var proposal: String { Self.proposalLabels[toolType] ?? String(localized: "Proposition") }
 
     /// « Séance ajoutée », « Séance supprimée »…
-    var doneLabel: String { Self.doneLabels[toolType] ?? "Fait" }
+    var doneLabel: String { Self.doneLabels[toolType] ?? String(localized: "Fait") }
 
     var symbolName: String {
         switch toolType {
@@ -45,57 +45,57 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
     }
 
     private static let proposalLabels = [
-        "tool-createPlannedSession": "Ajouter une séance",
-        "tool-createBrickSession": "Ajouter un brick (multisport)",
-        "tool-updatePlannedSession": "Modifier une séance",
-        "tool-deletePlannedSession": "Supprimer une séance",
-        "tool-setTravelContext": "Enregistrer un contexte voyage",
-        "tool-setTrainingConstraint": "Enregistrer une contrainte",
+        "tool-createPlannedSession": String(localized: "Ajouter une séance"),
+        "tool-createBrickSession": String(localized: "Ajouter un brick (multisport)"),
+        "tool-updatePlannedSession": String(localized: "Modifier une séance"),
+        "tool-deletePlannedSession": String(localized: "Supprimer une séance"),
+        "tool-setTravelContext": String(localized: "Enregistrer un contexte voyage"),
+        "tool-setTrainingConstraint": String(localized: "Enregistrer une contrainte"),
         "tool-proposePlaybookAction": "Action absence / douleur",
     ]
 
     private static let doneLabels = [
-        "tool-createPlannedSession": "Séance ajoutée",
-        "tool-createBrickSession": "Brick ajouté",
-        "tool-updatePlannedSession": "Séance modifiée",
-        "tool-deletePlannedSession": "Séance supprimée",
-        "tool-setTravelContext": "Contexte voyage enregistré",
-        "tool-setTrainingConstraint": "Contrainte enregistrée",
-        "tool-proposePlaybookAction": "Action enregistrée",
+        "tool-createPlannedSession": String(localized: "Séance ajoutée"),
+        "tool-createBrickSession": String(localized: "Brick ajouté"),
+        "tool-updatePlannedSession": String(localized: "Séance modifiée"),
+        "tool-deletePlannedSession": String(localized: "Séance supprimée"),
+        "tool-setTravelContext": String(localized: "Contexte voyage enregistré"),
+        "tool-setTrainingConstraint": String(localized: "Contrainte enregistrée"),
+        "tool-proposePlaybookAction": String(localized: "Action enregistrée"),
     ]
 
     private static let failureHints = [
-        "tool-createPlannedSession": "Cette séance n'a pas pu être ajoutée",
-        "tool-createBrickSession": "Ce brick n'a pas pu être ajouté",
-        "tool-updatePlannedSession": "Cette séance n'a pas pu être modifiée",
-        "tool-deletePlannedSession": "Cette séance n'a pas pu être supprimée",
-        "tool-setTravelContext": "Ce contexte voyage n'a pas pu être enregistré",
-        "tool-setTrainingConstraint": "Cette contrainte n'a pas pu être enregistrée",
-        "tool-proposePlaybookAction": "Cette action n'a pas pu être enregistrée",
+        "tool-createPlannedSession": String(localized: "Cette séance n'a pas pu être ajoutée"),
+        "tool-createBrickSession": String(localized: "Ce brick n'a pas pu être ajouté"),
+        "tool-updatePlannedSession": String(localized: "Cette séance n'a pas pu être modifiée"),
+        "tool-deletePlannedSession": String(localized: "Cette séance n'a pas pu être supprimée"),
+        "tool-setTravelContext": String(localized: "Ce contexte voyage n'a pas pu être enregistré"),
+        "tool-setTrainingConstraint": String(localized: "Cette contrainte n'a pas pu être enregistrée"),
+        "tool-proposePlaybookAction": String(localized: "Cette action n'a pas pu être enregistrée"),
     ]
 
     private static let sportLabels = [
-        "RUN": "Course", "BIKE": "Vélo", "SWIM": "Natation", "STRENGTH": "Musculation",
-        "TRIATHLON": "Triathlon", "HIKE": "Randonnée", "OTHER": "Autre",
+        "RUN": String(localized: "Course"), "BIKE": String(localized: "Vélo"), "SWIM": String(localized: "Natation"), "STRENGTH": String(localized: "Musculation"),
+        "TRIATHLON": String(localized: "Triathlon"), "HIKE": String(localized: "Randonnée"), "OTHER": String(localized: "Autre"),
     ]
 
     private static let playbookActionLabels = [
-        "CONTINUE": "Continuer",
-        "LIGHTEN": "Alléger",
-        "POSTPONE": "Reporter",
-        "RESTART": "Reprendre progressivement",
-        "PAUSE": "Mettre en pause",
+        "CONTINUE": String(localized: "Continuer"),
+        "LIGHTEN": String(localized: "Alléger"),
+        "POSTPONE": String(localized: "Reporter"),
+        "RESTART": String(localized: "Reprendre progressivement"),
+        "PAUSE": String(localized: "Mettre en pause"),
     ]
 
     /// The French name of a session intensity, as the coach and the generator both show it.
     static let intensityLabels = [
-        "RECOVERY": "Récupération", "ENDURANCE": "Endurance", "TEMPO": "Tempo",
-        "THRESHOLD": "Seuil", "VO2MAX": "VO2max", "RACE": "Compétition",
+        "RECOVERY": String(localized: "Récupération"), "ENDURANCE": String(localized: "Endurance"), "TEMPO": String(localized: "Tempo"),
+        "THRESHOLD": String(localized: "Seuil"), "VO2MAX": "VO2max", "RACE": String(localized: "Compétition"),
     ]
 
     private static let stepKinds = [
-        "warmup": "Échauffement", "interval": "Travail", "recovery": "Récup",
-        "rest": "Repos", "cooldown": "Retour au calme",
+        "warmup": String(localized: "Échauffement"), "interval": String(localized: "Travail"), "recovery": String(localized: "Récup"),
+        "rest": String(localized: "Repos"), "cooldown": String(localized: "Retour au calme"),
     ]
 
     private static let maxSteps = 6
@@ -125,7 +125,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
             status = .applied
         case "output-available", "output-error":
             let raw = (output?["error"]?.string ?? part["errorText"]?.string)?.trimmingCharacters(in: .whitespaces)
-            status = .failed(Self.humanized(raw) ?? Self.failureHints[type] ?? "L'opération n'a pas abouti")
+            status = .failed(Self.humanized(raw) ?? Self.failureHints[type] ?? String(localized: "L'opération n'a pas abouti"))
         default:
             status = .drafting
         }
@@ -135,22 +135,22 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
 
         switch type {
         case "tool-deletePlannedSession":
-            headline = title.flatMap { $0.isEmpty ? nil : $0 } ?? "Séance ciblée"
+            headline = title.flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Séance ciblée")
             intentLine = nil
             steps = []
         case "tool-createBrickSession":
             let legs = input["legs"]?.array ?? []
-            headline = title.flatMap { $0.isEmpty ? nil : $0 } ?? "Brick multisport"
+            headline = title.flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Brick multisport")
             intentLine = legs.isEmpty ? nil : "\(legs.count) jambes"
             steps = legs.prefix(Self.maxSteps).map { leg in
-                let sport = leg["type"]?.string.flatMap { Self.sportLabels[$0] } ?? "Jambe"
+                let sport = leg["type"]?.string.flatMap { Self.sportLabels[$0] } ?? String(localized: "Jambe")
                 let name = leg["title"]?.string?.trimmingCharacters(in: .whitespaces)
                 return [name.flatMap { $0.isEmpty ? nil : $0 } ?? sport, Self.minutes(leg["durationMin"])]
                     .compactMap { $0 }
                     .joined(separator: " · ")
             }
         case "tool-setTravelContext":
-            headline = input["locationLabel"]?.string ?? title ?? Self.proposalLabels[type] ?? "Proposition"
+            headline = input["locationLabel"]?.string ?? title ?? Self.proposalLabels[type] ?? String(localized: "Proposition")
             intentLine = [input["startDate"]?.string, input["endDate"]?.string]
                 .compactMap { $0.map(Self.formattedDate) }
                 .joined(separator: " → ")
@@ -162,11 +162,11 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
                 ?? action
                 ?? title
                 ?? Self.proposalLabels[type]
-                ?? "Proposition"
+                ?? String(localized: "Proposition")
             intentLine = input["rationale"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             steps = []
         default:
-            headline = title.flatMap { $0.isEmpty ? nil : $0 } ?? Self.proposalLabels[type] ?? "Proposition"
+            headline = title.flatMap { $0.isEmpty ? nil : $0 } ?? Self.proposalLabels[type] ?? String(localized: "Proposition")
             intentLine = Self.intentLine(input)
             steps = Self.steps(input)
         }
@@ -210,7 +210,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
             orderValue($0) < orderValue($1)
         }
         if !sets.isEmpty {
-            return sets.prefix(maxSteps).map { $0["exercise"]?.string?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "Exercice" }
+            return sets.prefix(maxSteps).map { $0["exercise"]?.string?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? String(localized: "Exercice") }
         }
 
         guard let description = input["description"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -237,7 +237,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         }
         let parts = [kind, duration, intensity(step["effort"])].compactMap { $0 }
         if !parts.isEmpty { return parts.joined(separator: " · ") }
-        return step["notes"]?.string?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "Étape"
+        return step["notes"]?.string?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? String(localized: "Étape")
     }
 
     private static func formatted(_ value: Double) -> String {
@@ -253,7 +253,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         parser.dateFormat = "yyyy-MM-dd"
         guard let date = parser.date(from: day) else { return raw }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = AppLanguage.locale
         formatter.setLocalizedDateFormatFromTemplate("EEEE d MMMM")
         return formatter.string(from: date)
     }
@@ -262,11 +262,11 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
     private static func humanized(_ raw: String?) -> String? {
         guard let raw, !raw.isEmpty else { return nil }
         let lower = raw.lowercased()
-        if lower.hasPrefix("an error occurred") { return "L'opération n'a pas abouti" }
-        if lower.contains("fetch failed") || lower.contains("network") { return "Problème de connexion — réessaie dans un instant" }
-        if lower.contains("timeout") || lower.contains("timed out") { return "La requête a pris trop de temps" }
+        if lower.hasPrefix("an error occurred") { return String(localized: "L'opération n'a pas abouti") }
+        if lower.contains("fetch failed") || lower.contains("network") { return String(localized: "Problème de connexion — réessaie dans un instant") }
+        if lower.contains("timeout") || lower.contains("timed out") { return String(localized: "La requête a pris trop de temps") }
         if raw.range(of: "[àâäéèêëïîôùûüç]", options: [.regularExpression, .caseInsensitive]) != nil { return raw }
-        return "L'opération n'a pas abouti"
+        return String(localized: "L'opération n'a pas abouti")
     }
 }
 
@@ -295,11 +295,11 @@ struct CoachProposalCard: View {
             case .drafting:
                 receipt(status: proposal.proposal + "…", symbol: proposal.symbolName, tone: SharpitColor.mutedForeground, inProgress: true)
             case .accepted:
-                receipt(status: "Validé, en cours d'application", symbol: "checkmark", tone: SharpitColor.primary, inProgress: true)
+                receipt(status: String(localized: "Validé, en cours d'application"), symbol: "checkmark", tone: SharpitColor.primary, inProgress: true)
             case .applied:
                 receipt(status: proposal.doneLabel, symbol: "checkmark.circle.fill", tone: SharpitColor.foreground)
             case .refused:
-                receipt(status: "Refusé", symbol: "xmark.circle", tone: SharpitColor.mutedForeground, struck: true)
+                receipt(status: String(localized: "Refusé"), symbol: "xmark.circle", tone: SharpitColor.mutedForeground, struck: true)
             case .failed(let hint):
                 receipt(status: hint, symbol: "exclamationmark.triangle.fill", tone: SharpitColor.signalRisk)
             }
@@ -316,7 +316,7 @@ struct CoachProposalCard: View {
     private var card: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(
-                title: proposal.isDelete ? "Suppression à valider" : proposal.proposal,
+                title: proposal.isDelete ? String(localized: "Suppression à valider") : proposal.proposal,
                 symbol: proposal.symbolName,
                 tint: tone,
                 showsChevron: false
@@ -345,8 +345,8 @@ struct CoachProposalCard: View {
 
             if proposal.isDelete, confirmingDelete {
                 Label(
-                    proposal.date.map { "Cette séance sera retirée du plan (\($0)). Action irréversible." }
-                        ?? "Cette séance sera retirée du plan. Action irréversible.",
+                    proposal.date.map { String(localized: "Cette séance sera retirée du plan (\($0)). Action irréversible.") }
+                        ?? String(localized: "Cette séance sera retirée du plan. Action irréversible."),
                     systemImage: "exclamationmark.triangle"
                 )
                 .font(SharpitTypography.meta)
@@ -355,12 +355,12 @@ struct CoachProposalCard: View {
             }
 
             HStack(spacing: SharpitSpacing.sm) {
-                answerButton(proposal.isDelete ? "Garder" : "Ignorer", prominent: false) {
+                answerButton(proposal.isDelete ? String(localized: "Garder") : String(localized: "Ignorer"), prominent: false) {
                     confirmingDelete = false
                     onAnswer?(false, nil)
                 }
                 if !proposal.isDelete {
-                    answerButton("Modifier", prominent: false) {
+                    answerButton(String(localized: "Modifier"), prominent: false) {
                         onAnswer?(false, CoachUIParts.reviseReason)
                     }
                 }
@@ -446,8 +446,8 @@ struct CoachProposalCard: View {
     }
 
     private var approveLabel: String {
-        guard proposal.isDelete else { return "Appliquer" }
-        return confirmingDelete ? "Confirmer la suppression" : "Confirmer"
+        guard proposal.isDelete else { return String(localized: "Appliquer") }
+        return confirmingDelete ? String(localized: "Confirmer la suppression") : String(localized: "Confirmer")
     }
 
     // MARK: Settled

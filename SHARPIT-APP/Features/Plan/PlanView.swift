@@ -235,7 +235,7 @@ struct PlanView: View {
             }
             .onChange(of: generation.isReady) { _, ready in
                 guard ready, !router.isShowingPlanGenerator else { return }
-                toastCenter?.show("Ta semaine est prête", symbol: "calendar.badge.checkmark", tone: .success, autoDismissAfter: 4.0)
+                toastCenter?.show(String(localized: "Ta semaine est prête"), symbol: "calendar.badge.checkmark", tone: .success, autoDismissAfter: 4.0)
             }
             // Every way of changing week — swipe, the strip's "Aujourd'hui", the calendar —
             // ends in `selectedOffset`, so loading follows from that one change.
@@ -336,7 +336,7 @@ extension PlanView {
             onLinked: {
                 selection = nil
                 toastCenter?.show(
-                    "Séance liée avec succès",
+                    String(localized: "Séance liée avec succès"),
                     symbol: "link",
                     tone: .success,
                     autoDismissAfter: 3.0
@@ -370,7 +370,7 @@ extension PlanView {
             onFinished: { _ in
                 selection = nil
                 toastCenter?.show(
-                    "Séance muscu enregistrée",
+                    String(localized: "Séance muscu enregistrée"),
                     symbol: "checkmark.circle.fill",
                     tone: .success,
                     autoDismissAfter: 3.0
@@ -601,7 +601,7 @@ private struct PlanFocusSession: View {
     private var sport: String {
         switch focus {
         case .session(let session): session.displayType
-        case .brick, .doneBrick: "Brick"
+        case .brick, .doneBrick: String(localized: "Brick")
         }
     }
 
@@ -624,7 +624,7 @@ private struct PlanFocusSession: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(alignment: .firstTextBaseline) {
-                Text(isToday ? "À faire aujourd'hui" : "Prochaine séance")
+                Text(isToday ? String(localized: "À faire aujourd'hui") : String(localized: "Prochaine séance"))
                     .font(SharpitTypography.eyebrow)
                     .tracking(SharpitTypography.eyebrowTracking)
                     .textCase(.uppercase)
@@ -638,9 +638,9 @@ private struct PlanFocusSession: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(2)
             HStack(spacing: SharpitSpacing.md) {
-                PlanFocusMetric(label: "Sport", value: sport)
+                PlanFocusMetric(label: String(localized: "Sport"), value: sport)
                 if let duration = durationMin {
-                    PlanFocusMetric(label: "Durée", value: "\(duration) min")
+                    PlanFocusMetric(label: String(localized: "Durée"), value: "\(duration) min")
                 }
             }
         }
@@ -873,9 +873,9 @@ private struct PlanExecutedCard: View {
     }
 
     private var accessibilityLabel: String {
-        var parts = ["Séance réalisée", entry.activity.title ?? entry.activity.type.label]
+        var parts = [String(localized: "Séance réalisée"), entry.activity.title ?? entry.activity.type.label]
         if let score = entry.complianceScore {
-            parts.append("exécution \(Int(score.rounded())) sur 100")
+            parts.append(String(localized: "exécution \(Int(score.rounded())) sur 100"))
         }
         return parts.joined(separator: ", ")
     }
@@ -919,7 +919,7 @@ private struct PlanSessionCard: View {
                     )
                     .lineLimit(2)
                 HStack(spacing: SharpitSpacing.xs) {
-                    if session.isKey { SharpitInlineTag("Clé") }
+                    if session.isKey { SharpitInlineTag(String(localized: "Clé")) }
                     Text(session.displayType)
                     if let durationMin = session.durationMin { Text("\(durationMin) min") }
                     if state == .missed { Text("Non réalisée") }
@@ -966,8 +966,8 @@ private struct PlanBrickCard: View {
                     .foregroundStyle(brick.isMissed ? SharpitColor.mutedForeground : SharpitColor.foreground)
                     .lineLimit(2)
                 HStack(spacing: SharpitSpacing.xs) {
-                    SharpitInlineTag("Brick")
-                    if brick.isKey { SharpitInlineTag("Clé") }
+                    SharpitInlineTag(String(localized: "Brick"))
+                    if brick.isKey { SharpitInlineTag(String(localized: "Clé")) }
                     Text(brick.legs.map { leg in leg.durationMin.map { "\($0)" } ?? "–" }.joined(separator: " + ") + " min")
                     if brick.isMissed { Text("Non réalisé") }
                 }
@@ -984,8 +984,8 @@ private struct PlanBrickCard: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "Brick, \(brick.chain)" + (brick.isKey ? ", séance clé" : "")
-                + (brick.totalDurationMin.map { ", \($0) minutes" } ?? "")
+            "Brick, \(brick.chain)" + (brick.isKey ? String(localized: ", séance clé") : "")
+                + (brick.totalDurationMin.map { String(localized: ", \($0) minutes") } ?? "")
         )
         .accessibilityAddTraits(.isButton)
     }
@@ -1045,7 +1045,7 @@ private struct PlanDoneBrickCard: View {
         .padding(.vertical, SharpitSpacing.xxs)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Brick réalisé, \(brick.chain)" + (brick.totalDurationMin.map { ", \($0) minutes" } ?? ""))
+        .accessibilityLabel("Brick réalisé, \(brick.chain)" + (brick.totalDurationMin.map { String(localized: ", \($0) minutes") } ?? ""))
         .accessibilityAddTraits(.isButton)
     }
 }

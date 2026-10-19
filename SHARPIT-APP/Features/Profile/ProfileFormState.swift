@@ -60,21 +60,21 @@ nonisolated struct ProfileFormState: Equatable {
         case .heightCm:
             return bounded(text, min: 100, max: 250, unit: "cm")
         case .targetWeightKg:
-            guard let value = ProfileFieldFormat.parseDecimal(text) else { return "Un poids en kg." }
-            return (30...250).contains(value) ? nil : "Entre 30 et 250 kg."
+            guard let value = ProfileFieldFormat.parseDecimal(text) else { return String(localized: "Un poids en kg.") }
+            return (30...250).contains(value) ? nil : String(localized: "Entre 30 et 250 kg.")
         case .sleepTargetHours:
-            guard let value = ProfileFieldFormat.parseDecimal(text) else { return "Un nombre d'heures." }
-            return (4...12).contains(value) ? nil : "Entre 4 et 12 heures."
+            guard let value = ProfileFieldFormat.parseDecimal(text) else { return String(localized: "Un nombre d'heures.") }
+            return (4...12).contains(value) ? nil : String(localized: "Entre 4 et 12 heures.")
         case .sleepBedtime:
-            return ProfileFieldFormat.parseClock(text) == nil ? "Une heure, comme 22:30." : nil
+            return ProfileFieldFormat.parseClock(text) == nil ? String(localized: "Une heure, comme 22:30.") : nil
         case .ftpW:
-            return ProfileFieldFormat.parseInteger(text) == nil ? "Une puissance en watts." : nil
+            return ProfileFieldFormat.parseInteger(text) == nil ? String(localized: "Une puissance en watts.") : nil
         case .maxHr, .lthr:
             return bounded(text, min: 80, max: 240, unit: "bpm")
         case .runThresholdPace, .runEasyPace:
-            return ProfileFieldFormat.parsePace(text) == nil ? "Une allure, comme 4:15." : nil
+            return ProfileFieldFormat.parsePace(text) == nil ? String(localized: "Une allure, comme 4:15.") : nil
         case .swimCss:
-            return ProfileFieldFormat.parsePace(text) == nil ? "Une allure, comme 1:38." : nil
+            return ProfileFieldFormat.parsePace(text) == nil ? String(localized: "Une allure, comme 1:38.") : nil
         case .poolLength:
             return bounded(text, min: 10, max: 100, unit: "m")
         }
@@ -146,8 +146,8 @@ nonisolated struct ProfileFormState: Equatable {
     }
 
     private func bounded(_ text: String, min: Int, max: Int, unit: String) -> String? {
-        guard let value = ProfileFieldFormat.parseInteger(text) else { return "Un nombre en \(unit)." }
-        return (min...max).contains(value) ? nil : "Entre \(min) et \(max) \(unit)."
+        guard let value = ProfileFieldFormat.parseInteger(text) else { return String(localized: "Un nombre en \(unit).") }
+        return (min...max).contains(value) ? nil : String(localized: "Entre \(min) et \(max) \(unit).")
     }
 }
 

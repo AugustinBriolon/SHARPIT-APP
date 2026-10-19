@@ -25,8 +25,8 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
 
     var name: String {
         switch self {
-        case .appleHealth: "Apple Santé"
-        case .appleCalendar: "Calendrier Apple"
+        case .appleHealth: String(localized: "Apple Santé")
+        case .appleCalendar: String(localized: "Calendrier Apple")
         case .withings, .google, .strava: oauth?.name ?? rawValue
         }
     }
@@ -44,8 +44,8 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
     /// What the source brings, once linked.
     var purpose: String {
         switch self {
-        case .appleHealth: "Séances, sommeil et cœur de ta montre"
-        case .appleCalendar: "Séances planifiées et créneaux occupés"
+        case .appleHealth: String(localized: "Séances, sommeil et cœur de ta montre")
+        case .appleCalendar: String(localized: "Séances planifiées et créneaux occupés")
         case .withings, .google, .strava: oauth?.purpose ?? ""
         }
     }
@@ -54,29 +54,29 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
     var benefit: String {
         switch self {
         case .appleHealth:
-            "Le coach lit tes séances, ton sommeil et ton cœur au repos pour mesurer ta récupération et ajuster ton plan, sans rien saisir."
+            String(localized: "Le coach lit tes séances, ton sommeil et ton cœur au repos pour mesurer ta récupération et ajuster ton plan, sans rien saisir.")
         case .appleCalendar:
-            "Tes séances apparaissent dans ton agenda et le coach évite tes créneaux déjà pris en construisant ta semaine."
+            String(localized: "Tes séances apparaissent dans ton agenda et le coach évite tes créneaux déjà pris en construisant ta semaine.")
         case .withings:
-            "Ta balance envoie poids et composition corporelle : le coach suit ta tendance plutôt qu'une pesée isolée."
+            String(localized: "Ta balance envoie poids et composition corporelle : le coach suit ta tendance plutôt qu'une pesée isolée.")
         case .google:
-            "Le coach voit tes créneaux libres dans Google Agenda et place tes séances quand tu es disponible."
+            String(localized: "Le coach voit tes créneaux libres dans Google Agenda et place tes séances quand tu es disponible.")
         case .strava:
-            "Tes sorties Strava rejoignent ton historique : le coach compte toute ta charge, même hors montre."
+            String(localized: "Tes sorties Strava rejoignent ton historique : le coach compte toute ta charge, même hors montre.")
         }
     }
 
-    var disconnectTitle: String { "Déconnecter \(name) ?" }
+    var disconnectTitle: String { String(localized: "Déconnecter \(name) ?") }
 
-    var disconnectLabel: String { "Déconnecter \(name)" }
+    var disconnectLabel: String { String(localized: "Déconnecter \(name)") }
 
     /// What stops, then what stays — the athlete decides on facts, never on a warning tone.
     var disconnectMessage: String {
         switch self {
         case .appleHealth:
-            "SharpIt ne lira plus tes séances, ton sommeil ni ton cœur depuis Santé. Ce qui est déjà importé est conservé."
+            String(localized: "SharpIt ne lira plus tes séances, ton sommeil ni ton cœur depuis Santé. Ce qui est déjà importé est conservé.")
         case .appleCalendar:
-            "Tes séances ne seront plus copiées dans le calendrier de ton iPhone et le coach ne lira plus tes créneaux occupés."
+            String(localized: "Tes séances ne seront plus copiées dans le calendrier de ton iPhone et le coach ne lira plus tes créneaux occupés.")
         case .withings, .google, .strava:
             oauth?.confirmationMessage ?? ""
         }

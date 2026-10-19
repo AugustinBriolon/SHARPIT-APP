@@ -35,7 +35,7 @@ final class OwnFoodsStore {
         } catch is CancellationError {
         } catch {
             guard phase != .ready else { return }
-            phase = .failed(SharpitErrorGuidance.message(for: error, subject: "La liste de tes aliments"))
+            phase = .failed(SharpitErrorGuidance.message(for: error, subject: String(localized: "La liste de tes aliments")))
         }
     }
 
@@ -56,7 +56,7 @@ final class OwnFoodsStore {
                 replace(stored)
             } catch {
                 replace(product)
-                failure = FoodLogStore.failureMessage(error, action: "Aliment non modifié")
+                failure = FoodLogStore.failureMessage(error, action: String(localized: "Aliment non modifié"))
             }
         }
         return shown
@@ -108,7 +108,7 @@ final class OwnFoodsStore {
             return true
         } catch {
             foods.insert(product, at: min(index, foods.count))
-            failure = FoodLogStore.failureMessage(error, action: "Aliment non supprimé")
+            failure = FoodLogStore.failureMessage(error, action: String(localized: "Aliment non supprimé"))
             return false
         }
     }

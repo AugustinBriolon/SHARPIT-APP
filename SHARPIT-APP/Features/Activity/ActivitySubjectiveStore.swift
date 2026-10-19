@@ -121,9 +121,9 @@ final class ActivitySubjectiveStore: Identifiable {
         } catch is CancellationError {
             status = .idle
         } catch let error as SharpitAPIError where error == .unauthorized {
-            status = .failed("Session expirée. Reconnecte-toi.")
+            status = .failed(String(localized: "Session expirée. Reconnecte-toi."))
         } catch {
-            status = .failed("Non enregistré. Touche une valeur pour réessayer.")
+            status = .failed(String(localized: "Non enregistré. Touche une valeur pour réessayer."))
         }
     }
 }

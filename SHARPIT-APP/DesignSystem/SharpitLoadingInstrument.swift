@@ -27,13 +27,13 @@ private extension InkPlateModel {
     static var placeholder: InkPlateModel {
         InkPlateModel(
             statusLabel: "FEU VERT",
-            headline: "Séance prévue pour aujourd'hui",
-            actionLine: "Tenir le plan sans forcer",
-            limitingCause: "Sommeil court",
+            headline: String(localized: "Séance prévue pour aujourd'hui"),
+            actionLine: String(localized: "Tenir le plan sans forcer"),
+            limitingCause: String(localized: "Sommeil court"),
             confidencePct: 72,
             confidenceLabel: "ESTIMATION PARTIELLE",
             packTier: .full,
-            estimationGaps: ["Baseline"],
+            estimationGaps: [String(localized: "Baseline")],
             posture: .steady
         )
     }
@@ -44,14 +44,14 @@ extension SessionCardModel {
         SessionCardModel(
             id: "skeleton",
             kind: .planned,
-            title: "Seuil 40 min",
+            title: String(localized: "Seuil 40 min"),
             subtitle: nil,
             metrics: [
-                V1TodayMetric(label: "Intensité", value: "Endurance", unit: ""),
-                V1TodayMetric(label: "Durée", value: "40", unit: "min"),
-                V1TodayMetric(label: "Charge", value: "50", unit: "TSS"),
+                V1TodayMetric(label: String(localized: "Intensité"), value: String(localized: "Endurance"), unit: ""),
+                V1TodayMetric(label: String(localized: "Durée"), value: "40", unit: "min"),
+                V1TodayMetric(label: String(localized: "Charge"), value: "50", unit: "TSS"),
             ],
-            sport: "Course",
+            sport: String(localized: "Course"),
             priority: true
         )
     }
@@ -60,8 +60,8 @@ extension SessionCardModel {
 extension OvernightGaugeModel {
     static var placeholders: [OvernightGaugeModel] {
         [
-            OvernightGaugeModel(key: .sleep, score: "0", caption: "Nuit dernière"),
-            OvernightGaugeModel(key: .recovery, score: "0", caption: "Frein · sommeil"),
+            OvernightGaugeModel(key: .sleep, score: "0", caption: String(localized: "Nuit dernière")),
+            OvernightGaugeModel(key: .recovery, score: "0", caption: String(localized: "Frein · sommeil")),
         ]
     }
 }

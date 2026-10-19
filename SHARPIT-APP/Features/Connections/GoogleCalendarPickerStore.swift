@@ -45,7 +45,7 @@ final class GoogleCalendarPickerStore {
                 } else if phaseBeforeLoad != .loading {
                     phase = phaseBeforeLoad
                 } else {
-                    phase = .failed(.load("Chargement interrompu. Réessaie."))
+                    phase = .failed(.load(String(localized: "Chargement interrompu. Réessaie.")))
                 }
             } else {
                 phase = .failed(Self.failure(for: error))
@@ -97,6 +97,6 @@ final class GoogleCalendarPickerStore {
         if case SharpitAPIError.googleNeedsReconnect(let text)? = error as? SharpitAPIError {
             return .needsReconnect(text)
         }
-        return .load(SharpitErrorGuidance.message(for: error, subject: "Les calendriers Google"))
+        return .load(SharpitErrorGuidance.message(for: error, subject: String(localized: "Les calendriers Google")))
     }
 }

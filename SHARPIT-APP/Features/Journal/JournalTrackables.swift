@@ -17,14 +17,14 @@ nonisolated enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .automatique: "Automatique"
-        case .sante: "État de santé"
-        case .medicament: "Médicament"
-        case .nutrition: "Nutrition"
-        case .complement: "Complément"
-        case .sommeil: "Sommeil"
-        case .styleVie: "Style de vie"
-        case .comportement: "Comportement"
+        case .automatique: String(localized: "Automatique")
+        case .sante: String(localized: "État de santé")
+        case .medicament: String(localized: "Médicament")
+        case .nutrition: String(localized: "Nutrition")
+        case .complement: String(localized: "Complément")
+        case .sommeil: String(localized: "Sommeil")
+        case .styleVie: String(localized: "Style de vie")
+        case .comportement: String(localized: "Comportement")
         case .bienEtre: "Bien-être"
         }
     }
@@ -96,56 +96,56 @@ nonisolated enum JournalCatalogue {
         // is the order the checklist renders in, so `JournalAutoItem.ids` has to match.
         JournalTrackable(
             id: "steps_10k",
-            label: "Pas (objectif)",
+            label: String(localized: "Pas (objectif)"),
             category: .automatique,
             symbolName: "figure.walk",
             kind: .auto
         ),
         JournalTrackable(
             id: "stress_ok",
-            label: "Stress sous cible",
+            label: String(localized: "Stress sous cible"),
             category: .automatique,
             symbolName: "waveform.path.ecg",
             kind: .auto
         ),
         JournalTrackable(
             id: "nap",
-            label: "Sieste",
+            label: String(localized: "Sieste"),
             category: .automatique,
             symbolName: "moon",
             kind: .auto
         ),
         JournalTrackable(
             id: "cardio_20",
-            label: "Cardio",
+            label: String(localized: "Cardio"),
             category: .automatique,
             symbolName: "heart.fill",
             kind: .auto
         ),
         JournalTrackable(
             id: "strength_20",
-            label: "Force",
+            label: String(localized: "Force"),
             category: .automatique,
             symbolName: "dumbbell",
             kind: .auto
         ),
         JournalTrackable(
             id: "sleep_target",
-            label: "Sommeil ≥ cible",
+            label: String(localized: "Sommeil ≥ cible"),
             category: .automatique,
             symbolName: "bed.double",
             kind: .auto
         ),
         JournalTrackable(
             id: "body_battery_ok",
-            label: "Body Battery",
+            label: String(localized: "Body Battery"),
             category: .automatique,
             symbolName: "battery.75percent",
             kind: .auto
         ),
         JournalTrackable(
             id: "hydration_sync",
-            label: "Hydratation (sync)",
+            label: String(localized: "Hydratation (sync)"),
             category: .automatique,
             symbolName: "drop.triangle",
             kind: .auto
@@ -154,7 +154,7 @@ nonisolated enum JournalCatalogue {
         // absentes", and hiding it here would make the two clients disagree.
         JournalTrackable(
             id: "outdoor_minutes",
-            label: "Temps outdoor",
+            label: String(localized: "Temps outdoor"),
             category: .automatique,
             symbolName: "sun.max",
             kind: .auto
@@ -163,95 +163,95 @@ nonisolated enum JournalCatalogue {
         // Bien-être — the three day basics, which are values rather than signals.
         JournalTrackable(
             id: "metric_caffeine",
-            label: "Caféine",
+            label: String(localized: "Caféine"),
             category: .bienEtre,
             symbolName: "cup.and.saucer",
             kind: .caffeine
         ),
         JournalTrackable(
             id: "metric_mood",
-            label: "Humeur",
+            label: String(localized: "Humeur"),
             category: .bienEtre,
             symbolName: "face.smiling",
             kind: .mood
         ),
         JournalTrackable(
             id: "metric_hydration",
-            label: "Hydratation",
+            label: String(localized: "Hydratation"),
             category: .bienEtre,
             symbolName: "drop",
             kind: .hydration
         ),
         JournalTrackable(
             id: "metric_driving",
-            label: "Conduite",
+            label: String(localized: "Conduite"),
             category: .styleVie,
             symbolName: "car",
             kind: .driving
         ),
 
         // État de santé
-        JournalTrackable(id: "fever", label: "Fièvre", category: .sante, symbolName: "thermometer.medium"),
-        JournalTrackable(id: "menstruation", label: "Menstruation", category: .sante, symbolName: "drop.circle"),
-        JournalTrackable(id: "tobacco", label: "Tabac", category: .sante, symbolName: "smoke"),
-        JournalTrackable(id: "headache", label: "Maux de tête", category: .sante, symbolName: "brain.head.profile"),
-        JournalTrackable(id: "pain", label: "Douleur", category: .sante, symbolName: "bandage"),
-        JournalTrackable(id: "allergies", label: "Allergies", category: .sante, symbolName: "wind"),
+        JournalTrackable(id: "fever", label: String(localized: "Fièvre"), category: .sante, symbolName: "thermometer.medium"),
+        JournalTrackable(id: "menstruation", label: String(localized: "Menstruation"), category: .sante, symbolName: "drop.circle"),
+        JournalTrackable(id: "tobacco", label: String(localized: "Tabac"), category: .sante, symbolName: "smoke"),
+        JournalTrackable(id: "headache", label: String(localized: "Maux de tête"), category: .sante, symbolName: "brain.head.profile"),
+        JournalTrackable(id: "pain", label: String(localized: "Douleur"), category: .sante, symbolName: "bandage"),
+        JournalTrackable(id: "allergies", label: String(localized: "Allergies"), category: .sante, symbolName: "wind"),
         JournalTrackable(id: "cold_congestion", label: "Rhume / congestion", category: .sante, symbolName: "humidity"),
-        JournalTrackable(id: "cramps", label: "Crampes", category: .sante, symbolName: "bolt"),
+        JournalTrackable(id: "cramps", label: String(localized: "Crampes"), category: .sante, symbolName: "bolt"),
         JournalTrackable(
             id: "abdominal_cramps",
-            label: "Crampes abdominales",
+            label: String(localized: "Crampes abdominales"),
             category: .sante,
             symbolName: "exclamationmark.circle"
         ),
-        JournalTrackable(id: "pregnant", label: "Enceinte", category: .sante, symbolName: "figure.child"),
-        JournalTrackable(id: "sexual_activity", label: "Activité sexuelle", category: .sante, symbolName: "heart"),
+        JournalTrackable(id: "pregnant", label: String(localized: "Enceinte"), category: .sante, symbolName: "figure.child"),
+        JournalTrackable(id: "sexual_activity", label: String(localized: "Activité sexuelle"), category: .sante, symbolName: "heart"),
 
         // Médicament
-        JournalTrackable(id: "medication", label: "Médicament", category: .medicament, symbolName: "pills"),
-        JournalTrackable(id: "antibiotic", label: "Antibiotique", category: .medicament, symbolName: "syringe"),
-        JournalTrackable(id: "contraception", label: "Contraception", category: .medicament, symbolName: "pill"),
+        JournalTrackable(id: "medication", label: String(localized: "Médicament"), category: .medicament, symbolName: "pills"),
+        JournalTrackable(id: "antibiotic", label: String(localized: "Antibiotique"), category: .medicament, symbolName: "syringe"),
+        JournalTrackable(id: "contraception", label: String(localized: "Contraception"), category: .medicament, symbolName: "pill"),
         JournalTrackable(id: "cbd", label: "CBD", category: .medicament, symbolName: "leaf"),
 
         // Nutrition
-        JournalTrackable(id: "added_sugar", label: "Sucre ajouté", category: .nutrition, symbolName: "birthday.cake"),
-        JournalTrackable(id: "alcohol", label: "Alcool", category: .nutrition, symbolName: "wineglass"),
-        JournalTrackable(id: "meal_out", label: "Repas hors domicile", category: .nutrition, symbolName: "fork.knife"),
+        JournalTrackable(id: "added_sugar", label: String(localized: "Sucre ajouté"), category: .nutrition, symbolName: "birthday.cake"),
+        JournalTrackable(id: "alcohol", label: String(localized: "Alcool"), category: .nutrition, symbolName: "wineglass"),
+        JournalTrackable(id: "meal_out", label: String(localized: "Repas hors domicile"), category: .nutrition, symbolName: "fork.knife"),
         JournalTrackable(
             id: "skipped_meal",
-            label: "Repas sauté",
+            label: String(localized: "Repas sauté"),
             category: .nutrition,
             symbolName: "fork.knife.circle"
         ),
         // The web's diet trackables: its keys, labels and order.
-        JournalTrackable(id: "diet_low_carb", label: "Pauvre en glucides", category: .nutrition, symbolName: "carrot", kind: .diet),
-        JournalTrackable(id: "diet_keto", label: "Cétogène", category: .nutrition, symbolName: "flame", kind: .diet),
-        JournalTrackable(id: "diet_gluten_free", label: "Sans gluten", category: .nutrition, symbolName: "nosign", kind: .diet),
-        JournalTrackable(id: "diet_dairy_free", label: "Sans produits laitiers", category: .nutrition, symbolName: "drop.triangle", kind: .diet),
-        JournalTrackable(id: "diet_vegetarian", label: "Végétarien", category: .nutrition, symbolName: "leaf", kind: .diet),
-        JournalTrackable(id: "diet_vegan", label: "Végétalien", category: .nutrition, symbolName: "leaf.circle", kind: .diet),
+        JournalTrackable(id: "diet_low_carb", label: String(localized: "Pauvre en glucides"), category: .nutrition, symbolName: "carrot", kind: .diet),
+        JournalTrackable(id: "diet_keto", label: String(localized: "Cétogène"), category: .nutrition, symbolName: "flame", kind: .diet),
+        JournalTrackable(id: "diet_gluten_free", label: String(localized: "Sans gluten"), category: .nutrition, symbolName: "nosign", kind: .diet),
+        JournalTrackable(id: "diet_dairy_free", label: String(localized: "Sans produits laitiers"), category: .nutrition, symbolName: "drop.triangle", kind: .diet),
+        JournalTrackable(id: "diet_vegetarian", label: String(localized: "Végétarien"), category: .nutrition, symbolName: "leaf", kind: .diet),
+        JournalTrackable(id: "diet_vegan", label: String(localized: "Végétalien"), category: .nutrition, symbolName: "leaf.circle", kind: .diet),
 
         // Compléments
         JournalTrackable(id: "omega3", label: "Oméga-3", category: .complement, symbolName: "pill"),
-        JournalTrackable(id: "creatine", label: "Créatine", category: .complement, symbolName: "pill"),
-        JournalTrackable(id: "vitamin_d", label: "Vitamine D", category: .complement, symbolName: "pill"),
-        JournalTrackable(id: "magnesium", label: "Magnésium", category: .complement, symbolName: "pill"),
-        JournalTrackable(id: "ashwagandha", label: "Ashwagandha", category: .complement, symbolName: "pill"),
-        JournalTrackable(id: "multivitamin", label: "Multivitamines", category: .complement, symbolName: "pills"),
-        JournalTrackable(id: "zinc", label: "Zinc", category: .complement, symbolName: "pill"),
-        JournalTrackable(id: "probiotic", label: "Probiotique", category: .complement, symbolName: "pill"),
-        JournalTrackable(id: "electrolytes", label: "Électrolytes", category: .complement, symbolName: "drop"),
-        JournalTrackable(id: "collagen", label: "Collagène", category: .complement, symbolName: "pill"),
+        JournalTrackable(id: "creatine", label: String(localized: "Créatine"), category: .complement, symbolName: "pill"),
+        JournalTrackable(id: "vitamin_d", label: String(localized: "Vitamine D"), category: .complement, symbolName: "pill"),
+        JournalTrackable(id: "magnesium", label: String(localized: "Magnésium"), category: .complement, symbolName: "pill"),
+        JournalTrackable(id: "ashwagandha", label: String(localized: "Ashwagandha"), category: .complement, symbolName: "pill"),
+        JournalTrackable(id: "multivitamin", label: String(localized: "Multivitamines"), category: .complement, symbolName: "pills"),
+        JournalTrackable(id: "zinc", label: String(localized: "Zinc"), category: .complement, symbolName: "pill"),
+        JournalTrackable(id: "probiotic", label: String(localized: "Probiotique"), category: .complement, symbolName: "pill"),
+        JournalTrackable(id: "electrolytes", label: String(localized: "Électrolytes"), category: .complement, symbolName: "drop"),
+        JournalTrackable(id: "collagen", label: String(localized: "Collagène"), category: .complement, symbolName: "pill"),
         JournalTrackable(
             id: "protein_powder",
-            label: "Protéine en poudre",
+            label: String(localized: "Protéine en poudre"),
             category: .complement,
             symbolName: "pills"
         ),
         JournalTrackable(
             id: "hydration_quality",
-            label: "Bonne hydratation (ressenti)",
+            label: String(localized: "Bonne hydratation (ressenti)"),
             category: .complement,
             symbolName: "drop.fill"
         ),
@@ -260,49 +260,49 @@ nonisolated enum JournalCatalogue {
         // night that ends this morning, so the screen groups them apart from the day.
         JournalTrackable(
             id: "late_meal",
-            label: "Repas tardif",
+            label: String(localized: "Repas tardif"),
             category: .sommeil,
             symbolName: "fork.knife.circle",
             window: .priorNight
         ),
         JournalTrackable(
             id: "device_in_bed",
-            label: "Écran au lit",
+            label: String(localized: "Écran au lit"),
             category: .sommeil,
             symbolName: "iphone",
             window: .priorNight
         ),
         JournalTrackable(
             id: "shared_bed",
-            label: "Lit partagé",
+            label: String(localized: "Lit partagé"),
             category: .sommeil,
             symbolName: "person.2",
             window: .priorNight
         ),
         JournalTrackable(
             id: "earplugs",
-            label: "Bouchons d'oreille",
+            label: String(localized: "Bouchons d'oreille"),
             category: .sommeil,
             symbolName: "ear",
             window: .priorNight
         ),
         JournalTrackable(
             id: "sleep_mask",
-            label: "Masque de sommeil",
+            label: String(localized: "Masque de sommeil"),
             category: .sommeil,
             symbolName: "eye.slash",
             window: .priorNight
         ),
         JournalTrackable(
             id: "pet_in_room",
-            label: "Animal dans la chambre",
+            label: String(localized: "Animal dans la chambre"),
             category: .sommeil,
             symbolName: "pawprint",
             window: .priorNight
         ),
         JournalTrackable(
             id: "melatonin",
-            label: "Mélatonine",
+            label: String(localized: "Mélatonine"),
             category: .sommeil,
             symbolName: "moon.zzz",
             window: .priorNight
@@ -311,37 +311,37 @@ nonisolated enum JournalCatalogue {
         // Style de vie
         JournalTrackable(
             id: "intermittent_fasting",
-            label: "Jeûne intermittent",
+            label: String(localized: "Jeûne intermittent"),
             category: .styleVie,
             symbolName: "alarm"
         ),
-        JournalTrackable(id: "sun_exposure", label: "Exposition au soleil", category: .styleVie, symbolName: "sun.max"),
-        JournalTrackable(id: "massage", label: "Massage", category: .styleVie, symbolName: "hand.raised"),
+        JournalTrackable(id: "sun_exposure", label: String(localized: "Exposition au soleil"), category: .styleVie, symbolName: "sun.max"),
+        JournalTrackable(id: "massage", label: String(localized: "Massage"), category: .styleVie, symbolName: "hand.raised"),
         JournalTrackable(
             id: "mobility",
-            label: "Étirements / mobilité",
+            label: String(localized: "Étirements / mobilité"),
             category: .styleVie,
             symbolName: "figure.flexibility"
         ),
-        JournalTrackable(id: "meditation", label: "Méditation", category: .styleVie, symbolName: "brain.head.profile"),
-        JournalTrackable(id: "easy_walk", label: "Marche légère", category: .styleVie, symbolName: "figure.walk"),
+        JournalTrackable(id: "meditation", label: String(localized: "Méditation"), category: .styleVie, symbolName: "brain.head.profile"),
+        JournalTrackable(id: "easy_walk", label: String(localized: "Marche légère"), category: .styleVie, symbolName: "figure.walk"),
         JournalTrackable(
             id: "pneumatic_recovery",
-            label: "Récupération pneumatique",
+            label: String(localized: "Récupération pneumatique"),
             category: .styleVie,
             symbolName: "waveform.path"
         ),
 
         // Comportement
-        JournalTrackable(id: "night_work", label: "Travail de nuit", category: .comportement, symbolName: "moon.stars"),
+        JournalTrackable(id: "night_work", label: String(localized: "Travail de nuit"), category: .comportement, symbolName: "moon.stars"),
 
         // Bien-être — recovery practices
-        JournalTrackable(id: "sauna", label: "Sauna", category: .bienEtre, symbolName: "flame"),
-        JournalTrackable(id: "cold_shower", label: "Douche froide", category: .bienEtre, symbolName: "snowflake"),
-        JournalTrackable(id: "ice_bath", label: "Bain de glace", category: .bienEtre, symbolName: "snowflake.circle"),
-        JournalTrackable(id: "cupping", label: "Cupping", category: .bienEtre, symbolName: "circle.grid.2x2"),
-        JournalTrackable(id: "chiropractor", label: "Chiropracteur", category: .bienEtre, symbolName: "stethoscope"),
-        JournalTrackable(id: "yoga", label: "Yoga", category: .bienEtre, symbolName: "figure.yoga")
+        JournalTrackable(id: "sauna", label: String(localized: "Sauna"), category: .bienEtre, symbolName: "flame"),
+        JournalTrackable(id: "cold_shower", label: String(localized: "Douche froide"), category: .bienEtre, symbolName: "snowflake"),
+        JournalTrackable(id: "ice_bath", label: String(localized: "Bain de glace"), category: .bienEtre, symbolName: "snowflake.circle"),
+        JournalTrackable(id: "cupping", label: String(localized: "Cupping"), category: .bienEtre, symbolName: "circle.grid.2x2"),
+        JournalTrackable(id: "chiropractor", label: String(localized: "Chiropracteur"), category: .bienEtre, symbolName: "stethoscope"),
+        JournalTrackable(id: "yoga", label: String(localized: "Yoga"), category: .bienEtre, symbolName: "figure.yoga")
     ]
 
     private static let byId = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
@@ -364,7 +364,7 @@ nonisolated enum JournalCatalogue {
 /// « 45 min », « 1 h 30 », « — min » — the web's `formatDrivingMinutes`.
 nonisolated enum JournalDrivingFormat {
     static func minutes(_ value: Int?) -> String {
-        guard let value else { return "— min" }
+        guard let value else { return String(localized: "— min") }
         if value < 60 { return "\(value) min" }
         let rest = value % 60
         return rest == 0 ? "\(value / 60) h" : "\(value / 60) h \(String(format: "%02d", rest))"

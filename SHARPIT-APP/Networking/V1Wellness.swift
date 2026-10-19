@@ -77,19 +77,19 @@ nonisolated enum WellnessDimension: String, CaseIterable, Identifiable, Sendable
 
     var title: String {
         switch self {
-        case .mood: "Humeur"
-        case .energy: "Énergie"
-        case .soreness: "Corps"
-        case .stress: "Stress"
+        case .mood: String(localized: "Humeur")
+        case .energy: String(localized: "Énergie")
+        case .soreness: String(localized: "Corps")
+        case .stress: String(localized: "Stress")
         }
     }
 
     var hint: String {
         switch self {
-        case .mood: "Comment te sens-tu psychologiquement ?"
-        case .energy: "Ton niveau d'énergie au réveil."
-        case .soreness: "Sensations musculaires et courbatures."
-        case .stress: "Charge mentale, tension ou pression ressentie."
+        case .mood: String(localized: "Comment te sens-tu psychologiquement ?")
+        case .energy: String(localized: "Ton niveau d'énergie au réveil.")
+        case .soreness: String(localized: "Sensations musculaires et courbatures.")
+        case .stress: String(localized: "Charge mentale, tension ou pression ressentie.")
         }
     }
 
@@ -99,10 +99,10 @@ nonisolated enum WellnessDimension: String, CaseIterable, Identifiable, Sendable
 
     private static func labels(for dimension: WellnessDimension) -> [String] {
         switch dimension {
-        case .mood: ["Très bas", "Bas", "Correct", "Bien", "Top"]
-        case .energy: ["Épuisé", "Fatigué", "Moyen", "En forme", "Plein"]
-        case .soreness: ["Aucune", "Légère", "Modérée", "Forte", "Max"]
-        case .stress: ["Calme", "Léger", "Modéré", "Élevé", "Très haut"]
+        case .mood: [String(localized: "Très bas"), String(localized: "Bas"), String(localized: "Correct"), String(localized: "Bien"), String(localized: "Top")]
+        case .energy: [String(localized: "Épuisé"), String(localized: "Fatigué"), String(localized: "Moyen"), String(localized: "En forme"), String(localized: "Plein")]
+        case .soreness: [String(localized: "Aucune"), String(localized: "Légère"), String(localized: "Modérée"), String(localized: "Forte"), String(localized: "Max")]
+        case .stress: [String(localized: "Calme"), String(localized: "Léger"), String(localized: "Modéré"), String(localized: "Élevé"), String(localized: "Très haut")]
         }
     }
 }

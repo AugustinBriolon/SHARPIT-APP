@@ -19,16 +19,16 @@ nonisolated enum BodyCompositionReadout {
     static func tiles(_ measurement: V1BodyMeasurement) -> [Tile] {
         var tiles: [Tile] = []
         if let bodyFatPct = measurement.bodyFatPct {
-            tiles.append(Tile(caption: "Masse grasse", value: percent(bodyFatPct), unit: "%"))
+            tiles.append(Tile(caption: String(localized: "Masse grasse"), value: percent(bodyFatPct), unit: "%"))
         }
         if let musclePct = measurement.musclePct {
-            tiles.append(Tile(caption: "Muscle", value: percent(musclePct), unit: "%"))
+            tiles.append(Tile(caption: String(localized: "Muscle"), value: percent(musclePct), unit: "%"))
         }
         if let waterPct = measurement.waterPct {
-            tiles.append(Tile(caption: "Eau corporelle", value: percent(waterPct), unit: "%"))
+            tiles.append(Tile(caption: String(localized: "Eau corporelle"), value: percent(waterPct), unit: "%"))
         }
         if let boneKg = measurement.boneKg {
-            tiles.append(Tile(caption: "Masse osseuse", value: percent(boneKg), unit: "kg"))
+            tiles.append(Tile(caption: String(localized: "Masse osseuse"), value: percent(boneKg), unit: "kg"))
         }
         if let bmi = measurement.bmi {
             tiles.append(Tile(caption: "IMC", value: percent(bmi), unit: nil))
@@ -40,9 +40,9 @@ nonisolated enum BodyCompositionReadout {
     /// them — naming an unknown provider explains less than saying nothing.
     static func scaleLabel(_ source: String?) -> String? {
         switch source?.uppercased() {
-        case "WITHINGS": "Withings"
-        case "RENPHO": "Renpho"
-        case "GARMIN": "Ta balance"
+        case "WITHINGS": String(localized: "Withings")
+        case "RENPHO": String(localized: "Renpho")
+        case "GARMIN": String(localized: "Ta balance")
         default: nil
         }
     }
@@ -72,7 +72,7 @@ nonisolated enum BodyTrend {
               let previous = reference?.weightKg else { return nil }
         let delta = current - previous
         guard abs(delta) >= noiseThresholdKg else {
-            return Reading(label: "Stable", tone: SharpitColor.signalNeutral)
+            return Reading(label: String(localized: "Stable"), tone: SharpitColor.signalNeutral)
         }
         let sign = delta > 0 ? "+" : "−"
         return Reading(

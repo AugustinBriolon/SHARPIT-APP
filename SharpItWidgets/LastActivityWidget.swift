@@ -65,7 +65,7 @@ struct LastActivityView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .widgetURL(activity.link)
         } else {
-            Label(entry.snapshot == nil ? "Ouvre SharpIt" : "Pas de tracé GPS", systemImage: "figure.run")
+            Label(entry.snapshot == nil ? String(localized: "Ouvre SharpIt") : String(localized: "Pas de tracé GPS"), systemImage: "figure.run")
                 .font(.headline)
                 .widgetURL(entry.link("/activity"))
         }
@@ -83,7 +83,7 @@ struct LastActivityView: View {
             }
             .widgetURL(activity.link)
         } else {
-            Label(entry.snapshot == nil ? "SharpIt" : "Pas de tracé", systemImage: "figure.run")
+            Label(entry.snapshot == nil ? "SharpIt" : String(localized: "Pas de tracé"), systemImage: "figure.run")
                 .widgetURL(entry.link("/activity"))
         }
     }
@@ -109,13 +109,13 @@ struct LastActivityView: View {
             }
             .widgetURL(activity.link)
         } else if entry.snapshot == nil {
-            WidgetAwaitingDay(eyebrow: "Dernière activité", symbol: "figure.run")
+            WidgetAwaitingDay(eyebrow: String(localized: "Dernière activité"), symbol: "figure.run")
         } else {
-            WidgetFrame(title: "Dernière activité") {
+            WidgetFrame(title: String(localized: "Dernière activité")) {
                 WidgetGlyph(symbol: "figure.run")
             } content: {
-                WidgetTitle(text: "Pas encore de tracé")
-                WidgetCaption(text: "Ouvre Activité après une séance GPS.")
+                WidgetTitle(text: String(localized: "Pas encore de tracé"))
+                WidgetCaption(text: String(localized: "Ouvre Activité après une séance GPS."))
                     .padding(.top, 4)
             }
             .widgetURL(entry.link("/activity"))
@@ -152,13 +152,13 @@ struct LastActivityView: View {
             }
             .widgetURL(activity.link)
         } else if entry.snapshot == nil {
-            WidgetAwaitingDay(eyebrow: "Dernière activité", symbol: "figure.run")
+            WidgetAwaitingDay(eyebrow: String(localized: "Dernière activité"), symbol: "figure.run")
         } else {
-            WidgetFrame(title: "Dernière activité") {
+            WidgetFrame(title: String(localized: "Dernière activité")) {
                 WidgetGlyph(symbol: "figure.run")
             } content: {
-                WidgetTitle(text: "Pas encore de tracé")
-                WidgetCaption(text: "Ouvre Activité après une séance GPS.")
+                WidgetTitle(text: String(localized: "Pas encore de tracé"))
+                WidgetCaption(text: String(localized: "Ouvre Activité après une séance GPS."))
                     .padding(.top, 4)
             }
             .widgetURL(entry.link("/activity"))
@@ -168,10 +168,10 @@ struct LastActivityView: View {
     private func figures(_ activity: WidgetSnapshot.LastActivity, limit: Int) -> [LabeledFigure] {
         var rows: [LabeledFigure] = []
         if !activity.distanceValue.isEmpty {
-            rows.append(.init(label: "Distance", value: activity.distanceValue, unit: activity.distanceUnit))
+            rows.append(.init(label: String(localized: "Distance"), value: activity.distanceValue, unit: activity.distanceUnit))
         }
         if !activity.durationValue.isEmpty {
-            rows.append(.init(label: "Durée", value: activity.durationValue, unit: activity.durationUnit))
+            rows.append(.init(label: String(localized: "Durée"), value: activity.durationValue, unit: activity.durationUnit))
         }
         if !activity.paceValue.isEmpty {
             rows.append(.init(label: activity.paceLabel, value: activity.paceValue, unit: activity.paceUnit))

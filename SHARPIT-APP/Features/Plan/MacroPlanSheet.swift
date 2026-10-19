@@ -42,7 +42,7 @@ struct MacroPlanSheet: View {
             }
             .task { await loadInitialData() }
             .confirmationDialog(
-                "Archiver ce plan macro ?",
+                String(localized: "Archiver ce plan macro ?"),
                 isPresented: $showingArchiveAlert,
                 titleVisibility: .visible
             ) {
@@ -70,7 +70,7 @@ struct MacroPlanSheet: View {
                         SharpitCardHeader(
                             title: group.phase.label,
                             symbol: group.phase.symbolName,
-                            subtitle: group.weeks.count == 1 ? "1 semaine" : "\(group.weeks.count) semaines",
+                            subtitle: group.weeks.count == 1 ? String(localized: "1 semaine") : "\(group.weeks.count) semaines",
                             showsChevron: false
                         )
                         SharpitInsetGroup {
@@ -111,7 +111,7 @@ struct MacroPlanSheet: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                     SharpitCardHeader(
-                        title: "Définir un plan macro",
+                        title: String(localized: "Définir un plan macro"),
                         symbol: "calendar.badge.clock",
                         showsChevron: false
                     )
@@ -126,14 +126,14 @@ struct MacroPlanSheet: View {
 
                 if datedGoals.isEmpty {
                     SharpitStateMessage(
-                        title: "Aucun objectif daté à venir",
+                        title: String(localized: "Aucun objectif daté à venir"),
                         symbol: "flag.checkered",
-                        detail: "Ajoute une course dans Objectifs pour générer un plan macro."
+                        detail: String(localized: "Ajoute une course dans Objectifs pour générer un plan macro.")
                     )
                     .frame(minHeight: 240)
                 } else {
                     VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                        SharpitCardHeader(title: "Objectif ciblé", symbol: "flag.checkered", showsChevron: false)
+                        SharpitCardHeader(title: String(localized: "Objectif ciblé"), symbol: "flag.checkered", showsChevron: false)
                         SharpitInsetGroup {
                             ForEach(datedGoals) { goal in
                                 MacroGoalChoiceRow(
@@ -158,7 +158,7 @@ struct MacroPlanSheet: View {
         .safeAreaInset(edge: .bottom) {
             if !datedGoals.isEmpty {
                 SharpitPrimaryButton(
-                    title: isGenerating ? "Génération en cours…" : "Générer le plan macro",
+                    title: isGenerating ? String(localized: "Génération en cours…") : String(localized: "Générer le plan macro"),
                     trailingSymbol: isGenerating ? nil : "sparkles",
                     isBusy: isGenerating
                 ) {
@@ -226,7 +226,7 @@ struct MacroPlanSheet: View {
             onPlanChanged()
         } catch {
             if plan == nil { plan = currentPlan }
-            SharpitWriteFailures.shared.report("Le plan n’a pas pu être archivé. Réessaie dans un instant.")
+            SharpitWriteFailures.shared.report(String(localized: "Le plan n’a pas pu être archivé. Réessaie dans un instant."))
         }
     }
 
@@ -234,7 +234,7 @@ struct MacroPlanSheet: View {
     private func dateRangeString(for plan: V1TrainingPlan) -> String? {
         guard let first = plan.weeks.first, let last = plan.weeks.last else { return nil }
         let f = DateFormatter()
-        f.locale = Locale(identifier: "fr_FR")
+        f.locale = AppLanguage.locale
         f.dateFormat = "d MMM"
         let start = f.string(from: first.weekStart)
         f.dateFormat = "d MMM yyyy"
@@ -325,7 +325,7 @@ private struct MacroGoalChoiceRow: View {
                 }
                 Spacer(minLength: SharpitSpacing.xs)
                 if let priority = goal.priority {
-                    SharpitPill("Course \(priority.rawValue)", style: priority == .a ? .lime : .neutral)
+                    SharpitPill(String(localized: "Course \(priority.rawValue)"), style: priority == .a ? .lime : .neutral)
                 }
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22, weight: .semibold))
@@ -409,7 +409,7 @@ private struct MacroWeekRowView: View {
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
                 if isCurrent {
-                    SharpitPill("Cette semaine", style: .lime)
+                    SharpitPill(String(localized: "Cette semaine"), style: .lime)
                 }
                 Spacer(minLength: SharpitSpacing.xs)
                 SharpitRowFigure(value: "\(Int(week.targetLoad))", unit: "TSS")
@@ -444,38 +444,38 @@ private struct MacroWeekRowView: View {
 /// Athlete-facing week quality derived from focus/phase (mirrors ADR-083 / week-quality.ts).
 private enum WeekQualityLabel {
     static func from(focus: String?, phase: V1PlanPhase, isDeload: Bool) -> String? {
-        if isDeload { return "Semaine facile" }
+        if isDeload { return String(localized: "Semaine facile") }
         let haystack = [focus, phase.rawValue].compactMap { $0 }.joined(separator: " ").lowercased()
         if haystack.range(of: "reprise|retour|return", options: .regularExpression) != nil {
-            return "Reprise"
+            return String(localized: "Reprise")
         }
-        if haystack.range(of: "deload|récup|recup|facile|alléger|alleger", options: .regularExpression) != nil {
-            return "Semaine facile"
+        if haystack.range(of: "deload|récup|recup|recovery|facile|easy|alléger|alleger|lighter", options: .regularExpression) != nil {
+            return String(localized: "Semaine facile")
         }
         if haystack.range(of: "affût|affut|taper", options: .regularExpression) != nil {
-            return "Affûtage"
+            return String(localized: "Affûtage")
         }
-        if haystack.range(of: "force|côte|cote|hill|ppg|renfo", options: .regularExpression) != nil {
-            return "Force / côtes"
+        if haystack.range(of: "force|strength|côte|cote|hill|ppg|renfo", options: .regularExpression) != nil {
+            return String(localized: "Force / côtes")
         }
         if haystack.range(of: "vma|vo2", options: .regularExpression) != nil {
             return "VMA / VO2"
         }
         if haystack.range(of: "seuil|tempo|lt2|sweet", options: .regularExpression) != nil {
-            return "Seuil"
+            return String(localized: "Seuil")
         }
         if haystack.range(of: "allure|spécific|specific|simulation|race", options: .regularExpression) != nil {
-            return "Allure spécifique"
+            return String(localized: "Allure spécifique")
         }
-        if haystack.range(of: "aérob|aerob|zone.?2|fondamentale|endurance|volume", options: .regularExpression) != nil {
-            return "Volume aérobie"
+        if haystack.range(of: "aérob|aerob|zone.?2|fondamentale|base|endurance|volume", options: .regularExpression) != nil {
+            return String(localized: "Volume aérobie")
         }
         switch phase {
-        case .base: return "Volume aérobie"
-        case .build: return "Seuil"
-        case .peak: return "Allure spécifique"
-        case .taper: return "Affûtage"
-        case .race: return "Course"
+        case .base: return String(localized: "Volume aérobie")
+        case .build: return String(localized: "Seuil")
+        case .peak: return String(localized: "Allure spécifique")
+        case .taper: return String(localized: "Affûtage")
+        case .race: return String(localized: "Course")
         }
     }
 }

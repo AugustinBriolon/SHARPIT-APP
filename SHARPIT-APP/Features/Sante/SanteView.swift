@@ -53,9 +53,9 @@ struct SanteView: View {
                     SharpitStateMessage.failed(message) { Task { await reload(force: true) } }
                 case .empty:
                     SharpitStateMessage(
-                        title: "Rien de mesuré pour l'instant",
+                        title: String(localized: "Rien de mesuré pour l'instant"),
                         symbol: "heart.text.square",
-                        detail: "Active Apple Santé dans Paramètres → Sources de données : ton bilan se construira ici."
+                        detail: String(localized: "Active Apple Santé dans Paramètres → Sources de données : ton bilan se construira ici.")
                     )
                 case .loading, .loaded:
                     readout
@@ -120,9 +120,9 @@ struct SanteView: View {
                         }
                         SensitiveZonesCard(store: zones)
                             .revealed(hasAppeared, index: 1)
-                        section("Signes vitaux", overview.vitals, index: 2)
-                        section("Corps", overview.body, index: 3)
-                        section("Au quotidien", overview.daily, index: 4)
+                        section(String(localized: "Signes vitaux"), overview.vitals, index: 2)
+                        section(String(localized: "Corps"), overview.body, index: 3)
+                        section(String(localized: "Au quotidien"), overview.daily, index: 4)
                     }
                     .padding(.horizontal, SharpitSpacing.pageInset)
                 } else {
@@ -228,7 +228,7 @@ private struct SanteWatchCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitCardHeader(
-                title: "À surveiller",
+                title: String(localized: "À surveiller"),
                 symbol: "exclamationmark.triangle",
                 tint: SharpitColor.signalCaution,
                 showsChevron: false
@@ -447,7 +447,7 @@ private struct SanteSkeleton: View {
                     spacing: SharpitSpacing.sm
                 ) {
                     ForEach(0..<4, id: \.self) { _ in
-                        SharpitStatTile(caption: "Mesure", value: "00,0", unit: "bpm")
+                        SharpitStatTile(caption: String(localized: "Mesure"), value: "00,0", unit: "bpm")
                     }
                 }
             }

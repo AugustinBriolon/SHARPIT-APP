@@ -383,15 +383,15 @@ private struct SignInAwardWinning: View {
 
             // Value Pillar Badges
             HStack(spacing: 8) {
-                pillarPill(title: "Sommeil & VRC")
+                pillarPill(title: String(localized: "Sommeil & VRC"))
                 Text("•")
                     .font(.caption2)
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
-                pillarPill(title: "Charge TSS")
+                pillarPill(title: String(localized: "Charge TSS"))
                 Text("•")
                     .font(.caption2)
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
-                pillarPill(title: "Planification")
+                pillarPill(title: String(localized: "Planification"))
             }
             .padding(.top, 4)
         }

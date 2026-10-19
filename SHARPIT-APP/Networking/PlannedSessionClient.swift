@@ -196,7 +196,7 @@ enum PlannedSessionClientError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .decoding: "Réponse du plan incompatible"
+        case .decoding: String(localized: "Réponse du plan incompatible")
         }
     }
 }

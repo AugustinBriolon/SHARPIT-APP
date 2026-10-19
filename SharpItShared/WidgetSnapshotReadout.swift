@@ -16,8 +16,8 @@ extension WidgetSnapshot.Nutrition {
     }
 
     var dialCaption: String {
-        guard let remaining else { return "kcal aujourd'hui" }
-        return remaining >= 0 ? "kcal restantes" : "kcal au-delà"
+        guard let remaining else { return String(localized: "kcal aujourd'hui") }
+        return remaining >= 0 ? String(localized: "kcal restantes") : String(localized: "kcal au-delà")
     }
 
     var hasLog: Bool { (calories ?? 0) > 0 }
@@ -41,8 +41,8 @@ extension WidgetSnapshot.Weight {
     var targetLine: String? {
         guard let targetKilograms else { return nil }
         let left = targetKilograms - kilograms
-        if abs(left) < 0.05 { return "Objectif \(SharpitFigureFormat.target(targetKilograms)) atteint" }
-        return "Encore \(SharpitFigureFormat.kilograms(abs(left))) kg · objectif \(SharpitFigureFormat.target(targetKilograms))"
+        if abs(left) < 0.05 { return String(localized: "Objectif \(SharpitFigureFormat.target(targetKilograms)) atteint") }
+        return String(localized: "Encore \(SharpitFigureFormat.kilograms(abs(left))) kg · objectif \(SharpitFigureFormat.target(targetKilograms))")
     }
 }
 
@@ -135,7 +135,7 @@ extension WeekVolume {
 
     /// « 4 séances · 3 h 10 » — the other half of the week, under the figure.
     var detailLine: String {
-        let count = sessionCount == 1 ? "1 séance" : "\(sessionCount) séances"
+        let count = sessionCount == 1 ? String(localized: "1 séance") : String(localized: "\(sessionCount) séances")
         guard readsInDistance, minutes > 0 else { return count }
         return "\(count) · \(SharpitFigureFormat.duration(minutes: minutes))"
     }
@@ -145,7 +145,7 @@ extension WeekVolume {
         let figure = readsInDistance
             ? "\(SharpitFigureFormat.kilometers(lastWeekSoFar)) km"
             : SharpitFigureFormat.duration(minutes: lastWeekSoFar)
-        return "Sem. dernière à ce jour : \(figure)"
+        return String(localized: "Sem. dernière à ce jour : \(figure)")
     }
 }
 
@@ -159,20 +159,20 @@ extension WidgetSnapshot.Goal {
     /// « 42 jours », « Demain », « Aujourd'hui ».
     func countdownCaption(from date: Date, calendar: Calendar = .current) -> String {
         switch daysLeft(from: date, calendar: calendar) {
-        case 0: "Aujourd'hui"
-        case 1: "Demain"
-        case let days: days >= 21 ? "\(days) jours · \(days / 7) sem." : "\(days) jours"
+        case 0: String(localized: "Aujourd'hui")
+        case 1: String(localized: "Demain")
+        case let days: days >= 21 ? String(localized: "\(days) jours · \(days / 7) sem.") : "\(days) jours"
         }
     }
 
     /// « dim. 14 juin 2027 ».
     var dateLine: String {
-        date.formatted(.dateTime.weekday(.abbreviated).day().month(.wide).year().locale(Locale(identifier: "fr_FR")))
+        date.formatted(.dateTime.weekday(.abbreviated).day().month(.wide).year().locale(AppLanguage.locale))
     }
 
     /// Format, place and target, what is known of them.
     var contextLine: String? {
-        let parts = [format, location, targetPerformance.map { "visé \($0)" }].compactMap { $0 }.filter { !$0.isEmpty }
+        let parts = [format, location, targetPerformance.map { String(localized: "visé \($0)") }].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 }

@@ -31,7 +31,7 @@ nonisolated enum PlanCalendarPlanner {
     private static func event(for session: V1PlannedSessionItem, calendar: Calendar) -> PlanCalendarEvent? {
         let day = calendar.startOfDay(for: session.date)
         let name = session.title ?? session.displayType
-        let title = session.isKey ? "\(name) · clé" : name
+        let title = session.isKey ? String(localized: "\(name) · clé") : name
         let notes = [session.durationMin.map { "\($0) min" }, session.notes].compactMap { $0 }.joined(separator: "\n")
         let minutes = session.durationMin ?? defaultMinutes
         if let clock = session.startTime.flatMap(Self.clock),
@@ -219,7 +219,7 @@ final class AppleCalendarSync {
                 try apply(wanted, to: writeCalendar, from: start, to: end, preserveSessionIds: pull.skipApplySessionIds)
                 persistSyncedSessionIds(pull.syncedSessionIds, afterWriting: wanted)
             } catch {
-                SharpitWriteFailures.shared.report("Calendrier : mise à jour impossible. Réessaie plus tard.")
+                SharpitWriteFailures.shared.report(String(localized: "Calendrier : mise à jour impossible. Réessaie plus tard."))
             }
         } catch {
             // Offline or signed out: the calendar keeps what it holds.
@@ -384,7 +384,7 @@ final class AppleCalendarSync {
         do {
             try await client.uploadAppleCalendarBusy(intervals, token: token)
         } catch {
-            SharpitWriteFailures.shared.report("Créneaux occupés : envoi impossible. Réessaie plus tard.")
+            SharpitWriteFailures.shared.report(String(localized: "Créneaux occupés : envoi impossible. Réessaie plus tard."))
         }
     }
 

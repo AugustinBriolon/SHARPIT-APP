@@ -201,7 +201,7 @@ final class GuidedHeartRateMonitor: NSObject, ObservableObject {
 
     static func displayName(for peripheral: CBPeripheral) -> String {
         let raw = peripheral.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return raw.isEmpty ? "Capteur sans nom" : raw
+        return raw.isEmpty ? String(localized: "Capteur sans nom") : raw
     }
 }
 
@@ -225,7 +225,7 @@ extension GuidedHeartRateMonitor: CBCentralManagerDelegate {
                 let trimmed = local.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty { return trimmed }
             }
-            return "Capteur sans nom"
+            return String(localized: "Capteur sans nom")
         }()
         upsertDevice(peripheral, name: label)
     }

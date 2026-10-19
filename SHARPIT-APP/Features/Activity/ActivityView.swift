@@ -36,7 +36,7 @@ struct ActivityView: View {
             .navigationTitle("Activité")
             .navigationBarTitleDisplayMode(.large)
             .modifier(LiquidNavChrome())
-            .searchable(text: $filter.query, placement: .navigationBarDrawer, prompt: "Rechercher une séance")
+            .searchable(text: $filter.query, placement: .navigationBarDrawer, prompt: String(localized: "Rechercher une séance"))
             .toolbar {
                 if case .loaded(let activities) = phase {
                     ToolbarItem(placement: .primaryAction) {
@@ -101,7 +101,7 @@ struct ActivityView: View {
                 ContentUnavailableView {
                     Label("Aucune séance", systemImage: "line.3.horizontal.decrease.circle")
                 } description: {
-                    Text(hasMore ? "Rien dans ce qui est chargé. Le reste de l’historique arrive en cherchant plus loin." : "Rien ne correspond à ces filtres.")
+                    Text(hasMore ? String(localized: "Rien dans ce qui est chargé. Le reste de l’historique arrive en cherchant plus loin.") : String(localized: "Rien ne correspond à ces filtres."))
                 } actions: {
                     if hasMore {
                         Button("Chercher plus loin") { Task { await loadMore() } }
@@ -223,7 +223,7 @@ struct ActivityView: View {
                 phase = .failed(error.localizedDescription)
                 return false
             } catch {
-                phase = .failed("Impossible de charger l’historique : \(error.localizedDescription)")
+                phase = .failed(String(localized: "Impossible de charger l’historique : \(error.localizedDescription)"))
                 return false
             }
         }
@@ -291,8 +291,8 @@ private struct ActivityWeekCard: View {
                 .foregroundStyle(SharpitColor.foreground)
 
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.lg) {
-                figure("\(week.count)", unit: week.count == 1 ? "séance" : "séances")
-                figure(week.durationSeconds > 0 ? ActivityHistory.hours(week.durationSeconds) : "0 min", unit: nil)
+                figure("\(week.count)", unit: week.count == 1 ? String(localized: "séance") : String(localized: "séances"))
+                figure(week.durationSeconds > 0 ? ActivityHistory.hours(week.durationSeconds) : String(localized: "0 min"), unit: nil)
                 if week.distanceM >= 1_000 {
                     figure(String(format: "%.0f", week.distanceM / 1_000), unit: "km")
                 }
@@ -482,10 +482,10 @@ private struct ActivityListLoading: View {
 
 enum ActivityFormat {
     static func dayLabel(for date: Date) -> String {
-        if Calendar.current.isDateInToday(date) { return "Aujourd’hui" }
-        if Calendar.current.isDateInYesterday(date) { return "Hier" }
+        if Calendar.current.isDateInToday(date) { return String(localized: "Aujourd’hui") }
+        if Calendar.current.isDateInYesterday(date) { return String(localized: "Hier") }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = AppLanguage.locale
         formatter.setLocalizedDateFormatFromTemplate("EEEE d MMMM")
         return formatter.string(from: date)
     }
@@ -493,7 +493,7 @@ enum ActivityFormat {
     static func duration(_ seconds: Double) -> String {
         // A corrupt or computed figure (∞, NaN, beyond Int) reads as missing rather than trapping.
         guard let minutes = Int(exactly: (seconds / 60).rounded(.towardZero)), minutes >= 0 else { return "—" }
-        return minutes >= 60 ? "\(minutes / 60) h \(minutes % 60) min" : "\(minutes) min"
+        return minutes >= 60 ? String(localized: "\(minutes / 60) h \(minutes % 60) min") : "\(minutes) min"
     }
 
     static func pace(_ seconds: Double) -> String {
@@ -526,7 +526,7 @@ enum ActivityFormat {
     static func primaryMetric(_ activity: V1ActivityListItem) -> String? {
         guard let distanceM = activity.distanceM, distanceM > 0 else { return nil }
         return distanceM >= 10_000
-            ? String(format: "%.1f km", distanceM / 1_000).replacingOccurrences(of: ".", with: ",")
+            ? String(format: String(localized: "%.1f km"), distanceM / 1_000).replacingOccurrences(of: ".", with: ",")
             : "\(Int(distanceM.rounded() / 10) * 10) m"
     }
 }
@@ -563,12 +563,12 @@ private struct ActivityFilterMenu: View {
             }
         } label: {
             Label(
-                "Filtrer",
+                String(localized: "Filtrer"),
                 systemImage: filter.narrows
                     ? "line.3.horizontal.decrease.circle.fill"
                     : "line.3.horizontal.decrease.circle"
             )
         }
-        .accessibilityValue(filter.narrows ? "Filtres actifs" : "Aucun filtre")
+        .accessibilityValue(filter.narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
     }
 }

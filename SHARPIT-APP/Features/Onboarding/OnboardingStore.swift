@@ -270,7 +270,7 @@ final class OnboardingStore {
 
     private func leaveIdentity() {
         let draft = identity
-        enqueue(failure: "Impossible d'enregistrer ton profil.") { token in
+        enqueue(failure: String(localized: "Impossible d'enregistrer ton profil.")) { token in
             try await self.services.saveFirstName(draft.trimmedFirstName)
             let patch = draft.profilePatch
             if !patch.fields.isEmpty {
@@ -288,14 +288,14 @@ final class OnboardingStore {
     private func leaveMotivation() {
         var patch = AthleteProfilePatch()
         patch.setFeatures(Dictionary(uniqueKeysWithValues: SharpitFeature.allCases.map { ($0, motivations.contains($0)) }))
-        enqueue(patch, failure: "Impossible d'enregistrer tes envies.")
+        enqueue(patch, failure: String(localized: "Impossible d'enregistrer tes envies."))
         moveNext()
     }
 
     private func leaveSports() {
         var patch = AthleteProfilePatch()
         patch.setPracticedSports(V1AthletePracticedSports(sports: sports))
-        enqueue(patch, failure: "Impossible d'enregistrer tes sports.")
+        enqueue(patch, failure: String(localized: "Impossible d'enregistrer tes sports."))
         if isStrengthOnly { intention.kind = .metric }
         moveNext()
     }
@@ -307,7 +307,7 @@ final class OnboardingStore {
                 strengthVenue: strengthVenue.rawValue,
                 owned: ownedEquipment.sorted()
             ))
-            enqueue(patch, failure: "Impossible d'enregistrer ton matériel.")
+            enqueue(patch, failure: String(localized: "Impossible d'enregistrer ton matériel."))
             equipmentIsDirty = false
         }
         moveNext()
@@ -316,13 +316,13 @@ final class OnboardingStore {
     private func leaveWeek() {
         var patch = AthleteProfilePatch()
         patch.setTrainingAvailability(availability)
-        enqueue(patch, failure: "Impossible d'enregistrer ta semaine.")
+        enqueue(patch, failure: String(localized: "Impossible d'enregistrer ta semaine."))
         moveNext()
     }
 
     private func submitGoal() {
         guard let input = intention.goalInput else { return }
-        enqueue(failure: "Impossible de créer l'objectif.") { token in
+        enqueue(failure: String(localized: "Impossible de créer l'objectif.")) { token in
             let goal = try await self.services.goals.createGoal(input, token: token)
             self.createdGoalId = goal.id
         }
@@ -334,7 +334,7 @@ final class OnboardingStore {
         if path.contains(.privacy) {
             injuriesAwaitingConsent = declared
         } else if !declared.isEmpty {
-            enqueue(failure: "Impossible d'enregistrer tes blessures.") { token in
+            enqueue(failure: String(localized: "Impossible d'enregistrer tes blessures.")) { token in
                 try await self.write(declared, token: token)
             }
         }
@@ -352,7 +352,7 @@ final class OnboardingStore {
     private func leavePrivacy() {
         let waiting = injuriesAwaitingConsent
         let update = PrivacyConsentUpdate.wall(ai: consents.ai, unofficialProviders: consents.unofficialProviders)
-        enqueue(failure: "Impossible d'enregistrer tes choix de confidentialité.") { token in
+        enqueue(failure: String(localized: "Impossible d'enregistrer tes choix de confidentialité.")) { token in
             _ = try await self.services.consents.updateConsents(update, token: token)
             try await self.write(waiting, token: token)
         }
@@ -401,7 +401,7 @@ final class OnboardingStore {
             try await write.work(try await tokenProvider())
         } catch {
             failedWrites.append(write)
-            self.error = message(for: error, failure: "\(write.failure) On réessaie avant de continuer.")
+            self.error = message(for: error, failure: String(localized: "\(write.failure) On réessaie avant de continuer."))
         }
     }
 
@@ -435,7 +435,7 @@ final class OnboardingStore {
             guard let self else { return }
             // The consents, the goal and the injuries must be in before the coach reads them.
             guard await self.flushWrites() else {
-                self.firstWeek = .failed(self.error ?? "Tes réponses ne sont pas encore enregistrées. Réessaie.")
+                self.firstWeek = .failed(self.error ?? String(localized: "Tes réponses ne sont pas encore enregistrées. Réessaie."))
                 return
             }
             let goalId = self.createdGoalId
@@ -456,12 +456,12 @@ final class OnboardingStore {
                     .filter { !plan.insertableIndices.contains($0) }
                     .map { (plan.sessions[$0], plan.verdict(at: $0)?.reason) }
                 self.firstWeek = kept.isEmpty
-                    ? .failed("Le coach n'a proposé aucune séance que tu puisses faire en sécurité. Tu pourras lui demander ta semaine depuis le Plan.")
+                    ? .failed(String(localized: "Le coach n'a proposé aucune séance que tu puisses faire en sécurité. Tu pourras lui demander ta semaine depuis le Plan."))
                     : .ready(summary: plan.summary, sessions: kept.map { plan.sessions[$0] })
             } catch is CancellationError {
             } catch {
                 self.firstWeek = .failed((error as? CoachPlanError)?.errorDescription
-                    ?? SharpitErrorGuidance.message(for: error, subject: "Ta première semaine"))
+                    ?? SharpitErrorGuidance.message(for: error, subject: String(localized: "Ta première semaine")))
             }
         }
     }
@@ -485,7 +485,7 @@ final class OnboardingStore {
         }
         let goalId = createdGoalId
         var added = false
-        await perform(failure: "Impossible d'ajouter ta semaine au plan. Réessaie.") { token in
+        await perform(failure: String(localized: "Impossible d'ajouter ta semaine au plan. Réessaie.")) { token in
             try await self.services.plan.insertWeek(sessions, goalId: goalId, token: token)
         } onSuccess: {
             added = true
@@ -500,7 +500,7 @@ final class OnboardingStore {
         let saved = await flushWrites()
         isBusy = false
         guard saved else { return }
-        await perform(failure: "Impossible de terminer l'onboarding. Réessaie.") { token in
+        await perform(failure: String(localized: "Impossible de terminer l'onboarding. Réessaie.")) { token in
             try await self.services.onboarding.completeOnboarding(token: token)
         } onSuccess: {
             self.stepMemory?.step = nil
@@ -536,8 +536,8 @@ final class OnboardingStore {
 
     private func message(for error: Error, failure: String) -> String {
         switch error as? SharpitAPIError {
-        case .unauthorized: "Session expirée. Reconnecte-toi."
-        case .transport: "Pas de connexion internet. Vérifie ton réseau, puis réessaie."
+        case .unauthorized: String(localized: "Session expirée. Reconnecte-toi.")
+        case .transport: String(localized: "Pas de connexion internet. Vérifie ton réseau, puis réessaie.")
         default: failure
         }
     }

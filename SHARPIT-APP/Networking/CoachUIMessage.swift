@@ -195,10 +195,10 @@ nonisolated enum CoachUIParts {
     ]
 
     /// The reasons the web attaches to an answer (`coach-approval-reason.ts`) — the model reads them.
-    static let approvedReason = "Appliqué par l’athlète"
-    static let deniedReason = "Ignoré par l’athlète — ne pas appliquer cette action ; proposer une alternative ou demander une précision"
-    static let reviseReason = "L’athlète demande une version modifiée — ne pas appliquer ; reformuler la proposition selon son prochain message"
-    static let dismissedReason = "Proposition ignorée — nouvelle demande envoyée"
+    static let approvedReason = String(localized: "Appliqué par l’athlète")
+    static let deniedReason = String(localized: "Ignoré par l’athlète — ne pas appliquer cette action ; proposer une alternative ou demander une précision")
+    static let reviseReason = String(localized: "L’athlète demande une version modifiée — ne pas appliquer ; reformuler la proposition selon son prochain message")
+    static let dismissedReason = String(localized: "Proposition ignorée — nouvelle demande envoyée")
 
     static func isTerminal(_ state: String?) -> Bool {
         state == "output-available" || state == "output-error" || state == "output-denied"

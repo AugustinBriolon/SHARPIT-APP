@@ -82,22 +82,22 @@ struct JournalAnalysesView: View {
             }
 
             if !analyses.lifts.isEmpty {
-                group("Ce qui t'aide", analyses.lifts, kind: .lift)
+                group(String(localized: "Ce qui t'aide"), analyses.lifts, kind: .lift)
             }
             if !analyses.drags.isEmpty {
-                group("Ce qui te freine", analyses.drags, kind: .drag)
+                group(String(localized: "Ce qui te freine"), analyses.drags, kind: .drag)
             }
             if !analyses.leads.isEmpty {
                 group(
-                    "Pistes à confirmer",
+                    String(localized: "Pistes à confirmer"),
                     analyses.leads,
                     kind: .lead,
-                    hint: "Écart encore fragile : continue à noter avant de changer quoi que ce soit."
+                    hint: String(localized: "Écart encore fragile : continue à noter avant de changer quoi que ce soit.")
                 )
             }
 
             SharpitListFooter(
-                "Une association n'est pas une cause : ce qui va avec une habitude, pas forcément ce qu'elle provoque. Médianes des jours avec et sans l'habitude."
+                String(localized: "Une association n'est pas une cause : ce qui va avec une habitude, pas forcément ce qu'elle provoque. Médianes des jours avec et sans l'habitude.")
             )
         }
     }

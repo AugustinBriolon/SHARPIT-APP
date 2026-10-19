@@ -195,14 +195,14 @@ private struct FoodSearchPage: View {
             if !isSearching {
                 Section {
                     if BarcodeScannerView.isAvailable {
-                        actionRow("Scanner un code-barres", symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan, action: onScan)
+                        actionRow(String(localized: "Scanner un code-barres"), symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan, action: onScan)
                     }
-                    actionRow("Décrire un repas", symbol: "text.bubble", tone: SharpitNutritionTone.Action.describe, action: onDescribe)
-                    actionRow("Mes repas", symbol: "bookmark", tone: SharpitNutritionTone.Action.savedMeals, action: onSavedMeals)
-                    actionRow("Mes aliments", symbol: "person.crop.square", tone: SharpitNutritionTone.Action.ownFoods, action: onOwnFoods)
-                    actionRow("Saisie rapide", symbol: "bolt", tone: SharpitNutritionTone.Action.quickAdd, action: onQuickAdd)
-                    actionRow("Créer un aliment", symbol: "plus.square.on.square", tone: SharpitNutritionTone.Action.create, action: onCreate)
-                    actionRow("Créer une recette", symbol: "frying.pan", tone: SharpitNutritionTone.Action.recipe, action: onRecipe)
+                    actionRow(String(localized: "Décrire un repas"), symbol: "text.bubble", tone: SharpitNutritionTone.Action.describe, action: onDescribe)
+                    actionRow(String(localized: "Mes repas"), symbol: "bookmark", tone: SharpitNutritionTone.Action.savedMeals, action: onSavedMeals)
+                    actionRow(String(localized: "Mes aliments"), symbol: "person.crop.square", tone: SharpitNutritionTone.Action.ownFoods, action: onOwnFoods)
+                    actionRow(String(localized: "Saisie rapide"), symbol: "bolt", tone: SharpitNutritionTone.Action.quickAdd, action: onQuickAdd)
+                    actionRow(String(localized: "Créer un aliment"), symbol: "plus.square.on.square", tone: SharpitNutritionTone.Action.create, action: onCreate)
+                    actionRow(String(localized: "Créer une recette"), symbol: "frying.pan", tone: SharpitNutritionTone.Action.recipe, action: onRecipe)
                 }
                 .sharpitListRows()
             }
@@ -215,7 +215,7 @@ private struct FoodSearchPage: View {
                         productRow(recent.product, grams: recent.lastGrams)
                     }
                 } header: {
-                    SharpitEyebrow("Récents")
+                    SharpitEyebrow(String(localized: "Récents"))
                 } footer: {
                     FoodSourcesAttribution(products: store.recent.map(\.product))
                 }
@@ -226,7 +226,7 @@ private struct FoodSearchPage: View {
         .searchable(
             text: $query,
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: "Chercher un aliment"
+            prompt: String(localized: "Chercher un aliment")
         )
         .autocorrectionDisabled()
         .onChange(of: query) { _, text in search.setQuery(text) }
@@ -247,14 +247,14 @@ private struct FoodSearchPage: View {
                         productRow(eaten.product, grams: eaten.lastGrams, timesEaten: eaten.timesEaten)
                     }
                 } header: {
-                    SharpitEyebrow("Déjà mangés")
+                    SharpitEyebrow(String(localized: "Déjà mangés"))
                 } footer: {
                     FoodSourcesAttribution(products: results.eaten.map(\.product))
                 }
                 .sharpitListRows()
             }
             if !results.own.isEmpty {
-                Section(eyebrow: "Mes aliments") {
+                Section(eyebrow: String(localized: "Mes aliments")) {
                     ForEach(results.own) { productRow($0) }
                 }
                 .sharpitListRows()
@@ -263,7 +263,7 @@ private struct FoodSearchPage: View {
                 Section {
                     ForEach(results.generic) { productRow($0) }
                 } header: {
-                    SharpitEyebrow("Aliments de base")
+                    SharpitEyebrow(String(localized: "Aliments de base"))
                 } footer: {
                     FoodSourcesAttribution(products: results.generic)
                 }
@@ -278,7 +278,7 @@ private struct FoodSearchPage: View {
                     }
                     ForEach(results.products) { productRow($0) }
                 } header: {
-                    SharpitEyebrow("Produits")
+                    SharpitEyebrow(String(localized: "Produits"))
                 } footer: {
                     FoodSourcesAttribution(products: results.products)
                 }
@@ -373,7 +373,7 @@ struct FoodProductRow: View {
         let seal = Text(Image(systemName: "checkmark.seal.fill"))
             .font(SharpitTypography.meta)
             .foregroundStyle(SharpitColor.primary)
-            .accessibilityLabel(product.verifiedLabel ?? "Vérifié")
+            .accessibilityLabel(product.verifiedLabel ?? String(localized: "Vérifié"))
         return Text("\(title) \(seal)")
     }
 
@@ -381,10 +381,10 @@ struct FoodProductRow: View {
         var parts: [String] = []
         if let timesEaten, timesEaten > 0 { parts.append("\(timesEaten) fois") }
         if let brand = product.brand, !brand.isEmpty { parts.append(brand) }
-        if let lastGrams { parts.append("Dernière fois \(FoodPortion.gramsLabel(lastGrams))") }
-        if product.source == "CUSTOM" { parts.append("Mon aliment") }
-        if product.isCiqual { parts.append("Aliment de base") }
-        return parts.isEmpty ? "Pour 100 g" : parts.joined(separator: " · ")
+        if let lastGrams { parts.append(String(localized: "Dernière fois \(FoodPortion.gramsLabel(lastGrams))")) }
+        if product.source == "CUSTOM" { parts.append(String(localized: "Mon aliment")) }
+        if product.isCiqual { parts.append(String(localized: "Aliment de base")) }
+        return parts.isEmpty ? String(localized: "Pour 100 g") : parts.joined(separator: " · ")
     }
 }
 
@@ -448,9 +448,9 @@ struct FoodPortionPage: View {
                     FoodHealthScoreHeader(health: health)
                     FoodDietConflictLine(health: health)
                 } header: {
-                    SharpitEyebrow("Score Sharpit")
+                    SharpitEyebrow(String(localized: "Score Sharpit"))
                 } footer: {
-                    SharpitListFooter("Le détail du score est plus bas.")
+                    SharpitListFooter(String(localized: "Le détail du score est plus bas."))
                 }
                 .sharpitListRows()
             }
@@ -467,9 +467,9 @@ struct FoodPortionPage: View {
                         .foregroundStyle(SharpitColor.signalRisk)
                 }
             } header: {
-                SharpitEyebrow("Quantité")
+                SharpitEyebrow(String(localized: "Quantité"))
             } footer: {
-                SharpitListFooter("Pour 100 g : \(NutritionReadout.kcal(product.kcalPer100g)) kcal · P \(FoodPortion.figure(product.proteinPer100g)) · G \(FoodPortion.figure(product.carbsPer100g)) · L \(FoodPortion.figure(product.fatPer100g)) g")
+                SharpitListFooter(String(localized: "Pour 100 g : \(NutritionReadout.kcal(product.kcalPer100g)) kcal · P \(FoodPortion.figure(product.proteinPer100g)) · G \(FoodPortion.figure(product.carbsPer100g)) · L \(FoodPortion.figure(product.fatPer100g)) g"))
             }
             .sharpitListRows()
 
@@ -490,7 +490,7 @@ struct FoodPortionPage: View {
         .task { await completeIfSummary() }
         .safeAreaInset(edge: .bottom) {
             SharpitActionDock {
-                SharpitPrimaryButton(title: "Ajouter") { add() }
+                SharpitPrimaryButton(title: String(localized: "Ajouter")) { add() }
                     .disabled(grams == nil)
             }
         }
@@ -549,21 +549,21 @@ private struct FoodQuickAddPage: View {
 
     var body: some View {
         List {
-            Section(eyebrow: "Aliment") {
+            Section(eyebrow: String(localized: "Aliment")) {
                 TextField("Nom (ex. Sandwich jambon-beurre)", text: $name)
                     .textInputAutocapitalization(.sentences)
-                FoodNumberRow(title: "Énergie", unit: "kcal", text: $kcal)
+                FoodNumberRow(title: String(localized: "Énergie"), unit: "kcal", text: $kcal)
             }
             .sharpitListRows()
 
             Section(
-                eyebrow: "Macronutriments",
-                footer: "Optionnels. Les valeurs sont celles de la portion entière."
+                eyebrow: String(localized: "Macronutriments"),
+                footer: String(localized: "Optionnels. Les valeurs sont celles de la portion entière.")
             ) {
-                FoodNumberRow(title: "Protéines", unit: "g", text: $protein)
-                FoodNumberRow(title: "Glucides", unit: "g", text: $carbs)
-                FoodNumberRow(title: "Lipides", unit: "g", text: $fat)
-                FoodNumberRow(title: "Poids de la portion", unit: "g", placeholder: "Optionnel", text: $gramsText)
+                FoodNumberRow(title: String(localized: "Protéines"), unit: "g", text: $protein)
+                FoodNumberRow(title: String(localized: "Glucides"), unit: "g", text: $carbs)
+                FoodNumberRow(title: String(localized: "Lipides"), unit: "g", text: $fat)
+                FoodNumberRow(title: String(localized: "Poids de la portion"), unit: "g", placeholder: String(localized: "Optionnel"), text: $gramsText)
             }
             .sharpitListRows()
 
@@ -575,7 +575,7 @@ private struct FoodQuickAddPage: View {
         .sharpitGroupedList()
         .safeAreaInset(edge: .bottom) {
             SharpitActionDock {
-                SharpitPrimaryButton(title: "Ajouter") {
+                SharpitPrimaryButton(title: String(localized: "Ajouter")) {
                     guard let entry else { return }
                     onAdd(meal, entry.grams, entry.quick)
                 }

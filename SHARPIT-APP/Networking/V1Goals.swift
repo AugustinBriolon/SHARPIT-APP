@@ -37,17 +37,17 @@ nonisolated enum GoalRole: String, Codable, CaseIterable, Identifiable, Sendable
 
     var label: String {
         switch self {
-        case .primary: "Objectif principal"
-        case .step: "Course étape"
-        case .training: "Course d’entraînement"
+        case .primary: String(localized: "Objectif principal")
+        case .step: String(localized: "Course étape")
+        case .training: String(localized: "Course d’entraînement")
         }
     }
 
     var consequence: String {
         switch self {
-        case .primary: "Le plan s’articule autour, avec un vrai affûtage."
-        case .step: "Quelques jours d’affûtage et de récupération, la progression continue."
-        case .training: "Pas d’affûtage, compte comme une séance dure."
+        case .primary: String(localized: "Le plan s’articule autour, avec un vrai affûtage.")
+        case .step: String(localized: "Quelques jours d’affûtage et de récupération, la progression continue.")
+        case .training: String(localized: "Pas d’affûtage, compte comme une séance dure.")
         }
     }
 }
@@ -66,8 +66,8 @@ nonisolated enum GoalKind: String, Codable, CaseIterable, Identifiable, Sendable
 
     var label: String {
         switch self {
-        case .race: "Course / Compétition"
-        case .metric: "Objectif chiffré"
+        case .race: String(localized: "Course / Compétition")
+        case .metric: String(localized: "Objectif chiffré")
         }
     }
 }
@@ -449,21 +449,21 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
     /// > 56 days: Développement
     var phaseLabel: String? {
         guard let days = daysRemaining, days >= 0 else { return nil }
-        if days <= 7 { return "Course" }
-        if days <= 21 { return "Affûtage" }
-        if days <= 56 { return "Spécifique" }
-        return "Développement"
+        if days <= 7 { return String(localized: "Course") }
+        if days <= 21 { return String(localized: "Affûtage") }
+        if days <= 56 { return String(localized: "Spécifique") }
+        return String(localized: "Développement")
     }
 
     /// Full countdown label matching the web app: e.g. "J-19 jours restants"
     var countdownText: String? {
         guard let days = daysRemaining else { return nil }
         if days > 0 {
-            return "J-\(days) jours restants"
+            return String(localized: "J-\(days) jours restants")
         } else if days == 0 {
-            return "Jour J"
+            return String(localized: "Jour J")
         } else {
-            return "Épreuve passée"
+            return String(localized: "Épreuve passée")
         }
     }
 

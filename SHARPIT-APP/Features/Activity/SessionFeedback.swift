@@ -17,22 +17,22 @@ enum SessionFeeling: Int, CaseIterable, Identifiable, Sendable {
     /// What the web stores and reads.
     var storedValue: String {
         switch self {
-        case .veryBad: "Très mal"
-        case .bad: "Mal"
-        case .okay: "Correct"
-        case .good: "Bien"
-        case .veryGood: "Très bien"
+        case .veryBad: String(localized: "Très mal")
+        case .bad: String(localized: "Mal")
+        case .okay: String(localized: "Correct")
+        case .good: String(localized: "Bien")
+        case .veryGood: String(localized: "Très bien")
         }
     }
 
     /// The web's hint, shown under the selected step.
     var hint: String {
         switch self {
-        case .veryBad: "Très dur — signes de surmenage ou inconfort."
-        case .bad: "Difficile, jambes lourdes ou manque d’énergie."
-        case .okay: "Séance faite, sans plus ni moins."
-        case .good: "Bon ressenti, effort maîtrisé."
-        case .veryGood: "Fluide, énergie au rendez-vous."
+        case .veryBad: String(localized: "Très dur — signes de surmenage ou inconfort.")
+        case .bad: String(localized: "Difficile, jambes lourdes ou manque d’énergie.")
+        case .okay: String(localized: "Séance faite, sans plus ni moins.")
+        case .good: String(localized: "Bon ressenti, effort maîtrisé.")
+        case .veryGood: String(localized: "Fluide, énergie au rendez-vous.")
         }
     }
 
@@ -77,12 +77,12 @@ enum SessionVerdict: String, Sendable {
     /// `SESSION_VERDICT_LABELS` on the web.
     var label: String {
         switch self {
-        case .asPlanned: "Conforme"
-        case .harder: "Plus dur que prévu"
-        case .easier: "Plus facile que prévu"
-        case .shorter: "Plus court"
-        case .longer: "Plus long"
-        case .different: "Différent"
+        case .asPlanned: String(localized: "Conforme")
+        case .harder: String(localized: "Plus dur que prévu")
+        case .easier: String(localized: "Plus facile que prévu")
+        case .shorter: String(localized: "Plus court")
+        case .longer: String(localized: "Plus long")
+        case .different: String(localized: "Différent")
         }
     }
 

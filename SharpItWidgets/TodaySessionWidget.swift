@@ -36,7 +36,7 @@ struct TodaySessionView: View {
     private var rectangular: some View {
         if let session = day?.leadSession {
             VStack(alignment: .leading, spacing: 1) {
-                Label { Text(session.isDone ? "Faite" : "Aujourd'hui") } icon: { Image(sharpitSymbol: session.isDone ? "checkmark.circle.fill" : session.sport.symbolName) }
+                Label { Text(session.isDone ? String(localized: "Faite") : String(localized: "Aujourd'hui")) } icon: { Image(sharpitSymbol: session.isDone ? "checkmark.circle.fill" : session.sport.symbolName) }
                     .font(.caption2.weight(.semibold))
                     .widgetAccentable()
                 Text(session.title).font(.headline).lineLimit(1)
@@ -47,7 +47,7 @@ struct TodaySessionView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .widgetURL(session.link)
         } else {
-            Label(day == nil ? "Ouvre SharpIt" : "Repos aujourd'hui", systemImage: "figure.cooldown")
+            Label(day == nil ? String(localized: "Ouvre SharpIt") : String(localized: "Repos aujourd'hui"), systemImage: "figure.cooldown")
                 .font(.headline)
         }
     }
@@ -62,7 +62,7 @@ struct TodaySessionView: View {
             }
             .widgetURL(session.link)
         } else {
-            Label(day == nil ? "SharpIt" : "Repos aujourd'hui", systemImage: "figure.cooldown")
+            Label(day == nil ? "SharpIt" : String(localized: "Repos aujourd'hui"), systemImage: "figure.cooldown")
         }
     }
 }
@@ -72,7 +72,7 @@ struct TodaySessionSmall: View {
     let entry: SnapshotEntry
 
     private var day: WidgetSnapshot.Day? { entry.day }
-    private var eyebrow: String { day.map { WidgetDay.label($0.trainingDayId) } ?? "Aujourd'hui" }
+    private var eyebrow: String { day.map { WidgetDay.label($0.trainingDayId) } ?? String(localized: "Aujourd'hui") }
 
     var body: some View {
         if let day {
@@ -84,7 +84,7 @@ struct TodaySessionSmall: View {
                     .widgetURL(WidgetSnapshot.link("/plan"))
             }
         } else {
-            WidgetAwaitingDay(eyebrow: "Séance du jour", symbol: "figure.run")
+            WidgetAwaitingDay(eyebrow: String(localized: "Séance du jour"), symbol: "figure.run")
         }
     }
 }
@@ -94,7 +94,7 @@ struct TodaySessionMedium: View {
     let entry: SnapshotEntry
 
     private var day: WidgetSnapshot.Day? { entry.day }
-    private var eyebrow: String { day.map { WidgetDay.label($0.trainingDayId) } ?? "Aujourd'hui" }
+    private var eyebrow: String { day.map { WidgetDay.label($0.trainingDayId) } ?? String(localized: "Aujourd'hui") }
 
     var body: some View {
         if let day {
@@ -108,14 +108,14 @@ struct TodaySessionMedium: View {
                 HStack(alignment: .bottom, spacing: 14) {
                     VStack(alignment: .leading, spacing: 10) {
                         if day.sessions.isEmpty {
-                            WidgetTitle(text: "Repos")
-                            WidgetCaption(text: "Rien de prévu aujourd'hui.")
+                            WidgetTitle(text: String(localized: "Repos"))
+                            WidgetCaption(text: String(localized: "Rien de prévu aujourd'hui."))
                         } else {
                             ForEach(day.sessions.prefix(2)) { session in
                                 Link(destination: session.link) { SessionLine(session: session) }
                             }
                             if day.sessions.count > 2 {
-                                WidgetCaption(text: "+ \(day.sessions.count - 2) autre\(day.sessions.count > 3 ? "s" : "")")
+                                WidgetCaption(text: String(localized: "+ \(day.sessions.count - 2) autre\(day.sessions.count > 3 ? "s" : "")"))
                             }
                         }
                     }
@@ -127,7 +127,7 @@ struct TodaySessionMedium: View {
             }
             .widgetURL(WidgetSnapshot.link("/plan"))
         } else {
-            WidgetAwaitingDay(eyebrow: "Séance du jour", symbol: "figure.run")
+            WidgetAwaitingDay(eyebrow: String(localized: "Séance du jour"), symbol: "figure.run")
         }
     }
 }
@@ -145,7 +145,7 @@ private struct SessionHero: View {
                 WidgetGlyph(symbol: session.sport.symbolName, tint: SharpitColor.foreground)
             }
         } content: {
-            WidgetEyebrow(text: session.isDone ? "Faite · \(session.sport.label)" : session.sport.label, tint: SharpitColor.foreground)
+            WidgetEyebrow(text: session.isDone ? String(localized: "Faite · \(session.sport.label)") : session.sport.label, tint: SharpitColor.foreground)
             WidgetTitle(text: session.title)
                 .padding(.top, 2)
             HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -188,8 +188,8 @@ private struct RestDay: View {
 
     var body: some View {
         WidgetFrame(eyebrow, symbol: "figure.cooldown") {
-            WidgetTitle(text: "Repos")
-            WidgetCaption(text: "Rien de prévu aujourd'hui.", lines: 2)
+            WidgetTitle(text: String(localized: "Repos"))
+            WidgetCaption(text: String(localized: "Rien de prévu aujourd'hui."), lines: 2)
         }
     }
 }

@@ -45,7 +45,7 @@ final class AppleCalendarSource {
     /// Calendrier permission, then tell the web the source is on.
     func enable(token: @escaping () async throws -> String) async {
         guard await sync.requestAccess() else {
-            state = .failed("Accès refusé : autorise SharpIt dans Réglages › Confidentialité › Calendriers.")
+            state = .failed(String(localized: "Accès refusé : autorise SharpIt dans Réglages › Confidentialité › Calendriers."))
             return
         }
         // The switch moves on the tap; a link that fails for good puts it back and says why.
@@ -56,7 +56,7 @@ final class AppleCalendarSource {
             linkRevision += 1
         } catch {
             setLinked(false)
-            state = .failed("Connexion Calendrier Apple impossible.")
+            state = .failed(String(localized: "Connexion Calendrier Apple impossible."))
         }
     }
 
@@ -70,7 +70,7 @@ final class AppleCalendarSource {
             sync.disable()
         } catch {
             setLinked(true)
-            state = .failed("Déconnexion Calendrier Apple impossible.")
+            state = .failed(String(localized: "Déconnexion Calendrier Apple impossible."))
         }
     }
 

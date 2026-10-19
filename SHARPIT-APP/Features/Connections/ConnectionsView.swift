@@ -42,7 +42,7 @@ struct ConnectionsView: View {
     var body: some View {
         let lists = sourceLists
         List {
-            Section(eyebrow: "Connectées", footer: ConnectionsReadout.sourcesFooter) {
+            Section(eyebrow: String(localized: "Connectées"), footer: ConnectionsReadout.sourcesFooter) {
                 if lists.connected.isEmpty {
                     emptyRow
                 } else {
@@ -65,7 +65,7 @@ struct ConnectionsView: View {
                     }
                 } footer: {
                     SharpitListFooter(
-                        "Quand deux sources mesurent la même chose, choisis celle qui fait foi. Le calendrier où SharpIt écrit tes séances se choisit en touchant la source."
+                        String(localized: "Quand deux sources mesurent la même chose, choisis celle qui fait foi. Le calendrier où SharpIt écrit tes séances se choisit en touchant la source.")
                     )
                 }
                 .sharpitListRows()
@@ -98,7 +98,7 @@ struct ConnectionsView: View {
             switch state {
             case .sending:
                 appleHealthToastToken = toastCenter.show(
-                    "Import depuis Apple Santé…",
+                    String(localized: "Import depuis Apple Santé…"),
                     symbol: "heart.text.square",
                     autoDismissAfter: nil
                 )
@@ -232,7 +232,7 @@ struct ConnectionsView: View {
             status = try await syncClient.sync(token: try await tokenProvider())
         } catch {
             toastCenter.show(
-                SharpitErrorGuidance.message(for: error, subject: "La synchronisation"),
+                SharpitErrorGuidance.message(for: error, subject: String(localized: "La synchronisation")),
                 symbol: "exclamationmark.triangle",
                 tone: .error,
                 autoDismissAfter: 4
@@ -269,7 +269,7 @@ struct ConnectionsView: View {
 
     private func loadStatus() async {
         let token = toastCenter.show(
-            "Vérification des sources…",
+            String(localized: "Vérification des sources…"),
             symbol: "arrow.triangle.2.circlepath",
             autoDismissAfter: nil
         )
@@ -281,7 +281,7 @@ struct ConnectionsView: View {
             appleCalendar.syncLinkedFromServer(answer.connected.contains(AppleCalendarSync.providerId))
         } catch {
             toastCenter.show(
-                SharpitErrorGuidance.message(for: error, subject: "L’état des connexions"),
+                SharpitErrorGuidance.message(for: error, subject: String(localized: "L’état des connexions")),
                 symbol: "exclamationmark.triangle",
                 tone: .error,
                 autoDismissAfter: 4

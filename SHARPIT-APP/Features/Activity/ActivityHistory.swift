@@ -11,7 +11,7 @@ nonisolated struct ActivityMonth: Identifiable, Equatable, Sendable {
 
     /// « 12 séances · 14 h 20 ».
     var summary: String {
-        let count = activities.count == 1 ? "1 séance" : "\(activities.count) séances"
+        let count = activities.count == 1 ? String(localized: "1 séance") : String(localized: "\(activities.count) séances")
         guard durationSeconds > 0 else { return count }
         return "\(count) · \(ActivityHistory.hours(durationSeconds))"
     }
@@ -93,10 +93,10 @@ nonisolated enum ActivityHistory {
     /// « Octobre » this year, « Octobre 2025 » before.
     private static func monthTitle(_ date: Date, currentYear: Int, calendar: Calendar) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = AppLanguage.locale
         formatter.calendar = calendar
         formatter.timeZone = calendar.timeZone
         formatter.setLocalizedDateFormatFromTemplate(calendar.component(.year, from: date) == currentYear ? "MMMM" : "MMMM yyyy")
-        return formatter.string(from: date).capitalized(with: Locale(identifier: "fr_FR"))
+        return formatter.string(from: date).capitalized(with: AppLanguage.locale)
     }
 }

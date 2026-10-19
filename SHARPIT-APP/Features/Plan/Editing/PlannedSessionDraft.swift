@@ -88,10 +88,10 @@ struct PlannedSessionDraft: Equatable {
     func missingRequirement(editing original: PlannedSessionDraft? = nil) -> String? {
         if let original, original.sport == sport { return nil }
         if isStrength {
-            return exercises.contains(where: \.isNamed) ? nil : "Ajoute au moins un exercice."
+            return exercises.contains(where: \.isNamed) ? nil : String(localized: "Ajoute au moins un exercice.")
         }
         let written = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        return written.isEmpty ? "Décris le déroulé de la séance." : nil
+        return written.isEmpty ? String(localized: "Décris le déroulé de la séance.") : nil
     }
 
     /// Every field, for a creation.

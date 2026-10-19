@@ -46,11 +46,11 @@ nonisolated enum FoodPortion {
     static func presets(for product: V1FoodProduct, lastGrams: Double?) -> [Preset] {
         var presets = [Preset(label: "100 g", grams: 100)]
         if let serving = product.servingGrams, serving > 0 {
-            let label = product.servingLabel.map { "\($0) · \(gramsLabel(serving))" } ?? "1 portion · \(gramsLabel(serving))"
+            let label = product.servingLabel.map { "\($0) · \(gramsLabel(serving))" } ?? String(localized: "1 portion · \(gramsLabel(serving))")
             presets.append(Preset(label: label, grams: serving))
         }
         if let lastGrams, lastGrams > 0 {
-            presets.append(Preset(label: "Dernière fois · \(gramsLabel(lastGrams))", grams: lastGrams))
+            presets.append(Preset(label: String(localized: "Dernière fois · \(gramsLabel(lastGrams))"), grams: lastGrams))
         }
         var seen = Set<Double>()
         return presets.filter { seen.insert($0.grams).inserted }
@@ -65,17 +65,17 @@ nonisolated enum FoodPortion {
 
     /// `150 g`, `12,5 g`.
     static func gramsLabel(_ grams: Double) -> String {
-        "\(grams.formatted(.number.precision(.fractionLength(0...1)).locale(Locale(identifier: "fr_FR")))) g"
+        "\(grams.formatted(.number.precision(.fractionLength(0...1)).locale(AppLanguage.locale))) g"
     }
 
     /// `12,5` — a grams or macro figure with at most one decimal, French separator.
     static func figure(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...1)).locale(Locale(identifier: "fr_FR")))
+        value.formatted(.number.precision(.fractionLength(0...1)).locale(AppLanguage.locale))
     }
 
     /// `2400`, `12,5` — the same without grouping, so a field shows what it parses back.
     static func editableFigure(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...1)).grouping(.never).locale(Locale(identifier: "fr_FR")))
+        value.formatted(.number.precision(.fractionLength(0...1)).grouping(.never).locale(AppLanguage.locale))
     }
 
     private static func scale(_ per100g: Double, _ grams: Double) -> Double {

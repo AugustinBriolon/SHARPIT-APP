@@ -24,11 +24,11 @@ struct ProView: View {
                         .revealed(hasAppeared, index: 1)
                 }
 
-                perkGroup("Réservé à Pro", perks: store.proPerks, badge: "Pro", highlighted: true)
+                perkGroup(String(localized: "Réservé à Pro"), perks: store.proPerks, badge: String(localized: "Pro"), highlighted: true)
                     .revealed(hasAppeared, index: 2)
-                perkGroup("Déjà inclus", perks: store.includedPerks, badge: "Inclus", highlighted: false)
+                perkGroup(String(localized: "Déjà inclus"), perks: store.includedPerks, badge: String(localized: "Inclus"), highlighted: false)
                     .revealed(hasAppeared, index: 3)
-                perkGroup("Bientôt", perks: store.plannedPerks, badge: "Bientôt", highlighted: false)
+                perkGroup(String(localized: "Bientôt"), perks: store.plannedPerks, badge: String(localized: "Bientôt"), highlighted: false)
                     .revealed(hasAppeared, index: 4)
 
                 actions
@@ -84,8 +84,8 @@ struct ProView: View {
 
     private var statusCard: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Ton palier", systemImage: "sparkle")
-            Text(store.isPro ? "SharpIt Pro" : "Gratuit")
+            SharpitEyebrow(String(localized: "Ton palier"), systemImage: "sparkle")
+            Text(store.isPro ? String(localized: "SharpIt Pro") : String(localized: "Gratuit"))
                 .font(SharpitTypography.pageTitle)
                 .tracking(SharpitTypography.pageTitleTracking)
                 .foregroundStyle(SharpitColor.inkSurfaceForeground)

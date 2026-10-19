@@ -60,15 +60,15 @@ struct GuidedStrengthSetTarget: Identifiable, Equatable, Sendable {
 
     nonisolated static func kilograms(_ value: Double) -> String {
         let rounded = (value * 10).rounded() / 10
-        guard rounded.isFinite else { return "— kg" }
-        if rounded == rounded.rounded() { return Int(exactly: rounded).map { "\($0) kg" } ?? "— kg" }
-        return String(format: "%.1f kg", rounded).replacingOccurrences(of: ".", with: ",")
+        guard rounded.isFinite else { return String(localized: "— kg") }
+        if rounded == rounded.rounded() { return Int(exactly: rounded).map { "\($0) kg" } ?? String(localized: "— kg") }
+        return String(format: String(localized: "%.1f kg"), rounded).replacingOccurrences(of: ".", with: ",")
     }
 
     /// Volume figure without the unit, for the Strong-style header (`3 590`).
     static func volumeFigure(_ value: Double) -> String {
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = AppLanguage.locale
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
         return formatter.string(from: NSNumber(value: value.rounded())) ?? "\(Int(value.rounded()))"
@@ -346,7 +346,7 @@ extension PlannedSessionFormat {
         let minutes = seconds / 60
         let rem = seconds % 60
         if rem == 0 { return "\(minutes) min" }
-        return "\(minutes) min \(rem) s"
+        return String(localized: "\(minutes) min \(rem) s")
     }
 
     /// `1:00` countdown for the rest ring.

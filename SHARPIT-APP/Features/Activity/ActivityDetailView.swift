@@ -58,10 +58,10 @@ struct ActivityDetailView: View {
 
     private var replayLabel: String {
         switch routeReplay.state {
-        case .playing: "Mettre en pause le tracé"
-        case .paused: "Reprendre le tracé"
-        case .finished: "Rejouer le tracé"
-        case .idle: "Animer le tracé"
+        case .playing: String(localized: "Mettre en pause le tracé")
+        case .paused: String(localized: "Reprendre le tracé")
+        case .finished: String(localized: "Rejouer le tracé")
+        case .idle: String(localized: "Animer le tracé")
         }
     }
 
@@ -268,7 +268,7 @@ struct ActivityDetailView: View {
             .buttonStyle(.plain)
             .padding(.leading, 16)
             .padding(.top, 12)
-            .accessibilityLabel(isMapExpanded ? "Réduire la carte" : "Retour")
+            .accessibilityLabel(isMapExpanded ? String(localized: "Réduire la carte") : String(localized: "Retour"))
         }
         .overlay(alignment: .topTrailing) {
             if case .loaded(let detail) = phase {
@@ -334,7 +334,7 @@ struct ActivityDetailView: View {
                                 .sharpitShadow(.control)
                                 .contentTransition(.symbolEffect(.replace))
                         }
-                        .accessibilityLabel(isMapExpanded ? "Réduire la carte" : "Agrandir la carte")
+                        .accessibilityLabel(isMapExpanded ? String(localized: "Réduire la carte") : String(localized: "Agrandir la carte"))
                     }
                     if !isMapExpanded, let mutator = client as? any ActivityMutating {
                         ActivityActionsMenu(
@@ -382,7 +382,7 @@ struct ActivityDetailView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(mapCamera == nil)
-                    .accessibilityLabel(isPitched ? "Vue à plat" : "Vue en relief")
+                    .accessibilityLabel(isPitched ? String(localized: "Vue à plat") : String(localized: "Vue en relief"))
                     Button {
                         routeReplay.toggle()
                     } label: {
@@ -434,7 +434,7 @@ struct ActivityDetailView: View {
         .sheet(isPresented: $showingCompliance) {
             if case .loaded(let detail) = phase, let analysis = detail.plannedSession?.analysis {
                 ComplianceDetailSheet(
-                    title: detail.plannedSession?.title ?? "Séance planifiée",
+                    title: detail.plannedSession?.title ?? String(localized: "Séance planifiée"),
                     analysis: analysis,
                     onUnlink: detail.plannedSession?.id.map { sessionId -> () -> Void in
                         { unlink(from: sessionId, detail: detail) }
@@ -639,8 +639,8 @@ struct ActivityDetailView: View {
                     }
                 }
                 SharpitWriteFailures.shared.report(goal == nil
-                    ? "L’objectif n’a pas pu être délié. Réessaie dans un instant."
-                    : "La séance n’a pas pu être liée à l’objectif. Réessaie dans un instant.")
+                    ? String(localized: "L’objectif n’a pas pu être délié. Réessaie dans un instant.")
+                    : String(localized: "La séance n’a pas pu être liée à l’objectif. Réessaie dans un instant."))
             }
         }
     }
@@ -661,7 +661,7 @@ struct ActivityDetailView: View {
                 if case .loaded(let current) = phase {
                     withAnimation(SharpitMotion.reveal) { phase = .loaded(current.withGoal(goal)) }
                 }
-                SharpitWriteFailures.shared.report("L’objectif n’a pas pu être validé. Réessaie dans un instant.")
+                SharpitWriteFailures.shared.report(String(localized: "L’objectif n’a pas pu être validé. Réessaie dans un instant."))
             }
         }
     }
@@ -681,7 +681,7 @@ struct ActivityDetailView: View {
                 router?.noteActivitiesChanged()
                 dismiss()
             } catch {
-                SharpitWriteFailures.shared.report("La séance n’a pas pu être supprimée. Réessaie dans un instant.")
+                SharpitWriteFailures.shared.report(String(localized: "La séance n’a pas pu être supprimée. Réessaie dans un instant."))
             }
         }
     }
@@ -695,15 +695,15 @@ struct ActivityDetailView: View {
                 try await SharpitRetry.run {
                     try await linker.reanalyze(sessionId: sessionId, token: try await tokenProvider())
                 }
-                notice = ActivityNotice(title: "Analyse relancée", message: "Le coach relit ta séance, la nouvelle analyse s’affiche ici dans un instant.")
+                notice = ActivityNotice(title: String(localized: "Analyse relancée"), message: String(localized: "Le coach relit ta séance, la nouvelle analyse s’affiche ici dans un instant."))
             } catch SharpitAPIError.rateLimited {
-                notice = ActivityNotice(title: "Analyse", message: "Une analyse vient d’être lancée. Réessaie dans quelques minutes.")
+                notice = ActivityNotice(title: String(localized: "Analyse"), message: String(localized: "Une analyse vient d’être lancée. Réessaie dans quelques minutes."))
                 return
             } catch let SharpitAPIError.message(reason) {
-                notice = ActivityNotice(title: "Analyse", message: reason)
+                notice = ActivityNotice(title: String(localized: "Analyse"), message: reason)
                 return
             } catch {
-                notice = ActivityNotice(title: "Analyse", message: "L’analyse n’a pas pu être relancée. Réessaie dans un instant.")
+                notice = ActivityNotice(title: String(localized: "Analyse"), message: String(localized: "L’analyse n’a pas pu être relancée. Réessaie dans un instant."))
                 return
             }
             for _ in 0..<4 {
@@ -726,7 +726,7 @@ struct ActivityDetailView: View {
         }
     }
 
-    static let unlinkFailure = "L’activité n’a pas pu être déliée. Réessaie dans un instant."
+    static let unlinkFailure = String(localized: "L’activité n’a pas pu être déliée. Réessaie dans un instant.")
 
     private func activitySplits(for detail: V1ActivityDetail) -> [ActivitySplit] {
         guard detail.type.supportsSplits else { return [] }
@@ -754,7 +754,7 @@ struct ActivityDetailView: View {
             }
         } catch is CancellationError {
         } catch {
-            SharpitWriteFailures.shared.report("Le récit n’a pas pu être généré. Réessaie dans un instant.")
+            SharpitWriteFailures.shared.report(String(localized: "Le récit n’a pas pu être généré. Réessaie dans un instant."))
         }
     }
 
@@ -787,7 +787,7 @@ struct ActivityDetailView: View {
         } catch let error as SharpitAPIError where error == .unauthorized {
             phase = .unauthorized
         } catch {
-            phase = .failed("Impossible de récupérer cette activité pour le moment.")
+            phase = .failed(String(localized: "Impossible de récupérer cette activité pour le moment."))
         }
     }
 }
@@ -889,7 +889,7 @@ private struct ActivityDetailContent: View {
                 // The session the athlete is reading is exactly what they would ask about,
                 // so the way to ask sits with its title rather than below the analysis.
                 HStack(spacing: SharpitSpacing.sm) {
-                    CoachDiscussButton(title: "Discuter de cette séance") {
+                    CoachDiscussButton(title: String(localized: "Discuter de cette séance")) {
                         router.discussWithCoach(
                             about: CoachDiscuss.describe(
                                 .activity(activityId: detail.id),
@@ -1066,7 +1066,7 @@ private struct ActivityDetailContent: View {
     /// two short readouts share one row instead of each leaving half a line empty.
     private var contextSection: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Ta séance")
+            SharpitEyebrow(String(localized: "Ta séance"))
             HStack(alignment: .top, spacing: SharpitSpacing.sm) {
                 SessionFeedbackTile(
                     rpe: detail.rpe.map { Int($0.rounded()) },
@@ -1088,9 +1088,9 @@ private struct ActivityDetailContent: View {
     private var coachAnalysis: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(
-                title: "Analyse du coach",
+                title: String(localized: "Analyse du coach"),
                 symbol: "sparkles",
-                subtitle: detail.narrativeAnalysis == nil ? "Prête à être générée" : nil,
+                subtitle: detail.narrativeAnalysis == nil ? String(localized: "Prête à être générée") : nil,
                 showsChevron: false
             )
             if let narrative = detail.narrativeAnalysis {
@@ -1112,7 +1112,7 @@ private struct ActivityDetailContent: View {
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.mutedForeground)
                 SharpitPrimaryButton(
-                    title: isGeneratingNarrative ? "Analyse en cours…" : "Générer l’analyse",
+                    title: isGeneratingNarrative ? String(localized: "Analyse en cours…") : String(localized: "Générer l’analyse"),
                     trailingSymbol: isGeneratingNarrative ? nil : "arrow.up.right",
                     isBusy: isGeneratingNarrative,
                     action: onGenerateNarrative
@@ -1127,7 +1127,7 @@ private struct ActivityDetailContent: View {
 
     private var sessionSummary: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(title: "Lecture de séance", symbol: "list.bullet.rectangle", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Lecture de séance"), symbol: "list.bullet.rectangle", showsChevron: false)
             let signals = summarySignals
             if !signals.isEmpty {
                 HStack(alignment: .top, spacing: SharpitSpacing.md) {
@@ -1149,17 +1149,17 @@ private struct ActivityDetailContent: View {
     private var summarySignals: [(caption: String, value: String, unit: String?)] {
         switch detail.type {
         case .strength:
-            return [("Exercices", "\(exerciseCount)", nil), ("Séries", "\(totalStrengthSets)", nil)]
-                + (strengthVolume.map { [("Volume", "\(Int($0.rounded()))", "kg")] } ?? [])
+            return [(String(localized: "Exercices"), "\(exerciseCount)", nil), (String(localized: "Séries"), "\(totalStrengthSets)", nil)]
+                + (strengthVolume.map { [(String(localized: "Volume"), "\(Int($0.rounded()))", "kg")] } ?? [])
         case .swim:
-            return (detail.swimSets.map { [("Séries", "\(Int($0.rounded()))", nil)] } ?? [])
-                + (detail.swolf.map { [("Swolf", "\(Int($0.rounded()))", nil)] } ?? [])
+            return (detail.swimSets.map { [(String(localized: "Séries"), "\(Int($0.rounded()))", nil)] } ?? [])
+                + (detail.swolf.map { [(String(localized: "Swolf"), "\(Int($0.rounded()))", nil)] } ?? [])
         case .triathlon:
             return []
         default:
-            return (detail.elevationM.map { [("Dénivelé", "\(Int($0.rounded()))", "m")] } ?? [])
-                + (detail.avgPower.map { [("Puissance", "\(Int($0.rounded()))", "W")] } ?? [])
-                + (detail.calories.map { [("Calories", "\(Int($0.rounded()))", "kcal")] } ?? [])
+            return (detail.elevationM.map { [(String(localized: "Dénivelé"), "\(Int($0.rounded()))", "m")] } ?? [])
+                + (detail.avgPower.map { [(String(localized: "Puissance"), "\(Int($0.rounded()))", "W")] } ?? [])
+                + (detail.calories.map { [(String(localized: "Calories"), "\(Int($0.rounded()))", "kcal")] } ?? [])
         }
     }
 
@@ -1192,7 +1192,7 @@ private struct ActivityDetailContent: View {
 
     private var dateLabel: String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = AppLanguage.locale
         formatter.setLocalizedDateFormatFromTemplate("d MMMM yyyy")
         return formatter.string(from: detail.date)
     }
@@ -1218,7 +1218,7 @@ private struct ActivityDetailContent: View {
 
     private var multisportLegsSection: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Enchaînement")
+            SharpitEyebrow(String(localized: "Enchaînement"))
             let segments = RaceLegsTimeline.segments(detail.multisportLegs)
             if !segments.isEmpty {
                 RaceLegsBar(segments: segments, compact: true)
@@ -1259,7 +1259,7 @@ private struct ActivityDetailContent: View {
     }
 
     private var cadenceLabel: String {
-        "Cadence"
+        String(localized: "Cadence")
     }
 
     private var caloriesValue: String {
@@ -1312,7 +1312,7 @@ private struct ActivityRaceHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Objectif", systemImage: "flag.checkered")
+            SharpitEyebrow(String(localized: "Objectif"), systemImage: "flag.checkered")
             Text(goal.title)
                 .font(SharpitTypography.cardTitle)
                 .tracking(SharpitTypography.cardTitleTracking)
@@ -1348,7 +1348,7 @@ private struct ActivityRaceHeader: View {
 
     private var detailLine: String? {
         let clean = { (text: String?) in text?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank }
-        let parts = [clean(goal.raceFormat), clean(goal.targetPerformance).map { "Objectif · \($0)" }].compactMap { $0 }
+        let parts = [clean(goal.raceFormat), clean(goal.targetPerformance).map { String(localized: "Objectif · \($0)") }].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: "  ·  ")
     }
 }
@@ -1404,7 +1404,7 @@ struct ActivitySplit: Identifiable, Equatable {
                 id: index,
                 distanceLabel: endDistance - startDistance < segmentDistance
                     // Where the split ends, like the whole ones: « 13,8 km », not its own 3,8.
-                    ? String(format: "%.1f km", endDistance / 1_000).replacingOccurrences(of: ".", with: ",")
+                    ? String(format: String(localized: "%.1f km"), endDistance / 1_000).replacingOccurrences(of: ".", with: ",")
                     : "\(Int(endDistance / 1_000)) km",
                 paceSeconds: pace,
                 variation: (pace / overallPace - 1) * 100,
@@ -1438,9 +1438,9 @@ struct ActivitySplitsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(
-                title: segmentDistance == 5_000 ? "Splits tous les 5 km" : "Splits au kilomètre",
+                title: segmentDistance == 5_000 ? String(localized: "Splits tous les 5 km") : String(localized: "Splits au kilomètre"),
                 symbol: "flag.pattern.checkered",
-                subtitle: "Barre longue, allure vive",
+                subtitle: String(localized: "Barre longue, allure vive"),
                 showsChevron: false
             )
             VStack(spacing: SharpitSpacing.sm) {
@@ -1507,10 +1507,10 @@ enum ActivityChartMetric: String, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .heartRate: "FC"
-        case .pace: "Allure"
-        case .power: "Puissance"
-        case .elevation: "Dénivelé"
-        case .cadence: "Cadence"
+        case .pace: String(localized: "Allure")
+        case .power: String(localized: "Puissance")
+        case .elevation: String(localized: "Dénivelé")
+        case .cadence: String(localized: "Cadence")
         }
     }
 
@@ -1609,7 +1609,7 @@ struct ActivityChartsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(title: "Courbes", symbol: "waveform.path.ecg", showsChevron: false) {
+            SharpitCardHeader(title: String(localized: "Courbes"), symbol: "waveform.path.ecg", showsChevron: false) {
                 // A swatch carries the curve's colour; the unit stays legible in muted ink.
                 HStack(spacing: SharpitSpacing.sm) {
                     ForEach(selection) { metric in
@@ -1653,7 +1653,7 @@ struct ActivityChartsSection: View {
                         if let first = selection.first {
                         Chart(points(for: first)) { point in
                             LineMark(
-                                x: .value("Temps", point.time),
+                                x: .value(String(localized: "Temps"), point.time),
                                 y: .value(first.unit, point.value)
                             )
                             .interpolationMethod(.catmullRom)
@@ -1678,7 +1678,7 @@ struct ActivityChartsSection: View {
                         let second = selection[1]
                         Chart(points(for: second)) { point in
                             LineMark(
-                                x: .value("Temps", point.time),
+                                x: .value(String(localized: "Temps"), point.time),
                                 y: .value(second.unit, point.value)
                             )
                             .interpolationMethod(.catmullRom)
@@ -1780,26 +1780,26 @@ extension ActivityHeroMetricData {
     /// « Résumé de séance »: what the session was, then what it cost (ADR 0006).
     static func primary(for detail: V1ActivityDetail, distanceM: Double?, isExpertReading: Bool) -> [ActivityHeroMetricData] {
         var metrics: [ActivityHeroMetricData] = []
-        if let duration = detail.duration { metrics.append(.init(label: "Durée", value: ActivityFormat.duration(duration), unit: nil)) }
+        if let duration = detail.duration { metrics.append(.init(label: String(localized: "Durée"), value: ActivityFormat.duration(duration), unit: nil)) }
         if detail.type == .strength {
-            if !detail.strengthSets.isEmpty { metrics.append(.init(label: "Séries", value: "\(detail.strengthSetCount)", unit: nil)) }
-            if let volume = detail.strengthVolumeKg { metrics.append(.init(label: "Volume", value: "\(Int(volume.rounded()))", unit: "kg")) }
+            if !detail.strengthSets.isEmpty { metrics.append(.init(label: String(localized: "Séries"), value: "\(detail.strengthSetCount)", unit: nil)) }
+            if let volume = detail.strengthVolumeKg { metrics.append(.init(label: String(localized: "Volume"), value: "\(Int(volume.rounded()))", unit: "kg")) }
         } else if let distance = distanceM {
-            metrics.append(.init(label: "Distance", value: distance >= 1_000 ? String(format: "%.1f", distance / 1_000).replacingOccurrences(of: ".", with: ",") : "\(Int(distance.rounded()))", unit: distance >= 1_000 ? "km" : "m"))
+            metrics.append(.init(label: String(localized: "Distance"), value: distance >= 1_000 ? String(format: "%.1f", distance / 1_000).replacingOccurrences(of: ".", with: ",") : "\(Int(distance.rounded()))", unit: distance >= 1_000 ? "km" : "m"))
         }
-        if let elevation = detail.elevationM, detail.type != .swim && detail.type != .strength { metrics.append(.init(label: "Dénivelé", value: "\(Int(elevation.rounded()))", unit: "m")) }
+        if let elevation = detail.elevationM, detail.type != .swim && detail.type != .strength { metrics.append(.init(label: String(localized: "Dénivelé"), value: "\(Int(elevation.rounded()))", unit: "m")) }
         if detail.type == .swim, let pace = detail.avgPaceSecPer100m {
-            metrics.append(.init(label: "Allure", value: ActivityFormat.paceClock(pace), unit: "/100 m"))
+            metrics.append(.init(label: String(localized: "Allure"), value: ActivityFormat.paceClock(pace), unit: "/100 m"))
         } else if detail.type == .bike, let distance = distanceM, let duration = detail.duration, duration > 0 {
             // A ride reads in km/h, never as a pace per km.
-            metrics.append(.init(label: "Vitesse", value: ActivityFormat.speedKmh(distanceM: distance, duration: duration), unit: "km/h"))
+            metrics.append(.init(label: String(localized: "Vitesse"), value: ActivityFormat.speedKmh(distanceM: distance, duration: duration), unit: "km/h"))
         } else if detail.type != .strength, let pace = detail.paceSecPerKm {
-            metrics.append(.init(label: "Allure", value: ActivityFormat.paceClock(pace), unit: "/km"))
+            metrics.append(.init(label: String(localized: "Allure"), value: ActivityFormat.paceClock(pace), unit: "/km"))
         }
         // Last, because it is what the session cost rather than what it was (ADR 0006).
         if let load = detail.load, load > 0 {
             metrics.append(.init(
-                label: isExpertReading ? "TSS" : "Charge",
+                label: isExpertReading ? "TSS" : String(localized: "Charge"),
                 value: "\(Int(load.rounded()))",
                 unit: nil
             ))
@@ -1809,7 +1809,7 @@ extension ActivityHeroMetricData {
 }
 
 struct ActivityMetricGrid: View {
-    var title = "Résumé de séance"
+    var title = String(localized: "Résumé de séance")
     var symbol = "chart.bar"
     let metrics: [ActivityHeroMetricData]
 
@@ -1936,12 +1936,12 @@ private struct ActivityRouteHero: View {
                     .stroke(tone, lineWidth: 5)
                 }
                 if let start = coordinates.first {
-                    Annotation("Départ", coordinate: start) {
+                    Annotation(String(localized: "Départ"), coordinate: start) {
                         RoutePointMarker(color: .white, stroke: tone)
                     }
                 }
                 if let finish = coordinates.last {
-                    Annotation("Arrivée", coordinate: finish) {
+                    Annotation(String(localized: "Arrivée"), coordinate: finish) {
                         RoutePointMarker(color: tone, stroke: .white)
                     }
                 }
@@ -2111,7 +2111,7 @@ struct CollapsedActivityBottomBar: View {
     var subtitleText: String {
         var parts: [String] = [detail.type.label]
         if let dist = detail.distanceM, dist > 0 {
-            parts.append(dist >= 1000 ? String(format: "%.1f km", dist / 1000) : "\(Int(dist.rounded())) m")
+            parts.append(dist >= 1000 ? String(format: String(localized: "%.1f km"), dist / 1000) : "\(Int(dist.rounded())) m")
         }
         if let elev = detail.elevationM, elev > 0 {
             parts.append("\(Int(elev.rounded())) m D+")

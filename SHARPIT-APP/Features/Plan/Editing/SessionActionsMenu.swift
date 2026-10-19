@@ -42,9 +42,9 @@ enum PlanMoveDays {
 
     /// « Aujourd’hui », « Demain », then « Mercredi 8 octobre ».
     static func label(_ day: Date, now: Date = .now, calendar: Calendar = .current) -> String {
-        if calendar.isDate(day, inSameDayAs: now) { return "Aujourd’hui" }
+        if calendar.isDate(day, inSameDayAs: now) { return String(localized: "Aujourd’hui") }
         if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(day, inSameDayAs: tomorrow) {
-            return "Demain"
+            return String(localized: "Demain")
         }
         let text = day.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide))
         return text.prefix(1).uppercased() + text.dropFirst()

@@ -9,8 +9,8 @@ nonisolated enum VerdictCopySanitizer {
     nonisolated private static let log = Logger(subsystem: "app.sharpit.ios", category: "verdict")
 
     /// Neutral lines when a displayed string still carries an unreplaced placeholder.
-    static let fallbackExplanation = "Le verdict n’est pas disponible pour le moment."
-    static let fallbackInstruction = "Suis ton plan avec prudence."
+    static let fallbackExplanation = String(localized: "Le verdict n’est pas disponible pour le moment.")
+    static let fallbackInstruction = String(localized: "Suis ton plan avec prudence.")
 
     /// Built per call — `Regex` is not `Sendable`, so it must not live in a static `let`
     /// under Swift 6 strict concurrency.

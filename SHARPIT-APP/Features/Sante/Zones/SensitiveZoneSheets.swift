@@ -19,12 +19,12 @@ struct SensitiveZoneFormSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    choices("Qu'est-ce que c'est ?", SensitiveZoneOptions.categories, selection: $draft.category)
+                    choices(String(localized: "Qu'est-ce que c'est ?"), SensitiveZoneOptions.categories, selection: $draft.category)
                     bodyPartPicker
-                    choices("Quel côté ?", SensitiveZoneOptions.sides, selection: $draft.side)
+                    choices(String(localized: "Quel côté ?"), SensitiveZoneOptions.sides, selection: $draft.side)
                     severityPicker
                     impactPicker
-                    SharpitFormField("Nom (facultatif)", placeholder: draft.resolvedTitle, text: $draft.title)
+                    SharpitFormField(String(localized: "Nom (facultatif)"), placeholder: draft.resolvedTitle, text: $draft.title)
                     descriptionField
                     Toggle(isOn: $draft.affectsTraining) {
                         VStack(alignment: .leading, spacing: 2) {
@@ -44,14 +44,14 @@ struct SensitiveZoneFormSheet: View {
                 }
                 .padding(SharpitSpacing.pageInset)
             }
-            .navigationTitle(isNew ? "Déclarer une zone" : "Modifier la zone")
+            .navigationTitle(isNew ? String(localized: "Déclarer une zone") : String(localized: "Modifier la zone"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isNew ? "Ajouter" : "Enregistrer") { save() }
+                    Button(isNew ? String(localized: "Ajouter") : String(localized: "Enregistrer")) { save() }
                         .disabled(!draft.isComplete || isSaving)
                 }
             }
@@ -90,7 +90,7 @@ struct SensitiveZoneFormSheet: View {
 
     private var bodyPartPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Où ?")
+            SharpitFieldLabel(String(localized: "Où ?"))
             LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
                 ForEach(bodyParts, id: \.self) { part in
                     OnboardingChoiceChip(title: part, isSelected: draft.bodyPart == part && !writesOwnPart) {
@@ -98,7 +98,7 @@ struct SensitiveZoneFormSheet: View {
                         draft.bodyPart = part
                     }
                 }
-                OnboardingChoiceChip(title: "Autre…", isSelected: writesOwnPart) {
+                OnboardingChoiceChip(title: String(localized: "Autre…"), isSelected: writesOwnPart) {
                     writesOwnPart = true
                     draft.bodyPart = nil
                 }
@@ -117,21 +117,21 @@ struct SensitiveZoneFormSheet: View {
 
     private var severityPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(SensitiveZoneOptions.isCorrective(draft.category) ? "Gêne ressentie" : "Douleur aujourd'hui")
+            SharpitFieldLabel(SensitiveZoneOptions.isCorrective(draft.category) ? String(localized: "Gêne ressentie") : String(localized: "Douleur aujourd'hui"))
             ZoneSeverityScale(severity: Binding(get: { draft.severity }, set: { draft.severity = $0 ?? 0 }))
         }
     }
 
     private var impactPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Ce que tu peux encore faire")
+            SharpitFieldLabel(String(localized: "Ce que tu peux encore faire"))
             ZoneImpactPicker(selection: $draft.functionalImpact)
         }
     }
 
     private var descriptionField: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Notes (facultatif)")
+            SharpitFieldLabel(String(localized: "Notes (facultatif)"))
             TextField("Quand ça apparaît, ce qui soulage…", text: $draft.description, axis: .vertical)
                 .font(SharpitTypography.body)
                 .lineLimit(3...6)
@@ -192,7 +192,7 @@ struct ZoneCheckinSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
             SharpitEyebrow(zone.place)
-            Text(prompt ?? (isCorrective ? "Comment ça va aujourd'hui ?" : "Comment va la douleur ?"))
+            Text(prompt ?? (isCorrective ? String(localized: "Comment ça va aujourd'hui ?") : String(localized: "Comment va la douleur ?")))
                 .font(SharpitTypography.sectionTitle)
                 .tracking(SharpitTypography.sectionTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
@@ -204,7 +204,7 @@ struct ZoneCheckinSheet: View {
     private var severityBlock: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(alignment: .lastTextBaseline) {
-                SharpitEyebrow(isCorrective ? "Gêne" : "Douleur")
+                SharpitEyebrow(isCorrective ? String(localized: "Gêne") : String(localized: "Douleur"))
                 Spacer()
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(draft.severity.map(String.init) ?? "—")
@@ -217,7 +217,7 @@ struct ZoneCheckinSheet: View {
                 }
             }
             ZoneSeverityScale(severity: $draft.severity)
-            Text(draft.severity.map(ZoneSeverityTint.caption) ?? "Touche une valeur")
+            Text(draft.severity.map(ZoneSeverityTint.caption) ?? String(localized: "Touche une valeur"))
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .contentTransition(.opacity)
@@ -227,14 +227,14 @@ struct ZoneCheckinSheet: View {
 
     private var impactBlock: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Ce que tu as pu faire")
+            SharpitEyebrow(String(localized: "Ce que tu as pu faire"))
             ZoneImpactPicker(selection: $draft.functionalImpact)
         }
     }
 
     private var commentBlock: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Un mot (facultatif)")
+            SharpitEyebrow(String(localized: "Un mot (facultatif)"))
             TextField("Après la séance, au réveil…", text: $draft.comment, axis: .vertical)
                 .font(SharpitTypography.body)
                 .lineLimit(2...4)
@@ -254,7 +254,7 @@ struct ZoneCheckinSheet: View {
         } label: {
             HStack {
                 if isSaving { ProgressView().tint(.white) }
-                Text(isSaving ? "Enregistrement…" : "Enregistrer")
+                Text(isSaving ? String(localized: "Enregistrement…") : String(localized: "Enregistrer"))
             }
             .font(SharpitTypography.bodyEmphasis)
             .frame(maxWidth: .infinity)

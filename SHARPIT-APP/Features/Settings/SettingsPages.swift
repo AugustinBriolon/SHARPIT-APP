@@ -49,7 +49,7 @@ struct AccountView: View {
                 .listRowBackground(Color.clear)
             }
 
-            Section(eyebrow: "Identité") {
+            Section(eyebrow: String(localized: "Identité")) {
                 LabeledContent("Prénom") {
                     TextField("Prénom", text: $firstName)
                         .multilineTextAlignment(.trailing)
@@ -66,8 +66,8 @@ struct AccountView: View {
             .sharpitListRows()
 
             Section(
-                eyebrow: "Profil",
-                footer: "Le sexe, la taille et l'âge servent à l'âge biologique et aux normes de fréquence cardiaque."
+                eyebrow: String(localized: "Profil"),
+                footer: String(localized: "Le sexe, la taille et l'âge servent à l'âge biologique et aux normes de fréquence cardiaque.")
             ) {
                 Picker("Sexe", selection: sexBinding) {
                     Text("Non renseigné").tag(AthleteSex?.none)
@@ -91,12 +91,12 @@ struct AccountView: View {
                 }
                 if form.birthDate != nil {
                     DatePicker(
-                        "Date de naissance",
+                        String(localized: "Date de naissance"),
                         selection: birthDateBinding,
                         in: Self.birthDateRange,
                         displayedComponents: .date
                     )
-                    .environment(\.locale, SharpitLocale.french)
+                    .environment(\.locale, SharpitLocale.current)
                 } else {
                     Button("Ajouter ta date de naissance") {
                         form.birthDate = Self.defaultBirthDate
@@ -173,7 +173,7 @@ struct AccountView: View {
             do {
                 _ = try await user.update(.init(firstName: first, lastName: last))
             } catch {
-                toastCenter?.show("Nom non enregistré. Réessaie.", symbol: "exclamationmark.triangle.fill", tone: .error)
+                toastCenter?.show(String(localized: "Nom non enregistré. Réessaie."), symbol: "exclamationmark.triangle.fill", tone: .error)
             }
         }
     }
@@ -256,7 +256,7 @@ struct NotificationPrefsView: View {
 
     var body: some View {
         List {
-            Section(eyebrow: "Sur cet appareil", footer: masterFooter) {
+            Section(eyebrow: String(localized: "Sur cet appareil"), footer: masterFooter) {
                 Toggle(isOn: masterBinding) {
                     Label {
                         Text("Autoriser les notifications")
@@ -301,11 +301,11 @@ struct NotificationPrefsView: View {
 
     private var masterFooter: String {
         if notificationStatus == .denied {
-            return "Refusées dans les réglages d'iOS : touche l'interrupteur pour les ouvrir."
+            return String(localized: "Refusées dans les réglages d'iOS : touche l'interrupteur pour les ouvrir.")
         }
         return isOn
-            ? "Choisis ci-dessous ce que SharpIt envoie sur cet appareil."
-            : "Cet appareil ne reçoit plus rien. Tes choix sont gardés pour quand tu les réactives."
+            ? String(localized: "Choisis ci-dessous ce que SharpIt envoie sur cet appareil.")
+            : String(localized: "Cet appareil ne reçoit plus rien. Tes choix sont gardés pour quand tu les réactives.")
     }
 
     private var masterBinding: Binding<Bool> {
@@ -353,17 +353,17 @@ struct NotificationPrefsView: View {
 
     private var kinds: some View {
         Section(
-            eyebrow: "Ce que SharpIt t'envoie",
-            footer: "Les rappels de séance partent de cet appareil, depuis ton plan : une heure avant, ou à 7 h 30 le jour même si la séance n'a pas d'heure."
+            eyebrow: String(localized: "Ce que SharpIt t'envoie"),
+            footer: String(localized: "Les rappels de séance partent de cet appareil, depuis ton plan : une heure avant, ou à 7 h 30 le jour même si la séance n'a pas d'heure.")
         ) {
-            toggle("Verdict du matin", detail: "Ta lecture du jour, une fois ta nuit synchronisée.", symbol: "sun.horizon", key: "morningVerdict", value: prefs.morningVerdict)
-            toggle("Bilan de la semaine", detail: "Le résumé de ta semaine d'entraînement.", symbol: "calendar", key: "weeklyReview", value: prefs.weeklyReview)
-            toggle("Rappel de séance", detail: "Une heure avant une séance prévue.", symbol: "figure.run", key: "sessionReminder", value: prefs.sessionReminder)
-            toggle("Séance faite", detail: "Après une séance synchronisée : sa part du plan et la suivante.", symbol: "checkmark.seal", key: "sessionDone", value: prefs.sessionDone)
-            toggle("Cible du jour", detail: "Quand ton effort entre dans la bande cible du jour.", symbol: "target", key: "targetStrain", value: prefs.targetStrain)
-            toggle("Check-ins du jour", detail: "Rappels locaux : hydratation, humeur, caféine.", symbol: "checklist", key: "dayCheckIns", value: prefs.dayCheckIns)
-            toggle("Séance manquée", detail: "Le lendemain, pour réorganiser ta semaine en un geste.", symbol: "arrow.uturn.forward", key: "missedSession", value: prefs.missedSession)
-            toggle("Alertes de synchronisation", detail: "Quand une source doit être reconnectée.", symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
+            toggle(String(localized: "Verdict du matin"), detail: String(localized: "Ta lecture du jour, une fois ta nuit synchronisée."), symbol: "sun.horizon", key: "morningVerdict", value: prefs.morningVerdict)
+            toggle(String(localized: "Bilan de la semaine"), detail: String(localized: "Le résumé de ta semaine d'entraînement."), symbol: "calendar", key: "weeklyReview", value: prefs.weeklyReview)
+            toggle(String(localized: "Rappel de séance"), detail: String(localized: "Une heure avant une séance prévue."), symbol: "figure.run", key: "sessionReminder", value: prefs.sessionReminder)
+            toggle(String(localized: "Séance faite"), detail: String(localized: "Après une séance synchronisée : sa part du plan et la suivante."), symbol: "checkmark.seal", key: "sessionDone", value: prefs.sessionDone)
+            toggle(String(localized: "Cible du jour"), detail: String(localized: "Quand ton effort entre dans la bande cible du jour."), symbol: "target", key: "targetStrain", value: prefs.targetStrain)
+            toggle(String(localized: "Check-ins du jour"), detail: String(localized: "Rappels locaux : hydratation, humeur, caféine."), symbol: "checklist", key: "dayCheckIns", value: prefs.dayCheckIns)
+            toggle(String(localized: "Séance manquée"), detail: String(localized: "Le lendemain, pour réorganiser ta semaine en un geste."), symbol: "arrow.uturn.forward", key: "missedSession", value: prefs.missedSession)
+            toggle(String(localized: "Alertes de synchronisation"), detail: String(localized: "Quand une source doit être reconnectée."), symbol: "arrow.triangle.2.circlepath", key: "syncAlerts", value: prefs.syncAlerts)
             Toggle(isOn: Binding(
                 get: { CoachReplyLiveActivityPreference.isEnabled },
                 set: { CoachReplyLiveActivityPreference.setEnabled($0) }

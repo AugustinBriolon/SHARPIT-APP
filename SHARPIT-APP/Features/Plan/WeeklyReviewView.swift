@@ -35,7 +35,7 @@ final class WeeklyReviewStore {
         } catch WeeklyReviewError.proRequired {
             phase = .proRequired
         } catch {
-            phase = .failed(SharpitErrorGuidance.message(for: error, subject: "Le bilan"))
+            phase = .failed(SharpitErrorGuidance.message(for: error, subject: String(localized: "Le bilan")))
         }
     }
 
@@ -51,9 +51,9 @@ final class WeeklyReviewStore {
         } catch WeeklyReviewError.proRequired {
             phase = .proRequired
         } catch SharpitAPIError.rateLimited {
-            writeError = "Tu as demandé plusieurs bilans d'affilée. Réessaie dans une heure."
+            writeError = String(localized: "Tu as demandé plusieurs bilans d'affilée. Réessaie dans une heure.")
         } catch {
-            writeError = SharpitErrorGuidance.message(for: error, subject: "Le bilan")
+            writeError = SharpitErrorGuidance.message(for: error, subject: String(localized: "Le bilan"))
         }
     }
 }
@@ -73,7 +73,7 @@ struct WeeklyReviewView: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 content
                 if case .loaded = store.phase, let onPrepareWeek {
-                    SharpitPrimaryButton(title: "Préparer ma semaine", trailingSymbol: "arrow.right", action: onPrepareWeek)
+                    SharpitPrimaryButton(title: String(localized: "Préparer ma semaine"), trailingSymbol: "arrow.right", action: onPrepareWeek)
                         .padding(.top, SharpitSpacing.sm)
                 }
             }
@@ -124,8 +124,8 @@ struct WeeklyReviewView: View {
             ProgressView().frame(maxWidth: .infinity).padding(.top, SharpitSpacing.xl)
         case .proRequired:
             SharpitProTeaser(
-                title: "Bilan hebdomadaire",
-                message: "Volume, charge, sommeil et récupération de la semaine, synthétisés par le coach — avec un plan pour la semaine suivante."
+                title: String(localized: "Bilan hebdomadaire"),
+                message: String(localized: "Volume, charge, sommeil et récupération de la semaine, synthétisés par le coach — avec un plan pour la semaine suivante.")
             )
         case .failed(let message):
             SharpitStateMessage.failed(message) { Task { await store.load() } }
@@ -163,7 +163,7 @@ private struct WeeklyReviewContent: View {
 
     private var weekLabel: String {
         guard let date = TrainingDayId.date(review.weekStart) else { return "" }
-        return "Semaine du " + date.sharpitFormatted(.dateTime.day().month(.wide))
+        return String(localized: "Semaine du ") + date.sharpitFormatted(.dateTime.day().month(.wide))
     }
 
     var body: some View {
@@ -173,7 +173,7 @@ private struct WeeklyReviewContent: View {
 
             let highlights = ReviewHighlight.all(from: sections)
             if !highlights.isEmpty {
-                ReviewCard(title: "Faits marquants", symbol: "list.star") {
+                ReviewCard(title: String(localized: "Faits marquants"), symbol: "list.star") {
                     SharpitInsetGroup {
                         ForEach(highlights) { highlight in
                             ReviewHighlightRow(highlight: highlight)
@@ -187,7 +187,7 @@ private struct WeeklyReviewContent: View {
             }
 
             if !sections.nextWeek.isEmpty {
-                ReviewCard(title: "La semaine prochaine", symbol: "arrow.forward") {
+                ReviewCard(title: String(localized: "La semaine prochaine"), symbol: "arrow.forward") {
                     SharpitInsetGroup {
                         ForEach(Array(sections.nextWeek.enumerated()), id: \.offset) { index, item in
                             HStack(alignment: .top, spacing: SharpitSpacing.sm) {
@@ -307,14 +307,14 @@ struct ReviewHeroFigure: Identifiable, Equatable {
         var figures: [ReviewHeroFigure] = []
         if let done = stats.sessionsDone {
             let planned = max(stats.sessionsPlanned ?? done, done)
-            figures.append(.init(caption: "Séances", value: "\(done)", unit: "/\(planned)"))
+            figures.append(.init(caption: String(localized: "Séances"), value: "\(done)", unit: "/\(planned)"))
         }
         if let load = stats.totalLoad {
-            figures.append(.init(caption: "Charge", value: "\(Int(load.rounded()))", unit: nil))
+            figures.append(.init(caption: String(localized: "Charge"), value: "\(Int(load.rounded()))", unit: nil))
         }
         if let sleep = stats.sleep?.avgDurationMin, sleep > 0 {
             let minutes = Int(sleep.rounded())
-            figures.append(.init(caption: "Sommeil", value: "\(minutes / 60) h", unit: String(format: "%02d", minutes % 60)))
+            figures.append(.init(caption: String(localized: "Sommeil"), value: "\(minutes / 60) h", unit: String(format: "%02d", minutes % 60)))
         }
         return figures
     }
@@ -378,9 +378,9 @@ private struct ReviewHighlightRow: View {
 
     private var label: String {
         switch highlight.kind {
-        case .win: "Bien joué"
-        case .watch: "À surveiller"
-        case .note: "À retenir"
+        case .win: String(localized: "Bien joué")
+        case .watch: String(localized: "À surveiller")
+        case .note: String(localized: "À retenir")
         }
     }
 
@@ -500,7 +500,7 @@ private struct ReviewMetricCard<Detail: View>: View {
 private struct ReviewDayBars: View {
     let values: [Double?]
 
-    private static let days = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"]
+    private static let days = [String(localized: "Lu"), String(localized: "Ma"), String(localized: "Me"), String(localized: "Je"), String(localized: "Ve"), String(localized: "Sa"), String(localized: "Di")]
 
     private var average: Double? {
         let present = values.compactMap { $0 }
@@ -512,12 +512,12 @@ private struct ReviewDayBars: View {
     var body: some View {
         Chart {
             ForEach(Array(values.prefix(7).enumerated()), id: \.offset) { index, value in
-                BarMark(x: .value("Jour", Self.days[index]), y: .value("Valeur", value ?? 0), width: .ratio(0.55))
+                BarMark(x: .value(String(localized: "Jour"), Self.days[index]), y: .value(String(localized: "Valeur"), value ?? 0), width: .ratio(0.55))
                     .foregroundStyle(value == nil ? SharpitColor.track : value == peak ? SharpitColor.highlight : SharpitColor.foreground)
                     .cornerRadius(3)
             }
             if let average {
-                RuleMark(y: .value("Moyenne", average))
+                RuleMark(y: .value(String(localized: "Moyenne"), average))
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }
@@ -543,7 +543,7 @@ private struct ReviewSportShares: View {
 
     var body: some View {
         let total = max(shares.reduce(0) { $0 + $1.durationMin }, 1)
-        ReviewCard(title: "Temps par sport", symbol: "stopwatch") {
+        ReviewCard(title: String(localized: "Temps par sport"), symbol: "stopwatch") {
             SharpitInsetGroup {
                 ForEach(shares, id: \.type) { share in
                     // The server names some sports by key, others in words; both get their glyph.
@@ -555,7 +555,7 @@ private struct ReviewSportShares: View {
                                 Text(known?.label ?? share.type.capitalized)
                                     .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
                                     .foregroundStyle(SharpitColor.foreground)
-                                Text(share.count == 1 ? "1 séance" : "\(share.count) séances")
+                                Text(share.count == 1 ? String(localized: "1 séance") : String(localized: "\(share.count) séances"))
                                     .font(SharpitTypography.meta)
                                     .foregroundStyle(SharpitColor.mutedForeground)
                                 Spacer(minLength: SharpitSpacing.xs)

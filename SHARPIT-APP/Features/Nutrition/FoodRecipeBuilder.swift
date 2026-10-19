@@ -61,16 +61,16 @@ nonisolated struct FoodRecipeBuilder: Equatable, Sendable {
 
     /// What stands between the recipe and « Créer », in the athlete's words; nil when ready.
     var problem: String? {
-        if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Donne un nom à ta recette." }
-        if lines.isEmpty { return "Ajoute au moins un ingrédient." }
+        if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return String(localized: "Donne un nom à ta recette.") }
+        if lines.isEmpty { return String(localized: "Ajoute au moins un ingrédient.") }
         if let blank = lines.first(where: { FoodLogForm.grams($0.gramsText) == nil }) {
-            return "Indique les grammes de « \(blank.ingredient.name) »."
+            return String(localized: "Indique les grammes de « \(blank.ingredient.name) ».")
         }
         if !cookedGramsText.trimmingCharacters(in: .whitespaces).isEmpty, cookedGrams == nil {
-            return "Vérifie le poids une fois cuit."
+            return String(localized: "Vérifie le poids une fois cuit.")
         }
         if !servingsText.trimmingCharacters(in: .whitespaces).isEmpty, servings == nil {
-            return "Le nombre de parts va de 1 à \(Self.maximumServings)."
+            return String(localized: "Le nombre de parts va de 1 à \(Self.maximumServings).")
         }
         return nil
     }

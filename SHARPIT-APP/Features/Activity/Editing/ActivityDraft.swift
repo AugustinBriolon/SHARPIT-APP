@@ -60,11 +60,11 @@ struct ActivityDraft: Equatable {
 
     /// What keeps the form from being sent, worded for the athlete; nil when it can go.
     var missingRequirement: String? {
-        if date > .now.addingTimeInterval(300) { return "Une séance faite ne peut pas être dans le futur." }
-        if measuresDistance, !distanceText.isEmpty, distanceM == nil { return "La distance n’est pas un nombre." }
-        if measuresElevation, !elevationText.isEmpty, Self.parse(elevationText) == nil { return "Le dénivelé n’est pas un nombre." }
-        if measuresHeartRate, !avgHrText.isEmpty, Self.parse(avgHrText) == nil { return "La fréquence cardiaque n’est pas un nombre." }
-        if isStrength, !exercises.contains(where: \.isNamed) { return "Ajoute au moins un exercice." }
+        if date > .now.addingTimeInterval(300) { return String(localized: "Une séance faite ne peut pas être dans le futur.") }
+        if measuresDistance, !distanceText.isEmpty, distanceM == nil { return String(localized: "La distance n’est pas un nombre.") }
+        if measuresElevation, !elevationText.isEmpty, Self.parse(elevationText) == nil { return String(localized: "Le dénivelé n’est pas un nombre.") }
+        if measuresHeartRate, !avgHrText.isEmpty, Self.parse(avgHrText) == nil { return String(localized: "La fréquence cardiaque n’est pas un nombre.") }
+        if isStrength, !exercises.contains(where: \.isNamed) { return String(localized: "Ajoute au moins un exercice.") }
         return nil
     }
 
@@ -177,7 +177,7 @@ struct ActivityDraft: Equatable {
 
     static func number(_ value: Double, digits: Int = 0) -> String {
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = AppLanguage.locale
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = digits
         formatter.usesGroupingSeparator = false

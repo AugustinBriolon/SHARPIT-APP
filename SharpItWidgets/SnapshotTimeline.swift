@@ -62,10 +62,10 @@ extension WidgetSnapshot {
     static let preview = WidgetSnapshot(
         day: Day(
             trainingDayId: dayId(.now),
-            verdict: Verdict(status: "Feu vert", headline: "Séance clé possible", action: "Tiens le seuil, pas plus.", posture: .push),
+            verdict: Verdict(status: String(localized: "Feu vert"), headline: String(localized: "Séance clé possible"), action: String(localized: "Tiens le seuil, pas plus."), posture: .push),
             sessions: [
-                Session(id: "a1", isDone: true, title: "Renfo gainage", sport: .strength, figures: [Figure(value: "30", unit: "min")]),
-                Session(id: "p1", isDone: false, title: "Seuil 3 × 8 min", sport: .run, plannedSessionId: "p1",
+                Session(id: "a1", isDone: true, title: String(localized: "Renfo gainage"), sport: .strength, figures: [Figure(value: "30", unit: "min")]),
+                Session(id: "p1", isDone: false, title: String(localized: "Seuil 3 × 8 min"), sport: .run, plannedSessionId: "p1",
                         figures: [Figure(value: "55", unit: "min"), Figure(value: "62", unit: "charge")]),
             ],
             sleep: Sleep(score: 82, caption: "7 h 12")
@@ -89,7 +89,7 @@ extension WidgetSnapshot {
                 let day = Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now
                 return RegularityDay(
                     date: dayId(day),
-                    weekdayLabel: day.formatted(.dateTime.weekday(.narrow).locale(Locale(identifier: "fr_FR"))),
+                    weekdayLabel: day.formatted(.dateTime.weekday(.narrow).locale(AppLanguage.locale)),
                     dayOfMonth: Calendar.current.component(.day, from: day),
                     hasActivity: [-6, -5, -3, -1, 0].contains(offset),
                     isToday: offset == 0,
@@ -106,19 +106,19 @@ extension WidgetSnapshot {
                 )
             }),
         goal: Goal(
-            id: "g1", title: "Ironman 70.3 Nice", date: Calendar.current.date(byAdding: .day, value: 42, to: .now) ?? .now,
-            location: "Nice", format: "70.3", targetPerformance: "5 h 15"
+            id: "g1", title: String(localized: "Ironman 70.3 Nice"), date: Calendar.current.date(byAdding: .day, value: 42, to: .now) ?? .now,
+            location: String(localized: "Nice"), format: "70.3", targetPerformance: "5 h 15"
         ),
         lastActivity: LastActivity(
             id: "preview", // gallery only — tap opens /activity, not a fake session
-            title: "Seuil 3 × 8 min",
+            title: String(localized: "Seuil 3 × 8 min"),
             sport: .run,
             dayId: dayId(.now),
             distanceValue: "5,20",
             distanceUnit: "km",
             durationValue: "28:14",
             durationUnit: "min",
-            paceLabel: "Allure",
+            paceLabel: String(localized: "Allure"),
             paceValue: "5:25",
             paceUnit: "/km",
             route: [[45.75, 4.83], [45.76, 4.84], [45.77, 4.85], [45.76, 4.86]]

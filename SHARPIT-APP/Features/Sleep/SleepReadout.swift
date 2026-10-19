@@ -25,7 +25,7 @@ enum SleepReadout {
               let average = average.flatMap({ Int(exactly: $0.rounded()) }) else { return nil }
         let delta = score - average
         guard delta != 0 else { return nil }
-        return "\(delta > 0 ? "↑" : "↓") \(abs(delta)) vs moy."
+        return String(localized: "\(delta > 0 ? "↑" : "↓") \(abs(delta)) vs moy.")
     }
 
     /// The three parts of the score, each on 0…100, in the order the night is read.
@@ -33,9 +33,9 @@ enum SleepReadout {
     static func components(_ breakdown: V1SleepBreakdown) -> [(label: String, value: Double)] {
         let restorative = breakdown.restorativeRatio.map { $0 <= 1 ? $0 * 100 : $0 }
         return [
-            ("Durée", breakdown.durationScore),
-            ("Structure", breakdown.architectureScore),
-            ("Récupération", restorative),
+            (String(localized: "Durée"), breakdown.durationScore),
+            (String(localized: "Structure"), breakdown.architectureScore),
+            (String(localized: "Récupération"), restorative),
         ].compactMap { label, value in value.map { (label, min(max($0, 0), 100)) } }
     }
 
@@ -75,7 +75,7 @@ enum SleepReadout {
     /// The sleep bank's balance: debt reads as a withdrawal, none as balanced.
     static func bankBalance(debtMin: Double?) -> String {
         guard let debtMin else { return "—" }
-        if debtMin.rounded() <= 0 { return "À l'équilibre" }
+        if debtMin.rounded() <= 0 { return String(localized: "À l'équilibre") }
         return "−" + duration(debtMin)
     }
 
@@ -93,9 +93,9 @@ enum SleepReadout {
 
         var label: String {
             switch self {
-            case .deep: "Profond"
-            case .rem: "Paradoxal"
-            case .light: "Léger"
+            case .deep: String(localized: "Profond")
+            case .rem: String(localized: "Paradoxal")
+            case .light: String(localized: "Léger")
             }
         }
 

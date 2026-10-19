@@ -187,7 +187,7 @@ private struct SharpitMarkdownTable: View {
 #Preview {
     ScrollView {
         SharpitMarkdownText(
-            markdown: """
+            markdown: String(localized: """
             ## Ta semaine
 
             Tu as **trois séances** encore devant toi. La clé est la sortie longue \
@@ -198,7 +198,7 @@ private struct SharpitMarkdownTable: View {
             - Dimanche : 2 h en endurance
 
             > Garde la sortie longue même si le seuil passe mal.
-            """
+            """)
         )
         .padding()
     }

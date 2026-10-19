@@ -9,7 +9,7 @@ enum ActivityClientError: Error, Equatable, LocalizedError {
         case .invalidResponse(let status, let body):
             return "API \(status) — \(body)"
         case .decoding(let message):
-            return "Réponse API incompatible — \(message)"
+            return String(localized: "Réponse API incompatible — \(message)")
         }
     }
 }
@@ -415,7 +415,7 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         case 401, 403:
             throw SharpitAPIError.unauthorized
         default:
-            let text = String(data: body, encoding: .utf8) ?? "Réponse illisible"
+            let text = String(data: body, encoding: .utf8) ?? String(localized: "Réponse illisible")
             throw ActivityClientError.invalidResponse(status: status, body: String(text.prefix(180)))
         }
     }

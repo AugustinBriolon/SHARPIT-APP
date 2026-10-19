@@ -18,7 +18,7 @@ struct MorningProposalCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(
-                title: isEasing ? "Ta nuit propose d'alléger" : "Ta nuit permet d'en faire plus",
+                title: isEasing ? String(localized: "Ta nuit propose d'alléger") : String(localized: "Ta nuit permet d'en faire plus"),
                 symbol: isEasing ? "moon.zzz.fill" : "bolt.heart.fill",
                 subtitle: MorningProposalReadout.change(from: proposal.from, to: proposal.to),
                 showsChevron: false
@@ -31,8 +31,8 @@ struct MorningProposalCard: View {
 
             if showsDetail {
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    side("Prévu", proposal.from, emphasized: false)
-                    side("Proposé", proposal.to, emphasized: true)
+                    side(String(localized: "Prévu"), proposal.from, emphasized: false)
+                    side(String(localized: "Proposé"), proposal.to, emphasized: true)
                 }
                 .transition(.opacity)
             }
@@ -40,7 +40,7 @@ struct MorningProposalCard: View {
             Button {
                 withAnimation(SharpitMotion.reveal) { showsDetail.toggle() }
             } label: {
-                Label(showsDetail ? "Masquer le détail" : "Voir le détail",
+                Label(showsDetail ? String(localized: "Masquer le détail") : String(localized: "Voir le détail"),
                       systemImage: showsDetail ? "chevron.up" : "chevron.down")
                     .labelStyle(.titleAndIcon)
                     .font(SharpitTypography.meta.weight(.semibold))
@@ -59,7 +59,7 @@ struct MorningProposalCard: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .buttonStyle(.sharpitPressable)
                     .fixedSize()
-                SharpitPrimaryButton(title: isEasing ? "Alléger" : "Augmenter") { onAnswer(true) }
+                SharpitPrimaryButton(title: isEasing ? String(localized: "Alléger") : String(localized: "Augmenter")) { onAnswer(true) }
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -119,6 +119,6 @@ enum MorningProposalReadout {
     /// The headline's halves, for a column too narrow to hold them on one line.
     static func headlineParts(_ side: V1TodayMorningProposal.Side) -> [String] {
         let parts = [side.intensityLabel, side.durationMin.map { "\($0) min" }].compactMap { $0 }
-        return parts.isEmpty ? ["Séance"] : parts
+        return parts.isEmpty ? [String(localized: "Séance")] : parts
     }
 }

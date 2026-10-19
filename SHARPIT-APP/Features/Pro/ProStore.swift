@@ -86,7 +86,7 @@ final class ProStore {
             publishTier()
             await ensureAppAccountToken(using: token)
         } catch {
-            if pro == nil { phase = .failed("SharpIt Pro est indisponible pour le moment.") }
+            if pro == nil { phase = .failed(String(localized: "SharpIt Pro est indisponible pour le moment.")) }
             await ensureAppAccountToken()
         }
     }
@@ -115,7 +115,7 @@ final class ProStore {
     /// StoreKit itself could not vouch for — is never sent.
     func handle(_ result: VerificationResult<Transaction>) async {
         guard case .verified(let transaction) = result else {
-            message = "Achat non vérifié par l'App Store."
+            message = String(localized: "Achat non vérifié par l'App Store.")
             return
         }
         let renewal = await renewalInfo(for: transaction)
@@ -139,9 +139,9 @@ final class ProStore {
             // Refused by the web (another account's purchase, a forged receipt): finished so
             // StoreKit stops offering it, never granted.
             await transaction.finish()
-            message = "Cet achat est rattaché à un autre compte."
+            message = String(localized: "Cet achat est rattaché à un autre compte.")
         } catch {
-            message = "L'abonnement sera confirmé dès que le serveur répondra."
+            message = String(localized: "L'abonnement sera confirmé dès que le serveur répondra.")
         }
     }
 
@@ -159,7 +159,7 @@ final class ProStore {
         do {
             try await AppStore.sync()
         } catch {
-            message = "Restauration annulée."
+            message = String(localized: "Restauration annulée.")
             return
         }
         var found = false
@@ -167,7 +167,7 @@ final class ProStore {
             found = true
             await handle(entitlement)
         }
-        if !found { message = "Aucun abonnement à restaurer sur ce compte Apple." }
+        if !found { message = String(localized: "Aucun abonnement à restaurer sur ce compte Apple.") }
         await load()
     }
 
@@ -194,30 +194,30 @@ final class ProStore {
 nonisolated enum ProReadout {
     static func status(_ subscription: V1ProSubscription?, isPro: Bool) -> String {
         guard let subscription else {
-            return isPro ? "Accès Pro offert" : "Version gratuite"
+            return isPro ? String(localized: "Accès Pro offert") : String(localized: "Version gratuite")
         }
         switch subscription.status {
         case "active":
             if subscription.willRenew, let renews = subscription.renewsAt ?? subscription.expiresAt {
-                return "Renouvellement le \(day(renews))"
+                return String(localized: "Renouvellement le \(day(renews))")
             }
             if let expires = subscription.expiresAt {
-                return "Actif jusqu'au \(day(expires))"
+                return String(localized: "Actif jusqu'au \(day(expires))")
             }
-            return "Actif"
+            return String(localized: "Actif")
         case "grace_period":
-            return "Paiement en attente — l'accès est maintenu"
+            return String(localized: "Paiement en attente — l'accès est maintenu")
         case "billing_retry":
-            return "Paiement refusé — mets à jour ton moyen de paiement"
+            return String(localized: "Paiement refusé — mets à jour ton moyen de paiement")
         case "revoked":
-            return "Abonnement remboursé"
+            return String(localized: "Abonnement remboursé")
         default:
-            if let expires = subscription.expiresAt { return "Expiré le \(day(expires))" }
-            return "Expiré"
+            if let expires = subscription.expiresAt { return String(localized: "Expiré le \(day(expires))") }
+            return String(localized: "Expiré")
         }
     }
 
     private static func day(_ date: Date) -> String {
-        date.formatted(.dateTime.day().month(.wide).year().locale(Locale(identifier: "fr_FR")))
+        date.formatted(.dateTime.day().month(.wide).year().locale(AppLanguage.locale))
     }
 }

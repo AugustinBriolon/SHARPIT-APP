@@ -109,9 +109,9 @@ final class AccountGateModel {
 
     nonisolated static func message(for error: any Error) -> String {
         if (error as? SharpitAPIError) == .unauthorized {
-            return "Ta session n'est pas encore prête. Réessaie, ou reconnecte-toi."
+            return String(localized: "Ta session n'est pas encore prête. Réessaie, ou reconnecte-toi.")
         }
-        return SharpitErrorGuidance.message(for: error, subject: "Ton profil")
+        return SharpitErrorGuidance.message(for: error, subject: String(localized: "Ton profil"))
     }
 
     /// The wall was accepted: carry on to the wizard, or to the app.
@@ -232,7 +232,7 @@ struct AccountGate<Content: View>: View {
         }
         // Moi → Confidentialité reports a withdrawn health consent through this.
         .environment(model)
-        .environment(\.locale, Locale(identifier: "fr_FR"))
+        .environment(\.locale, AppLanguage.locale)
         // Every switch from the consent wall on, the tabs and their sheets included, is lime.
         .toggleStyle(.sharpitSwitch)
     }

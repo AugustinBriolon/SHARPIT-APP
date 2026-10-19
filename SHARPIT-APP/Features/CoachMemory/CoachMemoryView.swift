@@ -48,8 +48,8 @@ struct CoachMemoryView: View {
 
     private var contextSection: some View {
         Section(
-            eyebrow: "Contexte permanent",
-            footer: "Informations durables que le coach IA prend en compte pour adapter chaque analyse et recommandation."
+            eyebrow: String(localized: "Contexte permanent"),
+            footer: String(localized: "Informations durables que le coach IA prend en compte pour adapter chaque analyse et recommandation.")
         ) {
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 TextEditor(text: $store.profileContextText)
@@ -81,22 +81,22 @@ struct CoachMemoryView: View {
     private var datedEntriesSection: some View {
         Group {
             memorySection(
-                eyebrow: "Déplacements & contraintes",
-                footer: "Périodes temporaires avec impact direct sur les séances planifiées.",
+                eyebrow: String(localized: "Déplacements & contraintes"),
+                footer: String(localized: "Périodes temporaires avec impact direct sur les séances planifiées."),
                 entries: store.entries.filter { $0.type == .travel || $0.type == .constraint },
-                empty: "Aucun déplacement ou contrainte planifié."
+                empty: String(localized: "Aucun déplacement ou contrainte planifié.")
             )
             memorySection(
-                eyebrow: "Blessures",
-                footer: "Gènes ou blessures suivies dans le temps.",
+                eyebrow: String(localized: "Blessures"),
+                footer: String(localized: "Gènes ou blessures suivies dans le temps."),
                 entries: store.entries.filter { $0.type == .injury },
-                empty: "Aucune blessure enregistrée."
+                empty: String(localized: "Aucune blessure enregistrée.")
             )
             memorySection(
-                eyebrow: "Préférences & notes",
-                footer: "Mémoire durable structurée — en plus du journal libre ci-dessus.",
+                eyebrow: String(localized: "Préférences & notes"),
+                footer: String(localized: "Mémoire durable structurée — en plus du journal libre ci-dessus."),
                 entries: store.entries.filter { $0.type == .preference || $0.type == .note },
-                empty: "Aucune préférence ni note."
+                empty: String(localized: "Aucune préférence ni note.")
             )
         }
     }
@@ -109,7 +109,7 @@ struct CoachMemoryView: View {
     ) -> some View {
         Section(eyebrow: eyebrow, footer: footer) {
             if store.entries.isEmpty && store.isLoading {
-                entryRow(CoachMemoryEntry(type: .travel, label: "Déplacement professionnel", startDate: .now, endDate: .now.addingTimeInterval(3 * 86_400)))
+                entryRow(CoachMemoryEntry(type: .travel, label: String(localized: "Déplacement professionnel"), startDate: .now, endDate: .now.addingTimeInterval(3 * 86_400)))
                     .redacted(reason: .placeholder)
                     .accessibilityLabel("Chargement")
             } else if entries.isEmpty {

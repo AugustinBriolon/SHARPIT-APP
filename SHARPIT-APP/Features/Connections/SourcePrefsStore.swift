@@ -47,7 +47,7 @@ final class SourcePrefsStore {
             prefs = answer.prefs
             phase = .loaded
         } catch {
-            if phase != .loaded { phase = .failed("Lecture de tes sources impossible.") }
+            if phase != .loaded { phase = .failed(String(localized: "Lecture de tes sources impossible.")) }
         }
     }
 
@@ -115,7 +115,7 @@ final class SourcePrefsStore {
             }
             if pendingWrites == 1 { prefs = saved }
         } catch {
-            failures.report("Source non enregistrée. Réessaie plus tard.")
+            failures.report(String(localized: "Source non enregistrée. Réessaie plus tard."))
             await load()
         }
     }

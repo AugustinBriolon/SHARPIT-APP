@@ -48,7 +48,7 @@ struct FoodEntryEditSheet: View {
                 }
                 .sharpitListRows()
 
-                Section(eyebrow: "Quantité") {
+                Section(eyebrow: String(localized: "Quantité")) {
                     FoodGramsRows(text: $gramsText, isFocused: $isGramsFocused)
                     if grams == nil {
                         Text("Entre une quantité entre 1 et 5 000 g.")
@@ -152,8 +152,8 @@ struct NutritionTargetsSheet: View {
                     .listRowInsets(EdgeInsets())
                 }
 
-                Section(eyebrow: "Énergie", footer: energyFooter) {
-                    FoodNumberRow(title: "Calories", unit: "kcal", placeholder: "—", text: $kcal)
+                Section(eyebrow: String(localized: "Énergie"), footer: energyFooter) {
+                    FoodNumberRow(title: String(localized: "Calories"), unit: "kcal", placeholder: "—", text: $kcal)
                 }
                 .sharpitListRows()
 
@@ -182,16 +182,16 @@ struct NutritionTargetsSheet: View {
     }
 
     private var energyFooter: String {
-        let range = "Entre 800 et 8 000 kcal par jour. Ta dépense d'entraînement s'y ajoute chaque jour."
-        return mode == .percent ? "Obligatoire pour répartir en %. \(range)" : range
+        let range = String(localized: "Entre 800 et 8 000 kcal par jour. Ta dépense d'entraînement s'y ajoute chaque jour.")
+        return mode == .percent ? String(localized: "Obligatoire pour répartir en %. \(range)") : range
     }
 
     @ViewBuilder
     private var gramsSections: some View {
-        Section(eyebrow: "Macronutriments", footer: "Optionnels. Un champ vide retire l'objectif.") {
-            FoodNumberRow(title: "Protéines", unit: "g", placeholder: "—", text: $protein)
-            FoodNumberRow(title: "Glucides", unit: "g", placeholder: "—", text: $carbs)
-            FoodNumberRow(title: "Lipides", unit: "g", placeholder: "—", text: $fat)
+        Section(eyebrow: String(localized: "Macronutriments"), footer: String(localized: "Optionnels. Un champ vide retire l'objectif.")) {
+            FoodNumberRow(title: String(localized: "Protéines"), unit: "g", placeholder: "—", text: $protein)
+            FoodNumberRow(title: String(localized: "Glucides"), unit: "g", placeholder: "—", text: $carbs)
+            FoodNumberRow(title: String(localized: "Lipides"), unit: "g", placeholder: "—", text: $fat)
         }
         .sharpitListRows()
 
@@ -208,10 +208,10 @@ struct NutritionTargetsSheet: View {
     @ViewBuilder
     private var percentSections: some View {
         let split = split
-        Section(eyebrow: "Répartition", footer: "Des nombres entiers. Les grammes suivent ton énergie.") {
-            NutritionShareRow(title: "Protéines", grams: split.proteinG, text: $proteinPct)
-            NutritionShareRow(title: "Glucides", grams: split.carbsG, text: $carbsPct)
-            NutritionShareRow(title: "Lipides", grams: split.fatG, text: $fatPct)
+        Section(eyebrow: String(localized: "Répartition"), footer: String(localized: "Des nombres entiers. Les grammes suivent ton énergie.")) {
+            NutritionShareRow(title: String(localized: "Protéines"), grams: split.proteinG, text: $proteinPct)
+            NutritionShareRow(title: String(localized: "Glucides"), grams: split.carbsG, text: $carbsPct)
+            NutritionShareRow(title: String(localized: "Lipides"), grams: split.fatG, text: $fatPct)
             LabeledContent("Total") {
                 Text("\(split.total) %")
                     .font(SharpitTypography.bodyEmphasis)
@@ -220,7 +220,7 @@ struct NutritionTargetsSheet: View {
                     .contentTransition(.numericText(value: Double(split.total)))
             }
             .animation(SharpitMotion.selection, value: split.total)
-            .accessibilityValue(split.isBalanced ? "\(split.total) %" : "\(split.total) %, il faut 100 %")
+            .accessibilityValue(split.isBalanced ? "\(split.total) %" : String(localized: "\(split.total) %, il faut 100 %"))
         }
         .sharpitListRows()
 
@@ -235,9 +235,9 @@ struct NutritionTargetsSheet: View {
     }
 
     private func percentProblem(_ split: NutritionTargetSplit) -> String? {
-        if split.hasInvalidShare { return "Chaque part est un nombre entier entre 0 et 100." }
-        if split.kcal == nil { return "Entre ton énergie, entre 800 et 8 000 kcal, pour répartir tes macros." }
-        if !split.isBalanced { return "Les trois parts doivent faire 100 % (\(split.total) % pour l'instant)." }
+        if split.hasInvalidShare { return String(localized: "Chaque part est un nombre entier entre 0 et 100.") }
+        if split.kcal == nil { return String(localized: "Entre ton énergie, entre 800 et 8 000 kcal, pour répartir tes macros.") }
+        if !split.isBalanced { return String(localized: "Les trois parts doivent faire 100 % (\(split.total) % pour l'instant).") }
         return nil
     }
 

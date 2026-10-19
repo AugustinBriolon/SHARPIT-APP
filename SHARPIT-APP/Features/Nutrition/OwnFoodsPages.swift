@@ -47,7 +47,7 @@ struct OwnFoodsPage: View {
         .task { await store.load() }
         .refreshable { await store.load() }
         .confirmationDialog(
-            pendingDelete.map { "Supprimer « \($0.name) » ?" } ?? "",
+            pendingDelete.map { String(localized: "Supprimer « \($0.name) » ?") } ?? "",
             isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
             titleVisibility: .visible,
             presenting: pendingDelete
@@ -83,8 +83,8 @@ struct OwnFoodsPage: View {
                 SharpitListFooter(failure, tone: SharpitColor.signalRisk)
             } else {
                 SharpitListFooter(onPick == nil
-                    ? "Touche un aliment pour le modifier, glisse vers la gauche pour le supprimer."
-                    : "Glisse vers la gauche pour modifier ou supprimer un aliment.")
+                    ? String(localized: "Touche un aliment pour le modifier, glisse vers la gauche pour le supprimer.")
+                    : String(localized: "Glisse vers la gauche pour modifier ou supprimer un aliment."))
             }
         }
         .sharpitListRows()
@@ -154,7 +154,7 @@ struct FoodCustomPage: View {
 
     init(
         purpose: Purpose,
-        createTitle: String = "Créer et ajouter",
+        createTitle: String = String(localized: "Créer et ajouter"),
         save: @escaping (FoodCustomDraft) async throws -> V1FoodProduct,
         onSaved: @escaping (V1FoodProduct) -> Void
     ) {
@@ -212,22 +212,22 @@ struct FoodCustomPage: View {
 
     var body: some View {
         List {
-            Section(eyebrow: "Aliment") {
+            Section(eyebrow: String(localized: "Aliment")) {
                 TextField("Nom", text: $name)
                     .textInputAutocapitalization(.sentences)
                 TextField("Marque (optionnel)", text: $brand)
             }
             .sharpitListRows()
 
-            Section(eyebrow: "Pour 100 g", footer: "Recopie l'étiquette. Fibres, sucres, sel et gras saturés sont optionnels ; avec les trois derniers, le score Sharpit lit tout l'aliment.") {
-                FoodNumberRow(title: "Énergie", unit: "kcal", text: $kcal)
-                FoodNumberRow(title: "Protéines", unit: "g", text: $protein)
-                FoodNumberRow(title: "Glucides", unit: "g", text: $carbs)
-                FoodNumberRow(title: "Lipides", unit: "g", text: $fat)
-                FoodNumberRow(title: "Fibres", unit: "g", placeholder: "—", text: $fiber)
-                FoodNumberRow(title: "Sucres", unit: "g", placeholder: "—", text: $sugar)
-                FoodNumberRow(title: "Sel", unit: "g", placeholder: "—", text: $salt)
-                FoodNumberRow(title: "Gras saturés", unit: "g", placeholder: "—", text: $saturatedFat)
+            Section(eyebrow: String(localized: "Pour 100 g"), footer: String(localized: "Recopie l'étiquette. Fibres, sucres, sel et gras saturés sont optionnels ; avec les trois derniers, le score Sharpit lit tout l'aliment.")) {
+                FoodNumberRow(title: String(localized: "Énergie"), unit: "kcal", text: $kcal)
+                FoodNumberRow(title: String(localized: "Protéines"), unit: "g", text: $protein)
+                FoodNumberRow(title: String(localized: "Glucides"), unit: "g", text: $carbs)
+                FoodNumberRow(title: String(localized: "Lipides"), unit: "g", text: $fat)
+                FoodNumberRow(title: String(localized: "Fibres"), unit: "g", placeholder: "—", text: $fiber)
+                FoodNumberRow(title: String(localized: "Sucres"), unit: "g", placeholder: "—", text: $sugar)
+                FoodNumberRow(title: String(localized: "Sel"), unit: "g", placeholder: "—", text: $salt)
+                FoodNumberRow(title: String(localized: "Gras saturés"), unit: "g", placeholder: "—", text: $saturatedFat)
             }
             .sharpitListRows()
 
@@ -236,13 +236,13 @@ struct FoodCustomPage: View {
             }
 
             Section {
-                FoodNumberRow(title: "Une portion", unit: "g", placeholder: "—", text: $serving)
+                FoodNumberRow(title: String(localized: "Une portion"), unit: "g", placeholder: "—", text: $serving)
             } header: {
-                SharpitEyebrow("Portion")
+                SharpitEyebrow(String(localized: "Portion"))
             } footer: {
                 SharpitListFooter(isEditing
-                    ? "Optionnel : le poids d'une portion habituelle, proposé à l'ajout. Tes repas déjà notés gardent leurs valeurs."
-                    : "Optionnel : le poids d'une portion habituelle, proposé à l'ajout.")
+                    ? String(localized: "Optionnel : le poids d'une portion habituelle, proposé à l'ajout. Tes repas déjà notés gardent leurs valeurs.")
+                    : String(localized: "Optionnel : le poids d'une portion habituelle, proposé à l'ajout."))
             }
             .sharpitListRows()
 
@@ -257,13 +257,13 @@ struct FoodCustomPage: View {
         .sharpitGroupedList()
         .safeAreaInset(edge: .bottom) {
             SharpitActionDock {
-                SharpitPrimaryButton(title: isEditing ? "Enregistrer" : createTitle, isBusy: isSaving) {
+                SharpitPrimaryButton(title: isEditing ? String(localized: "Enregistrer") : createTitle, isBusy: isSaving) {
                     Task { await submit() }
                 }
                 .disabled(!canSave)
             }
         }
-        .navigationTitle(isEditing ? "Modifier l'aliment" : "Créer un aliment")
+        .navigationTitle(isEditing ? String(localized: "Modifier l'aliment") : String(localized: "Créer un aliment"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -276,7 +276,7 @@ struct FoodCustomPage: View {
             let product = try await save(draft)
             onSaved(product)
         } catch {
-            failure = FoodLogStore.failureMessage(error, action: isEditing ? "Aliment non modifié" : "Aliment non créé")
+            failure = FoodLogStore.failureMessage(error, action: isEditing ? String(localized: "Aliment non modifié") : String(localized: "Aliment non créé"))
         }
     }
 }
@@ -328,7 +328,7 @@ struct OwnFoodsSettingsView: View {
             }
         }
         .navigationDestination(isPresented: $isCreating) {
-            FoodCustomPage(purpose: .create(name: ""), createTitle: "Créer") { draft in
+            FoodCustomPage(purpose: .create(name: ""), createTitle: String(localized: "Créer")) { draft in
                 try await SharpitRetry.run {
                     try await client.createCustomFood(draft, token: try await tokenProvider())
                 }

@@ -12,8 +12,8 @@ enum LegalDocument: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .terms: "Conditions d'utilisation"
-        case .privacy: "Politique de confidentialité"
+        case .terms: String(localized: "Conditions d'utilisation")
+        case .privacy: String(localized: "Politique de confidentialité")
         }
     }
 

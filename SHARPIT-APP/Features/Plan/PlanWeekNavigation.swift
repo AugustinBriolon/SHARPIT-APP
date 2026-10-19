@@ -42,7 +42,7 @@ struct PlanWeekHeader: View {
             return store.weekStart.sharpitFormatted(.dateTime.day().month(.wide))
         }
         let formatter = DateIntervalFormatter()
-        formatter.locale = SharpitLocale.french
+        formatter.locale = SharpitLocale.current
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: store.weekStart, to: end)
@@ -102,10 +102,10 @@ private struct PlanStatusDot: View {
     static func accessibilityLabel(day: Date, status: PlanDayStatus?) -> String {
         let date = day.sharpitFormatted(.dateTime.weekday(.wide).day())
         switch status {
-        case .executed: return "\(date), séance réalisée"
-        case .planned: return "\(date), séance prévue"
-        case .missed: return "\(date), séance non réalisée"
-        case nil: return "\(date), repos"
+        case .executed: return String(localized: "\(date), séance réalisée")
+        case .planned: return String(localized: "\(date), séance prévue")
+        case .missed: return String(localized: "\(date), séance non réalisée")
+        case nil: return String(localized: "\(date), repos")
         }
     }
 }
@@ -119,11 +119,11 @@ struct PlanCalendarSheet: View {
 
     var body: some View {
         SharpitCalendarSheet(
-            title: "Semaine",
+            title: String(localized: "Semaine"),
             initial: store.weekStart,
             weeks: store.weekCalendar,
             marks: marks,
-            legend: [(.filled, "Activité"), (.ring, "Prévue"), (.muted, "Manquée")],
+            legend: [(.filled, String(localized: "Activité")), (.ring, String(localized: "Prévue")), (.muted, String(localized: "Manquée"))],
             onPick: { store.showWeek(containing: $0) },
             onToday: { store.goToToday() }
         )

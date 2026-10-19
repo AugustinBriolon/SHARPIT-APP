@@ -51,7 +51,7 @@ nonisolated struct CoachFoodLogProposal: Equatable, Identifiable {
         case "output-available", "output-error":
             let raw = (output?["error"]?.string ?? part["errorText"]?.string)?
                 .trimmingCharacters(in: .whitespaces)
-            status = .failed(raw?.nilIfEmpty ?? "Ces aliments n'ont pas pu être ajoutés au journal")
+            status = .failed(raw?.nilIfEmpty ?? String(localized: "Ces aliments n'ont pas pu être ajoutés au journal"))
         default:
             status = .drafting
         }
@@ -116,7 +116,7 @@ nonisolated struct CoachFoodLogProposal: Equatable, Identifiable {
         var presets: [FoodPortion.Preset] = []
         let rounded = proposedGrams.rounded()
         if proposedGrams > 0, rounded != 100, rounded != 200 {
-            presets.append(FoodPortion.Preset(label: "Portion · \(FoodPortion.gramsLabel(proposedGrams))", grams: proposedGrams))
+            presets.append(FoodPortion.Preset(label: String(localized: "Portion · \(FoodPortion.gramsLabel(proposedGrams))"), grams: proposedGrams))
         }
         presets.append(FoodPortion.Preset(label: "100 g", grams: 100))
         presets.append(FoodPortion.Preset(label: "200 g", grams: 200))
@@ -212,11 +212,11 @@ struct CoachFoodLogCard: View {
             case .proposed:
                 card
             case .sending, .drafting:
-                receipt(status: "Envoi…", symbol: "fork.knife", tone: SharpitColor.mutedForeground, inProgress: true)
+                receipt(status: String(localized: "Envoi…"), symbol: "fork.knife", tone: SharpitColor.mutedForeground, inProgress: true)
             case .applied:
                 appliedReceipt
             case .refused:
-                receipt(status: "Refusé", symbol: "xmark.circle", tone: SharpitColor.mutedForeground, struck: true)
+                receipt(status: String(localized: "Refusé"), symbol: "xmark.circle", tone: SharpitColor.mutedForeground, struck: true)
             case .failed(let hint):
                 failedReceipt(hint)
             }
@@ -249,15 +249,15 @@ struct CoachFoodLogCard: View {
     private var disabledReason: String? {
         guard phase == .proposed else { return nil }
         // `onAnswer` stays set while a stream winds down; only missing handler blocks Add.
-        if onAnswer == nil { return "Le coach répond encore" }
-        if readyItems == nil { return "Grammage invalide" }
+        if onAnswer == nil { return String(localized: "Le coach répond encore") }
+        if readyItems == nil { return String(localized: "Grammage invalide") }
         return nil
     }
 
     private var card: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             SharpitCardHeader(
-                title: "Proposé",
+                title: String(localized: "Proposé"),
                 symbol: "fork.knife",
                 tint: SharpitColor.primary,
                 showsChevron: false
@@ -285,7 +285,7 @@ struct CoachFoodLogCard: View {
             }
 
             HStack(spacing: SharpitSpacing.sm) {
-                answerButton("Refuser", prominent: false, enabled: onAnswer != nil && !isSending) {
+                answerButton(String(localized: "Refuser"), prominent: false, enabled: onAnswer != nil && !isSending) {
                     logTap()
                     isSending = true
                     onAnswer?(false, nil)
@@ -393,7 +393,7 @@ struct CoachFoodLogCard: View {
 
     private var addTitle: String {
         let count = lines.count
-        return count <= 1 ? "Ajouter" : "Ajouter les \(count)"
+        return count <= 1 ? String(localized: "Ajouter") : String(localized: "Ajouter les \(count)")
     }
 
     private var addAccessibilityLabel: String {
@@ -401,7 +401,7 @@ struct CoachFoodLogCard: View {
             let grams = FoodLogForm.grams(line.gramsText).map(FoodPortion.gramsLabel) ?? line.gramsText
             return "\(line.name), \(grams)"
         }
-        return "Ajouter \(parts.joined(separator: ", "))"
+        return String(localized: "Ajouter \(parts.joined(separator: ", "))")
     }
 
     private func answerButton(
@@ -476,7 +476,7 @@ struct CoachFoodLogCard: View {
 
     private var appliedLabel: String {
         let count = proposal.items.count
-        return count <= 1 ? "Ajouté ✓" : "\(count) aliments ajoutés ✓"
+        return count <= 1 ? String(localized: "Ajouté ✓") : String(localized: "\(count) aliments ajoutés ✓")
     }
 
     private func receipt(

@@ -59,9 +59,9 @@ struct PlannedSessionCreateSheet: View {
         } catch let SharpitAPIError.message(reason) {
             failure = reason
         } catch let error as SharpitAPIError where [.transport, .rateLimited, .unauthorized].contains(error) {
-            failure = SharpitErrorGuidance.message(for: error, subject: "La séance")
+            failure = SharpitErrorGuidance.message(for: error, subject: String(localized: "La séance"))
         } catch {
-            failure = "La séance n’a pas pu être ajoutée. Réessaie dans un instant."
+            failure = String(localized: "La séance n’a pas pu être ajoutée. Réessaie dans un instant.")
         }
     }
 }
@@ -119,7 +119,7 @@ struct PlannedSessionFormContent: View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                 sportPicker
-                SharpitFormField("Titre (facultatif)", placeholder: draft.sport.label, text: $draft.title)
+                SharpitFormField(String(localized: "Titre (facultatif)"), placeholder: draft.sport.label, text: $draft.title)
                 whenFields
                 durationField
                 intensityPicker
@@ -139,7 +139,7 @@ struct PlannedSessionFormContent: View {
 
     private var sportPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Sport")
+            SharpitFieldLabel(String(localized: "Sport"))
             LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
                 ForEach(PlannedSessionDraft.sports, id: \.self) { sport in
                     OnboardingChoiceChip(title: sport.label, symbol: sport.symbolName, isSelected: draft.sport == sport) {
@@ -152,7 +152,7 @@ struct PlannedSessionFormContent: View {
 
     private var whenFields: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Quand")
+            SharpitFieldLabel(String(localized: "Quand"))
             DatePicker("Jour", selection: $draft.day, displayedComponents: .date)
                 .font(SharpitTypography.body)
                 .sharpitFieldWell()
@@ -168,15 +168,15 @@ struct PlannedSessionFormContent: View {
             }
         }
         .tint(SharpitColor.primary)
-        .environment(\.locale, Locale(identifier: "fr_FR"))
+        .environment(\.locale, AppLanguage.locale)
         .animation(SharpitMotion.reveal, value: draft.startTime != nil)
     }
 
     private var durationField: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Durée")
+            SharpitFieldLabel(String(localized: "Durée"))
             Stepper(value: duration, in: 5...600, step: 5) {
-                Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? "Non précisée")
+                Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? String(localized: "Non précisée"))
                     .font(SharpitTypography.body)
                     .monospacedDigit()
                     .foregroundStyle(draft.durationMin == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
@@ -188,7 +188,7 @@ struct PlannedSessionFormContent: View {
 
     private var intensityPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Intensité")
+            SharpitFieldLabel(String(localized: "Intensité"))
             LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
                 ForEach(PlannedSessionIntensity.allCases) { intensity in
                     OnboardingChoiceChip(title: intensity.label, isSelected: draft.intensity == intensity) {
@@ -204,9 +204,9 @@ struct PlannedSessionFormContent: View {
 
     private var descriptionField: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Déroulé")
+            SharpitFieldLabel(String(localized: "Déroulé"))
             TextField(
-                "Ex. : 15 min d’échauffement, 5 × 3 min au seuil, 10 min de retour au calme",
+                String(localized: "Ex. : 15 min d’échauffement, 5 × 3 min au seuil, 10 min de retour au calme"),
                 text: $draft.description,
                 axis: .vertical
             )
@@ -227,8 +227,8 @@ struct PlannedSessionFormContent: View {
     private var stepsNote: String? {
         guard let original, original.hasStructuredSteps else { return nil }
         return draft.sport == original.sport
-            ? "Les étapes détaillées du coach restent telles quelles."
-            : "Changer de sport retire les étapes détaillées du coach."
+            ? String(localized: "Les étapes détaillées du coach restent telles quelles.")
+            : String(localized: "Changer de sport retire les étapes détaillées du coach.")
     }
 
     @ViewBuilder
@@ -276,7 +276,7 @@ struct StrengthExercisesEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel("Exercices")
+            SharpitFieldLabel(String(localized: "Exercices"))
             ForEach($exercises) { $exercise in
                 exerciseCard($exercise)
                     .transition(.opacity.combined(with: .move(edge: .top)))

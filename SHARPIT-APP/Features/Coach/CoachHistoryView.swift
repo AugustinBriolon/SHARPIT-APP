@@ -67,7 +67,7 @@ struct CoachHistoryView: View {
             }
         case .loaded(let conversations) where conversations.isEmpty:
             ContentUnavailableView(
-                "Aucune conversation",
+                String(localized: "Aucune conversation"),
                 systemImage: "bubble.left.and.bubble.right",
                 description: Text("Tes échanges avec le coach apparaîtront ici.")
             )
@@ -145,7 +145,7 @@ private extension CoachConversationSummary {
     static let placeholders: [CoachConversationSummary] = (0..<6).map { index in
         CoachConversationSummary(
             id: "skeleton-\(index)",
-            title: "Conversation avec le coach sur la semaine",
+            title: String(localized: "Conversation avec le coach sur la semaine"),
             updatedAt: Date(timeIntervalSinceNow: -Double(index) * 86_400)
         )
     }

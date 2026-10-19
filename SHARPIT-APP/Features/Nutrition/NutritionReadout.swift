@@ -67,7 +67,7 @@ enum NutritionReadout {
 
     /// `1,8 g/kg` — one decimal, French separator.
     static func perKg(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "fr_FR")))) g/kg"
+        "\(value.formatted(.number.precision(.fractionLength(1)).locale(AppLanguage.locale))) g/kg"
     }
 
     /// How full a goal bar is, 0…1. Past the goal the bar is simply full; the figure says by how much.
@@ -110,17 +110,17 @@ enum NutritionReadout {
     /// The web's labels for what each finding is about (`nutrition-reading-display.ts`).
     static func jobLabel(_ job: String) -> String {
         switch job {
-        case "fuel": "Carburant"
-        case "quality": "Produits"
-        case "diet": "Régime"
-        case "weight": "Objectif de poids"
-        default: "Lecture"
+        case "fuel": String(localized: "Carburant")
+        case "quality": String(localized: "Produits")
+        case "diet": String(localized: "Régime")
+        case "weight": String(localized: "Objectif de poids")
+        default: String(localized: "Lecture")
         }
     }
 
     /// Why an entry is marked, as the web words it.
     static func flagLabel(_ reason: String) -> String {
-        reason == "diet_conflict" ? "Hors régime" : "Ultra-transformé"
+        reason == "diet_conflict" ? String(localized: "Hors régime") : "Ultra-transformé"
     }
 
     /// Where the day's energy came from, by share of the macros' kilocalories. Empty without any.
@@ -139,12 +139,12 @@ enum NutritionReadout {
 
     /// `72,5 kg`.
     static func kilograms(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0...1)).locale(Locale(identifier: "fr_FR")))) kg"
+        "\(value.formatted(.number.precision(.fractionLength(0...1)).locale(AppLanguage.locale))) kg"
     }
 
     /// `3 repas`, `1 repas`, `Aucun repas`.
     static func mealsCount(_ count: Int) -> String {
-        count == 0 ? "Aucun repas" : "\(count) repas"
+        count == 0 ? String(localized: "Aucun repas") : "\(count) repas"
     }
 
     /// The SF Symbol for a meal, by the food log's meal key.
@@ -177,7 +177,7 @@ enum NutritionReadout {
                 fuelDensity: nil,
                 meals: [
                     V1NutritionMeal(name: "breakfast", label: "Petit-déjeuner", calories: 520, protein: 25, carbs: 70, fat: 14, entries: []),
-                    V1NutritionMeal(name: "lunch", label: "Déjeuner", calories: 780, protein: 40, carbs: 90, fat: 25, entries: []),
+                    V1NutritionMeal(name: "lunch", label: String(localized: "Déjeuner"), calories: 780, protein: 40, carbs: 90, fat: 25, entries: []),
                 ]
             )
         )

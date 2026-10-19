@@ -14,11 +14,11 @@ struct CaffeineInputSheet: View {
     }
 
     private let presets: [Preset] = [
-        Preset(id: "tea", label: "Thé", delta: 40, icon: "cup.and.saucer"),
-        Preset(id: "espresso", label: "Expresso", delta: 60, icon: "cup.and.saucer.fill"),
-        Preset(id: "energy", label: "Énergie", delta: 80, icon: "bolt.fill"),
-        Preset(id: "filter", label: "Filtre", delta: 100, icon: "mug"),
-        Preset(id: "double", label: "Double expresso", delta: 120, icon: "mug.fill")
+        Preset(id: "tea", label: String(localized: "Thé"), delta: 40, icon: "cup.and.saucer"),
+        Preset(id: "espresso", label: String(localized: "Expresso"), delta: 60, icon: "cup.and.saucer.fill"),
+        Preset(id: "energy", label: String(localized: "Énergie"), delta: 80, icon: "bolt.fill"),
+        Preset(id: "filter", label: String(localized: "Filtre"), delta: 100, icon: "mug"),
+        Preset(id: "double", label: String(localized: "Double expresso"), delta: 120, icon: "mug.fill")
     ]
 
     private var currentMg: Int {
@@ -83,7 +83,7 @@ struct CaffeineInputSheet: View {
 
                     // Quick add presets grid
                     VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        SharpitEyebrow("Ajouts rapides")
+                        SharpitEyebrow(String(localized: "Ajouts rapides"))
 
                         LazyVGrid(
                             columns: [

@@ -70,12 +70,12 @@ struct DayDetailDatePicker: View {
         }
         .sheet(isPresented: $showingCalendar) {
             SharpitCalendarSheet(
-                title: "Jour",
+                title: String(localized: "Jour"),
                 initial: selectedDay,
                 weeks: weeks,
                 range: weeks.selectableDates.lowerBound...Date.now,
                 marks: calendarMarks,
-                legend: [(.filled, "Données"), (.muted, "Aucune donnée")],
+                legend: [(.filled, String(localized: "Données")), (.muted, String(localized: "Aucune donnée"))],
                 onPick: pick,
                 onToday: { pick(.now) }
             )
@@ -99,8 +99,8 @@ struct DayDetailDatePicker: View {
     private func accessibilityLabel(for day: Date, isFuture: Bool) -> String {
         let date = day.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide))
         switch isFuture ? nil : hasData(day) {
-        case true?: return "\(date), données disponibles"
-        case false?: return "\(date), aucune donnée"
+        case true?: return String(localized: "\(date), données disponibles")
+        case false?: return String(localized: "\(date), aucune donnée")
         case nil: return date
         }
     }

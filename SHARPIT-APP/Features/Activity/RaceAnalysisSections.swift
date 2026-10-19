@@ -25,11 +25,11 @@ struct RaceAnalysisSections: View {
             }
             let effort = RaceAnalysisReadout.effortRows(analysis)
             if !effort.isEmpty {
-                RaceFiguresBlock(title: "Gestion de l'effort", rows: effort)
+                RaceFiguresBlock(title: String(localized: "Gestion de l'effort"), rows: effort)
             }
             let load = RaceAnalysisReadout.loadRows(analysis, isExpertReading: isExpertReading)
             if !load.isEmpty {
-                RaceFiguresBlock(title: "Charge et récupération", rows: load)
+                RaceFiguresBlock(title: String(localized: "Charge et récupération"), rows: load)
             }
         }
     }
@@ -128,7 +128,7 @@ struct RaceZonesBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Zones cardiaques par étape")
+            SharpitEyebrow(String(localized: "Zones cardiaques par étape"))
             ForEach(rows) { row in
                 VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                     HStack {

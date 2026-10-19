@@ -51,51 +51,51 @@ struct DisplayModeView: View {
             if store.phase == .loaded {
                 Section {
                     choice(
-                        title: "Essentiel",
-                        detail: "Ce qui s'est passé, ce que ça a coûté, quoi faire ensuite — en mots plutôt qu'en sigles.",
-                        example: "Charge 78",
+                        title: String(localized: "Essentiel"),
+                        detail: String(localized: "Ce qui s'est passé, ce que ça a coûté, quoi faire ensuite — en mots plutôt qu'en sigles."),
+                        example: String(localized: "Charge 78"),
                         isExpert: false
                     )
                     choice(
-                        title: "Expert",
-                        detail: "Les mêmes écrans, plus la couche technique qui les fonde.",
+                        title: String(localized: "Expert"),
+                        detail: String(localized: "Les mêmes écrans, plus la couche technique qui les fonde."),
                         example: "78 TSS · IF 0,81 · CTL 52 · TSB −10",
                         isExpert: true
                     )
                 } footer: {
-                    SharpitListFooter("Ce que SharpIt affiche, pas ce qu'il mesure : les deux lectures partent des mêmes calculs. Tu peux changer quand tu veux.")
+                    SharpitListFooter(String(localized: "Ce que SharpIt affiche, pas ce qu'il mesure : les deux lectures partent des mêmes calculs. Tu peux changer quand tu veux."))
                 }
                 .sharpitListRows()
 
                 // Said exactly, screen by screen: a preference that promises more than it changes
                 // is worse than none.
-                Section(eyebrow: "Ce qu'Expert ajoute") {
+                Section(eyebrow: String(localized: "Ce qu'Expert ajoute")) {
                     change(
                         symbol: "waveform.path.ecg",
-                        title: "Analyse technique de chaque séance",
-                        text: "Dans Activité : NP, IF, VI, TSS, facteur d'efficacité, découplage cardiaque, temps par zone cardiaque et de puissance, et les seuils utilisés."
+                        title: String(localized: "Analyse technique de chaque séance"),
+                        text: String(localized: "Dans Activité : NP, IF, VI, TSS, facteur d'efficacité, découplage cardiaque, temps par zone cardiaque et de puissance, et les seuils utilisés.")
                     )
                     change(
                         symbol: "chart.xyaxis.line",
-                        title: "Ta forme dans Plan",
-                        text: "En haut de la semaine : forme chronique (CTL), fatigue aiguë (ATL), forme nette (TSB) sur six semaines, et ta charge TSS des huit dernières."
+                        title: String(localized: "Ta forme dans Plan"),
+                        text: String(localized: "En haut de la semaine : forme chronique (CTL), fatigue aiguë (ATL), forme nette (TSB) sur six semaines, et ta charge TSS des huit dernières.")
                     )
                     change(
                         symbol: "gauge.with.dots.needle.50percent",
-                        title: "La charge nommée en TSS",
-                        text: "Sur les séances faites et prévues : « 78 TSS » au lieu de « Charge 78 ». Le chiffre est le même."
+                        title: String(localized: "La charge nommée en TSS"),
+                        text: String(localized: "Sur les séances faites et prévues : « 78 TSS » au lieu de « Charge 78 ». Le chiffre est le même.")
                     )
                 }
                 .sharpitListRows()
 
-                Section(eyebrow: "Pour qui ?") {
+                Section(eyebrow: String(localized: "Pour qui ?")) {
                     audience(
-                        title: "Essentiel",
-                        text: "Pour t'entraîner sans jargon. Chaque écran dit ce qui s'est passé et quoi faire ensuite, avec des mots plutôt que des sigles. Le bon choix si tu découvres l'analyse de l'entraînement."
+                        title: String(localized: "Essentiel"),
+                        text: String(localized: "Pour t'entraîner sans jargon. Chaque écran dit ce qui s'est passé et quoi faire ensuite, avec des mots plutôt que des sigles. Le bon choix si tu découvres l'analyse de l'entraînement.")
                     )
                     audience(
-                        title: "Expert",
-                        text: "Pour qui suit déjà ses zones, sa charge et ses seuils — athlète confirmé, entraîneur, ou curieux de la mécanique. Les mêmes lectures, nommées techniquement, avec les chiffres qui les fondent."
+                        title: String(localized: "Expert"),
+                        text: String(localized: "Pour qui suit déjà ses zones, sa charge et ses seuils — athlète confirmé, entraîneur, ou curieux de la mécanique. Les mêmes lectures, nommées techniquement, avec les chiffres qui les fondent.")
                     )
                 }
                 .sharpitListRows()
@@ -191,14 +191,14 @@ private struct DisplayModeSkeleton: View {
     var body: some View {
         Section {
             DisplayModeChoiceRow(
-                title: "Essentiel",
-                detail: "Ce qui s'est passé, ce que ça a coûté, quoi faire ensuite.",
-                example: "Charge 78 · ressenti solide",
+                title: String(localized: "Essentiel"),
+                detail: String(localized: "Ce qui s'est passé, ce que ça a coûté, quoi faire ensuite."),
+                example: String(localized: "Charge 78 · ressenti solide"),
                 isSelected: false
             )
             DisplayModeChoiceRow(
-                title: "Expert",
-                detail: "Ajoute la couche technique : TSS, IF, CTL/ATL/TSB, zones, découplage.",
+                title: String(localized: "Expert"),
+                detail: String(localized: "Ajoute la couche technique : TSS, IF, CTL/ATL/TSB, zones, découplage."),
                 example: "78 TSS · IF 0,82 · TSB −12",
                 isSelected: false
             )

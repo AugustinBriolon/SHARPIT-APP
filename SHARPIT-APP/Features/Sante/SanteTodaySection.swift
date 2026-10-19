@@ -17,15 +17,15 @@ struct SanteDayState: Equatable {
         var tiles: [Tile] = []
         if let bank = response.energyBank, let value = bank.value {
             tiles.append(Tile(
-                caption: "Énergie",
+                caption: String(localized: "Énergie"),
                 value: "\(Int(value.rounded()))",
                 unit: "/100",
-                note: bank.typicalBaseline.map { "D'habitude \(Int($0.rounded()))" }
+                note: bank.typicalBaseline.map { String(localized: "D'habitude \(Int($0.rounded()))") }
             ))
         }
         if let stress = response.stress {
             tiles.append(Tile(
-                caption: "Stress",
+                caption: String(localized: "Stress"),
                 value: "\(Int(stress.value.rounded()))",
                 unit: "/100",
                 note: Self.stressCaption(stress.value)
@@ -33,7 +33,7 @@ struct SanteDayState: Equatable {
         }
         if let band = response.targetBand {
             tiles.append(Tile(
-                caption: "Effort visé",
+                caption: String(localized: "Effort visé"),
                 value: String(format: "%.0f–%.0f", band.low, band.high),
                 unit: nil,
                 note: Self.statusLabel(band.status)
@@ -44,16 +44,16 @@ struct SanteDayState: Equatable {
     }
 
     static func stressCaption(_ value: Double) -> String {
-        if value >= 75 { return "Élevé" }
-        if value >= 50 { return "Modéré" }
-        return "Calme"
+        if value >= 75 { return String(localized: "Élevé") }
+        if value >= 50 { return String(localized: "Modéré") }
+        return String(localized: "Calme")
     }
 
     static func statusLabel(_ status: String?) -> String? {
         switch status {
-        case "below": "Encore à faire"
-        case "within": "Atteint"
-        case "above": "Dépassé"
+        case "below": String(localized: "Encore à faire")
+        case "within": String(localized: "Atteint")
+        case "above": String(localized: "Dépassé")
         default: nil
         }
     }
@@ -64,7 +64,7 @@ struct SanteTodaySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Aujourd'hui")
+            SharpitEyebrow(String(localized: "Aujourd'hui"))
             HStack(spacing: SharpitSpacing.sm) {
                 ForEach(state.tiles, id: \.caption) { tile in
                     SharpitStatTile(caption: tile.caption, value: tile.value, unit: tile.unit, note: tile.note)

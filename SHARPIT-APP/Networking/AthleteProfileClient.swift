@@ -91,7 +91,7 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing, Thres
         if let reason, let refusal = V1ThresholdApplyRefusal(rawValue: reason) {
             return refusal.message
         }
-        return PlannedSessionClient.refusal(in: data) ?? "Seuils non appliqués."
+        return PlannedSessionClient.refusal(in: data) ?? String(localized: "Seuils non appliqués.")
     }
 
     private func exchange(_ request: URLRequest) async throws -> (Data, Int) {
@@ -161,7 +161,7 @@ enum AthleteProfileClientError: Error, Equatable, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .decoding: "Réponse du profil incompatible"
+        case .decoding: String(localized: "Réponse du profil incompatible")
         }
     }
 }

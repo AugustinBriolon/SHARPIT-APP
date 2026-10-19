@@ -31,8 +31,8 @@ struct CoachWidgetView: View {
             }
             .accessibilityLabel("Demander au coach")
         default:
-            WidgetFrame("Coach", symbol: "bubble.left.and.text.bubble.right", tint: SharpitColor.inkAccent) {
-                WidgetTitle(text: "Demander au coach")
+            WidgetFrame(String(localized: "Coach"), symbol: "bubble.left.and.text.bubble.right", tint: SharpitColor.inkAccent) {
+                WidgetTitle(text: String(localized: "Demander au coach"))
                     .padding(.bottom, 10)
                 HStack(spacing: 6) {
                     Text("Ta question…")

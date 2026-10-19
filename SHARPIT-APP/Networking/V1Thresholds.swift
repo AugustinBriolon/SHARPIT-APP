@@ -120,9 +120,9 @@ nonisolated enum V1ThresholdApplyRefusal: String, Sendable {
 
     var message: String {
         switch self {
-        case .noEstimates: "Pas assez de séances récentes pour estimer tes seuils."
-        case .unchanged: "Tes seuils sont déjà à jour."
-        case .nothingSelected: "Aucune proposition retenue."
+        case .noEstimates: String(localized: "Pas assez de séances récentes pour estimer tes seuils.")
+        case .unchanged: String(localized: "Tes seuils sont déjà à jour.")
+        case .nothingSelected: String(localized: "Aucune proposition retenue.")
         }
     }
 }

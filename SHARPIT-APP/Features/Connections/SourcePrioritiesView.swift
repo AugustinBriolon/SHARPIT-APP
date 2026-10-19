@@ -67,10 +67,10 @@ struct SourcePrioritiesView: View {
     private func footer(for sourceClass: V1SourceClass) -> String {
         let base = sourceClass.description
         if store.canChoosePrimary(in: sourceClass.id) {
-            return "\(base) Touche le nom pour choisir la source principale ; le commutateur active ou coupe la source."
+            return String(localized: "\(base) Touche le nom pour choisir la source principale ; le commutateur active ou coupe la source.")
         }
         if store.connectedCount(in: sourceClass.id) > 1 {
-            return "\(base) Active au moins deux sources pour en choisir une principale."
+            return String(localized: "\(base) Active au moins deux sources pour en choisir une principale.")
         }
         return base
     }
@@ -94,7 +94,7 @@ struct SourcePrioritiesView: View {
                                 .font(SharpitTypography.bodyEmphasis)
                                 .foregroundStyle(SharpitColor.foreground)
                             if choosesPrimary {
-                                Text(isPrimary ? "Principale" : "Choisir comme principale")
+                                Text(isPrimary ? String(localized: "Principale") : String(localized: "Choisir comme principale"))
                                     .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
                                     .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
                             }
@@ -115,7 +115,7 @@ struct SourcePrioritiesView: View {
                 .buttonStyle(.plain)
                 .disabled(!choosesPrimary)
                 .accessibilityAddTraits(isPrimary ? [.isSelected] : [])
-                .accessibilityHint(choosesPrimary && !isPrimary ? "En fait la source principale" : "")
+                .accessibilityHint(choosesPrimary && !isPrimary ? String(localized: "En fait la source principale") : "")
                 .accessibilityLabel(
                     choosesPrimary
                         ? "\(provider.name), \(isPrimary ? "principale" : "pas principale")"
@@ -125,7 +125,7 @@ struct SourcePrioritiesView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Toggle(
-                "Utiliser \(provider.name)",
+                String(localized: "Utiliser \(provider.name)"),
                 isOn: Binding(
                     get: { isEnabled },
                     set: { on in
@@ -151,7 +151,7 @@ struct SourcePrioritiesView: View {
                 }
             } label: {
                 writeCalendarLabel(
-                    "Calendrier Google",
+                    String(localized: "Calendrier Google"),
                     value: googleWriteCalendarSubtitle,
                     isProblem: googleWriteTargetHint != nil
                 )
@@ -162,7 +162,7 @@ struct SourcePrioritiesView: View {
                     Task { await refreshAppleWriteCalendarName() }
                 }
             } label: {
-                writeCalendarLabel("Calendrier de l'iPhone", value: appleWriteCalendarSubtitle, isProblem: false)
+                writeCalendarLabel(String(localized: "Calendrier de l'iPhone"), value: appleWriteCalendarSubtitle, isProblem: false)
             }
         }
     }
@@ -195,11 +195,11 @@ struct SourcePrioritiesView: View {
     }
 
     private var googleWriteCalendarSubtitle: String {
-        googleWriteTargetHint ?? googleWriteTargetName ?? "Choisir un calendrier"
+        googleWriteTargetHint ?? googleWriteTargetName ?? String(localized: "Choisir un calendrier")
     }
 
     private var appleWriteCalendarSubtitle: String {
-        appleWriteCalendarName ?? "Choisir un calendrier"
+        appleWriteCalendarName ?? String(localized: "Choisir un calendrier")
     }
 
     private func resyncAppleCalendarLink() {
@@ -267,7 +267,7 @@ struct SourcePrioritiesView: View {
             googleWriteTargetHint = message
         } catch {
             if googleWriteTargetName == nil {
-                googleWriteTargetHint = "Impossible de charger le calendrier"
+                googleWriteTargetHint = String(localized: "Impossible de charger le calendrier")
             }
         }
     }

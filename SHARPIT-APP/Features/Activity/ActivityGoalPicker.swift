@@ -65,16 +65,16 @@ struct ActivityGoalPickerSheet: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed:
             SharpitStateMessage(
-                title: "Objectifs indisponibles",
+                title: String(localized: "Objectifs indisponibles"),
                 symbol: "wifi.slash",
-                detail: "Vérifie ta connexion, puis réessaie.",
+                detail: String(localized: "Vérifie ta connexion, puis réessaie."),
                 retry: { Task { await load() } }
             )
         case .loaded(let goals) where goals.isEmpty:
             SharpitStateMessage(
-                title: "Aucune course",
+                title: String(localized: "Aucune course"),
                 symbol: "flag.checkered",
-                detail: "Ajoute ta course dans Objectifs pour y lier cette séance."
+                detail: String(localized: "Ajoute ta course dans Objectifs pour y lier cette séance.")
             )
         case .loaded(let goals):
             List(goals) { goal in

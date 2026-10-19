@@ -11,7 +11,7 @@ struct TodayTimelineStrip: View {
     var body: some View {
         if !events.isEmpty {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                SharpitCardHeader(title: "Fil de la journée", symbol: "clock", showsChevron: false)
+                SharpitCardHeader(title: String(localized: "Fil de la journée"), symbol: "clock", showsChevron: false)
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
                         row(event, isLast: index == events.count - 1)

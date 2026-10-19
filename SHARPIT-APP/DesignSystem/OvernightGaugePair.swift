@@ -77,8 +77,8 @@ private struct OvernightGaugeCell: View {
     private var displayCaption: String? {
         guard var text = (overrideCaption ?? gauge.caption) else { return nil }
         if gauge.key == .recovery {
-            text = text.replacingOccurrences(of: "VFC", with: "Système nerveux")
-            text = text.replacingOccurrences(of: "vfc", with: "Système nerveux")
+            text = text.replacingOccurrences(of: "VFC", with: String(localized: "Système nerveux"))
+            text = text.replacingOccurrences(of: "vfc", with: String(localized: "Système nerveux"))
         }
         return text
     }
@@ -164,7 +164,7 @@ private struct OvernightGaugeCell: View {
     }
 
     private var accessibilityLabel: String {
-        [title, "\(gauge.score) sur 100", displayCaption]
+        [title, String(localized: "\(gauge.score) sur 100"), displayCaption]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
@@ -172,8 +172,8 @@ private struct OvernightGaugeCell: View {
 
     private var title: String {
         switch gauge.key {
-        case .sleep: "Sommeil"
-        case .recovery: "Récupération"
+        case .sleep: String(localized: "Sommeil")
+        case .recovery: String(localized: "Récupération")
         case .effort, .adaptation, .stress: gauge.key.instrumentLabel
         }
     }
@@ -183,10 +183,10 @@ private struct OvernightGaugeCell: View {
     VStack(spacing: 20) {
         OvernightGaugePair(
             gauges: [
-                OvernightGaugeModel(key: .sleep, score: "79", caption: "Nuit dernière · 6h 54m"),
-                OvernightGaugeModel(key: .recovery, score: "20", caption: "Frein · VFC"),
+                OvernightGaugeModel(key: .sleep, score: "79", caption: String(localized: "Nuit dernière · 6h 54m")),
+                OvernightGaugeModel(key: .recovery, score: "20", caption: String(localized: "Frein · VFC")),
             ],
-            sleepOverrideCaption: "Manque · 1 h 06",
+            sleepOverrideCaption: String(localized: "Manque · 1 h 06"),
             onSelect: { _ in }
         )
     }

@@ -33,7 +33,7 @@ struct NutritionView: View {
         self.foodLogClient = foodLogClient
         self.tokenProvider = tokenProvider
         let dayStore = DayResourceStore<V1NutritionResponse>(
-            failureMessage: "Ton journal alimentaire n'a pas pu être chargé.",
+            failureMessage: String(localized: "Ton journal alimentaire n'a pas pu être chargé."),
             tokenProvider: tokenProvider,
             day: day,
             dataDays: { try await dataDaysClient.dataDays(domain: .nutrition, from: $0, to: $1, token: $2) },
@@ -55,9 +55,9 @@ struct NutritionView: View {
 
     var body: some View {
         DayDetailScaffold(
-            title: "Nutrition",
+            title: String(localized: "Nutrition"),
             emptySymbol: "fork.knife",
-            unavailableTitle: "Nutrition indisponible",
+            unavailableTitle: String(localized: "Nutrition indisponible"),
             store: store,
             content: { nutrition in
                 NutritionSections(
@@ -210,8 +210,8 @@ struct NutritionSections: View {
         switch nutrition.coachReading {
         case .proRequired?:
             SharpitProTeaser(
-                title: "Lecture du coach",
-                message: "Le coach lit ce que tu as mangé face à ton entraînement, et te donne une action concrète."
+                title: String(localized: "Lecture du coach"),
+                message: String(localized: "Le coach lit ce que tu as mangé face à ton entraînement, et te donne une action concrète.")
             )
         case let reading?:
             NutritionCoachPlate(reading: reading, dayId: nutrition.trainingDayId)
@@ -255,13 +255,13 @@ private struct NutritionEmptyDayPlate: View {
             .accessibilityHidden(true)
 
             VStack(spacing: SharpitSpacing.xxs) {
-                Text(isToday ? "Rien de noté pour l'instant" : "Rien de noté ce jour-là")
+                Text(isToday ? String(localized: "Rien de noté pour l'instant") : String(localized: "Rien de noté ce jour-là"))
                     .font(SharpitTypography.cardTitle)
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
                 Text(isToday
-                     ? "Note ton premier repas : scanne un emballage ou cherche un aliment. Calories, macros et lecture du coach suivent."
-                     : "Ajoute ce que tu as mangé ce jour-là, repas par repas.")
+                     ? String(localized: "Note ton premier repas : scanne un emballage ou cherche un aliment. Calories, macros et lecture du coach suivent.")
+                     : String(localized: "Ajoute ce que tu as mangé ce jour-là, repas par repas."))
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .multilineTextAlignment(.center)
@@ -270,9 +270,9 @@ private struct NutritionEmptyDayPlate: View {
 
             HStack(spacing: SharpitSpacing.xs) {
                 if BarcodeScannerView.isAvailable {
-                    capsule("Scanner", symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan) { onAdd(.scan) }
+                    capsule(String(localized: "Scanner"), symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan) { onAdd(.scan) }
                 }
-                capsule("Chercher un aliment", symbol: "magnifyingglass", tone: SharpitColor.primary) { onAdd(.search) }
+                capsule(String(localized: "Chercher un aliment"), symbol: "magnifyingglass", tone: SharpitColor.primary) { onAdd(.search) }
             }
 
             if let onCopyPreviousDay {
@@ -335,12 +335,12 @@ private struct NutritionEnergyPlate: View {
             dial
             if let goals = day.goals {
                 HStack(spacing: 0) {
-                    figure("Objectif", NutritionReadout.kcal(goals.calories.goal))
+                    figure(String(localized: "Objectif"), NutritionReadout.kcal(goals.calories.goal))
                     divider
-                    figure("Exercice", "+\(NutritionReadout.kcal(goals.exerciseCalories))")
+                    figure(String(localized: "Exercice"), "+\(NutritionReadout.kcal(goals.exerciseCalories))")
                     divider
                     figure(
-                        (goals.calories.remaining ?? 0) < 0 ? "Au-delà" : "Restant",
+                        (goals.calories.remaining ?? 0) < 0 ? "Au-delà" : String(localized: "Restant"),
                         NutritionReadout.kcal(goals.calories.remaining.map(abs)),
                         tone: NutritionReadout.goalTone(pct: goals.calories.pct)
                     )
@@ -507,11 +507,11 @@ private struct NutritionCoachPlate: View {
             }
             .buttonStyle(.sharpitPressable)
         case .pending:
-            status("Le coach lit ta journée…")
+            status(String(localized: "Le coach lit ta journée…"))
         case .awaitingDayEnd:
-            status("La lecture arrive une fois la journée avancée.")
+            status(String(localized: "La lecture arrive une fois la journée avancée."))
         case .unavailable, .proRequired:
-            status("Pas de lecture pour ce jour.")
+            status(String(localized: "Pas de lecture pour ce jour."))
         }
     }
 
@@ -529,7 +529,7 @@ private struct NutritionMacrosSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Macronutriments")
+            SharpitEyebrow(String(localized: "Macronutriments"))
             HStack(spacing: SharpitSpacing.sm) {
                 ForEach(NutritionReadout.Macro.allCases, id: \.self) { macro in
                     MacroTile(
@@ -649,7 +649,7 @@ private struct NutritionMealsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Repas")
+            SharpitEyebrow(String(localized: "Repas"))
             VStack(spacing: 0) {
                 ForEach(Array(meals.enumerated()), id: \.element) { index, meal in
                     NavigationLink {
@@ -691,7 +691,7 @@ private struct MealRow: View {
                     .tracking(SharpitTypography.cardTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
                 HStack(spacing: 4) {
-                    Text(meal.entries.count == 1 ? "1 aliment" : "\(meal.entries.count) aliments")
+                    Text(meal.entries.count == 1 ? String(localized: "1 aliment") : "\(meal.entries.count) aliments")
                     if flagged {
                         Image(systemName: "exclamationmark.circle.fill")
                             .foregroundStyle(SharpitColor.signalCaution)
@@ -735,13 +735,13 @@ private struct NutritionDayHeader: View {
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.xs) {
             if diet.isEmpty {
-                chip(isComplete ? "Journée close" : "Journée en cours", symbol: isComplete ? "checkmark.circle" : "clock", tone: SharpitColor.mutedForeground)
+                chip(isComplete ? String(localized: "Journée close") : String(localized: "Journée en cours"), symbol: isComplete ? "checkmark.circle" : "clock", tone: SharpitColor.mutedForeground)
             } else {
                 chip(diet.joined(separator: " · "), symbol: "leaf", tone: SharpitColor.primary)
                     .accessibilityLabel("Régime en cours : \(diet.joined(separator: ", "))")
             }
             Spacer(minLength: 0)
-            CoachDiscussButton(title: "Coach") {
+            CoachDiscussButton(title: String(localized: "Coach")) {
                 router.discussWithCoach(about: CoachDiscuss.describe(.nutrition(trainingDayId: dayId)))
             }
         }
@@ -772,7 +772,7 @@ private struct NutritionRegularitySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Régularité · \(history.count) \(history.count == 1 ? "jour" : "jours")")
+            SharpitEyebrow(String(localized: "Régularité · \(history.count) \(history.count == 1 ? "jour" : "jours")"))
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if let regularity {
                     HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
@@ -848,8 +848,8 @@ private struct NutritionRegularitySection: View {
 
     private var legend: some View {
         HStack(spacing: SharpitSpacing.md) {
-            legendItem("Dans l'objectif", tone(.onTarget))
-            legendItem("En dessous", tone(.under))
+            legendItem(String(localized: "Dans l'objectif"), tone(.onTarget))
+            legendItem(String(localized: "En dessous"), tone(.under))
             legendItem("Au-dessus", tone(.over))
         }
     }
@@ -878,8 +878,8 @@ private struct NutritionRegularitySection: View {
     }
 
     private var accessibilitySummary: String {
-        guard let regularity else { return "Régularité sur 14 jours" }
-        return "\(regularity.onTarget) jours dans l'objectif, \(regularity.logged) jours notés sur \(regularity.days)"
+        guard let regularity else { return String(localized: "Régularité sur 14 jours") }
+        return String(localized: "\(regularity.onTarget) jours dans l'objectif, \(regularity.logged) jours notés sur \(regularity.days)")
     }
 }
 

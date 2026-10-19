@@ -6,7 +6,7 @@ struct BrickEvaluationTile: View {
     let action: () -> Void
 
     var body: some View {
-        ReadoutTile(caption: "Évaluation du brick", action: action) {
+        ReadoutTile(caption: String(localized: "Évaluation du brick"), action: action) {
             switch store.phase {
             case .loading:
                 ProgressView()
@@ -21,9 +21,9 @@ struct BrickEvaluationTile: View {
                     .foregroundStyle(SharpitColor.primary)
             case .ready:
                 HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.lg) {
-                    reading("Effort", value: store.rpe, outOf: 10)
-                    reading("Transitions", value: store.transitionRating, outOf: 5)
-reading("Ressenti", value: store.feeling?.rawValue, outOf: 5)
+                    reading(String(localized: "Effort"), value: store.rpe, outOf: 10)
+                    reading(String(localized: "Transitions"), value: store.transitionRating, outOf: 5)
+reading(String(localized: "Ressenti"), value: store.feeling?.rawValue, outOf: 5)
                 }
             }
         }
@@ -50,10 +50,10 @@ struct BrickEvaluationSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                     SubjectiveScale(
-                        title: "Effort global",
+                        title: String(localized: "Effort global"),
                         value: store.rpe,
                         outOf: 10,
-                        caption: "Le brick entier, transitions comprises — pas chaque sport.",
+                        caption: String(localized: "Le brick entier, transitions comprises — pas chaque sport."),
                         tone: store.rpe.map(SessionFeedbackTone.effort)
                     ) {
                         RatingGrid(
@@ -64,11 +64,11 @@ struct BrickEvaluationSheet: View {
                     }
 
                     SubjectiveScale(
-                        title: "Transitions",
+                        title: String(localized: "Transitions"),
                         value: store.transitionRating,
                         outOf: 5,
                         caption: store.transitionRating.flatMap(BrickTransitionRating.init(rawValue:))?.hint
-                            ?? "1 ratées · 5 fluides",
+                            ?? String(localized: "1 ratées · 5 fluides"),
                         tone: store.transitionRating.map { _ in SharpitColor.primary }
                     ) {
                         RatingGrid(
@@ -79,10 +79,10 @@ struct BrickEvaluationSheet: View {
                     }
 
                     SubjectiveScale(
-                        title: "Ressenti",
+                        title: String(localized: "Ressenti"),
                         value: store.feeling?.rawValue,
                         outOf: 5,
-                        caption: store.feeling?.hint ?? "1 très mal · 5 très bien",
+                        caption: store.feeling?.hint ?? String(localized: "1 très mal · 5 très bien"),
                         tone: store.feeling.map(SessionFeedbackTone.feeling)
                     ) {
                         RatingGrid(
@@ -111,9 +111,9 @@ struct BrickEvaluationSheet: View {
 
     private var notesField: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Notes")
+            SharpitEyebrow(String(localized: "Notes"))
             TextField(
-                "Jambes en sortie de vélo, ravitaillement, matériel…",
+                String(localized: "Jambes en sortie de vélo, ravitaillement, matériel…"),
                 text: Binding(get: { store.notes }, set: { store.setNotes($0) }),
                 axis: .vertical
             )

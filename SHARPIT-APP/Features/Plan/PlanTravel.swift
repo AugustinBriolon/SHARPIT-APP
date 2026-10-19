@@ -35,7 +35,7 @@ nonisolated enum PlanTravel {
     /// What VoiceOver reads: each trip and its days.
     static func accessibilityLabel(_ trips: [CoachMemoryEntry]) -> String {
         let parts = trips.map { "\($0.displayTitle), \($0.formattedDateRange)" }
-        return "Déplacement cette semaine : " + parts.joined(separator: " ; ")
+        return String(localized: "Déplacement cette semaine : ") + parts.joined(separator: " ; ")
     }
 
     /// A calendar day as one comparable number (20261005).

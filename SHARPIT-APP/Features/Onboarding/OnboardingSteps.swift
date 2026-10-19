@@ -19,21 +19,21 @@ struct OnboardingIdentityStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitFormField("Prénom", placeholder: "Ton prénom", text: $draft.firstName)
+            SharpitFormField(String(localized: "Prénom"), placeholder: String(localized: "Ton prénom"), text: $draft.firstName)
                 .textContentType(.givenName)
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitFieldLabel("Sexe")
+                SharpitFieldLabel(String(localized: "Sexe"))
                 SharpitSegmentedChoice(options: AthleteSex.allCases, label: \.label, selection: $draft.sex)
             }
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitFieldLabel("Taille")
+                SharpitFieldLabel(String(localized: "Taille"))
                 SharpitRulerPicker(value: $draft.heightCm, range: Self.heights, unit: "cm", resting: 170)
             }
 
             SharpitDateField(
-                title: "Date de naissance",
+                title: String(localized: "Date de naissance"),
                 date: $draft.birthDate,
                 range: Self.birthDates,
                 resting: Calendar.current.date(byAdding: .year, value: -30, to: .now) ?? .now,
@@ -163,7 +163,7 @@ private struct MotivationRow: View {
         .disabled(isLocked)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityHint(isLocked ? "Toujours inclus" : "")
+        .accessibilityHint(isLocked ? String(localized: "Toujours inclus") : "")
     }
 }
 
@@ -237,13 +237,13 @@ struct OnboardingWeekStep: View {
                         .tracking(SharpitTypography.heroScoreTracking)
                         .foregroundStyle(count == 0 ? SharpitColor.mutedForeground : SharpitColor.foreground)
                         .contentTransition(.numericText(value: Double(count)))
-                    Text(count == 1 ? "séance par semaine" : "séances par semaine")
+                    Text(count == 1 ? String(localized: "séance par semaine") : String(localized: "séances par semaine"))
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
                 Text(count == 0
-                     ? "Aucun jour choisi : le coach s'appuiera sur les jours où tu t'entraînes vraiment."
-                     : "Le coach place tes séances sur ces jours et règle le volume en conséquence.")
+                     ? String(localized: "Aucun jour choisi : le coach s'appuiera sur les jours où tu t'entraînes vraiment.")
+                     : String(localized: "Le coach place tes séances sur ces jours et règle le volume en conséquence."))
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
@@ -275,7 +275,7 @@ struct OnboardingWeekStep: View {
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(OnboardingWeekday.label(day))
-        .accessibilityValue(isOn ? "disponible" : "non disponible")
+        .accessibilityValue(isOn ? "disponible" : String(localized: "non disponible"))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { store.toggleWeekday(day) }
     }
@@ -314,14 +314,14 @@ struct OnboardingGoalStep: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             if !isStrengthOnly {
                 HStack(spacing: SharpitSpacing.sm) {
-                    kindCard(.race, title: "Une course", symbol: "flag.checkered")
-                    kindCard(.metric, title: "Un palier", symbol: "gauge.with.needle")
+                    kindCard(.race, title: String(localized: "Une course"), symbol: "flag.checkered")
+                    kindCard(.metric, title: String(localized: "Un palier"), symbol: "gauge.with.needle")
                 }
             }
 
             switch draft.kind {
             case .race:
-                SharpitFormField("Nom de l'épreuve", placeholder: "Marathon de Paris, 70.3 Nice…", text: $draft.raceTitle)
+                SharpitFormField(String(localized: "Nom de l'épreuve"), placeholder: String(localized: "Marathon de Paris, 70.3 Nice…"), text: $draft.raceTitle)
                 if isTriathlete {
                     VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                         Text("Format")
@@ -345,7 +345,7 @@ struct OnboardingGoalStep: View {
                             .tracking(SharpitTypography.gaugeScoreTracking)
                             .foregroundStyle(SharpitColor.foreground)
                             .contentTransition(.numericText(value: Double(weeksLeft)))
-                        Text(weeksLeft == 1 ? "semaine de préparation" : "semaines de préparation")
+                        Text(weeksLeft == 1 ? String(localized: "semaine de préparation") : String(localized: "semaines de préparation"))
                             .font(SharpitTypography.bodyEmphasis)
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
@@ -353,17 +353,17 @@ struct OnboardingGoalStep: View {
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
-                SharpitFormField("Objectif visé (optionnel)", placeholder: "Terminer, sub 5 h…", text: $draft.targetPerformance)
-                OnboardingPlaceField(title: "Lieu (optionnel)", text: $draft.raceLocation)
+                SharpitFormField(String(localized: "Objectif visé (optionnel)"), placeholder: String(localized: "Terminer, sub 5 h…"), text: $draft.targetPerformance)
+                OnboardingPlaceField(title: String(localized: "Lieu (optionnel)"), text: $draft.raceLocation)
             case .metric:
                 SharpitFormField(
-                    "Ce que tu veux atteindre",
-                    placeholder: isStrengthOnly ? "Squat, développé couché, tractions…" : "FTP, VMA, allure 10 km…",
+                    String(localized: "Ce que tu veux atteindre"),
+                    placeholder: isStrengthOnly ? String(localized: "Squat, développé couché, tractions…") : String(localized: "FTP, VMA, allure 10 km…"),
                     text: $draft.metricTitle
                 )
                 HStack(spacing: SharpitSpacing.sm) {
-                    SharpitFormField("Valeur", placeholder: isStrengthOnly ? "100" : "280", text: $draft.metricTargetText, keyboard: .decimalPad)
-                    SharpitFormField("Unité", placeholder: isStrengthOnly ? "kg, reps…" : "W, km/h…", text: $draft.metricUnit)
+                    SharpitFormField(String(localized: "Valeur"), placeholder: isStrengthOnly ? "100" : "280", text: $draft.metricTargetText, keyboard: .decimalPad)
+                    SharpitFormField(String(localized: "Unité"), placeholder: isStrengthOnly ? String(localized: "kg, reps…") : "W, km/h…", text: $draft.metricUnit)
                 }
             }
         }
@@ -430,7 +430,7 @@ struct OnboardingInjuriesStep: View {
             }
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitFieldLabel(store.injuries.isEmpty ? "Où as-tu mal ?" : "Une autre zone ?")
+                SharpitFieldLabel(store.injuries.isEmpty ? String(localized: "Où as-tu mal ?") : String(localized: "Une autre zone ?"))
                 LazyVGrid(
                     columns: Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3),
                     spacing: SharpitSpacing.xs
@@ -445,8 +445,8 @@ struct OnboardingInjuriesStep: View {
             }
 
             Text(store.injuries.isEmpty
-                ? "Rien en cours ? Passe cette étape."
-                : "Tu pourras suivre leur évolution depuis Corps.")
+                ? String(localized: "Rien en cours ? Passe cette étape.")
+                : String(localized: "Tu pourras suivre leur évolution depuis Corps."))
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
         }
@@ -511,19 +511,19 @@ private struct OnboardingInjurySheet: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                question("Qu'est-ce que c'est ?") {
+                question(String(localized: "Qu'est-ce que c'est ?")) {
                     ForEach(OnboardingInjuryDraft.Kind.allCases) { kind in
                         OnboardingChoiceChip(title: kind.label, isSelected: draft.kind == kind) { draft.kind = kind }
                     }
                 }
                 if draft.asksForSide {
-                    question("Quel côté ?") {
+                    question(String(localized: "Quel côté ?")) {
                         ForEach(OnboardingInjuryDraft.Side.allCases) { side in
                             OnboardingChoiceChip(title: side.label, isSelected: draft.side == side) { draft.side = side }
                         }
                     }
                 }
-                question("Quelle gêne ?") {
+                question(String(localized: "Quelle gêne ?")) {
                     ForEach(OnboardingInjuryDraft.Level.allCases) { level in
                         OnboardingChoiceChip(title: level.label, isSelected: draft.level == level) { draft.level = level }
                     }
@@ -533,7 +533,7 @@ private struct OnboardingInjurySheet: View {
                     onSave(draft)
                     dismiss()
                 } label: {
-                    Text(isDeclared ? "Enregistrer" : "Ajouter")
+                    Text(isDeclared ? String(localized: "Enregistrer") : String(localized: "Ajouter"))
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.primaryForeground)
                         .frame(maxWidth: .infinity)
@@ -611,7 +611,7 @@ struct OnboardingPrivacyStep: View {
             .padding(.horizontal, SharpitSpacing.cardPadding)
             .sharpitSurface(.panel)
 
-            SharpitEyebrow("Optionnel")
+            SharpitEyebrow(String(localized: "Optionnel"))
             VStack(alignment: .leading, spacing: 0) {
                 ConsentCheckRow(isOn: $consents.ai) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -657,12 +657,12 @@ struct OnboardingFirstWeekStep: View {
         case .unavailable:
             note(
                 symbol: "calendar.badge.exclamationmark",
-                title: "Pas de séances générées",
-                detail: "Sans le traitement par IA, le coach ne rédige pas de séances. Tu peux l'activer plus tard dans Paramètres › Confidentialité, puis demander ta semaine depuis le Plan."
+                title: String(localized: "Pas de séances générées"),
+                detail: String(localized: "Sans le traitement par IA, le coach ne rédige pas de séances. Tu peux l'activer plus tard dans Paramètres › Confidentialité, puis demander ta semaine depuis le Plan.")
             )
         case .failed(let message):
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                note(symbol: "exclamationmark.triangle", title: "Semaine non préparée", detail: message)
+                note(symbol: "exclamationmark.triangle", title: String(localized: "Semaine non préparée"), detail: message)
                 Button("Réessayer") { store.startFirstWeek() }
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.primary)
@@ -684,7 +684,7 @@ struct OnboardingFirstWeekStep: View {
             }
             GeneratedWeekView(sessions: sessions)
             ForEach(Array(store.firstWeekSetAside.enumerated()), id: \.offset) { _, entry in
-                GeneratedSessionRow(session: entry.session, rejection: entry.reason ?? "Écartée par le contrôle de sécurité.")
+                GeneratedSessionRow(session: entry.session, rejection: entry.reason ?? String(localized: "Écartée par le contrôle de sécurité."))
             }
         }
     }
@@ -723,7 +723,7 @@ struct OnboardingSourcesStep: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             OnboardingSourceCard(
                 provider: .appleHealth,
-                title: "Apple Santé",
+                title: String(localized: "Apple Santé"),
                 detail: appleHealthDetail
             ) {
                 Toggle("Apple Santé", isOn: appleHealthBinding)
@@ -740,7 +740,7 @@ struct OnboardingSourcesStep: View {
 
     private var appleHealthDetail: String {
         let line = ConnectionsReadout.appleHealthSubtitle(isAvailable: appleHealth.isAvailable, state: appleHealth.state)
-        return appleHealth.isAvailable && !line.isProblem ? "Séances, sommeil, VFC et poids — ceux de ta montre aussi." : line.text
+        return appleHealth.isAvailable && !line.isProblem ? String(localized: "Séances, sommeil, VFC et poids — ceux de ta montre aussi.") : line.text
     }
 
     private var appleHealthBinding: Binding<Bool> {

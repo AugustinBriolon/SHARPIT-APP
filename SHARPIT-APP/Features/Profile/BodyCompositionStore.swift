@@ -91,9 +91,9 @@ final class BodyCompositionStore {
             phase = .unauthorized
         } catch {
             if hadCache {
-                refreshFailure = "Mesures non actualisées."
+                refreshFailure = String(localized: "Mesures non actualisées.")
             } else {
-                phase = .failed("Lecture de tes mesures impossible.")
+                phase = .failed(String(localized: "Lecture de tes mesures impossible."))
             }
         }
     }

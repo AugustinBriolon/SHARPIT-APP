@@ -70,7 +70,7 @@ final class SanteStore {
             phase = .unauthorized
         } catch {
             if overview == nil {
-                phase = .failed("Lecture de ta santé impossible.")
+                phase = .failed(String(localized: "Lecture de ta santé impossible."))
             } else {
                 refreshFailed = true
             }

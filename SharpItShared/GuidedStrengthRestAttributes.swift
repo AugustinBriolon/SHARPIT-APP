@@ -54,13 +54,13 @@ nonisolated struct GuidedStrengthRestAttributes: ActivityAttributes {
 
 /// French copy on the guided-strength Live Activity surfaces.
 nonisolated enum GuidedStrengthRestLiveActivityCopy {
-    static let restTitle = "Repos"
-    static let activeTitle = "Séance"
+    static let restTitle = String(localized: "Repos")
+    static let activeTitle = String(localized: "Séance")
 
     static func subtitle(nextExercise: String, nextSetLine: String) -> String {
         let name = nextExercise.trimmingCharacters(in: .whitespacesAndNewlines)
         let line = nextSetLine.trimmingCharacters(in: .whitespacesAndNewlines)
-        if name.isEmpty { return line.isEmpty ? "Séance en cours" : line }
+        if name.isEmpty { return line.isEmpty ? String(localized: "Séance en cours") : line }
         if line.isEmpty { return name }
         return "\(name) · \(line)"
     }

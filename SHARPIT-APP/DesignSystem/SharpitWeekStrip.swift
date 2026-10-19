@@ -266,7 +266,7 @@ private struct SharpitCalendarView: UIViewRepresentable {
     func makeUIView(context: Context) -> UICalendarView {
         let view = UICalendarView()
         view.calendar = calendar
-        view.locale = SharpitLocale.french
+        view.locale = SharpitLocale.current
         view.fontDesign = .default
         view.tintColor = UIColor(SharpitColor.primary)
         view.availableDateRange = DateInterval(start: range.lowerBound, end: range.upperBound)

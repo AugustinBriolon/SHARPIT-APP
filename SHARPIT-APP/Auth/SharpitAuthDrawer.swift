@@ -356,7 +356,7 @@ struct SharpitAuthDrawer: View {
         } catch is CancellationError {
             // User dismissed Apple prompt
         } catch {
-            errorMessage = "Échec de la connexion Apple : \(error.localizedDescription)"
+            errorMessage = String(localized: "Échec de la connexion Apple : \(error.localizedDescription)")
         }
         isLoading = false
     }
@@ -370,7 +370,7 @@ struct SharpitAuthDrawer: View {
         } catch is CancellationError {
             // User dismissed Google sheet
         } catch {
-            errorMessage = "Échec de la connexion Google : \(error.localizedDescription)"
+            errorMessage = String(localized: "Échec de la connexion Google : \(error.localizedDescription)")
         }
         isLoading = false
     }
@@ -378,7 +378,7 @@ struct SharpitAuthDrawer: View {
     private func handleEmailSubmit() async {
         let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard cleanEmail.contains("@") && cleanEmail.contains(".") else {
-            errorMessage = "Adresse e-mail invalide."
+            errorMessage = String(localized: "Adresse e-mail invalide.")
             return
         }
 
@@ -422,7 +422,7 @@ struct SharpitAuthDrawer: View {
                 self.activeSignUp = preparedSignUp
                 step = .codeVerification(email: cleanEmail)
             } catch let signUpError {
-                errorMessage = "Erreur : \(signUpError.localizedDescription)"
+                errorMessage = String(localized: "Erreur : \(signUpError.localizedDescription)")
             }
         }
         isLoading = false
@@ -445,7 +445,7 @@ struct SharpitAuthDrawer: View {
                 step = .codeVerification(email: email)
             }
         } catch {
-            errorMessage = "Impossible d'envoyer le code : \(error.localizedDescription)"
+            errorMessage = String(localized: "Impossible d'envoyer le code : \(error.localizedDescription)")
         }
         isLoading = false
     }
@@ -467,9 +467,9 @@ struct SharpitAuthDrawer: View {
                     }
                     dismiss()
                 } else if result.status.rawValue == "missing_requirements" {
-                    errorMessage = "Inscription incomplète : des informations complémentaires sont requises."
+                    errorMessage = String(localized: "Inscription incomplète : des informations complémentaires sont requises.")
                 } else {
-                    errorMessage = "Vérification incomplète : \(result.status.rawValue)"
+                    errorMessage = String(localized: "Vérification incomplète : \(result.status.rawValue)")
                 }
             } else if let activeSignUp {
                 let result = try await activeSignUp.verifyEmailCode(cleanCode)
@@ -480,15 +480,15 @@ struct SharpitAuthDrawer: View {
                     }
                     dismiss()
                 } else if result.status.rawValue == "missing_requirements" {
-                    errorMessage = "Inscription incomplète : des informations complémentaires sont requises."
+                    errorMessage = String(localized: "Inscription incomplète : des informations complémentaires sont requises.")
                 } else {
-                    errorMessage = "Vérification incomplète : \(result.status.rawValue)"
+                    errorMessage = String(localized: "Vérification incomplète : \(result.status.rawValue)")
                 }
             }
         } catch let err {
             let desc = err.localizedDescription
             if desc.lowercased().contains("already been verified") {
-                errorMessage = "Ce code a déjà été validé. Demande un nouveau code pour continuer."
+                errorMessage = String(localized: "Ce code a déjà été validé. Demande un nouveau code pour continuer.")
             } else {
                 errorMessage = desc
             }
@@ -503,14 +503,14 @@ struct SharpitAuthDrawer: View {
             if let activeSignIn {
                 let prepared = try await activeSignIn.sendEmailCode()
                 self.activeSignIn = prepared
-                errorMessage = "Un nouveau code a été envoyé !"
+                errorMessage = String(localized: "Un nouveau code a été envoyé !")
             } else if let activeSignUp {
                 let prepared = try await activeSignUp.sendEmailCode()
                 self.activeSignUp = prepared
-                errorMessage = "Un nouveau code a été envoyé !"
+                errorMessage = String(localized: "Un nouveau code a été envoyé !")
             }
         } catch {
-            errorMessage = "Impossible de renvoyer le code : \(error.localizedDescription)"
+            errorMessage = String(localized: "Impossible de renvoyer le code : \(error.localizedDescription)")
         }
         isLoading = false
     }

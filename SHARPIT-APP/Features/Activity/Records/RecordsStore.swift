@@ -46,7 +46,7 @@ final class RecordsStore {
         } catch {
             // Records already shown stay; only a page with nothing yet says it failed.
             if records == nil {
-                phase = .failed(SharpitErrorGuidance.message(for: error, subject: "Le tableau des records"))
+                phase = .failed(SharpitErrorGuidance.message(for: error, subject: String(localized: "Le tableau des records")))
             }
         }
     }
@@ -63,7 +63,7 @@ nonisolated enum RecordsReadout {
         return (String(displayValue[..<space]), unit)
     }
 
-    private static let french = Locale(identifier: "fr_FR")
+    private static let locale = AppLanguage.locale
 
     /// A record set in the last two weeks carries « Nouveau ».
     static func isRecent(_ date: Date, now: Date = .now, calendar: Calendar = .current) -> Bool {
@@ -73,7 +73,7 @@ nonisolated enum RecordsReadout {
 
     /// « 4:12/km · 3 mars 2026 », or the date alone.
     static func meta(_ entry: V1RecordEntry) -> String {
-        let date = entry.date.formatted(.dateTime.day().month(.abbreviated).year().locale(french))
+        let date = entry.date.formatted(.dateTime.day().month(.abbreviated).year().locale(locale))
         guard let sublabel = entry.sublabel, !sublabel.isEmpty else { return date }
         return "\(sublabel) · \(date)"
     }
@@ -82,14 +82,14 @@ nonisolated enum RecordsReadout {
     /// « il y a 2 ans » — the web's `recordNarrative`.
     static func narrative(_ date: Date, now: Date = .now, calendar: Calendar = .current) -> String {
         let days = dayCount(from: date, to: now, calendar: calendar)
-        if days > 120 && days <= 365 { return "record de la saison" }
+        if days > 120 && days <= 365 { return String(localized: "record de la saison") }
         return ago(days: days)
     }
 
     /// « Top 5 par catégorie sur 214 séances (180 avec données détaillées). »
     static func summary(_ records: V1Records) -> String {
-        let sessions = records.totalActivities == 1 ? "1 séance" : "\(records.totalActivities) séances"
-        return "Top 5 par catégorie sur \(sessions) (\(records.streamsAnalyzed) avec données détaillées)."
+        let sessions = records.totalActivities == 1 ? String(localized: "1 séance") : String(localized: "\(records.totalActivities) séances")
+        return String(localized: "Top 5 par catégorie sur \(sessions) (\(records.streamsAnalyzed) avec données détaillées).")
     }
 
     /// « 312 W ».
@@ -101,13 +101,13 @@ nonisolated enum RecordsReadout {
         switch days {
         case ..<1: return "aujourd'hui"
         case 1: return "hier"
-        case 2..<30: return "il y a \(days) jours"
+        case 2..<30: return String(localized: "il y a \(days) jours")
         case 30..<365:
             let months = max(1, Int((Double(days) / 30.4).rounded()))
-            return "il y a \(months) mois"
+            return String(localized: "il y a \(months) mois")
         default:
             let years = max(1, Int((Double(days) / 365).rounded()))
-            return years == 1 ? "il y a 1 an" : "il y a \(years) ans"
+            return years == 1 ? String(localized: "il y a 1 an") : String(localized: "il y a \(years) ans")
         }
     }
 

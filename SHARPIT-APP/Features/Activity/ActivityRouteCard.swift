@@ -38,19 +38,19 @@ nonisolated struct ActivityRouteStats: Equatable, Sendable {
         if activity.type == .bike,
            let meters = activity.distanceM, meters > 0,
            let seconds = activity.duration, seconds > 0 {
-            paceLabel = "Vitesse"
+            paceLabel = String(localized: "Vitesse")
             pace = Figure(value: Self.speedKmh(distanceM: meters, duration: seconds), unit: "km/h")
         } else if activity.type == .swim,
                   let meters = activity.distanceM, meters > 0,
                   let seconds = activity.duration, seconds > 0 {
-            paceLabel = "Allure"
+            paceLabel = String(localized: "Allure")
             pace = Figure(value: Self.paceClock(seconds / (meters / 100)), unit: "/100 m")
         } else if let meters = activity.distanceM, meters >= 100,
                   let seconds = activity.duration, seconds > 0 {
-            paceLabel = "Allure"
+            paceLabel = String(localized: "Allure")
             pace = Figure(value: Self.paceClock(seconds / (meters / 1_000)), unit: "/km")
         } else {
-            paceLabel = "Allure"
+            paceLabel = String(localized: "Allure")
             pace = Figure(value: "", unit: "")
         }
     }

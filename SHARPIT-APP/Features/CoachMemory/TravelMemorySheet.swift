@@ -12,11 +12,11 @@ enum AllowedDiscipline: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .run: "Course"
-        case .bike: "Vélo"
-        case .swim: "Natation"
-        case .strength: "Muscu"
-        case .mobility: "Mobilité"
+        case .run: String(localized: "Course")
+        case .bike: String(localized: "Vélo")
+        case .swim: String(localized: "Natation")
+        case .strength: String(localized: "Muscu")
+        case .mobility: String(localized: "Mobilité")
         }
     }
 
@@ -82,7 +82,7 @@ struct TravelMemorySheet: View {
                     .pickerStyle(.menu)
                 }
 
-                Section(eyebrow: "Détails") {
+                Section(eyebrow: String(localized: "Détails")) {
                     if type == .travel {
                         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                             TextField("Lieu / Destination (ex: Londres, Chamonix...)", text: $locationLabel)
@@ -138,7 +138,7 @@ struct TravelMemorySheet: View {
 
                         TextField("Titre (optionnel, ex: Déplacement pro)", text: $label)
                     } else {
-                        TextField(type == .injury ? "Blessure / gène (ex: Genou droit)" : "Titre", text: $label)
+                        TextField(type == .injury ? String(localized: "Blessure / gène (ex: Genou droit)") : String(localized: "Titre"), text: $label)
                     }
 
                     if showsDatePickers {
@@ -154,7 +154,7 @@ struct TravelMemorySheet: View {
 
                 if showsTrainingImpact {
                 Section(
-                    eyebrow: "Impact sur l'entraînement",
+                    eyebrow: String(localized: "Impact sur l'entraînement"),
                     footer: constraintFooter
                 ) {
                     Picker("Contrainte générale", selection: $trainingConstraint) {
@@ -260,20 +260,20 @@ struct TravelMemorySheet: View {
 
     private var constraintFooter: String {
         switch trainingConstraint {
-        case .full: "Le coach continue de prescrire des séances complètes selon les sports disponibles."
-        case .reduced: "Le coach allège le volume et l'intensité pendant cette période."
-        case .mobilityOnly: "Seules des séances de récupération et mobilité seront proposées."
-        case .none: "Aucune séance ne sera planifiée sur ces dates."
+        case .full: String(localized: "Le coach continue de prescrire des séances complètes selon les sports disponibles.")
+        case .reduced: String(localized: "Le coach allège le volume et l'intensité pendant cette période.")
+        case .mobilityOnly: String(localized: "Seules des séances de récupération et mobilité seront proposées.")
+        case .none: String(localized: "Aucune séance ne sera planifiée sur ces dates.")
         }
     }
 
     private var sheetTitle: String {
         switch type {
-        case .travel: "Nouveau déplacement"
-        case .constraint: "Nouvelle contrainte"
-        case .injury: "Nouvelle blessure"
-        case .preference: "Nouvelle préférence"
-        case .note: "Nouvelle note"
+        case .travel: String(localized: "Nouveau déplacement")
+        case .constraint: String(localized: "Nouvelle contrainte")
+        case .injury: String(localized: "Nouvelle blessure")
+        case .preference: String(localized: "Nouvelle préférence")
+        case .note: String(localized: "Nouvelle note")
         }
     }
 

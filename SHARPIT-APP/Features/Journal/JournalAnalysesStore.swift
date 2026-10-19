@@ -45,7 +45,7 @@ final class JournalAnalysesStore {
             phase = .unauthorized
         } catch {
             if analyses == nil {
-                phase = .failed(SharpitErrorGuidance.message(for: error, subject: "Les analyses du journal"))
+                phase = .failed(SharpitErrorGuidance.message(for: error, subject: String(localized: "Les analyses du journal")))
             }
         }
     }
@@ -55,16 +55,16 @@ final class JournalAnalysesStore {
 nonisolated enum JournalAnalysesReadout {
     /// « 4 / 7 jours · encore 3 », as the web's progress line.
     static func progress(_ analyses: V1JournalAnalyses) -> String {
-        let count = "\(min(analyses.daysWithSignal, analyses.minDays)) / \(analyses.minDays) jours"
-        return analyses.remainingDays > 0 ? "\(count) · encore \(analyses.remainingDays)" : count
+        let count = String(localized: "\(min(analyses.daysWithSignal, analyses.minDays)) / \(analyses.minDays) jours")
+        return analyses.remainingDays > 0 ? String(localized: "\(count) · encore \(analyses.remainingDays)") : count
     }
 
     /// « 7 jours avec · 22 sans ».
     static func sample(_ row: V1JournalAnalysesRow) -> String {
-        "\(days(row.nYes)) avec · \(row.nNo) sans"
+        String(localized: "\(days(row.nYes)) avec · \(row.nNo) sans")
     }
 
     static func days(_ count: Int) -> String {
-        count == 1 ? "1 jour" : "\(count) jours"
+        count == 1 ? String(localized: "1 jour") : "\(count) jours"
     }
 }

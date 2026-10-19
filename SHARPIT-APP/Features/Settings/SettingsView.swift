@@ -80,7 +80,7 @@ struct SettingsView: View {
                     .listRowBackground(SharpitColor.inkSurface)
                 }
 
-                Section(eyebrow: "Apparence", footer: "Propre à cet iPhone.") {
+                Section(eyebrow: String(localized: "Apparence"), footer: String(localized: "Propre à cet iPhone.")) {
                     SharpitSegmentedControl(
                         selection: $appearance,
                         options: AppearancePreference.allCases.map {
@@ -91,47 +91,50 @@ struct SettingsView: View {
                 }
                 .sharpitListRows()
 
-                Section(eyebrow: "Données") {
+                Section(eyebrow: String(localized: "Données")) {
                     NavigationLink(value: SettingsRoute.sources) {
-                        SharpitSettingsLabel(symbol: "link", title: "Sources de données", detail: sourcesDetail)
+                        SharpitSettingsLabel(symbol: "link", title: String(localized: "Sources de données"), detail: sourcesDetail)
                     }
                     // A page, not a quick setting: the switch and the kinds it sends are one
                     // decision, and iOS may have the last word on it.
                     NavigationLink(value: SettingsRoute.notifications) {
-                        SharpitSettingsLabel(symbol: "bell.badge", title: "Notifications", detail: notificationsDetail)
+                        SharpitSettingsLabel(symbol: "bell.badge", title: String(localized: "Notifications"), detail: notificationsDetail)
                     }
                 }
                 .sharpitListRows()
 
-                Section(eyebrow: "Entraînement") {
+                Section(eyebrow: String(localized: "Entraînement")) {
                     NavigationLink(value: SettingsRoute.equipment) {
-                        SharpitSettingsLabel(symbol: "figure.run.square.stack", title: "Sports & équipement", detail: sportsDetail)
+                        SharpitSettingsLabel(symbol: "figure.run.square.stack", title: String(localized: "Sports & équipement"), detail: sportsDetail)
                     }
                     // They calibrate training, not health: here rather than in Santé (SHARPIT ADR-053).
                     // Endurance thresholds mean nothing to a strength-only athlete.
                     if !PracticedSportCatalog.isStrengthOnly(profile.profile.practicedSports?.sports ?? []) {
                         NavigationLink(value: SettingsRoute.thresholds) {
-                            SharpitSettingsLabel(symbol: "gauge.with.dots.needle.67percent", title: "Seuils d'entraînement", detail: "FTP, FC, allure, CSS")
+                            SharpitSettingsLabel(symbol: "gauge.with.dots.needle.67percent", title: String(localized: "Seuils d'entraînement"), detail: String(localized: "FTP, FC, allure, CSS"))
                         }
                     }
                 }
                 .sharpitListRows()
 
-                Section(eyebrow: "Affichage") {
+                Section(eyebrow: String(localized: "Affichage")) {
                     NavigationLink(value: SettingsRoute.features) {
-                        SharpitSettingsLabel(symbol: "square.grid.2x2", title: "Pages et widgets", detail: featuresDetail)
+                        SharpitSettingsLabel(symbol: "square.grid.2x2", title: String(localized: "Pages et widgets"), detail: featuresDetail)
                     }
                     NavigationLink(value: SettingsRoute.density) {
-                        SharpitSettingsLabel(symbol: "eye", title: "Densité de lecture", detail: displayMode.isExpert ? "Expert" : "Essentiel")
+                        SharpitSettingsLabel(symbol: "eye", title: String(localized: "Densité de lecture"), detail: displayMode.isExpert ? String(localized: "Expert") : String(localized: "Essentiel"))
+                    }
+                    NavigationLink(value: SettingsRoute.language) {
+                        SharpitSettingsLabel(symbol: "globe", title: String(localized: "Langue"), detail: AppLanguage.chosen.displayName)
                     }
                 }
                 .sharpitListRows()
 
                 // Hidden with the Nutrition page: switched off, it shows nowhere.
                 if features.isOn(.nutrition) {
-                    Section(eyebrow: "Nutrition") {
+                    Section(eyebrow: String(localized: "Nutrition")) {
                         NavigationLink(value: SettingsRoute.ownFoods) {
-                            SharpitSettingsLabel(symbol: "fork.knife", title: "Mes aliments", detail: "Créer, modifier, supprimer")
+                            SharpitSettingsLabel(symbol: "fork.knife", title: String(localized: "Mes aliments"), detail: String(localized: "Créer, modifier, supprimer"))
                         }
                     }
                     .sharpitListRows()
@@ -139,13 +142,13 @@ struct SettingsView: View {
 
                 Section {
                     NavigationLink(value: SettingsRoute.feedback) {
-                        SharpitSettingsLabel(symbol: "bubble.left.and.text.bubble.right", title: "Donner un avis", detail: "Un bug, une idée : je lis tout")
+                        SharpitSettingsLabel(symbol: "bubble.left.and.text.bubble.right", title: String(localized: "Donner un avis"), detail: String(localized: "Un bug, une idée : je lis tout"))
                     }
                     NavigationLink(value: SettingsRoute.privacy) {
-                        SharpitSettingsLabel(symbol: "hand.raised", title: "Confidentialité & conditions", detail: "Consentements, CGU, données, compte")
+                        SharpitSettingsLabel(symbol: "hand.raised", title: String(localized: "Confidentialité & conditions"), detail: String(localized: "Consentements, CGU, données, compte"))
                     }
                 } header: {
-                    SharpitEyebrow("Aide")
+                    SharpitEyebrow(String(localized: "Aide"))
                 } footer: {
                     footer
                 }
@@ -179,20 +182,20 @@ struct SettingsView: View {
     // MARK: - Details
 
     private var notificationsDetail: String {
-        if notificationStatus == .denied { return "Refusées dans iOS" }
-        guard push.isEnabledByAthlete else { return "Désactivées" }
-        guard let prefs = profile.profile.notificationPrefs else { return "Verdict du matin" }
+        if notificationStatus == .denied { return String(localized: "Refusées dans iOS") }
+        guard push.isEnabledByAthlete else { return String(localized: "Désactivées") }
+        guard let prefs = profile.profile.notificationPrefs else { return String(localized: "Verdict du matin") }
         let on = [
-            prefs.morningVerdict ? "verdict du matin" : nil,
+            prefs.morningVerdict ? String(localized: "verdict du matin") : nil,
             prefs.weeklyReview ? "bilan" : nil,
             prefs.sessionReminder ? "rappels" : nil,
-            prefs.sessionDone ? "séances faites" : nil,
-            prefs.targetStrain ? "cible du jour" : nil,
+            prefs.sessionDone ? String(localized: "séances faites") : nil,
+            prefs.targetStrain ? String(localized: "cible du jour") : nil,
             prefs.dayCheckIns ? "check-ins" : nil,
-            prefs.missedSession ? "séances manquées" : nil,
+            prefs.missedSession ? String(localized: "séances manquées") : nil,
             prefs.syncAlerts ? "alertes" : nil,
         ].compactMap { $0 }
-        return on.isEmpty ? "Aucune" : on.joined(separator: ", ").capitalizedFirstLetter
+        return on.isEmpty ? String(localized: "Aucune") : on.joined(separator: ", ").capitalizedFirstLetter
     }
 
     private var sourcesDetail: String {
@@ -213,13 +216,13 @@ struct SettingsView: View {
     private var sportsDetail: String {
         let sports = PracticedSportCatalog.ordered(profile.profile.practicedSports?.sports ?? [])
         let labels = sports.compactMap { id in PracticedSportCatalog.all.first { $0.id == id }?.label }
-        return labels.isEmpty ? "Tes disciplines et ton matériel" : labels.joined(separator: " · ")
+        return labels.isEmpty ? String(localized: "Tes disciplines et ton matériel") : labels.joined(separator: " · ")
     }
 
     /// « Tout est affiché », or what is hidden.
     private var featuresDetail: String {
         let off = SharpitFeature.allCases.filter { !features.isOn($0) }.map(\.title)
-        return off.isEmpty ? "Tout est affiché" : "Masqué : " + off.joined(separator: ", ")
+        return off.isEmpty ? String(localized: "Tout est affiché") : String(localized: "Masqué : ") + off.joined(separator: ", ")
     }
 
     private var footer: some View {
@@ -268,6 +271,8 @@ struct SettingsView: View {
             OwnFoodsSettingsView(tokenProvider: tokenProvider)
         case .feedback:
             FeedbackView(tokenProvider: tokenProvider)
+        case .language:
+            LanguageSettingsView(client: profileClient, tokenProvider: tokenProvider)
         case .density:
             DisplayModeView(
                 client: profileClient,
@@ -288,6 +293,7 @@ enum SettingsRoute: Hashable {
     case privacy
     case notifications
     case density
+    case language
     case features
     case ownFoods
     case feedback
@@ -323,7 +329,7 @@ private struct AccountRow: View {
                 }
             }
             Spacer(minLength: 0)
-            SharpitPill(isPro ? "Pro" : "Gratuit", style: isPro ? .lime : .neutral)
+            SharpitPill(isPro ? String(localized: "Pro") : String(localized: "Gratuit"), style: isPro ? .lime : .neutral)
         }
         .padding(.vertical, SharpitSpacing.xs)
         .accessibilityElement(children: .combine)
@@ -334,7 +340,7 @@ private struct AccountRow: View {
         let parts = [clerk.user?.firstName, clerk.user?.lastName]
             .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-        return parts.isEmpty ? "Ton compte" : parts.joined(separator: " ")
+        return parts.isEmpty ? String(localized: "Ton compte") : parts.joined(separator: " ")
     }
 }
 
@@ -355,10 +361,10 @@ private struct ProRow: View {
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     if !isPro {
-                        SharpitPill("Découvrir", style: .lime)
+                        SharpitPill(String(localized: "Découvrir"), style: .lime)
                     }
                 }
-                Text(isPro ? "Tout SharpIt est ouvert pour toi." : "Bilan hebdo, analyse de séance, lecture coach du journal.")
+                Text(isPro ? String(localized: "Tout SharpIt est ouvert pour toi.") : String(localized: "Bilan hebdo, analyse de séance, lecture coach du journal."))
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)

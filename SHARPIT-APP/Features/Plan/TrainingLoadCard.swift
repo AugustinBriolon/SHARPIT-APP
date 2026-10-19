@@ -11,7 +11,7 @@ struct TrainingLoadCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(title: "Forme", symbol: "chart.xyaxis.line", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Forme"), symbol: "chart.xyaxis.line", showsChevron: false)
             if let calibration = load.calibration, calibration.isCalibrating {
                 Text(calibrationCaption(calibration))
                     .font(SharpitTypography.meta)
@@ -19,10 +19,10 @@ struct TrainingLoadCard: View {
             }
             if let today {
                 HStack(alignment: .top, spacing: SharpitSpacing.md) {
-                    figure("Forme chronique", value: "\(Int(today.ctl.rounded()))", caption: "CTL", tone: SharpitColor.foreground)
-                    figure("Fatigue aiguë", value: "\(Int(today.atl.rounded()))", caption: "ATL", tone: SharpitColor.foreground)
+                    figure(String(localized: "Forme chronique"), value: "\(Int(today.ctl.rounded()))", caption: "CTL", tone: SharpitColor.foreground)
+                    figure(String(localized: "Fatigue aiguë"), value: "\(Int(today.atl.rounded()))", caption: "ATL", tone: SharpitColor.foreground)
                     figure(
-                        "Forme nette",
+                        String(localized: "Forme nette"),
                         value: TrainingLoadReadout.signed(today.tsb),
                         caption: "TSB",
                         tone: TrainingLoadReadout.isInFormBand(today.tsb) ? SharpitColor.foreground : SharpitColor.signalCaution
@@ -46,11 +46,11 @@ struct TrainingLoadCard: View {
     private func calibrationCaption(_ calibration: V1TrainingLoad.Calibration) -> String {
         let remaining = max(0, calibration.daysNeeded - calibration.daysWithLoad)
         if remaining == 0 {
-            return "En calibration — encore quelques jours de charge."
+            return String(localized: "En calibration — encore quelques jours de charge.")
         }
         return remaining == 1
-            ? "En calibration — encore 1 jour de charge pour fiabiliser la forme."
-            : "En calibration — encore \(remaining) jours de charge pour fiabiliser la forme."
+            ? String(localized: "En calibration — encore 1 jour de charge pour fiabiliser la forme.")
+            : String(localized: "En calibration — encore \(remaining) jours de charge pour fiabiliser la forme.")
     }
 
     private func figure(_ label: String, value: String, caption: String, tone: Color) -> some View {
@@ -79,16 +79,16 @@ struct TrainingLoadCard: View {
     private var curve: some View {
         Chart {
             RectangleMark(
-                yStart: .value("Bas", TrainingLoadReadout.formBand.lowerBound),
-                yEnd: .value("Haut", TrainingLoadReadout.formBand.upperBound)
+                yStart: .value(String(localized: "Bas"), TrainingLoadReadout.formBand.lowerBound),
+                yEnd: .value(String(localized: "Haut"), TrainingLoadReadout.formBand.upperBound)
             )
             .foregroundStyle(SharpitColor.analysisSurfaceAlt)
             ForEach(load.days) { day in
-                LineMark(x: .value("Jour", day.date), y: .value("CTL", day.ctl), series: .value("Série", "CTL"))
+                LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("CTL", day.ctl), series: .value(String(localized: "Série"), "CTL"))
                     .foregroundStyle(SharpitColor.primary)
-                LineMark(x: .value("Jour", day.date), y: .value("ATL", day.atl), series: .value("Série", "ATL"))
+                LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("ATL", day.atl), series: .value(String(localized: "Série"), "ATL"))
                     .foregroundStyle(SharpitColor.signalVo2)
-                LineMark(x: .value("Jour", day.date), y: .value("TSB", day.tsb), series: .value("Série", "TSB"))
+                LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("TSB", day.tsb), series: .value(String(localized: "Série"), "TSB"))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }

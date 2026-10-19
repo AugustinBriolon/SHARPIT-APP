@@ -10,7 +10,7 @@ struct NextGoalWidget: Widget {
                 if entry.unlocksExtraWidgets {
                     NextGoalWidgetView(entry: entry)
                 } else {
-                    WidgetProLocked(title: "Prochain objectif", symbol: "flag.checkered")
+                    WidgetProLocked(title: String(localized: "Prochain objectif"), symbol: "flag.checkered")
                 }
             }
                 .sharpitWidgetChrome()
@@ -60,10 +60,10 @@ struct NextGoalBody: View {
     let showsContext: Bool
 
     var body: some View {
-        WidgetFrame(showsContext ? "Prochain objectif" : "Objectif", symbol: "flag.checkered", tint: SharpitColor.inkAccent) {
+        WidgetFrame(showsContext ? String(localized: "Prochain objectif") : String(localized: "Objectif"), symbol: "flag.checkered", tint: SharpitColor.inkAccent) {
             if let goal {
                 let days = goal.daysLeft(from: date)
-                WidgetHero(value: days == 0 ? "Jour J" : "\(days)", unit: days == 0 ? nil : (days == 1 ? "jour" : "jours"))
+                WidgetHero(value: days == 0 ? String(localized: "Jour J") : "\(days)", unit: days == 0 ? nil : (days == 1 ? "jour" : "jours"))
                 WidgetTitle(text: goal.title, lines: 1)
                 WidgetCaption(text: goal.dateLine)
                 if showsContext, let context = goal.contextLine {
@@ -71,7 +71,7 @@ struct NextGoalBody: View {
                         .padding(.top, 2)
                 }
             } else {
-                WidgetAwaitingData(text: "Aucune course prévue. Ajoute-la dans Objectifs.")
+                WidgetAwaitingData(text: String(localized: "Aucune course prévue. Ajoute-la dans Objectifs."))
             }
         }
     }

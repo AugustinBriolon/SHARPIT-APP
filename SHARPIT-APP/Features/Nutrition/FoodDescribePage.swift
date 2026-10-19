@@ -51,8 +51,8 @@ struct FoodDescribePage: View {
                 List {
                     Section {
                         SharpitProTeaser(
-                            title: "Décrire un repas",
-                            message: "Décris ce que tu as mangé : SharpIt en tire les aliments et les macros, à ajuster avant d’ajouter."
+                            title: String(localized: "Décrire un repas"),
+                            message: String(localized: "Décris ce que tu as mangé : SharpIt en tire les aliments et les macros, à ajuster avant d’ajouter.")
                         )
                         .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: 0, bottom: SharpitSpacing.sm, trailing: 0))
                         .listRowBackground(Color.clear)
@@ -77,7 +77,7 @@ struct FoodDescribePage: View {
                         }
                         .disabled(readyDrafts.isEmpty)
                     } else {
-                        SharpitPrimaryButton(title: phase == .loading ? "Génération…" : "Générer") {
+                        SharpitPrimaryButton(title: phase == .loading ? String(localized: "Génération…") : String(localized: "Générer")) {
                             Task { await generate() }
                         }
                         .disabled(!canGenerate)
@@ -89,17 +89,17 @@ struct FoodDescribePage: View {
 
     private var addTitle: String {
         let count = readyDrafts.count
-        return count <= 1 ? "Ajouter au repas" : "Ajouter les \(count) aliments"
+        return count <= 1 ? String(localized: "Ajouter au repas") : String(localized: "Ajouter les \(count) aliments")
     }
 
     private var composeList: some View {
         List {
             Section(
-                eyebrow: "Ton repas",
-                footer: "Exemple : ce midi au resto, faux-filet environ 300 g, frites et brocolis."
+                eyebrow: String(localized: "Ton repas"),
+                footer: String(localized: "Exemple : ce midi au resto, faux-filet environ 300 g, frites et brocolis.")
             ) {
                 TextField(
-                    "Ce midi j’ai mangé…",
+                    String(localized: "Ce midi j’ai mangé…"),
                     text: $description,
                     axis: .vertical
                 )
@@ -139,8 +139,8 @@ struct FoodDescribePage: View {
             .sharpitListRows()
 
             Section(
-                eyebrow: "Aliments",
-                footer: "Ajuste les grammes ; les macros suivent. Un aliment connu garde sa note. Glisse pour retirer une ligne."
+                eyebrow: String(localized: "Aliments"),
+                footer: String(localized: "Ajuste les grammes ; les macros suivent. Un aliment connu garde sa note. Glisse pour retirer une ligne.")
             ) {
                 ForEach($items) { $line in
                     VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -157,7 +157,7 @@ struct FoodDescribePage: View {
                                 .font(SharpitTypography.meta)
                                 .foregroundStyle(SharpitColor.mutedForeground)
                         }
-                        FoodNumberRow(title: "Portion", unit: "g", text: $line.gramsText)
+                        FoodNumberRow(title: String(localized: "Portion"), unit: "g", text: $line.gramsText)
                         Text(line.macrosCaption)
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
@@ -192,7 +192,7 @@ struct FoodDescribePage: View {
             items = described.map { DescribedFoodLine(from: $0) }
             phase = .review
         } catch {
-            failure = (error as? LocalizedError)?.errorDescription ?? "Impossible de décrire ce repas."
+            failure = (error as? LocalizedError)?.errorDescription ?? String(localized: "Impossible de décrire ce repas.")
             phase = .compose
         }
     }
@@ -222,22 +222,22 @@ struct DescribedFoodLine: Identifiable, Equatable {
 
     var matchCaption: String? {
         switch match {
-        case "eaten": return "Déjà mangé"
-        case "own": return "Tes aliments"
-        case "generic": return "Table Ciqual"
-        case "product": return "Open Food Facts"
-        default: return product == nil ? "Estimation (sans note)" : nil
+        case "eaten": return String(localized: "Déjà mangé")
+        case "own": return String(localized: "Tes aliments")
+        case "generic": return String(localized: "Table Ciqual")
+        case "product": return String(localized: "Open Food Facts")
+        default: return product == nil ? String(localized: "Estimation (sans note)") : nil
         }
     }
 
     var macrosCaption: String {
-        guard let grams = gramsValue else { return "Indique un poids" }
+        guard let grams = gramsValue else { return String(localized: "Indique un poids") }
         let factor = grams / 100
         let kcal = Int((per100g.kcal * factor).rounded())
         let p = Int((per100g.protein * factor).rounded())
         let c = Int((per100g.carbs * factor).rounded())
         let f = Int((per100g.fat * factor).rounded())
-        return "\(kcal) kcal · P \(p) g · G \(c) g · L \(f) g"
+        return String(localized: "\(kcal) kcal · P \(p) g · G \(c) g · L \(f) g")
     }
 
     func draft(trainingDayId: String, meal: FoodLogMeal) -> FoodLogDraft? {

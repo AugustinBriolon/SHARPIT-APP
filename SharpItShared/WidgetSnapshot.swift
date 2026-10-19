@@ -345,9 +345,9 @@ nonisolated enum WidgetSnapshotStore {
 extension WidgetSnapshot.Macro.Kind {
     var label: String {
         switch self {
-        case .protein: "Protéines"
-        case .carbohydrates: "Glucides"
-        case .fat: "Lipides"
+        case .protein: String(localized: "Protéines")
+        case .carbohydrates: String(localized: "Glucides")
+        case .fat: String(localized: "Lipides")
         }
     }
 

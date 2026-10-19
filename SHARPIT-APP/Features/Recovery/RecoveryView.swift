@@ -17,7 +17,7 @@ struct RecoveryView: View {
         self.tokenProvider = tokenProvider
         self.syncClient = syncClient
         _store = State(initialValue: DayResourceStore(
-            failureMessage: "Ta récupération n'a pas pu être chargée.",
+            failureMessage: String(localized: "Ta récupération n'a pas pu être chargée."),
             tokenProvider: tokenProvider,
             dataDays: { try await dataDaysClient.dataDays(domain: .recovery, from: $0, to: $1, token: $2) },
             fetch: { try await client.recovery(trainingDayId: $0, token: $1) }
@@ -34,12 +34,12 @@ struct RecoveryView: View {
 
     var body: some View {
         DayDetailScaffold(
-            title: "Récupération",
+            title: String(localized: "Récupération"),
             emptySymbol: "heart.text.square",
-            unavailableTitle: "Récupération indisponible",
+            unavailableTitle: String(localized: "Récupération indisponible"),
             store: store,
             content: { recovery in RecoverySections(recovery: recovery) },
-            emptyAction: (title: "Synchroniser maintenant", run: syncAndReload)
+            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload)
         )
     }
 }
@@ -99,7 +99,7 @@ struct RecoverySections: View {
             }
 
             // The score is read first; the way to ask about it comes once it has been read.
-            CoachDiscussButton(title: "Discuter de ma récupération") {
+            CoachDiscussButton(title: String(localized: "Discuter de ma récupération")) {
                 router.discussWithCoach(about: CoachDiscuss.describe(.today))
             }
             .padding(.top, SharpitSpacing.xxs)
@@ -135,7 +135,7 @@ private struct RecoveryLimitSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Ce qui pèse")
+            SharpitEyebrow(String(localized: "Ce qui pèse"))
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if let limiter = recovery.limiter {
                     HStack(spacing: SharpitSpacing.sm) {
@@ -224,7 +224,7 @@ private struct RecoveryMorningSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: "Ce matin", symbol: "sunrise", subtitle: "Face à ta norme", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Ce matin"), symbol: "sunrise", subtitle: String(localized: "Face à ta norme"), showsChevron: false)
 
             HStack(alignment: .top, spacing: SharpitSpacing.md) {
                 SharpitStatTile(
@@ -236,13 +236,13 @@ private struct RecoveryMorningSection: View {
                     isFlat: true
                 )
                 SharpitStatTile(
-                    caption: "FC repos",
+                    caption: String(localized: "FC repos"),
                     value: recovery.today.restingHr.map { "\(Int($0.rounded()))" } ?? "—",
                     unit: recovery.today.restingHr == nil ? nil : "bpm",
                     isFlat: true
                 )
                 if let battery = recovery.today.bodyBattery {
-                    SharpitStatTile(caption: "Batterie", value: "\(Int(battery.rounded()))", unit: "%", isFlat: true)
+                    SharpitStatTile(caption: String(localized: "Batterie"), value: "\(Int(battery.rounded()))", unit: "%", isFlat: true)
                 }
             }
 
@@ -305,23 +305,23 @@ private struct RecoveryHistorySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("VFC · \(history.count) derniers jours")
+            SharpitEyebrow(String(localized: "VFC · \(history.count) derniers jours"))
             Chart {
                 if let low = today.hrvBaselineLow, let high = today.hrvBaselineHigh,
                    let first = points.first?.date, let last = points.last?.date {
                     RectangleMark(
-                        xStart: .value("Début", first),
-                        xEnd: .value("Fin", last),
-                        yStart: .value("Norme basse", low),
-                        yEnd: .value("Norme haute", high)
+                        xStart: .value(String(localized: "Début"), first),
+                        xEnd: .value(String(localized: "Fin"), last),
+                        yStart: .value(String(localized: "Norme basse"), low),
+                        yEnd: .value(String(localized: "Norme haute"), high)
                     )
                     .foregroundStyle(SharpitColor.signalRecovery.opacity(0.12))
                 }
                 ForEach(points, id: \.date) { point in
-                    LineMark(x: .value("Jour", point.date, unit: .day), y: .value("VFC", point.hrv))
+                    LineMark(x: .value(String(localized: "Jour"), point.date, unit: .day), y: .value("VFC", point.hrv))
                         .foregroundStyle(SharpitColor.primary)
                         .interpolationMethod(.monotone)
-                    PointMark(x: .value("Jour", point.date, unit: .day), y: .value("VFC", point.hrv))
+                    PointMark(x: .value(String(localized: "Jour"), point.date, unit: .day), y: .value("VFC", point.hrv))
                         .foregroundStyle(SharpitColor.primary)
                         .symbolSize(18)
                 }
@@ -350,7 +350,7 @@ private struct RecoveryEvidenceSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Ce qui l'explique")
+            SharpitEyebrow(String(localized: "Ce qui l'explique"))
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 ForEach(evidence, id: \.self) { line in
                     HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {

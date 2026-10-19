@@ -48,7 +48,7 @@ struct SessionLinkCandidate: Identifiable, Equatable, Sendable {
 
     private static func dayLabel(forGap gap: Int) -> String {
         switch gap {
-        case 0: "Même jour"
+        case 0: String(localized: "Même jour")
         case ..<0: "J−1"
         default: "J+1"
         }
@@ -107,7 +107,7 @@ final class SessionLinkStore {
             phase = .ready
         } catch is CancellationError {
         } catch {
-            phase = .failed(Self.message(for: error, fallback: "Tes séances réalisées n'ont pas pu être chargées."))
+            phase = .failed(Self.message(for: error, fallback: String(localized: "Tes séances réalisées n'ont pas pu être chargées.")))
         }
     }
 
@@ -125,14 +125,14 @@ final class SessionLinkStore {
             phase = .ready
             return true
         } catch {
-            phase = .failed(Self.message(for: error, fallback: "La liaison n'a pas abouti. Réessaie."))
+            phase = .failed(Self.message(for: error, fallback: String(localized: "La liaison n'a pas abouti. Réessaie.")))
             return false
         }
     }
 
     private static func message(for error: Error, fallback: String) -> String {
         if let apiError = error as? SharpitAPIError, apiError == .unauthorized {
-            return "Session expirée. Reconnecte-toi."
+            return String(localized: "Session expirée. Reconnecte-toi.")
         }
         return fallback
     }

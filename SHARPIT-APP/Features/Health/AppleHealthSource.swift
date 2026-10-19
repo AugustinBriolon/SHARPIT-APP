@@ -85,13 +85,13 @@ final class AppleHealthSource {
     /// has nowhere else — and from then on what is new.
     func enable(token: @escaping () async throws -> String) async {
         guard reader.isAvailable else {
-            state = .failed("Apple Santé n'est pas disponible sur cet appareil.")
+            state = .failed(String(localized: "Apple Santé n'est pas disponible sur cet appareil."))
             return
         }
         do {
             try await reader.requestAuthorization()
         } catch {
-            state = .failed("Accès à Apple Santé refusé.")
+            state = .failed(String(localized: "Accès à Apple Santé refusé."))
             return
         }
         setEnabled(true)
@@ -138,7 +138,7 @@ final class AppleHealthSource {
             scheduleResume(token: token)
             return false
         } catch {
-            state = .failed("Envoi Apple Santé impossible.")
+            state = .failed(String(localized: "Envoi Apple Santé impossible."))
             return false
         }
     }

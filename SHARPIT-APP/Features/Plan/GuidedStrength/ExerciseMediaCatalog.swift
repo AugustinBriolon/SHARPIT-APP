@@ -2,7 +2,7 @@ import Foundation
 
 /// CDN media for the exercises-dataset catalog (same IDs / aliases as the web app).
 enum ExerciseMediaCatalog {
-    static let attribution = "© Gym visual — gymvisual.com"
+    static let attribution = String(localized: "© Gym visual — gymvisual.com")
 
     private static let cdnRoot = "https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main"
 

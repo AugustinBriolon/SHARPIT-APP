@@ -193,7 +193,7 @@ struct JournalView: View {
     private var dayMetricsSection: some View {
         let metrics = store.visibleTrackables.filter { [.caffeine, .mood, .hydration, .driving].contains($0.kind) }
         if !metrics.isEmpty {
-            JournalSection(isGrouped: true, title: "Journée") {
+            JournalSection(isGrouped: true, title: String(localized: "Journée")) {
                 ForEach(metrics) { trackable in
                     JournalTrackableRow(
                         trackable: trackable,
@@ -215,8 +215,8 @@ struct JournalView: View {
         if !store.checklist.isEmpty {
             JournalSection(
                 isGrouped: true,
-                title: "Checklist auto",
-                hint: "Dérivée de tes données santé et activités — lecture seule."
+                title: String(localized: "Checklist auto"),
+                hint: String(localized: "Dérivée de tes données santé et activités — lecture seule.")
             ) {
                 ForEach(store.checklist) { item in
                     JournalChecklistRow(item: item)
@@ -229,7 +229,7 @@ struct JournalView: View {
     private var priorNightSection: some View {
         let trackables = store.priorNightTrackables
         if !trackables.isEmpty {
-            JournalSection(isGrouped: true, title: "Nuit", hint: priorNightHint) {
+            JournalSection(isGrouped: true, title: String(localized: "Nuit"), hint: priorNightHint) {
                 ForEach(trackables) { trackable in
                     JournalTrackableRow(trackable: trackable, store: store)
                 }
@@ -252,7 +252,7 @@ struct JournalView: View {
         let trackables = store.dayTrackables
         let custom = store.visibleCustomItems
         if !trackables.isEmpty || !custom.isEmpty {
-            JournalSection(isGrouped: true, title: "Signaux du jour") {
+            JournalSection(isGrouped: true, title: String(localized: "Signaux du jour")) {
                 ForEach(trackables) { trackable in
                     JournalTrackableRow(trackable: trackable, store: store)
                 }
@@ -269,12 +269,12 @@ struct JournalView: View {
 private struct JournalLoadingRows: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            JournalSection(isGrouped: true, title: "Journée") {
-                JournalMetricRow(label: "Humeur", symbolName: "face.smiling", value: "Non renseigné") {}
-                JournalMetricRow(label: "Caféine", symbolName: "cup.and.saucer", value: "— mg") {}
+            JournalSection(isGrouped: true, title: String(localized: "Journée")) {
+                JournalMetricRow(label: String(localized: "Humeur"), symbolName: "face.smiling", value: String(localized: "Non renseigné")) {}
+                JournalMetricRow(label: String(localized: "Caféine"), symbolName: "cup.and.saucer", value: String(localized: "— mg")) {}
             }
-            JournalSection(isGrouped: true, title: "Signaux du jour") {
-                ForEach(["Alcool", "Écrans tard", "Repas tardif", "Sieste"], id: \.self) { label in
+            JournalSection(isGrouped: true, title: String(localized: "Signaux du jour")) {
+                ForEach([String(localized: "Alcool"), String(localized: "Écrans tard"), String(localized: "Repas tardif"), String(localized: "Sieste")], id: \.self) { label in
                     JournalFactorRow(label: label, symbolName: "circle", state: .unset) { _ in }
                 }
             }
@@ -381,14 +381,14 @@ private struct JournalTrackableRow: View {
             JournalMetricRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                value: store.entry.caffeineMg.map { "\($0) mg" } ?? "— mg",
+                value: store.entry.caffeineMg.map { "\($0) mg" } ?? String(localized: "— mg"),
                 onOpen: onOpenCaffeine
             )
         case .hydration:
             JournalMetricRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                value: store.entry.hydrationMl.map { "\($0) ml" } ?? "— ml",
+                value: store.entry.hydrationMl.map { "\($0) ml" } ?? String(localized: "— ml"),
                 onOpen: onOpenHydration
             )
         case .driving:
@@ -402,7 +402,7 @@ private struct JournalTrackableRow: View {
             JournalMetricRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                value: store.moodLabel ?? "Non renseigné",
+                value: store.moodLabel ?? String(localized: "Non renseigné"),
                 onOpen: onOpenWellness
             )
         case .auto, .diet:
@@ -467,7 +467,7 @@ struct JournalMetricRow: View {
     }
 
     private var isUnset: Bool {
-        value.hasPrefix("—") || value.contains("non renseigné") || value.contains("Non renseigné")
+        value.hasPrefix("—") || value.contains("non renseigné") || value.contains(String(localized: "Non renseigné"))
     }
 }
 
@@ -573,17 +573,17 @@ private extension JournalFactorState {
 
     var title: String {
         switch self {
-        case .no: "Non"
+        case .no: String(localized: "Non")
         case .unset: "—"
-        case .yes: "Oui"
+        case .yes: String(localized: "Oui")
         }
     }
 
     var accessibilityTitle: String {
         switch self {
-        case .no: "Non"
-        case .unset: "Non renseigné"
-        case .yes: "Oui"
+        case .no: String(localized: "Non")
+        case .unset: String(localized: "Non renseigné")
+        case .yes: String(localized: "Oui")
         }
     }
 
@@ -750,12 +750,12 @@ private struct JournalDatePicker: View {
         }
         .sheet(isPresented: $showingCalendar) {
             SharpitCalendarSheet(
-                title: "Journal",
+                title: String(localized: "Journal"),
                 initial: store.selectedDate,
                 weeks: weeks,
                 range: weeks.selectableDates.lowerBound...Date.now,
                 marks: calendarMarks,
-                legend: [(.filled, "Journal rempli"), (.muted, "Rien de noté")],
+                legend: [(.filled, String(localized: "Journal rempli")), (.muted, String(localized: "Rien de noté"))],
                 onPick: pick,
                 onToday: { pick(.now) }
             )
@@ -800,10 +800,10 @@ private struct JournalDatePicker: View {
 
     private func accessibilityLabel(for day: Date, isFuture: Bool, hasAnswer: Bool?) -> String {
         let date = day.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide))
-        if isFuture { return "\(date), non disponible" }
+        if isFuture { return String(localized: "\(date), non disponible") }
         switch hasAnswer {
-        case true?: return "\(date), journal rempli"
-        case false?: return "\(date), rien de noté"
+        case true?: return String(localized: "\(date), journal rempli")
+        case false?: return String(localized: "\(date), rien de noté")
         case nil: return date
         }
     }

@@ -192,7 +192,7 @@ struct SharpitKeepToggle: View {
         }
         .buttonStyle(.plain)
         .padding(.vertical, -SharpitSpacing.sm)
-        .accessibilityLabel(isSelected ? "Retirer" : "Garder")
+        .accessibilityLabel(isSelected ? String(localized: "Retirer") : String(localized: "Garder"))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

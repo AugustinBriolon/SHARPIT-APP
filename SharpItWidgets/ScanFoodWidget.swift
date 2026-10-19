@@ -42,13 +42,13 @@ struct ScanFoodWidgetView: View {
             }
             .accessibilityLabel("Scanner un produit")
         default:
-            WidgetFrame("Nutrition", symbol: "fork.knife", tint: SharpitColor.inkAccent) {
+            WidgetFrame(String(localized: "Nutrition"), symbol: "fork.knife", tint: SharpitColor.inkAccent) {
                 Image(systemName: "barcode.viewfinder")
                     .font(.system(size: 34, weight: .regular))
                     .foregroundStyle(SharpitColor.inkAccent)
                     .widgetAccentable()
                     .padding(.bottom, 6)
-                WidgetTitle(text: "Scanner un produit")
+                WidgetTitle(text: String(localized: "Scanner un produit"))
             }
         }
     }

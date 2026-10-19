@@ -20,7 +20,7 @@ final class RessentiDuJourStore {
     }
 
     /// Exact copy shown when a background save fails for good.
-    static let saveFailureMessage = "Pas enregistré, réessaie"
+    static let saveFailureMessage = String(localized: "Pas enregistré, réessaie")
 
     private(set) var phase: Phase = .idle
     /// Primary morning feeling — maps onto wellness `mood`.

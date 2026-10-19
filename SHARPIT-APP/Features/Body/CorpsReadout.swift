@@ -41,26 +41,26 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .weight: "Poids"
+        case .weight: String(localized: "Poids")
         case .hrv: "VFC"
-        case .restingHr: "FC de repos"
-        case .vo2maxRun: "VO₂max course"
-        case .vo2maxBike: "VO₂max vélo"
-        case .bodyFatPct: "Masse grasse"
-        case .leanMassKg: "Masse maigre"
-        case .musclePct: "Muscle"
-        case .waterPct: "Eau corporelle"
-        case .boneKg: "Masse osseuse"
+        case .restingHr: String(localized: "FC de repos")
+        case .vo2maxRun: String(localized: "VO₂max course")
+        case .vo2maxBike: String(localized: "VO₂max vélo")
+        case .bodyFatPct: String(localized: "Masse grasse")
+        case .leanMassKg: String(localized: "Masse maigre")
+        case .musclePct: String(localized: "Muscle")
+        case .waterPct: String(localized: "Eau corporelle")
+        case .boneKg: String(localized: "Masse osseuse")
         case .bmi: "IMC"
-        case .visceralFat: "Graisse viscérale"
-        case .bmr: "Métabolisme de base"
-        case .bodyAgeScale: "Âge corporel"
-        case .vascularAge: "Âge vasculaire"
+        case .visceralFat: String(localized: "Graisse viscérale")
+        case .bmr: String(localized: "Métabolisme de base")
+        case .bodyAgeScale: String(localized: "Âge corporel")
+        case .vascularAge: String(localized: "Âge vasculaire")
         case .ftp: "FTP"
-        case .maxHr: "FC max"
-        case .lthr: "FC seuil"
-        case .runThresholdPace: "Allure seuil"
-        case .swimCss: "CSS natation"
+        case .maxHr: String(localized: "FC max")
+        case .lthr: String(localized: "FC seuil")
+        case .runThresholdPace: String(localized: "Allure seuil")
+        case .swimCss: String(localized: "CSS natation")
         }
     }
 
@@ -85,29 +85,29 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
     var explanation: String {
         switch self {
         case .weight:
-            "Chaque point est une pesée. Une variation d'un jour à l'autre est surtout de l'eau."
+            String(localized: "Chaque point est une pesée. Une variation d'un jour à l'autre est surtout de l'eau.")
         case .hrv:
-            "Variabilité de la fréquence cardiaque mesurée la nuit par ta montre. La bande est ta plage habituelle selon ta montre."
+            String(localized: "Variabilité de la fréquence cardiaque mesurée la nuit par ta montre. La bande est ta plage habituelle selon ta montre.")
         case .restingHr:
-            "Fréquence cardiaque la plus basse de la nuit. Une hausse durable accompagne souvent la fatigue ou la maladie."
+            String(localized: "Fréquence cardiaque la plus basse de la nuit. Une hausse durable accompagne souvent la fatigue ou la maladie.")
         case .vo2maxRun, .vo2maxBike:
-            "Estimation de ta capacité aérobie par ta montre, à partir de tes séances."
+            String(localized: "Estimation de ta capacité aérobie par ta montre, à partir de tes séances.")
         case .bodyFatPct, .musclePct, .waterPct, .boneKg, .bmi:
-            "Mesuré par ta balance. Suis la tendance plutôt qu'une pesée isolée."
+            String(localized: "Mesuré par ta balance. Suis la tendance plutôt qu'une pesée isolée.")
         case .leanMassKg:
-            "Tout ce qui n'est pas de la graisse : muscles, os, organes et eau."
+            String(localized: "Tout ce qui n'est pas de la graisse : muscles, os, organes et eau.")
         case .visceralFat:
-            "Indice de la graisse autour des organes, estimé par ta balance."
+            String(localized: "Indice de la graisse autour des organes, estimé par ta balance.")
         case .bmr:
-            "L'énergie que ton corps dépense au repos sur une journée, estimée par ta balance."
+            String(localized: "L'énergie que ton corps dépense au repos sur une journée, estimée par ta balance.")
         case .bodyAgeScale:
-            "L'âge que ta balance associe à ta composition corporelle. Une estimation du fabricant, pas un âge biologique."
+            String(localized: "L'âge que ta balance associe à ta composition corporelle. Une estimation du fabricant, pas un âge biologique.")
         case .vascularAge:
-            "Estimé par ta balance à partir de la vitesse de l'onde de pouls. Une indication, pas un diagnostic."
+            String(localized: "Estimé par ta balance à partir de la vitesse de l'onde de pouls. Une indication, pas un diagnostic.")
         case .ftp, .lthr, .runThresholdPace, .swimCss:
-            "Chaque point est une valeur enregistrée — importée de ta montre, estimée ou saisie."
+            String(localized: "Chaque point est une valeur enregistrée — importée de ta montre, estimée ou saisie.")
         case .maxHr:
-            "La fréquence la plus haute que ton cœur atteint. Elle sert à caler tes zones."
+            String(localized: "La fréquence la plus haute que ton cœur atteint. Elle sert à caler tes zones.")
         }
     }
 }
@@ -120,10 +120,10 @@ nonisolated enum CorpsSection: String, CaseIterable, Sendable {
 
     var title: String {
         switch self {
-        case .hero: "Poids"
-        case .recovery: "Récupération"
-        case .composition: "Composition"
-        case .thresholds: "Seuils"
+        case .hero: String(localized: "Poids")
+        case .recovery: String(localized: "Récupération")
+        case .composition: String(localized: "Composition")
+        case .thresholds: String(localized: "Seuils")
         }
     }
 }
@@ -195,10 +195,10 @@ nonisolated enum CorpsReadout {
         scale(.weight) { $0.weightKg }
         recoveryMetrics(recovery).forEach { metrics.append($0) }
         if let run = profile?.vo2maxRunning {
-            metrics.append(single(.vo2maxRun, Double(run), source: "Ta montre"))
+            metrics.append(single(.vo2maxRun, Double(run), source: String(localized: "Ta montre")))
         }
         if let bike = profile?.vo2maxCycling {
-            metrics.append(single(.vo2maxBike, Double(bike), source: "Ta montre"))
+            metrics.append(single(.vo2maxBike, Double(bike), source: String(localized: "Ta montre")))
         }
         scale(.bodyFatPct) { $0.bodyFatPct }
         scale(.leanMassKg) { m in
@@ -284,12 +284,12 @@ nonisolated enum CorpsReadout {
 
     static func sourceLabel(_ source: String) -> String? {
         switch source.lowercased() {
-        case "withings": "Withings"
-        case "garmin": "Ta montre"
-        case "renpho": "Renpho"
-        case "apple_health", "apple-health": "Apple Santé"
-        case "profile", "manual": "Saisi"
-        case "estimated": "Estimé"
+        case "withings": String(localized: "Withings")
+        case "garmin": String(localized: "Ta montre")
+        case "renpho": String(localized: "Renpho")
+        case "apple_health", "apple-health": String(localized: "Apple Santé")
+        case "profile", "manual": String(localized: "Saisi")
+        case "estimated": String(localized: "Estimé")
         case "": nil
         default: source.capitalized
         }
@@ -297,15 +297,15 @@ nonisolated enum CorpsReadout {
 
     private static func note(for metric: V1BodyMetric, band: ClosedRange<Double>?) -> String? {
         if metric.key == .hrv, let band {
-            return "plage \(Int(band.lowerBound.rounded()))–\(Int(band.upperBound.rounded()))"
+            return String(localized: "plage \(Int(band.lowerBound.rounded()))–\(Int(band.upperBound.rounded()))")
         }
         guard let previous = metric.previous, let days = metric.deltaWindowDays else { return nil }
         let delta = metric.value - previous
         let noise = metric.key == .weight ? weightNoiseKg : 0.05 * max(abs(previous), 1)
-        if abs(delta) < noise { return "stable sur \(days) j" }
+        if abs(delta) < noise { return String(localized: "stable sur \(days) j") }
         let sign = delta > 0 ? "+" : "−"
         let unit = metric.key.unit.map { " \($0)" } ?? ""
-        return "\(sign)\(format(abs(delta), for: metric.key))\(unit) sur \(days) j"
+        return String(localized: "\(sign)\(format(abs(delta), for: metric.key))\(unit) sur \(days) j")
     }
 
     private static func tone(for metric: V1BodyMetric, band: ClosedRange<Double>?) -> CorpsTone {
@@ -336,10 +336,10 @@ nonisolated enum CorpsReadout {
                 key: .hrv,
                 value: last.value,
                 measuredAt: last.date,
-                source: "Ta montre",
+                source: String(localized: "Ta montre"),
                 series: hrvSeries,
                 baseline: band,
-                note: band.map { "plage \(Int($0.lowerBound.rounded()))–\(Int($0.upperBound.rounded()))" },
+                note: band.map { String(localized: "plage \(Int($0.lowerBound.rounded()))–\(Int($0.upperBound.rounded()))") },
                 tone: band.map { band -> CorpsTone in
                     last.value < band.lowerBound ? .belowRange : .inRange
                 } ?? .neutral
@@ -351,10 +351,10 @@ nonisolated enum CorpsReadout {
                 key: .restingHr,
                 value: last.value,
                 measuredAt: last.date,
-                source: "Ta montre",
+                source: String(localized: "Ta montre"),
                 series: rhrSeries,
                 baseline: nil,
-                note: mean(rhrSeries).map { "moyenne \(Int($0.rounded())) bpm" },
+                note: mean(rhrSeries).map { String(localized: "moyenne \(Int($0.rounded())) bpm") },
                 tone: .neutral
             ))
         }
@@ -368,9 +368,9 @@ nonisolated enum CorpsReadout {
         let cutoff = last.date.addingTimeInterval(-7 * 24 * 3600)
         guard let reference = series.last(where: { $0.date <= cutoff }) else { return nil }
         let delta = last.value - reference.value
-        guard abs(delta) >= weightNoiseKg else { return "stable sur 7 j" }
+        guard abs(delta) >= weightNoiseKg else { return String(localized: "stable sur 7 j") }
         let sign = delta > 0 ? "+" : "−"
-        return "\(sign)\(ProfileFieldFormat.decimal(abs(delta))) kg sur 7 j"
+        return String(localized: "\(sign)\(ProfileFieldFormat.decimal(abs(delta))) kg sur 7 j")
     }
 
     static func format(_ value: Double, for key: CorpsMetricKey) -> String {
@@ -407,9 +407,9 @@ nonisolated enum CorpsReadout {
 
 /// The biological age as Corps words it (SHARPIT ADR-045). Never framed as a medical age.
 enum BiologicalAgeReadout {
-    static let disclaimer = "Estimation d'entraînement à partir de ta VO₂max, pas un diagnostic."
+    static let disclaimer = String(localized: "Estimation d'entraînement à partir de ta VO₂max, pas un diagnostic.")
     /// What the estimate needs (SHARPIT ADR-045), said when one is missing.
-    static let requirements = "Pour le calculer, il faut ta date de naissance, ton sexe et une VO₂max de moins de 90 jours (course ou vélo, lue sur ta montre)."
+    static let requirements = String(localized: "Pour le calculer, il faut ta date de naissance, ton sexe et une VO₂max de moins de 90 jours (course ou vélo, lue sur ta montre).")
 
     static func years(_ value: Double) -> String {
         "\(Int(value.rounded()))"
@@ -418,14 +418,14 @@ enum BiologicalAgeReadout {
     /// `36 ans · 3 ans de moins`, or just the civil age when the two match.
     static func comparison(_ age: V1BiologicalAge) -> String? {
         guard let civil = age.chronologicalYears else { return nil }
-        let base = "Âge civil \(Int(civil.rounded())) ans"
+        let base = String(localized: "Âge civil \(Int(civil.rounded())) ans")
         let gap = Int(civil.rounded()) - Int(age.years.rounded())
         switch gap {
         case 0: return base
-        case 1: return "\(base) · 1 an de moins"
-        case -1: return "\(base) · 1 an de plus"
-        case let years where years > 0: return "\(base) · \(years) ans de moins"
-        default: return "\(base) · \(-gap) ans de plus"
+        case 1: return String(localized: "\(base) · 1 an de moins")
+        case -1: return String(localized: "\(base) · 1 an de plus")
+        case let years where years > 0: return String(localized: "\(base) · \(years) ans de moins")
+        default: return String(localized: "\(base) · \(-gap) ans de plus")
         }
     }
 
@@ -434,11 +434,11 @@ enum BiologicalAgeReadout {
     static func gap(_ age: V1BiologicalAge) -> String? {
         guard let civil = age.chronologicalYears else { return nil }
         switch Int(civil.rounded()) - Int(age.years.rounded()) {
-        case 0: return "Comme ton âge civil"
-        case 1: return "1 an de moins que ton âge civil"
-        case -1: return "1 an de plus que ton âge civil"
-        case let years where years > 0: return "\(years) ans de moins que ton âge civil"
-        case let years: return "\(-years) ans de plus que ton âge civil"
+        case 0: return String(localized: "Comme ton âge civil")
+        case 1: return String(localized: "1 an de moins que ton âge civil")
+        case -1: return String(localized: "1 an de plus que ton âge civil")
+        case let years where years > 0: return String(localized: "\(years) ans de moins que ton âge civil")
+        case let years: return String(localized: "\(-years) ans de plus que ton âge civil")
         }
     }
 

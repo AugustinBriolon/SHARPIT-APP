@@ -77,8 +77,8 @@ enum WidgetDay {
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
         parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: trainingDayId) else { return "Aujourd'hui" }
-        return date.formatted(.dateTime.weekday(.abbreviated).day().locale(Locale(identifier: "fr_FR")))
+        guard let date = parser.date(from: trainingDayId) else { return String(localized: "Aujourd'hui") }
+        return date.formatted(.dateTime.weekday(.abbreviated).day().locale(AppLanguage.locale))
     }
 }
 
@@ -212,7 +212,7 @@ struct WidgetAwaitingDay: View {
 
     var body: some View {
         WidgetFrame(eyebrow, symbol: symbol) {
-            WidgetAwaitingData(text: "Ouvre SharpIt pour charger ta journée.")
+            WidgetAwaitingData(text: String(localized: "Ouvre SharpIt pour charger ta journée."))
         }
     }
 }
@@ -235,7 +235,7 @@ struct WidgetProLocked: View {
                 .font(.headline)
         default:
             WidgetFrame(title, symbol: symbol) {
-                WidgetCaption(text: "Widget SharpIt Pro. Passe à Pro dans Paramètres pour l'afficher.", lines: 4)
+                WidgetCaption(text: String(localized: "Widget SharpIt Pro. Passe à Pro dans Paramètres pour l'afficher."), lines: 4)
             }
         }
     }
@@ -259,7 +259,7 @@ struct WidgetFeatureOff: View {
                 .font(.headline)
         default:
             WidgetFrame(feature.title, symbol: feature.symbolName) {
-                WidgetCaption(text: "Masqué dans SharpIt. Réactive-le dans Paramètres › Pages et widgets.", lines: 4)
+                WidgetCaption(text: String(localized: "Masqué dans SharpIt. Réactive-le dans Paramètres › Pages et widgets."), lines: 4)
             }
         }
     }

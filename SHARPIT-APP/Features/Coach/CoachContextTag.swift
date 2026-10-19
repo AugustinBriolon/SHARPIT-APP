@@ -47,7 +47,7 @@ struct CoachContextPreview: View {
     var body: some View {
         if let context {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow("Contexte")
+                SharpitEyebrow(String(localized: "Contexte"))
                 CoachContextTag(context: context)
                 Text("La conversation s'ouvrira avec ce sujet joint.")
                     .font(SharpitTypography.meta)

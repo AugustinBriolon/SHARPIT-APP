@@ -22,7 +22,7 @@ struct AppleWeatherAttribution: Equatable, Sendable {
 @Observable
 final class LocationWeatherService {
     var reading: AppleWeatherReading?
-    var statusLine: String = "Météo"
+    var statusLine: String = String(localized: "Météo")
     var attribution: AppleWeatherAttribution?
 
     @ObservationIgnored
@@ -41,11 +41,11 @@ final class LocationWeatherService {
         guard !hasStarted else { return }
         hasStarted = true
         locator.onDenied = { [weak self] in
-            self?.statusLine = "Météo indisponible"
+            self?.statusLine = String(localized: "Météo indisponible")
         }
         locator.onFix = { [weak self] location in
             guard let self else { return }
-            self.statusLine = "Météo…"
+            self.statusLine = String(localized: "Météo…")
             Task { await self.refresh(from: location) }
         }
         locator.start()
@@ -63,12 +63,12 @@ final class LocationWeatherService {
             let current = try await weather
             let celsius = current.temperature.converted(to: .celsius).value
             reading = AppleWeatherReading(
-                city: await city ?? "Ici",
+                city: await city ?? String(localized: "Ici"),
                 temperatureCelsius: Int(celsius.rounded()),
                 condition: current.condition.description,
                 symbolName: current.symbolName
             )
-            statusLine = reading?.city ?? "Météo"
+            statusLine = reading?.city ?? String(localized: "Météo")
             Self.storeCachedReading(reading)
             if let mark = try? await mark {
                 attribution = AppleWeatherAttribution(
@@ -79,7 +79,7 @@ final class LocationWeatherService {
             }
         } catch {
             if reading == nil {
-                statusLine = "Météo indisponible"
+                statusLine = String(localized: "Météo indisponible")
             }
         }
     }

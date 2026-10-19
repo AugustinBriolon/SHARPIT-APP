@@ -25,7 +25,7 @@ struct FoodLogMealsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(spacing: SharpitSpacing.xs) {
-                SharpitEyebrow("Repas")
+                SharpitEyebrow(String(localized: "Repas"))
                 Spacer(minLength: 0)
                 if let day = store.dayHealth, day.score != nil {
                     Text("Note du jour")
@@ -153,13 +153,13 @@ private struct FoodLogMealRow: View {
         .padding(.vertical, SharpitSpacing.sm)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityHint(opensPage ? "Ouvre le repas" : "Ajoute un aliment")
+        .accessibilityHint(opensPage ? String(localized: "Ouvre le repas") : String(localized: "Ajoute un aliment"))
     }
 
     private var countLabel: String {
         switch section.entries.count {
-        case 0: "Rien de noté"
-        case 1: "1 aliment"
+        case 0: String(localized: "Rien de noté")
+        case 1: String(localized: "1 aliment")
         default: "\(section.entries.count) aliments"
         }
     }
@@ -216,7 +216,7 @@ struct FoodLogMealPage: View {
                 SharpitEyebrow(countLabel(section.entries.count))
             } footer: {
                 if let savedName {
-                    SharpitListFooter("« \(savedName) » est dans Mes repas : tu peux le noter d'un geste depuis « + ».")
+                    SharpitListFooter(String(localized: "« \(savedName) » est dans Mes repas : tu peux le noter d'un geste depuis « + »."))
                 }
             }
             .sharpitListRows()
@@ -272,8 +272,8 @@ struct FoodLogMealPage: View {
 
     private func countLabel(_ count: Int) -> String {
         switch count {
-        case 0: "Rien de noté"
-        case 1: "1 aliment"
+        case 0: String(localized: "Rien de noté")
+        case 1: String(localized: "1 aliment")
         default: "\(count) aliments"
         }
     }
@@ -319,7 +319,7 @@ private struct FoodLogEntryRow: View {
         .opacity(entry.isPending ? 0.55 : 1)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityHint(entry.isPending ? "" : "Modifie la quantité ou le repas")
+        .accessibilityHint(entry.isPending ? "" : String(localized: "Modifie la quantité ou le repas"))
     }
 
     private var detail: String {

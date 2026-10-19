@@ -23,10 +23,10 @@ struct RaceZoneRow: Sendable, Equatable, Identifiable {
 /// How the race blocks word the server's `raceAnalysis`: the figures are the server's, this only
 /// says them.
 enum RaceAnalysisReadout {
-    private static let french = Locale(identifier: "fr_FR")
+    private static let locale = AppLanguage.locale
 
     static func objectiveTitle(_ analysis: V1RaceAnalysis) -> String {
-        analysis.target?.seconds != nil ? "Par rapport à l'objectif" : "Enchaînement"
+        analysis.target?.seconds != nil ? String(localized: "Par rapport à l'objectif") : String(localized: "Enchaînement")
     }
 
     /// « 5:40:03 · +10:03 vs objectif Sub 5h30 », or the time alone without a target.
@@ -49,7 +49,7 @@ enum RaceAnalysisReadout {
     static func legRows(_ legs: [V1MultisportLeg]) -> [RaceLegRow] {
         let timed = legs.filter { $0.durationSec > 0 }
         return zip(timed, RaceLegsTimeline.segments(legs)).map { leg, segment in
-            let parts = [leg.distanceM.map(distance), leg.avgHr.map { "FC moy \(Int($0.rounded()))" }].compactMap { $0 }
+            let parts = [leg.distanceM.map(distance), leg.avgHr.map { String(localized: "FC moy \(Int($0.rounded()))") }].compactMap { $0 }
             return RaceLegRow(
                 id: segment.id,
                 segment: segment,
@@ -67,13 +67,13 @@ enum RaceAnalysisReadout {
             guard total > 0 else { return nil }
             let shares = zones.map { $0 / total }
             let spoken = shares.enumerated()
-                .map { "zone \($0.offset + 1) \(Int(($0.element * 100).rounded())) %" }
+                .map { String(localized: "zone \($0.offset + 1) \(Int(($0.element * 100).rounded())) %") }
                 .joined(separator: ", ")
             return RaceZoneRow(
                 id: segment.id,
                 label: segment.label,
                 shares: shares,
-                averageLine: leg.avgHr.map { "FC moy \(Int($0.rounded()))" },
+                averageLine: leg.avgHr.map { String(localized: "FC moy \(Int($0.rounded()))") },
                 spokenLabel: "\(segment.label) : \(spoken)"
             )
         }
@@ -92,7 +92,7 @@ enum RaceAnalysisReadout {
         }
         if let drift = analysis.runHrDriftPct {
             rows.append(ActivityTechnicalRow(
-                label: "Dérive cardiaque",
+                label: String(localized: "Dérive cardiaque"),
                 value: "\(drift > 0 ? "+" : "")\(percent(drift)) %",
                 note: ActivityTechnicalReadout.decouplingNote(abs(drift))
             ))
@@ -103,24 +103,24 @@ enum RaceAnalysisReadout {
     static func loadRows(_ analysis: V1RaceAnalysis, isExpertReading: Bool) -> [ActivityTechnicalRow] {
         var rows: [ActivityTechnicalRow] = []
         if let tss = analysis.load?.tss {
-            rows.append(ActivityTechnicalRow(label: isExpertReading ? "TSS" : "Charge", value: "\(Int(tss.rounded()))"))
+            rows.append(ActivityTechnicalRow(label: isExpertReading ? "TSS" : String(localized: "Charge"), value: "\(Int(tss.rounded()))"))
         }
         if let hours = analysis.load?.recoveryHours, hours > 0 {
-            rows.append(ActivityTechnicalRow(label: "Récupération", value: "≈ \(Int(hours.rounded())) h"))
+            rows.append(ActivityTechnicalRow(label: String(localized: "Récupération"), value: "≈ \(Int(hours.rounded())) h"))
         }
         return rows
     }
 
     /// « Allure tenue » within 2 %, else which way the second half went.
     static func changeNote(_ changePct: Double) -> String {
-        if abs(changePct) < 2 { return "Allure tenue" }
+        if abs(changePct) < 2 { return String(localized: "Allure tenue") }
         let amount = "\(percent(abs(changePct))) %"
-        return changePct > 0 ? "Ralenti de \(amount) en 2e moitié" : "Accéléré de \(amount) en 2e moitié"
+        return changePct > 0 ? String(localized: "Ralenti de \(amount) en 2e moitié") : String(localized: "Accéléré de \(amount) en 2e moitié")
     }
 
     static func pace(_ value: Double, _ unit: V1RaceAnalysis.Pacing.Unit) -> String {
         switch unit {
-        case .kmh: value.formatted(.number.precision(.fractionLength(1)).locale(french))
+        case .kmh: value.formatted(.number.precision(.fractionLength(1)).locale(locale))
         case .secPer100m, .secPerKm: RaceTime.clock(value)
         }
     }
@@ -135,12 +135,12 @@ enum RaceAnalysisReadout {
     }
 
     private static func percent(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...1)).locale(french))
+        value.formatted(.number.precision(.fractionLength(0...1)).locale(locale))
     }
 
     private static func distance(_ meters: Double) -> String {
         meters >= 1_000
-            ? "\((meters / 1_000).formatted(.number.precision(.fractionLength(1)).locale(french))) km"
+            ? "\((meters / 1_000).formatted(.number.precision(.fractionLength(1)).locale(locale))) km"
             : "\(Int(meters.rounded())) m"
     }
 }

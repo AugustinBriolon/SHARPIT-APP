@@ -45,14 +45,14 @@ private struct NutritionAwaiting: View {
     let nutrition: WidgetSnapshot.Nutrition?
 
     var body: some View {
-        WidgetFrame("Nutrition", symbol: "fork.knife") {
+        WidgetFrame(String(localized: "Nutrition"), symbol: "fork.knife") {
             WidgetAwaitingData(text: message)
         }
     }
 
     private var message: String {
-        guard nutrition != nil else { return "Ouvre SharpIt pour charger ta journée." }
-        return "Note ton premier repas dans SharpIt."
+        guard nutrition != nil else { return String(localized: "Ouvre SharpIt pour charger ta journée.") }
+        return String(localized: "Note ton premier repas dans SharpIt.")
     }
 }
 
@@ -61,7 +61,7 @@ struct NutritionSmall: View {
 
     var body: some View {
         if let nutrition, nutrition.hasLog {
-            WidgetFrame("Nutrition", symbol: "fork.knife") {
+            WidgetFrame(String(localized: "Nutrition"), symbol: "fork.knife") {
                 DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure)
                 WidgetCaption(text: nutrition.dialCaption)
                     .frame(maxWidth: .infinity)
@@ -77,7 +77,7 @@ struct NutritionMedium: View {
 
     var body: some View {
         if let nutrition, nutrition.hasLog {
-            WidgetFrame("Nutrition", symbol: "fork.knife") {
+            WidgetFrame(String(localized: "Nutrition"), symbol: "fork.knife") {
                 HStack(alignment: .bottom, spacing: 16) {
                     VStack(spacing: 2) {
                         DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure)

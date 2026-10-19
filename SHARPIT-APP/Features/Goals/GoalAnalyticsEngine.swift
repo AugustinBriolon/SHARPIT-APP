@@ -15,8 +15,8 @@ struct GoalVolumeStats: Sendable, Equatable {
         durationSeconds: 0,
         durationLabel: "—",
         topSportLabel: nil,
-        sessionHint: "Aucune séance liée pour l’instant",
-        durationHint: "Temps consacré"
+        sessionHint: String(localized: "Aucune séance liée pour l’instant"),
+        durationHint: String(localized: "Temps consacré")
     )
 }
 
@@ -80,7 +80,7 @@ enum GoalAnalyticsEngine {
         }
 
         let topSportName = sortedSports.first.flatMap { sportDisplayName($0.key) }
-        let hint = topSportName.map { "Mix : \($0) en tête" } ?? "Depuis le début du cap"
+        let hint = topSportName.map { String(localized: "Mix : \($0) en tête") } ?? String(localized: "Depuis le début du cap")
 
         return GoalVolumeStats(
             sessionsDone: done.count,
@@ -88,19 +88,19 @@ enum GoalAnalyticsEngine {
             durationLabel: formatDuration(totalDurationSec),
             topSportLabel: topSportName,
             sessionHint: hint,
-            durationHint: totalDurationSec <= 0 ? "Temps consacré" : hint
+            durationHint: totalDurationSec <= 0 ? String(localized: "Temps consacré") : hint
         )
     }
 
     static func sportDisplayName(_ type: String) -> String {
         switch type.uppercased() {
-        case "BIKE": "Vélo"
-        case "RUN": "Course"
-        case "SWIM": "Natation"
-        case "STRENGTH": "Force"
-        case "HIKE": "Randonnée"
-        case "TRIATHLON": "Triathlon"
-        default: "Autre"
+        case "BIKE": String(localized: "Vélo")
+        case "RUN": String(localized: "Course")
+        case "SWIM": String(localized: "Natation")
+        case "STRENGTH": String(localized: "Force")
+        case "HIKE": String(localized: "Randonnée")
+        case "TRIATHLON": String(localized: "Triathlon")
+        default: String(localized: "Autre")
         }
     }
 

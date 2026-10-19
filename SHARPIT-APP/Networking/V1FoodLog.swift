@@ -16,9 +16,9 @@ nonisolated enum FoodLogMeal: String, CaseIterable, Codable, Sendable, Identifia
     var label: String {
         switch self {
         case .breakfast: "Petit-déjeuner"
-        case .lunch: "Déjeuner"
-        case .dinner: "Dîner"
-        case .snacks: "Collations"
+        case .lunch: String(localized: "Déjeuner")
+        case .dinner: String(localized: "Dîner")
+        case .snacks: String(localized: "Collations")
         }
     }
 
@@ -99,10 +99,10 @@ nonisolated struct V1FoodProduct: Codable, Sendable, Equatable, Hashable, Identi
     var verifiedLabel: String? {
         guard isVerified else { return nil }
         switch verifiedBy {
-        case "ciqual": return "Vérifié, valeurs mesurées par l'Anses"
-        case "producer": return "Vérifié, données du fabricant"
-        case "checked": return "Vérifié, fiche contrôlée par Open Food Facts"
-        default: return "Vérifié"
+        case "ciqual": return String(localized: "Vérifié, valeurs mesurées par l'Anses")
+        case "producer": return String(localized: "Vérifié, données du fabricant")
+        case "checked": return String(localized: "Vérifié, fiche contrôlée par Open Food Facts")
+        default: return String(localized: "Vérifié")
         }
     }
 
@@ -111,8 +111,8 @@ nonisolated struct V1FoodProduct: Codable, Sendable, Equatable, Hashable, Identi
     /// A generic food from the ANSES Ciqual table (SHARPIT ADR-065).
     var isCiqual: Bool { source == "CIQUAL" }
 
-    static let openFoodFactsAttribution = "Données Open Food Facts (ODbL)"
-    static let ciqualAttribution = "Table Ciqual 2020, Anses (Licence Ouverte)"
+    static let openFoodFactsAttribution = String(localized: "Données Open Food Facts (ODbL)")
+    static let ciqualAttribution = String(localized: "Table Ciqual 2020, Anses (Licence Ouverte)")
 
     /// The attribution line the listed foods' sources ask for; nil for the athlete's own foods only.
     static func attribution(for products: [V1FoodProduct]) -> String? {
@@ -148,10 +148,10 @@ nonisolated struct V1FoodHealth: Codable, Sendable, Equatable, Hashable {
 
         var label: String {
             switch self {
-            case .excellent: "Excellent"
-            case .good: "Correct"
-            case .mediocre: "Médiocre"
-            case .poor: "À éviter"
+            case .excellent: String(localized: "Excellent")
+            case .good: String(localized: "Correct")
+            case .mediocre: String(localized: "Médiocre")
+            case .poor: String(localized: "À éviter")
             }
         }
     }
@@ -165,9 +165,9 @@ nonisolated struct V1FoodHealth: Codable, Sendable, Equatable, Hashable {
 
         var label: String {
             switch self {
-            case .low: "Faible"
-            case .moderate: "Modéré"
-            case .high: "Élevé"
+            case .low: String(localized: "Faible")
+            case .moderate: String(localized: "Modéré")
+            case .high: String(localized: "Élevé")
             case .unknown: "—"
             }
         }
@@ -178,9 +178,9 @@ nonisolated struct V1FoodHealth: Codable, Sendable, Equatable, Hashable {
 
         var label: String {
             switch self {
-            case .none: "Sans risque"
-            case .limited: "Risque limité"
-            case .high: "À risque"
+            case .none: String(localized: "Sans risque")
+            case .limited: String(localized: "Risque limité")
+            case .high: String(localized: "À risque")
             }
         }
     }

@@ -75,9 +75,9 @@ nonisolated enum RecordSport: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .run: "Course"
-        case .bike: "Vélo"
-        case .swim: "Natation"
+        case .run: String(localized: "Course")
+        case .bike: String(localized: "Vélo")
+        case .swim: String(localized: "Natation")
         }
     }
 

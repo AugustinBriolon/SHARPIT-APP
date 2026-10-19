@@ -53,8 +53,8 @@ struct GoalsView: View {
                     // The page's own shape while the goals load: the race plate, then each section.
                     VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                         NextRaceCard(goal: V1Goal.placeholderRace)
-                        skeletonSection("En cours", goals: V1Goal.placeholders)
-                        skeletonSection("Atteints", goals: [V1Goal.placeholderReached])
+                        skeletonSection(String(localized: "En cours"), goals: V1Goal.placeholders)
+                        skeletonSection(String(localized: "Atteints"), goals: [V1Goal.placeholderReached])
                     }
                     .redacted(reason: .placeholder)
                     .allowsHitTesting(false)
@@ -64,11 +64,11 @@ struct GoalsView: View {
                     emptyState
                         .revealed(hasAppeared, index: 1)
                 } else if !inProgress.isEmpty {
-                    goalList(title: "En cours", goals: inProgress, startIndex: 1)
+                    goalList(title: String(localized: "En cours"), goals: inProgress, startIndex: 1)
                 }
 
                 if !store.completedGoals.isEmpty {
-                    goalList(title: "Atteints", goals: store.completedGoals, startIndex: inProgress.count + 2)
+                    goalList(title: String(localized: "Atteints"), goals: store.completedGoals, startIndex: inProgress.count + 2)
                         .opacity(0.8)
                 }
 
@@ -135,7 +135,7 @@ struct GoalsView: View {
                         Button {
                             Task { await store.toggleAchieved(goal) }
                         } label: {
-                            Label(goal.achieved ? "Remettre en cours" : "Marquer comme atteint",
+                            Label(goal.achieved ? String(localized: "Remettre en cours") : String(localized: "Marquer comme atteint"),
                                   systemImage: goal.achieved ? "arrow.uturn.backward" : "checkmark.circle")
                         }
                         SharpitDeleteMenuButton { Task { await store.delete(id: goal.id) } }
@@ -150,7 +150,7 @@ struct GoalsView: View {
     /// goals — the figure, the period, the day, and the session that did it when there is one.
     private var achievementList: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Réalisations récentes")
+            SharpitEyebrow(String(localized: "Réalisations récentes"))
             LazyVStack(spacing: SharpitSpacing.sm) {
                 ForEach(store.recentAchievements) { achievement in
                     if let activity = achievement.activity, store.sessionReader != nil {
@@ -237,7 +237,7 @@ private struct NextRaceCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack {
-                SharpitEyebrow("Prochain cap", systemImage: "flag.checkered")
+                SharpitEyebrow(String(localized: "Prochain cap"), systemImage: "flag.checkered")
                 Spacer(minLength: 0)
                 if let role = goal.role {
                     GoalRoleChip(role: role)
@@ -387,7 +387,7 @@ struct GoalHero: View {
     private var race: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack {
-                SharpitEyebrow(goal.isReached ? "Course courue" : (goal.phaseLabel ?? "Course"), systemImage: "flag.checkered")
+                SharpitEyebrow(goal.isReached ? String(localized: "Course courue") : (goal.phaseLabel ?? String(localized: "Course")), systemImage: "flag.checkered")
                 Spacer(minLength: 0)
                 if let role = goal.role {
                     GoalRoleChip(role: role)
@@ -438,7 +438,7 @@ struct GoalHero: View {
     private var metric: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.md) {
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitEyebrow(goal.achieved ? "Atteint" : "Objectif chiffré", systemImage: "gauge.with.dots.needle.67percent")
+                SharpitEyebrow(goal.achieved ? String(localized: "Atteint") : String(localized: "Objectif chiffré"), systemImage: "gauge.with.dots.needle.67percent")
                 Text(goal.title)
                     .font(SharpitTypography.pageTitle)
                     .tracking(SharpitTypography.pageTitleTracking)
@@ -519,7 +519,7 @@ private struct SeasonTimelineView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("En route · \(timeline.steps.count) \(timeline.steps.count == 1 ? "étape" : "étapes")", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+            SharpitEyebrow(String(localized: "En route · \(timeline.steps.count) \(timeline.steps.count == 1 ? "étape" : "étapes")"), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(timeline.steps) { step in
                     NavigationLink(value: GoalRoute.detail(step.goal)) {
@@ -623,7 +623,7 @@ private struct SeasonConflictNotice: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow("Deux objectifs principaux", systemImage: "flag.2.crossed")
+            SharpitEyebrow(String(localized: "Deux objectifs principaux"), systemImage: "flag.2.crossed")
             Text("\(conflict.kept.title) et \(conflict.demoted.title) sont à moins de six mois l’une de l’autre : le plan ne s’affûte vraiment que pour une.")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
@@ -653,7 +653,7 @@ enum GoalFormat {
         guard let days = goal.daysRemaining else { return "" }
         if days > 1 { return "jours" }
         if days == 1 { return "jour" }
-        return days == 0 ? "Jour de course" : "Épreuve passée"
+        return days == 0 ? String(localized: "Jour de course") : String(localized: "Épreuve passée")
     }
 
     /// « 12 octobre 2026 · Marathon · Paris »
@@ -670,7 +670,7 @@ enum GoalFormat {
     static func raceCardLine(_ goal: V1Goal) -> String {
         switch goal.raceStatus {
         case .done?: doneLine(goal)
-        case .awaitingResult?: "Ta course est passée · résultat à lier"
+        case .awaitingResult?: String(localized: "Ta course est passée · résultat à lier")
         default: [goal.role?.label, raceLine(goal)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
         }
     }
@@ -682,7 +682,7 @@ enum GoalFormat {
         let delta = time.flatMap { seconds in
             RaceTime.targetSeconds(from: goal.targetPerformance).map { RaceDelta(seconds: seconds - $0).label }
         }
-        return ["Terminée", time.map(RaceTime.clock), delta].compactMap { $0 }.joined(separator: " · ")
+        return [String(localized: "Terminée"), time.map(RaceTime.clock), delta].compactMap { $0 }.joined(separator: " · ")
     }
 
     /// « 265 / 280 W » or « Cible 280 W ».
@@ -690,7 +690,7 @@ enum GoalFormat {
         let unit = goal.unit.map { " \($0)" } ?? ""
         switch (goal.currentValue, goal.targetValue) {
         case let (current?, target?): return "\(number(current)) / \(number(target))\(unit)"
-        case let (nil, target?): return "Cible \(number(target))\(unit)"
+        case let (nil, target?): return String(localized: "Cible \(number(target))\(unit)")
         default: return goal.unit ?? ""
         }
     }
@@ -704,13 +704,13 @@ enum GoalFormat {
 
 private extension V1Goal {
     static let placeholders: [V1Goal] = [
-        V1Goal(id: "skeleton-0", title: "Semi-marathon de printemps", kind: .race, targetDate: .now.addingTimeInterval(60 * 86_400)),
-        V1Goal(id: "skeleton-1", title: "Poids de forme", kind: .metric, currentValue: 72, targetValue: 70, unit: "kg"),
+        V1Goal(id: "skeleton-0", title: String(localized: "Semi-marathon de printemps"), kind: .race, targetDate: .now.addingTimeInterval(60 * 86_400)),
+        V1Goal(id: "skeleton-1", title: String(localized: "Poids de forme"), kind: .metric, currentValue: 72, targetValue: 70, unit: "kg"),
     ]
     static let placeholderRace = V1Goal(
-        id: "skeleton-race", title: "Triathlon de la saison", kind: .race, targetDate: .now.addingTimeInterval(90 * 86_400)
+        id: "skeleton-race", title: String(localized: "Triathlon de la saison"), kind: .race, targetDate: .now.addingTimeInterval(90 * 86_400)
     )
-    static let placeholderReached = V1Goal(id: "skeleton-reached", title: "Course de l'an dernier", kind: .race, achieved: true)
+    static let placeholderReached = V1Goal(id: "skeleton-reached", title: String(localized: "Course de l'an dernier"), kind: .race, achieved: true)
 }
 
 /// A race past its day with no result: say so where the goals are read, and offer the two ways
@@ -723,7 +723,7 @@ struct RaceAwaitingResultNotice: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Ta course est passée", systemImage: "flag.checkered")
+            SharpitEyebrow(String(localized: "Ta course est passée"), systemImage: "flag.checkered")
             Text(goal.title)
                 .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(SharpitColor.foreground)
@@ -777,9 +777,9 @@ private struct RaceResultPickerSheet: View {
             Group {
                 if candidates.isEmpty {
                     SharpitStateMessage(
-                        title: "Aucune séance ce jour-là",
+                        title: String(localized: "Aucune séance ce jour-là"),
                         symbol: "figure.run",
-                        detail: "Synchronise ta montre, ou ouvre la séance de ta course pour la lier depuis son menu."
+                        detail: String(localized: "Synchronise ta montre, ou ouvre la séance de ta course pour la lier depuis son menu.")
                     )
                 } else {
                     List(candidates) { activity in

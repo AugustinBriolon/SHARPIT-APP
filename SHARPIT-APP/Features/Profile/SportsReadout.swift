@@ -18,11 +18,11 @@ enum SportsReadout {
         let count = catalogIds.intersection(owned).count
         let base: String
         if catalogIds.isEmpty {
-            base = "Sans matériel particulier"
+            base = String(localized: "Sans matériel particulier")
         } else if count == 0 {
-            base = "Aucun matériel renseigné"
+            base = String(localized: "Aucun matériel renseigné")
         } else {
-            base = count == 1 ? "1 équipement" : "\(count) équipements"
+            base = count == 1 ? String(localized: "1 équipement") : String(localized: "\(count) équipements")
         }
         return sportId == "strength" ? "\(venue.title) · \(base)" : base
     }

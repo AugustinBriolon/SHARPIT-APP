@@ -25,7 +25,7 @@ struct NutritionTodayCard: View {
     }
 
     private var header: some View {
-        SharpitCardHeader(title: "Nutrition", symbol: "fork.knife")
+        SharpitCardHeader(title: String(localized: "Nutrition"), symbol: "fork.knife")
     }
 
     @ViewBuilder
@@ -37,9 +37,9 @@ struct NutritionTodayCard: View {
             NutritionDayGlance(day: NutritionReadout.placeholderDay)
                 .redacted(reason: .placeholder)
         case .empty:
-            message("Rien de noté aujourd'hui", detail: "Note ton premier repas : scanne un emballage ou cherche un aliment.")
+            message(String(localized: "Rien de noté aujourd'hui"), detail: String(localized: "Note ton premier repas : scanne un emballage ou cherche un aliment."))
         case .failed:
-            message("Journal indisponible", detail: "Touche pour réessayer.")
+            message(String(localized: "Journal indisponible"), detail: String(localized: "Touche pour réessayer."))
         }
     }
 
@@ -57,7 +57,7 @@ struct NutritionTodayCard: View {
     }
 
     private var hint: String {
-        phase == .empty ? "Ouvre le journal pour noter un repas" : "Ouvre le journal alimentaire du jour"
+        phase == .empty ? String(localized: "Ouvre le journal pour noter un repas") : String(localized: "Ouvre le journal alimentaire du jour")
     }
 }
 
@@ -87,7 +87,7 @@ private struct NutritionDayGlance: View {
                 .contentTransition(.numericText())
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            Text(calories?.goal.map { "sur \(NutritionReadout.kcal($0)) kcal" } ?? "kcal")
+            Text(calories?.goal.map { String(localized: "sur \(NutritionReadout.kcal($0)) kcal") } ?? "kcal")
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundStyle(SharpitColor.mutedForeground)
             if let calories, calories.goal != nil {
@@ -104,7 +104,7 @@ private struct NutritionDayGlance: View {
     private var footCapsule: some View {
         SharpitTelemetryCapsule(
             lead: NutritionReadout.mealsCount(day.meals.count),
-            value: NutritionReadout.remainingLabel(calories?.remaining) ?? (day.complete ? "Journée close" : "Journée en cours")
+            value: NutritionReadout.remainingLabel(calories?.remaining) ?? (day.complete ? String(localized: "Journée close") : String(localized: "Journée en cours"))
         )
     }
 }

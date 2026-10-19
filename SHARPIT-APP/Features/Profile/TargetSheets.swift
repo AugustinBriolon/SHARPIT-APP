@@ -61,13 +61,13 @@ struct SleepTargetsSheet: View {
     private var durationCard: some View {
         VStack(spacing: SharpitSpacing.md) {
             SharpitCardHeader(
-                title: "Durée visée",
+                title: String(localized: "Durée visée"),
                 symbol: "moon.zzz.fill",
-                subtitle: "Tes nuits et ta dette de sommeil se lisent face à ce repère.",
+                subtitle: String(localized: "Tes nuits et ta dette de sommeil se lisent face à ce repère."),
                 showsChevron: false
             )
             HStack {
-                stepButton("minus", label: "Moins 15 minutes", delta: -15)
+                stepButton("minus", label: String(localized: "Moins 15 minutes"), delta: -15)
                 Spacer(minLength: 0)
                 Text(SleepTargetFormat.duration(minutes))
                     .font(SharpitTypography.heroScore)
@@ -83,7 +83,7 @@ struct SleepTargetsSheet: View {
                         step(direction == .increment ? 15 : -15)
                     }
                 Spacer(minLength: 0)
-                stepButton("plus", label: "Plus 15 minutes", delta: 15)
+                stepButton("plus", label: String(localized: "Plus 15 minutes"), delta: 15)
             }
             SharpitSegmentedControl(
                 selection: $minutes.animation(SharpitMotion.selection),
@@ -101,9 +101,9 @@ struct SleepTargetsSheet: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             Toggle(isOn: $hasBedtime.animation(SharpitMotion.selection)) {
                 SharpitCardHeader(
-                    title: "Heure fixe",
+                    title: String(localized: "Heure fixe"),
                     symbol: "bed.double.fill",
-                    subtitle: "Se coucher à la même heure compte autant que la durée.",
+                    subtitle: String(localized: "Se coucher à la même heure compte autant que la durée."),
                     showsChevron: false
                 )
             }
@@ -117,7 +117,7 @@ struct SleepTargetsSheet: View {
                             .foregroundStyle(SharpitColor.mutedForeground)
                         DatePicker("Coucher", selection: $bedtime, displayedComponents: .hourAndMinute)
                             .labelsHidden()
-                            .environment(\.locale, SharpitLocale.french)
+                            .environment(\.locale, SharpitLocale.current)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(SharpitSpacing.sm)
@@ -243,8 +243,8 @@ struct WeightTargetSheet: View {
         NavigationStack {
             List {
                 Section(
-                    eyebrow: "Poids cible",
-                    footer: "Optionnel. Tracé sur ta courbe de poids et pris en compte dans la lecture nutritionnelle — jamais une alerte."
+                    eyebrow: String(localized: "Poids cible"),
+                    footer: String(localized: "Optionnel. Tracé sur ta courbe de poids et pris en compte dans la lecture nutritionnelle — jamais une alerte.")
                 ) {
                     HStack {
                         TextField("72,0", text: $text)

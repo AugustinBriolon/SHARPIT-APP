@@ -14,11 +14,11 @@ nonisolated struct ActivityFilter: Equatable, Sendable {
 
         var label: String {
             switch self {
-            case .week: "7 derniers jours"
-            case .month: "30 derniers jours"
-            case .quarter: "3 derniers mois"
-            case .year: "12 derniers mois"
-            case .all: "Tout l’historique"
+            case .week: String(localized: "7 derniers jours")
+            case .month: String(localized: "30 derniers jours")
+            case .quarter: String(localized: "3 derniers mois")
+            case .year: String(localized: "12 derniers mois")
+            case .all: String(localized: "Tout l’historique")
             }
         }
 

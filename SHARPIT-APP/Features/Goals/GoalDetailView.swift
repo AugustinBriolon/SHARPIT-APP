@@ -68,7 +68,7 @@ struct GoalDetailView: View {
             .padding(.vertical, SharpitSpacing.md)
         }
         .background(SharpitCanvasBackground())
-        .navigationTitle(goal.kind == .race ? "Course" : "Objectif")
+        .navigationTitle(goal.kind == .race ? String(localized: "Course") : String(localized: "Objectif"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { hasAppeared = true }
         .task(id: goalId) {
@@ -91,7 +91,7 @@ struct GoalDetailView: View {
             GoalEditView(goal: goal, store: store)
         }
         .confirmationDialog(
-            "Supprimer cet objectif ?",
+            String(localized: "Supprimer cet objectif ?"),
             isPresented: $showsDeleteConfirmation,
             titleVisibility: .visible
         ) {
@@ -116,14 +116,14 @@ struct GoalDetailView: View {
         return VStack(spacing: SharpitSpacing.sm) {
             HStack(spacing: SharpitSpacing.sm) {
                 metricTile(
-                    title: "Séances",
+                    title: String(localized: "Séances"),
                     value: "\(stats.sessionsDone)",
                     caption: stats.sessionHint,
                     symbol: "dumbbell.fill"
                 )
 
                 metricTile(
-                    title: "Durée",
+                    title: String(localized: "Durée"),
                     value: stats.durationLabel,
                     caption: stats.durationHint,
                     symbol: "clock.fill"
@@ -171,7 +171,7 @@ struct GoalDetailView: View {
     /// it and what would sharpen it — or an honest line when it cannot project this race.
     private func racePositionCard(_ proj: RaceProjectionReadout?) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(title: "Position", symbol: "scope", showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Position"), symbol: "scope", showsChevron: false)
             if let proj {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -262,7 +262,7 @@ struct GoalDetailView: View {
     private func raceOutcomeCard(actual: Double, projected: RaceProjectionReadout?) -> some View {
         let delta = RaceTime.targetSeconds(from: goal.targetPerformance).map { RaceDelta(seconds: actual - $0) }
         return VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(title: "Résultat", symbol: "flag.checkered", tint: SharpitColor.signalRecovery, showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Résultat"), symbol: "flag.checkered", tint: SharpitColor.signalRecovery, showsChevron: false)
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(RaceTime.clock(actual))
@@ -338,7 +338,7 @@ struct GoalDetailView: View {
     /// The projected legs, each with its time and, quietly, where its pace came from.
     private func projectedSplitCard(_ legs: [RaceProjectionReadout.Leg]) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(title: "Détail par segment", symbol: "stopwatch", showsChevron: false) {
+            SharpitCardHeader(title: String(localized: "Détail par segment"), symbol: "stopwatch", showsChevron: false) {
                 Text("Projection")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
@@ -428,7 +428,7 @@ struct GoalDetailView: View {
     /// The sessions raced for this goal, each pushing its page in the Objectifs stack.
     private var linkedActivitiesSection: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Activités liées")
+            SharpitEyebrow(String(localized: "Activités liées"))
             ForEach(linkedActivities) { activity in
                 NavigationLink(value: GoalRoute.activity(activity.id)) {
                     GoalLinkedActivityRow(activity: activity)
@@ -472,7 +472,7 @@ struct GoalDetailView: View {
                             .tint(.white)
                     } else {
                         Image(systemName: goal.achieved ? "arrow.counterclockwise" : "checkmark.circle.fill")
-                        Text(goal.achieved ? "Marquer comme en cours" : "Valider l'objectif")
+                        Text(goal.achieved ? String(localized: "Marquer comme en cours") : String(localized: "Valider l'objectif"))
                     }
                 }
                 .font(SharpitTypography.bodyEmphasis)
@@ -548,15 +548,15 @@ private struct RaceTrajectoryChart: View {
     var body: some View {
         Chart {
             if let targetSec {
-                RuleMark(y: .value("Objectif", targetSec))
+                RuleMark(y: .value(String(localized: "Objectif"), targetSec))
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }
             ForEach(points, id: \.date) { point in
-                LineMark(x: .value("Semaine", point.date), y: .value("Arrivée", point.finishSec))
+                LineMark(x: .value(String(localized: "Semaine"), point.date), y: .value(String(localized: "Arrivée"), point.finishSec))
                     .foregroundStyle(SharpitColor.primary)
                     .interpolationMethod(.monotone)
-                PointMark(x: .value("Semaine", point.date), y: .value("Arrivée", point.finishSec))
+                PointMark(x: .value(String(localized: "Semaine"), point.date), y: .value(String(localized: "Arrivée"), point.finishSec))
                     .foregroundStyle(SharpitColor.primary)
                     .symbolSize(point == points.last ? 36 : 14)
             }

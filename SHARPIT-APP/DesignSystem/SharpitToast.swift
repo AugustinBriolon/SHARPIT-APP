@@ -236,14 +236,14 @@ private struct SharpitSyncToastModifier: ViewModifier {
             switch state {
             case .syncing:
                 token = toastCenter.show(
-                    "Synchronisation…",
+                    String(localized: "Synchronisation…"),
                     symbol: "arrow.triangle.2.circlepath",
                     tone: .syncing,
                     autoDismissAfter: nil
                 )
             case .failed:
                 token = toastCenter.show(
-                    "Synchronisation impossible",
+                    String(localized: "Synchronisation impossible"),
                     symbol: "exclamationmark.triangle.fill",
                     tone: .error,
                     autoDismissAfter: 3.5
@@ -251,7 +251,7 @@ private struct SharpitSyncToastModifier: ViewModifier {
             case .idle:
                 if oldState == .syncing {
                     token = toastCenter.show(
-                        "Synchronisé",
+                        String(localized: "Synchronisé"),
                         symbol: "checkmark.circle.fill",
                         tone: .success,
                         autoDismissAfter: 2.0

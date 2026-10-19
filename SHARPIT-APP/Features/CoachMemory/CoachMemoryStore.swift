@@ -44,9 +44,9 @@ final class CoachMemoryStore {
             profileContextText = snap.profileContext
             lastSavedContext = snap.profileContext
         } catch SharpitAPIError.unauthorized {
-            errorMessage = "Session expirée"
+            errorMessage = String(localized: "Session expirée")
         } catch {
-            errorMessage = "Impossible de charger la mémoire du coach"
+            errorMessage = String(localized: "Impossible de charger la mémoire du coach")
         }
     }
 
@@ -62,7 +62,7 @@ final class CoachMemoryStore {
             }
         } catch {
             if lastSavedContext == text { lastSavedContext = previous }
-            failures.report("Contexte non enregistré. Réessaie dans un instant.")
+            failures.report(String(localized: "Contexte non enregistré. Réessaie dans un instant."))
         }
     }
 
@@ -83,7 +83,7 @@ final class CoachMemoryStore {
             if let first = snapshot.entries.first, first.type == input.type {
                 return true
             }
-            errorMessage = "Impossible d'ajouter la contrainte"
+            errorMessage = String(localized: "Impossible d'ajouter la contrainte")
             return false
         }
     }
@@ -99,7 +99,7 @@ final class CoachMemoryStore {
             await self.load()
         } catch {
             await self.load()
-            errorMessage = "Suppression impossible"
+            errorMessage = String(localized: "Suppression impossible")
         }
     }
 }

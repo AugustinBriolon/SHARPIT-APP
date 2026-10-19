@@ -26,9 +26,9 @@ enum ConnectionsReadout {
     /// Paramètres' line under « Sources de données »: the one source by name, else how many.
     static func sourcesSummary(_ linked: Set<ManagedSource>) -> String {
         switch linked.count {
-        case 0: "Aucune source connectée"
-        case 1: "\(linked.first!.name) connecté"
-        default: "\(linked.count) sources connectées"
+        case 0: String(localized: "Aucune source connectée")
+        case 1: String(localized: "\(linked.first!.name) connecté")
+        default: String(localized: "\(linked.count) sources connectées")
         }
     }
 
@@ -59,7 +59,7 @@ enum ConnectionsReadout {
 
     /// What Apple Health is for, unless something stops it: the switch already says on or off.
     static func appleHealthSubtitle(isAvailable: Bool, state: AppleHealthSource.State) -> Line {
-        guard isAvailable else { return Line(text: "Indisponible sur cet appareil", isProblem: false) }
+        guard isAvailable else { return Line(text: String(localized: "Indisponible sur cet appareil"), isProblem: false) }
         if case .failed(let message) = state { return Line(text: message, isProblem: true) }
         return Line(text: ManagedSource.appleHealth.purpose, isProblem: false)
     }
@@ -75,11 +75,11 @@ enum ConnectionsReadout {
     }
 
     static func disconnected(_: DisconnectableSource) -> Badge {
-        Badge(text: "Non connecté", tone: .neutral)
+        Badge(text: String(localized: "Non connecté"), tone: .neutral)
     }
 
     static let sourcesFooter =
-        "Touche une source pour la gérer ou la déconnecter. Le + en ajoute une."
+        String(localized: "Touche une source pour la gérer ou la déconnecter. Le + en ajoute une.")
 
     /// Connected sources first, then the ones the « + » sheet offers — each in the screen's order.
     /// A source the device cannot run (Apple Health on an iPad) is never offered.
@@ -99,13 +99,13 @@ enum ConnectionsReadout {
     static func disconnectFailure(_ source: DisconnectableSource, error: any Error) -> String {
         switch error as? SharpitAPIError {
         case .transport?:
-            "Pas de connexion internet : \(source.name) est toujours relié. Réessaie."
+            String(localized: "Pas de connexion internet : \(source.name) est toujours relié. Réessaie.")
         case .unauthorized?:
-            "Ta session a expiré. Reconnecte-toi, puis réessaie."
+            String(localized: "Ta session a expiré. Reconnecte-toi, puis réessaie.")
         case .message(let text)?:
             text
         default:
-            "Déconnexion de \(source.name) impossible pour le moment. Réessaie dans un instant."
+            String(localized: "Déconnexion de \(source.name) impossible pour le moment. Réessaie dans un instant.")
         }
     }
 

@@ -17,19 +17,19 @@ enum RecoveryReadout {
     /// The web's `PRIMARY_LIMITER_LABEL` wording, shortened to fit a bar's caption.
     static func dimensionLabel(_ key: String) -> String {
         switch key {
-        case "autonomic": "Système nerveux"
-        case "sleep": "Sommeil"
-        case "subjective": "Ressenti"
-        case "loadContext": "Charge"
+        case "autonomic": String(localized: "Système nerveux")
+        case "sleep": String(localized: "Sommeil")
+        case "subjective": String(localized: "Ressenti")
+        case "loadContext": String(localized: "Charge")
         default: key
         }
     }
 
     static func pillarCaption(_ key: String) -> String {
         switch key {
-        case "autonomic": "Autonome"
+        case "autonomic": String(localized: "Autonome")
         case "wellness": "Bien-être"
-        case "load": "Charge"
+        case "load": String(localized: "Charge")
         default: key
         }
     }
@@ -60,9 +60,9 @@ enum RecoveryReadout {
         guard let low = today.hrvBaselineLow, let high = today.hrvBaselineHigh else { return nil }
         let range = "\(Int(low.rounded()))–\(Int(high.rounded()))"
         return switch hrvPosition(today) {
-        case .below: "sous ta norme \(range)"
-        case .above: "au-dessus de ta norme \(range)"
-        case .within, .unknown: "dans ta norme \(range)"
+        case .below: String(localized: "sous ta norme \(range)")
+        case .above: String(localized: "au-dessus de ta norme \(range)")
+        case .within, .unknown: String(localized: "dans ta norme \(range)")
         }
     }
 
@@ -74,7 +74,7 @@ enum RecoveryReadout {
     static func recoveryHorizon(_ days: Double?) -> String? {
         guard let days else { return nil }
         let rounded = Int(days.rounded(.up))
-        if rounded <= 0 { return "Récupération complète" }
-        return "Récupération complète d'ici \(rounded) jour\(rounded > 1 ? "s" : "")"
+        if rounded <= 0 { return String(localized: "Récupération complète") }
+        return String(localized: "Récupération complète d'ici \(rounded) jour\(rounded > 1 ? "s" : "")")
     }
 }

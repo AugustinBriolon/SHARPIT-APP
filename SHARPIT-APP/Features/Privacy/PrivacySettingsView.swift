@@ -36,7 +36,7 @@ final class PrivacySettingsStore {
         } catch SharpitAPIError.unauthorized {
             phase = .unauthorized
         } catch {
-            if consents == nil { phase = .failed("Lecture de tes consentements impossible.") }
+            if consents == nil { phase = .failed(String(localized: "Lecture de tes consentements impossible.")) }
         }
     }
 
@@ -56,9 +56,9 @@ final class PrivacySettingsStore {
             SharpitMotion.run(SharpitMotion.selection) { consents = saved }
             return saved
         } catch SharpitAPIError.unauthorized {
-            saveError = "Session expirée. Reconnecte-toi."
+            saveError = String(localized: "Session expirée. Reconnecte-toi.")
         } catch {
-            saveError = "Enregistrement impossible. Réessaie."
+            saveError = String(localized: "Enregistrement impossible. Réessaie.")
         }
         return nil
     }
@@ -115,7 +115,7 @@ struct PrivacySettingsView: View {
         .task { await store.load() }
         .sheet(item: $openDocument) { LegalDocumentSheet(document: $0) }
         .confirmationDialog(
-            "Retirer le consentement santé ?",
+            String(localized: "Retirer le consentement santé ?"),
             isPresented: $confirmsHealthWithdraw,
             titleVisibility: .visible
         ) {
@@ -133,7 +133,7 @@ struct PrivacySettingsView: View {
             Text("Résumé et les traitements physiologiques seront bloqués immédiatement. Tu pourras réactiver le consentement sur l'écran dédié.")
         }
         .confirmationDialog(
-            "Supprimer ton compte ?",
+            String(localized: "Supprimer ton compte ?"),
             isPresented: $confirmsDeletion,
             titleVisibility: .visible
         ) {
@@ -167,21 +167,21 @@ struct PrivacySettingsView: View {
             let url = try PrivacyExport.write(data)
             exportedFile = SharpitSharedFile(url: url)
         } catch {
-            exportError = SharpitErrorGuidance.message(for: error, subject: "L'export de tes données")
+            exportError = SharpitErrorGuidance.message(for: error, subject: String(localized: "L'export de tes données"))
         }
     }
 
     private var exportSection: some View {
         Section(
-            eyebrow: "Tes données",
-            footer: "Un fichier JSON avec ton profil, tes consentements, tes activités, ton plan et tes mesures. Tu choisis où l'envoyer : Fichiers, AirDrop, e-mail."
+            eyebrow: String(localized: "Tes données"),
+            footer: String(localized: "Un fichier JSON avec ton profil, tes consentements, tes activités, ton plan et tes mesures. Tu choisis où l'envoyer : Fichiers, AirDrop, e-mail.")
         ) {
             Button {
                 Task { await exportData() }
             } label: {
                 HStack {
                     Label {
-                        Text(isExporting ? "Préparation de l'export…" : "Exporter mes données")
+                        Text(isExporting ? String(localized: "Préparation de l'export…") : String(localized: "Exporter mes données"))
                             .font(SharpitTypography.bodyEmphasis)
                             .foregroundStyle(SharpitColor.foreground)
                     } icon: {
@@ -206,9 +206,9 @@ struct PrivacySettingsView: View {
     private var renewsSubscription: Bool { pro?.hasRenewingSubscription ?? false }
 
     private var deletionMessage: String {
-        let erased = "Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Strava, Withings et autres sont révoquées. C'est irréversible."
+        let erased = String(localized: "Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Strava, Withings et autres sont révoquées. C'est irréversible.")
         guard renewsSubscription else { return erased }
-        return erased + "\n\nTon abonnement SharpIt Pro continue de se renouveler : supprimer ton compte ne l'arrête pas. Annule-le d'abord pour ne plus être facturé."
+        return erased + String(localized: "\n\nTon abonnement SharpIt Pro continue de se renouveler : supprimer ton compte ne l'arrête pas. Annule-le d'abord pour ne plus être facturé.")
     }
 
     /// Deletes server-side — data and sign-in identity — then signs out on this iPhone.
@@ -221,14 +221,14 @@ struct PrivacySettingsView: View {
             LocalAccountData.erase(context: modelContext)
             try? await clerk.auth.signOut()
         } catch {
-            deletionError = SharpitErrorGuidance.message(for: error, subject: "La suppression du compte")
+            deletionError = SharpitErrorGuidance.message(for: error, subject: String(localized: "La suppression du compte"))
         }
     }
 
     private var deletionSection: some View {
         Section(
-            eyebrow: "Compte",
-            footer: "Efface ton compte et toutes tes données, tout de suite. Pour les garder, exporte-les d'abord, juste au-dessus."
+            eyebrow: String(localized: "Compte"),
+            footer: String(localized: "Efface ton compte et toutes tes données, tout de suite. Pour les garder, exporte-les d'abord, juste au-dessus.")
         ) {
             Button(role: .destructive) {
                 confirmsDeletion = true
@@ -251,7 +251,7 @@ struct PrivacySettingsView: View {
 
     private var list: some View {
         List {
-            Section(eyebrow: "Documents", footer: documentsFooter) {
+            Section(eyebrow: String(localized: "Documents"), footer: documentsFooter) {
                 ForEach(LegalDocument.allCases) { document in
                     Button {
                         openDocument = document
@@ -277,25 +277,25 @@ struct PrivacySettingsView: View {
             }
             .sharpitListRows()
 
-            Section(eyebrow: "Données de santé (requis)", footer: PrivacyCopy.healthDisclaimer) {
+            Section(eyebrow: String(localized: "Données de santé (requis)"), footer: PrivacyCopy.healthDisclaimer) {
                 Toggle(isOn: healthBinding) {
                     consentLabel(
-                        "Sync et traitements physiologiques",
-                        detail: "Données de santé / physiologiques (art. 9). Sans ce consentement, l'accès à Résumé est bloqué."
+                        String(localized: "Sync et traitements physiologiques"),
+                        detail: String(localized: "Données de santé / physiologiques (art. 9). Sans ce consentement, l'accès à Résumé est bloqué.")
                     )
                 }
             }
             .sharpitListRows()
 
-            Section(eyebrow: "Traitements optionnels") {
+            Section(eyebrow: String(localized: "Traitements optionnels")) {
                 Toggle(isOn: binding(\.hasAIConsent) { on in
                     var update = PrivacyConsentUpdate()
                     update.aiProcessingConsent = on
                     return update
                 }) {
                     consentLabel(
-                        "Traitement par IA",
-                        detail: "Coach et bilans rédigés. Sans ce consentement, les moteurs déterministes restent disponibles."
+                        String(localized: "Traitement par IA"),
+                        detail: String(localized: "Coach et bilans rédigés. Sans ce consentement, les moteurs déterministes restent disponibles.")
                     )
                 }
                 Toggle(isOn: binding(\.hasUnofficialProvidersAck) { on in
@@ -304,8 +304,8 @@ struct PrivacySettingsView: View {
                     return update
                 }) {
                     consentLabel(
-                        "Fournisseurs non officiels",
-                        detail: "J'ai pris connaissance que certaines intégrations sont non officielles / « en l'état »."
+                        String(localized: "Fournisseurs non officiels"),
+                        detail: String(localized: "J'ai pris connaissance que certaines intégrations sont non officielles / « en l'état ».")
                     )
                 }
             }
@@ -333,7 +333,7 @@ struct PrivacySettingsView: View {
     private var documentsFooter: String {
         let accepted = store.consents?.privacyVersion ?? "—"
         let current = store.consents?.currentPrivacyVersion ?? "—"
-        return "Version acceptée : \(accepted) · actuelle : \(current). Contact : augustin.briolon@gmail.com"
+        return String(localized: "Version acceptée : \(accepted) · actuelle : \(current). Contact : augustin.briolon@gmail.com")
     }
 
     private func consentLabel(_ title: String, detail: String) -> some View {

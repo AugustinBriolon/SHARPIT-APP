@@ -115,9 +115,9 @@ nonisolated enum CoachDiscuss {
     static func planningHorizonLabel(_ horizonDays: Int) -> String {
         switch horizonDays {
         case 1: "demain"
-        case 3: "les 3 prochains jours"
-        case 7: "les 7 prochains jours"
-        case 14: "les 14 prochains jours"
+        case 3: String(localized: "les 3 prochains jours")
+        case 7: String(localized: "les 7 prochains jours")
+        case 14: String(localized: "les 14 prochains jours")
         default: "\(horizonDays) jours"
         }
     }
@@ -130,17 +130,17 @@ nonisolated enum CoachDiscuss {
 
         let label: String = switch target {
         case .today:
-            "Ton état du jour"
+            String(localized: "Ton état du jour")
         case .morningBrief:
-            "Brief du matin"
+            String(localized: "Brief du matin")
         case .plannedSession:
-            resolved.map { "Séance prévue · \($0)" } ?? "Une séance prévue"
+            resolved.map { String(localized: "Séance prévue · \($0)") } ?? String(localized: "Une séance prévue")
         case .activity:
-            resolved.map { "Séance réalisée · \($0)" } ?? "Une séance réalisée"
+            resolved.map { String(localized: "Séance réalisée · \($0)") } ?? String(localized: "Une séance réalisée")
         case .planning(let horizonDays):
-            "Ta semaine · \(planningHorizonLabel(horizonDays))"
+            String(localized: "Ta semaine · \(planningHorizonLabel(horizonDays))")
         case .nutrition:
-            "Ta nutrition du jour"
+            String(localized: "Ta nutrition du jour")
         }
 
         return CoachDiscussContext(target: target, label: label)

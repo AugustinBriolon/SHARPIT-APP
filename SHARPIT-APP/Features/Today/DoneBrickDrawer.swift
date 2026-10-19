@@ -48,7 +48,7 @@ struct DoneBrickPreview: Identifiable, Equatable {
     init(planned brick: PlanDoneBrick) {
         self.id = brick.id
         self.brickGroupId = brick.id
-        self.summary = brick.totalDurationMin.map { DoneBrickFormat.duration($0 * 60) + " au total" }
+        self.summary = brick.totalDurationMin.map { DoneBrickFormat.duration($0 * 60) + String(localized: " au total") }
         self.legs = brick.legs.map { leg in
             Leg(
                 id: leg.session.id,
@@ -101,12 +101,12 @@ enum DoneBrickFormat {
 
     /// A done leg's line: « 1h20 · RPE 6 », or « À faire » while it is not done.
     static func legMeta(_ leg: DoneBrickPreview.Leg) -> String {
-        guard leg.isDone else { return "À faire" }
+        guard leg.isDone else { return String(localized: "À faire") }
         let parts = [
             leg.actual?.durationSec.map(duration),
             leg.actual?.rpe.map { "RPE \($0)" },
         ].compactMap { $0 }
-        return parts.isEmpty ? "Réalisée" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "Réalisée") : parts.joined(separator: " · ")
     }
 }
 
@@ -167,7 +167,7 @@ struct DoneBrickDrawer: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Brick réalisé · \(brick.legs.count) étapes")
+            SharpitEyebrow(String(localized: "Brick réalisé · \(brick.legs.count) étapes"))
             BrickChainGlyphs(sports: brick.legs.map(\.sport))
             Text(brick.chain)
                 .font(SharpitTypography.pageTitle)
@@ -266,7 +266,7 @@ private struct DoneBrickTransitionRow: View {
                 .fill(SharpitColor.primary.opacity(0.5))
                 .frame(width: 2, height: 36)
                 .padding(.leading, SharpitSpacing.cardPadding + 14)
-            Text("T\(index + 1) · " + (seconds.map(DoneBrickFormat.transition) ?? "non mesurée"))
+            Text("T\(index + 1) · " + (seconds.map(DoneBrickFormat.transition) ?? String(localized: "non mesurée")))
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
@@ -277,6 +277,6 @@ private struct DoneBrickTransitionRow: View {
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(seconds.map { "Transition \(index + 1), \(DoneBrickFormat.transition($0))" } ?? "Transition non mesurée")
+        .accessibilityLabel(seconds.map { String(localized: "Transition \(index + 1), \(DoneBrickFormat.transition($0))") } ?? String(localized: "Transition non mesurée"))
     }
 }

@@ -68,14 +68,14 @@ nonisolated struct V1GoalAchievement: Decodable, Sendable, Equatable, Identifiab
 /// How an achievement reads, in the web's words (`goal-achievements-history.tsx`,
 /// `formatGoalDisplayValue`, `formatAchievementPeriodKey`).
 nonisolated enum GoalAchievementReadout {
-    private static let french = Locale(identifier: "fr_FR")
+    private static let locale = AppLanguage.locale
 
     /// « 42,2 km · Semaine 27 · 2026 · 5 juil. 2026 · marqué manuellement »
     static func line(_ achievement: V1GoalAchievement) -> String {
         var parts = [value(achievement.value, unit: achievement.goal.unit, metricKey: achievement.goal.metricKey)]
         if let period = period(achievement.periodKey) { parts.append(period) }
-        parts.append(achievement.achievedAt.formatted(.dateTime.day().month(.abbreviated).year().locale(french)))
-        if achievement.isManual { parts.append("marqué manuellement") }
+        parts.append(achievement.achievedAt.formatted(.dateTime.day().month(.abbreviated).year().locale(locale)))
+        if achievement.isManual { parts.append(String(localized: "marqué manuellement")) }
         return parts.joined(separator: " · ")
     }
 
@@ -96,7 +96,7 @@ nonisolated enum GoalAchievementReadout {
             return "\(Int(value.rounded())) m"
         case "séances"?:
             let count = Int(value.rounded())
-            return "\(count) séance\(value > 1 ? "s" : "")"
+            return String(localized: "\(count) séance\(value > 1 ? "s" : "")")
         case let unit?:
             return "\(plain(value)) \(unit)"
         case nil:
@@ -109,7 +109,7 @@ nonisolated enum GoalAchievementReadout {
         if key == "_performance" || key.isEmpty { return nil }
         let parts = key.split(separator: "-").map(String.init)
         if parts.count == 2, parts[0].count == 4, parts[1].hasPrefix("W"), parts[1].count == 3 {
-            return "Semaine \(parts[1].dropFirst()) · \(parts[0])"
+            return String(localized: "Semaine \(parts[1].dropFirst()) · \(parts[0])")
         }
         if parts.count == 2, parts[0].count == 4, parts[1].count == 2,
            let year = Int(parts[0]), let month = Int(parts[1]), (1...12).contains(month) {
@@ -119,12 +119,12 @@ nonisolated enum GoalAchievementReadout {
             components.day = 1
             guard let date = Calendar(identifier: .gregorian).date(from: components) else { return key }
             let formatter = DateFormatter()
-            formatter.locale = french
+            formatter.locale = locale
             formatter.dateFormat = "LLLL yyyy"
             return formatter.string(from: date)
         }
         if parts.count == 1, key.count == 4, Int(key) != nil {
-            return "Année \(key)"
+            return String(localized: "Année \(key)")
         }
         return key
     }

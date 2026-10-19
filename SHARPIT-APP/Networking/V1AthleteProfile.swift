@@ -51,9 +51,9 @@ nonisolated enum AthleteSex: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .female: "Femme"
-        case .male: "Homme"
-        case .other: "Autre"
+        case .female: String(localized: "Femme")
+        case .male: String(localized: "Homme")
+        case .other: String(localized: "Autre")
         }
     }
 }
@@ -104,6 +104,8 @@ nonisolated struct V1NotificationPrefs: Codable, Sendable, Equatable {
 nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     /// Reading density: `essential` or `expert`.
     var displayMode: String?
+    /// Language the app shows (`fr` | `en`), so server copy follows it (iOS ADR 0019).
+    var locale: String?
     var tier: String?
 
     // Identity and rhythm.
@@ -199,7 +201,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case displayMode, tier, heightCm, birthDate, targetWeightKg
+        case displayMode, locale, tier, heightCm, birthDate, targetWeightKg
         case sleepTargetMinutes, sleepBedtimeTargetMin
         case ftpW, maxHr, lthr, runThresholdPaceSecPerKm, runEasyPaceSecPerKm, swimCssSecPer100m
         case defaultPoolLengthM, vo2maxRunning, vo2maxCycling, thresholdsSyncedAt
@@ -210,6 +212,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         displayMode = try container.decodeIfPresent(String.self, forKey: .displayMode)
+        locale = try container.decodeIfPresent(String.self, forKey: .locale)
         tier = try container.decodeIfPresent(String.self, forKey: .tier)
         heightCm = try container.decodeIfPresent(Int.self, forKey: .heightCm)
         birthDate = Self.date(in: container, forKey: .birthDate)
@@ -258,6 +261,7 @@ nonisolated struct V1AthleteProfile: Codable, Sendable, Equatable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(displayMode, forKey: .displayMode)
+        try container.encodeIfPresent(locale, forKey: .locale)
         try container.encodeIfPresent(tier, forKey: .tier)
         try container.encodeIfPresent(heightCm, forKey: .heightCm)
         try container.encodeIfPresent(birthDate?.toAPI, forKey: .birthDate)
@@ -324,6 +328,7 @@ nonisolated extension V1AthleteProfile {
 /// comes from Garmin or from an estimate, never from a field.
 nonisolated enum AthleteProfileField: String, CaseIterable, Sendable {
     case displayMode
+    case locale
     case heightCm
     case birthDate
     case targetWeightKg

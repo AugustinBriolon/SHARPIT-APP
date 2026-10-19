@@ -23,7 +23,7 @@ struct CorpsSparkline: View {
     var body: some View {
         if points.count > 1 {
             Chart(points) { point in
-                LineMark(x: .value("Jour", point.date), y: .value("Valeur", point.value))
+                LineMark(x: .value(String(localized: "Jour"), point.date), y: .value(String(localized: "Valeur"), point.value))
                     .interpolationMethod(.monotone)
                     .foregroundStyle(tone)
                     .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round))
@@ -169,15 +169,15 @@ struct CorpsMetricDrawer: View {
         return Chart {
             if let band = metric.baseline, let first = shown.first, let last = shown.last {
                 RectangleMark(
-                    xStart: .value("Début", first.date),
-                    xEnd: .value("Fin", last.date),
-                    yStart: .value("Bas", band.lowerBound),
-                    yEnd: .value("Haut", band.upperBound)
+                    xStart: .value(String(localized: "Début"), first.date),
+                    xEnd: .value(String(localized: "Fin"), last.date),
+                    yStart: .value(String(localized: "Bas"), band.lowerBound),
+                    yEnd: .value(String(localized: "Haut"), band.upperBound)
                 )
                 .foregroundStyle(SharpitColor.signalRecovery.opacity(0.12))
             }
             if let target, target > 0 {
-                RuleMark(y: .value("Cible", target))
+                RuleMark(y: .value(String(localized: "Cible"), target))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
                     .annotation(position: .top, alignment: .trailing) {
@@ -187,18 +187,18 @@ struct CorpsMetricDrawer: View {
                     }
             }
             ForEach(shown) { point in
-                LineMark(x: .value("Jour", point.date), y: .value(metric.key.label, point.value))
+                LineMark(x: .value(String(localized: "Jour"), point.date), y: .value(metric.key.label, point.value))
                     .interpolationMethod(.monotone)
                     .foregroundStyle(SharpitColor.primary)
-                PointMark(x: .value("Jour", point.date), y: .value(metric.key.label, point.value))
+                PointMark(x: .value(String(localized: "Jour"), point.date), y: .value(metric.key.label, point.value))
                     .foregroundStyle(SharpitColor.primary)
                     .symbolSize((shown.count > 40 ? 6 : 22) * dotScale)
             }
             if let scrubbed {
-                RuleMark(x: .value("Jour", scrubbed.date))
+                RuleMark(x: .value(String(localized: "Jour"), scrubbed.date))
                     .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
                     .lineStyle(StrokeStyle(lineWidth: 1))
-                PointMark(x: .value("Jour", scrubbed.date), y: .value(metric.key.label, scrubbed.value))
+                PointMark(x: .value(String(localized: "Jour"), scrubbed.date), y: .value(metric.key.label, scrubbed.value))
                     .foregroundStyle(SharpitColor.primary)
                     .symbolSize(90)
                     .annotation(position: .top, spacing: 6, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
@@ -257,9 +257,9 @@ struct CorpsMetricDrawer: View {
         let values = points.map(\.value)
         if let low = values.min(), let high = values.max() {
             HStack(spacing: SharpitSpacing.sm) {
-                SharpitStatTile(caption: "Min", value: CorpsReadout.format(low, for: metric.key), unit: metric.key.unit)
-                SharpitStatTile(caption: "Max", value: CorpsReadout.format(high, for: metric.key), unit: metric.key.unit)
-                SharpitStatTile(caption: "Mesures", value: "\(values.count)")
+                SharpitStatTile(caption: String(localized: "Min"), value: CorpsReadout.format(low, for: metric.key), unit: metric.key.unit)
+                SharpitStatTile(caption: String(localized: "Max"), value: CorpsReadout.format(high, for: metric.key), unit: metric.key.unit)
+                SharpitStatTile(caption: String(localized: "Mesures"), value: "\(values.count)")
             }
         }
     }
@@ -277,8 +277,8 @@ nonisolated enum CorpsRange: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .thirtyDays: "30 j"
         case .ninetyDays: "90 j"
-        case .year: "1 an"
-        case .all: "Tout"
+        case .year: String(localized: "1 an")
+        case .all: String(localized: "Tout")
         }
     }
 

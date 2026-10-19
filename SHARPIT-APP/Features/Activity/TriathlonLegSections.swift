@@ -34,7 +34,7 @@ struct TriathlonLegSections: View {
         let zones = race.raceAnalysis.map(RaceAnalysisReadout.zoneRows)?.filter { $0.id == track.id } ?? []
         return VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             ActivityMetricGrid(
-                title: "Résumé de l’étape",
+                title: String(localized: "Résumé de l’étape"),
                 metrics: ActivityHeroMetricData.primary(
                     for: detail,
                     distanceM: detail.distanceM ?? track.samples.last?.d,
@@ -64,7 +64,7 @@ private struct TriathlonTransitionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitEyebrow("Transition · \(track.segment.label)", systemImage: "arrow.triangle.2.circlepath")
+            SharpitEyebrow(String(localized: "Transition · \(track.segment.label)"), systemImage: "arrow.triangle.2.circlepath")
             Text(RaceTime.clock(track.leg.durationSec))
                 .font(SharpitTypography.heroScore)
                 .tracking(SharpitTypography.heroScoreTracking)
@@ -87,15 +87,15 @@ enum TriathlonTransitionReadout {
     static func rows(_ leg: V1MultisportLeg) -> [ActivityTechnicalRow] {
         var rows: [ActivityTechnicalRow] = []
         if let distance = leg.distanceM, distance > 0 {
-            rows.append(ActivityTechnicalRow(label: "Distance", value: "\(Int(distance.rounded())) m"))
+            rows.append(ActivityTechnicalRow(label: String(localized: "Distance"), value: "\(Int(distance.rounded())) m"))
         }
         if let moving = leg.movingDurationSec, moving > 0 {
             let moving = min(moving, leg.durationSec)
-            rows.append(ActivityTechnicalRow(label: "En mouvement", value: RaceTime.clock(moving)))
-            rows.append(ActivityTechnicalRow(label: "À l’arrêt", value: RaceTime.clock(leg.durationSec - moving)))
+            rows.append(ActivityTechnicalRow(label: String(localized: "En mouvement"), value: RaceTime.clock(moving)))
+            rows.append(ActivityTechnicalRow(label: String(localized: "À l’arrêt"), value: RaceTime.clock(leg.durationSec - moving)))
         }
         if let hr = leg.avgHr, hr > 0 {
-            rows.append(ActivityTechnicalRow(label: "FC moyenne", value: "\(Int(hr.rounded())) bpm"))
+            rows.append(ActivityTechnicalRow(label: String(localized: "FC moyenne"), value: "\(Int(hr.rounded())) bpm"))
         }
         return rows
     }

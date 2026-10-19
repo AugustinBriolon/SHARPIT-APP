@@ -65,7 +65,7 @@ enum ActivityStatusClientError: Error, Equatable, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .decoding: "Réponse du statut d'activité incompatible"
+        case .decoding: String(localized: "Réponse du statut d'activité incompatible")
         }
     }
 }

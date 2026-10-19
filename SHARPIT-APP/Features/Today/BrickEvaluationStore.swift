@@ -11,11 +11,11 @@ enum BrickTransitionRating: Int, CaseIterable, Sendable {
 
     var hint: String {
         switch self {
-        case .missed: "Jambes coupées, rythme jamais retrouvé."
-        case .hard: "Longues à digérer, allure en dessous."
-        case .fair: "Quelques minutes pour retrouver le rythme."
-        case .good: "Rythme retrouvé vite, sans à-coup."
-        case .smooth: "Enchaînement naturel, aucune rupture."
+        case .missed: String(localized: "Jambes coupées, rythme jamais retrouvé.")
+        case .hard: String(localized: "Longues à digérer, allure en dessous.")
+        case .fair: String(localized: "Quelques minutes pour retrouver le rythme.")
+        case .good: String(localized: "Rythme retrouvé vite, sans à-coup.")
+        case .smooth: String(localized: "Enchaînement naturel, aucune rupture.")
         }
     }
 }
@@ -77,7 +77,7 @@ final class BrickEvaluationStore: Identifiable {
         } catch is CancellationError {
             return
         } catch {
-            phase = .unavailable("Évaluation indisponible pour l'instant.")
+            phase = .unavailable(String(localized: "Évaluation indisponible pour l'instant."))
         }
     }
 
@@ -164,9 +164,9 @@ final class BrickEvaluationStore: Identifiable {
         } catch is CancellationError {
             status = .idle
         } catch let error as SharpitAPIError where error == .unauthorized {
-            status = .failed("Session expirée. Reconnecte-toi.")
+            status = .failed(String(localized: "Session expirée. Reconnecte-toi."))
         } catch {
-            status = .failed("Non enregistré. Touche une valeur pour réessayer.")
+            status = .failed(String(localized: "Non enregistré. Touche une valeur pour réessayer."))
         }
     }
 }

@@ -89,16 +89,16 @@ extension PlannedSessionPreview {
     init(session: V1PlannedSessionItem, isExpertReading: Bool = false) {
         var metrics: [PlannedSessionMetric] = []
         if let durationMin = session.durationMin {
-            metrics.append(PlannedSessionMetric(label: "Durée", value: "\(durationMin) min"))
+            metrics.append(PlannedSessionMetric(label: String(localized: "Durée"), value: "\(durationMin) min"))
         }
         if let intensity = session.intensity, !intensity.isEmpty {
-            metrics.append(PlannedSessionMetric(label: "Intensité", value: intensity.capitalized))
+            metrics.append(PlannedSessionMetric(label: String(localized: "Intensité"), value: intensity.capitalized))
         }
         // What the session is expected to cost. Shown in both readings, named for the one it
         // is read in (ADR 0006, reversing the omission this comment used to record).
         if let load = session.load, load > 0 {
             metrics.append(PlannedSessionMetric(
-                label: isExpertReading ? "TSS" : "Charge",
+                label: isExpertReading ? "TSS" : String(localized: "Charge"),
                 value: "\(Int(load.rounded()))"
             ))
         }
@@ -139,15 +139,15 @@ extension PlannedSessionPreview {
     init(generated session: V1GeneratedSession, isExpertReading: Bool = false) {
         var metrics: [PlannedSessionMetric] = []
         if session.durationMin > 0 {
-            metrics.append(PlannedSessionMetric(label: "Durée", value: "\(Int(session.durationMin)) min"))
+            metrics.append(PlannedSessionMetric(label: String(localized: "Durée"), value: "\(Int(session.durationMin)) min"))
         }
         metrics.append(PlannedSessionMetric(
-            label: "Intensité",
+            label: String(localized: "Intensité"),
             value: CoachProposal.intensityLabels[session.intensity] ?? session.intensity.capitalized
         ))
         if session.load > 0 {
             metrics.append(PlannedSessionMetric(
-                label: isExpertReading ? "TSS" : "Charge",
+                label: isExpertReading ? "TSS" : String(localized: "Charge"),
                 value: "\(Int(session.load.rounded()))"
             ))
         }
@@ -171,7 +171,7 @@ extension PlannedSessionPreview {
         self.init(
             sessionId: card.plannedSessionId,
             title: card.title,
-            sport: card.sport ?? "Séance",
+            sport: card.sport ?? String(localized: "Séance"),
             symbolName: SharpitSportTone.symbolName(for: card.sport ?? ""),
             date: nil,
             metrics: card.metrics.map {
@@ -267,7 +267,7 @@ struct PlannedSessionDrawer: View {
                         }
                     }
                     .confirmationDialog(
-                        "Supprimer cette séance ?",
+                        String(localized: "Supprimer cette séance ?"),
                         isPresented: $isConfirmingDeletion,
                         titleVisibility: .visible
                     ) {
@@ -308,7 +308,7 @@ struct PlannedSessionDrawer: View {
                     // Without an id the coach cannot be told *which* session, and a tag
                     // naming the wrong one is worse than no tag.
                     if let sessionId = preview.sessionId {
-                        CoachDiscussButton(title: "Discuter de cette séance") {
+                        CoachDiscussButton(title: String(localized: "Discuter de cette séance")) {
                             onDiscussWithCoach(
                                 CoachDiscuss.describe(
                                     .plannedSession(sessionId: sessionId),
@@ -323,8 +323,8 @@ struct PlannedSessionDrawer: View {
                 if preview.sessionId != nil, linking != nil {
                     DrawerActionRow(
                         symbolName: "link",
-                        title: "Lier à une séance réalisée",
-                        subtitle: "Si elle n'a pas été rapprochée toute seule"
+                        title: String(localized: "Lier à une séance réalisée"),
+                        subtitle: String(localized: "Si elle n'a pas été rapprochée toute seule")
                     ) {
                         showingLinkPicker = true
                     }
@@ -337,7 +337,7 @@ struct PlannedSessionDrawer: View {
         .animation(SharpitMotion.reveal, value: steps.count)
         .animation(SharpitMotion.reveal, value: canFollowOnPhone)
         .task { await fetchBreakdownIfMissing() }
-        .navigationTitle(isEmbedded ? preview.sport : "Séance prévue")
+        .navigationTitle(isEmbedded ? preview.sport : String(localized: "Séance prévue"))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingLinkPicker) {
             if let sessionId = preview.sessionId, let linking {
@@ -520,8 +520,8 @@ struct CoachDiscussButton: View {
 
 #Preview {
     VStack(spacing: SharpitSpacing.md) {
-        CoachDiscussButton(title: "Discuter de cette séance") {}
-        CoachDiscussButton(title: "Discuter avec le coach") {}
+        CoachDiscussButton(title: String(localized: "Discuter de cette séance")) {}
+        CoachDiscussButton(title: String(localized: "Discuter avec le coach")) {}
     }
     .padding()
     .background(SharpitCanvasBackground())

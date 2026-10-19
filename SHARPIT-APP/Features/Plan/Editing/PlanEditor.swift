@@ -91,8 +91,8 @@ final class PlanEditor {
         }
     }
 
-    static let saveFailure = "La séance n’a pas pu être modifiée. Réessaie dans un instant."
-    static let deleteFailure = "La séance n’a pas pu être supprimée. Réessaie dans un instant."
+    static let saveFailure = String(localized: "La séance n’a pas pu être modifiée. Réessaie dans un instant.")
+    static let deleteFailure = String(localized: "La séance n’a pas pu être supprimée. Réessaie dans un instant.")
 }
 
 extension V1PlannedSessionItem {

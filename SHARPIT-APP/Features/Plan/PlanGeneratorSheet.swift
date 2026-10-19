@@ -41,7 +41,7 @@ struct PlanGeneratorSheet: View {
         case .generating(let drafts):
             GeneratingWeekView(
                 drafts: drafts,
-                note: "Environ une minute. Tu peux fermer : une notification te dira quand c'est prêt."
+                note: String(localized: "Environ une minute. Tu peux fermer : une notification te dira quand c'est prêt.")
             )
         case .ready(let plan, let selected), .inserting(let plan, let selected):
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -70,13 +70,13 @@ struct PlanGeneratorSheet: View {
     }
 
     private var selectedGoalTitle: String {
-        store.goals.first { $0.id == store.goalId }?.title ?? "Forme générale"
+        store.goals.first { $0.id == store.goalId }?.title ?? String(localized: "Forme générale")
     }
 
     private func request(error: String?) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitFieldLabel("Durée")
+                SharpitFieldLabel(String(localized: "Durée"))
                 Picker("Durée", selection: $store.days) {
                     Text("3 jours").tag(3)
                     Text("1 semaine").tag(7)
@@ -116,7 +116,7 @@ struct PlanGeneratorSheet: View {
                 .sharpitSurface(.panel)
             }
 
-            SharpitFormField("Une demande (optionnel)", placeholder: "Deux sorties vélo, repos vendredi…", text: $store.focus)
+            SharpitFormField(String(localized: "Une demande (optionnel)"), placeholder: String(localized: "Deux sorties vélo, repos vendredi…"), text: $store.focus)
 
             if let error {
                 Label(error, systemImage: "exclamationmark.triangle")
@@ -130,14 +130,14 @@ struct PlanGeneratorSheet: View {
         SharpitActionDock {
             switch store.phase {
             case .idle, .failed:
-                SharpitPrimaryButton(title: "Générer") { store.start() }
+                SharpitPrimaryButton(title: String(localized: "Générer")) { store.start() }
             case .generating:
                 // Nothing to do but wait or close — « Fermer » is in the bar.
                 EmptyView()
             case .ready(_, let selected), .inserting(_, let selected):
                 let busy = if case .inserting = store.phase { true } else { false }
                 SharpitPrimaryButton(
-                    title: busy ? "Ajout au plan…" : "Ajouter \(selected.count) séance\(selected.count > 1 ? "s" : "")",
+                    title: busy ? String(localized: "Ajout au plan…") : String(localized: "Ajouter \(selected.count) séance\(selected.count > 1 ? "s" : "")"),
                     isBusy: busy
                 ) {
                     Task { await insert() }
@@ -156,7 +156,7 @@ struct PlanGeneratorSheet: View {
             return
         }
         toastCenter?.show(
-            "\(count) séance\(count > 1 ? "s" : "") ajoutée\(count > 1 ? "s" : "")",
+            String(localized: "\(count) séance\(count > 1 ? "s" : "") ajoutée\(count > 1 ? "s" : "")"),
             symbol: "calendar.badge.plus",
             tone: .success,
             autoDismissAfter: 3.0

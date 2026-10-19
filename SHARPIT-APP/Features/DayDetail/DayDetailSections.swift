@@ -90,7 +90,7 @@ struct DayDetailEvidenceSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Ce qui l'explique")
+            SharpitEyebrow(String(localized: "Ce qui l'explique"))
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 ForEach(evidence, id: \.self) { line in
                     HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {

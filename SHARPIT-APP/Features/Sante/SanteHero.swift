@@ -92,7 +92,7 @@ struct SanteHero: View {
     // MARK: - What it shows
 
     private var caption: String {
-        mode == .norms ? "Repères dans leur norme" : "Âge biologique"
+        mode == .norms ? String(localized: "Repères dans leur norme") : String(localized: "Âge biologique")
     }
 
     @ViewBuilder
@@ -142,9 +142,9 @@ struct SanteHero: View {
         if let age = synthesis.biologicalAge { return BiologicalAgeReadout.gap(age) }
         guard synthesis.normed > 0 else { return nil }
         switch watchCount {
-        case 0: return "Rien à surveiller"
-        case 1: return "1 point à surveiller"
-        default: return "\(watchCount) points à surveiller"
+        case 0: return String(localized: "Rien à surveiller")
+        case 1: return String(localized: "1 point à surveiller")
+        default: return String(localized: "\(watchCount) points à surveiller")
         }
     }
 

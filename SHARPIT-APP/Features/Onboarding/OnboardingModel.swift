@@ -23,56 +23,56 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     /// Bare names — the header owns the counting.
     var label: String {
         switch self {
-        case .identity: "Toi"
-        case .motivation: "Tes envies"
-        case .sports: "Sports"
-        case .equipment: "Matériel"
-        case .week: "Ta semaine"
-        case .goal: "Objectif"
-        case .injuries: "Blessures"
-        case .privacy: "Confidentialité"
-        case .sources: "Sources"
-        case .firstWeek: "Première semaine"
+        case .identity: String(localized: "Toi")
+        case .motivation: String(localized: "Tes envies")
+        case .sports: String(localized: "Sports")
+        case .equipment: String(localized: "Matériel")
+        case .week: String(localized: "Ta semaine")
+        case .goal: String(localized: "Objectif")
+        case .injuries: String(localized: "Blessures")
+        case .privacy: String(localized: "Confidentialité")
+        case .sources: String(localized: "Sources")
+        case .firstWeek: String(localized: "Première semaine")
         }
     }
 
     var title: String {
         switch self {
-        case .identity: "Construisons ton coach"
-        case .motivation: "Ce que tu viens chercher"
-        case .sports: "Tes sports"
-        case .equipment: "Ton matériel"
-        case .week: "Ta semaine type"
-        case .goal: "Ton objectif"
-        case .injuries: "Tes blessures"
-        case .privacy: "Tes données, tes règles"
-        case .sources: "Branche tes appareils"
-        case .firstWeek: "Ta première semaine"
+        case .identity: String(localized: "Construisons ton coach")
+        case .motivation: String(localized: "Ce que tu viens chercher")
+        case .sports: String(localized: "Tes sports")
+        case .equipment: String(localized: "Ton matériel")
+        case .week: String(localized: "Ta semaine type")
+        case .goal: String(localized: "Ton objectif")
+        case .injuries: String(localized: "Tes blessures")
+        case .privacy: String(localized: "Tes données, tes règles")
+        case .sources: String(localized: "Branche tes appareils")
+        case .firstWeek: String(localized: "Ta première semaine")
         }
     }
 
     var intro: String {
         switch self {
         case .identity:
-            "Quelques repères sur toi : le coach règle charges, allures et récupération à partir d'eux."
+            String(localized: "Quelques repères sur toi : le coach règle charges, allures et récupération à partir d'eux.")
         case .motivation:
-            "Ton coach est toujours là. Ajoute ce que tu veux suivre en plus : le reste disparaît, et revient quand tu veux dans Paramètres."
+            String(localized: "Ton coach est toujours là. Ajoute ce que tu veux suivre en plus : le reste disparaît, et revient quand tu veux dans Paramètres.")
         case .sports:
-            "Touche tes disciplines. Un sport d'endurance, ou la musculation seule."
+            String(localized: "Touche tes disciplines. Un sport d'endurance, ou la musculation seule.")
         case .equipment:
-            "Seulement ce qui sert à tes sports, pour des séances que tu peux vraiment faire."
+            String(localized: "Seulement ce qui sert à tes sports, pour des séances que tu peux vraiment faire.")
         case .week:
-            "Glisse le doigt sur les jours où tu peux t'entraîner."
+            String(localized: "Glisse le doigt sur les jours où tu peux t'entraîner.")
         case .goal:
-            "Une course ou un palier : tout le plan se construit vers lui."
+            String(localized: "Une course ou un palier : tout le plan se construit vers lui.")
         case .injuries:
-            "Une douleur ou une blessure en cours ? Le coach adapte tes séances pour la ménager."
+            String(localized: "Une douleur ou une blessure en cours ? Le coach adapte tes séances pour la ménager.")
         case .privacy:
-            "Avant de brancher tes appareils, choisis ce que SharpIt peut faire de tes données."
+            String(localized: "Avant de brancher tes appareils, choisis ce que SharpIt peut faire de tes données.")
         case .sources:
-            "Ta montre, ton téléphone et ton journal alimentaire nourrissent ton coach. Tu pourras en ajouter plus tard."
+            String(localized: "Ta montre, ton téléphone et ton journal alimentaire nourrissent ton coach. Tu pourras en ajouter plus tard.")
         case .firstWeek:
-            "Le coach place tes premières séances sur tes jours."
+            String(localized: "Le coach place tes premières séances sur tes jours.")
         }
     }
 
@@ -120,8 +120,8 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .pain: "Douleur"
-            case .injury: "Blessure"
+            case .pain: String(localized: "Douleur")
+            case .injury: String(localized: "Blessure")
             }
         }
     }
@@ -134,9 +134,9 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .left: "Gauche"
-            case .right: "Droite"
-            case .both: "Les deux"
+            case .left: String(localized: "Gauche")
+            case .right: String(localized: "Droite")
+            case .both: String(localized: "Les deux")
             }
         }
     }
@@ -150,22 +150,22 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
         var id: Int { rawValue }
         var label: String {
             switch self {
-            case .light: "Légère"
-            case .moderate: "Modérée"
-            case .strong: "Forte"
+            case .light: String(localized: "Légère")
+            case .moderate: String(localized: "Modérée")
+            case .strong: String(localized: "Forte")
             }
         }
     }
 
     /// The web's `COMMON_BODY_PARTS`, so a note written here reads the same on the web.
     static let bodyParts = [
-        "Genou", "Cheville", "Pied", "Mollet", "Cuisse", "Ischio", "Hanche",
-        "Bassin", "Dos", "Lombaires", "Épaule", "Cou", "Tendon d'Achille",
+        String(localized: "Genou"), String(localized: "Cheville"), String(localized: "Pied"), String(localized: "Mollet"), String(localized: "Cuisse"), String(localized: "Ischio"), String(localized: "Hanche"),
+        String(localized: "Bassin"), String(localized: "Dos"), String(localized: "Lombaires"), String(localized: "Épaule"), String(localized: "Cou"), String(localized: "Tendon d'Achille"),
     ]
 
     /// Zones that come in pairs, and so ask for a side.
     static let pairedParts: Set<String> = [
-        "Genou", "Cheville", "Pied", "Mollet", "Cuisse", "Ischio", "Hanche", "Épaule", "Tendon d'Achille",
+        String(localized: "Genou"), String(localized: "Cheville"), String(localized: "Pied"), String(localized: "Mollet"), String(localized: "Cuisse"), String(localized: "Ischio"), String(localized: "Hanche"), String(localized: "Épaule"), String(localized: "Tendon d'Achille"),
     ]
 
     var id: String { bodyPart }
@@ -188,7 +188,7 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
         switch side {
         case .left: words.append("gauche")
         case .right: words.append("droit")
-        case .both: words.append("des deux côtés")
+        case .both: words.append(String(localized: "des deux côtés"))
         case nil: break
         }
         return words.joined(separator: " ")
@@ -216,8 +216,8 @@ nonisolated enum OnboardingIntentionKind: String, CaseIterable, Identifiable, Se
 
     var label: String {
         switch self {
-        case .race: "Une course"
-        case .metric: "Un objectif chiffré"
+        case .race: String(localized: "Une course")
+        case .metric: String(localized: "Un objectif chiffré")
         }
     }
 }
@@ -232,10 +232,10 @@ nonisolated enum OnboardingTriathlonFormat: String, CaseIterable, Sendable {
 
     var shortLabel: String {
         switch self {
-        case .sprint: "Sprint"
+        case .sprint: String(localized: "Sprint")
         case .olympic: "M"
         case .half: "70.3"
-        case .full: "Ironman"
+        case .full: String(localized: "Ironman")
         }
     }
 }
@@ -303,8 +303,8 @@ nonisolated struct OnboardingIntentionDraft: Equatable, Sendable {
 
 /// Weekday labels for the availability step, indexed by `Date#getDay` as the web stores them.
 nonisolated enum OnboardingWeekday {
-    static let shortLabels = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
-    static let labels = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]
+    static let shortLabels = [String(localized: "Dim"), String(localized: "Lun"), String(localized: "Mar"), String(localized: "Mer"), String(localized: "Jeu"), String(localized: "Ven"), String(localized: "Sam")]
+    static let labels = [String(localized: "Dimanche"), String(localized: "Lundi"), String(localized: "Mardi"), String(localized: "Mercredi"), String(localized: "Jeudi"), String(localized: "Vendredi"), String(localized: "Samedi")]
 
     static func label(_ day: Int) -> String {
         labels.indices.contains(day) ? labels[day] : ""
@@ -316,7 +316,7 @@ nonisolated enum OnboardingWeekday {
         let days = availability.availableWeekdays
         guard !days.isEmpty else { return nil }
         let count = availability.targetSessionsPerWeek ?? days.count
-        let sessions = count == 1 ? "1 séance possible" : "\(count) séances possibles"
+        let sessions = count == 1 ? String(localized: "1 séance possible") : String(localized: "\(count) séances possibles")
         return "\(sessions) · \(days.map(label).joined(separator: ", "))"
     }
 }
@@ -329,25 +329,25 @@ private extension String {
 /// SharpIt on, and what is left unticked stays out of the app until Paramètres brings it back.
 nonisolated enum OnboardingMotivation {
     /// The plan, the coach, the sessions: SharpIt itself, never switched off.
-    static let coachingTitle = "Être coaché vers mon objectif"
-    static let coachingDetail = "Ton plan, tes séances et ton coach. Toujours inclus."
+    static let coachingTitle = String(localized: "Être coaché vers mon objectif")
+    static let coachingDetail = String(localized: "Ton plan, tes séances et ton coach. Toujours inclus.")
 
     /// The question as the athlete reads it, one per feature.
     static func title(_ feature: SharpitFeature) -> String {
         switch feature {
-        case .health: "Suivre ma santé"
-        case .journal: "Comprendre l'effet de mes habitudes"
-        case .nutrition: "Suivre ce que je mange"
-        case .regularity: "Garder un œil sur ma régularité"
+        case .health: String(localized: "Suivre ma santé")
+        case .journal: String(localized: "Comprendre l'effet de mes habitudes")
+        case .nutrition: String(localized: "Suivre ce que je mange")
+        case .regularity: String(localized: "Garder un œil sur ma régularité")
         }
     }
 
     static func detail(_ feature: SharpitFeature) -> String {
         switch feature {
-        case .health: "Cœur au repos, VFC, sommeil, VO₂max : l'onglet Santé."
-        case .journal: "Alcool, écrans, humeur : leur effet sur ta nuit et ta récupération."
-        case .nutrition: "Tes repas face à ta charge du jour."
-        case .regularity: "Tes jours d'entraînement autour d'aujourd'hui, sur Résumé et en widget."
+        case .health: String(localized: "Cœur au repos, VFC, sommeil, VO₂max : l'onglet Santé.")
+        case .journal: String(localized: "Alcool, écrans, humeur : leur effet sur ta nuit et ta récupération.")
+        case .nutrition: String(localized: "Tes repas face à ta charge du jour.")
+        case .regularity: String(localized: "Tes jours d'entraînement autour d'aujourd'hui, sur Résumé et en widget.")
         }
     }
 

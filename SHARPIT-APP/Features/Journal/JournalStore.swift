@@ -91,7 +91,7 @@ final class JournalStore {
             persistCache()
         } catch is CancellationError {
         } catch {
-            let message = Self.message(for: error, fallback: "Ton journal n'a pas pu être chargé.")
+            let message = Self.message(for: error, fallback: String(localized: "Ton journal n'a pas pu être chargé."))
             // A painted cache survives a failed refresh: replacing yesterday's answers with a
             // full-screen error would lose what the athlete already recorded from view.
             if hadCache {
@@ -278,7 +278,7 @@ final class JournalStore {
             updateCompletionState()
         } catch is CancellationError {
         } catch {
-            let message = Self.message(for: error, fallback: "Impossible de charger le journal pour ce jour.")
+            let message = Self.message(for: error, fallback: String(localized: "Impossible de charger le journal pour ce jour."))
             if hadCache {
                 saveFailure = message
             } else {
@@ -404,7 +404,7 @@ final class JournalStore {
             persistCache()
         } catch is CancellationError {
         } catch {
-            saveFailure = Self.message(for: error, fallback: "Journal non enregistré. Réessaie.")
+            saveFailure = Self.message(for: error, fallback: String(localized: "Journal non enregistré. Réessaie."))
         }
     }
 
@@ -463,16 +463,16 @@ final class JournalStore {
             persistCache()
         } catch {
             prefs = previous
-            saveFailure = Self.message(for: error, fallback: "Préférences non enregistrées. Réessaie.")
+            saveFailure = Self.message(for: error, fallback: String(localized: "Préférences non enregistrées. Réessaie."))
         }
     }
 
     private static func message(for error: Error, fallback: String) -> String {
         switch error as? SharpitAPIError {
         case .unauthorized?:
-            return "Session expirée. Reconnecte-toi."
+            return String(localized: "Session expirée. Reconnecte-toi.")
         case .rateLimited?:
-            return "Trop de requêtes d'affilée. Réessaie dans un instant."
+            return String(localized: "Trop de requêtes d'affilée. Réessaie dans un instant.")
         case .message(let text)?:
             return text
         default:

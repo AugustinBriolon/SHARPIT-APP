@@ -91,7 +91,7 @@ final class PlanGenerationStore {
                 await self.follow(job.id)
             } catch is CancellationError {
             } catch {
-                self.phase = .failed(Self.message(for: error, subject: "La génération"))
+                self.phase = .failed(Self.message(for: error, subject: String(localized: "La génération")))
             }
         }
     }
@@ -133,13 +133,13 @@ final class PlanGenerationStore {
         switch job.status {
         case "ready":
             guard let week = job.plan, !week.sessions.isEmpty else {
-                phase = .failed("Le coach n'a proposé aucune séance. Précise ta demande et réessaie.")
+                phase = .failed(String(localized: "Le coach n'a proposé aucune séance. Précise ta demande et réessaie."))
                 return
             }
             if case .ready = phase { return }
             phase = .ready(plan: week, selected: week.insertableIndices)
         case "failed":
-            phase = .failed(job.error ?? "La génération a échoué. Réessaie dans un instant.")
+            phase = .failed(job.error ?? String(localized: "La génération a échoué. Réessaie dans un instant."))
         default:
             phase = .generating(drafts: job.drafts)
         }
@@ -171,7 +171,7 @@ final class PlanGenerationStore {
             phase = .idle
             return sessions.count
         } catch {
-            insertError = Self.message(for: error, subject: "L'ajout au plan")
+            insertError = Self.message(for: error, subject: String(localized: "L'ajout au plan"))
             phase = .ready(plan: week, selected: selected)
             return nil
         }

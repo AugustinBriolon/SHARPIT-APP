@@ -106,13 +106,13 @@ final class FoodSearchStore {
     static func message(for error: Error) -> String {
         switch error {
         case let error as SharpitAPIError where error == .rateLimited:
-            "Trop de recherches d'affilée. Réessaie dans une minute."
+            String(localized: "Trop de recherches d'affilée. Réessaie dans une minute.")
         case let error as SharpitAPIError where error == .transport || error == .unauthorized:
-            SharpitErrorGuidance.message(for: error, subject: "La recherche")
+            SharpitErrorGuidance.message(for: error, subject: String(localized: "La recherche"))
         case FoodLogError.openFoodFactsUnavailable:
             FoodLogError.openFoodFactsUnavailable.errorDescription ?? ""
         default:
-            "La recherche n'a pas abouti. Réessaie dans un instant."
+            String(localized: "La recherche n'a pas abouti. Réessaie dans un instant.")
         }
     }
 }

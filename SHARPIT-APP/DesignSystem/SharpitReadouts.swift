@@ -149,7 +149,7 @@ struct SharpitHeroScore: View {
         guard let score else { return "—" }
         guard fractionDigits > 0 else { return "\(Int(score.rounded()))" }
         return score.formatted(
-            .number.precision(.fractionLength(fractionDigits)).locale(Locale(identifier: "fr_FR"))
+            .number.precision(.fractionLength(fractionDigits)).locale(AppLanguage.locale)
         )
     }
 

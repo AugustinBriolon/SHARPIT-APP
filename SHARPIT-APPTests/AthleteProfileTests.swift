@@ -63,7 +63,7 @@ import Testing
     let keys = Set(AthleteProfileField.allCases.map(\.rawValue))
 
     #expect(keys == [
-        "displayMode", "heightCm", "birthDate", "targetWeightKg",
+        "displayMode", "locale", "heightCm", "birthDate", "targetWeightKg",
         "sleepTargetMinutes", "sleepBedtimeTargetMin",
         "ftpW", "maxHr", "lthr",
         "runThresholdPaceSecPerKm", "runEasyPaceSecPerKm", "swimCssSecPer100m", "defaultPoolLengthM",

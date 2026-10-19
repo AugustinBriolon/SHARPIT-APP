@@ -12,13 +12,13 @@ nonisolated enum V1ActivityType: String, Codable, Sendable {
 
     var label: String {
         switch self {
-        case .run: "Course"
-        case .bike: "Vélo"
-        case .swim: "Natation"
-        case .strength: "Force"
-        case .hike: "Randonnée"
-        case .triathlon: "Triathlon"
-        case .other: "Activité"
+        case .run: String(localized: "Course")
+        case .bike: String(localized: "Vélo")
+        case .swim: String(localized: "Natation")
+        case .strength: String(localized: "Force")
+        case .hike: String(localized: "Randonnée")
+        case .triathlon: String(localized: "Triathlon")
+        case .other: String(localized: "Activité")
         }
     }
 

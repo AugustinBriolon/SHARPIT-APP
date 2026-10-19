@@ -39,7 +39,7 @@ final class ActivityStatusStore {
             phase = .ready
         } catch is CancellationError {
         } catch {
-            phase = .failed(Self.message(for: error, fallback: "Ton statut n'a pas pu être chargé."))
+            phase = .failed(Self.message(for: error, fallback: String(localized: "Ton statut n'a pas pu être chargé.")))
         }
     }
 
@@ -65,13 +65,13 @@ final class ActivityStatusStore {
             phase = .ready
         } catch {
             store = previous
-            phase = .failed(Self.message(for: error, fallback: "Ton statut n'a pas pu être enregistré."))
+            phase = .failed(Self.message(for: error, fallback: String(localized: "Ton statut n'a pas pu être enregistré.")))
         }
     }
 
     private static func message(for error: Error, fallback: String) -> String {
         if let apiError = error as? SharpitAPIError, apiError == .unauthorized {
-            return "Session expirée. Reconnecte-toi."
+            return String(localized: "Session expirée. Reconnecte-toi.")
         }
         return fallback
     }
@@ -107,7 +107,7 @@ enum ActivityStatusDate {
         guard let date = date(from: day, calendar: calendar) else { return day }
         let formatter = DateFormatter()
         formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.locale = AppLanguage.locale
         formatter.timeZone = calendar.timeZone
         formatter.setLocalizedDateFormatFromTemplate("d MMM yyyy")
         return formatter.string(from: date)

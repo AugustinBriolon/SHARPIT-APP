@@ -27,7 +27,7 @@ struct GeneratedWeekView: View {
                         opened = session
                     }
                     .accessibilityAddTraits(isWriting ? [] : .isButton)
-                    .accessibilityHint(isWriting ? "" : "Ouvre le détail de la séance")
+                    .accessibilityHint(isWriting ? "" : String(localized: "Ouvre le détail de la séance"))
             }
         }
         .animation(SharpitMotion.fade, value: sessions.count)
@@ -37,7 +37,7 @@ struct GeneratedWeekView: View {
     @ViewBuilder
     private func row(index: Int, session: V1GeneratedSession) -> some View {
         if let verdict = verdicts[index], verdict.isRejected {
-            GeneratedSessionRow(session: session, rejection: verdict.reason ?? "Écartée par le contrôle de sécurité.")
+            GeneratedSessionRow(session: session, rejection: verdict.reason ?? String(localized: "Écartée par le contrôle de sécurité."))
         } else if let selection {
             GeneratedSessionRow(
                 session: session,
@@ -63,23 +63,23 @@ struct GeneratingWeekView: View {
 
     /// What the coach goes through before the first session, in the order it reads it.
     static let readingSteps = [
-        "Analyse de ton profil",
-        "Lecture de ta charge",
-        "Lecture de ta récupération",
-        "Prise en compte des blessures",
-        "Lecture de ton agenda",
-        "Choix des séances clés",
+        String(localized: "Analyse de ton profil"),
+        String(localized: "Lecture de ta charge"),
+        String(localized: "Lecture de ta récupération"),
+        String(localized: "Prise en compte des blessures"),
+        String(localized: "Lecture de ton agenda"),
+        String(localized: "Choix des séances clés"),
     ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             CoachWorkingHeader(
                 readingSteps: Self.readingSteps,
-                readingDetail: "Le coach part de tes données, pas d'un modèle type.",
-                writingTitle: drafts.isEmpty ? nil : "Rédaction des séances",
+                readingDetail: String(localized: "Le coach part de tes données, pas d'un modèle type."),
+                writingTitle: drafts.isEmpty ? nil : String(localized: "Rédaction des séances"),
                 writingDetail: drafts.isEmpty
                     ? nil
-                    : "\(drafts.count) séance\(drafts.count > 1 ? "s" : "") écrite\(drafts.count > 1 ? "s" : ""), la suite arrive.",
+                    : String(localized: "\(drafts.count) séance\(drafts.count > 1 ? "s" : "") écrite\(drafts.count > 1 ? "s" : ""), la suite arrive."),
                 note: note
             )
 
@@ -97,7 +97,7 @@ struct GeneratingWeekView: View {
 
 private extension V1GeneratedSession {
     static let placeholder = V1GeneratedSession(
-        date: "2026-01-05", type: .run, intensity: "ENDURANCE", title: "Séance en cours d'écriture",
+        date: "2026-01-05", type: .run, intensity: "ENDURANCE", title: String(localized: "Séance en cours d'écriture"),
         description: "", durationMin: 45, load: 0
     )
 }
@@ -164,7 +164,7 @@ struct GeneratedSessionRow: View {
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
                         .foregroundStyle(SharpitColor.mutedForeground)
-                    if session.isKey { SharpitInlineTag("Clé") }
+                    if session.isKey { SharpitInlineTag(String(localized: "Clé")) }
                 }
                 Text(session.title)
                     .font(SharpitTypography.bodyEmphasis)

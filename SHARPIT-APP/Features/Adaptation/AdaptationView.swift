@@ -18,7 +18,7 @@ struct AdaptationView: View {
         self.tokenProvider = tokenProvider
         self.syncClient = syncClient
         _store = State(initialValue: DayResourceStore(
-            failureMessage: "Ton adaptation n'a pas pu être chargée.",
+            failureMessage: String(localized: "Ton adaptation n'a pas pu être chargée."),
             tokenProvider: tokenProvider,
             dataDays: { try await dataDaysClient.dataDays(domain: .adaptation, from: $0, to: $1, token: $2) },
             fetch: { try await client.adaptation(trainingDayId: $0, token: $1) }
@@ -35,12 +35,12 @@ struct AdaptationView: View {
 
     var body: some View {
         DayDetailScaffold(
-            title: "Adaptation",
+            title: String(localized: "Adaptation"),
             emptySymbol: "arrow.triangle.2.circlepath",
-            unavailableTitle: "Adaptation indisponible",
+            unavailableTitle: String(localized: "Adaptation indisponible"),
             store: store,
             content: { adaptation in AdaptationSections(adaptation: adaptation) },
-            emptyAction: (title: "Synchroniser maintenant", run: syncAndReload)
+            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload)
         )
     }
 }
@@ -55,13 +55,13 @@ struct AdaptationSections: View {
             hero
             if adaptation.plateauRisk {
                 DayDetailAlert(
-                    label: "Plateau · ton adaptation stagne sur la fenêtre récente.",
+                    label: String(localized: "Plateau · ton adaptation stagne sur la fenêtre récente."),
                     tone: SharpitColor.signalCaution
                 )
             }
             if adaptation.overreachingWithoutAdaptation {
                 DayDetailAlert(
-                    label: "Surcharge sans gain · charge haute sans réponse adaptative en face.",
+                    label: String(localized: "Surcharge sans gain · charge haute sans réponse adaptative en face."),
                     tone: SharpitColor.signalRisk
                 )
             }
@@ -91,7 +91,7 @@ struct AdaptationSections: View {
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
-            CoachDiscussButton(title: "Discuter de mon adaptation") {
+            CoachDiscussButton(title: String(localized: "Discuter de mon adaptation")) {
                 router.discussWithCoach(about: CoachDiscuss.describe(.today))
             }
             .padding(.top, SharpitSpacing.xxs)
@@ -107,7 +107,7 @@ private struct AdaptationVerdictSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Ce que ça implique")
+            SharpitEyebrow(String(localized: "Ce que ça implique"))
             DayDetailVerdictCard(
                 label: adaptation.verdict.label,
                 tone: RecoveryReadout.tone(for: adaptation.verdict.tone)
@@ -115,14 +115,14 @@ private struct AdaptationVerdictSection: View {
 
             HStack(spacing: SharpitSpacing.sm) {
                 SharpitStatTile(
-                    caption: adaptation.limitingFactor ?? "Frein",
+                    caption: adaptation.limitingFactor ?? String(localized: "Frein"),
                     value: limitingScore.map { "\(Int($0.rounded()))" } ?? "—",
                     unit: limitingScore == nil ? nil : "/100",
-                    note: adaptation.limitingFactor == nil ? nil : "ce qui freine le plus",
+                    note: adaptation.limitingFactor == nil ? nil : String(localized: "ce qui freine le plus"),
                     tone: AdaptationReadout.limiterTone(limitingScore)
                 )
                 SharpitStatTile(
-                    caption: "Charge suivante",
+                    caption: String(localized: "Charge suivante"),
                     value: AdaptationReadout.loadMultiplier(adaptation.loadMultiplier),
                     note: AdaptationReadout.loadMultiplierNote(adaptation.loadMultiplier)
                 )
@@ -142,7 +142,7 @@ private struct AdaptationDimensionsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("Dimensions")
+            SharpitEyebrow(String(localized: "Dimensions"))
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 ForEach(AdaptationReadout.displayedDimensions(adaptation)) { dimension in
                     DayDetailDimensionRow(
@@ -151,7 +151,7 @@ private struct AdaptationDimensionsSection: View {
                         available: dimension.available,
                         score: dimension.score,
                         tone: AdaptationReadout.dimensionTone(dimension),
-                        tag: dimension.isLimiting ? "Frein" : nil
+                        tag: dimension.isLimiting ? String(localized: "Frein") : nil
                     )
                 }
                 if AdaptationReadout.isNeuromuscularMissing(adaptation) {
