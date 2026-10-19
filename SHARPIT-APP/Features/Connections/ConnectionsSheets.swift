@@ -5,9 +5,12 @@ import SwiftUI
 struct SourceManageSheet: View {
     let source: ManagedSource
     let status: ConnectionsReadout.Line
+    /// The picker for the calendar SharpIt writes the plan into, for the calendar sources.
+    var calendarPicker: AnyView? = nil
     let onDisconnect: () -> Void
 
     @State private var confirming = false
+    @State private var pickingCalendar = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
@@ -26,6 +29,24 @@ struct SourceManageSheet: View {
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
+            if calendarPicker != nil {
+                Button { pickingCalendar = true } label: {
+                    HStack {
+                        Label("Calendrier des séances", systemImage: "calendar")
+                            .font(SharpitTypography.bodyEmphasis)
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                    }
+                    .foregroundStyle(SharpitColor.foreground)
+                    .padding(.vertical, SharpitSpacing.xs)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Choisis où SharpIt écrit tes séances")
+            }
             SharpitPrimaryButton(title: source.disconnectLabel, style: .secondary) { confirming = true }
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
@@ -37,7 +58,11 @@ struct SourceManageSheet: View {
         } message: {
             Text(source.disconnectMessage)
         }
-        .presentationDetents([.height(250)])
+        .sheet(isPresented: $pickingCalendar) {
+            NavigationStack { calendarPicker }
+                .sharpitSheet()
+        }
+        .presentationDetents([.height(calendarPicker == nil ? 250 : 310)])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }

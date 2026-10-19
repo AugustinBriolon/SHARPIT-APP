@@ -66,7 +66,7 @@ struct ConnectionsView: View {
                     }
                 } footer: {
                     SharpitListFooter(
-                        "Quand deux sources mesurent la même chose, choisis celle qui fait foi. L’Agenda Google (créneaux) n’est pas le calendrier des séances Sharpit dans Plan."
+                        "Quand deux sources mesurent la même chose, choisis celle qui fait foi. Le calendrier où SharpIt écrit tes séances se choisit en touchant la source."
                     )
                 }
                 .sharpitListRows()
@@ -84,7 +84,7 @@ struct ConnectionsView: View {
         .task { await loadStatus() }
         .refreshable { await loadStatus() }
         .sheet(item: $managing) { source in
-            SourceManageSheet(source: source, status: statusLine(source)) {
+            SourceManageSheet(source: source, status: statusLine(source), calendarPicker: calendarPicker(for: source)) {
                 managing = nil
                 Task { await disconnectSource(source) }
             }
@@ -162,6 +162,14 @@ struct ConnectionsView: View {
         .foregroundStyle(SharpitColor.foreground)
         .disabled(isBusy)
         .accessibilityHint("Gérer ou déconnecter \(source.name)")
+    }
+
+    private func calendarPicker(for source: ManagedSource) -> AnyView? {
+        switch source {
+        case .google: AnyView(GoogleCalendarPickerView(tokenProvider: tokenProvider))
+        case .appleCalendar: AnyView(AppleCalendarPickerView())
+        default: nil
+        }
     }
 
     private func statusLine(_ source: ManagedSource) -> ConnectionsReadout.Line {
