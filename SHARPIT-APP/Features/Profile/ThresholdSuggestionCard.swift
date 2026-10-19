@@ -29,24 +29,14 @@ struct ThresholdSuggestionCard: View {
                 }
             }
 
-            HStack(spacing: SharpitSpacing.sm) {
-                Button(action: onApply) {
-                    Label(
-                        ThresholdSuggestionReadout.applyLabel(accepted: store.accepted.count, offered: store.offered.count),
-                        systemImage: "checkmark"
-                    )
-                    .font(SharpitTypography.bodyEmphasis)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(SharpitColor.primary)
-                .disabled(store.accepted.isEmpty)
-
-                if store.accepted.isEmpty {
-                    Text("Aucune proposition retenue.")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-            }
+            // The house button: the system's prominent style drew ink on ink, a slab with no words.
+            SharpitPrimaryButton(
+                title: ThresholdSuggestionReadout.applyLabel(accepted: store.accepted.count, offered: store.offered.count),
+                trailingSymbol: "checkmark",
+                action: onApply
+            )
+            .disabled(store.accepted.isEmpty)
+            .opacity(store.accepted.isEmpty ? 0.4 : 1)
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
