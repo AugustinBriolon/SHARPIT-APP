@@ -76,3 +76,15 @@ private func connectOAuth(
     #expect(ProviderOAuthConnectOutcome.connected.message(for: .strava).hasPrefix("Strava connecté"))
     #expect(ProviderOAuthConnectOutcome.cancelled.tone == .syncing)
 }
+
+@Test func settingsCountsEveryLinkedSourceNotOnlyAppleHealth() {
+    let linked = ConnectionsReadout.linkedSources(
+        providerKeys: ["strava", "google", "withings", "garmin"],
+        appleHealthEnabled: true,
+        appleCalendarLinked: true
+    )
+    #expect(linked.count == 5)
+    #expect(ConnectionsReadout.sourcesSummary(linked) == "5 sources connectées")
+    #expect(ConnectionsReadout.sourcesSummary([.appleHealth]) == "Apple Santé connecté")
+    #expect(ConnectionsReadout.sourcesSummary([]) == "Aucune source connectée")
+}

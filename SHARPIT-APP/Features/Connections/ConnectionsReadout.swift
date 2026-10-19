@@ -9,6 +9,29 @@ import SwiftUI
 /// every tick. The recency itself still matters, but it belongs on the toast that shows while
 /// a check is under way, not on a row that reads every minute of the athlete's life.
 enum ConnectionsReadout {
+    /// The sources linked: the OAuth ones the server reports, the iPhone's own from their switches.
+    static func linkedSources(
+        providerKeys: [String],
+        appleHealthEnabled: Bool,
+        appleCalendarLinked: Bool
+    ) -> Set<ManagedSource> {
+        var sources = Set(ManagedSource.allCases.filter { source in
+            source.oauth.map { providerKeys.contains($0.statusKey) } ?? false
+        })
+        if appleHealthEnabled { sources.insert(.appleHealth) }
+        if appleCalendarLinked { sources.insert(.appleCalendar) }
+        return sources
+    }
+
+    /// Paramètres' line under « Sources de données »: the one source by name, else how many.
+    static func sourcesSummary(_ linked: Set<ManagedSource>) -> String {
+        switch linked.count {
+        case 0: "Aucune source connectée"
+        case 1: "\(linked.first!.name) connecté"
+        default: "\(linked.count) sources connectées"
+        }
+    }
+
     struct Badge: Equatable {
         let text: String
         let tone: Tone

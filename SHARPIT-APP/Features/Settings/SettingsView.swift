@@ -27,6 +27,7 @@ struct SettingsView: View {
     @State private var profile: AthleteProfileStore
     @State private var push = PushNotificationManager.shared
     @State private var notificationStatus: UNAuthorizationStatus?
+    @State private var providerKeys: [String] = []
     @Environment(ProStore.self) private var pro: ProStore?
     /// The pages open, the first one given when a notification opens Paramètres on it.
     @State private var path: [SettingsRoute]
@@ -161,6 +162,7 @@ struct SettingsView: View {
             .navigationDestination(for: SettingsRoute.self, destination: destination)
             .task { await profile.load() }
             .task { await refreshNotificationStatus() }
+            .task { await refreshProviderKeys() }
         }
         .sharpitSheet()
     }
@@ -194,7 +196,18 @@ struct SettingsView: View {
     }
 
     private var sourcesDetail: String {
-        appleHealth.isEnabled ? "Apple Santé activé" : "Apple Santé"
+        ConnectionsReadout.sourcesSummary(ConnectionsReadout.linkedSources(
+            providerKeys: providerKeys,
+            appleHealthEnabled: appleHealth.isEnabled,
+            appleCalendarLinked: appleCalendar.isLinked
+        ))
+    }
+
+    /// Offline, the line counts the iPhone's own sources only.
+    private func refreshProviderKeys() async {
+        guard let token = try? await tokenProvider(),
+              let status = try? await syncClient.syncStatus(token: token) else { return }
+        providerKeys = status.providers.map(\.key)
     }
 
     private var sportsDetail: String {

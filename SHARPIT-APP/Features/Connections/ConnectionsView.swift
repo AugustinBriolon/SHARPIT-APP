@@ -28,12 +28,11 @@ struct ConnectionsView: View {
     @State private var showingAdd = false
 
     private var linked: Set<ManagedSource> {
-        var sources = Set(ManagedSource.allCases.filter { source in
-            source.oauth.map(isOAuthConnected) ?? false
-        })
-        if appleHealth.isEnabled { sources.insert(.appleHealth) }
-        if appleCalendar.isLinked { sources.insert(.appleCalendar) }
-        return sources
+        ConnectionsReadout.linkedSources(
+            providerKeys: status?.providers.map(\.key) ?? [],
+            appleHealthEnabled: appleHealth.isEnabled,
+            appleCalendarLinked: appleCalendar.isLinked
+        )
     }
 
     private var sourceLists: (connected: [ManagedSource], available: [ManagedSource]) {
