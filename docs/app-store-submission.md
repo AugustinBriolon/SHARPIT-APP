@@ -18,6 +18,7 @@ App Store Connect. Order follows the launch plan: legal → iOS compliance → p
 | SharpIt Pro: StoreKit 2 paywall (`SubscriptionStoreView`) with `appAccountToken`, restore, manage, auto-renew notice, Terms + Privacy links | `Features/Pro/ProView.swift` |
 | Every transaction verified by the server (JWS against Apple's roots), tier derived server-side | SHARPIT ADR-044, `/api/v1/billing/apple/verify` |
 | App Store Server Notifications V2 (renewal, expiry, grace, billing retry, refund, revoke) | `/api/billing/apple/notifications` |
+| French + English: String Catalog (`SharpItShared/Localizable.xcstrings`, `SHARPIT-APP/InfoPlist.xcstrings`), Paramètres › Langue, English for any other device language; server copy, pushes and coach follow | iOS ADR 0019, SHARPIT ADR-096 |
 | Local StoreKit testing: `Config/SharpitPro.storekit`, preselected in the shared scheme; a dev API accepts its `Xcode` transactions, a production build never does | `ProProductsTests`, `apple-verifier.test.ts` |
 
 ## Subscription metadata (proposal)
@@ -33,6 +34,9 @@ Mirrors `Config/SharpitPro.storekit`. The product ids are fixed in code (`Sharpi
 | Price (France, base) | 9,99 € | 79,99 € (≈ 33 % off 12 months) |
 | Display name (fr) | SharpIt Pro — mensuel | SharpIt Pro — annuel |
 | Description (fr) | Bilan hebdomadaire, analyse de séance et lecture coach du journal. | same |
+| Display name (en) | SharpIt Pro — Monthly | SharpIt Pro — Yearly |
+| Description (en) | Weekly summary, session analysis and the coach's reading of your journal. | same |
+| Group display name (en) | SharpIt Pro | |
 | Group display name (fr) | SharpIt Pro | |
 | Family Sharing | off | off |
 | Introductory offer | none for 1.0 (a free week can be added later; mirror it in the `.storekit`) | |
@@ -42,6 +46,33 @@ Review screenshot of the paywall: Paramètres › SharpIt Pro on a free account.
 **Check before submitting:** the perk « Envoi vers la montre » is listed as Pro by the web
 (`pro-perks.ts`) and shows in the iOS paywall, but the iOS app has no Garmin push (ADR 0013).
 Mark it `planned` or hide it on iOS so the paywall only sells what the app does (guideline 2.3.1).
+
+## Localization (App Store Connect)
+
+The app ships in French and English (iOS ADR 0019). App Store Connect lists a language for each
+localization added to the version; the primary language decides the fallback in every other
+storefront.
+
+- **Primary language: English (U.K. or U.S.)**, so storefronts outside France read English, and add
+  **French** as a second localization. Keeping French primary would show French metadata worldwide.
+- **App name**: SharpIt (both). **Subtitle** (30 chars): fr « Ton coach triathlon et endurance »,
+  en “Your triathlon & endurance coach”.
+- **Promotional text** (en): “A coach that reads your night, your load and your plan every morning,
+  and tells you what today's session should be.”
+- **Description** (en), first lines: “SharpIt reads your sleep, heart rate, HRV and training from your
+  watch through Apple Health, and turns them into one decision each morning: train, go easy or rest.
+  Your plan adapts when life gets in the way, and the coach answers questions about your own data.”
+  Then the same feature list as the French description, translated.
+- **Keywords** (en, 100 chars): `triathlon,training plan,endurance,coach,HRV,recovery,running,cycling,swim,ironman`
+- **What's New** (en): “First release.”
+- **Screenshots**: one set per language. Shoot English with Paramètres › Langue › English (or a
+  simulator in English), same screens as listed below.
+- **Subscriptions**: add the English display names and descriptions above to both products and the
+  group, or English storefronts show the French ones.
+- **Privacy policy / Terms**: `sharpit.app/privacy` and the terms are French only. Apple accepts
+  that, but an English version (or a translated summary) is worth adding before marketing abroad.
+- **Review notes**: add “The app follows the device language (French or English); Settings ›
+  Langue / Language switches it.”
 
 ## App Privacy answers (App Store Connect › App Privacy)
 
@@ -89,8 +120,11 @@ Either provide them or switch the target to iPhone only before the first submiss
    `https://api.sharpit.app/api/billing/apple/notifications`, then « Request a Test Notification ».
 6. **Demo account**: create a sign-in for the demo athlete and put it in the review notes.
 7. **App Privacy**: answer as listed above. **Age rating**: complete the questionnaire.
-8. **Version page**: screenshots, description, keywords, support URL, privacy policy URL
+8. **Version page**: primary language English plus a French localization (see Localization),
+   screenshots per language, description, keywords, support URL, privacy policy URL
    (`https://sharpit.app/privacy`), subscriptions attached to version 1.0.
+   Before an English build reaches testers, apply the `20261019120000_athlete_locale` migration in
+   production (the server stores the athlete's language there).
 9. **Sandbox check**: on TestFlight, buy with a Sandbox account, confirm Paramètres › SharpIt Pro
    shows Pro and that the subscription row exists on the server.
 10. **Upload the build** from Xcode Organizer (CLI export needs an Apple account in Xcode).
