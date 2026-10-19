@@ -12,6 +12,7 @@ extension View {
     func sharpitGroupedList() -> some View {
         listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
+            .sharpitShadow(.panel)
             .background(SharpitElevatedColor.groupedCanvas.ignoresSafeArea())
             .font(SharpitTypography.body)
             .foregroundStyle(SharpitColor.foreground)
