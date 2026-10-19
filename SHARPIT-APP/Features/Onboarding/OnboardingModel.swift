@@ -8,6 +8,7 @@ import Foundation
 /// (`OnboardingStore.path`).
 nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     case identity
+    case motivation
     case sports
     case equipment
     case week
@@ -23,6 +24,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     var label: String {
         switch self {
         case .identity: "Toi"
+        case .motivation: "Tes envies"
         case .sports: "Sports"
         case .equipment: "Matériel"
         case .week: "Ta semaine"
@@ -37,6 +39,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .identity: "Construisons ton coach"
+        case .motivation: "Ce que tu viens chercher"
         case .sports: "Tes sports"
         case .equipment: "Ton matériel"
         case .week: "Ta semaine type"
@@ -52,6 +55,8 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
         switch self {
         case .identity:
             "Quelques repères sur toi : le coach règle charges, allures et récupération à partir d'eux."
+        case .motivation:
+            "Ton coach est toujours là. Ajoute ce que tu veux suivre en plus : le reste disparaît, et revient quand tu veux dans Paramètres."
         case .sports:
             "Touche tes disciplines. Un sport d'endurance, ou la musculation seule."
         case .equipment:
@@ -76,7 +81,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     var allowsSkip: Bool {
         switch self {
         case .equipment, .week, .goal, .injuries: true
-        case .identity, .sports, .privacy, .sources, .firstWeek: false
+        case .identity, .motivation, .sports, .privacy, .sources, .firstWeek: false
         }
     }
 }
@@ -318,4 +323,34 @@ nonisolated enum OnboardingWeekday {
 
 private extension String {
     nonisolated var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
+}
+
+/// Why the athlete comes, beyond the coaching every account gets: each answer turns a part of
+/// SharpIt on, and what is left unticked stays out of the app until Paramètres brings it back.
+nonisolated enum OnboardingMotivation {
+    /// The plan, the coach, the sessions: SharpIt itself, never switched off.
+    static let coachingTitle = "Être coaché vers mon objectif"
+    static let coachingDetail = "Ton plan, tes séances et ton coach. Toujours inclus."
+
+    /// The question as the athlete reads it, one per feature.
+    static func title(_ feature: SharpitFeature) -> String {
+        switch feature {
+        case .health: "Suivre ma santé"
+        case .journal: "Comprendre l'effet de mes habitudes"
+        case .nutrition: "Suivre ce que je mange"
+        case .regularity: "Garder un œil sur ma régularité"
+        }
+    }
+
+    static func detail(_ feature: SharpitFeature) -> String {
+        switch feature {
+        case .health: "Cœur au repos, VFC, sommeil, VO₂max : l'onglet Santé."
+        case .journal: "Alcool, écrans, humeur : leur effet sur ta nuit et ta récupération."
+        case .nutrition: "Tes repas face à ta charge du jour."
+        case .regularity: "Tes jours d'entraînement autour d'aujourd'hui, sur Résumé et en widget."
+        }
+    }
+
+    /// Health first: it is what most athletes come for after the coach.
+    static let order: [SharpitFeature] = [.health, .journal, .nutrition, .regularity]
 }

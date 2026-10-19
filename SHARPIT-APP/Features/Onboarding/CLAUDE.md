@@ -3,14 +3,18 @@
 Feature notes, loaded when working in this directory. Repo-wide rules live in the root `CLAUDE.md`.
 
 **Onboarding.** A new account answers the first-login wizard before it sees the tabs: Toi (first
-name, sex, height, birth date) → Sports → Matériel → Ta semaine → Objectif → Blessures →
+name, sex, height, birth date) → Ce que tu viens chercher → Sports → Matériel → Ta semaine → Objectif → Blessures →
 Confidentialité (only when owed) → Sources → Première semaine (`OnboardingStep`). The server
 decides who owes it (`onboardingCompletedAt` present and `null` on `/api/v1/athlete-profile`); the
 phone only remembers a "done" per Clerk user, so a finished athlete never waits on a profile read.
 The gate's read is retried, a refusal included (right after sign-up Clerk can hand out no token
 yet); if it still fails, a finished athlete is let in offline, a new one sees « Réessayer »
 (`AccountGateModel.Status.unreachable`) — let in, nothing would ever reopen the wizard.
-Sports accepts an endurance sport or strength alone (SHARPIT ADR-086,
+« Ce que tu viens chercher » (`OnboardingMotivation`) shows the coaching as always in (locked: the
+plan and its generation are never switched off) and four rows ticked by their fill — santé, habitudes
+(journal), nutrition, régularité — none ticked to start with; leaving it writes all four `featurePrefs`
+at once (`AthleteProfilePatch.setFeatures`), so what stays unticked is out of the app from the first
+tab, back through Paramètres › Pages et widgets. Sports accepts an endurance sport or strength alone (SHARPIT ADR-086,
 `PracticedSportCatalog.isPlannable`); a strength-only athlete gets a palier goal only and no
 Seuils row in Paramètres. `AccountGateModel` owns the
 `OnboardingStore`, so a session refresh that resolves the gate again never rebuilds the wizard, and
@@ -37,7 +41,7 @@ services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`
 The page is one page: the header's tick dial (`SharpitTickGauge`, animatable, so it sweeps from step
 to step) and the step's title stay put, and only the content under them slides in from the side the
 athlete is heading. The dial's thumb shows from the first step, at its start, with the position
-(« 1 / 9 ») inside the arc. A choice is seen by its fill — no haptic, no symbol
+(« 1 / 10 ») inside the arc. A choice is seen by its fill — no haptic, no symbol
 animates (a wiggle on every tile read as unfinished); triathlon is the app's own symbol
 (`triathlon.circles` in the asset catalog), SF Symbols drawing none. Toi uses the design system's
 inputs: `SharpitFormField` (the label above a soft well, a ring while focused — no card),

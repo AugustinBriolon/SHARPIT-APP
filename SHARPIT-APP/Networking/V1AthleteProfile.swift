@@ -414,6 +414,13 @@ nonisolated struct AthleteProfilePatch: Equatable, Sendable {
         fields["featurePrefs"] = .object(["version": .number(1), feature.rawValue: .bool(on)])
     }
 
+    /// Every feature at once — the onboarding's answer, which must not leave one at its default.
+    mutating func setFeatures(_ choices: [SharpitFeature: Bool]) {
+        var obj: [String: JSONValue] = ["version": .number(1)]
+        for (feature, on) in choices { obj[feature.rawValue] = .bool(on) }
+        fields["featurePrefs"] = .object(obj)
+    }
+
     mutating func setNotificationPrefs(_ changes: [String: JSONValue]) {
         var obj = changes
         obj["version"] = .number(1)

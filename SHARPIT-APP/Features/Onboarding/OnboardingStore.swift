@@ -45,6 +45,8 @@ final class OnboardingStore {
     private(set) var firstWeekSetAside: [(session: V1GeneratedSession, reason: String?)] = []
 
     var identity = OnboardingIdentityDraft()
+    /// What the athlete comes for besides the coaching; nothing ticked to start with.
+    private(set) var motivations: Set<SharpitFeature> = []
     /// Catalog order, as the web stores it.
     var sports: [String] = []
     var ownedEquipment: Set<String> = []
@@ -113,6 +115,7 @@ final class OnboardingStore {
     var canAdvance: Bool {
         switch step {
         case .identity: identity.isValid
+        case .motivation: true
         case .sports: canContinueFromSports
         case .goal: intention.isValid
         case .privacy: consents.requiredAccepted
@@ -226,6 +229,7 @@ final class OnboardingStore {
         guard !isBusy, canAdvance, origin == nil || origin == step else { return }
         switch step {
         case .identity: leaveIdentity()
+        case .motivation: leaveMotivation()
         case .sports: leaveSports()
         case .equipment: leaveEquipment()
         case .week: leaveWeek()
@@ -273,6 +277,18 @@ final class OnboardingStore {
                 _ = try await self.services.profile.patchAthleteProfile(patch, token: token)
             }
         }
+        moveNext()
+    }
+
+    func toggleMotivation(_ feature: SharpitFeature) {
+        if motivations.contains(feature) { motivations.remove(feature) } else { motivations.insert(feature) }
+    }
+
+    /// Every feature written, ticked or not: an unticked one leaves the app at once.
+    private func leaveMotivation() {
+        var patch = AthleteProfilePatch()
+        patch.setFeatures(Dictionary(uniqueKeysWithValues: SharpitFeature.allCases.map { ($0, motivations.contains($0)) }))
+        enqueue(patch, failure: "Impossible d'enregistrer tes envies.")
         moveNext()
     }
 

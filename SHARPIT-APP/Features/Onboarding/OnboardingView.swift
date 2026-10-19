@@ -81,6 +81,7 @@ struct OnboardingView: View {
     private var stepContent: some View {
         switch store.step {
         case .identity: OnboardingIdentityStep(draft: $store.identity)
+        case .motivation: OnboardingMotivationStep(store: store)
         case .sports: OnboardingSportsStep(store: store)
         case .equipment: OnboardingEquipmentStep(store: store)
         case .week: OnboardingWeekStep(store: store)

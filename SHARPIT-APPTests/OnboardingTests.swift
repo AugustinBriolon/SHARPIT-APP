@@ -154,6 +154,7 @@ private func storeOnEquipment(_ store: OnboardingStore) async {
     await store.load()
     store.identity.firstName = "Zoé"
     await store.advance()
+    await store.advance() // Ce que tu viens chercher: the coaching alone
     store.toggleSport("run")
     await store.advance()
 }
@@ -281,7 +282,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
 @Test func theWizardBuildsTheCoachThenPlansItsWeek() {
     #expect(OnboardingStep.allCases == [
-        .identity, .sports, .equipment, .week, .goal, .injuries, .privacy, .sources, .firstWeek,
+        .identity, .motivation, .sports, .equipment, .week, .goal, .injuries, .privacy, .sources, .firstWeek,
     ])
 }
 
@@ -360,6 +361,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.load()
     store.identity.firstName = "Zoé"
     await store.advance()
+    await store.advance() // Ce que tu viens chercher: the coaching alone
 
     store.toggleSport("mobility")
     await store.advance()
@@ -367,7 +369,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(store.step == .sports)
     #expect(!store.canAdvance)
     await store.flushWrites()
-    #expect(await profile.patches.isEmpty)
+    #expect(await profile.patches.allSatisfy { $0.fields["practicedSports"] == nil })
 }
 
 /// Strength alone is a real programme (SHARPIT ADR-086): it goes on, with a palier for goal.
@@ -377,6 +379,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.load()
     store.identity.firstName = "Zoé"
     await store.advance()
+    await store.advance() // Ce que tu viens chercher: the coaching alone
 
     store.toggleSport("strength")
     #expect(store.isStrengthOnly)
@@ -393,6 +396,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.load()
     store.identity.firstName = "Zoé"
     await store.advance()
+    await store.advance() // Ce que tu viens chercher: the coaching alone
 
     store.toggleSport("strength")
     store.toggleSport("run")
@@ -401,7 +405,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(store.step == .equipment)
     await store.flushWrites()
     let patches = await profile.patches
-    #expect(patches.first?.fields["practicedSports"] == .object([
+    #expect(patches.first { $0.fields["practicedSports"] != nil }?.fields["practicedSports"] == .object([
         "version": .number(1),
         "sports": .array([.string("run"), .string("strength")]),
     ]))
@@ -413,6 +417,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.load()
     store.identity.firstName = "Zoé"
     await store.advance()
+    await store.advance() // Ce que tu viens chercher: the coaching alone
 
     store.toggleSport("bike")
     await store.advance()
@@ -433,7 +438,8 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
     #expect(store.step == .week)
     await store.flushWrites()
-    #expect(await profile.patches.count == 1)
+    // The motivation step's features, then the sports: the step itself writes nothing more.
+    #expect(await profile.patches.count == 2)
 }
 
 /// A step with nothing to save moves at once; the same tap delivered again must not skip the
@@ -450,7 +456,8 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
     #expect(store.step == .week)
     await store.flushWrites()
-    #expect(await profile.patches.count == 1)
+    // The motivation step's features, then the sports: the step itself writes nothing more.
+    #expect(await profile.patches.count == 2)
 }
 
 @MainActor
@@ -643,7 +650,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     store.identity.heightCm = 168
     await store.advance()
 
-    #expect(store.step == .sports)
+    #expect(store.step == .motivation)
     await store.flushWrites()
     #expect(await names.names == ["Zoé"])
     await store.flushWrites()
@@ -987,4 +994,31 @@ private func makeGate(
 
     #expect(saved == .accepted)
     #expect(await client.updates == [update])
+}
+
+@MainActor
+@Test func theMotivationStepWritesEveryFeatureTickedOrNot() async {
+    let profile = RecordingProfileClient()
+    let store = makeStore(profile: profile)
+    await store.load()
+    store.identity.firstName = "Zoé"
+    await store.advance()
+
+    #expect(store.step == .motivation)
+    #expect(store.canAdvance)
+    store.toggleMotivation(.health)
+    store.toggleMotivation(.journal)
+    store.toggleMotivation(.journal)
+    await store.advance()
+
+    #expect(store.step == .sports)
+    await store.flushWrites()
+    let features = await profile.patches.first { $0.fields["featurePrefs"] != nil }?.fields["featurePrefs"]
+    #expect(features == .object([
+        "version": .number(1),
+        "health": .bool(true),
+        "journal": .bool(false),
+        "nutrition": .bool(false),
+        "regularity": .bool(false),
+    ]))
 }

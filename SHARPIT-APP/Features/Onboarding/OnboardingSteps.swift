@@ -90,6 +90,83 @@ struct OnboardingChoiceChip: View {
     }
 }
 
+// MARK: - Motivation
+
+/// Why the athlete comes: the coaching, always in, then what they want to follow besides — each
+/// a row ticked by its fill. What stays unticked leaves the app (Paramètres › Pages et widgets).
+struct OnboardingMotivationStep: View {
+    let store: OnboardingStore
+
+    var body: some View {
+        VStack(spacing: SharpitSpacing.xs) {
+            MotivationRow(
+                symbol: "figure.run",
+                title: OnboardingMotivation.coachingTitle,
+                detail: OnboardingMotivation.coachingDetail,
+                isSelected: true,
+                isLocked: true
+            ) {}
+            ForEach(OnboardingMotivation.order) { feature in
+                MotivationRow(
+                    symbol: feature.symbolName,
+                    title: OnboardingMotivation.title(feature),
+                    detail: OnboardingMotivation.detail(feature),
+                    isSelected: store.motivations.contains(feature),
+                    isLocked: false
+                ) {
+                    SharpitMotion.run(SharpitMotion.selection) { store.toggleMotivation(feature) }
+                }
+            }
+        }
+    }
+}
+
+private struct MotivationRow: View {
+    let symbol: String
+    let title: String
+    let detail: String
+    let isSelected: Bool
+    let isLocked: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: SharpitSpacing.sm) {
+                SharpitIconTile(symbol: symbol, size: 36)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text(detail)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: SharpitSpacing.xs)
+                Image(systemName: isLocked ? "lock.fill" : (isSelected ? "checkmark.circle.fill" : "circle"))
+                    .font(.title3)
+                    .foregroundStyle(isSelected && !isLocked ? SharpitColor.primary : SharpitColor.mutedForeground)
+                    .accessibilityHidden(true)
+            }
+            .padding(SharpitSpacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
+                    .fill(SharpitColor.analysisSurfaceAlt)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
+                    .strokeBorder(isSelected && !isLocked ? SharpitColor.primary : .clear, lineWidth: 2)
+            )
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .disabled(isLocked)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityHint(isLocked ? "Toujours inclus" : "")
+    }
+}
+
 // MARK: - Sports
 
 /// Endurance first, complements after — the same tiles as Paramètres › Sports & équipement.
