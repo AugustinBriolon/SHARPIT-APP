@@ -4,7 +4,8 @@ Feature notes, loaded when working in this directory. Repo-wide rules live in th
 
 **Morning proposal.** As soon as the night is read, the web's morning recalibration may propose
 today's session eased or raised (`/api/v1/today`'s `morningProposal`), shown under the verdict
-(`MorningProposalCard`: what changes, why, the plan beside the proposal). Until the check-in is
+(`MorningProposalCard`: the change in one line, why in one sentence, the plan beside the proposal
+under « Voir le détail »; one primary button, « Garder le plan » as plain text). Until the check-in is
 done (`checkInDone: false`) the card says it was read from the night alone and opens the check-in
 from Résumé; once the check-in reached the server (`MorningWellnessStore`'s `onSaved` bumps
 `ShellRouter.checkInRevision`, Résumé reads the day again) the server replaces a proposal still
