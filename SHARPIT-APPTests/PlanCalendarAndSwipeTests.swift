@@ -75,6 +75,19 @@ import Testing
         #expect(!AppleCalendarSync.shouldWrite(connected: []))
     }
 
+    @Test func googlePrimaryLeavesThePlanCopyToTheServer() {
+        let googlePrimary = V1SourcePrefs(classes: [
+            "calendar": V1ClassSources(primary: "google", enabled: ["google", "apple-calendar"]),
+        ])
+        let applePrimary = V1SourcePrefs(classes: [
+            "calendar": V1ClassSources(primary: "apple-calendar", enabled: ["google", "apple-calendar"]),
+        ])
+        let connected = ["google", "apple-calendar"]
+        #expect(AppleCalendarSync.serverWritesGoogle(prefs: googlePrimary, connected: connected))
+        #expect(!AppleCalendarSync.serverWritesGoogle(prefs: applePrimary, connected: connected))
+        #expect(!AppleCalendarSync.serverWritesGoogle(prefs: googlePrimary, connected: ["apple-calendar"]))
+    }
+
     @Test func busyUploadRunsWhenAppleCalendarEnabledNotOnlyWhenPrimary() {
         let connected = ["google", "apple-calendar"]
         let primaryGoogle = V1SourcePrefs(classes: [

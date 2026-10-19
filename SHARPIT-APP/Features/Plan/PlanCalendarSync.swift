@@ -181,6 +181,13 @@ final class AppleCalendarSync {
                 await uploadBusy(from: start, to: end, client: busyClient, token: token)
             }
             guard Self.shouldWrite(connected: prefsAnswer.connected) else { return }
+            if Self.serverWritesGoogle(prefs: prefsAnswer.prefs, connected: prefsAnswer.connected) {
+                // The plan is already in Google; a second copy here doubled every session.
+                if let writeCalendar = existingWriteCalendar() {
+                    try? apply([], to: writeCalendar, from: start, to: end, preserveSessionIds: [])
+                }
+                return
+            }
             guard let sessionWriter else { return }
             _ = try? await calendarLinker?.linkAppleCalendar(true, token: token)
             var sessions = try await plan.plannedSessions(from: start, to: end, token: token)
@@ -222,6 +229,12 @@ final class AppleCalendarSync {
     /// Linked is enough: no Pro, no primary — the plan is the athlete's own data (ADR 0016).
     static func shouldWrite(connected: [String]) -> Bool {
         connected.contains(providerId)
+    }
+
+    /// Google primary for the calendar: the server writes the plan there (`shouldSyncGoogleCalendarWrites`).
+    static func serverWritesGoogle(prefs: V1SourcePrefs, connected: [String]) -> Bool {
+        let sources = prefs.sources(for: calendarClassId)
+        return connected.contains("google") && sources.primary == "google" && sources.enabled.contains("google")
     }
 
     static func shouldUploadBusy(prefs: V1SourcePrefs, connected: [String]) -> Bool {
@@ -397,8 +410,11 @@ final class AppleCalendarSync {
         preserveSessionIds: Set<String>
     ) throws {
         let predicate = store.predicateForEvents(withStart: start, end: end, calendars: [calendar])
+        // Only SharpIt's own events: the chosen calendar may be the athlete's, full of linked meetings.
         var existing = Dictionary(
-            store.events(matching: predicate).compactMap { event in event.url.map { ($0, event) } },
+            store.events(matching: predicate).compactMap { event in
+                event.url.flatMap { AppleCalendarPull.sessionId(fromSharpitURL: $0) == nil ? nil : ($0, event) }
+            },
             uniquingKeysWith: { first, _ in first }
         )
         for event in wanted {
