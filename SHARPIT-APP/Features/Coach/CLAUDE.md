@@ -25,11 +25,12 @@ possible); the frameworks' callbacks are built in nonisolated functions, since m
 closures trap when called on their queues. `-SharpitCoachDemo` scripts two questions on a
 streamed answer in Debug builds.
 
-**Coach quota.** The coach routes share a token budget per rolling 24 h (SHARPIT ADR-077: about 6
-questions Free, 62 Pro — « Volume de coach étendu »). `CoachStore` reads `/api/v1/coach/quota`
+**Coach quota.** The coach is SharpIt Pro (SHARPIT ADR-097); the coach routes share a token budget
+per rolling 24 h (ADR-077: about 62 questions Pro). `CoachStore` reads `/api/v1/coach/quota`
 (`CoachQuotaClient`, `V1CoachQuota`) on open and after each answer; once half is spent, a thin gauge
 above the composer counts the questions left or says when the budget frees up
-(`CoachQuotaReadout`), and a Free athlete gets « Passer Pro ». The counts are the web's.
+(`CoachQuotaReadout`). A Free quota (or a `pro_required` refusal on send) sets `needsPro`, and
+`SharpitProTeaser` takes the composer's place. The counts are the web's.
 
 **Coach history.** The server keeps the conversations and the client saves the whole thread
 after each answer, as the web does. A turn opened from history keeps its stored JSON

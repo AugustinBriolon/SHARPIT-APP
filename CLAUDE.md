@@ -138,8 +138,11 @@ at a time (`JournalStore.saveChain`), so a save retried in the background never 
 optionals cannot express. The web's validator records why: a PATCH that materialised the
 fields it had not been given once wiped an athlete's thresholds on a one-field save.
 
-**Pro gating.** Pro gates what SHARPIT adds — analyses, computed metrics, pushes to the watch —
-never the athlete's own data, with one exception the athlete chose (`docs/adr/0011`): the extra
+**Pro gating.** Pro gates what SHARPIT adds — since SHARPIT ADR-097 the whole coach (chat, the
+week generator and « Ajouter », the coach's re-plan, every analysis), plus computed metrics and
+pushes to the watch — never the athlete's own data. A refused route answers `pro_required`
+(`SharpitAPIError.proRequired`; the session analysis' `402 locked` reads the same), and the screen
+shows `SharpitProTeaser`, never an error. One exception the athlete chose (`docs/adr/0011`): the extra
 widgets (Sommeil, Poids, Volume, Régularité, Prochain objectif) are Pro — `ProStore` writes the tier
 into the snapshot, a locked widget draws `WidgetProLocked`. The plan's copy into the iPhone's
 Calendar is free (`docs/adr/0016`, superseding 0011's calendar part): once Apple Calendar is linked,
