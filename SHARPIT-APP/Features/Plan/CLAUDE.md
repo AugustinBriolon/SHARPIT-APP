@@ -6,7 +6,12 @@ Feature notes, loaded when working in this directory. Repo-wide rules live in th
 background (`/api/v1/coach/plan/jobs`, `PlanJobServing`): the app starts the job, follows its
 drafts while in front, and picks it back up on its return (`PlanGenerationStore.resume`); the
 server pushes « Ta semaine est prête » (`/plan/generator`, which opens Plan's generator through
-`ShellRouter.isShowingPlanGenerator`), app open or not. The store is owned by `PlanView`. The
+`ShellRouter.isShowingPlanGenerator`), app open or not. The plan horizon (SHARPIT ADR-095) uses the
+same job: when a running training plan is three days from its last planned session, the server
+writes the next week itself, Résumé shows « Ta semaine est prête » (`PlanHorizonCard`, from
+`/api/v1/today`'s `planHorizon`) and the generator picks it up as the latest job; untouched, the
+server adds it the day before it starts. The weekly review ends with « Préparer ma semaine », which
+closes the review and then opens the generator (one sheet at a time). The store is owned by `PlanView`. The
 sessions appear one by one (`GeneratedWeekView`, shared with the onboarding's first week, which
 still streams `/api/v1/coach/plan`). The server's Gate takes out what it rejects before the week
 is shown, so « Ajouter » (`/api/v1/coach/plan/insert`) is never refused for safety.

@@ -60,15 +60,22 @@ final class WeeklyReviewStore {
 
 struct WeeklyReviewView: View {
     @State private var store: WeeklyReviewStore
+    /// « Préparer ma semaine »: the review's natural next step (ADR-095); nil where it cannot open.
+    private let onPrepareWeek: (() -> Void)?
 
-    init(store: WeeklyReviewStore) {
+    init(store: WeeklyReviewStore, onPrepareWeek: (() -> Void)? = nil) {
         _store = State(initialValue: store)
+        self.onPrepareWeek = onPrepareWeek
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 content
+                if case .loaded = store.phase, let onPrepareWeek {
+                    SharpitPrimaryButton(title: "Préparer ma semaine", trailingSymbol: "arrow.right", action: onPrepareWeek)
+                        .padding(.top, SharpitSpacing.sm)
+                }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)

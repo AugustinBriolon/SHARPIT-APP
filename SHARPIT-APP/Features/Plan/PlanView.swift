@@ -15,6 +15,8 @@ struct PlanView: View {
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var store: PlanStore
     @State private var selection: PlanSelection?
+    /// The review closes first, then the generator opens: one sheet at a time.
+    @State private var opensGeneratorAfterReview = false
     /// The expert reading's load layer, shown above this week (ADR 0006); nil otherwise.
     @State private var trainingLoad: V1TrainingLoad?
     /// Effort and Adaptation for today, under the current week.
@@ -183,9 +185,16 @@ struct PlanView: View {
                     router.noteCalendarChanged()
                 }
             }
-            .sheet(isPresented: Bindable(router).isShowingWeeklyReview) {
+            .sheet(isPresented: Bindable(router).isShowingWeeklyReview, onDismiss: {
+                guard opensGeneratorAfterReview else { return }
+                opensGeneratorAfterReview = false
+                router.isShowingPlanGenerator = true
+            }) {
                 NavigationStack {
-                    WeeklyReviewView(store: WeeklyReviewStore(tokenProvider: tokenProvider))
+                    WeeklyReviewView(store: WeeklyReviewStore(tokenProvider: tokenProvider)) {
+                        opensGeneratorAfterReview = true
+                        router.isShowingWeeklyReview = false
+                    }
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("Fermer") { router.isShowingWeeklyReview = false }
