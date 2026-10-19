@@ -49,6 +49,25 @@ struct GoogleCalendarPickerStoreTests {
         #expect(store.calendars == [sample])
     }
 
+    @Test @MainActor func aTapDuringARefreshStillSelects() async {
+        let sample = googleCalendarPickerSample
+        let counter = OSAllocatedUnfairLock(initialState: 0)
+        let stub = GoogleCalendarsLoadStub {
+            let n = counter.withLock { value -> Int in
+                value += 1
+                return value
+            }
+            if n > 1 { try await Task.sleep(for: .seconds(30)) }
+            return [sample]
+        }
+        let store = GoogleCalendarPickerStore(client: stub, tokenProvider: { "tok" })
+        await store.load()
+        let refresh = Task { await store.load() }
+        while store.phase != .loading { await Task.yield() }
+        #expect(await store.select(sample))
+        refresh.cancel()
+    }
+
     @Test @MainActor func cancelledInitialLoadOffersRetryInsteadOfEmptyReady() async {
         let stub = GoogleCalendarsLoadStub { throw CancellationError() }
         let store = GoogleCalendarPickerStore(client: stub, tokenProvider: { "tok" })

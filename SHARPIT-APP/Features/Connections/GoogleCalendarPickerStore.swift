@@ -55,7 +55,8 @@ final class GoogleCalendarPickerStore {
 
     /// True when the choice is saved and the sheet can close.
     func select(_ calendar: V1GoogleCalendar) async -> Bool {
-        guard phase != .selecting, phase != .loading else { return false }
+        // A refresh behind known calendars must not swallow the tap: the athlete sees the list.
+        guard phase != .selecting, phase != .loading || !calendars.isEmpty else { return false }
         let phaseBeforeSelect = phase
         phase = .selecting
         do {

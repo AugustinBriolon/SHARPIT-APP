@@ -22,7 +22,7 @@ struct GoogleCalendarPickerView: View {
             case .loading:
                 calendarList(store.calendars.isEmpty ? V1GoogleCalendar.placeholders : store.calendars)
                     .redacted(reason: store.calendars.isEmpty ? .placeholder : [])
-                    .allowsHitTesting(false)
+                    .allowsHitTesting(!store.calendars.isEmpty)
                     .accessibilityLabel("Chargement des calendriers Google")
             case .failed(.needsReconnect(let message)):
                 reconnectState(message)
