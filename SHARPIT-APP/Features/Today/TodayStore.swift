@@ -343,6 +343,8 @@ final class TodayStore {
             return String(localized: "Trop de requêtes — réessaie dans un instant")
         case .message(let text), .googleNeedsReconnect(let text):
             return text
+        case .proRequired:
+            return apiError.errorDescription ?? ""
         }
     }
 }

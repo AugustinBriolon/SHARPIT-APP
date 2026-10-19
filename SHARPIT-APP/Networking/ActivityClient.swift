@@ -412,6 +412,9 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         switch status {
         case 200, 201, 204:
             return
+        case 402 where SharpitAPIError.isProRequired(body, code: "locked"),
+             403 where SharpitAPIError.isProRequired(body):
+            throw SharpitAPIError.proRequired
         case 401, 403:
             throw SharpitAPIError.unauthorized
         default:

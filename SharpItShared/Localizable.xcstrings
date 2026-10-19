@@ -4802,6 +4802,22 @@
         }
       }
     },
+    "Analyse de séance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session analysis"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse de séance"
+          }
+        }
+      }
+    },
     "Analyse de ton profil" : {
       "localizations" : {
         "en" : {
@@ -19586,6 +19602,22 @@
         }
       }
     },
+    "Le coach est réservé à SharpIt Pro." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The coach comes with SharpIt Pro."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le coach est réservé à SharpIt Pro."
+          }
+        }
+      }
+    },
     "Le coach lit ce que tu as mangé face à ton entraînement, et te donne une action concrète." : {
       "localizations" : {
         "en" : {
@@ -19598,6 +19630,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le coach lit ce que tu as mangé face à ton entraînement, et te donne une action concrète."
+          }
+        }
+      }
+    },
+    "Le coach lit chaque séance avec SharpIt Pro : ce qui a marché, ce qui a coûté, ce que ça change pour la suite." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The coach reads every session with SharpIt Pro: what worked, what it cost, what it changes for what comes next."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le coach lit chaque séance avec SharpIt Pro : ce qui a marché, ce qui a coûté, ce que ça change pour la suite."
           }
         }
       }
@@ -19842,6 +19890,22 @@
         }
       }
     },
+    "Le coach réajuste tes séances à venir avec SharpIt Pro. Tes séances déjà au plan restent à toi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The coach readjusts your upcoming sessions with SharpIt Pro. The sessions already in your plan stay yours."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le coach réajuste tes séances à venir avec SharpIt Pro. Tes séances déjà au plan restent à toi."
+          }
+        }
+      }
+    },
     "Le coach répond" : {
       "localizations" : {
         "en" : {
@@ -19886,6 +19950,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le coach voit tes créneaux libres dans Google Agenda et place tes séances quand tu es disponible."
+          }
+        }
+      }
+    },
+    "Le coach écrit ta semaine et la tient à jour avec SharpIt Pro. Tes séances déjà au plan restent à toi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The coach writes your week and keeps it up to date with SharpIt Pro. The sessions already in your plan stay yours."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le coach écrit ta semaine et la tient à jour avec SharpIt Pro. Tes séances déjà au plan restent à toi."
           }
         }
       }
@@ -25954,6 +26034,22 @@
         }
       }
     },
+    "Plan qui s’adapte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A plan that adapts"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan qui s’adapte"
+          }
+        }
+      }
+    },
     "Planification" : {
       "localizations" : {
         "en" : {
@@ -26430,6 +26526,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pose ta question"
+          }
+        }
+      }
+    },
+    "Pose tes questions au coach qui connaît tes données, avec SharpIt Pro. Tes séances et ta santé restent ouvertes sans abonnement." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask the coach who knows your data, with SharpIt Pro. Your sessions and your health stay open without a subscription."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pose tes questions au coach qui connaît tes données, avec SharpIt Pro. Tes séances et ta santé restent ouvertes sans abonnement."
           }
         }
       }
@@ -28302,6 +28414,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Relier sur sharpit.app"
+          }
+        }
+      }
+    },
+    "Relire une séance est réservé à SharpIt Pro, avec le reste du coaching." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading a session again comes with SharpIt Pro, with the rest of the coaching."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relire une séance est réservé à SharpIt Pro, avec le reste du coaching."
           }
         }
       }
@@ -30302,6 +30430,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Réservé à Pro"
+          }
+        }
+      }
+    },
+    "Réservé à SharpIt Pro." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SharpIt Pro only."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réservé à SharpIt Pro."
           }
         }
       }

@@ -148,6 +148,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch status {
         case 200...299: return data
+        case 403 where SharpitAPIError.isProRequired(data): throw SharpitAPIError.proRequired
         case 401, 403: throw SharpitAPIError.unauthorized
         case 429: throw SharpitAPIError.rateLimited
         case 400...499: throw Self.refusal(in: data).map(SharpitAPIError.message) ?? SharpitAPIError.badRequest

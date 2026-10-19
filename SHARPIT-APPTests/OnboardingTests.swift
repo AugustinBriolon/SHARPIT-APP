@@ -64,8 +64,13 @@ private final class RecordingPlanClient: CoachPlanServing {
     private(set) var requestedGoalIds: [String?] = []
     private(set) var inserted: [(sessions: [V1GeneratedSession], goalId: String?)] = []
     private let fails: Bool
+    /// The server's `pro_required` on « Ajouter » (SHARPIT ADR-097).
+    private let insertProOnly: Bool
 
-    init(fails: Bool = false) { self.fails = fails }
+    init(fails: Bool = false, insertProOnly: Bool = false) {
+        self.fails = fails
+        self.insertProOnly = insertProOnly
+    }
 
     func generateWeek(
         days _: Int,
@@ -86,6 +91,7 @@ private final class RecordingPlanClient: CoachPlanServing {
 
 
     func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token _: String) async throws {
+        if insertProOnly { throw SharpitAPIError.proRequired }
         inserted.append((sessions, goalId))
     }
 }
@@ -1021,4 +1027,29 @@ private func makeGate(
         "nutrition": .bool(false),
         "regularity": .bool(false),
     ]))
+}
+
+/// Until the onboarding paywall, a Free athlete sees the week, then finishes without it: the
+/// server keeps « Ajouter » for Pro (SHARPIT ADR-097), and the wizard must not hold them there.
+@MainActor
+@Test func aFreeAthleteFinishesWithoutTheWeekTheServerKeepsForPro() async {
+    var consented = V1PrivacyConsents.accepted
+    consented.aiProcessingConsentAt = Date(timeIntervalSince1970: 1_800_000_000)
+    let plan = RecordingPlanClient(insertProOnly: true)
+    let onboarding = FlakyOnboardingClient(failures: 0)
+    let store = makeStore(onboarding: onboarding, plan: plan, currentConsents: consented)
+    await storeOnEquipment(store)
+    await store.skip()
+    await store.skip()
+    await store.skip()
+    await store.skip()
+    await store.advance()
+    _ = await settledFirstWeek(store)
+
+    await store.advance()
+
+    #expect(store.error == nil)
+    #expect(plan.inserted.isEmpty)
+    #expect(await onboarding.completions == 1)
+    #expect(store.phase == .bootstrap)
 }

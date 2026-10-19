@@ -159,6 +159,7 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
         switch status {
         case 200..<300: return try JSONDecoder().decode(JobEnvelope.self, from: data).job
         case 401: throw SharpitAPIError.unauthorized
+        case 403 where SharpitAPIError.isProRequired(data): throw SharpitAPIError.proRequired
         case 404: return nil
         case 402: throw CoachPlanError.custom("Tu as atteint ton quota de coach pour le moment. Réessaie plus tard, ou passe à SharpIt Pro.")
         case 429: throw SharpitAPIError.rateLimited
@@ -180,9 +181,10 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
             "sessions": .array(sessions.map(\.insertBody)),
         ]))
 
-        let (_, response) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
+        if status == 403, SharpitAPIError.isProRequired(data) { throw SharpitAPIError.proRequired }
         if status == 422 {
             throw CoachPlanError.custom("Une séance a été écartée par le contrôle de sécurité. Décoche-la puis réessaie.")
         }
@@ -246,6 +248,11 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
         if let http = response as? HTTPURLResponse {
             if http.statusCode == 401 { throw SharpitAPIError.unauthorized }
             guard (200..<300).contains(http.statusCode) else {
+                if http.statusCode == 403 {
+                    var body = Data()
+                    for try await byte in bytes.prefix(4096) { body.append(byte) }
+                    if SharpitAPIError.isProRequired(body) { throw SharpitAPIError.proRequired }
+                }
                 throw SharpitAPIError.server
             }
         }

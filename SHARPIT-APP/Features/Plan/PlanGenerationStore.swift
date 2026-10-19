@@ -21,6 +21,9 @@ final class PlanGenerationStore {
     private(set) var phase: Phase = .idle
     /// Why the last « Ajouter » failed; the week stays on screen to try again.
     private(set) var insertError: String?
+    /// The coach writes the week with SharpIt Pro (SHARPIT ADR-097): set by the server's refusal,
+    /// the sheet then shows the Pro teaser instead of the generator.
+    private(set) var needsPro = false
     var days = 7
     /// nil for no goal.
     var goalId: String?
@@ -90,6 +93,9 @@ final class PlanGenerationStore {
                 self.jobId = job.id
                 await self.follow(job.id)
             } catch is CancellationError {
+            } catch SharpitAPIError.proRequired {
+                self.needsPro = true
+                self.phase = .idle
             } catch {
                 self.phase = .failed(Self.message(for: error, subject: String(localized: "La génération")))
             }
@@ -170,6 +176,10 @@ final class PlanGenerationStore {
             markHandled()
             phase = .idle
             return sessions.count
+        } catch SharpitAPIError.proRequired {
+            needsPro = true
+            phase = .ready(plan: week, selected: selected)
+            return nil
         } catch {
             insertError = Self.message(for: error, subject: String(localized: "L'ajout au plan"))
             phase = .ready(plan: week, selected: selected)

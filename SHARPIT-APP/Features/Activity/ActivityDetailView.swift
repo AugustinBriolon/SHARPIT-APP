@@ -13,6 +13,8 @@ struct ActivityDetailView: View {
     @State private var phase: DetailPhase
     @State private var appeared = false
     @State private var isGeneratingNarrative = false
+    /// The analysis is SharpIt Pro (SHARPIT ADR-097): set by the server's refusal.
+    @State private var narrativeNeedsPro = false
     @State private var streamPayload: V1ActivityStreamPayload?
     @State private var isEnriching = false
     @State private var showingCompliance = false
@@ -163,6 +165,7 @@ struct ActivityDetailView: View {
                                     streamPayload: streamPayload,
                                     appeared: appeared,
                                     isGeneratingNarrative: isGeneratingNarrative,
+                                    narrativeNeedsPro: narrativeNeedsPro,
                                     onGenerateNarrative: { Task { await generateNarrative() } },
                                     splits: activitySplits(for: detail),
                                     onShowCompliance: { showingCompliance = true },
@@ -202,6 +205,7 @@ struct ActivityDetailView: View {
                             streamPayload: streamPayload,
                             appeared: appeared,
                             isGeneratingNarrative: isGeneratingNarrative,
+                            narrativeNeedsPro: narrativeNeedsPro,
                             onGenerateNarrative: { Task { await generateNarrative() } },
                             splits: activitySplits(for: detail),
                             onShowCompliance: { showingCompliance = true },
@@ -702,6 +706,9 @@ struct ActivityDetailView: View {
             } catch let SharpitAPIError.message(reason) {
                 notice = ActivityNotice(title: String(localized: "Analyse"), message: reason)
                 return
+            } catch SharpitAPIError.proRequired {
+                notice = ActivityNotice(title: String(localized: "Analyse"), message: String(localized: "Relire une séance est réservé à SharpIt Pro, avec le reste du coaching."))
+                return
             } catch {
                 notice = ActivityNotice(title: String(localized: "Analyse"), message: String(localized: "L’analyse n’a pas pu être relancée. Réessaie dans un instant."))
                 return
@@ -753,6 +760,8 @@ struct ActivityDetailView: View {
                 phase = .loaded(detail)
             }
         } catch is CancellationError {
+        } catch SharpitAPIError.proRequired {
+            withAnimation(SharpitMotion.reveal) { narrativeNeedsPro = true }
         } catch {
             SharpitWriteFailures.shared.report(String(localized: "Le récit n’a pas pu être généré. Réessaie dans un instant."))
         }
@@ -817,6 +826,7 @@ private struct ActivityDetailContent: View {
     let streamPayload: V1ActivityStreamPayload?
     let appeared: Bool
     let isGeneratingNarrative: Bool
+    var narrativeNeedsPro = false
     let onGenerateNarrative: () -> Void
     let splits: [ActivitySplit]
     let onShowCompliance: () -> Void
@@ -1107,6 +1117,11 @@ private struct ActivityDetailContent: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .textSelection(.enabled)
+            } else if narrativeNeedsPro {
+                SharpitProTeaser(
+                    title: String(localized: "Analyse de séance"),
+                    message: String(localized: "Le coach lit chaque séance avec SharpIt Pro : ce qui a marché, ce qui a coûté, ce que ça change pour la suite.")
+                )
             } else {
                 Text("SharpIt croise ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")
                     .font(SharpitTypography.body)

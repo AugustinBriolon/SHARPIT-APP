@@ -23,9 +23,21 @@ enum SharpitAPIError: Error, Equatable, LocalizedError {
     case message(String)
     /// Google OAuth token expired or revoked — relink Google Agenda, not the SharpIt session.
     case googleNeedsReconnect(String)
+    /// `403 { error: 'pro_required' }`: coaching is SharpIt Pro (SHARPIT ADR-097). A screen shows
+    /// `SharpitProTeaser` for it, never an error line.
+    case proRequired
+
+    /// Whether a refusal's body is the server's `pro_required` — or, for the session analysis,
+    /// its older word for the same refusal, `402 { error: 'locked' }`.
+    nonisolated static func isProRequired(_ body: Data, code: String = "pro_required") -> Bool {
+        let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any]
+        return json?["error"] as? String == code
+    }
 
     var errorDescription: String? {
         switch self {
+        case .proRequired:
+            return String(localized: "Réservé à SharpIt Pro.")
         case .message(let text), .googleNeedsReconnect(let text):
             return text
         case .unauthorized:

@@ -187,6 +187,9 @@ actor CoachChatClient: CoachChatServing {
             guard (200..<300).contains(http.statusCode) else {
                 var body = Data()
                 for try await byte in bytes.prefix(4096) { body.append(byte) }
+                if http.statusCode == 403, SharpitAPIError.isProRequired(body) {
+                    throw SharpitAPIError.proRequired
+                }
                 let message = Self.errorMessage(inBody: body)
                 // Status only: the body can echo the athlete's question or health context.
                 Self.log.error("coach chat refused: \(http.statusCode, privacy: .public)")

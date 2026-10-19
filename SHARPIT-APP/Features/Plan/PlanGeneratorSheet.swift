@@ -33,6 +33,18 @@ struct PlanGeneratorSheet: View {
 
     @ViewBuilder
     private var content: some View {
+        if store.needsPro {
+            SharpitProTeaser(
+                title: String(localized: "Plan qui s’adapte"),
+                message: String(localized: "Le coach écrit ta semaine et la tient à jour avec SharpIt Pro. Tes séances déjà au plan restent à toi.")
+            )
+        } else {
+            phaseContent
+        }
+    }
+
+    @ViewBuilder
+    private var phaseContent: some View {
         switch store.phase {
         case .idle:
             request(error: nil)
@@ -126,27 +138,31 @@ struct PlanGeneratorSheet: View {
         }
     }
 
+    /// Nothing to start or keep below Pro: the teaser above says why.
+    @ViewBuilder
     private var actions: some View {
-        SharpitActionDock {
-            switch store.phase {
-            case .idle, .failed:
-                SharpitPrimaryButton(title: String(localized: "Générer")) { store.start() }
-            case .generating:
-                // Nothing to do but wait or close — « Fermer » is in the bar.
-                EmptyView()
-            case .ready(_, let selected), .inserting(_, let selected):
-                let busy = if case .inserting = store.phase { true } else { false }
-                SharpitPrimaryButton(
-                    title: busy ? String(localized: "Ajout au plan…") : String(localized: "Ajouter \(selected.count) séance\(selected.count > 1 ? "s" : "")"),
-                    isBusy: busy
-                ) {
-                    Task { await insert() }
+        if !store.needsPro {
+            SharpitActionDock {
+                switch store.phase {
+                case .idle, .failed:
+                    SharpitPrimaryButton(title: String(localized: "Générer")) { store.start() }
+                case .generating:
+                    // Nothing to do but wait or close — « Fermer » is in the bar.
+                    EmptyView()
+                case .ready(_, let selected), .inserting(_, let selected):
+                    let busy = if case .inserting = store.phase { true } else { false }
+                    SharpitPrimaryButton(
+                        title: busy ? String(localized: "Ajout au plan…") : String(localized: "Ajouter \(selected.count) séance\(selected.count > 1 ? "s" : "")"),
+                        isBusy: busy
+                    ) {
+                        Task { await insert() }
+                    }
+                    .disabled(selected.isEmpty || busy)
+                    Button("Recommencer") { store.reset() }
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .disabled(busy)
                 }
-                .disabled(selected.isEmpty || busy)
-                Button("Recommencer") { store.reset() }
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .disabled(busy)
             }
         }
     }

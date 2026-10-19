@@ -42,6 +42,18 @@ struct PlanAdapterSheet: View {
 
     @ViewBuilder
     private var content: some View {
+        if store.needsPro {
+            SharpitProTeaser(
+                title: String(localized: "Plan qui s’adapte"),
+                message: String(localized: "Le coach réajuste tes séances à venir avec SharpIt Pro. Tes séances déjà au plan restent à toi.")
+            )
+        } else {
+            phaseContent
+        }
+    }
+
+    @ViewBuilder
+    private var phaseContent: some View {
         switch store.phase {
         case .idle:
             request(error: nil)
@@ -120,9 +132,11 @@ struct PlanAdapterSheet: View {
     private var actions: some View {
         switch store.phase {
         case .idle, .failed:
-            SharpitActionDock {
-                SharpitPrimaryButton(title: String(localized: "Proposer des ajustements")) {
-                    Task { await store.start() }
+            if !store.needsPro {
+                SharpitActionDock {
+                    SharpitPrimaryButton(title: String(localized: "Proposer des ajustements")) {
+                        Task { await store.start() }
+                    }
                 }
             }
         case .analyzing:

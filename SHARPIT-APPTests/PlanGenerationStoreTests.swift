@@ -7,6 +7,9 @@ private final class StreamingPlanClient: CoachPlanServing, PlanJobServing {
     private(set) var inserted: [(sessions: [V1GeneratedSession], goalId: String?)] = []
     var fails = false
     var insertFails = false
+    /// The server's `pro_required` (SHARPIT ADR-097), on the job or on « Ajouter ».
+    var proOnly = false
+    var insertProOnly = false
     var gate: V1PlanGate?
 
     static let week = [
@@ -32,6 +35,7 @@ private final class StreamingPlanClient: CoachPlanServing, PlanJobServing {
     var latest: V1PlanJob?
 
     nonisolated func startWeekJob(days _: Int, goalId _: String?, focus _: String?, startDate _: Date?, token _: String) async throws -> V1PlanJob {
+        if await MainActor.run(body: { proOnly }) { throw SharpitAPIError.proRequired }
         await MainActor.run { started += 1 }
         return V1PlanJob(id: "job-\(await MainActor.run { started })", status: "running")
     }
@@ -48,6 +52,7 @@ private final class StreamingPlanClient: CoachPlanServing, PlanJobServing {
     }
 
     func insertWeek(_ sessions: [V1GeneratedSession], goalId: String?, token _: String) async throws {
+        if insertProOnly { throw SharpitAPIError.proRequired }
         if insertFails { throw SharpitAPIError.server }
         inserted.append((sessions, goalId))
     }
@@ -225,4 +230,32 @@ private func settled(_ store: PlanGenerationStore) async {
     #expect(GeneratingWeekView.readingSteps.count >= 3)
     // One line on the narrowest iPhone, so the page never jumps when the line changes.
     #expect(GeneratingWeekView.readingSteps.allSatisfy { $0.count <= 30 })
+}
+
+@MainActor
+@Test func aFreeAthleteAskingForAWeekIsOfferedPro() async {
+    let client = StreamingPlanClient()
+    client.proOnly = true
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: freshDefaults(), pollInterval: .milliseconds(1), tokenProvider: { "t" })
+
+    store.start()
+    await settled(store)
+
+    #expect(store.needsPro)
+    #expect(store.isGenerating == false)
+    #expect(client.started == 0)
+}
+
+@MainActor
+@Test func aWeekRefusedForProIsOfferedProAndStaysOnScreen() async {
+    let client = StreamingPlanClient()
+    client.insertProOnly = true
+    let store = PlanGenerationStore(plan: client, goalClient: NoGoals(), defaults: freshDefaults(), pollInterval: .milliseconds(1), tokenProvider: { "t" })
+    store.start()
+    await settled(store)
+
+    #expect(await store.insert() == nil)
+    #expect(store.needsPro)
+    #expect(store.insertError == nil)
+    #expect(store.isReady)
 }

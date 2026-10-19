@@ -29,6 +29,9 @@ final class CoachStore {
     private(set) var quota: V1CoachQuota?
     /// When `quota` was read, so its wait counts from then.
     private(set) var quotaReadAt: Date?
+    /// The coach is SharpIt Pro (SHARPIT ADR-097): the quota says so on open, a refusal on send.
+    /// The view then shows the Pro teaser where the composer was.
+    private(set) var needsPro = false
 
     /// Called when the server carried out an approved change, so Plan and Résumé reload.
     var onCalendarChanged: (() -> Void)?
@@ -68,6 +71,7 @@ final class CoachStore {
             }
             self.quota = fresh
             self.quotaReadAt = .now
+            self.needsPro = !fresh.isPro
             return true
         }
     }
@@ -79,7 +83,7 @@ final class CoachStore {
     }
 
     var canSend: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isReplying && !isOutOfQuota
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isReplying && !isOutOfQuota && !needsPro
     }
 
     var isOutOfQuota: Bool { CoachQuotaReadout.isSpent(quota, readAt: quotaReadAt) }
@@ -250,6 +254,11 @@ final class CoachStore {
                 failure = String(localized: "Réponse arrêtée.")
             }
             userStoppedReply = false
+            CoachReplyLiveActivityController.shared.end()
+        } catch SharpitAPIError.proRequired {
+            needsPro = true
+            markContinuationFailed(id: id, message: String(localized: "Le coach est réservé à SharpIt Pro."))
+            dropEmptyAnswer()
             CoachReplyLiveActivityController.shared.end()
         } catch let error as SharpitAPIError where error == .unauthorized {
             markContinuationFailed(id: id, message: String(localized: "Session expirée. Reconnecte-toi."))

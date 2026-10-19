@@ -357,7 +357,22 @@ struct CoachView: View {
     /// The composer's one height — the smallest tappable size, for the field and both circles.
     private static let controlHeight = SharpitSpacing.minimumTouchTarget
 
+    @ViewBuilder
     private var composer: some View {
+        if store.needsPro {
+            SharpitProTeaser(
+                title: String(localized: "Coach"),
+                message: String(localized: "Pose tes questions au coach qui connaît tes données, avec SharpIt Pro. Tes séances et ta santé restent ouvertes sans abonnement.")
+            )
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.top, SharpitSpacing.xs)
+            .padding(.bottom, SharpitSpacing.sm)
+        } else {
+            questionComposer
+        }
+    }
+
+    private var questionComposer: some View {
         VStack(spacing: SharpitSpacing.xs) {
             if let failure = dictation.failure {
                 Text(failure)

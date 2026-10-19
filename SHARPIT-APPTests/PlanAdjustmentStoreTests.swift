@@ -9,12 +9,14 @@ private final class AdjustmentClient: PlanAdjustmentServing {
         V1AdaptChange(action: .remove, sessionId: "s2", title: "VMA", reason: "Trop tôt."),
     ])
     var fails = false
+    var proOnly = false
     var applyFails = false
     private(set) var applied: [[V1AdaptChange]] = []
     private(set) var focus: String?
 
     func adaptPlan(days _: Int, focus: String?, token _: String, onReasoning _: @escaping @Sendable (String) -> Void) async throws -> V1AdaptPlanResult {
         self.focus = focus
+        if proOnly { throw SharpitAPIError.proRequired }
         if fails { throw CoachPlanError.custom("Le coach n'a pas pu terminer.") }
         return result
     }
@@ -90,4 +92,17 @@ private final class AdjustmentClient: PlanAdjustmentServing {
 
     #expect(change.applyBody["endurancePrescription"]?["blocks"] != nil)
     #expect(change.applyBody["decisionId"]?.string == "d1")
+}
+
+/// SHARPIT ADR-097: the coach's re-plan is Pro, so a refusal is the teaser, not an error line.
+@MainActor
+@Test func aFreeAthleteIsOfferedProInsteadOfAnError() async {
+    let client = AdjustmentClient()
+    client.proOnly = true
+    let store = PlanAdjustmentStore(client: client, tokenProvider: { "t" })
+
+    await store.start()
+
+    #expect(store.needsPro)
+    #expect(store.phase == .idle)
 }

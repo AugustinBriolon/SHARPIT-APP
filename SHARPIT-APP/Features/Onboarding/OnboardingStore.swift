@@ -486,7 +486,12 @@ final class OnboardingStore {
         let goalId = createdGoalId
         var added = false
         await perform(failure: String(localized: "Impossible d'ajouter ta semaine au plan. Réessaie.")) { token in
-            try await self.services.plan.insertWeek(sessions, goalId: goalId, token: token)
+            do {
+                try await self.services.plan.insertWeek(sessions, goalId: goalId, token: token)
+            } catch SharpitAPIError.proRequired {
+                // shortcut: a Free athlete finishes without the previewed week (SHARPIT ADR-097),
+                // upgrade when the onboarding paywall lands (plan step 5).
+            }
         } onSuccess: {
             added = true
         }

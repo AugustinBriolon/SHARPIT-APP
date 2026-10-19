@@ -23,6 +23,8 @@ final class PlanAdjustmentStore {
     var focus = ""
     /// Why the last apply failed, shown with the changes still on screen.
     private(set) var applyError: String?
+    /// The coach adjusts the plan with SharpIt Pro (SHARPIT ADR-097): set by the server's refusal.
+    private(set) var needsPro = false
 
     private let client: any PlanAdjustmentServing
     private let tokenProvider: () async throws -> String
@@ -48,6 +50,9 @@ final class PlanAdjustmentStore {
                 onReasoning: { _ in }
             )
             phase = .ready(result, selected: Set(result.changes.indices))
+        } catch SharpitAPIError.proRequired {
+            needsPro = true
+            phase = .idle
         } catch {
             phase = .failed(Self.message(for: error))
         }
