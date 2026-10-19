@@ -14,5 +14,6 @@ and answers 400 with `reason` — `no_estimates`, `unchanged`, `nothing_selected
 the fields on the tap (`AthleteProfileStore.show`, `V1ThresholdApplyPreview.patch(for:)`), wait for a
 value being typed (`settle`), go out through `SharpitRetry`, and `AthleteProfileStore.refresh` reads
 the profile and its threshold history back; `revision` then resets the form to the stored values.
-Thresholds a watch synced on the web read « Synchronisé depuis ta montre »; the app imports none
-itself (`docs/adr/0013`).
+Thresholds a watch synced on the web say so in the line above the cards (« Importés de ta montre … »);
+the app imports none itself (`docs/adr/0013`). Each discipline is one white card of rows — name and
+meaning left, the figure typed in place right — never a coloured tile or a boxed field.

@@ -1,9 +1,9 @@
 import SwiftData
 import SwiftUI
 
-/// Réglages → Seuils & repères: the yardstick load is read against.
-/// Modern, tactile and sportive bento layout with dynamic conversions (W/kg, km/h, % LTHR)
-/// and reactive auto-save without manual confirmation button.
+/// Réglages → Seuils & repères: the yardstick load is read against. One white card per
+/// discipline, its references as rows — name and what the value means on the left, the figure
+/// typed in place on the right — saved as they are typed.
 struct ThresholdsView: View {
     @State private var store: AthleteProfileStore
     @State private var form = ProfileFormState()
@@ -33,8 +33,8 @@ struct ThresholdsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: SharpitSpacing.lg) {
-                confidenceCard
+            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+                sourceLine
 
                 if let suggestions, suggestions.preview?.hasChanges == true {
                     ThresholdSuggestionCard(
@@ -86,153 +86,106 @@ struct ThresholdsView: View {
         .scrollDismissesKeyboard(.interactively)
     }
 
-    // MARK: - Confidence & Source Card
+    // MARK: - Source
 
-    private var confidenceCard: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            confidenceHeader
+    /// Where the figures come from, said once above the cards rather than as a card of its own.
+    private var sourceLine: some View {
+        Label {
+            Text(sourceText)
+        } icon: {
+            Image(systemName: store.profile.thresholdsSyncedAt != nil ? "arrow.triangle.2.circlepath" : "hand.point.up.left")
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        .font(SharpitTypography.meta)
+        .foregroundStyle(SharpitColor.mutedForeground)
+        .padding(.horizontal, SharpitSpacing.xxs)
     }
 
-    private var confidenceHeader: some View {
-        HStack(spacing: SharpitSpacing.md) {
-            SharpitIconTile(symbol: store.profile.thresholdsSyncedAt != nil ? "arrow.triangle.2.circlepath" : "person.badge.shield.checkmark")
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(store.profile.thresholdsSyncedAt != nil ? "Synchronisé depuis ta montre" : "Calibrations manuelles")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-
-                Text(confidenceSubtitle)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var confidenceSubtitle: String {
+    private var sourceText: String {
         if let syncedAt = store.profile.thresholdsSyncedAt {
-            return "Importé " + SyncReadout.age(of: syncedAt, now: .now) + " · Se règle sur la montre"
+            return "Importés de ta montre " + SyncReadout.age(of: syncedAt, now: .now) + " — ils s'y règlent aussi."
         }
-        return "Ces repères personnalisés orientent les intensités et les zones d'effort."
+        return "Saisis à la main. Ils règlent tes zones et la charge de chaque séance."
     }
 
-    // MARK: - Cardio Section
+    // MARK: - Disciplines
 
     private var cardioSection: some View {
-        disciplineContainer(
-            title: "Cardio",
-            subtitle: "Repères de pulsation pour le calibrage des zones cardiaques.",
-            symbolName: "heart.fill",
-            color: SharpitColor.signalRisk
-        ) {
-            VStack(spacing: SharpitSpacing.sm) {
-                ThresholdInputField(
-                    label: "FC max",
-                    text: $form.maxHr,
-                    placeholder: "190",
-                    unit: "bpm",
-                    keyboard: .numberPad,
-                    error: form.error(for: .maxHr),
-                    dynamicHint: fcMaxHint,
-                    onChange: scheduleAutoSave
-                )
-
-                ThresholdInputField(
-                    label: "LTHR (Seuil lactique)",
-                    text: $form.lthr,
-                    placeholder: "168",
-                    unit: "bpm",
-                    keyboard: .numberPad,
-                    error: form.error(for: .lthr),
-                    dynamicHint: lthrHint,
-                    onChange: scheduleAutoSave
-                )
-            }
-        }
-    }
-
-    private var fcMaxHint: String? {
-        guard let hr = ProfileFieldFormat.parseInteger(form.maxHr) else { return nil }
-        return "\(hr) bpm max"
-    }
-
-    private var lthrHint: String? {
-        guard let lthr = ProfileFieldFormat.parseInteger(form.lthr) else { return nil }
-        if let maxHr = ProfileFieldFormat.parseInteger(form.maxHr), maxHr > 0 {
-            let pct = Int((Double(lthr) / Double(maxHr) * 100).rounded())
-            return "Bascule à \(pct)% de FC max"
-        }
-        return "Bascule aérobie / anaérobie"
-    }
-
-    // MARK: - Bike Section
-
-    private var bikeSection: some View {
-        disciplineContainer(
-            title: "Cyclisme / Vélo",
-            subtitle: "Puissance de référence pour les zones de watts et la charge vélo.",
-            symbolName: "bicycle",
-            color: SharpitColor.foreground
-        ) {
-            ThresholdInputField(
-                label: "FTP (Functional Threshold Power)",
-                text: $form.ftpW,
-                placeholder: "280",
-                unit: "W",
+        disciplineCard(title: "Cardio", symbol: "heart") {
+            ThresholdRow(
+                label: "FC max",
+                text: $form.maxHr,
+                placeholder: "190",
+                unit: "bpm",
                 keyboard: .numberPad,
-                error: form.error(for: .ftpW),
-                dynamicHint: ftpHint,
+                error: form.error(for: .maxHr),
+                hint: nil,
+                onChange: scheduleAutoSave
+            )
+            ThresholdRow(
+                label: "Seuil lactique",
+                text: $form.lthr,
+                placeholder: "168",
+                unit: "bpm",
+                keyboard: .numberPad,
+                error: form.error(for: .lthr),
+                hint: lthrHint,
                 onChange: scheduleAutoSave
             )
         }
     }
 
-    private var ftpHint: String? {
-        guard let w = ProfileFieldFormat.parseInteger(form.ftpW) else { return nil }
-        if let targetWeight = store.profile.targetWeightKg, targetWeight > 0 {
-            let ratio = Double(w) / targetWeight
-            return String(format: "%.1f W/kg", ratio)
-        }
-        return "Effort max soutenable 1h"
+    private var lthrHint: String {
+        guard let lthr = ProfileFieldFormat.parseInteger(form.lthr),
+              let maxHr = ProfileFieldFormat.parseInteger(form.maxHr), maxHr > 0
+        else { return "LTHR" }
+        let pct = Int((Double(lthr) / Double(maxHr) * 100).rounded())
+        return "LTHR · \(pct) % de la FC max"
     }
 
-    // MARK: - Run Section
+    private var bikeSection: some View {
+        disciplineCard(title: "Vélo", symbol: "bicycle") {
+            ThresholdRow(
+                label: "FTP",
+                text: $form.ftpW,
+                placeholder: "280",
+                unit: "W",
+                keyboard: .numberPad,
+                error: form.error(for: .ftpW),
+                hint: ftpHint,
+                onChange: scheduleAutoSave
+            )
+        }
+    }
+
+    private var ftpHint: String {
+        guard let w = ProfileFieldFormat.parseInteger(form.ftpW),
+              let weight = store.profile.targetWeightKg, weight > 0
+        else { return "Puissance tenue une heure" }
+        return Self.oneDecimal(Double(w) / weight) + " W/kg"
+    }
 
     private var runSection: some View {
-        disciplineContainer(
-            title: "Course à pied",
-            subtitle: "Allure seuil et allure Z2 (endurance) pour calibrer les footings et le rTSS.",
-            symbolName: "figure.run",
-            color: SharpitColor.foreground
-        ) {
-            VStack(spacing: SharpitSpacing.sm) {
-                ThresholdInputField(
-                    label: "Allure seuil",
-                    text: $form.runThresholdPace,
-                    placeholder: "4:15",
-                    unit: "/km",
-                    keyboard: .numbersAndPunctuation,
-                    error: form.error(for: .runThresholdPace),
-                    dynamicHint: paceHint(form.runThresholdPace),
-                    onChange: scheduleAutoSave
-                )
-                ThresholdInputField(
-                    label: "Allure Z2 / endurance",
-                    text: $form.runEasyPace,
-                    placeholder: derivedEasyPacePlaceholder,
-                    unit: "/km",
-                    keyboard: .numbersAndPunctuation,
-                    error: form.error(for: .runEasyPace),
-                    dynamicHint: easyPaceHint,
-                    onChange: scheduleAutoSave
-                )
-            }
+        disciplineCard(title: "Course à pied", symbol: "figure.run") {
+            ThresholdRow(
+                label: "Allure seuil",
+                text: $form.runThresholdPace,
+                placeholder: "4:15",
+                unit: "/km",
+                keyboard: .numbersAndPunctuation,
+                error: form.error(for: .runThresholdPace),
+                hint: paceHint(form.runThresholdPace),
+                onChange: scheduleAutoSave
+            )
+            ThresholdRow(
+                label: "Allure endurance",
+                text: $form.runEasyPace,
+                placeholder: derivedEasyPacePlaceholder,
+                unit: "/km",
+                keyboard: .numbersAndPunctuation,
+                error: form.error(for: .runEasyPace),
+                hint: easyPaceHint,
+                onChange: scheduleAutoSave
+            )
         }
     }
 
@@ -245,197 +198,117 @@ struct ThresholdsView: View {
     }
 
     private var easyPaceHint: String? {
-        if let hint = paceHint(form.runEasyPace) { return hint }
+        if let hint = paceHint(form.runEasyPace) { return "Z2 · " + hint }
         if form.runEasyPace.trimmingCharacters(in: .whitespaces).isEmpty,
            ProfileFieldFormat.parsePace(form.runThresholdPace) != nil {
-            return "Vide = dérivée du seuil (~+15 %)"
+            return "Z2 · vide, déduite du seuil"
         }
-        return nil
+        return "Z2"
     }
 
     private func paceHint(_ text: String) -> String? {
         guard let paceSec = ProfileFieldFormat.parsePace(text), paceSec > 0 else { return nil }
-        let kmh = 3600.0 / paceSec
-        return String(format: "%.1f km/h", kmh)
+        return Self.oneDecimal(3600.0 / paceSec) + " km/h"
     }
 
-    // MARK: - Swim Section
+    /// « 2,6 », « 10,8 »: the comma the rest of the app reads.
+    private static func oneDecimal(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(1)).locale(SharpitLocale.french))
+    }
 
     private var swimSection: some View {
-        disciplineContainer(
-            title: "Natation",
-            subtitle: "Vitesse critique de nage (CSS) et longueur de bassin habituelle.",
-            symbolName: "figure.pool.swim",
-            color: SharpitColor.foreground
-        ) {
-            VStack(spacing: SharpitSpacing.sm) {
-                ThresholdInputField(
-                    label: "Vitesse critique (CSS)",
-                    text: $form.swimCss,
-                    placeholder: "1:38",
-                    unit: "/100 m",
-                    keyboard: .numbersAndPunctuation,
-                    error: form.error(for: .swimCss),
-                    dynamicHint: "Allure seuil en continu",
-                    onChange: scheduleAutoSave
-                )
-
-                poolLengthSelector
-            }
+        disciplineCard(title: "Natation", symbol: "figure.pool.swim") {
+            ThresholdRow(
+                label: "Vitesse critique",
+                text: $form.swimCss,
+                placeholder: "1:38",
+                unit: "/100 m",
+                keyboard: .numbersAndPunctuation,
+                error: form.error(for: .swimCss),
+                hint: "CSS · allure seuil en continu",
+                onChange: scheduleAutoSave
+            )
+            poolLengthRow
         }
     }
 
-    private var poolLengthSelector: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Longueur de bassin")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-
-            HStack(spacing: SharpitSpacing.xs) {
-                ForEach([25, 50], id: \.self) { length in
-                    let isSelected = form.poolLength == "\(length)"
-                    Button {
-                        withAnimation(.snappy(duration: 0.2)) {
-                            form.poolLength = "\(length)"
-                        }
-                        scheduleAutoSave()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text("\(length) m")
-                                .font(SharpitTypography.bodyEmphasis)
-                            if isSelected {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 11, weight: .bold))
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .sharpitConcentricBackground(isSelected ? SharpitColor.foreground.opacity(0.18) : SharpitColor.card, minimum: SharpitRadius.small)
-                        .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.foreground)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: SharpitRadius.small)
-                                .strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.border.opacity(0.6), lineWidth: isSelected ? 1.5 : 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+    private var poolLengthRow: some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Text("Bassin")
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+            Spacer(minLength: SharpitSpacing.xs)
+            SharpitSegmentedControl(
+                selection: Binding(
+                    get: { form.poolLength },
+                    set: { form.poolLength = $0; scheduleAutoSave() }
+                ),
+                options: ["25", "50"].map { .init(value: $0, label: "\($0) m") }
+            )
+            .frame(width: 148)
         }
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
+        .padding(.vertical, SharpitSpacing.sm)
     }
 
-    // MARK: - VO₂max Estimates Section
+    // MARK: - Measured by the watch
 
     @ViewBuilder
     private var estimatesSection: some View {
         let running = store.profile.vo2maxRunning
         let cycling = store.profile.vo2maxCycling
         if running != nil || cycling != nil {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Mesuré pour toi")
-                        .font(SharpitTypography.sectionTitle)
-                        .foregroundStyle(SharpitColor.foreground)
-
-                    Text("Estimé par ta montre. Se règle sur la montre, pas ici.")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-
-                HStack(spacing: SharpitSpacing.sm) {
-                    if let running {
-                        vo2maxCard(title: "VO₂max course", value: running, icon: "figure.run")
-                    }
-                    if let cycling {
-                        vo2maxCard(title: "VO₂max vélo", value: cycling, icon: "bicycle")
-                    }
-                }
+            disciplineCard(title: "Mesuré par ta montre", symbol: "applewatch", subtitle: "Se règle sur la montre") {
+                if let running { measuredRow("VO₂max course", value: running) }
+                if let cycling { measuredRow("VO₂max vélo", value: cycling) }
             }
         }
     }
 
-    private func vo2maxCard(title: String, value: Int, icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                SharpitIconTile(symbol: icon, size: 28)
-                Spacer()
-                Text("Montre")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(SharpitColor.analysisGrid.opacity(0.3), in: Capsule())
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(value)")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text("ml/kg/min")
-                        .font(.system(size: 11))
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-
-                Text(title)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
+    private func measuredRow(_ title: String, value: Int) -> some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            Text(title)
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+            Spacer(minLength: SharpitSpacing.xs)
+            SharpitRowFigure(value: "\(value)", unit: "ml/kg/min")
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
+        .frame(minHeight: SharpitSpacing.rowHeight)
+        .accessibilityElement(children: .combine)
     }
 
-    // MARK: - History Section
+    // MARK: - History
 
     @ViewBuilder
     private var historySection: some View {
         if !store.history.isEmpty {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Historique des calibrations")
-                        .font(SharpitTypography.sectionTitle)
-                        .foregroundStyle(SharpitColor.foreground)
-
-                    Text("Évolution de tes repères enregistrés au fil des tests et saisons.")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-
-                VStack(spacing: SharpitSpacing.xs) {
-                    ForEach(store.history) { snapshot in
-                        historyRow(snapshot)
-                    }
+            disciplineCard(title: "Historique", symbol: "clock.arrow.circlepath") {
+                ForEach(store.history) { snapshot in
+                    historyRow(snapshot)
                 }
             }
         }
     }
 
     private func historyRow(_ snapshot: V1ThresholdSnapshot) -> some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(snapshot.createdAt.sharpitFormatted(.dateTime.day().month(.abbreviated).year()))
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-
-                    Text(snapshot.sourceLabel)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(SharpitColor.primary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(SharpitColor.primary.opacity(0.12), in: Capsule())
-                }
-
-                Text(formattedSnapshotValues(snapshot))
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: SharpitSpacing.xs) {
+                Text(snapshot.createdAt.sharpitFormatted(.dateTime.day().month(.abbreviated).year()))
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: SharpitSpacing.xs)
+                Text(snapshot.sourceLabel)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
             }
-
-            Spacer()
+            Text(formattedSnapshotValues(snapshot))
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
+        .padding(.vertical, SharpitSpacing.sm)
+        .accessibilityElement(children: .combine)
     }
 
     private func formattedSnapshotValues(_ snapshot: V1ThresholdSnapshot) -> String {
@@ -451,40 +324,21 @@ struct ThresholdsView: View {
         return parts.isEmpty ? "—" : parts.joined(separator: " · ")
     }
 
-    // MARK: - Container Helper
+    // MARK: - Card
 
-    private func disciplineContainer<Content: View>(
+    /// A sport is told by its glyph in the ink tile, never by a colour (ADR-085).
+    private func disciplineCard<Content: View>(
         title: String,
-        subtitle: String,
-        symbolName: String,
-        color: Color,
+        symbol: String,
+        subtitle: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            HStack(spacing: SharpitSpacing.sm) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                        .fill(color.opacity(0.15))
-                        .frame(width: 36, height: 36)
-                    Image(systemName: symbolName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(color)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(SharpitTypography.cardTitle)
-                        .foregroundStyle(SharpitColor.foreground)
-
-                    Text(subtitle)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-
-                Spacer()
-            }
-
-            content()
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitCardHeader(title: title, symbol: symbol, subtitle: subtitle, showsChevron: false)
+            // The last row's own padding already sits above the card's: pulled in so the foot
+            // does not read as an empty row.
+            SharpitInsetGroup { content() }
+                .padding(.bottom, -SharpitSpacing.sm)
         }
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panel)
@@ -530,61 +384,54 @@ struct ThresholdsView: View {
     }
 }
 
-// MARK: - Threshold Input Field
+// MARK: - Threshold Row
 
-private struct ThresholdInputField: View {
+/// One reference as a row: its name and what it means on the left, the figure typed in place on
+/// the right. A tap anywhere on the row puts the cursor in the figure.
+private struct ThresholdRow: View {
     let label: String
     @Binding var text: String
     let placeholder: String
     let unit: String
     var keyboard: UIKeyboardType = .numberPad
     var error: String?
-    var dynamicHint: String?
+    var hint: String?
     var onChange: () -> Void
 
+    @FocusState private var isFocused: Bool
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
+        HStack(spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(error != nil ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
-
-                Spacer()
-
-                if let error {
-                    Text(error)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(SharpitColor.signalRisk)
-                } else if let dynamicHint {
-                    Text(dynamicHint)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(SharpitColor.primary)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                if let line = error ?? hint {
+                    Text(line)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(error != nil ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-
-            HStack(spacing: SharpitSpacing.xs) {
+            Spacer(minLength: SharpitSpacing.xs)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
                 TextField(placeholder, text: $text)
-                    .font(.system(size: 19, weight: .semibold, design: .rounded))
-                    .foregroundStyle(SharpitColor.foreground)
+                    .font(SharpitTypography.data)
+                    .foregroundStyle(error != nil ? SharpitColor.signalRisk : SharpitColor.foreground)
+                    .multilineTextAlignment(.trailing)
                     .keyboardType(keyboard)
-                    .onChange(of: text) { _, _ in
-                        onChange()
-                    }
-
+                    .focused($isFocused)
+                    .frame(width: 72)
+                    .onChange(of: text) { _, _ in onChange() }
                 Text(unit)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .sharpitConcentricBackground(SharpitColor.analysisGrid.opacity(0.35), minimum: 6)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .sharpitConcentricBackground(SharpitColor.card, minimum: SharpitRadius.small)
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.small)
-                    .strokeBorder(error != nil ? SharpitColor.signalRisk : SharpitColor.border.opacity(0.6), lineWidth: error != nil ? 1.5 : 1)
-            )
         }
+        .padding(.horizontal, SharpitSpacing.rowPaddingX)
+        .padding(.vertical, SharpitSpacing.sm)
+        .frame(minHeight: SharpitSpacing.rowHeight)
+        .contentShape(.rect)
+        .onTapGesture { isFocused = true }
     }
 }
