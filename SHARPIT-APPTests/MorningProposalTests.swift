@@ -105,6 +105,10 @@ private func loadedProposal(_ store: TodayStore) -> V1TodayMorningProposal? {
     #expect(MorningProposalReadout.headlineParts(proposal.from) == ["Seuil", "40 min"])
     #expect(MorningProposalReadout.headlineParts(.init(intensityLabel: nil, durationMin: 30, description: nil)) == ["30 min"])
     #expect(MorningProposalReadout.headlineParts(.init(intensityLabel: nil, durationMin: nil, description: nil)) == ["Séance"])
+    #expect(MorningProposalReadout.change(
+        from: .init(intensityLabel: "Endurance", durationMin: 75, description: nil),
+        to: .init(intensityLabel: "Récupération", durationMin: 55, description: nil)
+    ) == "Endurance 75 min → Récupération 55 min")
 }
 
 @Test func aProposalReadFromTheNightAloneSaysTheCheckInIsToDo() throws {
