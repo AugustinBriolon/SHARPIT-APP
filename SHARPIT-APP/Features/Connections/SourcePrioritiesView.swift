@@ -49,6 +49,7 @@ struct SourcePrioritiesView: View {
                 Section {
                     ForEach(sourceClass.providers.filter { store.isConnected($0.id) }) { provider in
                         row(provider, in: sourceClass)
+                        writeCalendarRow(provider, in: sourceClass)
                     }
                 } header: {
                     SharpitEyebrow(sourceClass.label)
@@ -78,8 +79,6 @@ struct SourcePrioritiesView: View {
         let isEnabled = store.isEnabled(provider.id, in: sourceClass.id)
         let isPrimary = store.isPrimary(provider.id, in: sourceClass.id)
         let choosesPrimary = store.canChoosePrimary(in: sourceClass.id) && isEnabled
-        let showsGooglePicker = showsGoogleWriteCalendarPicker(in: sourceClass, provider: provider)
-        let showsApplePicker = showsAppleWriteCalendarPicker(in: sourceClass, provider: provider)
         return HStack(spacing: SharpitSpacing.sm) {
             if let logo = ProviderLogo.Provider(integrationId: provider.id) {
                 ProviderLogo(provider: logo)
@@ -122,38 +121,6 @@ struct SourcePrioritiesView: View {
                         ? "\(provider.name), \(isPrimary ? "principale" : "pas principale")"
                         : provider.name
                 )
-
-                if showsGooglePicker {
-                    NavigationLink {
-                        GoogleCalendarPickerView(tokenProvider: tokenProvider, client: googleClient) {
-                            Task { await refreshGoogleWriteTarget() }
-                        }
-                    } label: {
-                        Text(googleWriteCalendarSubtitle)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(
-                                googleWriteTargetHint != nil
-                                    ? SharpitColor.signalRisk
-                                    : SharpitColor.mutedForeground
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Calendrier Google, \(googleWriteCalendarSubtitle)")
-                }
-
-                if showsApplePicker {
-                    NavigationLink {
-                        AppleCalendarPickerView {
-                            Task { await refreshAppleWriteCalendarName() }
-                        }
-                    } label: {
-                        Text(appleWriteCalendarSubtitle)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Calendrier Apple, \(appleWriteCalendarSubtitle)")
-                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -172,6 +139,43 @@ struct SourcePrioritiesView: View {
             .tint(SharpitColor.primary)
         }
         .padding(.vertical, SharpitSpacing.xxs)
+    }
+
+    /// Its own row: inside the provider row, beside its button and switch, the link was a hard target.
+    @ViewBuilder
+    private func writeCalendarRow(_ provider: V1SourceClass.Provider, in sourceClass: V1SourceClass) -> some View {
+        if showsGoogleWriteCalendarPicker(in: sourceClass, provider: provider) {
+            NavigationLink {
+                GoogleCalendarPickerView(tokenProvider: tokenProvider, client: googleClient) {
+                    Task { await refreshGoogleWriteTarget() }
+                }
+            } label: {
+                writeCalendarLabel(
+                    "Calendrier Google",
+                    value: googleWriteCalendarSubtitle,
+                    isProblem: googleWriteTargetHint != nil
+                )
+            }
+        } else if showsAppleWriteCalendarPicker(in: sourceClass, provider: provider) {
+            NavigationLink {
+                AppleCalendarPickerView {
+                    Task { await refreshAppleWriteCalendarName() }
+                }
+            } label: {
+                writeCalendarLabel("Calendrier de l'iPhone", value: appleWriteCalendarSubtitle, isProblem: false)
+            }
+        }
+    }
+
+    private func writeCalendarLabel(_ title: String, value: String, isProblem: Bool) -> some View {
+        LabeledContent {
+            Text(value)
+                .foregroundStyle(isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+        } label: {
+            Text(title)
+                .foregroundStyle(SharpitColor.foreground)
+        }
+        .font(SharpitTypography.meta)
     }
 
     private func showsGoogleWriteCalendarPicker(
