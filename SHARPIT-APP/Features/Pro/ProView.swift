@@ -114,7 +114,8 @@ struct ProView: View {
             .subscriptionStoreControlStyle(.prominentPicker)
             .subscriptionStoreButtonLabel(.multiline)
             .storeButton(.hidden, for: .cancellation)
-            .storeButton(.visible, for: .restorePurchases)
+            // Restore goes through `store.restore()` below, which hands each entitlement to the web.
+            .storeButton(.hidden, for: .restorePurchases)
             .inAppPurchaseOptions { _ in
                 [.appAccountToken(appAccountToken)]
             }
@@ -179,7 +180,7 @@ struct ProView: View {
                     .sharpitGlassButton(prominent: false)
                     .frame(maxWidth: .infinity)
             }
-            if store.isPro {
+            if !store.isPro || store.isAppleSubscription {
                 Button {
                     Task { await store.restore() }
                 } label: {

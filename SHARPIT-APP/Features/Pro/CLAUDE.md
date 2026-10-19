@@ -8,5 +8,7 @@ every purchase, and hands every transaction — a purchase in `ProView`'s `Subsc
 `Transaction.unfinished` and `Transaction.updates` from launch, a restore — to
 `/api/v1/billing/apple/verify`, finishing it only once the web has it. The app never decides the
 tier. Products: `app.sharpit.ios.pro.monthly` and `.yearly` (`SharpitProProduct`), mirrored in
-`Config/SharpitPro.storekit` for the simulator (select it in the scheme's Run → Options →
-StoreKit Configuration).
+`Config/SharpitPro.storekit` for the simulator (preselected in the shared scheme's Run →
+Options → StoreKit Configuration; `ProProductsTests` keeps the ids in sync). Those local
+transactions are environment `Xcode`, unsigned by Apple: only a dev API (`next dev`) accepts
+them, so run Debug against the local API (no `SHARPIT_API_ORIGIN` override in `Local.xcconfig`) to buy end to end.
