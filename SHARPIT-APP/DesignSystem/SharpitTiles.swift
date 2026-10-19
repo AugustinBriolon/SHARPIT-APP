@@ -14,7 +14,12 @@ struct SharpitIconTile: View {
             .font(.system(size: side * 0.42, weight: .bold))
             .foregroundStyle(SharpitColor.inkAccent)
             .frame(width: side, height: side)
-            .sharpitConcentricBackground(SharpitColor.inkSurface, minimum: SharpitRadius.tile * side / SharpitTokens.tileSize)
+            // A fixed squircle: concentric, a tile in a list's first or last row took the card's
+            // corner and read as a circle beside the squares of the middle rows.
+            .background(
+                SharpitColor.inkSurface,
+                in: RoundedRectangle(cornerRadius: SharpitRadius.tile * side / SharpitTokens.tileSize, style: .continuous)
+            )
             .accessibilityHidden(true)
     }
 }

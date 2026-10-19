@@ -278,8 +278,10 @@ review's hero, Santé's age — the rest are white cards.
 
 Corners nest concentrically (HIG, iOS 26). A container declares its corner
 (`sharpitContainerCorner`, done by every `sharpitSurface`); what sits inside fills with
-`sharpitConcentricBackground(_:minimum:)` — chips, tiles, buttons, segments — never a fixed
-`RoundedRectangle`, so a button docked at a sheet's foot follows the sheet's curve. The token radius
+`sharpitConcentricBackground(_:minimum:)` — chips, buttons, segments — never a fixed
+`RoundedRectangle`, so a button docked at a sheet's foot follows the sheet's curve. The icon tile
+is the exception: a fixed squircle, since in a list's first or last row a concentric tile took the
+card's corner and read as a circle beside its neighbours. The token radius
 is the minimum; before iOS 26 it is the corner. Strokes keep a fixed shape (ConcentricRectangle is
 not insettable).
 
