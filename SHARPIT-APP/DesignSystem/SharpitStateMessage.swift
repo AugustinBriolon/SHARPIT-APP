@@ -12,16 +12,26 @@ struct SharpitStateMessage: View {
     var retry: (() -> Void)?
 
     var body: some View {
+        // The system's layout, the brand's voice: the ink tile, SharpIt's type and its button —
+        // shown before `RootView` too (the account gate), where no app tint reaches.
         ContentUnavailableView {
-            Label(title, systemImage: symbol)
+            VStack(spacing: SharpitSpacing.md) {
+                SharpitIconTile(symbol: symbol, size: 56)
+                Text(title)
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+            }
         } description: {
             if let detail {
                 Text(detail)
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.mutedForeground)
             }
         } actions: {
             if let retry {
-                Button("Réessayer", action: retry)
-                    .buttonStyle(.bordered)
+                SharpitPrimaryButton(title: String(localized: "Réessayer"), style: .secondary, action: retry)
+                    .frame(maxWidth: 220)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
