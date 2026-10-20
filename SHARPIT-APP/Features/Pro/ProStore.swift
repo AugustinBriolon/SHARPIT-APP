@@ -171,7 +171,12 @@ final class ProStore {
             if storeProducts.isEmpty {
                 await loadProducts()
             }
-            guard let product = storeProducts.first(where: { $0.id == productId }) ?? (try await Product.products(for: [productId])).first else {
+            let product: Product
+            if let cached = storeProducts.first(where: { $0.id == productId }) {
+                product = cached
+            } else if let fetched = try await Product.products(for: [productId]).first {
+                product = fetched
+            } else {
                 message = String(localized: "Offre introuvable dans l'App Store.")
                 return false
             }

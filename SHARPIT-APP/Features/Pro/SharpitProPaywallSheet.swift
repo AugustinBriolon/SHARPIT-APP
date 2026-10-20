@@ -167,10 +167,22 @@ struct SharpitProPaywallSheet: View {
         }
     }
 
+    private var yearlyPriceText: String {
+        if let product = store.storeProducts.first(where: { $0.id == SharpitProProduct.yearly }) {
+            return "\(product.displayPrice) / an"
+        }
+        return "99,99 € / an"
+    }
+
+    private var monthlyPriceText: String {
+        if let product = store.storeProducts.first(where: { $0.id == SharpitProProduct.monthly }) {
+            return "\(product.displayPrice) / mois"
+        }
+        return "9,99 € / mois"
+    }
+
     private var annualCard: some View {
         let isSelected = selectedProductId == SharpitProProduct.yearly
-        let yearlyProduct = store.storeProducts.first(where: { $0.id == SharpitProProduct.yearly })
-        let priceText = yearlyProduct != nil ? "\(yearlyProduct!.displayPrice) / an" : "99,99 € / an"
 
         return Button {
             UISelectionFeedbackGenerator().selectionChanged()
@@ -205,7 +217,7 @@ struct SharpitProPaywallSheet: View {
 
                 Spacer()
 
-                Text(priceText)
+                Text(yearlyPriceText)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
             }
@@ -213,7 +225,7 @@ struct SharpitProPaywallSheet: View {
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(SharpitColor.cardBackground)
+                    .fill(SharpitColor.card)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
@@ -225,8 +237,6 @@ struct SharpitProPaywallSheet: View {
 
     private var monthlyCard: some View {
         let isSelected = selectedProductId == SharpitProProduct.monthly
-        let monthlyProduct = store.storeProducts.first(where: { $0.id == SharpitProProduct.monthly })
-        let priceText = monthlyProduct != nil ? "\(monthlyProduct!.displayPrice) / mois" : "9,99 € / mois"
 
         return Button {
             UISelectionFeedbackGenerator().selectionChanged()
@@ -251,7 +261,7 @@ struct SharpitProPaywallSheet: View {
 
                 Spacer()
 
-                Text(priceText)
+                Text(monthlyPriceText)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
             }
@@ -259,7 +269,7 @@ struct SharpitProPaywallSheet: View {
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(SharpitColor.cardBackground)
+                    .fill(SharpitColor.card)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
