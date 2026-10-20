@@ -25,13 +25,35 @@ final class ActivityStatusStore {
 
     private let client: any ActivityStatusServing
     private let tokenProvider: () async throws -> String
+    /// An in-flight read task; parallel callers wait on the first instead of firing redundant HTTP requests.
+    private var inFlight: Task<Void, Never>?
 
     init(client: any ActivityStatusServing, tokenProvider: @escaping () async throws -> String) {
         self.client = client
         self.tokenProvider = tokenProvider
     }
 
+    /// Reads the mode unless it is already loaded or being loaded.
+    func loadIfNeeded() async {
+        guard phase != .ready else { return }
+        await load()
+    }
+
     func load() async {
+        if let inFlight {
+            await inFlight.value
+            return
+        }
+        let task = Task { [weak self] in
+            guard let self else { return }
+            await self.performLoad()
+        }
+        inFlight = task
+        await task.value
+        inFlight = nil
+    }
+
+    private func performLoad() async {
         if phase != .ready { phase = .loading }
         do {
             let token = try await tokenProvider()

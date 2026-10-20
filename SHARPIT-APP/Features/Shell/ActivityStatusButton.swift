@@ -46,7 +46,7 @@ struct ActivityStatusButton: View {
         .sheet(isPresented: $isPresented) {
             ActivityStatusDrawer(store: store)
         }
-        .task { await store.load() }
+        .task { await store.loadIfNeeded() }
     }
 }
 

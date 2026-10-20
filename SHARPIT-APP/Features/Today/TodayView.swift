@@ -167,8 +167,10 @@ struct TodayView: View {
                 }
             }
             .refreshable {
-                await store.refresh()
-                await nutrition?.load(trainingDayId: store.dayId)
+                async let refreshToday: Void = store.refresh()
+                async let refreshNutrition: Void? = nutrition?.load(trainingDayId: store.dayId)
+                async let refreshStatus: Void? = activityStatusStore?.load()
+                _ = await (refreshToday, refreshNutrition, refreshStatus)
                 weather.start()
                 // The pull can take a minute; the gesture ends on what the server has now,
                 // and the screen reloads once the providers have answered.
@@ -247,9 +249,10 @@ struct TodayView: View {
             }
             .task {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
-                // The food log is read alongside today rather than once the fold is drawn, so
-                // the nutrition card no longer waits on the whole day before asking for its own.
-                async let nutritionRead: Void? = nutrition?.load(trainingDayId: store.dayId)
+                // The food log and activity status are read alongside today rather than once the fold
+                // is drawn, so all fold cards arrive together without cascading layout shifts.
+                async let statusRead: Void? = activityStatusStore?.loadIfNeeded()
+                async let nutritionRead: Void? = nutrition?.loadIfNeeded(trainingDayId: store.dayId)
                 await store.load(resetToLoading: shouldReset)
                 // The server has answered, or refused: Résumé is drawn whole, and the splash may
                 // go. The snapshot alone is the plate without its sessions, so it waits for the
@@ -257,7 +260,7 @@ struct TodayView: View {
                 launchCurtain?.markReady()
                 Task { await pullProviders(force: false) }
                 weather.start()
-                _ = await nutritionRead
+                _ = await (statusRead, nutritionRead)
                 await evaluateRessentiPrompt()
             }
         }
