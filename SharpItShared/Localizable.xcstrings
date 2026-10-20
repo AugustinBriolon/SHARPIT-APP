@@ -42599,6 +42599,294 @@
           }
         }
       }
+    },
+    "%lld ans": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld years old"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ans"
+          }
+        }
+      }
+    },
+    "Abonnement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement"
+          }
+        }
+      }
+    },
+    "Analyse technique dans Activité": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Technical analysis in Activity"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyse technique dans Activité"
+          }
+        }
+      }
+    },
+    "CTL, ATL et TSB sur six semaines, TSS des huit dernières.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CTL, ATL and TSB over six weeks, TSS for the last eight."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CTL, ATL et TSB sur six semaines, TSS des huit dernières."
+          }
+        }
+      }
+    },
+    "Changer la photo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changer la photo"
+          }
+        }
+      }
+    },
+    "Connexion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion"
+          }
+        }
+      }
+    },
+    "Découvrir SharpIt Pro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discover SharpIt Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Découvrir SharpIt Pro"
+          }
+        }
+      }
+    },
+    "E-mail et mot de passe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email and password"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-mail et mot de passe"
+          }
+        }
+      }
+    },
+    "En mots plutôt qu'en sigles. Le bon choix pour commencer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Words rather than acronyms. The right choice to start with."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En mots plutôt qu'en sigles. Le bon choix pour commencer."
+          }
+        }
+      }
+    },
+    "Les données gardées sur cet iPhone sont effacées. Elles reviennent à ta prochaine connexion.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data kept on this iPhone is erased. It comes back the next time you sign in."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les données gardées sur cet iPhone sont effacées. Elles reviennent à ta prochaine connexion."
+          }
+        }
+      }
+    },
+    "NP, IF, VI, EF, découplage, temps par zone, seuils utilisés.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NP, IF, VI, EF, decoupling, time in zones, thresholds used."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NP, IF, VI, EF, découplage, temps par zone, seuils utilisés."
+          }
+        }
+      }
+    },
+    "Photo et sécurité": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo and security"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo et sécurité"
+          }
+        }
+      }
+    },
+    "Se déconnecter ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se déconnecter ?"
+          }
+        }
+      }
+    },
+    "Tes données restent sur ton compte. Pour le supprimer, va dans Confidentialité & conditions.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data stays on your account. To delete it, go to Privacy & terms."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes données restent sur ton compte. Pour le supprimer, va dans Confidentialité & conditions."
+          }
+        }
+      }
+    },
+    "Ton prénom sert à te saluer, ton nom reste sur ton compte.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first name is used to greet you; your last name stays on your account."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton prénom sert à te saluer, ton nom reste sur ton compte."
+          }
+        }
+      }
+    },
+    "Vélo endurance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endurance ride"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vélo endurance"
+          }
+        }
+      }
+    },
+    "Zones, charge et seuils, avec les chiffres qui les fondent.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zones, load and thresholds, with the numbers behind them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zones, charge et seuils, avec les chiffres qui les fondent."
+          }
+        }
+      }
+    },
+    "« 78 TSS » au lieu de « charge 78 ». Le chiffre est le même.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“78 TSS” instead of “load 78”. Same number."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« 78 TSS » au lieu de « charge 78 ». Le chiffre est le même."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

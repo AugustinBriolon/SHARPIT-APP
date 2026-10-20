@@ -76,6 +76,16 @@ struct AccountAvatar: View {
     }
 }
 
+nonisolated enum AccountDisplayName {
+    /// « Augustin Briolon »; one name alone; nil when Clerk holds none.
+    static func from(first: String?, last: String?) -> String? {
+        let parts = [first, last]
+            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+}
+
 nonisolated enum AccountInitials {
     /// « Augustin Briolon » → « AB »; one name → its first letter; no name → the e-mail's first
     /// letter; nothing at all → nil, and the disc shows a person instead of a question mark.

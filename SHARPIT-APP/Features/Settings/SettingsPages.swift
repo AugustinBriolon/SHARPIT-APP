@@ -23,6 +23,8 @@ struct AccountView: View {
     @State private var nameSave: Task<Void, Never>?
     @State private var profileSave: Task<Void, Never>?
     @State private var isEditingAccount = false
+    @State private var isConfirmingSignOut = false
+    @Environment(ProStore.self) private var pro: ProStore?
 
     init(
         profileClient: any AthleteProfileServing,
@@ -39,17 +41,42 @@ struct AccountView: View {
     var body: some View {
         List {
             Section {
-                VStack(spacing: SharpitSpacing.sm) {
-                    AccountAvatar(size: 88)
-                    Button("Photo, e-mail et mot de passe") { isEditingAccount = true }
-                        .font(SharpitTypography.meta.weight(.semibold))
-                        .foregroundStyle(SharpitColor.primary)
-                }
-                .frame(maxWidth: .infinity)
+                AccountHeader(
+                    firstName: firstName,
+                    lastName: lastName,
+                    isPro: isPro,
+                    onEditPhoto: { isEditingAccount = true }
+                )
                 .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
             }
 
-            Section(eyebrow: String(localized: "Identité")) {
+            // The header already says who and which tier: the rows only open what changes them.
+            Section(eyebrow: String(localized: "Connexion")) {
+                Button { isEditingAccount = true } label: {
+                    SharpitSettingsLabel(
+                        symbol: "lock",
+                        title: String(localized: "Photo et sécurité"),
+                        detail: String(localized: "E-mail et mot de passe")
+                    )
+                }
+                .buttonStyle(.plain)
+                NavigationLink(value: SettingsRoute.pro) {
+                    SharpitSettingsLabel(
+                        symbol: "sparkle",
+                        title: String(localized: "Abonnement"),
+                        detail: isPro || pro?.pro?.subscription != nil
+                            ? ProReadout.status(pro?.pro?.subscription, isPro: isPro)
+                            : String(localized: "Découvrir SharpIt Pro")
+                    )
+                }
+            }
+            .sharpitListRows()
+
+            Section(
+                eyebrow: String(localized: "Identité"),
+                footer: String(localized: "Ton prénom sert à te saluer, ton nom reste sur ton compte.")
+            ) {
                 LabeledContent("Prénom") {
                     TextField("Prénom", text: $firstName)
                         .multilineTextAlignment(.trailing)
@@ -90,12 +117,18 @@ struct AccountView: View {
                         .foregroundStyle(SharpitColor.signalRisk)
                 }
                 if form.birthDate != nil {
-                    DatePicker(
-                        String(localized: "Date de naissance"),
-                        selection: birthDateBinding,
-                        in: Self.birthDateRange,
-                        displayedComponents: .date
-                    )
+                    // The age reads under the label it derives from, not on a read-only row of its own.
+                    DatePicker(selection: birthDateBinding, in: Self.birthDateRange, displayedComponents: .date) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Date de naissance")
+                            if let age = AccountAge.label(birthDate: form.birthDate) {
+                                Text(age)
+                                    .font(SharpitTypography.meta)
+                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .contentTransition(.numericText())
+                            }
+                        }
+                    }
                     .environment(\.locale, SharpitLocale.current)
                 } else {
                     Button("Ajouter ta date de naissance") {
@@ -103,21 +136,23 @@ struct AccountView: View {
                         scheduleProfileSave()
                     }
                 }
-                LabeledContent("Âge", value: AccountAge.years(birthDate: form.birthDate).map { "\($0) ans" } ?? "—")
             }
             .sharpitListRows()
 
             Section {
-                Button(role: .destructive) {
-                    // Same wipe as account delete: health cache, SwiftData and disk stay tied
-                    // to the account that wrote them — never paint the next sign-in from them.
-                    LocalAccountData.erase(context: modelContext)
-                    Task { try? await clerk.auth.signOut() }
-                } label: {
+                Button(role: .destructive) { isConfirmingSignOut = true } label: {
                     Text("Se déconnecter").frame(maxWidth: .infinity)
                 }
+            } footer: {
+                SharpitListFooter(String(localized: "Tes données restent sur ton compte. Pour le supprimer, va dans Confidentialité & conditions."))
             }
             .sharpitListRows()
+        }
+        .confirmationDialog("Se déconnecter ?", isPresented: $isConfirmingSignOut, titleVisibility: .visible) {
+            Button("Se déconnecter", role: .destructive, action: signOut)
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Les données gardées sur cet iPhone sont effacées. Elles reviennent à ta prochaine connexion.")
         }
         .sharpitGroupedList()
         .disabled(!hasLoaded)
@@ -136,6 +171,15 @@ struct AccountView: View {
         .onChange(of: lastName) { _, _ in scheduleNameSave() }
         .onChange(of: form.heightCm) { _, _ in scheduleProfileSave() }
         .sheet(isPresented: $isEditingAccount) { SharpitUserProfileSheet() }
+    }
+
+    private var isPro: Bool { pro?.pro?.isPro ?? store.profile.isPro }
+
+    /// Same wipe as account delete: health cache, SwiftData and disk stay tied to the account
+    /// that wrote them — never paint the next sign-in from them.
+    private func signOut() {
+        LocalAccountData.erase(context: modelContext)
+        Task { try? await clerk.auth.signOut() }
     }
 
     private var sexBinding: Binding<AthleteSex?> {
@@ -207,11 +251,63 @@ struct AccountView: View {
     }()
 }
 
+/// The page's top: the face (a tap opens Clerk's photo editor), the name as typed below, the
+/// e-mail and the tier.
+private struct AccountHeader: View {
+    let firstName: String
+    let lastName: String
+    let isPro: Bool
+    let onEditPhoto: () -> Void
+
+    @Environment(Clerk.self) private var clerk
+    @ScaledMetric(relativeTo: .largeTitle) private var avatarSize: CGFloat = 96
+
+    var body: some View {
+        VStack(spacing: SharpitSpacing.sm) {
+            Button(action: onEditPhoto) {
+                AccountAvatar(size: avatarSize)
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                            .frame(width: 28, height: 28)
+                            .background(SharpitColor.inkSurface, in: Circle())
+                    }
+            }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityLabel("Changer la photo")
+
+            VStack(spacing: SharpitSpacing.xxs) {
+                Text(AccountDisplayName.from(first: firstName, last: lastName) ?? String(localized: "Ton compte"))
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+                if let email = clerk.user?.primaryEmailAddress?.emailAddress {
+                    Text(email)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                }
+            }
+            SharpitPill(isPro ? String(localized: "Pro") : String(localized: "Gratuit"), style: isPro ? .lime : .neutral)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, SharpitSpacing.md)
+        .accessibilityElement(children: .contain)
+    }
+}
+
 nonisolated enum AccountAge {
     /// Whole years since the birth date, as the web's profile shows them.
     static func years(birthDate: Date?, now: Date = Date(), calendar: Calendar = .current) -> Int? {
         guard let birthDate, birthDate < now else { return nil }
         return calendar.dateComponents([.year], from: birthDate, to: now).year
+    }
+
+    /// « 36 ans », under the birth date it comes from; nil while none is set.
+    static func label(birthDate: Date?, now: Date = Date(), calendar: Calendar = .current) -> String? {
+        years(birthDate: birthDate, now: now, calendar: calendar).map { String(localized: "\($0) ans") }
     }
 }
 

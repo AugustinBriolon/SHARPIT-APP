@@ -337,10 +337,8 @@ private struct AccountRow: View {
     }
 
     private var name: String {
-        let parts = [clerk.user?.firstName, clerk.user?.lastName]
-            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        return parts.isEmpty ? String(localized: "Ton compte") : parts.joined(separator: " ")
+        AccountDisplayName.from(first: clerk.user?.firstName, last: clerk.user?.lastName)
+            ?? String(localized: "Ton compte")
     }
 }
 

@@ -50,71 +50,44 @@ struct DisplayModeView: View {
         List {
             if store.phase == .loaded {
                 Section {
-                    choice(
-                        title: String(localized: "Essentiel"),
-                        detail: String(localized: "Ce qui s'est passé, ce que ça a coûté, quoi faire ensuite — en mots plutôt qu'en sigles."),
-                        example: String(localized: "Charge 78"),
-                        isExpert: false
-                    )
-                    choice(
-                        title: String(localized: "Expert"),
-                        detail: String(localized: "Les mêmes écrans, plus la couche technique qui les fonde."),
-                        example: "78 TSS · IF 0,81 · CTL 52 · TSB −10",
-                        isExpert: true
-                    )
+                    DisplayModePicker(isExpert: store.isExpertReading, onSelect: select)
                 } footer: {
                     SharpitListFooter(String(localized: "Ce que SharpIt affiche, pas ce qu'il mesure : les deux lectures partent des mêmes calculs. Tu peux changer quand tu veux."))
                 }
-                .sharpitListRows()
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
 
                 // Said exactly, screen by screen: a preference that promises more than it changes
                 // is worse than none.
                 Section(eyebrow: String(localized: "Ce qu'Expert ajoute")) {
                     change(
                         symbol: "waveform.path.ecg",
-                        title: String(localized: "Analyse technique de chaque séance"),
-                        text: String(localized: "Dans Activité : NP, IF, VI, TSS, facteur d'efficacité, découplage cardiaque, temps par zone cardiaque et de puissance, et les seuils utilisés.")
+                        title: String(localized: "Analyse technique dans Activité"),
+                        text: String(localized: "NP, IF, VI, EF, découplage, temps par zone, seuils utilisés.")
                     )
                     change(
                         symbol: "chart.xyaxis.line",
                         title: String(localized: "Ta forme dans Plan"),
-                        text: String(localized: "En haut de la semaine : forme chronique (CTL), fatigue aiguë (ATL), forme nette (TSB) sur six semaines, et ta charge TSS des huit dernières.")
+                        text: String(localized: "CTL, ATL et TSB sur six semaines, TSS des huit dernières.")
                     )
                     change(
                         symbol: "gauge.with.dots.needle.50percent",
                         title: String(localized: "La charge nommée en TSS"),
-                        text: String(localized: "Sur les séances faites et prévues : « 78 TSS » au lieu de « Charge 78 ». Le chiffre est le même.")
-                    )
-                }
-                .sharpitListRows()
-
-                Section(eyebrow: String(localized: "Pour qui ?")) {
-                    audience(
-                        title: String(localized: "Essentiel"),
-                        text: String(localized: "Pour t'entraîner sans jargon. Chaque écran dit ce qui s'est passé et quoi faire ensuite, avec des mots plutôt que des sigles. Le bon choix si tu découvres l'analyse de l'entraînement.")
-                    )
-                    audience(
-                        title: String(localized: "Expert"),
-                        text: String(localized: "Pour qui suit déjà ses zones, sa charge et ses seuils — athlète confirmé, entraîneur, ou curieux de la mécanique. Les mêmes lectures, nommées techniquement, avec les chiffres qui les fondent.")
+                        text: String(localized: "« 78 TSS » au lieu de « charge 78 ». Le chiffre est le même.")
                     )
                 }
                 .sharpitListRows()
             } else {
-                DisplayModeSkeleton()
+                Section {
+                    DisplayModePicker(isExpert: nil, onSelect: { _ in })
+                        .redacted(reason: .placeholder)
+                        .accessibilityHidden(true)
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
             }
         }
         .sharpitGroupedList()
-    }
-
-    /// One row of a single-choice group, marked with a check as the system's own settings do.
-    private func choice(title: String, detail: String, example: String, isExpert: Bool) -> some View {
-        let isSelected = store.isExpertReading == isExpert
-        return Button {
-            select(isExpert)
-        } label: {
-            DisplayModeChoiceRow(title: title, detail: detail, example: example, isSelected: isSelected)
-        }
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private func change(symbol: String, title: String, text: String) -> some View {
@@ -134,77 +107,107 @@ struct DisplayModeView: View {
         .padding(.vertical, SharpitSpacing.xxs)
     }
 
-    private func audience(title: String, text: String) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            Text(title)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.foreground)
-            Text(text)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.vertical, SharpitSpacing.xxs)
-    }
-
     private func select(_ isExpert: Bool) {
         guard store.isExpertReading != isExpert else { return }
         store.setExpertReading(isExpert)
     }
 }
 
-/// The row's content, shared with the skeleton so the two cannot drift apart.
-private struct DisplayModeChoiceRow: View {
-    let title: String
-    let detail: String
-    let example: String
-    let isSelected: Bool
+
+/// The two readings side by side, each shown on the same example session as the screens draw it —
+/// the difference seen rather than described, as iOS shows Clair and Sombre. `isExpert` nil is the
+/// skeleton, before the profile answers (`docs/adr/0008`).
+private struct DisplayModePicker: View {
+    let isExpert: Bool?
+    let onSelect: (Bool) -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                Text(title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text(detail)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(example)
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            Spacer(minLength: 0)
-            if isSelected {
-                Image(systemName: "checkmark")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.primary)
-                    .accessibilityHidden(true)
-            }
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: SharpitSpacing.md))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: SharpitSpacing.sm))
+        layout {
+            option(
+                expert: false,
+                title: String(localized: "Essentiel"),
+                audience: String(localized: "En mots plutôt qu'en sigles. Le bon choix pour commencer.")
+            )
+            option(
+                expert: true,
+                title: String(localized: "Expert"),
+                audience: String(localized: "Zones, charge et seuils, avec les chiffres qui les fondent.")
+            )
         }
-        .contentShape(.rect)
+        .padding(.vertical, SharpitSpacing.sm)
+        .animation(SharpitMotion.selection, value: isExpert)
+    }
+
+    private func option(expert: Bool, title: String, audience: String) -> some View {
+        let isSelected = isExpert == expert
+        return Button { onSelect(expert) } label: {
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                DisplayModeSample(isExpert: expert)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                            .strokeBorder(SharpitColor.primary, lineWidth: isSelected ? 2 : 0)
+                    }
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(SharpitTypography.bodyEmphasis)
+                            .foregroundStyle(SharpitColor.foreground)
+                        Text(audience)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    SharpitCheckBox(isOn: isSelected)
+                }
+                .padding(.horizontal, SharpitSpacing.xxs)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityHint(audience)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
 
-/// Two choice rows, shaped like the real ones, before the profile answers (`docs/adr/0008`).
-private struct DisplayModeSkeleton: View {
+/// One session, read in one density: the label the screens use (`ActivityFormat.trainingLoad`), so
+/// the example cannot drift from what Activité and Plan show.
+private struct DisplayModeSample: View {
+    let isExpert: Bool
+
     var body: some View {
-        Section {
-            DisplayModeChoiceRow(
-                title: String(localized: "Essentiel"),
-                detail: String(localized: "Ce qui s'est passé, ce que ça a coûté, quoi faire ensuite."),
-                example: String(localized: "Charge 78 · ressenti solide"),
-                isSelected: false
-            )
-            DisplayModeChoiceRow(
-                title: String(localized: "Expert"),
-                detail: String(localized: "Ajoute la couche technique : TSS, IF, CTL/ATL/TSB, zones, découplage."),
-                example: "78 TSS · IF 0,82 · TSB −12",
-                isSelected: false
-            )
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            SharpitIconTile(symbol: "bicycle")
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Vélo endurance")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text(verbatim: "1 h 30 · \(ActivityFormat.trainingLoad(78, isExpertReading: isExpert))")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .monospacedDigit()
+                // The technical layer, on its own line: the essential card keeps the space empty
+                // so both cards stand the same height.
+                Text(verbatim: "IF 0,81 · TSB −10")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .monospacedDigit()
+                    .opacity(isExpert ? 1 : 0)
+            }
         }
-        .sharpitListRows()
-        .redacted(reason: .placeholder)
+        .padding(SharpitSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
         .accessibilityHidden(true)
     }
 }

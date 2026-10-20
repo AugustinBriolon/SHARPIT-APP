@@ -90,6 +90,14 @@ private func weighIn(_ daysAgo: Double, weight: Double?, fat: Double? = nil, sou
     #expect(AccountInitials.from(first: nil, last: "  ") == nil)
 }
 
+@Test func displayNameJoinsTheNamesClerkHolds() {
+    #expect(AccountDisplayName.from(first: "Augustin", last: "Briolon") == "Augustin Briolon")
+    #expect(AccountDisplayName.from(first: " Gus ", last: nil) == "Gus")
+    #expect(AccountDisplayName.from(first: "", last: "Briolon") == "Briolon")
+    #expect(AccountDisplayName.from(first: " ", last: "  ") == nil)
+    #expect(AccountDisplayName.from(first: nil, last: nil) == nil)
+}
+
 @Test func ageIsWholeYears() {
     let calendar = Calendar(identifier: .gregorian)
     let birth = calendar.date(from: DateComponents(year: 1995, month: 10, day: 1))!
@@ -97,6 +105,16 @@ private func weighIn(_ daysAgo: Double, weight: Double?, fat: Double? = nil, sou
 
     #expect(AccountAge.years(birthDate: birth, now: now, calendar: calendar) == 30)
     #expect(AccountAge.years(birthDate: nil) == nil)
+}
+
+@Test func ageLabelReadsUnderTheBirthDate() {
+    let calendar = Calendar(identifier: .gregorian)
+    let birth = calendar.date(from: DateComponents(year: 1995, month: 10, day: 1))!
+    let now = calendar.date(from: DateComponents(year: 2026, month: 9, day: 24))!
+
+    #expect(AccountAge.label(birthDate: birth, now: now, calendar: calendar) == "30 ans")
+    #expect(AccountAge.label(birthDate: nil) == nil)
+    #expect(AccountAge.label(birthDate: now, now: birth, calendar: calendar) == nil)
 }
 
 @Test func appearanceMapsToAColourScheme() {

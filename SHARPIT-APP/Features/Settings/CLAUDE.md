@@ -28,10 +28,15 @@ for « Séance dans la boîte » (a synced activity counted for the plan: its sh
 and the next session, `sessionDone`), `/plan/catch-up` for « Dommage pour hier » (yesterday's session
 missed, `missedSession`: `ShellRouter.pendingCatchUp` opens Plan's adapter with the miss said, as
 « Rattraper ma semaine » does), a tab), Sources de
-données, Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: the choice needs its
-explanation), Donner un avis (`FeedbackView`: a note to the team, shown as sent on the tap and
+données, Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: two cards side by side, as iOS shows Clair and Sombre, each
+drawing the same example session in its reading through `ActivityFormat.trainingLoad`, its audience
+in one line under it; then exactly what Expert adds, screen by screen), Donner un avis (`FeedbackView`: a note to the team, shown as sent on the tap and
 posted behind to `/api/v1/feedback` with the app's version — the external beta's voice,
 `docs/beta-testflight.md`) and Confidentialité, each row saying its state before it is opened. A page's explanation is the footer of its
-list (`SharpitListFooter`), never a paragraph above it. Compte edits in
-place: first and last name through Clerk's `user.update`, sex, height and birth date through
-`AthleteProfilePatch`; e-mail, password and photo stay in Clerk's own sheet.
+list (`SharpitListFooter`), never a paragraph above it. Compte opens on its face
+(`AccountHeader`: the photo, camera badge opening Clerk's sheet, the name as typed, the e-mail, the
+tier — said once, so no row below repeats them), then « Connexion » (« Photo et sécurité », Clerk's
+sheet; « Abonnement » to Pro, with its renewal or « Découvrir SharpIt Pro »), and edits in place:
+first and last name through Clerk's `user.update`, sex, height and birth date through
+`AthleteProfilePatch`, the age read under the birth date (`AccountAge.label`), not on a row of its own. Signing out asks first (`AccountView.signOut`, the same local wipe
+as account delete) — the page's one confirmation, since it is the one thing that erases.
