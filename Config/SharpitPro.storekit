@@ -29,12 +29,12 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "9.99",
+          "displayPrice" : "12.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "6740000001",
           "introductoryOffer" : {
-            "displayPrice" : "4.99",
+            "displayPrice" : "6.49",
             "internalID" : "6740000003",
             "numberOfPeriods" : 1,
             "paymentMode" : "payAsYouGo",
