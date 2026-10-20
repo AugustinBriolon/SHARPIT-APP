@@ -250,7 +250,7 @@ private struct OnboardingHeader: View {
 /// The step's primary action, docked over a fade, with the reason it is held when it is.
 private struct OnboardingActionBar: View {
     let store: OnboardingStore
-    var onScrollToPaywall: (() -> Void)? = nil
+    var onOpenProModal: (() -> Void)? = nil
     @Environment(ProStore.self) private var pro: ProStore?
 
     var body: some View {
@@ -280,7 +280,7 @@ private struct OnboardingActionBar: View {
                 isBusy: store.isBusy || store.firstWeek == .generating && store.step == .firstWeek
             ) { [step = store.step] in
                 if step == .firstWeek, case .ready = store.firstWeek, pro?.isPro != true {
-                    onScrollToPaywall?()
+                    onOpenProModal?()
                 } else {
                     Task { await store.advance(from: step) }
                 }
@@ -332,10 +332,8 @@ private struct OnboardingActionBar: View {
         case .firstWeek:
             switch store.firstWeek {
             case .generating: String(localized: "Le coach prépare ta semaine…")
-            case .ready where pro?.isPro == true:
-                store.isBusy ? String(localized: "Ajout au plan…") : String(localized: "Ajouter à mon plan")
             case .ready:
-                String(localized: "Souscrire")
+                store.isBusy ? String(localized: "Application du plan…") : String(localized: "Appliquer le plan")
             default: String(localized: "Terminer")
             }
         default: store.isBusy ? String(localized: "Enregistrement…") : String(localized: "Continuer")
