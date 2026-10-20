@@ -15,7 +15,7 @@ App Store Connect. Order follows the launch plan: legal → iOS compliance → p
 | Usage strings: Health read/write, location, camera, microphone, speech, calendars, Bluetooth | build settings `INFOPLIST_KEY_NS*` |
 | Account deletion in the app | Paramètres › Confidentialité |
 | No Garmin in the app (guideline 5.2.2) | iOS ADR 0013 |
-| SharpIt Pro: StoreKit 2 paywall (`SubscriptionStoreView`) with `appAccountToken`, restore, manage, auto-renew notice, Terms + Privacy links | `Features/Pro/ProView.swift` |
+| SharpIt Pro: StoreKit 2 paywall (`SharpitProPaywallSheet`, App Store prices and intro offer from `Product`) with `appAccountToken`, restore, manage, auto-renew notice, Terms + Privacy links | `Features/Pro/SharpitProPaywallSheet.swift`, `Features/Pro/ProView.swift` |
 | Every transaction verified by the server (JWS against Apple's roots), tier derived server-side | SHARPIT ADR-044, `/api/v1/billing/apple/verify` |
 | App Store Server Notifications V2 (renewal, expiry, grace, billing retry, refund, revoke) | `/api/billing/apple/notifications` |
 | French + English: String Catalog (`SharpItShared/Localizable.xcstrings`, `SHARPIT-APP/InfoPlist.xcstrings`), Paramètres › Langue, English for any other device language; server copy, pushes and coach follow | iOS ADR 0019, SHARPIT ADR-096 |
@@ -28,10 +28,10 @@ Mirrors `Config/SharpitPro.storekit`. The product ids are fixed in code (`Sharpi
 | Field | Monthly | Yearly |
 |---|---|---|
 | Subscription group | SharpIt Pro | SharpIt Pro |
-| Product id | `app.sharpit.ios.pro.monthly` | `app.sharpit.ios.pro.yearly` |
+| Product id | `app.sharpit.pro.monthly` | `app.sharpit.pro.yearly` |
 | Reference name | SharpIt Pro Monthly | SharpIt Pro Yearly |
 | Duration | 1 month | 1 year |
-| Price (France, base) | 9,99 € | 79,99 € (≈ 33 % off 12 months) |
+| Price (France, base) | 12,99 € | 99,99 € (≈ 35 % off 12 months) |
 | Display name (fr) | SharpIt Pro — mensuel | SharpIt Pro — annuel |
 | Description (fr) | Bilan hebdomadaire, analyse de séance et lecture coach du journal. | same |
 | Display name (en) | SharpIt Pro — Monthly | SharpIt Pro — Yearly |
@@ -39,7 +39,7 @@ Mirrors `Config/SharpitPro.storekit`. The product ids are fixed in code (`Sharpi
 | Group display name (en) | SharpIt Pro | |
 | Group display name (fr) | SharpIt Pro | |
 | Family Sharing | off | off |
-| Introductory offer | none for 1.0 (a free week can be added later; mirror it in the `.storekit`) | |
+| Introductory offer | Pay as you go, 1 month at 6,49 € (−50 %), all territories (SHARPIT ADR-097) | none |
 
 Review screenshot of the paywall: Paramètres › SharpIt Pro on a free account.
 

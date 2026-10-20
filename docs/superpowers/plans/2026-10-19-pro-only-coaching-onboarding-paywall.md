@@ -33,7 +33,7 @@ Welcome → profile (identity → injuries, on the phone) → Sign in with Apple
 
 ## Step 1 — App Store Connect and StoreKit config (no code)
 
-1. App Store Connect → subscription group « SharpIt Pro » → `app.sharpit.ios.pro.monthly` →
+1. App Store Connect → subscription group « SharpIt Pro » → `app.sharpit.pro.monthly` (12,99 €) →
    Introductory Offer: *Pay as you go*, 1 month, 50 % of the price, all territories.
 2. `SHARPIT-APP/Config/SharpitPro.storekit`: set the same `introductoryOffer` on the monthly
    product (currently `null`, line 36) so the simulator shows it.
@@ -166,7 +166,7 @@ StoreKit config: buy with the intro offer, cancel, restore.
 3. Step 4 (pre-account wizard), then step 5 (paywall), one commit each.
 4. Step 6, then the docs: the « Pro gating » paragraph of `SHARPIT-APP/CLAUDE.md` (it still says
    Pro gates only analyses and computed metrics), `Features/Onboarding/CLAUDE.md` and
-   `Features/Pro/CLAUDE.md`, an iOS ADR (`docs/adr/0020`) for the pre-account wizard draft, and
+   `Features/Pro/CLAUDE.md`, an iOS ADR (`docs/adr/0021`) for the pre-account wizard draft, and
    ADR-097 marked Accepted.
 
 ## Open points
