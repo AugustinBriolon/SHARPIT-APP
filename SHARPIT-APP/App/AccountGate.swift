@@ -189,12 +189,10 @@ struct AccountGate<Content: View>: View {
             switch model.status {
             case .checking:
                 // A neutral mark, never a screen's skeleton: where the athlete lands is not
-                // known yet.
-                ZStack {
-                    SharpitCanvasBackground()
-                    SharpitLaunchMark()
-                }
-                .transition(.opacity)
+                // known yet. The splash itself, so the curtain lifting at its ceiling shows the
+                // same mark at the same place rather than a smaller one under the safe area.
+                SharpitLaunchSplash()
+                    .transition(.opacity)
             case .consent(let reason):
                 PrivacyConsentWallView(
                     reason: reason,

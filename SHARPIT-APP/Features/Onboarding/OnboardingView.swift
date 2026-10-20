@@ -35,7 +35,7 @@ struct OnboardingView: View {
             Group {
                 switch store.phase {
                 case .loading:
-                    SharpitLaunchMark()
+                    SharpitLaunchSplash()
                 case .steps:
                     steps
                         .transition(.opacity)
