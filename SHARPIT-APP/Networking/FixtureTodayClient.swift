@@ -16,6 +16,8 @@ nonisolated struct V1MorningProposalAnswer: Decodable, Sendable {
 enum SharpitAPIError: Error, Equatable, LocalizedError {
     case unauthorized
     case badRequest
+    /// `409`: the server understood the request but the resource belongs to another account.
+    case conflict
     case server
     case transport
     /// The server refused because the same request ran moments ago.
@@ -44,6 +46,8 @@ enum SharpitAPIError: Error, Equatable, LocalizedError {
             return String(localized: "Session expirée ou non autorisée")
         case .badRequest:
             return String(localized: "Requête invalide")
+        case .conflict:
+            return String(localized: "Conflit avec une autre ressource")
         case .rateLimited:
             return String(localized: "Trop de requêtes, réessaie plus tard")
         case .server:

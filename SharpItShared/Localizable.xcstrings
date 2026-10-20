@@ -3908,6 +3908,22 @@
         }
       }
     },
+    "Achat refusé par le serveur : transaction invalide.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purchase refused by the server: invalid transaction."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achat refusé par le serveur : transaction invalide."
+          }
+        }
+      }
+    },
     "Actif": {
       "localizations": {
         "en": {
@@ -11395,6 +11411,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Confirmer la suppression"
+          }
+        }
+      }
+    },
+    "Conflit avec une autre ressource": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conflicts with another resource"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conflit avec une autre ressource"
           }
         }
       }
@@ -39828,6 +39860,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tout afficher (%lld)"
+          }
+        }
+      }
+    },
+    "Tout ce qui est inclus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything included"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout ce qui est inclus"
           }
         }
       }

@@ -65,6 +65,9 @@ struct SharpitProPaywallSheet: View {
 
                 plans
                     .revealed(hasAppeared, index: 5)
+
+                ProPerkGroup(title: String(localized: "Tout ce qui est inclus"), perks: store.proPerks, highlighted: true)
+                    .revealed(hasAppeared, index: 6)
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.top, SharpitSpacing.xl + SharpitSpacing.sm)
@@ -77,6 +80,7 @@ struct SharpitProPaywallSheet: View {
         .sharpitSheet()
         .onAppear { hasAppeared = true }
         .task { await loadOffers() }
+        .task { if store.pro == nil { await store.load() } }
     }
 
     // MARK: - Plans

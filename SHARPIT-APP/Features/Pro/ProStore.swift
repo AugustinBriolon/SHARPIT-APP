@@ -137,11 +137,14 @@ final class ProStore {
             }
             publishTier()
             message = nil
-        } catch SharpitAPIError.badRequest {
-            // Refused by the web (another account's purchase, a forged receipt): finished so
-            // StoreKit stops offering it, never granted.
+        } catch SharpitAPIError.conflict {
+            // Another account's purchase: finished so StoreKit stops offering it, never granted.
             await transaction.finish()
             message = String(localized: "Cet achat est rattaché à un autre compte.")
+        } catch SharpitAPIError.badRequest {
+            // A receipt the web could not verify (forged, or an Xcode one against a production API).
+            await transaction.finish()
+            message = String(localized: "Achat refusé par le serveur : transaction invalide.")
         } catch {
             message = String(localized: "L'abonnement sera confirmé dès que le serveur répondra.")
         }

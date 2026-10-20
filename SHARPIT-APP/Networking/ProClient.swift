@@ -143,7 +143,8 @@ actor ProClient: ProServing {
         switch (response as? HTTPURLResponse)?.statusCode ?? 0 {
         case 200..<300: break
         case 401: throw SharpitAPIError.unauthorized
-        case 400, 409: throw SharpitAPIError.badRequest
+        case 400: throw SharpitAPIError.badRequest
+        case 409: throw SharpitAPIError.conflict
         default: throw SharpitAPIError.server
         }
         do {

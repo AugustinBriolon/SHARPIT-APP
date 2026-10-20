@@ -25,11 +25,11 @@ struct ProView: View {
                         .revealed(hasAppeared, index: 1)
                 }
 
-                perkGroup(String(localized: "Réservé à Pro"), perks: store.proPerks, badge: String(localized: "Pro"), highlighted: true)
+                ProPerkGroup(title: String(localized: "Réservé à Pro"), perks: store.proPerks, badge: String(localized: "Pro"), highlighted: true)
                     .revealed(hasAppeared, index: 2)
-                perkGroup(String(localized: "Déjà inclus"), perks: store.includedPerks, badge: String(localized: "Inclus"), highlighted: false)
+                ProPerkGroup(title: String(localized: "Déjà inclus"), perks: store.includedPerks, badge: String(localized: "Inclus"))
                     .revealed(hasAppeared, index: 3)
-                perkGroup(String(localized: "Bientôt"), perks: store.plannedPerks, badge: String(localized: "Bientôt"), highlighted: false)
+                ProPerkGroup(title: String(localized: "Bientôt"), perks: store.plannedPerks, badge: String(localized: "Bientôt"))
                     .revealed(hasAppeared, index: 4)
 
                 actions
@@ -107,49 +107,6 @@ struct ProView: View {
         .sharpitSurface(.ink)
         .redacted(reason: store.phase == .loading ? .placeholder : [])
         .animation(SharpitMotion.reveal, value: store.message)
-    }
-
-    @ViewBuilder
-    private func perkGroup(_ title: String, perks: [V1ProPerk], badge: String, highlighted: Bool) -> some View {
-        if !perks.isEmpty {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow(title)
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    ForEach(perks) { perk in
-                        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                            Image(systemName: highlighted ? "checkmark.seal.fill" : "circle.dashed")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(highlighted ? SharpitColor.primary : SharpitColor.mutedForeground)
-                                .frame(width: 22)
-                            VStack(alignment: .leading, spacing: 3) {
-                                HStack(spacing: SharpitSpacing.xs) {
-                                    Text(perk.title)
-                                        .font(SharpitTypography.bodyEmphasis)
-                                        .foregroundStyle(SharpitColor.foreground)
-                                    Text(badge.uppercased())
-                                        .font(SharpitTypography.label)
-                                        .tracking(SharpitTypography.labelTracking)
-                                        .foregroundStyle(highlighted ? SharpitColor.highlightForeground : SharpitColor.mutedForeground)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(
-                                            highlighted ? SharpitColor.highlight : SharpitColor.analysisGrid.opacity(0.6),
-                                            in: Capsule()
-                                        )
-                                }
-                                Text(perk.description)
-                                    .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                    }
-                }
-                .padding(SharpitSpacing.cardPadding)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .sharpitSurface(.panel)
-            }
-        }
     }
 
     @ViewBuilder

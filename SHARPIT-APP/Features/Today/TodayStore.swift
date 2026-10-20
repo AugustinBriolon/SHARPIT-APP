@@ -331,7 +331,7 @@ final class TodayStore {
             return String(localized: "Impossible de charger le résumé")
         }
         switch apiError {
-        case .badRequest:
+        case .badRequest, .conflict:
             return String(localized: "Requête invalide")
         case .server:
             return String(localized: "Le serveur n'a pas pu produire le résumé")
