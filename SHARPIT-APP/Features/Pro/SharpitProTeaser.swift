@@ -7,16 +7,14 @@ struct SharpitProTeaser: View {
     let message: String
 
     @Environment(ProStore.self) private var pro: ProStore?
+    @State private var isShowingPaywall = false
 
     var body: some View {
         if let pro {
-            NavigationLink {
-                ProView(store: pro)
-            } label: {
-                content
-            }
-            .buttonStyle(.sharpitPressable)
-            .accessibilityHint("Ouvre SharpIt Pro")
+            Button { isShowingPaywall = true } label: { content }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Ouvre SharpIt Pro")
+                .sheet(isPresented: $isShowingPaywall) { SharpitProPaywallSheet(store: pro) }
         } else {
             content
         }

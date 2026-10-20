@@ -786,6 +786,38 @@
         }
       }
     },
+    "%@ / an": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / year"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / an"
+          }
+        }
+      }
+    },
+    "%@ / mois": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / month"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / mois"
+          }
+        }
+      }
+    },
     "%@ %@": {
       "localizations": {
         "en": {
@@ -1150,6 +1182,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ kilocalories, protéines %@ g, "
+          }
+        }
+      }
+    },
+    "%@ le 1er mois": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ the first month"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ le 1er mois"
           }
         }
       }
@@ -2083,17 +2131,18 @@
       }
     },
     "%lld min • Débloquer avec Pro": {
+      "extractionState": "stale",
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld min • Débloquer avec Pro"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld min • Unlock with Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min • Débloquer avec Pro"
           }
         }
       }
@@ -2322,6 +2371,22 @@
         }
       }
     },
+    "%lld séances dans la semaine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sessions in the week"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld séances dans la semaine"
+          }
+        }
+      }
+    },
     "%lld séances possibles": {
       "localizations": {
         "en": {
@@ -2339,17 +2404,18 @@
       }
     },
     "%lld séances préparées pour ta semaine": {
+      "extractionState": "stale",
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld séances préparées pour ta semaine"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld sessions prepared for your week"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld séances préparées pour ta semaine"
           }
         }
       }
@@ -2766,6 +2832,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "≠ Strain du jour"
+          }
+        }
+      }
+    },
+    "−%lld %%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld%%"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld %%"
           }
         }
       }
@@ -3794,6 +3876,22 @@
         }
       }
     },
+    "Achat en attente de validation.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purchase awaiting approval."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achat en attente de validation."
+          }
+        }
+      }
+    },
     "Achat non vérifié par l'App Store.": {
       "localizations": {
         "en": {
@@ -3950,6 +4048,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Activation, assistance et charge progressive."
+          }
+        }
+      }
+    },
+    "Activation…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activating…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activation…"
           }
         }
       }
@@ -4675,6 +4789,7 @@
       }
     },
     "Ajouter à mon plan": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -5395,17 +5510,18 @@
       }
     },
     "Allures cibles, séances guidées et ajustement dynamique en temps réel.": {
+      "extractionState": "stale",
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allures cibles, séances guidées et ajustement dynamique en temps réel."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Target paces, guided sessions, and dynamic real-time adjustment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allures cibles, séances guidées et ajustement dynamique en temps réel."
           }
         }
       }
@@ -5715,6 +5831,22 @@
         }
       }
     },
+    "Annuel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yearly"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuel"
+          }
+        }
+      }
+    },
     "Annuler": {
       "localizations": {
         "en": {
@@ -5859,6 +5991,22 @@
         }
       }
     },
+    "Application du plan…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applying the plan…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Application du plan…"
+          }
+        }
+      }
+    },
     "Application…": {
       "localizations": {
         "en": {
@@ -5935,6 +6083,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Appliquer %lld modification%@"
+          }
+        }
+      }
+    },
+    "Appliquer le plan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply the plan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer le plan"
           }
         }
       }
@@ -7317,16 +7481,16 @@
     },
     "Bas du corps": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bas du corps"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Lower body"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bas du corps"
           }
         }
       }
@@ -10277,16 +10441,16 @@
     },
     "Choisis le format de l’épreuve.": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choisis le format de l’épreuve."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Choose the event format."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis le format de l’épreuve."
           }
         }
       }
@@ -10755,18 +10919,34 @@
         }
       }
     },
-    "Commencer avec SharpIt": {
+    "Commencer à %@": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start at %@"
+          }
+        },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Commencer avec SharpIt"
+            "value": "Commencer à %@"
           }
-        },
+        }
+      }
+    },
+    "Commencer avec SharpIt": {
+      "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Get started with SharpIt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commencer avec SharpIt"
           }
         }
       }
@@ -11702,16 +11882,16 @@
     },
     "Continuer et créer mon compte": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continuer et créer mon compte"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Continue and create my account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer et créer mon compte"
           }
         }
       }
@@ -12294,16 +12474,16 @@
     },
     "Crée ton compte pour brancher tes appareils et générer ton plan.": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Crée ton compte pour brancher tes appareils et générer ton plan."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Create your account to connect your devices and generate your plan."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crée ton compte pour brancher tes appareils et générer ton plan."
           }
         }
       }
@@ -12470,16 +12650,16 @@
     },
     "Créneaux libres et occupés pour tes séances.": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Créneaux libres et occupés pour tes séances."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Free and busy slots for your sessions."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créneaux libres et occupés pour tes séances."
           }
         }
       }
@@ -13829,17 +14009,18 @@
       }
     },
     "Détails avec Pro": {
+      "extractionState": "stale",
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Détails avec Pro"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Details with Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Détails avec Pro"
           }
         }
       }
@@ -14102,13 +14283,13 @@
     },
     "Discipline": {
       "localizations": {
-        "fr": {
+        "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Discipline"
           }
         },
-        "en": {
+        "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Discipline"
@@ -14566,13 +14747,13 @@
     },
     "Duathlon": {
       "localizations": {
-        "fr": {
+        "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Duathlon"
           }
         },
-        "en": {
+        "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Duathlon"
@@ -15280,6 +15461,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Elle disparaît de ton plan."
+          }
+        }
+      }
+    },
+    "Elle s'adapte à ta vie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It adapts to your life"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elle s'adapte à ta vie"
           }
         }
       }
@@ -18681,16 +18878,16 @@
     },
     "Haut du corps": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Haut du corps"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Upper body"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haut du corps"
           }
         }
       }
@@ -19527,6 +19724,22 @@
         }
       }
     },
+    "Impossible de charger les offres.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't load the plans."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger les offres."
+          }
+        }
+      }
+    },
     "Impossible de créer l'objectif": {
       "localizations": {
         "en": {
@@ -19571,6 +19784,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Impossible de décrire ce repas."
+          }
+        }
+      }
+    },
+    "Impossible de finaliser l'achat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't complete the purchase."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de finaliser l'achat."
           }
         }
       }
@@ -20010,16 +20239,16 @@
     },
     "J'ai déjà un compte": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "J'ai déjà un compte"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "I already have an account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "J'ai déjà un compte"
           }
         }
       }
@@ -23915,16 +24144,16 @@
     },
     "Marathon de Paris…": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Marathon de Paris…"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Paris Marathon…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marathon de Paris…"
           }
         }
       }
@@ -24517,6 +24746,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Menstruation"
+          }
+        }
+      }
+    },
+    "Mensuel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mensuel"
           }
         }
       }
@@ -25724,16 +25969,16 @@
     },
     "Nom personnalisé (optionnel)": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nom personnalisé (optionnel)"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Custom name (optional)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom personnalisé (optionnel)"
           }
         }
       }
@@ -26886,6 +27131,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Obligatoire pour répartir en %%. %@"
+          }
+        }
+      }
+    },
+    "Offre introuvable dans l'App Store.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan not found on the App Store."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offre introuvable dans l'App Store."
           }
         }
       }
@@ -28203,17 +28464,18 @@
       }
     },
     "Passe à Pro pour débloquer ton plan": {
+      "extractionState": "stale",
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Passe à Pro pour débloquer ton plan"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Upgrade to Pro to unlock your plan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passe à Pro pour débloquer ton plan"
           }
         }
       }
@@ -28246,6 +28508,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Passer %@ en course étape"
+          }
+        }
+      }
+    },
+    "Passer à Pro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passer à Pro"
           }
         }
       }
@@ -28667,17 +28945,34 @@
       }
     },
     "Plan personnalisé": {
+      "extractionState": "stale",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom plan"
+          }
+        },
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Plan personnalisé"
           }
-        },
+        }
+      }
+    },
+    "Plan personnalisé par ton coach": {
+      "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Custom plan"
+            "value": "Plan tailored by your coach"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan personnalisé par ton coach"
           }
         }
       }
@@ -29084,16 +29379,16 @@
     },
     "Poids et composition corporelle de ta balance.": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Poids et composition corporelle de ta balance."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Weight and body composition from your scale."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poids et composition corporelle de ta balance."
           }
         }
       }
@@ -29547,17 +29842,18 @@
       }
     },
     "Préparation de l'offre Pro…": {
+      "extractionState": "stale",
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Préparation de l'offre Pro…"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Preparing Pro offer…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Préparation de l'offre Pro…"
           }
         }
       }
@@ -30198,6 +30494,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "puis %@"
+          }
+        }
+      }
+    },
+    "puis %@ / mois": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "then %@ / month"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "puis %@ / mois"
           }
         }
       }
@@ -31642,6 +31954,22 @@
         }
       }
     },
+    "Renouvellement automatique, résiliable à tout moment.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renews automatically, cancel anytime."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renouvellement automatique, résiliable à tout moment."
+          }
+        }
+      }
+    },
     "Renouvellement le %@": {
       "localizations": {
         "en": {
@@ -32652,16 +32980,16 @@
     },
     "Rester sur le plan gratuit": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rester sur le plan gratuit"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Stay on the free plan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rester sur le plan gratuit"
           }
         }
       }
@@ -33354,6 +33682,22 @@
         }
       }
     },
+    "S'abonner": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscribe"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S'abonner"
+          }
+        }
+      }
+    },
     "Sa": {
       "localizations": {
         "en": {
@@ -33532,16 +33876,16 @@
     },
     "Salle + maison": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Salle + maison"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Gym + home"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salle + maison"
           }
         }
       }
@@ -33590,6 +33934,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Samedi"
+          }
+        }
+      }
+    },
+    "Sans engagement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No commitment"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sans engagement"
           }
         }
       }
@@ -34461,16 +34821,16 @@
     },
     "Séances dans ton agenda et créneaux occupés.": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Séances dans ton agenda et créneaux occupés."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sessions in your calendar and busy slots."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Séances dans ton agenda et créneaux occupés."
           }
         }
       }
@@ -34781,16 +35141,16 @@
     },
     "Semaine débloquée avec SharpIt Pro": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Semaine débloquée avec SharpIt Pro"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Week unlocked with SharpIt Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semaine débloquée avec SharpIt Pro"
           }
         }
       }
@@ -35611,6 +35971,22 @@
         }
       }
     },
+    "soit %@ / mois": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "just %@ / month"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "soit %@ / mois"
+          }
+        }
+      }
+    },
     "Solde 7 jours": {
       "localizations": {
         "en": {
@@ -35948,17 +36324,18 @@
       }
     },
     "Souscrire": {
+      "extractionState": "stale",
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Souscrire"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Subscribe"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Souscrire"
           }
         }
       }
@@ -36846,13 +37223,13 @@
     },
     "Swimrun": {
       "localizations": {
-        "fr": {
+        "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Swimrun"
           }
         },
-        "en": {
+        "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Swimrun"
@@ -37480,6 +37857,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta semaine type"
+          }
+        }
+      }
+    },
+    "Ta semaine, écrite pour toi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your week, written for you"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta semaine, écrite pour toi"
           }
         }
       }
@@ -38668,6 +39061,22 @@
         }
       }
     },
+    "Ton coach, ta semaine.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your coach, your week."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton coach, ta semaine."
+          }
+        }
+      }
+    },
     "Ton cœur au repos. Plus il est bas, plus il travaille peu pour les mêmes besoins : il baisse avec l'endurance et monte avec la fatigue, le stress ou une maladie qui couve.": {
       "localizations": {
         "en": {
@@ -38846,16 +39255,16 @@
     },
     "Ton plan, tes séances et ton coach.": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton plan, tes séances et ton coach."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your plan, your sessions, and your coach."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton plan, tes séances et ton coach."
           }
         }
       }
@@ -39214,17 +39623,18 @@
       }
     },
     "Touche une séance pour découvrir les offres SharpIt Pro et débloquer les allures et exercices guidés.": {
+      "extractionState": "stale",
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Touche une séance pour découvrir les offres SharpIt Pro et débloquer les allures et exercices guidés."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Tap a session to discover SharpIt Pro offers and unlock target paces and guided exercises."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touche une séance pour découvrir les offres SharpIt Pro et débloquer les allures et exercices guidés."
           }
         }
       }
@@ -39263,16 +39673,16 @@
     },
     "Touchez pour modifier, balayez vers la gauche pour supprimer.": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Touchez pour modifier, balayez vers la gauche pour supprimer."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Tap to edit, swipe left to delete."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touchez pour modifier, balayez vers la gauche pour supprimer."
           }
         }
       }
@@ -39552,16 +39962,16 @@
     },
     "Toutes tes sorties GPS, même sans montre.": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toutes tes sorties GPS, même sans montre."
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "All your GPS activities, even without a watch."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes tes sorties GPS, même sans montre."
           }
         }
       }
@@ -39616,16 +40026,16 @@
     },
     "Trail": {
       "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trail"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Trail running"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trail"
           }
         }
       }
@@ -40266,6 +40676,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Un bug, une idée : je lis tout"
+          }
+        }
+      }
+    },
+    "Un coach qui lit tes données": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A coach who reads your data"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un coach qui lit tes données"
           }
         }
       }

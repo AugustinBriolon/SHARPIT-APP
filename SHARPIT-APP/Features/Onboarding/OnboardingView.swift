@@ -46,6 +46,9 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .sharpitRegularColumn()
+            // The week stays behind the paywall, out of reach until Pro.
+            .blur(radius: isShowingProPaywall ? 12 : 0)
+            .animation(SharpitMotion.reveal, value: isShowingProPaywall)
         }
         .background(SharpitColor.background.ignoresSafeArea())
         .animation(SharpitMotion.reveal, value: store.phase)
@@ -54,6 +57,7 @@ struct OnboardingView: View {
             if let pro {
                 SharpitProPaywallSheet(
                     store: pro,
+                    sessions: store.firstWeekSessions,
                     onSubscribed: {
                         isShowingProPaywall = false
                         Task { await store.advance(from: .firstWeek) }

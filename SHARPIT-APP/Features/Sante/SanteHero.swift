@@ -37,6 +37,7 @@ struct SanteHero: View {
     let watchCount: Int
 
     @State private var hasAppeared = false
+    @State private var isShowingPaywall = false
     @Environment(ProStore.self) private var pro: ProStore?
 
     private var mode: Mode { Mode(synthesis) }
@@ -174,8 +175,9 @@ struct SanteHero: View {
         .padding(.vertical, SharpitSpacing.xs + 2)
         .background(SharpitColor.highlight, in: Capsule())
         if let pro {
-            NavigationLink { ProView(store: pro) } label: { label }
+            Button { isShowingPaywall = true } label: { label }
                 .buttonStyle(.sharpitPressable)
+                .sheet(isPresented: $isShowingPaywall) { SharpitProPaywallSheet(store: pro) }
                 .accessibilityHint("Ton âge biologique, calculé par SharpIt à partir de ta VO₂max")
         } else {
             label

@@ -2,15 +2,16 @@ import StoreKit
 import SwiftUI
 
 /// Paramètres → SharpIt Pro: where the athlete stands, what Pro adds over the free version, and
-/// the App Store's own subscription sheet to subscribe, restore or manage.
+/// the way to `SharpitProPaywallSheet` to subscribe, then restore or manage.
 ///
 /// The perks are the web's (`/api/v1/pro`), never a copy: the same list on both platforms,
-/// worded once. Buying goes through `SubscriptionStoreView`, the system paywall — prices, trial
-/// and legal lines come from the App Store and stay correct in every storefront.
+/// worded once. Every price the paywall shows is the App Store's (`Product`), so it stays correct
+/// in every storefront.
 struct ProView: View {
     let store: ProStore
 
     @State private var managesSubscription = false
+    @State private var isShowingPaywall = false
     @State private var hasAppeared = false
 
     var body: some View {
@@ -57,12 +58,13 @@ struct ProView: View {
         }
     }
 
-    /// Never shows `SubscriptionStoreView` until `appAccountToken` is known — a purchase
+    /// Never offers the paywall until `appAccountToken` is known — a purchase
     /// without it would omit the account binding StoreKit requires.
     @ViewBuilder
     private var purchaseSection: some View {
-        if let token = store.appAccountToken {
-            paywall(appAccountToken: token)
+        if store.appAccountToken != nil {
+            SharpitPrimaryButton(title: String(localized: "Passer à Pro")) { isShowingPaywall = true }
+                .sheet(isPresented: $isShowingPaywall) { SharpitProPaywallSheet(store: store) }
         } else if store.isFetchingAccountToken || store.phase == .loading {
             ProgressView("Préparation de l'abonnement…")
                 .frame(maxWidth: .infinity, minHeight: 120)
@@ -105,28 +107,6 @@ struct ProView: View {
         .sharpitSurface(.ink)
         .redacted(reason: store.phase == .loading ? .placeholder : [])
         .animation(SharpitMotion.reveal, value: store.message)
-    }
-
-    /// The App Store's paywall for the SharpIt Pro products, carrying the account token so the
-    /// purchase is tied to this athlete. Token is required — never an empty options set.
-    private func paywall(appAccountToken: UUID) -> some View {
-        SubscriptionStoreView(productIDs: SharpitProProduct.all)
-            .subscriptionStoreControlStyle(.prominentPicker)
-            .subscriptionStoreButtonLabel(.multiline)
-            .storeButton(.hidden, for: .cancellation)
-            // Restore goes through `store.restore()` below, which hands each entitlement to the web.
-            .storeButton(.hidden, for: .restorePurchases)
-            .inAppPurchaseOptions { _ in
-                [.appAccountToken(appAccountToken)]
-            }
-            .onInAppPurchaseCompletion { _, result in
-                if case .success(.success(let verification)) = result {
-                    await store.handle(verification)
-                }
-            }
-            .tint(SharpitColor.primary)
-            .frame(minHeight: 320)
-            .clipShape(RoundedRectangle(cornerRadius: SharpitRadius.panelLarge, style: .continuous))
     }
 
     @ViewBuilder

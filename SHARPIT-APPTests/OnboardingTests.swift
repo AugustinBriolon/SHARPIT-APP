@@ -1098,8 +1098,11 @@ private func makeGate(
     await store.skip()
     await store.skip()
     await store.skip()
+    #expect(store.firstWeekSessions == nil)
     await store.advance()
     _ = await settledFirstWeek(store)
+    // The paywall draws the week the coach wrote.
+    #expect(store.firstWeekSessions?.isEmpty == false)
 
     await store.advance()
 

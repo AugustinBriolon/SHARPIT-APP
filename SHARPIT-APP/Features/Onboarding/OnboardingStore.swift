@@ -51,6 +51,12 @@ final class OnboardingStore {
     /// Free athlete: the week is ready to see, but « Ajouter » needs SharpIt Pro (ADR-097).
     private(set) var firstWeekNeedsPro = false
 
+    /// The week the coach wrote, once it is ready to show.
+    var firstWeekSessions: [V1GeneratedSession]? {
+        if case .ready(_, let sessions) = firstWeek { return sessions }
+        return nil
+    }
+
     var identity = OnboardingIdentityDraft()
     /// What the athlete comes for besides the coaching; nothing ticked to start with.
     private(set) var motivations: Set<SharpitFeature> = []
