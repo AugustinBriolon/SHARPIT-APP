@@ -17,3 +17,10 @@ Config/Local.xcconfig
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+
+# Agent & IDE local configs
+.claude/
+.cursor/
+.mcp.json
+.ignore
+

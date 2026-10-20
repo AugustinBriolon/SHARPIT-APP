@@ -277,6 +277,26 @@ nonisolated enum V1TodaySignalKey: String, Codable, Sendable {
     case effort
     case adaptation
     case stress
+
+    var instrumentLabel: String {
+        switch self {
+        case .sleep: String(localized: "Nuit")
+        case .recovery: String(localized: "Récup")
+        case .effort: String(localized: "Effort")
+        case .adaptation: "Adapt."
+        case .stress: String(localized: "Stress") // ADR-079. Callers: OvernightGaugePair.
+        }
+    }
+
+    var instrumentSymbol: String {
+        switch self {
+        case .sleep: "moon.zzz"
+        case .recovery: "heart"
+        case .effort: "bolt"
+        case .adaptation: "arrow.triangle.2.circlepath"
+        case .stress: "waveform.path.ecg"
+        }
+    }
 }
 
 nonisolated enum TrainingDayId {
