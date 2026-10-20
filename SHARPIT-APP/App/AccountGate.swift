@@ -39,17 +39,21 @@ final class AccountGateModel {
     private let consentClient: any PrivacyConsentServing
     private let profileClient: any AthleteProfileServing
     private let defaults: UserDefaults
+    /// The wizard answered before sign-up: dropped when the account turns out to be onboarded.
+    private let onboardingDraft: OnboardingDraftFile?
     private var userId: String?
 
     init(
         consentClient: any PrivacyConsentServing,
         profileClient: any AthleteProfileServing,
         defaults: UserDefaults = .standard,
+        onboardingDraft: OnboardingDraftFile? = nil,
         makeOnboardingStore: @escaping @MainActor (_ consentsOwed: Bool, _ consents: V1PrivacyConsents?, _ userId: String) -> OnboardingStore
     ) {
         self.consentClient = consentClient
         self.profileClient = profileClient
         self.defaults = defaults
+        self.onboardingDraft = onboardingDraft
         self.makeOnboardingStore = makeOnboardingStore
     }
 
@@ -83,6 +87,8 @@ final class AccountGateModel {
                 move(to: .onboarding)
                 return
             }
+            // « J'ai déjà un compte » after starting the wizard: that account has its answers.
+            onboardingDraft?.clear()
             if let reason = consents.wallReason {
                 move(to: .consent(reason))
                 return
@@ -160,16 +166,26 @@ struct AccountGate<Content: View>: View {
     @State private var model = AccountGateModel(
         consentClient: PrivacyConsentClient(),
         profileClient: AthleteProfileClient(),
+        onboardingDraft: .shared,
         makeOnboardingStore: AccountGate.liveOnboardingStore
     )
     /// Held here rather than built in `body`, so the Sources step keeps observing one source.
     /// Its switch is stored in UserDefaults, so the tabs' own instance reads what was chosen.
     @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
+    @State private var appleCalendar = AppleCalendarSource(client: SharpitClient())
+    /// Available during onboarding so the first-week Pro teaser can open the paywall.
+    @State private var pro = ProStore(tokenProvider: {
+        guard let token = try await Clerk.shared.auth.getToken() else {
+            throw SharpitAPIError.unauthorized
+        }
+        return token
+    })
     @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
     @ViewBuilder var content: () -> Content
 
     var body: some View {
         ZStack {
+            SharpitCanvasBackground()
             switch model.status {
             case .checking:
                 // A neutral mark, never a screen's skeleton: where the athlete lands is not
@@ -194,6 +210,7 @@ struct AccountGate<Content: View>: View {
                     OnboardingView(
                         store: store,
                         appleHealth: appleHealth,
+                        appleCalendar: appleCalendar,
                         tokenProvider: liveToken
                     ) {
                         model.onboardingFinished()
@@ -228,10 +245,15 @@ struct AccountGate<Content: View>: View {
         // Keyed by the athlete, so signing out and in as someone else asks again.
         .task(id: clerk.user?.id) {
             appleHealth.bind(userId: clerk.user?.id)
+            appleCalendar.bind(userId: clerk.user?.id)
             await model.resolve(userId: clerk.user?.id, tokenProvider: liveToken)
+        }
+        .task(id: clerk.user?.id) {
+            await pro.load()
         }
         // Moi → Confidentialité reports a withdrawn health consent through this.
         .environment(model)
+        .environment(pro)
         .environment(\.locale, AppLanguage.locale)
         // Every switch from the consent wall on, the tabs and their sheets included, is lime.
         .toggleStyle(.sharpitSwitch)
@@ -242,25 +264,37 @@ struct AccountGate<Content: View>: View {
     @MainActor
     static func liveOnboardingStore(consentsOwed: Bool, consents: V1PrivacyConsents?, userId: String) -> OnboardingStore {
         return OnboardingStore(
-            services: OnboardingServices(
-                profile: AthleteProfileClient(),
-                goals: GoalClient(),
-                onboarding: OnboardingClient(),
-                consents: PrivacyConsentClient(),
-                plan: CoachPlanClient(),
-                physicalNotes: PhysicalNoteClient(),
-                saveFirstName: { firstName in
-                    guard let user = await Clerk.shared.user, user.firstName != firstName else { return }
-                    _ = try await user.update(.init(firstName: firstName))
-                }
-            ),
+            services: liveOnboardingServices,
             consentsOwed: consentsOwed,
             currentConsents: consents,
             stepMemory: OnboardingStepMemory(userId: userId),
             firstName: Clerk.shared.user?.firstName,
+            draftFile: .shared,
+            onExit: {
+                Task {
+                    try? await Clerk.shared.auth.signOut()
+                }
+            },
             tokenProvider: {
                 guard let token = try await Clerk.shared.auth.getToken() else { throw SharpitAPIError.unauthorized }
                 return token
+            }
+        )
+    }
+
+    /// What the wizard writes to — before sign-up too, where nothing is called.
+    @MainActor
+    static var liveOnboardingServices: OnboardingServices {
+        OnboardingServices(
+            profile: AthleteProfileClient(),
+            goals: GoalClient(),
+            onboarding: OnboardingClient(),
+            consents: PrivacyConsentClient(),
+            plan: CoachPlanClient(),
+            physicalNotes: PhysicalNoteClient(),
+            saveFirstName: { firstName in
+                guard let user = await Clerk.shared.user, user.firstName != firstName else { return }
+                _ = try await user.update(.init(firstName: firstName))
             }
         )
     }

@@ -71,7 +71,17 @@ final class CoachStore {
             }
             self.quota = fresh
             self.quotaReadAt = .now
-            self.needsPro = !fresh.isPro
+            if fresh.isPro {
+                self.needsPro = false
+            } else if fresh.remainingQuestions > 0 {
+                self.needsPro = false
+            } else if fresh.dailyQuestions > 0 && fresh.retryAfterSeconds != nil {
+                // Free daily quota exhausted for rolling 24h window; isOutOfQuota stops send
+                // and shows retry wait in gauge, rather than locking behind Pro teaser.
+                self.needsPro = false
+            } else {
+                self.needsPro = true
+            }
             return true
         }
     }

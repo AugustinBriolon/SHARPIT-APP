@@ -30,7 +30,7 @@ nonisolated struct V1FeaturePrefs: Codable, Sendable, Equatable {
 }
 
 /// One feature the athlete can turn off, with the words Paramètres uses for it.
-nonisolated enum SharpitFeature: String, CaseIterable, Identifiable, Sendable {
+nonisolated enum SharpitFeature: String, CaseIterable, Identifiable, Codable, Sendable {
     case journal, nutrition, health, regularity
 
     var id: String { rawValue }

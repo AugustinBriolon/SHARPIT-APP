@@ -24,6 +24,10 @@
 	<string>$(SHARPIT_API_ORIGIN)</string>
 	<key>SharpitWebOrigin</key>
 	<string>$(SHARPIT_WEB_ORIGIN)</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
@@ -31,9 +35,5 @@
 		<key>UIImageName</key>
 		<string>LaunchMark</string>
 	</dict>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
 </dict>
 </plist>

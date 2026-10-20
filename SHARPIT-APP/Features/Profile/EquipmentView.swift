@@ -173,7 +173,8 @@ struct EquipmentBySport: View {
                             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                                 EquipmentChoiceRow(item: item, isOwned: owned.contains(item.id)) { onToggle(item.id) }
                                 if index < items.count - 1 {
-                                    Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1).padding(.leading, 44)
+                                    Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                                        .padding(.leading, (sport != .strength && !item.symbolName.isEmpty) ? 44 : 0)
                                 }
                             }
                         }
@@ -191,9 +192,16 @@ struct EquipmentBySport: View {
                 columns: [GridItem(.flexible(), spacing: SharpitSpacing.xs), GridItem(.flexible(), spacing: SharpitSpacing.xs)],
                 spacing: SharpitSpacing.xs
             ) {
-                ForEach(V1AthleteEquipment.StrengthVenue.allCases) { choice in
-                    OnboardingChoiceChip(title: choice.title, symbol: choice.symbolName, isSelected: venue == choice) {
-                        SharpitMotion.run(SharpitMotion.selection) { onVenue(choice) }
+                ForEach(V1AthleteEquipment.StrengthVenue.Toggle.allCases) { chip in
+                    OnboardingChoiceChip(
+                        title: chip.title,
+                        symbol: chip.symbolName,
+                        isSelected: venue.toggles.contains(chip)
+                    ) {
+                        SharpitHaptics.play(.notch(major: false))
+                        SharpitMotion.run(SharpitMotion.selection) {
+                            onVenue(V1AthleteEquipment.StrengthVenue.toggling(chip, in: venue))
+                        }
                     }
                 }
             }
@@ -216,10 +224,12 @@ struct EquipmentChoiceRow: View {
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
             HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: item.symbolName)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
-                    .frame(width: 32)
+                if item.sport != .strength && !item.symbolName.isEmpty {
+                    Image(systemName: item.symbolName)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
+                        .frame(width: 32)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.label)
                         .font(SharpitTypography.bodyEmphasis)

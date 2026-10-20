@@ -7,6 +7,8 @@ import SwiftUI
 struct SharpitAuthDrawer: View {
     @Environment(Clerk.self) private var clerk
     @Environment(\.dismiss) private var dismiss
+    /// Why an account is asked for, when the athlete arrives from the wizard.
+    var headline: String?
 
     // Form states
     @State private var email = ""
@@ -68,6 +70,15 @@ struct SharpitAuthDrawer: View {
 
     private var identifierView: some View {
         VStack(spacing: SharpitSpacing.md) {
+            if let headline {
+                Text(headline)
+                    .font(SharpitTypography.verdict)
+                    .tracking(SharpitTypography.verdictTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             // Error banner if any
             if let errorMessage {
                 errorBanner(message: errorMessage)

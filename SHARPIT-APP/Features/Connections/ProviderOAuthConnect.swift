@@ -85,6 +85,9 @@ enum ProviderOAuthConnect {
         do {
             entry = try await client.providerHandoffURL(source, token: try await tokenProvider())
         } catch {
+            #if DEBUG
+            print("[ProviderOAuthConnect] providerHandoffURL failed for \(source.rawValue): \(error)")
+            #endif
             return .failed
         }
 
@@ -97,6 +100,9 @@ enum ProviderOAuthConnect {
         } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
             return .cancelled
         } catch {
+            #if DEBUG
+            print("[ProviderOAuthConnect] authenticate failed for \(source.rawValue): \(error)")
+            #endif
             return .failed
         }
     }

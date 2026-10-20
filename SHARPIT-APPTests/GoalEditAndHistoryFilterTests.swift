@@ -13,7 +13,9 @@ private func race() -> V1Goal {
         location: "Paris",
         priority: .a,
         raceFormat: "Marathon",
-        targetPerformance: "3h30"
+        targetPerformance: "3h30",
+        discipline: "RUN",
+        formatKey: "RUN_MARATHON"
     )
 }
 
@@ -56,11 +58,31 @@ private func race() -> V1Goal {
 
 @Test func aGoalNeedsANameAndNumbers() {
     var draft = GoalDraft.new()
+    draft.kind = .metric
     #expect(draft.missingRequirement != nil)
     draft.title = "FTP"
     #expect(draft.missingRequirement == nil)
     draft.targetValueText = "trois cents"
     #expect(draft.missingRequirement == "La valeur cible n’est pas un nombre.")
+}
+
+@Test func aRaceCreationEncodesDisciplineAndFormatKey() throws {
+    var draft = GoalDraft.new()
+    draft.discipline = .run
+    draft.formatKey = "RUN_MARATHON"
+    draft.title = ""
+    #expect(draft.missingRequirement == nil)
+    let input = draft.creation
+    #expect(input.title == "Marathon")
+    #expect(input.discipline == "RUN")
+    #expect(input.formatKey == "RUN_MARATHON")
+    #expect(input.runM == 42_195)
+
+    let data = try JSONEncoder().encode(input)
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    #expect(json["discipline"] as? String == "RUN")
+    #expect(json["formatKey"] as? String == "RUN_MARATHON")
+    #expect(json["runM"] as? Int == 42_195)
 }
 
 @Test func anEditShowsBeforeTheServerAnswers() {

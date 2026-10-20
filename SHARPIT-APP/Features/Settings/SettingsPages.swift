@@ -269,9 +269,7 @@ struct NotificationPrefsView: View {
             }
             .sharpitListRows()
 
-            if isOn {
-                kinds
-            }
+            kinds
 
             if case .failed(let message) = store.phase {
                 Section {

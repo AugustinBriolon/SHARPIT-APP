@@ -47,7 +47,7 @@
               "locale" : "fr_FR"
             }
           ],
-          "productID" : "app.sharpit.ios.pro.monthly",
+          "productID" : "app.sharpit.pro.monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "SharpIt Pro Monthly",
           "subscriptionGroupID" : "21540001",
@@ -60,7 +60,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "79.99",
+          "displayPrice" : "99.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "6740000002",
@@ -72,7 +72,7 @@
               "locale" : "fr_FR"
             }
           ],
-          "productID" : "app.sharpit.ios.pro.yearly",
+          "productID" : "app.sharpit.pro.yearly",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "SharpIt Pro Yearly",
           "subscriptionGroupID" : "21540001",

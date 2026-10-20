@@ -1,4 +1,5 @@
 import AuthenticationServices
+import StoreKit
 import SwiftUI
 import UIKit
 
@@ -98,22 +99,24 @@ struct OnboardingMotivationStep: View {
     let store: OnboardingStore
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.xs) {
+        VStack(spacing: SharpitSpacing.sm) {
+            // Always on for the coach build — same look as the others, never locked
+            // (Pro is asked on the first-week step, not here).
             MotivationRow(
                 symbol: "figure.run",
                 title: OnboardingMotivation.coachingTitle,
                 detail: OnboardingMotivation.coachingDetail,
-                isSelected: true,
-                isLocked: true
+                isSelected: true
             ) {}
+            .allowsHitTesting(false)
             ForEach(OnboardingMotivation.order) { feature in
                 MotivationRow(
                     symbol: feature.symbolName,
                     title: OnboardingMotivation.title(feature),
                     detail: OnboardingMotivation.detail(feature),
-                    isSelected: store.motivations.contains(feature),
-                    isLocked: false
+                    isSelected: store.motivations.contains(feature)
                 ) {
+                    SharpitHaptics.play(.notch(major: false))
                     SharpitMotion.run(SharpitMotion.selection) { store.toggleMotivation(feature) }
                 }
             }
@@ -126,16 +129,15 @@ private struct MotivationRow: View {
     let title: String
     let detail: String
     let isSelected: Bool
-    let isLocked: Bool
     let onToggle: () -> Void
 
     var body: some View {
         Button(action: onToggle) {
-            HStack(spacing: SharpitSpacing.sm) {
-                SharpitIconTile(symbol: symbol, size: 36)
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: SharpitSpacing.md) {
+                SharpitIconTile(symbol: symbol, size: 44)
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(SharpitTypography.bodyEmphasis)
+                        .font(SharpitTypography.cardTitle)
                         .foregroundStyle(SharpitColor.foreground)
                     Text(detail)
                         .font(SharpitTypography.meta)
@@ -143,27 +145,26 @@ private struct MotivationRow: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: SharpitSpacing.xs)
-                Image(systemName: isLocked ? "lock.fill" : (isSelected ? "checkmark.circle.fill" : "circle"))
-                    .font(.title3)
-                    .foregroundStyle(isSelected && !isLocked ? SharpitColor.primary : SharpitColor.mutedForeground)
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.45))
+                    .symbolEffect(.bounce, value: isSelected)
                     .accessibilityHidden(true)
             }
-            .padding(SharpitSpacing.sm)
+            .padding(SharpitSpacing.md)
             .background(
-                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
                     .fill(SharpitColor.analysisSurfaceAlt)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                    .strokeBorder(isSelected && !isLocked ? SharpitColor.primary : .clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                    .strokeBorder(isSelected ? SharpitColor.primary : SharpitColor.analysisGrid, lineWidth: isSelected ? 2 : 1)
             )
             .contentShape(.rect)
         }
-        .buttonStyle(.plain)
-        .disabled(isLocked)
+        .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityHint(isLocked ? String(localized: "Toujours inclus") : "")
     }
 }
 
@@ -298,13 +299,20 @@ struct OnboardingWeekStep: View {
 // MARK: - Goal
 
 /// A race with its date, or a figure to reach. The time left is read live, so the athlete sees
-/// what the plan has to work with.
+/// what the plan has to work with. Race formats come from the ADR-082 catalog.
 struct OnboardingGoalStep: View {
     @Binding var draft: OnboardingIntentionDraft
-    /// A triathlete picks the distance: the plan of a sprint and of an Ironman share little.
-    var isTriathlete = false
+    /// Practiced sports — filters which race disciplines are offered.
+    var sports: Set<String> = []
     /// Strength alone has no race: the palier is the only kind.
     var isStrengthOnly = false
+
+    private var disciplines: [RaceDiscipline] { RaceDiscipline.offered(for: sports) }
+
+    private var formats: [RaceFormatEntry] {
+        guard let discipline = draft.discipline else { return [] }
+        return RaceFormatCatalog.formats(for: discipline)
+    }
 
     private var weeksLeft: Int {
         max(Calendar.current.dateComponents([.weekOfYear], from: .now, to: draft.raceDate).weekOfYear ?? 0, 0)
@@ -321,19 +329,25 @@ struct OnboardingGoalStep: View {
 
             switch draft.kind {
             case .race:
-                SharpitFormField(String(localized: "Nom de l'épreuve"), placeholder: String(localized: "Marathon de Paris, 70.3 Nice…"), text: $draft.raceTitle)
-                if isTriathlete {
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        Text("Format")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                        SharpitSegmentedChoice(
-                            options: OnboardingTriathlonFormat.allCases,
-                            label: \.shortLabel,
-                            selection: $draft.triathlonFormat
-                        )
-                    }
+                if disciplines.count > 1 {
+                    SharpitSelectField(
+                        title: String(localized: "Discipline"),
+                        placeholder: String(localized: "Choisir"),
+                        selection: disciplineSelection,
+                        options: disciplines.map { ($0, $0.label) }
+                    )
                 }
+
+                // A single catalog entry is auto-selected — no need to list it.
+                if formats.count > 1 {
+                    SharpitSelectField(
+                        title: String(localized: "Format"),
+                        placeholder: String(localized: "Choisir"),
+                        selection: formatSelection,
+                        options: formats.map { ($0.key, $0.label) }
+                    )
+                }
+
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                     DatePicker("Date", selection: $draft.raceDate, in: Date()..., displayedComponents: .date)
                         .font(SharpitTypography.bodyEmphasis)
@@ -353,6 +367,12 @@ struct OnboardingGoalStep: View {
                 }
                 .padding(SharpitSpacing.cardPadding)
                 .sharpitSurface(.panel)
+
+                SharpitFormField(
+                    String(localized: "Nom personnalisé (optionnel)"),
+                    placeholder: draft.selectedFormat?.label ?? String(localized: "Marathon de Paris…"),
+                    text: $draft.raceTitle
+                )
                 SharpitFormField(String(localized: "Objectif visé (optionnel)"), placeholder: String(localized: "Terminer, sub 5 h…"), text: $draft.targetPerformance)
                 OnboardingPlaceField(title: String(localized: "Lieu (optionnel)"), text: $draft.raceLocation)
             case .metric:
@@ -368,6 +388,8 @@ struct OnboardingGoalStep: View {
             }
         }
         .animation(SharpitMotion.selection, value: draft.kind)
+        .animation(SharpitMotion.selection, value: draft.discipline)
+        .onAppear(perform: seedDisciplineIfNeeded)
     }
 
     private func kindCard(_ kind: OnboardingIntentionKind, title: String, symbol: String) -> some View {
@@ -400,6 +422,45 @@ struct OnboardingGoalStep: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
+
+    private var disciplineSelection: Binding<RaceDiscipline?> {
+        Binding(
+            get: { draft.discipline },
+            set: { next in
+                guard let next else { return }
+                SharpitMotion.run(SharpitMotion.selection) {
+                    draft.discipline = next
+                    if RaceFormatCatalog.entry(key: draft.formatKey)?.discipline != next {
+                        draft.formatKey = RaceFormatCatalog.formats(for: next).first?.key ?? ""
+                    }
+                }
+            }
+        )
+    }
+
+    private var formatSelection: Binding<String?> {
+        Binding(
+            get: { draft.formatKey.isEmpty ? nil : draft.formatKey },
+            set: { next in
+                SharpitMotion.run(SharpitMotion.selection) {
+                    draft.formatKey = next ?? ""
+                }
+            }
+        )
+    }
+
+    private func seedDisciplineIfNeeded() {
+        guard draft.kind == .race else { return }
+        if draft.discipline == nil, let preferred = RaceDiscipline.preferred(for: sports) {
+            draft.discipline = preferred
+        }
+        if let discipline = draft.discipline {
+            let available = RaceFormatCatalog.formats(for: discipline)
+            if draft.formatKey.isEmpty || RaceFormatCatalog.entry(key: draft.formatKey)?.discipline != discipline {
+                draft.formatKey = available.first?.key ?? ""
+            }
+        }
+    }
 }
 
 // MARK: - Injuries
@@ -410,38 +471,32 @@ struct OnboardingInjuriesStep: View {
     let store: OnboardingStore
     @State private var editing: OnboardingInjuryDraft?
 
+    private var lowerBody: [String] {
+        OnboardingInjuryDraft.bodyParts.filter { OnboardingInjuryDraft.lowerBodyParts.contains($0) }
+    }
+
+    private var upperBody: [String] {
+        OnboardingInjuryDraft.bodyParts.filter { !OnboardingInjuryDraft.lowerBodyParts.contains($0) }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             if !store.injuries.isEmpty {
-                VStack(spacing: 0) {
-                    ForEach(Array(store.injuries.enumerated()), id: \.element.id) { index, injury in
+                VStack(spacing: SharpitSpacing.xs) {
+                    ForEach(store.injuries) { injury in
                         OnboardingInjuryRow(injury: injury) {
                             editing = injury
                         } onRemove: {
                             store.removeInjury(injury.bodyPart)
                         }
-                        if index < store.injuries.count - 1 {
-                            Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
-                        }
                     }
                 }
-                .padding(.horizontal, SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
             }
 
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 SharpitFieldLabel(store.injuries.isEmpty ? String(localized: "Où as-tu mal ?") : String(localized: "Une autre zone ?"))
-                LazyVGrid(
-                    columns: Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3),
-                    spacing: SharpitSpacing.xs
-                ) {
-                    ForEach(OnboardingInjuryDraft.bodyParts, id: \.self) { part in
-                        let declared = store.injuries.first { $0.bodyPart == part }
-                        OnboardingChoiceChip(title: part, isSelected: declared != nil) {
-                            editing = declared ?? OnboardingInjuryDraft(bodyPart: part)
-                        }
-                    }
-                }
+                injuryChipSection(title: String(localized: "Bas du corps"), parts: lowerBody)
+                injuryChipSection(title: String(localized: "Haut du corps"), parts: upperBody)
             }
 
             Text(store.injuries.isEmpty
@@ -463,6 +518,64 @@ struct OnboardingInjuriesStep: View {
             .presentationDetents([.medium, .large])
         }
     }
+
+    private func injuryChipSection(title: String, parts: [String]) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            Text(title)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: SharpitSpacing.xs),
+                    GridItem(.flexible(), spacing: SharpitSpacing.xs)
+                ],
+                spacing: SharpitSpacing.xs
+            ) {
+                ForEach(parts, id: \.self) { part in
+                    let declared = store.injuries.first { $0.bodyPart == part }
+                    let isDeclared = declared != nil
+                    Button {
+                        SharpitHaptics.play(.notch(major: false))
+                        editing = declared ?? OnboardingInjuryDraft(bodyPart: part)
+                    } label: {
+                        HStack(spacing: SharpitSpacing.xs) {
+                            Text(part)
+                                .font(SharpitTypography.bodyEmphasis)
+                                .foregroundStyle(isDeclared ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
+
+                            Spacer(minLength: 0)
+
+                            if isDeclared {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(SharpitColor.highlight)
+                            } else {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                            }
+                        }
+                        .padding(.horizontal, SharpitSpacing.sm)
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .background(
+                            RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous)
+                                .fill(isDeclared ? SharpitColor.primary : SharpitColor.card)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous)
+                                .strokeBorder(isDeclared ? SharpitColor.primary : SharpitColor.border, lineWidth: 1)
+                        )
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.sharpitPressable)
+                    .accessibilityAddTraits(isDeclared ? [.isButton, .isSelected] : .isButton)
+                }
+            }
+        }
+    }
 }
 
 private struct OnboardingInjuryRow: View {
@@ -470,32 +583,192 @@ private struct OnboardingInjuryRow: View {
     let onEdit: () -> Void
     let onRemove: () -> Void
 
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            Button(action: onEdit) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(injury.title.prefix(1).uppercased() + injury.title.dropFirst())
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text("Gêne \((injury.level ?? .moderate).label.lowercased())")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .frame(width: 32, height: 32)
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Retirer \(injury.bodyPart)")
+    @State private var offset: CGFloat = 0
+    @State private var isRevealed = false
+    @State private var hasPassedDeleteThreshold = false
+
+    private let buttonWidth: CGFloat = 76
+    private let deleteThreshold: CGFloat = -136
+
+    private var subtitle: String {
+        var parts = ["Gêne \((injury.level ?? .moderate).label.lowercased())"]
+        if let side = injury.side {
+            parts.append(side.label.lowercased())
         }
-        .padding(.vertical, SharpitSpacing.sm)
+        return parts.joined(separator: " · ")
+    }
+
+    private var severityColor: Color {
+        switch injury.level {
+        case .light:
+            return SharpitColor.highlight
+        case .moderate:
+            return Color.orange
+        case .strong:
+            return SharpitColor.destructive
+        case nil:
+            return SharpitColor.mutedForeground
+        }
+    }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            // Delete action surface revealed on swipe
+            deleteBackground
+
+            // Discreet front card
+            cardContent
+                .offset(x: offset)
+                .simultaneousGesture(dragGesture)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(injury.title). \(subtitle)")
+        .accessibilityHint(String(localized: "Touchez pour modifier, balayez vers la gauche pour supprimer."))
+        .accessibilityAction(named: String(localized: "Supprimer")) {
+            triggerRemove()
+        }
+    }
+
+    private var deleteBackground: some View {
+        Button {
+            triggerRemove()
+        } label: {
+            ZStack {
+                Rectangle()
+                    .fill(SharpitColor.destructive)
+
+                HStack {
+                    Spacer()
+                    VStack(spacing: SharpitSpacing.xxs) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text(String(localized: "Supprimer"))
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundStyle(SharpitColor.destructiveForeground)
+                    .frame(width: buttonWidth)
+                    .scaleEffect(hasPassedDeleteThreshold ? 1.15 : 1.0)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.75), value: hasPassedDeleteThreshold)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var cardContent: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            Circle()
+                .fill(severityColor)
+                .frame(width: 8, height: 8)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(injury.title.prefix(1).uppercased() + injury.title.dropFirst())
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+
+                Text(subtitle)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: SharpitSpacing.xs)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.35))
+        }
+        .padding(.horizontal, SharpitSpacing.md)
+        .padding(.vertical, SharpitSpacing.sm + 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous)
+                .fill(SharpitColor.card)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous)
+                .strokeBorder(SharpitColor.border.opacity(0.7), lineWidth: 1)
+        )
+        .contentShape(.rect)
+        .onTapGesture {
+            if isRevealed {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                    offset = 0
+                    isRevealed = false
+                }
+            } else {
+                onEdit()
+            }
+        }
+    }
+
+    private var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .local)
+            .onChanged { value in
+                let translationX = value.translation.width
+                // Only track horizontal gestures
+                if abs(translationX) < abs(value.translation.height) && abs(offset) < 2 {
+                    return
+                }
+
+                if isRevealed {
+                    let proposed = -buttonWidth + translationX
+                    if proposed > 0 {
+                        // Rubber-band resistance towards the right past 0
+                        offset = proposed * 0.15
+                    } else {
+                        offset = proposed
+                    }
+                } else {
+                    if translationX > 0 {
+                        // Rubber-band resistance to the right
+                        offset = translationX * 0.15
+                    } else {
+                        offset = translationX
+                    }
+                }
+
+                let crossed = offset < deleteThreshold
+                if crossed != hasPassedDeleteThreshold {
+                    hasPassedDeleteThreshold = crossed
+                    SharpitHaptics.play(.notch(major: crossed))
+                }
+            }
+            .onEnded { value in
+                let velocityX = value.velocity.width
+
+                if offset < deleteThreshold || velocityX < -550 {
+                    // Full swipe to delete
+                    triggerRemove()
+                } else if offset < -36 || velocityX < -150 {
+                    // Snap open to reveal delete button
+                    isRevealed = true
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        offset = -buttonWidth
+                    }
+                } else {
+                    // Snap back closed
+                    isRevealed = false
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        offset = 0
+                    }
+                }
+                hasPassedDeleteThreshold = false
+            }
+    }
+
+    private func triggerRemove() {
+        SharpitHaptics.play(.notch(major: true))
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+            offset = -400
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            withAnimation(SharpitMotion.reveal) {
+                onRemove()
+            }
+        }
     }
 }
 
@@ -621,10 +894,6 @@ struct OnboardingPrivacyStep: View {
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
                 }
-                Divider().padding(.leading, 44)
-                ConsentCheckRow(isOn: $consents.unofficialProviders) {
-                    Text("Je comprends que certaines connexions fournisseurs peuvent être non officielles.")
-                }
             }
             .padding(.horizontal, SharpitSpacing.cardPadding)
             .sharpitSurface(.panelAlt)
@@ -643,10 +912,11 @@ struct OnboardingPrivacyStep: View {
 
 // MARK: - First week
 
-/// The week the coach planned while the athlete linked their sources. It fills the dial as the
-/// coach reasons, then lays the sessions out day by day; adding them puts them in the plan.
+/// The week the coach planned while the athlete linked their sources.
+/// For free athletes, details are locked and a subscription screen is proposed.
 struct OnboardingFirstWeekStep: View {
     let store: OnboardingStore
+    @Environment(ProStore.self) private var pro: ProStore?
 
     var body: some View {
         switch store.firstWeek {
@@ -676,13 +946,33 @@ struct OnboardingFirstWeekStep: View {
 
     private func ready(summary: String, sessions: [V1GeneratedSession]) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            if pro?.isPro == true {
+                HStack(spacing: SharpitSpacing.xs) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundStyle(SharpitColor.primary)
+                    Text(String(localized: "Semaine débloquée avec SharpIt Pro"))
+                        .font(SharpitTypography.meta.weight(.semibold))
+                        .foregroundStyle(SharpitColor.primary)
+                }
+            } else {
+                HStack(spacing: SharpitSpacing.xs) {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(SharpitColor.primary)
+                    Text(String(localized: "Plan personnalisé par ton coach"))
+                        .font(SharpitTypography.meta.weight(.semibold))
+                        .foregroundStyle(SharpitColor.primary)
+                }
+            }
+
             if !summary.isEmpty {
                 Text(summary)
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(3)
+                    .lineLimit(4)
             }
+
             GeneratedWeekView(sessions: sessions)
+
             ForEach(Array(store.firstWeekSetAside.enumerated()), id: \.offset) { _, entry in
                 GeneratedSessionRow(session: entry.session, rejection: entry.reason ?? String(localized: "Écartée par le contrôle de sécurité."))
             }
@@ -713,11 +1003,22 @@ struct OnboardingFirstWeekStep: View {
 
 // MARK: - Sources
 
-/// Where the readings come from: Apple Health is switched on here.
+/// Where the readings come from: Apple Health, Strava, Withings, Google Calendar, Apple Calendar.
 /// Connecting nothing is a valid path: Finaliser is never held back by this step.
 struct OnboardingSourcesStep: View {
     let appleHealth: AppleHealthSource
+    var appleCalendar: AppleCalendarSource = AppleCalendarSource(client: SharpitClient())
     let tokenProvider: () async throws -> String
+    var hasAccount: Bool = true
+    var onAccountNeeded: (() -> Void)? = nil
+    var oauthHandoffClient: any ProviderOAuthHandoffServing = SharpitClient()
+    var syncClient: any SyncServing = SharpitClient()
+    var sourcePrefsClient: any SourcePrefsServing = SharpitClient()
+
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
+    @State private var status: V1SyncStatus?
+    @State private var connectingOAuth: DisconnectableSource?
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -730,11 +1031,110 @@ struct OnboardingSourcesStep: View {
                     .labelsHidden()
                     .disabled(!appleHealth.isAvailable)
             }
+
+            OnboardingSourceCard(
+                provider: .strava,
+                title: String(localized: "Strava"),
+                detail: String(localized: "Toutes tes sorties GPS, même sans montre.")
+            ) {
+                oauthControl(for: .strava)
+            }
+
+            OnboardingSourceCard(
+                provider: .withings,
+                title: String(localized: "Withings"),
+                detail: String(localized: "Poids et composition corporelle de ta balance.")
+            ) {
+                oauthControl(for: .withings)
+            }
+
+            OnboardingSourceCard(
+                provider: .google,
+                title: String(localized: "Google Agenda"),
+                detail: String(localized: "Créneaux libres et occupés pour tes séances.")
+            ) {
+                oauthControl(for: .google)
+            }
+
+            OnboardingSourceCard(
+                provider: .appleCalendar,
+                title: String(localized: "Calendrier Apple"),
+                detail: String(localized: "Séances dans ton agenda et créneaux occupés.")
+            ) {
+                Toggle("Calendrier Apple", isOn: appleCalendarBinding)
+                    .labelsHidden()
+            }
+
+            if let errorMessage {
+                HStack(spacing: SharpitSpacing.xs) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(SharpitColor.signalRisk)
+                    Text(errorMessage)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.signalRisk)
+                }
+                .padding(.horizontal, SharpitSpacing.xxs)
+                .transition(.opacity)
+            }
+
             Text("Tout est optionnel et se règle plus tard dans Paramètres › Sources.")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .padding(.horizontal, SharpitSpacing.xxs)
                 .padding(.top, SharpitSpacing.xxs)
+        }
+        .task { await loadStatus() }
+    }
+
+    private func isOAuthConnected(_ source: DisconnectableSource) -> Bool {
+        status?.providers.contains(where: { $0.key == source.statusKey }) ?? false
+    }
+
+    @ViewBuilder
+    private func oauthControl(for source: DisconnectableSource) -> some View {
+        if connectingOAuth == source {
+            ProgressView()
+                .frame(width: 44, height: 28)
+        } else if isOAuthConnected(source) {
+            SharpitPill(String(localized: "Connecté"), style: .lime)
+        } else {
+            Button {
+                if !hasAccount {
+                    onAccountNeeded?()
+                } else {
+                    Task { await connectOAuth(source) }
+                }
+            } label: {
+                SharpitPill(String(localized: "Connecter"), style: .neutral)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Connecter \(source.name)")
+        }
+    }
+
+    private func connectOAuth(_ source: DisconnectableSource) async {
+        guard connectingOAuth == nil else { return }
+        connectingOAuth = source
+        errorMessage = nil
+        defer { connectingOAuth = nil }
+        let outcome = await ProviderOAuthConnect.run(
+            source: source,
+            client: oauthHandoffClient,
+            tokenProvider: tokenProvider,
+            authenticate: webAuthenticationSession.providerOAuthConnect
+        )
+        if outcome.isLinked {
+            await loadStatus()
+        } else if outcome != .cancelled {
+            errorMessage = outcome.message(for: source)
+        }
+    }
+
+    private func loadStatus() async {
+        guard let token = try? await tokenProvider() else { return }
+        status = try? await syncClient.syncStatus(token: token)
+        if let prefs = try? await sourcePrefsClient.sourcePrefs(token: token) {
+            appleCalendar.syncLinkedFromServer(prefs.connected.contains(AppleCalendarSync.providerId))
         }
     }
 
@@ -747,10 +1147,31 @@ struct OnboardingSourcesStep: View {
         Binding(
             get: { appleHealth.isEnabled },
             set: { on in
+                if !hasAccount {
+                    onAccountNeeded?()
+                    return
+                }
                 if on {
                     Task { await appleHealth.enable(token: tokenProvider) }
                 } else {
                     Task { await appleHealth.disable(token: tokenProvider) }
+                }
+            }
+        )
+    }
+
+    private var appleCalendarBinding: Binding<Bool> {
+        Binding(
+            get: { appleCalendar.isLinked },
+            set: { on in
+                if !hasAccount {
+                    onAccountNeeded?()
+                    return
+                }
+                if on {
+                    Task { await appleCalendar.enable(token: tokenProvider) }
+                } else {
+                    Task { await appleCalendar.disable(token: tokenProvider) }
                 }
             }
         )

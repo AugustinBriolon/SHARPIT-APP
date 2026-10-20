@@ -12,7 +12,17 @@ struct AuthGate<SignedIn: View>: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var authIsPresented = false
+    /// Why the sign-up is asked for, when the wizard asks for it.
+    @State private var authHeadline: String?
     @State private var authSession = AuthSession.shared
+    /// The wizard before an account (SHARPIT ADR-097): the profile steps, kept on the phone.
+    @State private var preAccountWizard: OnboardingStore?
+    /// True when the welcome → wizard push is forward; false when the back chevron pops it.
+    @State private var wizardEntryForward = true
+    /// After a pop, the welcome screen must not replay its entrance choreography.
+    @State private var welcomePlaysEntrance = true
+    /// The wizard never reaches Sources without an account; OnboardingView still takes one.
+    @State private var appleHealth = AppleHealthSource(reader: HealthKitReader(), client: SharpitClient())
     @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
     var signedIn: () -> SignedIn
 
@@ -21,13 +31,26 @@ struct AuthGate<SignedIn: View>: View {
             if clerk.user != nil {
                 signedIn()
             } else if authSession.expiredNotice {
-                SessionExpiredSignIn(onSignIn: { authIsPresented = true })
+                SessionExpiredSignIn(onSignIn: { signIn() })
+            } else if let preAccountWizard {
+                OnboardingView(
+                    store: preAccountWizard,
+                    appleHealth: appleHealth,
+                    tokenProvider: { throw SharpitAPIError.unauthorized },
+                    onFinished: {}
+                )
+                .transition(OnboardingStepSlide(direction: { wizardEntryForward }))
             } else {
-                SignInAwardWinning(onSignIn: { authIsPresented = true })
+                SignInAwardWinning(
+                    playsEntrance: welcomePlaysEntrance,
+                    onStart: { startWizard() },
+                    onSignIn: { signIn() }
+                )
+                .transition(OnboardingStepSlide(direction: { wizardEntryForward }))
             }
         }
         .sheet(isPresented: $authIsPresented) {
-            SharpitAuthDrawer()
+            SharpitAuthDrawer(headline: authHeadline)
         }
         .overlay {
             if scenePhase != .active {
@@ -46,6 +69,8 @@ struct AuthGate<SignedIn: View>: View {
         }
         .onChange(of: clerk.user?.id) { previous, current in
             if let userId = current {
+                // The account's own wizard takes over, from the draft.
+                preAccountWizard = nil
                 AuthSession.shared.clearExpiredNotice()
                 LocalAccountData.claim(userId: userId, context: modelContext)
                 CrashReporting.identify(userId: userId)
@@ -53,6 +78,47 @@ struct AuthGate<SignedIn: View>: View {
                 // Became nil — purge local data (manual sign-out or hard 401 expiry).
                 LocalAccountData.erase(context: modelContext)
                 CrashReporting.identify(userId: nil)
+            }
+        }
+    }
+
+    private func signIn() {
+        authHeadline = nil
+        authIsPresented = true
+    }
+
+    /// « Commencer »: the profile steps first, the account once they are answered — reopened
+    /// where it was when a draft is on the phone.
+    private func startWizard() {
+        let store = OnboardingStore(
+            services: AccountGate<EmptyView>.liveOnboardingServices,
+            consentsOwed: true,
+            hasAccount: false,
+            draftFile: .shared,
+            onAccountNeeded: {
+                authHeadline = String(localized: "Crée ton compte pour brancher tes appareils et générer ton plan.")
+                authIsPresented = true
+            },
+            onExit: { leaveWizard() },
+            tokenProvider: { throw SharpitAPIError.unauthorized }
+        )
+        wizardEntryForward = true
+        Task { @MainActor in
+            await Task.yield()
+            SharpitMotion.run {
+                preAccountWizard = store
+            }
+        }
+    }
+
+    private func leaveWizard() {
+        // Rebind the wizard's transition to pop before removing it (same bake as step slides).
+        wizardEntryForward = false
+        welcomePlaysEntrance = false
+        Task { @MainActor in
+            await Task.yield()
+            SharpitMotion.run {
+                preAccountWizard = nil
             }
         }
     }
@@ -79,9 +145,146 @@ private struct SessionExpiredSignIn: View {
     }
 }
 
+// MARK: – Top Status Chip & Simulated Notification Stream
+
+private struct WelcomeNotificationSimulator: View {
+    var isActive: Bool = true
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    @State private var currentIndex = 0
+    @State private var dragOffset: CGFloat = 0
+    @State private var cycleId = UUID()
+
+    private static let samples: [SharpitToastCenter.Toast] = [
+        SharpitToastCenter.Toast(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            message: String(localized: "Course au seuil 48 min · Charge TSS 64"),
+            symbol: "waveform.path.ecg",
+            tone: .success,
+            title: String(localized: "Analyse de séance prête"),
+            accentColor: SharpitColor.primary
+        ),
+        SharpitToastCenter.Toast(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+            message: String(localized: "Sortie longue 21,1 km · Importée d'Apple Santé"),
+            symbol: "figure.run",
+            tone: .info,
+            title: String(localized: "Nouvelle activité détectée"),
+            accentColor: SharpitColor.highlight
+        ),
+        SharpitToastCenter.Toast(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
+            message: String(localized: "VRC 68 ms (+12) · Forme optimale pour l'intensité"),
+            symbol: "sun.horizon.fill",
+            tone: .success,
+            title: String(localized: "Verdict du matin"),
+            accentColor: SharpitColor.primary
+        ),
+        SharpitToastCenter.Toast(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000004")!,
+            message: String(localized: "Plan de la semaine adapté selon ta récupération"),
+            symbol: "sparkles",
+            tone: .info,
+            title: String(localized: "Conseil du coach"),
+            accentColor: SharpitColor.highlight
+        )
+    ]
+
+    var body: some View {
+        let short = verticalSizeClass == .compact
+        let toast = Self.samples[currentIndex % Self.samples.count]
+
+        ZStack(alignment: .top) {
+            SharpitToastView(toast: toast)
+                .id(toast.id)
+                .offset(y: reduceMotion ? 0 : dragOffset)
+                .opacity(dragOffset < 0 ? max(0, 1.0 + Double(dragOffset / 40.0)) : 1.0)
+                .transition(
+                    reduceMotion
+                        ? .opacity
+                        : .asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: 5)),
+                            removal: .opacity.combined(with: .offset(y: -5))
+                        )
+                )
+        }
+        .frame(maxWidth: 360)
+        .frame(minHeight: short ? 44 : 48, alignment: .top)
+        .contentShape(.rect)
+        .gesture(dismissDrag)
+        .onTapGesture {
+            advanceManually()
+        }
+        .task(id: "\(isActive)-\(scenePhase == .active)-\(cycleId)") {
+            guard isActive, scenePhase == .active else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(4.2))
+                guard !Task.isCancelled else { break }
+                advanceAutomatically()
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(String(localized: "Touche pour voir la notification suivante"))
+    }
+
+    private func advanceAutomatically() {
+        let anim: Animation = reduceMotion
+            ? .easeInOut(duration: 0.22)
+            : .spring(response: 0.38, dampingFraction: 0.94)
+        withAnimation(anim) {
+            currentIndex = (currentIndex + 1) % Self.samples.count
+            dragOffset = 0
+        }
+    }
+
+    private func advanceManually() {
+        SharpitHaptics.play(.notch(major: false))
+        cycleId = UUID()
+        let anim: Animation = reduceMotion
+            ? .easeInOut(duration: 0.20)
+            : .spring(response: 0.34, dampingFraction: 0.94)
+        withAnimation(anim) {
+            currentIndex = (currentIndex + 1) % Self.samples.count
+            dragOffset = 0
+        }
+    }
+
+    private var dismissDrag: some Gesture {
+        DragGesture(minimumDistance: 6)
+            .onChanged { value in
+                if reduceMotion {
+                    dragOffset = min(0, value.translation.height)
+                } else {
+                    let t = value.translation.height
+                    dragOffset = t < 0 ? t : rubberband(t, dimension: 36)
+                }
+            }
+            .onEnded { value in
+                let shouldDismiss = value.translation.height < -16 || value.velocity.height < -200
+                if shouldDismiss {
+                    advanceManually()
+                } else {
+                    withAnimation(.spring(response: 0.30, dampingFraction: 0.92)) {
+                        dragOffset = 0
+                    }
+                }
+            }
+    }
+
+    private func rubberband(_ overshoot: CGFloat, dimension: CGFloat, constant: CGFloat = 0.55) -> CGFloat {
+        (overshoot * dimension * constant) / (dimension + constant * abs(overshoot))
+    }
+}
+
 // MARK: – Award-Winning Welcome Experience
 
 private struct SignInAwardWinning: View {
+    /// False when returning from the pre-account wizard — show the deck at once, no replay.
+    var playsEntrance = true
+    var onStart: () -> Void
     var onSignIn: () -> Void
 
     // Choreographed entrance states
@@ -105,52 +308,88 @@ private struct SignInAwardWinning: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
+        let short = verticalSizeClass == .compact
         ZStack {
-            // 1 — Deep atmospheric canvas with texture & ambient glow
+            // 1 — Atmospheric canvas edge-to-edge (no opaque dock band that cuts the glow).
             SharpitColor.background.ignoresSafeArea()
             ambientAtmosphere
             PrecisionParticleField()
                 .ignoresSafeArea()
 
-            // 2 — Page that fills the window; short heights (landscape / Split View) scroll.
+            // 2 — Hero + branding; CTA overlaid so the atmosphere keeps running underneath.
             GeometryReader { geo in
-                let short = verticalSizeClass == .compact || geo.size.height < 720
+                let ctaReserve: CGFloat = short ? 120 : 140
+                let topReserve: CGFloat = short ? 68 : 88
                 ScrollView(.vertical) {
                     VStack(spacing: 0) {
-                        systemStatusChip
-                            .padding(.top, short ? 24 : 56)
-                            .opacity(showHeader ? 1 : 0)
-                            .offset(y: showHeader ? 0 : -12)
-
-                        Spacer(minLength: short ? 8 : 16)
+                        // Fixed top spacer: anchors telemetryHero stably regardless of notification height or morph state.
+                        Spacer(minLength: topReserve)
 
                         telemetryHero
-                            .scaleEffect(short ? 0.72 : 1)
-                            .frame(height: short ? 224 : 310)
+                            .scaleEffect(short ? 0.78 : 1)
+                            .frame(height: short ? 220 : 300)
                             .frame(maxWidth: .infinity)
 
-                        Spacer(minLength: short ? 8 : 20)
+                        Spacer(minLength: short ? 12 : 24)
 
                         brandingBlock
                             .opacity(showText ? 1 : 0)
                             .offset(y: showText ? 0 : 16)
-                            .padding(.bottom, short ? 16 : 32)
+                            .padding(.bottom, SharpitSpacing.md)
 
-                        ctaDeck
-                            .padding(.horizontal, SharpitSpacing.pageInset)
-                            .padding(.bottom, short ? 20 : 36)
-                            .opacity(showCTA ? 1 : 0)
-                            .offset(y: showCTA ? 0 : 20)
+                        Spacer(minLength: short ? 8 : 16)
                     }
-                    .frame(maxWidth: .infinity, minHeight: geo.size.height)
+                    .frame(maxWidth: .infinity, minHeight: max(geo.size.height - ctaReserve, 0))
+                    .padding(.horizontal, SharpitSpacing.pageInset)
+                    .padding(.bottom, ctaReserve)
                 }
                 .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
             }
+
+            // 3 — Floating top overlay: minimal & smooth notification ticker.
+            // Absolutely positioned over the screen; zero layout impact on the central hero.
+            VStack(spacing: 0) {
+                WelcomeNotificationSimulator(isActive: showHeader)
+                    .padding(.top, short ? 4 : 8)
+                    .opacity(showHeader ? 1 : 0)
+                    .offset(y: showHeader ? 0 : -8)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            .ignoresSafeArea(.keyboard)
+            .allowsHitTesting(showHeader)
+
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                ctaDeck
+                    .padding(.horizontal, SharpitSpacing.pageInset)
+                    .padding(.top, SharpitSpacing.sm)
+                    .padding(.bottom, SharpitSpacing.sm)
+                    .opacity(showCTA ? 1 : 0)
+                    .offset(y: showCTA ? 0 : 20)
+            }
             .sharpitRegularColumn()
         }
         .ignoresSafeArea(.keyboard)
-        .task { await runChoreography() }
+        .task {
+            if playsEntrance {
+                await runChoreography()
+            } else {
+                showFullyPresented()
+            }
+        }
+    }
+
+    private func showFullyPresented() {
+        showHeader = true
+        showDial = true
+        dialProgress = 0.88
+        showCenterBadge = true
+        showFloatingCards = true
+        showText = true
+        showCTA = true
+        startAmbientLoops()
     }
 
     // MARK: – Ambient Atmosphere
@@ -180,52 +419,9 @@ private struct SignInAwardWinning: View {
                 startRadius: 10,
                 endRadius: 220
             )
-
-            // Subtle warm grounding glow near the bottom
-            RadialGradient(
-                colors: [
-                    SharpitColor.primary.opacity(0.09),
-                    .clear
-                ],
-                center: UnitPoint(x: 0.8, y: 0.85),
-                startRadius: 20,
-                endRadius: 240
-            )
         }
         .ignoresSafeArea()
     }
-
-    // MARK: – Top Status Chip
-
-    private var systemStatusChip: some View {
-        HStack(spacing: 7) {
-            // Live pulsing beacon dot
-            ZStack {
-                Circle()
-                    .fill(SharpitColor.highlight.opacity(0.4))
-                    .frame(width: 14, height: 14)
-                    .scaleEffect(radarPulse ? 1.6 : 0.9)
-                    .opacity(radarPulse ? 0 : 0.8)
-                Circle()
-                    .fill(SharpitColor.primary)
-                    .frame(width: 7, height: 7)
-            }
-
-            Text("ANALYSE ATHLÉTIQUE")
-                .font(SharpitTypography.system(size: 10.5, weight: .medium, digits: true))
-                .tracking(1.4)
-                .foregroundStyle(SharpitColor.foreground.opacity(0.75))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 7)
-        .background {
-            Capsule()
-                .fill(SharpitColor.card)
-                .overlay(Capsule().strokeBorder(SharpitColor.border, lineWidth: 1))
-                .sharpitShadow(.control)
-        }
-    }
-
     // MARK: – Center Telemetry Hero
 
     private var telemetryHero: some View {
@@ -408,10 +604,10 @@ private struct SignInAwardWinning: View {
     private var ctaDeck: some View {
         VStack(spacing: 14) {
             Button {
-                onSignIn()
+                onStart()
             } label: {
                 HStack(spacing: 10) {
-                    Text("Se connecter")
+                    Text("Commencer")
                         .font(SharpitTypography.system(size: 17, weight: .semibold))
                         .foregroundStyle(SharpitColor.primaryForeground)
 
@@ -445,18 +641,13 @@ private struct SignInAwardWinning: View {
                 .sharpitShadow(.panel)
             }
             .buttonStyle(.sharpitPressable)
-            .accessibilityLabel("Se connecter à SharpIt")
+            .accessibilityLabel("Commencer avec SharpIt")
             .prefetchClerkImages()
 
-            // Trust reassurance microcopy
-            HStack(spacing: 5) {
-                Image(systemName: "checkmark.shield")
-                    .font(.caption2)
-                    .foregroundStyle(SharpitColor.primary.opacity(0.8))
-                Text("Connexion instantanée · Données synchronisées")
-                    .font(SharpitTypography.system(size: 12, weight: .regular))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
+            Button("J'ai déjà un compte", action: onSignIn)
+                .font(SharpitTypography.system(size: 15, weight: .semibold))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(minHeight: SharpitSpacing.minimumTouchTarget)
         }
     }
 

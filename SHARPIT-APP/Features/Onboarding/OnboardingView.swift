@@ -2,13 +2,15 @@ import SwiftUI
 
 /// The first-login wizard, shown full screen after sign-up and before the tabs.
 ///
-/// The header's dial fills as the coach is built, the actions stay docked below, and only the
-/// step between them moves: it slides in from the side the athlete is heading. The move is
-/// driven by the step's value (`.animation(_:value:)`), not by an animation block opened in
-/// async code, so the page on screen is always the store's step.
+/// The dial and the docked actions stay put; the title and the step's body push/pop together
+/// like a NavigationStack page (forward ← from the trailing edge, back → from the leading).
 struct OnboardingView: View {
-    @State private var store: OnboardingStore
+    @Bindable var store: OnboardingStore
+    @State private var scrollProxy: ScrollViewProxy?
+    @State private var isShowingProPaywall = false
+    @Environment(ProStore.self) private var pro: ProStore?
     let appleHealth: AppleHealthSource
+    let appleCalendar: AppleCalendarSource
     let tokenProvider: () async throws -> String
     /// Called once the bootstrap beat is over — the gate then shows Résumé.
     let onFinished: () -> Void
@@ -16,11 +18,13 @@ struct OnboardingView: View {
     init(
         store: OnboardingStore,
         appleHealth: AppleHealthSource,
+        appleCalendar: AppleCalendarSource = AppleCalendarSource(client: SharpitClient()),
         tokenProvider: @escaping () async throws -> String,
         onFinished: @escaping () -> Void
     ) {
-        _store = State(initialValue: store)
+        self.store = store
         self.appleHealth = appleHealth
+        self.appleCalendar = appleCalendar
         self.tokenProvider = tokenProvider
         self.onFinished = onFinished
     }
@@ -43,38 +47,43 @@ struct OnboardingView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .sharpitRegularColumn()
         }
+        .background(SharpitColor.background.ignoresSafeArea())
         .animation(SharpitMotion.reveal, value: store.phase)
         .task { await store.load() }
-    }
-
-    /// One page: the header, its dial and the step's title stay put — the dial sweeps on to
-    /// the new step and the title cross-fades — and only what is under them slides.
-    private var steps: some View {
-        VStack(spacing: 0) {
-            OnboardingHeader(store: store)
-            OnboardingTitle(step: store.step)
-                .animation(SharpitMotion.fade, value: store.step)
-
-            ZStack {
-                OnboardingPage { stepContent }
-                    .id(store.step)
-                    .transition(pageTransition)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
-            .animation(SharpitMotion.reveal, value: store.step)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                OnboardingActionBar(store: store)
+        .sheet(isPresented: $isShowingProPaywall) {
+            if let pro {
+                SharpitProPaywallSheet(
+                    store: pro,
+                    onSubscribed: {
+                        isShowingProPaywall = false
+                        Task { await store.advance(from: .firstWeek) }
+                    }
+                )
             }
         }
     }
 
-    private var pageTransition: AnyTransition {
-        let forward = store.isMovingForward
-        return .asymmetric(
-            insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
-            removal: .move(edge: forward ? .leading : .trailing).combined(with: .opacity)
-        )
+    private var steps: some View {
+        VStack(spacing: 0) {
+            OnboardingHeader(store: store)
+
+            ZStack {
+                VStack(spacing: 0) {
+                    OnboardingTitle(step: store.step)
+                    OnboardingPage(onScrollProxyChange: { scrollProxy = $0 }) { stepContent }
+                }
+                .id(store.step)
+                .transition(OnboardingStepSlide(store: store))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            OnboardingActionBar(
+                store: store,
+                onOpenProModal: { isShowingProPaywall = true }
+            )
+        }
     }
 
     @ViewBuilder
@@ -85,41 +94,71 @@ struct OnboardingView: View {
         case .sports: OnboardingSportsStep(store: store)
         case .equipment: OnboardingEquipmentStep(store: store)
         case .week: OnboardingWeekStep(store: store)
-        case .goal: OnboardingGoalStep(draft: $store.intention, isTriathlete: store.sports.contains("triathlon"), isStrengthOnly: store.isStrengthOnly)
+        case .goal: OnboardingGoalStep(draft: $store.intention, sports: Set(store.sports), isStrengthOnly: store.isStrengthOnly)
         case .injuries: OnboardingInjuriesStep(store: store)
         case .privacy: OnboardingPrivacyStep(consents: $store.consents)
         case .sources:
             OnboardingSourcesStep(
                 appleHealth: appleHealth,
-                tokenProvider: tokenProvider
+                appleCalendar: appleCalendar,
+                tokenProvider: tokenProvider,
+                hasAccount: store.hasAccount,
+                onAccountNeeded: store.requestAccount
             )
         case .firstWeek: OnboardingFirstWeekStep(store: store)
         }
     }
 }
 
-/// The step's title and intro, under the dial. They swap in place: the step changes, not the
-/// page.
+/// Horizontal page push/pop — edge is read for both views at animation time (not baked at insert).
+/// Forward: new from the right, old exits left. Back: active exits right, previous from the left.
+struct OnboardingStepSlide: Transition {
+    var isMovingForward: () -> Bool
+
+    init(forward: Bool) {
+        self.isMovingForward = { forward }
+    }
+
+    init(store: OnboardingStore) {
+        self.isMovingForward = { store.isMovingForward }
+    }
+
+    init(direction: @escaping () -> Bool) {
+        self.isMovingForward = direction
+    }
+
+    func body(content: Content, phase: TransitionPhase) -> some View {
+        let forward = isMovingForward()
+        let distance: CGFloat = 440
+        let offset: CGFloat = switch phase {
+        case .willAppear:
+            forward ? distance : -distance
+        case .didDisappear:
+            forward ? -distance : distance
+        default:
+            0
+        }
+        return content.offset(x: offset)
+    }
+}
+
+/// The step's title and intro — slides with the page body.
 private struct OnboardingTitle: View {
     let step: OnboardingStep
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                Text(step.title)
-                    .font(SharpitTypography.screenTitle)
-                    .tracking(SharpitTypography.screenTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .accessibilityAddTraits(.isHeader)
-                Text(step.intro)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .id(step)
-            .transition(.opacity)
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            Text(step.title)
+                .font(SharpitTypography.screenTitle)
+                .tracking(SharpitTypography.screenTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            Text(step.intro)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.sm)
         .padding(.bottom, SharpitSpacing.md)
@@ -128,17 +167,23 @@ private struct OnboardingTitle: View {
 
 /// What the step asks, scrolling between the title and the docked actions.
 private struct OnboardingPage<Content: View>: View {
+    var onScrollProxyChange: ((ScrollViewProxy) -> Void)? = nil
     @ViewBuilder let content: Content
 
     var body: some View {
-        ScrollView {
-            content
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.bottom, SharpitSpacing.xl)
+        ScrollViewReader { proxy in
+            ScrollView {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, SharpitSpacing.pageInset)
+                    .padding(.bottom, SharpitSpacing.xl)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .scrollIndicators(.hidden)
+            .onAppear {
+                onScrollProxyChange?(proxy)
+            }
         }
-        .scrollDismissesKeyboard(.interactively)
-        .scrollIndicators(.hidden)
     }
 }
 
@@ -161,7 +206,7 @@ private struct OnboardingHeader: View {
             .buttonStyle(.plain)
             .opacity(store.canGoBack ? 1 : 0)
             .disabled(!store.canGoBack || store.isBusy)
-            .accessibilityLabel("Étape précédente")
+            .accessibilityLabel(String(localized: "Retour"))
             // As wide as « Passer » opposite, so the dial sits on the screen's centre.
             .frame(width: Self.sideWidth, alignment: .leading)
 
@@ -205,6 +250,8 @@ private struct OnboardingHeader: View {
 /// The step's primary action, docked over a fade, with the reason it is held when it is.
 private struct OnboardingActionBar: View {
     let store: OnboardingStore
+    var onScrollToPaywall: (() -> Void)? = nil
+    @Environment(ProStore.self) private var pro: ProStore?
 
     var body: some View {
         // The generator's dock and button: a fade to the bottom edge, a button a touch taller.
@@ -232,12 +279,16 @@ private struct OnboardingActionBar: View {
                 title: primaryLabel,
                 isBusy: store.isBusy || store.firstWeek == .generating && store.step == .firstWeek
             ) { [step = store.step] in
-                Task { await store.advance(from: step) }
+                if step == .firstWeek, case .ready = store.firstWeek, pro?.isPro != true {
+                    onScrollToPaywall?()
+                } else {
+                    Task { await store.advance(from: step) }
+                }
             }
             .disabled(!store.canAdvance || store.isBusy)
 
             if showsFinishWithout {
-                Button("Terminer sans ces séances") { Task { await store.finishWithoutFirstWeek() } }
+                Button(finishWithoutLabel) { Task { await store.finishWithoutFirstWeek() } }
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .frame(maxWidth: .infinity)
@@ -246,6 +297,13 @@ private struct OnboardingActionBar: View {
         }
         .animation(SharpitMotion.fade, value: store.error)
         .animation(SharpitMotion.selection, value: store.step)
+    }
+
+    private var finishWithoutLabel: String {
+        if store.step == .firstWeek, pro?.isPro != true {
+            return String(localized: "Rester sur le plan gratuit")
+        }
+        return String(localized: "Terminer sans ces séances")
     }
 
     private var hint: String? {
@@ -267,12 +325,17 @@ private struct OnboardingActionBar: View {
     private var primaryLabel: String {
         switch store.step {
         case .identity: store.isBusy ? String(localized: "Enregistrement…") : String(localized: "Commencer")
+        case .injuries where !store.hasAccount:
+            store.isBusy ? String(localized: "Enregistrement…") : String(localized: "Continuer et créer mon compte")
         case .injuries where store.injuries.isEmpty: String(localized: "Aucune blessure")
         case .privacy: String(localized: "Accepter et continuer")
         case .firstWeek:
             switch store.firstWeek {
             case .generating: String(localized: "Le coach prépare ta semaine…")
-            case .ready: store.isBusy ? String(localized: "Ajout au plan…") : String(localized: "Ajouter à mon plan")
+            case .ready where pro?.isPro == true:
+                store.isBusy ? String(localized: "Ajout au plan…") : String(localized: "Ajouter à mon plan")
+            case .ready:
+                String(localized: "Souscrire")
             default: String(localized: "Terminer")
             }
         default: store.isBusy ? String(localized: "Enregistrement…") : String(localized: "Continuer")

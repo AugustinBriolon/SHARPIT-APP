@@ -10,6 +10,11 @@ import Observation
 /// allow AI, the first week is generated in the background while the athlete links their
 /// sources, and it waits for them on the last step. The wizard is finished only by
 /// `/api/v1/onboarding/complete` — never by the app deciding it.
+///
+/// Before an account exists (SHARPIT ADR-097) the profile steps, identity to injuries, write
+/// nothing: what each step would write is noted in an `OnboardingDraft` on the phone, and the
+/// step after them asks for the account (`onAccountNeeded`). The account's wizard then replays
+/// the draft through the same writes and opens on the first step that needs the account.
 @MainActor
 @Observable
 final class OnboardingStore {
@@ -43,6 +48,8 @@ final class OnboardingStore {
     private(set) var firstWeekDrafts: [V1GeneratedSession] = []
     /// Sessions the server's safety check rejected: never offered, only counted and explained.
     private(set) var firstWeekSetAside: [(session: V1GeneratedSession, reason: String?)] = []
+    /// Free athlete: the week is ready to see, but « Ajouter » needs SharpIt Pro (ADR-097).
+    private(set) var firstWeekNeedsPro = false
 
     var identity = OnboardingIdentityDraft()
     /// What the athlete comes for besides the coaching; nothing ticked to start with.
@@ -71,9 +78,23 @@ final class OnboardingStore {
     /// written once the privacy step is accepted, before the first week is planned.
     private var injuriesAwaitingConsent: [OnboardingInjuryDraft] = []
 
+    /// False for the wizard before sign-up: nothing goes to the server, the draft holds it all.
+    let hasAccount: Bool
+    /// The steps that need an account: the wizard before sign-up stops in front of them.
+    static let accountSteps: Set<OnboardingStep> = [.privacy, .sources, .firstWeek]
+
     private let services: OnboardingServices
     private let tokenProvider: () async throws -> String
     private let stepMemory: OnboardingStepMemory?
+    private let draftFile: OnboardingDraftFile?
+    private let onAccountNeeded: (() -> Void)?
+    /// Leaves the pre-account wizard for the welcome screen (back on the first step).
+    private let onExit: (() -> Void)?
+    /// The steps left before sign-up whose write the account replays.
+    private var answered: Set<OnboardingStep> = []
+    /// Where a replayed wizard opens: the profile steps behind it are already written, so the
+    /// athlete does not go back to them (a goal would be created twice).
+    private var replayFloor: OnboardingStep?
 
     init(
         services: OnboardingServices,
@@ -81,16 +102,31 @@ final class OnboardingStore {
         currentConsents: V1PrivacyConsents? = nil,
         stepMemory: OnboardingStepMemory? = nil,
         firstName: String? = nil,
+        hasAccount: Bool = true,
+        draftFile: OnboardingDraftFile? = nil,
+        onAccountNeeded: (() -> Void)? = nil,
+        onExit: (() -> Void)? = nil,
         tokenProvider: @escaping () async throws -> String
     ) {
         self.services = services
         self.tokenProvider = tokenProvider
         self.stepMemory = stepMemory
+        self.hasAccount = hasAccount
+        self.draftFile = draftFile
+        self.onAccountNeeded = onAccountNeeded
+        self.onExit = onExit
         path = OnboardingStep.allCases.filter { $0 != .privacy || consentsOwed }
         hasAIConsent = currentConsents?.hasAIConsent ?? false
         consents.ai = currentConsents?.hasAIConsent ?? false
-        consents.unofficialProviders = currentConsents?.hasUnofficialProvidersAck ?? false
         identity.firstName = firstName ?? ""
+        // Pre-account: no network read — open on the steps at once (no launch-mark flash).
+        if !hasAccount {
+            phase = .steps
+            if let draft = draftFile?.load() {
+                adopt(draft)
+                step = Self.accountSteps.contains(draft.step) ? .injuries : draft.step
+            }
+        }
     }
 
     var canContinueFromSports: Bool { PracticedSportCatalog.isPlannable(sports) }
@@ -109,7 +145,13 @@ final class OnboardingStore {
     }
 
     var position: Int { (path.firstIndex(of: step) ?? 0) + 1 }
-    var canGoBack: Bool { previous != nil && step != .firstWeek }
+    /// Previous step, or the welcome screen when the wizard can leave.
+    var canGoBack: Bool {
+        if step == .firstWeek { return false }
+        if let replayFloor, step == replayFloor { return false }
+        if previous != nil { return true }
+        return onExit != nil
+    }
 
     /// Whether the step's primary action can run now.
     var canAdvance: Bool {
@@ -141,6 +183,16 @@ final class OnboardingStore {
     func load() async {
         guard phase == .loading else { return }
         defer { phase = .steps }
+        if let draft = draftFile?.load() {
+            adopt(draft)
+            if hasAccount {
+                replay()
+            } else {
+                step = Self.accountSteps.contains(draft.step) ? .injuries : draft.step
+            }
+            return
+        }
+        guard hasAccount else { return }
         if let remembered = stepMemory?.step, path.contains(remembered), remembered != .firstWeek {
             step = remembered
         }
@@ -167,6 +219,41 @@ final class OnboardingStore {
         if let declared = profile.trainingAvailability {
             availability = declared
         }
+    }
+
+    private func adopt(_ draft: OnboardingDraft) {
+        let accountName = identity.firstName
+        identity = draft.identity
+        if identity.trimmedFirstName.isEmpty { identity.firstName = accountName }
+        motivations = draft.motivations
+        sports = draft.sports
+        ownedEquipment = draft.ownedEquipment
+        strengthVenue = draft.strengthVenue
+        availability = draft.availability
+        intention = draft.intention
+        injuries = draft.injuries
+        answered = draft.answered
+    }
+
+    /// The account's first open after a draft: every answered step is written, in the path's
+    /// order, and the wizard opens where the account is needed. The draft goes once all is in.
+    private func replay() {
+        for answeredStep in path where answered.contains(answeredStep) {
+            write(answeredStep)
+        }
+        if let first = path.first(where: Self.accountSteps.contains) {
+            replayFloor = first
+            move(to: first)
+        }
+        Task { await flushWrites() }
+    }
+
+    private var currentDraft: OnboardingDraft {
+        OnboardingDraft(
+            step: step, answered: answered, identity: identity, motivations: motivations,
+            sports: sports, ownedEquipment: ownedEquipment, strengthVenue: strengthVenue,
+            availability: availability, intention: intention, injuries: injuries
+        )
     }
 
     // MARK: - Editing
@@ -218,8 +305,12 @@ final class OnboardingStore {
     // MARK: - Navigation
 
     func goBack() {
-        guard !isBusy, canGoBack, let previous else { return }
-        move(to: previous)
+        guard !isBusy, canGoBack else { return }
+        if let previous, step != replayFloor {
+            move(to: previous)
+            return
+        }
+        onExit?()
     }
 
     /// The step's primary action: saves what it holds, then moves on. `origin` is the step the
@@ -248,7 +339,9 @@ final class OnboardingStore {
         switch step {
         case .equipment: leaveEquipment()
         case .week: leaveWeek()
-        case .goal: moveNext()
+        case .goal:
+            answered.remove(.goal)
+            moveNext()
         case .injuries:
             injuries = []
             leaveInjuries()
@@ -265,18 +358,26 @@ final class OnboardingStore {
 
     private func moveNext() {
         guard let next else { return }
+        if !hasAccount, Self.accountSteps.contains(next) {
+            requestAccount()
+            return
+        }
         move(to: next)
     }
 
+    /// Triggers account creation when an account-requiring action is taken.
+    func requestAccount() {
+        draftFile?.save(currentDraft)
+        onAccountNeeded?()
+    }
+
+    /// Leaving a step: written at once with an account, noted for the replay before one.
+    private func record(_ left: OnboardingStep) {
+        if hasAccount { write(left) } else { answered.insert(left) }
+    }
+
     private func leaveIdentity() {
-        let draft = identity
-        enqueue(failure: String(localized: "Impossible d'enregistrer ton profil.")) { token in
-            try await self.services.saveFirstName(draft.trimmedFirstName)
-            let patch = draft.profilePatch
-            if !patch.fields.isEmpty {
-                _ = try await self.services.profile.patchAthleteProfile(patch, token: token)
-            }
-        }
+        record(.identity)
         moveNext()
     }
 
@@ -284,61 +385,91 @@ final class OnboardingStore {
         if motivations.contains(feature) { motivations.remove(feature) } else { motivations.insert(feature) }
     }
 
-    /// Every feature written, ticked or not: an unticked one leaves the app at once.
     private func leaveMotivation() {
-        var patch = AthleteProfilePatch()
-        patch.setFeatures(Dictionary(uniqueKeysWithValues: SharpitFeature.allCases.map { ($0, motivations.contains($0)) }))
-        enqueue(patch, failure: String(localized: "Impossible d'enregistrer tes envies."))
+        record(.motivation)
         moveNext()
     }
 
     private func leaveSports() {
-        var patch = AthleteProfilePatch()
-        patch.setPracticedSports(V1AthletePracticedSports(sports: sports))
-        enqueue(patch, failure: String(localized: "Impossible d'enregistrer tes sports."))
+        record(.sports)
         if isStrengthOnly { intention.kind = .metric }
         moveNext()
     }
 
     private func leaveEquipment() {
         if equipmentIsDirty {
-            var patch = AthleteProfilePatch()
-            patch.setEquipment(V1AthleteEquipment(
-                strengthVenue: strengthVenue.rawValue,
-                owned: ownedEquipment.sorted()
-            ))
-            enqueue(patch, failure: String(localized: "Impossible d'enregistrer ton matériel."))
+            record(.equipment)
             equipmentIsDirty = false
         }
         moveNext()
     }
 
     private func leaveWeek() {
-        var patch = AthleteProfilePatch()
-        patch.setTrainingAvailability(availability)
-        enqueue(patch, failure: String(localized: "Impossible d'enregistrer ta semaine."))
+        record(.week)
         moveNext()
     }
 
     private func submitGoal() {
-        guard let input = intention.goalInput else { return }
-        enqueue(failure: String(localized: "Impossible de créer l'objectif.")) { token in
-            let goal = try await self.services.goals.createGoal(input, token: token)
-            self.createdGoalId = goal.id
-        }
+        guard intention.goalInput != nil else { return }
+        record(.goal)
         moveNext()
     }
 
     private func leaveInjuries() {
-        let declared = injuries
-        if path.contains(.privacy) {
-            injuriesAwaitingConsent = declared
-        } else if !declared.isEmpty {
-            enqueue(failure: String(localized: "Impossible d'enregistrer tes blessures.")) { token in
-                try await self.write(declared, token: token)
-            }
-        }
+        record(.injuries)
         moveNext()
+    }
+
+    /// The write a profile step makes, from what the store holds now.
+    private func write(_ left: OnboardingStep) {
+        switch left {
+        case .identity:
+            let draft = identity
+            enqueue(failure: String(localized: "Impossible d'enregistrer ton profil.")) { token in
+                try await self.services.saveFirstName(draft.trimmedFirstName)
+                let patch = draft.profilePatch
+                if !patch.fields.isEmpty {
+                    _ = try await self.services.profile.patchAthleteProfile(patch, token: token)
+                }
+            }
+        case .motivation:
+            // Every feature written, ticked or not: an unticked one leaves the app at once.
+            var patch = AthleteProfilePatch()
+            patch.setFeatures(Dictionary(uniqueKeysWithValues: SharpitFeature.allCases.map { ($0, motivations.contains($0)) }))
+            enqueue(patch, failure: String(localized: "Impossible d'enregistrer tes envies."))
+        case .sports:
+            var patch = AthleteProfilePatch()
+            patch.setPracticedSports(V1AthletePracticedSports(sports: sports))
+            enqueue(patch, failure: String(localized: "Impossible d'enregistrer tes sports."))
+        case .equipment:
+            var patch = AthleteProfilePatch()
+            patch.setEquipment(V1AthleteEquipment(
+                strengthVenue: strengthVenue.rawValue,
+                owned: ownedEquipment.sorted()
+            ))
+            enqueue(patch, failure: String(localized: "Impossible d'enregistrer ton matériel."))
+        case .week:
+            var patch = AthleteProfilePatch()
+            patch.setTrainingAvailability(availability)
+            enqueue(patch, failure: String(localized: "Impossible d'enregistrer ta semaine."))
+        case .goal:
+            guard let input = intention.goalInput else { return }
+            enqueue(failure: String(localized: "Impossible de créer l'objectif.")) { token in
+                let goal = try await self.services.goals.createGoal(input, token: token)
+                self.createdGoalId = goal.id
+            }
+        case .injuries:
+            let declared = injuries
+            if path.contains(.privacy) {
+                injuriesAwaitingConsent = declared
+            } else if !declared.isEmpty {
+                enqueue(failure: String(localized: "Impossible d'enregistrer tes blessures.")) { token in
+                    try await self.write(declared, token: token)
+                }
+            }
+        case .privacy, .sources, .firstWeek:
+            break
+        }
     }
 
     private func write(_ declared: [OnboardingInjuryDraft], token: String) async throws {
@@ -351,7 +482,7 @@ final class OnboardingStore {
     /// generated once both are in (`startFirstWeek` waits for the queue).
     private func leavePrivacy() {
         let waiting = injuriesAwaitingConsent
-        let update = PrivacyConsentUpdate.wall(ai: consents.ai, unofficialProviders: consents.unofficialProviders)
+        let update = PrivacyConsentUpdate.wall(ai: consents.ai, unofficialProviders: false)
         enqueue(failure: String(localized: "Impossible d'enregistrer tes choix de confidentialité.")) { token in
             _ = try await self.services.consents.updateConsents(update, token: token)
             try await self.write(waiting, token: token)
@@ -405,12 +536,29 @@ final class OnboardingStore {
         }
     }
 
+    /// One flush at a time: a second caller (the replay's, then the first week's) waits for the
+    /// one under way, which otherwise read an emptied list mid-retry as « everything saved ».
+    private var flushing: Task<Bool, Never>?
+
     /// Waits for every queued write and tries the failed ones once more — before anything
     /// depends on them. True when everything the athlete answered is saved.
     @discardableResult
     func flushWrites() async -> Bool {
+        if let flushing { return await flushing.value }
+        let flush = Task { await self.drainWrites() }
+        flushing = flush
+        let saved = await flush.value
+        flushing = nil
+        return saved
+    }
+
+    private func drainWrites() async -> Bool {
         await writeQueue?.value
-        guard !failedWrites.isEmpty else { return true }
+        guard !failedWrites.isEmpty else {
+            // Everything answered before sign-up is on the server now.
+            if hasAccount { draftFile?.clear() }
+            return true
+        }
         let retrying = failedWrites
         failedWrites = []
         for write in retrying {
@@ -476,28 +624,30 @@ final class OnboardingStore {
         firstWeekDrafts = drafts
     }
 
-    /// Puts the week in the plan, then finishes. A failed insert stays on the step, the week
-    /// still on screen, so the athlete can try again or finish without it.
+    /// Puts the week in the plan, then finishes. Pro refusal keeps the preview and asks for
+    /// SharpIt Pro (SHARPIT ADR-097); the athlete can still leave without the week.
     private func addFirstWeekAndFinish() async {
         guard case .ready(_, let sessions) = firstWeek, !addedFirstWeek else {
             await finish()
             return
         }
-        let goalId = createdGoalId
-        var added = false
-        await perform(failure: String(localized: "Impossible d'ajouter ta semaine au plan. Réessaie.")) { token in
-            do {
-                try await self.services.plan.insertWeek(sessions, goalId: goalId, token: token)
-            } catch SharpitAPIError.proRequired {
-                // shortcut: a Free athlete finishes without the previewed week (SHARPIT ADR-097),
-                // upgrade when the onboarding paywall lands (plan step 5).
-            }
-        } onSuccess: {
-            added = true
+        isBusy = true
+        error = nil
+        defer { isBusy = false }
+        do {
+            let token = try await tokenProvider()
+            try await services.plan.insertWeek(sessions, goalId: createdGoalId, token: token)
+            addedFirstWeek = true
+            firstWeekNeedsPro = false
+            await finish()
+        } catch SharpitAPIError.proRequired {
+            firstWeekNeedsPro = true
+        } catch {
+            self.error = message(
+                for: error,
+                failure: String(localized: "Impossible d'ajouter ta semaine au plan. Réessaie.")
+            )
         }
-        guard added else { return }
-        addedFirstWeek = true
-        await finish()
     }
 
     private func finish() async {
@@ -516,10 +666,19 @@ final class OnboardingStore {
     // MARK: - Writes
 
     private func move(to target: OnboardingStep) {
+        guard hasAccount || !Self.accountSteps.contains(target) else {
+            draftFile?.save(currentDraft)
+            onAccountNeeded?()
+            return
+        }
         error = nil
-        isMovingForward = (path.firstIndex(of: target) ?? 0) > (path.firstIndex(of: step) ?? 0)
-        step = target
+        let forward = (path.firstIndex(of: target) ?? 0) > (path.firstIndex(of: step) ?? 0)
+        isMovingForward = forward
+        SharpitMotion.run {
+            step = target
+        }
         stepMemory?.step = target
+        if !hasAccount { draftFile?.save(currentDraft) }
     }
 
     private func perform(
@@ -562,13 +721,12 @@ struct OnboardingServices {
 }
 
 /// The consents the privacy step asks for: the two documents and health, required together
-/// (the server refuses one without the others); AI and the unofficial-providers notice optional.
+/// (the server refuses one without the others); AI optional.
 struct OnboardingConsents: Equatable {
     var terms = false
     var privacy = false
     var health = false
     var ai = false
-    var unofficialProviders = false
 
     var requiredAccepted: Bool { terms && privacy && health }
 
@@ -579,7 +737,6 @@ struct OnboardingConsents: Equatable {
         privacy = true
         health = true
         ai = true
-        unofficialProviders = true
     }
 }
 

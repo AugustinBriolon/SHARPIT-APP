@@ -6,7 +6,7 @@ import Foundation
 /// consents the data needs — just before the sources that bring the data in — then the first week
 /// it plans. The privacy step is in the path only when the consents are owed
 /// (`OnboardingStore.path`).
-nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
+nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Codable, Sendable {
     case identity
     case motivation
     case sports
@@ -88,14 +88,18 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
 
 /// Who the athlete is, for the identity step: the first name goes to their Clerk account, the
 /// rest to the profile.
-nonisolated struct OnboardingIdentityDraft: Equatable, Sendable {
+nonisolated struct OnboardingIdentityDraft: Equatable, Codable, Sendable {
     var firstName = ""
     var sex: AthleteSex?
     var heightCm: Int?
     var birthDate: Date?
 
     var trimmedFirstName: String { firstName.trimmingCharacters(in: .whitespacesAndNewlines) }
-    var isValid: Bool { !trimmedFirstName.isEmpty }
+    /// Prénom, sexe, taille et date de naissance — le bouton « Commencer » reste gris tant
+    /// qu'un champ manque.
+    var isValid: Bool {
+        !trimmedFirstName.isEmpty && sex != nil && heightCm != nil && birthDate != nil
+    }
 
     /// The profile fields this step holds — only those answered, so nothing saved is cleared.
     /// The first name is Clerk's.
@@ -112,8 +116,8 @@ nonisolated struct OnboardingIdentityDraft: Equatable, Sendable {
 /// how much it bothers. Nothing is chosen for the athlete; it is complete once each question
 /// that applies is answered. Kept on the phone until the health consent is given, then written
 /// as a physical note.
-nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
-    enum Kind: String, CaseIterable, Identifiable, Sendable {
+nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Sendable {
+    enum Kind: String, CaseIterable, Identifiable, Codable, Sendable {
         case pain = "PAIN"
         case injury = "INJURY"
 
@@ -126,7 +130,7 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
         }
     }
 
-    enum Side: String, CaseIterable, Identifiable, Sendable {
+    enum Side: String, CaseIterable, Identifiable, Codable, Sendable {
         case left = "LEFT"
         case right = "RIGHT"
         case both = "BILATERAL"
@@ -142,7 +146,7 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
     }
 
     /// How much it bothers, in words — stored on the web's 0…10 severity.
-    enum Level: Int, CaseIterable, Identifiable, Sendable {
+    enum Level: Int, CaseIterable, Identifiable, Codable, Sendable {
         case light = 2
         case moderate = 5
         case strong = 8
@@ -161,6 +165,11 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
     static let bodyParts = [
         String(localized: "Genou"), String(localized: "Cheville"), String(localized: "Pied"), String(localized: "Mollet"), String(localized: "Cuisse"), String(localized: "Ischio"), String(localized: "Hanche"),
         String(localized: "Bassin"), String(localized: "Dos"), String(localized: "Lombaires"), String(localized: "Épaule"), String(localized: "Cou"), String(localized: "Tendon d'Achille"),
+    ]
+
+    /// Grouped under « Bas du corps » in the injuries step.
+    static let lowerBodyParts: Set<String> = [
+        String(localized: "Genou"), String(localized: "Cheville"), String(localized: "Pied"), String(localized: "Mollet"), String(localized: "Cuisse"), String(localized: "Ischio"), String(localized: "Hanche"), String(localized: "Bassin"), String(localized: "Tendon d'Achille"),
     ]
 
     /// Zones that come in pairs, and so ask for a side.
@@ -208,7 +217,7 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Sendable {
 
 /// What the intention step records — the web's `OnboardingIntentionKind` minus `later`,
 /// which is the step's Passer.
-nonisolated enum OnboardingIntentionKind: String, CaseIterable, Identifiable, Sendable {
+nonisolated enum OnboardingIntentionKind: String, CaseIterable, Identifiable, Codable, Sendable {
     case race
     case metric
 
@@ -222,34 +231,18 @@ nonisolated enum OnboardingIntentionKind: String, CaseIterable, Identifiable, Se
     }
 }
 
-/// A triathlon's distance, worded so the web's `resolveTriathlonFormat` reads it back — the
-/// race predictor and the coach's periodization hang on it.
-nonisolated enum OnboardingTriathlonFormat: String, CaseIterable, Sendable {
-    case sprint = "Triathlon sprint"
-    case olympic = "Triathlon olympique (M)"
-    case half = "70.3 (Half Ironman)"
-    case full = "Ironman"
-
-    var shortLabel: String {
-        switch self {
-        case .sprint: String(localized: "Sprint")
-        case .olympic: "M"
-        case .half: "70.3"
-        case .full: String(localized: "Ironman")
-        }
-    }
-}
-
 /// The few fields the wizard asks for a first goal, turned into the same payload as the
 /// web's `buildOnboardingGoalPayload` (`src/lib/onboarding/status/intention.ts`).
-nonisolated struct OnboardingIntentionDraft: Equatable, Sendable {
+nonisolated struct OnboardingIntentionDraft: Equatable, Codable, Sendable {
     var kind: OnboardingIntentionKind = .race
 
+    /// Optional custom name (« Marathon de Paris »); empty → format label.
     var raceTitle = ""
     var raceDate: Date
     var raceLocation = ""
-    /// Asked of a triathlete only; any race may name it in its title instead.
-    var triathlonFormat: OnboardingTriathlonFormat?
+    /// ADR-082 structured race — required for a race intention.
+    var discipline: RaceDiscipline?
+    var formatKey = ""
     /// « Terminer », « Sub 5 h » — optional.
     var targetPerformance = ""
 
@@ -261,6 +254,10 @@ nonisolated struct OnboardingIntentionDraft: Equatable, Sendable {
         raceDate = calendar.date(byAdding: .month, value: 3, to: now) ?? now
     }
 
+    var selectedFormat: RaceFormatEntry? {
+        RaceFormatCatalog.entry(key: formatKey)
+    }
+
     /// Accepts « 42,2 » as the French keyboard types it.
     var metricTarget: Double? {
         Double(metricTargetText.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
@@ -269,7 +266,7 @@ nonisolated struct OnboardingIntentionDraft: Equatable, Sendable {
     var isValid: Bool {
         switch kind {
         case .race:
-            return !raceTitle.trimmed.isEmpty
+            return discipline != nil && !formatKey.trimmed.isEmpty && RaceFormatCatalog.entry(key: formatKey) != nil
         case .metric:
             guard let target = metricTarget, target.isFinite, target > 0 else { return false }
             return !metricTitle.trimmed.isEmpty && !metricUnit.trimmed.isEmpty
@@ -281,14 +278,24 @@ nonisolated struct OnboardingIntentionDraft: Equatable, Sendable {
         guard isValid else { return nil }
         switch kind {
         case .race:
+            let format = selectedFormat
+            let title = raceTitle.trimmed.isEmpty ? (format?.label ?? formatKey) : raceTitle.trimmed
+            let distances = format?.distances
             return CreateGoalInput(
-                title: raceTitle.trimmed,
+                title: title,
                 kind: .race,
                 priority: .a,
                 targetDate: raceDate,
                 location: raceLocation.trimmed.isEmpty ? nil : raceLocation.trimmed,
-                raceFormat: triathlonFormat?.rawValue,
-                targetPerformance: targetPerformance.trimmed.isEmpty ? nil : targetPerformance.trimmed
+                raceFormat: format?.label,
+                targetPerformance: targetPerformance.trimmed.isEmpty ? nil : targetPerformance.trimmed,
+                discipline: discipline?.rawValue,
+                formatKey: formatKey,
+                swimM: distances?.swimM,
+                bikeM: distances?.bikeM,
+                runM: distances?.runM,
+                run2M: distances?.run2M,
+                segments: distances?.segments
             )
         case .metric:
             return CreateGoalInput(
@@ -328,9 +335,10 @@ private extension String {
 /// Why the athlete comes, beyond the coaching every account gets: each answer turns a part of
 /// SharpIt on, and what is left unticked stays out of the app until Paramètres brings it back.
 nonisolated enum OnboardingMotivation {
-    /// The plan, the coach, the sessions: SharpIt itself, never switched off.
+    /// The plan, the coach, the sessions — presented as available during onboarding; Pro is
+    /// asked later, when the week would enter the plan (SHARPIT ADR-097).
     static let coachingTitle = String(localized: "Être coaché vers mon objectif")
-    static let coachingDetail = String(localized: "Ton plan, tes séances et ton coach. Toujours inclus.")
+    static let coachingDetail = String(localized: "Ton plan, tes séances et ton coach.")
 
     /// The question as the athlete reads it, one per feature.
     static func title(_ feature: SharpitFeature) -> String {

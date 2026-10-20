@@ -71,6 +71,7 @@ final class CoachDictation {
     private let audioEngine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
+    private var listeningTask: Task<Void, Never>?
     private var hasTap = false
 
     /// The draft once dictation has added `heard` after what was typed before it.
@@ -108,6 +109,8 @@ final class CoachDictation {
     }
 
     func stop() {
+        listeningTask?.cancel()
+        listeningTask = nil
         resetEngine()
         isListening = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -148,33 +151,33 @@ final class CoachDictation {
         // while the node is 48 kHz, and installTap then raises (APPLE-IOS-3).
         let format = input.inputFormat(forBus: 0)
         guard Self.canTap(format) else { throw DictationUnavailable() }
-        Self.feed(request, from: input)
+        Self.installAudioTap(on: input, feeding: request)
         hasTap = true
         audioEngine.prepare()
         try audioEngine.start()
 
-        // Build the speech callback off the main actor — default isolation is MainActor, so a
-        // closure formed here would trap on the speech queue (APPLE-IOS-2 / APPLE-IOS-4).
-        task = Self.recognize(
-            request,
-            with: recognizer,
-            onResult: Self.bindResults(
-                typed: typed,
-                onText: onText,
-                onFinished: { [weak self] in self?.stop() }
-            )
-        )
+        // Decouple speech recognition callbacks from MainActor using an AsyncStream.
+        // The stream yields transcriptions from the Speech background queue, which are
+        // consumed cleanly here on MainActor without queue assertions.
+        let (stream, recognitionTask) = Self.makeSpeechStream(with: recognizer, request: request)
+        self.task = recognitionTask
+
+        listeningTask = Task { [weak self] in
+            for await heard in stream {
+                guard let self, self.isListening else { break }
+                onText(Self.merged(typed: typed, heard: heard))
+            }
+            self?.stop()
+        }
     }
 
     private struct DictationUnavailable: Error {}
 
-    // The audio and speech frameworks call back on their own queues. Written inside this
-    // main-actor class, those closures would be main-actor isolated and trap when called
-    // there, so they are built in nonisolated functions.
+    // MARK: - Non-isolated Audio & Speech Bridges
 
-    nonisolated private static func feed(
-        _ request: SFSpeechAudioBufferRecognitionRequest,
-        from input: AVAudioInputNode
+    nonisolated private static func installAudioTap(
+        on input: AVAudioInputNode,
+        feeding request: SFSpeechAudioBufferRecognitionRequest
     ) {
         // nil → node's bus format; never pass a guessed AVAudioFormat across a session change.
         input.installTap(onBus: 0, bufferSize: 1024, format: nil) { buffer, _ in
@@ -182,27 +185,20 @@ final class CoachDictation {
         }
     }
 
-    nonisolated private static func bindResults(
-        typed: String,
-        onText: @escaping @MainActor (String) -> Void,
-        onFinished: @escaping @MainActor () -> Void
-    ) -> @Sendable (_ heard: String?, _ finished: Bool) -> Void {
-        { heard, finished in
-            Task { @MainActor in
-                if let heard { onText(merged(typed: typed, heard: heard)) }
-                if finished { onFinished() }
+    nonisolated private static func makeSpeechStream(
+        with recognizer: SFSpeechRecognizer,
+        request: SFSpeechAudioBufferRecognitionRequest
+    ) -> (AsyncStream<String>, SFSpeechRecognitionTask) {
+        let (stream, continuation) = AsyncStream.makeStream(of: String.self)
+        let task = recognizer.recognitionTask(with: request) { result, error in
+            if let result {
+                continuation.yield(result.bestTranscription.formattedString)
+            }
+            if error != nil || (result?.isFinal ?? false) {
+                continuation.finish()
             }
         }
-    }
-
-    nonisolated private static func recognize(
-        _ request: SFSpeechAudioBufferRecognitionRequest,
-        with recognizer: SFSpeechRecognizer,
-        onResult: @escaping @Sendable (_ heard: String?, _ finished: Bool) -> Void
-    ) -> SFSpeechRecognitionTask {
-        recognizer.recognitionTask(with: request) { result, error in
-            onResult(result?.bestTranscription.formattedString, error != nil || (result?.isFinal ?? false))
-        }
+        return (stream, task)
     }
 
     nonisolated private static func authorized() async -> Bool {

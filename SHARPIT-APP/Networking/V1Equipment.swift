@@ -7,7 +7,7 @@ nonisolated struct V1AthleteEquipment: Codable, Sendable, Equatable {
     var strengthVenue: String?
     var owned: [String] = []
 
-    enum StrengthVenue: String, CaseIterable, Identifiable, Sendable {
+    enum StrengthVenue: String, CaseIterable, Identifiable, Codable, Sendable {
         case gym
         case home
         case both
@@ -19,7 +19,7 @@ nonisolated struct V1AthleteEquipment: Codable, Sendable, Equatable {
             switch self {
             case .gym: String(localized: "Salle")
             case .home: String(localized: "Maison")
-            case .both: String(localized: "Les deux")
+            case .both: String(localized: "Salle + maison")
             case .bodyweight: String(localized: "Poids du corps")
             }
         }
@@ -40,6 +40,68 @@ nonisolated struct V1AthleteEquipment: Codable, Sendable, Equatable {
             case .both: String(localized: "Salle + matériel à la maison.")
             case .bodyweight: String(localized: "Séances au poids du corps uniquement.")
             }
+        }
+
+        /// Chips the athlete toggles (no exclusive « Les deux » — both flags → `.both` on the wire).
+        enum Toggle: String, CaseIterable, Identifiable, Sendable {
+            case gym
+            case home
+            case bodyweight
+
+            var id: String { rawValue }
+
+            var title: String {
+                switch self {
+                case .gym: String(localized: "Salle")
+                case .home: String(localized: "Maison")
+                case .bodyweight: String(localized: "Poids du corps")
+                }
+            }
+
+            var symbolName: String {
+                switch self {
+                case .gym: "dumbbell"
+                case .home: "house"
+                case .bodyweight: "figure.cross.training"
+                }
+            }
+        }
+
+        /// Wire value from the multi-select chips.
+        static func from(toggles: Set<Toggle>) -> StrengthVenue {
+            if toggles.contains(.bodyweight) { return .bodyweight }
+            let gym = toggles.contains(.gym)
+            let home = toggles.contains(.home)
+            switch (gym, home) {
+            case (true, true): return .both
+            case (true, false): return .gym
+            case (false, true): return .home
+            case (false, false): return .bodyweight
+            }
+        }
+
+        /// Chips that represent this wire value.
+        var toggles: Set<Toggle> {
+            switch self {
+            case .gym: [.gym]
+            case .home: [.home]
+            case .both: [.gym, .home]
+            case .bodyweight: [.bodyweight]
+            }
+        }
+
+        /// Toggle one chip: bodyweight clears salle/maison; salle/maison clear bodyweight.
+        static func toggling(_ chip: Toggle, in current: StrengthVenue) -> StrengthVenue {
+            var selected = current.toggles
+            if selected.contains(chip) {
+                selected.remove(chip)
+            } else if chip == .bodyweight {
+                selected = [.bodyweight]
+            } else {
+                selected.remove(.bodyweight)
+                selected.insert(chip)
+            }
+            return from(toggles: selected)
         }
     }
 }
@@ -167,7 +229,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Haltères / kettlebell"),
             impact: String(localized: "Charge libre à domicile pour le renfo."),
-            symbolName: "dumbbell",
+            symbolName: "",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
@@ -175,7 +237,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Barre + disques"),
             impact: String(localized: "Mouvements composés chargés à domicile."),
-            symbolName: "circle.circle",
+            symbolName: "",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
@@ -183,7 +245,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Banc"),
             impact: String(localized: "Développés et variations allongées."),
-            symbolName: "table.furniture.fill",
+            symbolName: "",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
@@ -191,7 +253,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Barre de traction"),
             impact: String(localized: "Tractions et gainage vertical."),
-            symbolName: "figure.strengthtraining.traditional",
+            symbolName: "",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
@@ -199,7 +261,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Élastiques"),
             impact: String(localized: "Activation, assistance et charge progressive."),
-            symbolName: "lines.measurement.horizontal",
+            symbolName: "",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
@@ -207,7 +269,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: "TRX / sangles",
             impact: String(localized: "Renfo en suspension au poids du corps."),
-            symbolName: "figure.gymnastics",
+            symbolName: "",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
@@ -215,7 +277,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Anneaux de gymnastique"),
             impact: String(localized: "Tirage et poussée instables."),
-            symbolName: "circle",
+            symbolName: "",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
@@ -223,7 +285,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Barres de dips"),
             impact: String(localized: "Poussée verticale lestable."),
-            symbolName: "pause",
+            symbolName: "",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(
@@ -231,7 +293,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Gilet lesté"),
             impact: String(localized: "Lest portable (tractions, pompes, côtes)."),
-            symbolName: "tshirt"
+            symbolName: ""
         ),
 
         // Mobilité

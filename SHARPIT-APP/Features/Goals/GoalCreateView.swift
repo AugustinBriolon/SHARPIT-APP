@@ -26,7 +26,10 @@ struct GoalCreateView: View {
                 }
             }
             .onChange(of: draft.targetDate, initial: true) { suggestRole() }
-            .onChange(of: draft.raceFormat) { suggestRole() }
+            .onChange(of: draft.formatKey) {
+                draft.raceFormat = draft.selectedFormat?.label ?? draft.raceFormat
+                suggestRole()
+            }
             .onChange(of: store.goals) { suggestRole() }
             .principalConflictConfirmation($conflict, store: store) {
                 Task { await submit() }
@@ -136,16 +139,30 @@ private struct GoalFormFields: View {
             }
 
             Section(eyebrow: String(localized: "Détails")) {
-                TextField("Nom de l’objectif", text: $draft.title)
-                    .textInputAutocapitalization(.sentences)
-
                 if draft.kind == .race {
+                    Picker("Discipline", selection: disciplineBinding) {
+                        Text(String(localized: "Choisir")).tag(Optional<RaceDiscipline>.none)
+                        ForEach(RaceDiscipline.allCases) { discipline in
+                            Text(discipline.label).tag(Optional(discipline))
+                        }
+                    }
+                    if let discipline = draft.discipline {
+                        Picker("Format", selection: $draft.formatKey) {
+                            Text(String(localized: "Choisir")).tag("")
+                            ForEach(RaceFormatCatalog.formats(for: discipline)) { format in
+                                Text(format.label).tag(format.key)
+                            }
+                        }
+                    }
+                    TextField("Nom personnalisé (optionnel)", text: $draft.title)
+                        .textInputAutocapitalization(.sentences)
                     DatePicker("Date de la course", selection: $draft.targetDate, displayedComponents: .date)
-                    TextField("Format (Marathon, 70.3…)", text: $draft.raceFormat)
                     TextField("Lieu", text: $draft.location)
                         .textContentType(.addressCity)
                     TextField("Chrono visé (3h30…)", text: $draft.targetPerformance)
                 } else {
+                    TextField("Nom de l’objectif", text: $draft.title)
+                        .textInputAutocapitalization(.sentences)
                     TextField("Valeur cible", text: $draft.targetValueText)
                         .keyboardType(.decimalPad)
                     TextField("Valeur actuelle", text: $draft.currentValueText)
@@ -197,5 +214,19 @@ private struct GoalFormFields: View {
             draft.priority = $0
             onRolePicked()
         })
+    }
+
+    private var disciplineBinding: Binding<RaceDiscipline?> {
+        Binding(
+            get: { draft.discipline },
+            set: { next in
+                draft.discipline = next
+                if let next, RaceFormatCatalog.entry(key: draft.formatKey)?.discipline != next {
+                    draft.formatKey = RaceFormatCatalog.formats(for: next).first?.key ?? ""
+                }
+                if next == nil { draft.formatKey = "" }
+                onRolePicked()
+            }
+        )
     }
 }

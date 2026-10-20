@@ -7,8 +7,8 @@ import WidgetKit
 /// Connect (subscription group « SharpIt Pro ») and in `Config/SharpitPro.storekit`, which the
 /// simulator uses to buy without App Store Connect.
 nonisolated enum SharpitProProduct {
-    static let monthly = "app.sharpit.ios.pro.monthly"
-    static let yearly = "app.sharpit.ios.pro.yearly"
+    static let monthly = "app.sharpit.pro.monthly"
+    static let yearly = "app.sharpit.pro.yearly"
     static let all = [monthly, yearly]
 }
 
@@ -36,6 +36,8 @@ final class ProStore {
     private(set) var message: String?
     /// True while a token fetch is in flight after a miss — the paywall stays hidden until set.
     private(set) var isFetchingAccountToken = false
+    private(set) var storeProducts: [Product] = []
+    private(set) var isPurchasing = false
 
     private let client: any ProServing
     private let tokenProvider: () async throws -> String
@@ -142,6 +144,57 @@ final class ProStore {
             message = String(localized: "Cet achat est rattaché à un autre compte.")
         } catch {
             message = String(localized: "L'abonnement sera confirmé dès que le serveur répondra.")
+        }
+    }
+
+    /// Loads the available StoreKit products for SharpIt Pro.
+    func loadProducts() async {
+        guard storeProducts.isEmpty else { return }
+        do {
+            let loaded = try await Product.products(for: SharpitProProduct.all)
+            storeProducts = SharpitProProduct.all.compactMap { id in loaded.first(where: { $0.id == id }) }
+        } catch {
+            #if DEBUG
+            print("[ProStore] Failed to load StoreKit products: \(error)")
+            #endif
+        }
+    }
+
+    /// Purchases a SharpIt Pro subscription product, handling verification and account binding.
+    @discardableResult
+    func purchase(productId: String) async -> Bool {
+        isPurchasing = true
+        message = nil
+        defer { isPurchasing = false }
+        await ensureAppAccountToken()
+        do {
+            if storeProducts.isEmpty {
+                await loadProducts()
+            }
+            guard let product = storeProducts.first(where: { $0.id == productId }) ?? (try await Product.products(for: [productId])).first else {
+                message = String(localized: "Offre introuvable dans l'App Store.")
+                return false
+            }
+            var options: Set<Product.PurchaseOption> = []
+            if let appAccountToken {
+                options.insert(.appAccountToken(appAccountToken))
+            }
+            let result = try await product.purchase(options: options)
+            switch result {
+            case .success(let verification):
+                await handle(verification)
+                return isPro
+            case .pending:
+                message = String(localized: "Achat en attente de validation.")
+                return false
+            case .userCancelled:
+                return false
+            @unknown default:
+                return false
+            }
+        } catch {
+            message = String(localized: "Impossible de finaliser l'achat.")
+            return false
         }
     }
 

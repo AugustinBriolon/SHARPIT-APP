@@ -239,6 +239,45 @@ struct SharpitRulerPicker: View {
     }
 }
 
+/// A labelled menu select in the same well as text / date fields — tap opens a native menu.
+struct SharpitSelectField<Value: Hashable>: View {
+    let title: String
+    let placeholder: String
+    @Binding var selection: Value?
+    let options: [(value: Value, label: String)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitFieldLabel(title)
+            Menu {
+                ForEach(options, id: \.value) { option in
+                    Button(option.label) {
+                        SharpitHaptics.play(.notch(major: false))
+                        selection = option.value
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(selectedLabel ?? placeholder)
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(selectedLabel == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(SharpitTypography.label)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+                .contentShape(.rect)
+                .sharpitFieldWell()
+            }
+        }
+    }
+
+    private var selectedLabel: String? {
+        guard let selection else { return nil }
+        return options.first(where: { $0.value == selection })?.label
+    }
+}
+
 /// A date in a field well, with what it means beside it (an age). A tap opens the wheel in a
 /// short sheet: in place it grew the page into a scroll, and the app's tint coloured its band.
 struct SharpitDateField: View {

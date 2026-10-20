@@ -135,7 +135,11 @@ private func makeStore(
     names: NameRecorder = NameRecorder(),
     consentsOwed: Bool = false,
     currentConsents: V1PrivacyConsents? = nil,
-    stepMemory: OnboardingStepMemory? = nil
+    stepMemory: OnboardingStepMemory? = nil,
+    hasAccount: Bool = true,
+    draftFile: OnboardingDraftFile? = nil,
+    onAccountNeeded: (() -> Void)? = nil,
+    onExit: (() -> Void)? = nil
 ) -> OnboardingStore {
     OnboardingStore(
         services: OnboardingServices(
@@ -150,15 +154,28 @@ private func makeStore(
         consentsOwed: consentsOwed,
         currentConsents: currentConsents,
         stepMemory: stepMemory,
+        hasAccount: hasAccount,
+        draftFile: draftFile,
+        onAccountNeeded: onAccountNeeded,
+        onExit: onExit,
         tokenProvider: { "t" }
     )
+}
+
+/// Fills the identity step so « Commencer » can run.
+@MainActor
+private func fillIdentity(_ store: OnboardingStore, firstName: String = "Zoé") {
+    store.identity.firstName = firstName
+    store.identity.sex = .female
+    store.identity.heightCm = 168
+    store.identity.birthDate = Calendar.current.date(byAdding: .year, value: -30, to: .now)
 }
 
 /// Loads the wizard and walks past the identity and an endurance sport, both saved.
 @MainActor
 private func storeOnEquipment(_ store: OnboardingStore) async {
     await store.load()
-    store.identity.firstName = "Zoé"
+    fillIdentity(store)
     await store.advance()
     await store.advance() // Ce que tu viens chercher: the coaching alone
     store.toggleSport("run")
@@ -315,6 +332,8 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
 @Test func aRaceBecomesTheSeasonsAGoal() {
     var draft = OnboardingIntentionDraft()
+    draft.discipline = .run
+    draft.formatKey = "RUN_MARATHON"
     draft.raceTitle = "  Marathon de Paris "
     draft.raceLocation = " "
 
@@ -325,20 +344,45 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(input?.priority == .a)
     #expect(input?.targetDate == draft.raceDate)
     #expect(input?.location == nil)
-    #expect(input?.raceFormat == nil)
+    #expect(input?.discipline == "RUN")
+    #expect(input?.formatKey == "RUN_MARATHON")
+    #expect(input?.raceFormat == "Marathon")
+    #expect(input?.runM == 42_195)
     #expect(input?.targetPerformance == nil)
 }
 
-/// The distance is worded as the web's triathlon predictor reads it back.
-@Test func aTriathletesRaceCarriesItsDistanceAndAim() {
+/// ADR-082 format key drives distances; a custom title stays optional.
+@Test func aTriathletesRaceCarriesItsFormatKeyAndAim() {
     var draft = OnboardingIntentionDraft()
+    draft.discipline = .triathlon
+    draft.formatKey = "TRI_L"
     draft.raceTitle = "Nice"
-    draft.triathlonFormat = .half
     draft.targetPerformance = " Sub 5 h "
 
-    #expect(draft.goalInput?.raceFormat == "70.3 (Half Ironman)")
+    #expect(draft.goalInput?.discipline == "TRIATHLON")
+    #expect(draft.goalInput?.formatKey == "TRI_L")
+    #expect(draft.goalInput?.raceFormat == "Triathlon L")
+    #expect(draft.goalInput?.swimM == 1_900)
+    #expect(draft.goalInput?.bikeM == 90_000)
+    #expect(draft.goalInput?.runM == 21_097)
     #expect(draft.goalInput?.targetPerformance == "Sub 5 h")
-    #expect(OnboardingTriathlonFormat.allCases.map(\.shortLabel) == ["Sprint", "M", "70.3", "Ironman"])
+    #expect(draft.goalInput?.title == "Nice")
+}
+
+@Test func aRaceWithoutFormatKeyIsInvalid() {
+    var draft = OnboardingIntentionDraft()
+    draft.raceTitle = "Marathon de Paris"
+    #expect(!draft.isValid)
+    draft.discipline = .run
+    draft.formatKey = "RUN_MARATHON"
+    #expect(draft.isValid)
+}
+
+@Test func emptyRaceTitleFallsBackToFormatLabel() {
+    var draft = OnboardingIntentionDraft()
+    draft.discipline = .run
+    draft.formatKey = "RUN_10K"
+    #expect(draft.goalInput?.title == "10 km")
 }
 
 @Test func aMetricNeedsATitleAPositiveTargetAndAUnit() {
@@ -365,7 +409,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     let profile = RecordingProfileClient()
     let store = makeStore(profile: profile)
     await store.load()
-    store.identity.firstName = "Zoé"
+    fillIdentity(store)
     await store.advance()
     await store.advance() // Ce que tu viens chercher: the coaching alone
 
@@ -383,7 +427,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 @Test func strengthAloneGoesOnWithAPalierGoal() async {
     let store = makeStore(profile: RecordingProfileClient())
     await store.load()
-    store.identity.firstName = "Zoé"
+    fillIdentity(store)
     await store.advance()
     await store.advance() // Ce que tu viens chercher: the coaching alone
 
@@ -400,7 +444,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     let profile = RecordingProfileClient()
     let store = makeStore(profile: profile)
     await store.load()
-    store.identity.firstName = "Zoé"
+    fillIdentity(store)
     await store.advance()
     await store.advance() // Ce que tu viens chercher: the coaching alone
 
@@ -421,7 +465,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 @Test func aFailedSaveIsShownAndHoldsWhatDependsOnIt() async {
     let store = makeStore(profile: RecordingProfileClient(failsPatch: true))
     await store.load()
-    store.identity.firstName = "Zoé"
+    fillIdentity(store)
     await store.advance()
     await store.advance() // Ce que tu viens chercher: the coaching alone
 
@@ -444,8 +488,8 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
     #expect(store.step == .week)
     await store.flushWrites()
-    // The motivation step's features, then the sports: the step itself writes nothing more.
-    #expect(await profile.patches.count == 2)
+    // The identity body, motivation features, then sports: the step itself writes nothing more.
+    #expect(await profile.patches.count == 3)
 }
 
 /// A step with nothing to save moves at once; the same tap delivered again must not skip the
@@ -462,8 +506,8 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
     #expect(store.step == .week)
     await store.flushWrites()
-    // The motivation step's features, then the sports: the step itself writes nothing more.
-    #expect(await profile.patches.count == 2)
+    // The identity body, motivation features, then sports: the step itself writes nothing more.
+    #expect(await profile.patches.count == 3)
 }
 
 @MainActor
@@ -506,11 +550,15 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.skip()
     await store.skip()
 
+    store.intention.discipline = .triathlon
+    store.intention.formatKey = "TRI_L"
     store.intention.raceTitle = "Triathlon de Nice"
     await store.advance()
     #expect(store.step == .injuries)
     await store.flushWrites()
     #expect(await goals.created.map(\.title) == ["Triathlon de Nice"])
+    #expect(await goals.created.first?.formatKey == "TRI_L")
+    #expect(await goals.created.first?.discipline == "TRIATHLON")
 
     var knee = OnboardingInjuryDraft(bodyPart: "Genou")
     knee.kind = .pain
@@ -529,7 +577,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     await store.advance()
     #expect(store.step == .sources)
     await store.flushWrites()
-    #expect(await consents.updates == [.wall(ai: true, unofficialProviders: true)])
+    #expect(await consents.updates == [.wall(ai: true, unofficialProviders: false)])
     await store.flushWrites()
     #expect(await notes.notes.map(\.title) == ["Douleur genou droit"])
 
@@ -644,7 +692,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 }
 
 @MainActor
-@Test func theIdentityNeedsAFirstNameThenSavesItAndTheBody() async {
+@Test func theIdentityNeedsEveryFieldThenSavesItAndTheBody() async {
     let profile = RecordingProfileClient()
     let names = NameRecorder()
     let store = makeStore(profile: profile, names: names)
@@ -652,8 +700,14 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(!store.canAdvance)
 
     store.identity.firstName = "  Zoé "
+    #expect(!store.canAdvance)
     store.identity.sex = .female
+    #expect(!store.canAdvance)
     store.identity.heightCm = 168
+    #expect(!store.canAdvance)
+    let birth = Calendar.current.date(byAdding: .year, value: -30, to: .now)!
+    store.identity.birthDate = birth
+    #expect(store.canAdvance)
     await store.advance()
 
     #expect(store.step == .motivation)
@@ -663,7 +717,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     let patch = await profile.patches.first
     #expect(patch?.fields["sex"] == .string("female"))
     #expect(patch?.fields["heightCm"] == .number(168))
-    #expect(patch?.fields.keys.contains("birthDate") == false)
+    #expect(patch?.fields["birthDate"] == .string(ProfileFieldFormat.isoDay(birth)!))
 }
 
 /// Consents already given: the injuries are written as the step is left.
@@ -768,9 +822,10 @@ private func makeGate(
     consents: StubConsentClient = StubConsentClient(),
     profile: RecordingProfileClient = RecordingProfileClient(),
     defaults: UserDefaults,
+    draftFile: OnboardingDraftFile? = nil,
     onStore: @escaping @MainActor (Bool) -> Void = { _ in }
 ) -> AccountGateModel {
-    AccountGateModel(consentClient: consents, profileClient: profile, defaults: defaults) { owed, current, _ in
+    AccountGateModel(consentClient: consents, profileClient: profile, defaults: defaults, onboardingDraft: draftFile) { owed, current, _ in
         onStore(owed)
         return makeStore(consentsOwed: owed, currentConsents: current)
     }
@@ -1007,7 +1062,7 @@ private func makeGate(
     let profile = RecordingProfileClient()
     let store = makeStore(profile: profile)
     await store.load()
-    store.identity.firstName = "Zoé"
+    fillIdentity(store)
     await store.advance()
 
     #expect(store.step == .motivation)
@@ -1029,10 +1084,10 @@ private func makeGate(
     ]))
 }
 
-/// Until the onboarding paywall, a Free athlete sees the week, then finishes without it: the
-/// server keeps « Ajouter » for Pro (SHARPIT ADR-097), and the wizard must not hold them there.
+/// Free athlete: the week is previewed, « Ajouter » asks for Pro (SHARPIT ADR-097); they can
+/// still leave without inserting it.
 @MainActor
-@Test func aFreeAthleteFinishesWithoutTheWeekTheServerKeepsForPro() async {
+@Test func aFreeAthleteIsAskedForProThenCanFinishWithoutTheWeek() async {
     var consented = V1PrivacyConsents.accepted
     consented.aiProcessingConsentAt = Date(timeIntervalSince1970: 1_800_000_000)
     let plan = RecordingPlanClient(insertProOnly: true)
@@ -1049,7 +1104,202 @@ private func makeGate(
     await store.advance()
 
     #expect(store.error == nil)
+    #expect(store.firstWeekNeedsPro)
     #expect(plan.inserted.isEmpty)
+    #expect(await onboarding.completions == 0)
+    #expect(store.phase == .steps)
+
+    await store.finishWithoutFirstWeek()
     #expect(await onboarding.completions == 1)
     #expect(store.phase == .bootstrap)
+}
+
+// MARK: - Before an account (SHARPIT ADR-097)
+
+private func temporaryDraftFile() -> OnboardingDraftFile {
+    OnboardingDraftFile(fileURL: FileManager.default.temporaryDirectory
+        .appending(path: "OnboardingDraft-\(UUID().uuidString).json"))
+}
+
+private func kneePain() -> OnboardingInjuryDraft {
+    var knee = OnboardingInjuryDraft(bodyPart: "Genou")
+    knee.kind = .pain
+    knee.side = .right
+    knee.level = .moderate
+    return knee
+}
+
+/// Identity to injuries, as before sign-up: an endurance sport, equipment and week skipped, a race.
+@MainActor
+private func answerTheProfileSteps(_ store: OnboardingStore) async {
+    await storeOnEquipment(store)
+    await store.skip()
+    await store.skip()
+    store.intention.discipline = .triathlon
+    store.intention.formatKey = "TRI_L"
+    store.intention.raceTitle = "Triathlon de Nice"
+    await store.advance()
+    store.saveInjury(kneePain())
+    await store.advance()
+}
+
+@Test func theDraftComesBackAsItWasAndStaysOutOfBackups() throws {
+    let file = temporaryDraftFile()
+    var draft = OnboardingDraft(step: .goal, answered: [.identity, .sports])
+    draft.identity.firstName = "Zoé"
+    draft.identity.sex = .female
+    draft.sports = ["run"]
+    draft.intention.discipline = .run
+    draft.intention.formatKey = "RUN_MARATHON"
+    draft.intention.raceTitle = "Nice"
+    draft.injuries = [kneePain()]
+
+    file.save(draft)
+
+    #expect(file.load() == draft)
+    #expect(BackupExclusion.isExcluded(file.fileURL))
+    file.clear()
+    #expect(file.load() == nil)
+}
+
+@MainActor
+@Test func beforeAnAccountTheProfileStepsWriteNothingAndThenAskForOne() async {
+    let profile = RecordingProfileClient()
+    let goals = RecordingGoalClient()
+    let notes = NoteRecorder()
+    let names = NameRecorder()
+    let file = temporaryDraftFile()
+    var askedForAccount = 0
+    let store = makeStore(
+        profile: profile, goals: goals, notes: notes, names: names, consentsOwed: true,
+        hasAccount: false, draftFile: file, onAccountNeeded: { askedForAccount += 1 }
+    )
+
+    await answerTheProfileSteps(store)
+
+    #expect(askedForAccount == 1)
+    #expect(store.step == .injuries)
+    await store.flushWrites()
+    #expect(await profile.patches.isEmpty)
+    #expect(await goals.created.isEmpty)
+    #expect(await notes.notes.isEmpty)
+    #expect(await names.names.isEmpty)
+    let draft = file.load()
+    #expect(draft?.identity.firstName == "Zoé")
+    #expect(draft?.answered == [.identity, .motivation, .sports, .week, .goal, .injuries])
+    #expect(draft?.injuries == [kneePain()])
+    file.clear()
+}
+
+@MainActor
+@Test func aRelaunchBeforeSignUpReopensTheStepReached() async {
+    let file = temporaryDraftFile()
+    let first = makeStore(consentsOwed: true, hasAccount: false, draftFile: file)
+    await storeOnEquipment(first)
+
+    let relaunched = makeStore(consentsOwed: true, hasAccount: false, draftFile: file)
+    await relaunched.load()
+
+    #expect(relaunched.step == .equipment)
+    #expect(relaunched.identity.firstName == "Zoé")
+    #expect(relaunched.sports == ["run"])
+    file.clear()
+}
+
+@MainActor
+@Test func theAccountReplaysTheDraftThenOpensWhereItIsNeeded() async {
+    let file = temporaryDraftFile()
+    await answerTheProfileSteps(makeStore(consentsOwed: true, hasAccount: false, draftFile: file))
+    let profile = RecordingProfileClient()
+    let goals = RecordingGoalClient()
+    let notes = NoteRecorder()
+    let names = NameRecorder()
+    let store = makeStore(profile: profile, goals: goals, notes: notes, names: names, consentsOwed: true, draftFile: file)
+
+    await store.load()
+    await store.flushWrites()
+
+    #expect(store.step == .privacy)
+    #expect(!store.canGoBack)
+    #expect(await names.names == ["Zoé"])
+    #expect(await profile.patches.count == 4) // identity body, motivation, sports, week
+    #expect(await goals.created.map(\.title) == ["Triathlon de Nice"])
+    // Health data: written with the consents, not before.
+    #expect(await notes.notes.isEmpty)
+    #expect(file.load() == nil)
+
+    store.consents.acceptAll()
+    await store.advance()
+    await store.flushWrites()
+    #expect(await notes.notes.map(\.title) == ["Douleur genou droit"])
+}
+
+@MainActor
+@Test func aReplayThatFailsKeepsTheDraftForTheNextTry() async {
+    let file = temporaryDraftFile()
+    await answerTheProfileSteps(makeStore(consentsOwed: true, hasAccount: false, draftFile: file))
+    let store = makeStore(profile: RecordingProfileClient(failsPatch: true), consentsOwed: true, draftFile: file)
+
+    await store.load()
+    #expect(!(await store.flushWrites()))
+
+    #expect(store.error != nil)
+    #expect(file.load() != nil)
+    file.clear()
+}
+
+/// Back on the first pre-account step leaves the wizard for the welcome screen.
+@MainActor
+@Test func backOnTheFirstPreAccountStepLeavesTheWizard() async {
+    var left = 0
+    let store = makeStore(hasAccount: false, onExit: { left += 1 })
+    await store.load()
+
+    #expect(store.step == .identity)
+    #expect(store.canGoBack)
+    store.goBack()
+    #expect(left == 1)
+}
+
+/// « J'ai déjà un compte » on an onboarded account: the answers on the phone are not theirs.
+@MainActor
+@Test func anOnboardedAccountDropsTheDraft() async throws {
+    let file = temporaryDraftFile()
+    file.save(OnboardingDraft(step: .goal, answered: [.identity]))
+    let gate = makeGate(
+        profile: RecordingProfileClient(V1AthleteProfile(needsOnboarding: false)),
+        defaults: try freshDefaults("account-gate-draft"),
+        draftFile: file
+    )
+
+    await gate.resolve(userId: "user_9") { "t" }
+
+    #expect(gate.status == .ready)
+    #expect(file.load() == nil)
+}
+
+/// A draft saved on account steps (e.g. from an earlier build) never opens on them without an account.
+@MainActor
+@Test func preAccountDraftNeverReopensOnAccountSteps() async {
+    let file = temporaryDraftFile()
+    file.save(OnboardingDraft(step: .sources, answered: [.identity, .injuries]))
+
+    let store = makeStore(consentsOwed: true, hasAccount: false, draftFile: file)
+    await store.load()
+
+    #expect(store.step == .injuries)
+    file.clear()
+}
+
+/// Back on the first step with an account leaves via onExit (e.g. signing out to the welcome screen).
+@MainActor
+@Test func backOnFirstStepWithAccountLeavesToWelcome() async {
+    var left = 0
+    let store = makeStore(hasAccount: true, onExit: { left += 1 })
+    await store.load()
+
+    #expect(store.step == .identity)
+    #expect(store.canGoBack)
+    store.goBack()
+    #expect(left == 1)
 }

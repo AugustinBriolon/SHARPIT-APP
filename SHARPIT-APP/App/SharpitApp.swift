@@ -42,12 +42,17 @@ struct SharpitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if let modelContainer {
-                launchedApp
-                    .modelContainer(modelContainer)
-            } else {
-                PersistenceCannotStartView()
+            Group {
+                if let modelContainer {
+                    launchedApp
+                        .modelContainer(modelContainer)
+                } else {
+                    PersistenceCannotStartView()
+                }
             }
+            .background(SharpitCanvasBackground())
+            .environment(Clerk.shared)
+            .environment(\.clerkTheme, .sharpit)
         }
     }
 
@@ -79,6 +84,7 @@ struct SharpitApp: App {
 
     private var app: some View {
         ZStack {
+            SharpitCanvasBackground()
             AuthGate {
                 // The legal wall, then the web's onboarding, before a new account sees the tabs.
                 AccountGate {

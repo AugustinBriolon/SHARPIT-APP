@@ -268,6 +268,9 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
     var priority: GoalPriority?
     var raceFormat: String?
     var targetPerformance: String?
+    /// ADR-082 structured race — nil from an older server or a figure goal.
+    var discipline: String?
+    var formatKey: String?
     var createdAt: Date?
     /// Nil for a figure goal, or from a server that predates it.
     var status: GoalRaceStatus?
@@ -283,7 +286,7 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         case id, title, kind, horizon, metricKey
         case startValue, currentValue, targetValue, unit, lowerIsBetter
         case targetDate, location, achieved, notes
-        case priority, raceFormat, targetPerformance, createdAt
+        case priority, raceFormat, targetPerformance, discipline, formatKey, createdAt
         case status, result, projection
         case priorityRole, priorityConsequence, seasonConflict
     }
@@ -306,6 +309,8 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         priority: GoalPriority? = nil,
         raceFormat: String? = nil,
         targetPerformance: String? = nil,
+        discipline: String? = nil,
+        formatKey: String? = nil,
         createdAt: Date? = nil,
         status: GoalRaceStatus? = nil,
         result: V1GoalRaceResult? = nil,
@@ -331,6 +336,8 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         self.priority = priority
         self.raceFormat = raceFormat
         self.targetPerformance = targetPerformance
+        self.discipline = discipline
+        self.formatKey = formatKey
         self.createdAt = createdAt
         self.status = status
         self.result = result
@@ -363,6 +370,8 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         priority = try container.decodeIfPresent(GoalPriority.self, forKey: .priority)
         raceFormat = try container.decodeIfPresent(String.self, forKey: .raceFormat)
         targetPerformance = try container.decodeIfPresent(String.self, forKey: .targetPerformance)
+        discipline = try container.decodeIfPresent(String.self, forKey: .discipline)
+        formatKey = try container.decodeIfPresent(String.self, forKey: .formatKey)
         if let rawCreated = try container.decodeIfPresent(String.self, forKey: .createdAt) {
             createdAt = try? Date.fromAPI(rawCreated)
         } else {
@@ -395,6 +404,8 @@ nonisolated struct V1Goal: Identifiable, Codable, Sendable, Equatable {
         try container.encodeIfPresent(priority, forKey: .priority)
         try container.encodeIfPresent(raceFormat, forKey: .raceFormat)
         try container.encodeIfPresent(targetPerformance, forKey: .targetPerformance)
+        try container.encodeIfPresent(discipline, forKey: .discipline)
+        try container.encodeIfPresent(formatKey, forKey: .formatKey)
         try container.encodeIfPresent(createdAt?.toAPI, forKey: .createdAt)
         try container.encodeIfPresent(status, forKey: .status)
         try container.encodeIfPresent(result, forKey: .result)
@@ -497,10 +508,19 @@ nonisolated struct CreateGoalInput: Codable, Sendable {
     var currentValue: Double?
     var unit: String?
     var notes: String?
+    /// ADR-082 structured race (mirrors server `createGoalSchema`).
+    var discipline: String?
+    var formatKey: String?
+    var swimM: Int?
+    var bikeM: Int?
+    var runM: Int?
+    var run2M: Int?
+    var segments: Int?
 
     enum CodingKeys: String, CodingKey {
         case title, kind, priority, targetDate, location
         case raceFormat, targetPerformance, targetValue, startValue, currentValue, unit, notes
+        case discipline, formatKey, swimM, bikeM, runM, run2M, segments
     }
 
     func encode(to encoder: Encoder) throws {
@@ -517,6 +537,13 @@ nonisolated struct CreateGoalInput: Codable, Sendable {
         try container.encodeIfPresent(currentValue, forKey: .currentValue)
         try container.encodeIfPresent(unit, forKey: .unit)
         try container.encodeIfPresent(notes, forKey: .notes)
+        try container.encodeIfPresent(discipline, forKey: .discipline)
+        try container.encodeIfPresent(formatKey, forKey: .formatKey)
+        try container.encodeIfPresent(swimM, forKey: .swimM)
+        try container.encodeIfPresent(bikeM, forKey: .bikeM)
+        try container.encodeIfPresent(runM, forKey: .runM)
+        try container.encodeIfPresent(run2M, forKey: .run2M)
+        try container.encodeIfPresent(segments, forKey: .segments)
     }
 }
 

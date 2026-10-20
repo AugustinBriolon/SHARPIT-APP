@@ -18,6 +18,9 @@ nonisolated struct GoalDraft: Equatable, Sendable {
     var currentValueText = ""
     var unit = ""
     var notes = ""
+    /// ADR-082 structured race.
+    var discipline: RaceDiscipline?
+    var formatKey = ""
 
     /// A new goal: a race three months out; its role is suggested by the form (`GoalSeason`).
     static func new(now: Date = .now, calendar: Calendar = .current) -> GoalDraft {
@@ -41,6 +44,12 @@ nonisolated struct GoalDraft: Equatable, Sendable {
         currentValueText = goal.currentValue.map(Self.number) ?? ""
         unit = goal.unit ?? ""
         notes = goal.notes ?? ""
+        discipline = goal.discipline.flatMap(RaceDiscipline.init(rawValue:))
+        formatKey = goal.formatKey ?? ""
+    }
+
+    var selectedFormat: RaceFormatEntry? {
+        RaceFormatCatalog.entry(key: formatKey)
     }
 
     /// A race always has its day (the server refuses one without); a figure may have none.
@@ -48,7 +57,17 @@ nonisolated struct GoalDraft: Equatable, Sendable {
 
     /// What keeps the form from being sent, worded for the athlete; nil when it can go.
     var missingRequirement: String? {
-        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return String(localized: "Donne un nom à ton objectif.") }
+        if kind == .race {
+            if discipline == nil || formatKey.isEmpty || selectedFormat == nil {
+                return String(localized: "Choisis le format de l’épreuve.")
+            }
+            let resolvedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? (selectedFormat?.label ?? "")
+                : title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if resolvedTitle.isEmpty { return String(localized: "Donne un nom à ton objectif.") }
+        } else if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return String(localized: "Donne un nom à ton objectif.")
+        }
         if !targetValueText.isEmpty, Self.parse(targetValueText) == nil { return String(localized: "La valeur cible n’est pas un nombre.") }
         if !currentValueText.isEmpty, Self.parse(currentValueText) == nil { return String(localized: "La valeur actuelle n’est pas un nombre.") }
         return nil
@@ -61,19 +80,33 @@ nonisolated struct GoalDraft: Equatable, Sendable {
     }
 
     var creation: CreateGoalInput {
-        CreateGoalInput(
-            title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+        let format = selectedFormat
+        let distances = format?.distances
+        let resolvedTitle: String = {
+            let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { return trimmed }
+            return format?.label ?? ""
+        }()
+        return CreateGoalInput(
+            title: resolvedTitle,
             kind: kind,
             priority: kind == .race ? priority : nil,
             targetDate: datesTarget ? Self.noon(of: targetDate) : nil,
             location: kind == .race ? Self.text(location) : nil,
-            raceFormat: kind == .race ? Self.text(raceFormat) : nil,
+            raceFormat: kind == .race ? (format?.label ?? Self.text(raceFormat)) : nil,
             targetPerformance: kind == .race ? Self.text(targetPerformance) : nil,
             targetValue: kind == .metric ? Self.parse(targetValueText) : nil,
             startValue: nil,
             currentValue: kind == .metric ? Self.parse(currentValueText) : nil,
             unit: kind == .metric ? Self.text(unit) : nil,
-            notes: Self.text(notes)
+            notes: Self.text(notes),
+            discipline: kind == .race ? discipline?.rawValue : nil,
+            formatKey: kind == .race ? Self.text(formatKey) : nil,
+            swimM: kind == .race ? distances?.swimM : nil,
+            bikeM: kind == .race ? distances?.bikeM : nil,
+            runM: kind == .race ? distances?.runM : nil,
+            run2M: kind == .race ? distances?.run2M : nil,
+            segments: kind == .race ? distances?.segments : nil
         )
     }
 
@@ -97,6 +130,21 @@ nonisolated struct GoalDraft: Equatable, Sendable {
         if currentValueText != original.currentValueText { fields["currentValue"] = Self.parse(currentValueText).map(JSONValue.number) ?? .null }
         if unit != original.unit { fields["unit"] = Self.json(unit) }
         if notes != original.notes { fields["notes"] = Self.json(notes) }
+        if discipline != original.discipline {
+            fields["discipline"] = discipline.map { .string($0.rawValue) } ?? .null
+        }
+        if formatKey != original.formatKey { fields["formatKey"] = Self.json(formatKey) }
+        if kind == .race, formatKey != original.formatKey || discipline != original.discipline {
+            let distances = selectedFormat?.distances
+            fields["swimM"] = distances?.swimM.map { .number(Double($0)) } ?? .null
+            fields["bikeM"] = distances?.bikeM.map { .number(Double($0)) } ?? .null
+            fields["runM"] = distances?.runM.map { .number(Double($0)) } ?? .null
+            fields["run2M"] = distances?.run2M.map { .number(Double($0)) } ?? .null
+            fields["segments"] = distances?.segments.map { .number(Double($0)) } ?? .null
+            if let label = selectedFormat?.label {
+                fields["raceFormat"] = .string(label)
+            }
+        }
         return fields
     }
 
@@ -145,6 +193,8 @@ extension V1Goal {
             goal.location = created.location
             goal.raceFormat = created.raceFormat
             goal.targetPerformance = created.targetPerformance
+            goal.discipline = created.discipline
+            goal.formatKey = created.formatKey
         } else {
             goal.targetValue = created.targetValue
             goal.currentValue = created.currentValue

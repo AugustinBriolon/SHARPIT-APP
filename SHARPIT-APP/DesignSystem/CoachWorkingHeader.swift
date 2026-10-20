@@ -80,6 +80,7 @@ struct SharpitPrimaryButton: View {
     var trailingSymbol: String? = nil
     var isBusy = false
     let action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         Button(action: action) {
@@ -99,21 +100,24 @@ struct SharpitPrimaryButton: View {
             .contentShape(.rect)
         }
         .buttonStyle(.sharpitPressable)
+        .animation(SharpitMotion.fade, value: isEnabled)
     }
 
     private var foreground: Color {
+        guard isEnabled else { return SharpitColor.mutedForeground }
         switch style {
-        case .primary: SharpitColor.primaryForeground
-        case .accent: SharpitColor.highlightForeground
-        case .secondary: SharpitColor.foreground
+        case .primary: return SharpitColor.primaryForeground
+        case .accent: return SharpitColor.highlightForeground
+        case .secondary: return SharpitColor.foreground
         }
     }
 
     private var background: Color {
+        guard isEnabled else { return SharpitColor.chipSurface }
         switch style {
-        case .primary: SharpitColor.primary
-        case .accent: SharpitColor.highlight
-        case .secondary: SharpitColor.chipSurface
+        case .primary: return SharpitColor.primary
+        case .accent: return SharpitColor.highlight
+        case .secondary: return SharpitColor.chipSurface
         }
     }
 }

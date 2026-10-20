@@ -42,7 +42,7 @@ nonisolated struct V1TrainingAvailability: Codable, Sendable, Equatable {
 }
 
 /// Declared in Paramètres → Compte; biological age and HR norms depend on it.
-nonisolated enum AthleteSex: String, CaseIterable, Identifiable, Sendable {
+nonisolated enum AthleteSex: String, CaseIterable, Identifiable, Codable, Sendable {
     case female
     case male
     case other

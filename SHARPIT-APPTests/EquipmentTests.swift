@@ -57,6 +57,19 @@ import Testing
     #expect(homeItemsWithBodyweight.contains(where: { $0.id == "strength_weighted_vest" }))
 }
 
+@Test func strengthVenueTogglesDeriveWireValue() {
+    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: [.gym]) == .gym)
+    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: [.home]) == .home)
+    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: [.gym, .home]) == .both)
+    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: [.bodyweight]) == .bodyweight)
+    #expect(V1AthleteEquipment.StrengthVenue.from(toggles: []) == .bodyweight)
+
+    #expect(V1AthleteEquipment.StrengthVenue.toggling(.home, in: .gym) == .both)
+    #expect(V1AthleteEquipment.StrengthVenue.toggling(.bodyweight, in: .both) == .bodyweight)
+    #expect(V1AthleteEquipment.StrengthVenue.toggling(.gym, in: .bodyweight) == .gym)
+    #expect(V1AthleteEquipment.StrengthVenue.toggling(.gym, in: .gym) == .bodyweight)
+}
+
 @Test func equipmentAndPracticedSportsDecodesFromProfileJson() throws {
     let json = """
     {
