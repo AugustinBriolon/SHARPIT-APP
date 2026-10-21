@@ -577,7 +577,7 @@ struct SharpitAuthDrawer: View {
             let result = try await activeSignIn.authenticateWithPassword(verificationCode)
             self.activeSignIn = result
             guard result.status == .complete, let sessionId = result.createdSessionId else {
-                errorMessage = String(localized: "Connexion incomplète. Vérifie ton compte ou essaie un code par e-mail.")
+                errorMessage = "Connexion incomplète (\(result.status.rawValue))."
                 isLoading = false
                 return
             }

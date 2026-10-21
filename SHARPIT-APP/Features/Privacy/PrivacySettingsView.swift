@@ -206,7 +206,7 @@ struct PrivacySettingsView: View {
     private var renewsSubscription: Bool { pro?.hasRenewingSubscription ?? false }
 
     private var deletionMessage: String {
-        let erased = String(localized: "Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Strava, Withings et autres sont révoquées. C'est irréversible.")
+        let erased = String(localized: "Ton compte sera désactivé immédiatement et tes connexions Strava, Withings et autres révoquées. Tu auras un délai de grâce de 14 jours pour changer d'avis et réactiver ton compte en te reconnectant avant la suppression définitive de toutes tes données.")
         guard renewsSubscription else { return erased }
         return erased + String(localized: "\n\nTon abonnement SharpIt Pro continue de se renouveler : supprimer ton compte ne l'arrête pas. Annule-le d'abord pour ne plus être facturé.")
     }
@@ -228,7 +228,7 @@ struct PrivacySettingsView: View {
     private var deletionSection: some View {
         Section(
             eyebrow: String(localized: "Compte"),
-            footer: String(localized: "Efface ton compte et toutes tes données, tout de suite. Pour les garder, exporte-les d'abord, juste au-dessus.")
+            footer: String(localized: "Désactive ton compte immédiatement. La suppression définitive de tes données interviendra après un délai de grâce de 14 jours.")
         ) {
             Button(role: .destructive) {
                 confirmsDeletion = true
