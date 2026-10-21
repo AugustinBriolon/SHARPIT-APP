@@ -2,10 +2,11 @@ import SwiftUI
 
 /// « Saisir une séance » and « Modifier la séance »: one sheet, the same fields.
 ///
-/// Both wait for the server — the figures the detail shows (pace, load, the plan it counts for)
-/// are the server's, computed from what is sent — so the confirm button turns into a spinner
-/// while it goes, and a refusal is said under the form in the server's words, the form left as
-/// typed. A half-typed session is not thrown away by a swipe: « Annuler » says it.
+/// A new session waits for the server: the figures the detail shows (pace, load, the plan it
+/// counts for) are the server's, so the confirm button turns into a spinner, and a refusal is
+/// said under the form, the form left as typed. An edit never makes the athlete wait: the sheet
+/// closes on the tap, the write goes out behind, and a refusal lands in the app's toast.
+/// A half-typed session is not thrown away by a swipe: « Annuler » says it.
 struct ActivityFormSheet: View {
     enum Mode {
         case create
@@ -73,23 +74,17 @@ struct ActivityFormSheet: View {
     }
 
     private func save() async {
+        if case .edit(let existing) = mode {
+            saveInBackground(existing)
+            return
+        }
         isSaving = true
         failure = nil
         defer { isSaving = false }
         do {
-            let id: String
-            switch mode {
-            case .create:
-                let fields = draft.creation()
-                id = try await SharpitRetry.run {
-                    try await client.createActivity(fields, token: try await tokenProvider())
-                }
-            case .edit(let existing):
-                let fields = draft.changes(from: original)
-                try await SharpitRetry.run {
-                    try await client.updateActivity(id: existing, fields: fields, token: try await tokenProvider())
-                }
-                id = existing
+            let fields = draft.creation()
+            let id = try await SharpitRetry.run {
+                try await client.createActivity(fields, token: try await tokenProvider())
             }
             onSaved(id)
             dismiss()
@@ -98,9 +93,27 @@ struct ActivityFormSheet: View {
         } catch let error as SharpitAPIError where [.transport, .rateLimited, .unauthorized].contains(error) {
             failure = SharpitErrorGuidance.message(for: error, subject: String(localized: "La séance"))
         } catch {
-            failure = isCreating
-                ? String(localized: "La séance n’a pas pu être ajoutée. Réessaie dans un instant.")
-                : String(localized: "La séance n’a pas pu être modifiée. Réessaie dans un instant.")
+            failure = String(localized: "La séance n’a pas pu être ajoutée. Réessaie dans un instant.")
+        }
+    }
+
+    /// The edit shows on the tap: the sheet closes, the write goes out behind, and a refusal
+    /// reaches the app's toast because the sheet is gone by then.
+    private func saveInBackground(_ id: String) {
+        let fields = draft.changes(from: original)
+        let client = client
+        let tokenProvider = tokenProvider
+        let onSaved = onSaved
+        dismiss()
+        Task {
+            do {
+                try await SharpitRetry.run {
+                    try await client.updateActivity(id: id, fields: fields, token: try await tokenProvider())
+                }
+                onSaved(id)
+            } catch {
+                SharpitWriteFailures.shared.report(String(localized: "La séance n’a pas pu être modifiée. Réessaie dans un instant."))
+            }
         }
     }
 }
