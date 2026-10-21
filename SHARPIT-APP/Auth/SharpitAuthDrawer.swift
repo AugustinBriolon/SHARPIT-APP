@@ -255,6 +255,19 @@ struct SharpitAuthDrawer: View {
                 }
             }
             .padding(.top, SharpitSpacing.xxs)
+
+            if activeSignIn?.supportedFirstFactors?.contains(where: { $0.strategy == .password }) == true {
+                Button {
+                    verificationCode = ""
+                    errorMessage = nil
+                    step = .password(email: email)
+                } label: {
+                    Text("Se connecter avec un mot de passe à la place")
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.primary)
+                }
+                .padding(.top, SharpitSpacing.xxs)
+            }
         }
     }
 
@@ -406,14 +419,11 @@ struct SharpitAuthDrawer: View {
                 }
                 dismiss()
             case .needsFirstFactor:
-                // Prioritize passwordless email OTP if available
-                let hasEmailFactor = signIn.supportedFirstFactors?.contains(where: { $0.strategy != .password }) ?? false
-                if hasEmailFactor {
-                    let preparedSignIn = try await signIn.sendEmailCode()
-                    self.activeSignIn = preparedSignIn
-                    step = .codeVerification(email: cleanEmail)
-                } else if let factor = signIn.supportedFirstFactors?.first, factor.strategy == .password {
+                // Prioritize password when available (required for App Store Review demo accounts)
+                let hasPassword = signIn.supportedFirstFactors?.contains(where: { $0.strategy == .password }) ?? false
+                if hasPassword {
                     self.activeSignIn = signIn
+                    verificationCode = ""
                     step = .password(email: cleanEmail)
                 } else {
                     let preparedSignIn = try await signIn.sendEmailCode()
