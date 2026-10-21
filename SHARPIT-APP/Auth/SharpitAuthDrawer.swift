@@ -16,6 +16,8 @@ struct SharpitAuthDrawer: View {
     @State private var step: AuthStep = .identifier
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var isPasswordVisible = false
+    @FocusState private var isPasswordFocused: Bool
 
     // Active session references
     @State private var activeSignIn: SignIn?
@@ -290,18 +292,9 @@ struct SharpitAuthDrawer: View {
                 errorBanner(message: errorMessage)
             }
 
-            SecureField("Mot de passe", text: $verificationCode)
-                .font(SharpitTypography.body)
-                .padding(.horizontal, SharpitSpacing.md)
-                .padding(.vertical, SharpitSpacing.md)
-                .background {
-                    RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                        .fill(SharpitColor.card)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                                .strokeBorder(SharpitColor.border, lineWidth: 1)
-                        )
-                }
+            passwordField
+                .onChange(of: verificationCode) { _, _ in errorMessage = nil }
+                .onAppear { isPasswordFocused = true }
 
             Button {
                 Task { await handleVerifyPassword() }
@@ -352,6 +345,44 @@ struct SharpitAuthDrawer: View {
     }
 
     // MARK: – Helpers & Icons
+
+    private var passwordField: some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            Group {
+                if isPasswordVisible {
+                    TextField("Mot de passe", text: $verificationCode)
+                } else {
+                    SecureField("Mot de passe", text: $verificationCode)
+                }
+            }
+            .focused($isPasswordFocused)
+            .textContentType(.password)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .font(SharpitTypography.body)
+
+            Button {
+                isPasswordVisible.toggle()
+            } label: {
+                Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                    .font(.system(size: 16))
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel(isPasswordVisible ? "Masquer le mot de passe" : "Afficher le mot de passe")
+        }
+        .padding(.leading, SharpitSpacing.md)
+        .padding(.trailing, SharpitSpacing.xs)
+        .padding(.vertical, SharpitSpacing.xs)
+        .background {
+            RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+                .fill(SharpitColor.card)
+                .overlay(
+                    RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+                        .strokeBorder(SharpitColor.border, lineWidth: 1)
+                )
+        }
+    }
 
     private func errorBanner(message: String) -> some View {
         HStack(spacing: SharpitSpacing.xs) {
@@ -545,14 +576,19 @@ struct SharpitAuthDrawer: View {
         do {
             let result = try await activeSignIn.authenticateWithPassword(verificationCode)
             self.activeSignIn = result
-            if result.status == .complete {
-                if let sessionId = result.createdSessionId {
-                    try await clerk.auth.setActive(sessionId: sessionId)
-                }
-                dismiss()
+            guard result.status == .complete, let sessionId = result.createdSessionId else {
+                errorMessage = String(localized: "Connexion incomplète. Vérifie ton compte ou essaie un code par e-mail.")
+                isLoading = false
+                return
             }
+            try await clerk.auth.setActive(sessionId: sessionId)
+            dismiss()
+        } catch is URLError {
+            errorMessage = String(localized: "Connexion impossible. Vérifie ton réseau et réessaie.")
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = String(localized: "Mot de passe incorrect, ou compte introuvable. Réessaie.")
+            verificationCode = ""
+            isPasswordFocused = true
         }
         isLoading = false
     }
