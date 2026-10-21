@@ -31,7 +31,10 @@ instead of skipping a step. Once the consents allow AI, the store asks `/api/v1/
 next seven days — towards the goal just created — while the athlete links their sources; « Ajouter
 à mon plan » sends the week back whole to `/api/v1/coach/plan/insert`, which stores it through the
 web generator's own mapping (the coach's strength and endurance prescriptions included) or refuses
-it before writing anything; Plan's generator uses the same route. Then `/api/v1/onboarding/complete`
+it before writing anything; Plan's generator uses the same route. The generated week is kept
+while the answers the coach reads (identity, sports, equipment, availability, goal, injuries, AI
+consent — `PlanInputs`) stay the same: `startFirstWeek` called again does not ask twice, and a
+changed answer drops the week and writes it again. Then `/api/v1/onboarding/complete`
 finishes the wizard. Without AI consent the step says so and finishes without a week. Sources switches
 Apple Health on — a switch per Clerk account (`AppleHealthSource.bind(userId:)`), so a new account
 on the same iPhone starts off — and offers nothing for Garmin or MyFitnessPal, which the app never

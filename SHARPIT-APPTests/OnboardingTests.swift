@@ -665,6 +665,44 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     #expect(plan.requestedGoalIds.count == 2)
 }
 
+/// Coming back to the sources step with the same answers keeps the week the coach wrote.
+@MainActor
+@Test func theFirstWeekIsKeptWhileTheAnswersStayTheSame() async {
+    var consented = V1PrivacyConsents.accepted
+    consented.aiProcessingConsentAt = Date(timeIntervalSince1970: 1_800_000_000)
+    let plan = RecordingPlanClient()
+    let store = makeStore(plan: plan, currentConsents: consented)
+
+    store.startFirstWeek()
+    guard case .ready(_, let first) = await settledFirstWeek(store) else {
+        Issue.record("The first week was not generated")
+        return
+    }
+    store.startFirstWeek()
+
+    #expect(plan.requestedGoalIds.count == 1)
+    #expect(store.firstWeekSessions?.map(\.title) == first.map(\.title))
+}
+
+/// A changed answer makes the kept week stale: the coach writes it again.
+@MainActor
+@Test func aChangedAnswerWritesTheFirstWeekAgain() async {
+    var consented = V1PrivacyConsents.accepted
+    consented.aiProcessingConsentAt = Date(timeIntervalSince1970: 1_800_000_000)
+    let plan = RecordingPlanClient()
+    let store = makeStore(plan: plan, currentConsents: consented)
+
+    store.startFirstWeek()
+    _ = await settledFirstWeek(store)
+    store.toggleSport("run")
+    store.startFirstWeek()
+    #expect(store.firstWeek == .generating)
+    _ = await settledFirstWeek(store)
+
+    #expect(plan.requestedGoalIds.count == 2)
+    #expect(store.firstWeekSessions != nil)
+}
+
 /// The week is in the plan once: a completion that failed and is tried again adds nothing more.
 @MainActor
 @Test func aRetriedFinishNeverAddsTheWeekTwice() async {

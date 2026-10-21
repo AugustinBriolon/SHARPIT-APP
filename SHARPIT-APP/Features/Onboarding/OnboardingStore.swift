@@ -576,9 +576,41 @@ final class OnboardingStore {
 
     // MARK: - First week
 
-    /// Once, and only with the AI consent: the plan generator is an AI route.
+    /// Everything the coach reads to write the week. The week is kept while these stay the same.
+    private struct PlanInputs: Equatable {
+        let identity: OnboardingIdentityDraft
+        let sports: [String]
+        let ownedEquipment: Set<String>
+        let strengthVenue: V1AthleteEquipment.StrengthVenue
+        let availability: V1TrainingAvailability
+        let intention: OnboardingIntentionDraft
+        let injuries: [OnboardingInjuryDraft]
+        let hasAIConsent: Bool
+    }
+
+    private var planInputs: PlanInputs {
+        PlanInputs(
+            identity: identity, sports: sports, ownedEquipment: ownedEquipment,
+            strengthVenue: strengthVenue, availability: availability, intention: intention,
+            injuries: injuries, hasAIConsent: hasAIConsent
+        )
+    }
+
+    /// The inputs of the week now held (generating, ready, failed or unavailable).
+    private var plannedFor: PlanInputs?
+
+    /// Once per set of answers, and only with the AI consent: the plan generator is an AI route.
+    /// Coming back to this point with the same answers keeps the week; a changed answer drops it.
     func startFirstWeek() {
+        let inputs = planInputs
+        if let plannedFor, plannedFor != inputs, !addedFirstWeek {
+            generation?.cancel()
+            firstWeek = .idle
+            firstWeekDrafts = []
+            firstWeekSetAside = []
+        }
         guard firstWeek == .idle || isRetryable else { return }
+        plannedFor = inputs
         guard hasAIConsent else {
             firstWeek = .unavailable
             return
@@ -614,6 +646,8 @@ final class OnboardingStore {
                     : .ready(summary: plan.summary, sessions: kept.map { plan.sessions[$0] })
             } catch is CancellationError {
             } catch {
+                // A generation dropped for changed answers must not overwrite the one that replaced it.
+                guard !Task.isCancelled else { return }
                 self.firstWeek = .failed((error as? CoachPlanError)?.errorDescription
                     ?? SharpitErrorGuidance.message(for: error, subject: String(localized: "Ta première semaine")))
             }
