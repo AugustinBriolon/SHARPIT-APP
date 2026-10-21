@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 import StoreKit
 import WidgetKit
 
@@ -38,6 +39,8 @@ final class ProStore {
     private(set) var isFetchingAccountToken = false
     private(set) var storeProducts: [Product] = []
     private(set) var isPurchasing = false
+
+    private static let log = Logger(subsystem: "app.sharpit.ios", category: "pro")
 
     private let client: any ProServing
     private let tokenProvider: () async throws -> String
@@ -156,10 +159,13 @@ final class ProStore {
         do {
             let loaded = try await Product.products(for: SharpitProProduct.all)
             storeProducts = SharpitProProduct.all.compactMap { id in loaded.first(where: { $0.id == id }) }
+            let missing = SharpitProProduct.all.filter { id in !loaded.contains { $0.id == id } }
+            if !missing.isEmpty {
+                // An empty answer without an error: App Store Connect does not serve these ids yet.
+                Self.log.error("App Store returned no product for \(missing.joined(separator: ", "), privacy: .public)")
+            }
         } catch {
-            #if DEBUG
-            print("[ProStore] Failed to load StoreKit products: \(error)")
-            #endif
+            Self.log.error("Product.products failed: \(String(describing: error), privacy: .public)")
         }
     }
 

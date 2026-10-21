@@ -15,7 +15,7 @@ them, so run Debug against the local API (no `SHARPIT_API_ORIGIN` override in `L
 
 **The paywall.** `SharpitProPaywallSheet` is the only one: the onboarding's first week (drawn in
 `ProWeekHero`, the wizard blurred behind), every `SharpitProTeaser`, Santé's unlock and `ProView`'s
-« Passer à Pro » open it as a sheet. It shows the week as a picture, three short lines and the two
+« Passer à Pro » open it as a sheet. It shows the week as a picture, the web's Pro perks (`ProPerkGroup`) and the two
 plans; every amount is the App Store's `Product` (`ProPriceReadout` only derives the per-month and
 the −X %, rounded down). The monthly's intro offer shows only when `isEligibleForIntroOffer` says
 the Apple Account can still take it, and is then preselected; otherwise the yearly is. Buying
