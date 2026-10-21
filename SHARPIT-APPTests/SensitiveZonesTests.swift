@@ -168,9 +168,9 @@ private actor ZoneClient: SensitiveZoneServing {
     private(set) var patches: [(String, PhysicalNotePatch)] = []
     private(set) var checkins: [PhysicalCheckinInput] = []
     private(set) var created: [CreatePhysicalNoteInput] = []
-    private let refusesWrites: Bool
+    private let refusal: SharpitAPIError?
 
-    init(refusesWrites: Bool = false) { self.refusesWrites = refusesWrites }
+    init(refusal: SharpitAPIError? = nil) { self.refusal = refusal }
 
     func sensitiveZonesData(token _: String) async throws -> Data {
         reads += 1
@@ -178,7 +178,7 @@ private actor ZoneClient: SensitiveZoneServing {
     }
 
     func updateNote(id: String, patch: PhysicalNotePatch, token _: String) async throws {
-        if refusesWrites { throw SharpitAPIError.unauthorized }
+        if let refusal { throw refusal }
         patches.append((id, patch))
     }
 
@@ -230,8 +230,17 @@ private actor ZoneClient: SensitiveZoneServing {
         #expect(await client.patches.isEmpty)
     }
 
+    @Test func aRefusedStatusComesBackAndSaysSo() async throws {
+        let store = SensitiveZonesStore(client: ZoneClient(refusal: .badRequest), tokenProvider: { "t" })
+        await store.load()
+        let zone = try #require(store.zone("n1"))
+        #expect(await store.setStatus(zone, to: "RESOLVED") == false)
+        #expect(store.zone("n1")?.status == zone.status)
+        #expect(store.saveError == "Le statut n'a pas pu être changé.")
+    }
+
     @Test func aLostSessionSaysSo() async throws {
-        let store = SensitiveZonesStore(client: ZoneClient(refusesWrites: true), tokenProvider: { "t" })
+        let store = SensitiveZonesStore(client: ZoneClient(refusal: .unauthorized), tokenProvider: { "t" })
         await store.load()
         let zone = try #require(store.zone("n1"))
         #expect(await store.setStatus(zone, to: "MONITORING") == false)

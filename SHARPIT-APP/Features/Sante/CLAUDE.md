@@ -17,7 +17,7 @@ it, its 0–10 curve and timeline (readings and status changes, a relapse named)
 « Faire le point » (`ZoneCheckinSheet`: severity, what the athlete could do, a word), edit and
 declare (`SensitiveZoneFormSheet`, the body part picked from the web's list so the plan can check
 it), under watch, resolved (proposed when two weeks of readings say 0/10, never automatic), « Ça
-revient ». Every change goes out through `SharpitRetry` and reads the zones again: the strategy is
+revient ». Every change goes out through `SharpitRetry`. A status change (« Ça revient », resolve, monitor) shows on the tap and is put back with an inline error if the web refuses it; the other changes wait on their sheet, then read the zones again: the strategy is
 the web's. Then
 « Signes vitaux » (resting HR, HRV, sleep, VO₂max), « Corps » (weight with its target, body fat,
 visceral fat, muscle) and « Au quotidien » (steps, breathing during sleep). Everything comes from

@@ -53,7 +53,7 @@ nonisolated struct V1SensitiveZone: Decodable, Equatable, Identifiable, Hashable
     let bodyPartRecognized: Bool
     let side: String
     let sideLabel: String?
-    let status: String
+    var status: String
     let statusLabel: String
     let severity: Int?
     let functionalImpact: String?

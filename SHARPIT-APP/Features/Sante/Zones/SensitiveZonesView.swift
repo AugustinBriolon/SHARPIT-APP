@@ -406,7 +406,6 @@ struct SensitiveZoneDetailView: View {
                 }
             }
         }
-        .disabled(store.isSaving)
     }
 }
 

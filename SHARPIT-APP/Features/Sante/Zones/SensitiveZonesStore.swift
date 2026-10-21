@@ -17,8 +17,6 @@ final class SensitiveZonesStore {
 
     private(set) var phase: Phase = .loading
     private(set) var zones: V1SensitiveZones?
-    /// A change is on its way: the actions wait for it.
-    private(set) var isSaving = false
     /// The last change the web refused, for the page to say so.
     var saveError: String?
 
@@ -80,11 +78,27 @@ final class SensitiveZonesStore {
         }
     }
 
+    /// The status shows on the tap; a refusal puts the zone back and says so on the page.
     @discardableResult
     func setStatus(_ zone: V1SensitiveZone, to status: String) async -> Bool {
-        await perform(String(localized: "Le statut n'a pas pu être changé.")) { token in
-            try await client.updateNote(id: zone.id, patch: PhysicalNotePatch(status: status), token: token)
+        let before = zones
+        saveError = nil
+        setLocalStatus(zone.id, status)
+        do {
+            try await SharpitRetry.run {
+                try await client.updateNote(id: zone.id, patch: PhysicalNotePatch(status: status), token: try await tokenProvider())
+            }
+        } catch SharpitAPIError.unauthorized {
+            zones = before
+            phase = .unauthorized
+            return false
+        } catch {
+            zones = before
+            saveError = String(localized: "Le statut n'a pas pu être changé.")
+            return false
         }
+        await load()
+        return true
     }
 
     @discardableResult
@@ -95,9 +109,18 @@ final class SensitiveZonesStore {
         }
     }
 
+    private func setLocalStatus(_ id: String, _ status: String) {
+        guard let current = zones else { return }
+        let updated = current.zones.map { zone -> V1SensitiveZone in
+            guard zone.id == id else { return zone }
+            var changed = zone
+            changed.status = status
+            return changed
+        }
+        zones = V1SensitiveZones(zones: updated, bodyParts: current.bodyParts)
+    }
+
     private func perform(_ failure: String, _ change: (String) async throws -> Void) async -> Bool {
-        isSaving = true
-        defer { isSaving = false }
         do {
             // A dropped connection or a 5xx is tried again; a refusal is not.
             try await SharpitRetry.run { try await change(try await tokenProvider()) }
