@@ -94,7 +94,9 @@ final class SensitiveZonesStore {
             return false
         } catch {
             zones = before
-            saveError = String(localized: "Le statut n'a pas pu être changé.")
+            let message = String(localized: "Statut non enregistré.")
+            saveError = message
+            SharpitWriteFailures.shared.report(message)
             return false
         }
         await load()

@@ -236,7 +236,7 @@ private actor ZoneClient: SensitiveZoneServing {
         let zone = try #require(store.zone("n1"))
         #expect(await store.setStatus(zone, to: "RESOLVED") == false)
         #expect(store.zone("n1")?.status == zone.status)
-        #expect(store.saveError == "Le statut n'a pas pu être changé.")
+        #expect(store.saveError == "Statut non enregistré.")
     }
 
     @Test func aLostSessionSaysSo() async throws {
