@@ -459,20 +459,7 @@ struct ActivityDetailView: View {
                 }
             }
         }
-        .sheet(item: $editing) { editing in
-            ActivityFormSheet(
-                mode: .edit(id: editing.id),
-                draft: editing.draft,
-                client: editing.mutator,
-                tokenProvider: tokenProvider
-            ) { _ in
-                router?.noteActivitiesChanged()
-                Task {
-                    await client.forgetActivity(id: activity)
-                    await load()
-                }
-            }
-        }
+        .sheet(item: $editing) { editing in editSheet(editing) }
         .navigationDestination(item: $openedLeg) { id in
             ActivityDetailView(activity: id, client: client, linker: linker, goalClient: goalClient, tokenProvider: tokenProvider)
         }
@@ -614,6 +601,28 @@ struct ActivityDetailView: View {
             router?.noteCalendarChanged()
             await load()
         }
+    }
+
+    private func editSheet(_ editing: ActivityEditing) -> some View {
+        ActivityFormSheet(
+            mode: .edit(id: editing.id),
+            draft: editing.draft,
+            client: editing.mutator,
+            tokenProvider: tokenProvider,
+            onEdited: showEdited
+        ) { _ in
+            router?.noteActivitiesChanged()
+            Task {
+                await client.forgetActivity(id: activity)
+                await load()
+            }
+        }
+    }
+
+    /// The edit shows on the tap, before the server answers; the reload that follows confirms it.
+    private func showEdited(_ draft: ActivityDraft) {
+        guard case .loaded(let current) = phase else { return }
+        withAnimation(SharpitMotion.reveal) { phase = .loaded(current.applying(draft)) }
     }
 
     /// Links the session to a goal, or unlinks it with nil: shown on the tap, sent behind, put

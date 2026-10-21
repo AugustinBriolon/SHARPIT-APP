@@ -415,6 +415,23 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
     }
 
     /// The same session linked to `goal`, or unlinked with nil — shown before the server answers.
+    /// The fields the edit sheet changes, as typed, before the server answers.
+    @MainActor
+    func applying(_ draft: ActivityDraft) -> V1ActivityDetail {
+        V1ActivityDetail(
+            id: id, type: draft.sport, date: draft.date, title: draft.title.isEmpty ? nil : draft.title,
+            duration: draft.durationMin.map { Double($0 * 60) }, load: load,
+            rpe: draft.rpe.map(Double.init), feeling: draft.feeling?.storedValue,
+            weather: weather, notes: draft.notes.isEmpty ? nil : draft.notes,
+            distanceM: distanceM, elevationM: elevationM, paceSecPerKm: paceSecPerKm,
+            avgPaceSecPer100m: avgPaceSecPer100m, avgHr: avgHr, cadence: cadence,
+            avgCadence: avgCadence, avgPower: avgPower, swimSets: swimSets, swolf: swolf,
+            calories: calories, strengthSets: strengthSets, plannedSession: plannedSession,
+            narrativeAnalysis: narrativeAnalysis, stream: stream, multisportLegs: multisportLegs,
+            goal: goal, raceAnalysis: raceAnalysis
+        )
+    }
+
     func withGoal(_ goal: V1ActivityGoal?) -> V1ActivityDetail {
         V1ActivityDetail(
             id: id, type: type, date: date, title: title, duration: duration, load: load,

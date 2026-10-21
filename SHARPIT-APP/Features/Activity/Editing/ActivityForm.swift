@@ -18,6 +18,8 @@ struct ActivityFormSheet: View {
     let tokenProvider: () async throws -> String
     /// Called once the server has it, with the activity's id.
     let onSaved: (String) -> Void
+    /// Called on the tap of an edit, with the draft as typed, so the page shows it before the server answers.
+    let onEdited: (ActivityDraft) -> Void
 
     @State private var draft: ActivityDraft
     private let original: ActivityDraft
@@ -30,11 +32,13 @@ struct ActivityFormSheet: View {
         draft: ActivityDraft,
         client: any ActivityMutating,
         tokenProvider: @escaping () async throws -> String,
+        onEdited: @escaping (ActivityDraft) -> Void = { _ in },
         onSaved: @escaping (String) -> Void
     ) {
         self.mode = mode
         self.client = client
         self.tokenProvider = tokenProvider
+        self.onEdited = onEdited
         self.onSaved = onSaved
         original = draft
         _draft = State(initialValue: draft)
@@ -104,6 +108,7 @@ struct ActivityFormSheet: View {
         let client = client
         let tokenProvider = tokenProvider
         let onSaved = onSaved
+        onEdited(draft)
         dismiss()
         Task {
             do {
@@ -112,7 +117,7 @@ struct ActivityFormSheet: View {
                 }
                 onSaved(id)
             } catch {
-                SharpitWriteFailures.shared.report(String(localized: "La séance n’a pas pu être modifiée. Réessaie dans un instant."))
+                SharpitWriteFailures.shared.report(String(localized: "Modification non enregistrée."))
             }
         }
     }
