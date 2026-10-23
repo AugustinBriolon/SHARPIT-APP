@@ -241,21 +241,11 @@ struct WeightTargetSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section(
-                    eyebrow: String(localized: "Poids cible"),
-                    footer: String(localized: "Optionnel. Tracé sur ta courbe de poids et pris en compte dans la lecture nutritionnelle — jamais une alerte.")
-                ) {
-                    HStack {
-                        TextField("72,0", text: $text)
-                            .keyboardType(.decimalPad)
-                            .font(SharpitTypography.data)
-                            .focused($isFocused)
-                        Text("kg")
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
+            ScrollView {
+                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                    plate
                     if !isValid {
-                        Text("Entre 30 et 250 kg.")
+                        Label("Entre 30 et 250 kg.", systemImage: "exclamationmark.triangle.fill")
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.signalRisk)
                     }
@@ -264,11 +254,13 @@ struct WeightTargetSheet: View {
                             text = ""
                             save()
                         }
+                        .frame(maxWidth: .infinity, minHeight: SharpitSpacing.minimumTouchTarget)
                     }
                 }
-                .sharpitListRows()
+                .padding(SharpitSpacing.pageInset)
             }
-            .sharpitGroupedList()
+            .scrollDismissesKeyboard(.interactively)
+            .background(SharpitCanvasBackground())
             .disabled(!hasLoaded)
             .navigationTitle("Objectif de poids")
             .navigationBarTitleDisplayMode(.inline)
@@ -288,9 +280,50 @@ struct WeightTargetSheet: View {
                 isFocused = true
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
+    }
+
+    /// The target, big on the ink plate: typed, or stepped by half a kilo.
+    private var plate: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            Text("Poids cible")
+                .font(SharpitTypography.cardTitle)
+                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                SharpitStepButton(symbol: "minus", label: String(localized: "Moins 0,5 kg")) { step(-0.5) }
+                VStack(spacing: 2) {
+                    TextField("72,0", text: $text)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.center)
+                        .font(SharpitTypography.heroScore)
+                        .tracking(SharpitTypography.heroScoreTracking)
+                        .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                        .focused($isFocused)
+                        .accessibilityLabel("Poids cible en kilos")
+                    Text("kg")
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.inkAccent)
+                }
+                .frame(maxWidth: .infinity)
+                SharpitStepButton(symbol: "plus", label: String(localized: "Plus 0,5 kg")) { step(0.5) }
+            }
+            Text("Optionnel. Tracé sur ta courbe de poids et pris en compte dans la lecture nutritionnelle — jamais une alerte.")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.ink)
+    }
+
+    private func step(_ delta: Double) {
+        let next = min(max((parsed ?? store.profile.targetWeightKg ?? 70) + delta, 30), 250)
+        text = ProfileFieldFormat.decimal(next)
     }
 
     private func save() {

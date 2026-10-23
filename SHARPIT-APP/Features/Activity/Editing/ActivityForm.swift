@@ -200,8 +200,8 @@ private struct ActivityFormContent: View {
     }
 
     private var durationReadout: some View {
-        let minus = stepButton(symbol: "minus", label: String(localized: "Moins 5 minutes")) { draft.adjustDuration(by: -5) }
-        let plus = stepButton(symbol: "plus", label: String(localized: "Plus 5 minutes")) { draft.adjustDuration(by: 5) }
+        let minus = SharpitStepButton(symbol: "minus", label: String(localized: "Moins 5 minutes")) { draft.adjustDuration(by: -5) }
+        let plus = SharpitStepButton(symbol: "plus", label: String(localized: "Plus 5 minutes")) { draft.adjustDuration(by: 5) }
         return Group {
             if typeSize.isAccessibilitySize {
                 VStack(spacing: SharpitSpacing.sm) {
@@ -242,21 +242,6 @@ private struct ActivityFormContent: View {
                 .minimumScaleFactor(0.6)
                 .transition(.opacity.combined(with: .move(edge: .top)))
         }
-    }
-
-    private func stepButton(symbol: String, label: String, action: @escaping () -> Void) -> some View {
-        Button {
-            SharpitMotion.run(SharpitMotion.selection, action)
-            SharpitHaptics.play(.notch(major: false))
-        } label: {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
-                .background(SharpitColor.inkSurfaceForeground.opacity(0.12), in: Circle())
-        }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityLabel(label)
     }
 
     /// Equal shares of the plate's width: a scrolled row cut its last preset at the edge.

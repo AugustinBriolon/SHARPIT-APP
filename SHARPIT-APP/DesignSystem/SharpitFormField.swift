@@ -357,3 +357,25 @@ struct SharpitDateField: View {
         Binding(get: { date ?? resting }, set: { date = $0 })
     }
 }
+
+/// A round − or + on an ink plate: one step, with the notch under the finger.
+struct SharpitStepButton: View {
+    let symbol: String
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            SharpitMotion.run(SharpitMotion.selection, action)
+            SharpitHaptics.play(.notch(major: false))
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
+                .background(SharpitColor.inkSurfaceForeground.opacity(0.12), in: Circle())
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel(label)
+    }
+}

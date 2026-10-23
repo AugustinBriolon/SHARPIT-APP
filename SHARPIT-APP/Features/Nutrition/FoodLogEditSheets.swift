@@ -141,28 +141,17 @@ struct NutritionTargetsSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    Picker("Saisie des macros", selection: $mode) {
-                        Text("Grammes").tag(NutritionTargetsMode.grams)
-                        Text("%").tag(NutritionTargetsMode.percent)
-                    }
-                    .pickerStyle(.segmented)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
+            ScrollView {
+                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                    energyPlate
+                    macrosCard
+                    problemNote
                 }
-
-                Section(eyebrow: String(localized: "Énergie"), footer: energyFooter) {
-                    FoodNumberRow(title: String(localized: "Calories"), unit: "kcal", placeholder: "—", text: $kcal)
-                }
-                .sharpitListRows()
-
-                switch mode {
-                case .grams: gramsSections
-                case .percent: percentSections
-                }
+                .padding(SharpitSpacing.pageInset)
+                .animation(SharpitMotion.reveal, value: mode)
             }
-            .sharpitGroupedList()
+            .scrollDismissesKeyboard(.interactively)
+            .background(SharpitCanvasBackground())
             .navigationTitle("Objectifs")
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: mode) { _, newMode in carryOver(to: newMode) }
@@ -176,9 +165,49 @@ struct NutritionTargetsSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
+    }
+
+    /// The energy, big, on the ink plate: typed, or stepped by 50.
+    private var energyPlate: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            Text("Énergie par jour")
+                .font(SharpitTypography.cardTitle)
+                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                SharpitStepButton(symbol: "minus", label: String(localized: "Moins 50 kcal")) { stepKcal(-50) }
+                VStack(spacing: 2) {
+                    TextField("—", text: $kcal)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.center)
+                        .font(SharpitTypography.heroScore)
+                        .tracking(SharpitTypography.heroScoreTracking)
+                        .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                        .accessibilityLabel("Calories")
+                    Text("kcal")
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.inkAccent)
+                }
+                .frame(maxWidth: .infinity)
+                SharpitStepButton(symbol: "plus", label: String(localized: "Plus 50 kcal")) { stepKcal(50) }
+            }
+            Text(energyFooter)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.ink)
+    }
+
+    private func stepKcal(_ delta: Int) {
+        let next = (NutritionTargetsInput.requiredKcal(kcal) ?? 2_000) + delta
+        kcal = String(min(max(next, 800), 8_000))
     }
 
     private var energyFooter: String {
@@ -186,52 +215,64 @@ struct NutritionTargetsSheet: View {
         return mode == .percent ? String(localized: "Obligatoire pour répartir en %. \(range)") : range
     }
 
-    @ViewBuilder
-    private var gramsSections: some View {
-        Section(eyebrow: String(localized: "Macronutriments"), footer: String(localized: "Optionnels. Un champ vide retire l'objectif.")) {
-            FoodNumberRow(title: String(localized: "Protéines"), unit: "g", placeholder: "—", text: $protein)
-            FoodNumberRow(title: String(localized: "Glucides"), unit: "g", placeholder: "—", text: $carbs)
-            FoodNumberRow(title: String(localized: "Lipides"), unit: "g", placeholder: "—", text: $fat)
-        }
-        .sharpitListRows()
-
-        if gramsTargets == nil {
-            Section {
-                Text("Une valeur sort des bornes : 800 à 8 000 kcal, au plus 600 g de protéines, 1 500 g de glucides, 500 g de lipides.")
+    private var macrosCard: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            SharpitFieldLabel(String(localized: "Macronutriments"))
+            SharpitSegmentedChoice(
+                options: [NutritionTargetsMode.grams, .percent],
+                label: { $0 == .grams ? String(localized: "Grammes") : "%" },
+                selection: Binding(get: { mode }, set: { if let next = $0 { mode = next } })
+            )
+            switch mode {
+            case .grams:
+                SharpitFormField(String(localized: "Protéines (g)"), placeholder: "—", text: $protein, keyboard: .decimalPad)
+                SharpitFormField(String(localized: "Glucides (g)"), placeholder: "—", text: $carbs, keyboard: .decimalPad)
+                SharpitFormField(String(localized: "Lipides (g)"), placeholder: "—", text: $fat, keyboard: .decimalPad)
+                Text("Optionnels. Un champ vide retire l'objectif.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalRisk)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+            case .percent:
+                NutritionShareRow(title: String(localized: "Protéines"), grams: split.proteinG, text: $proteinPct)
+                NutritionShareRow(title: String(localized: "Glucides"), grams: split.carbsG, text: $carbsPct)
+                NutritionShareRow(title: String(localized: "Lipides"), grams: split.fatG, text: $fatPct)
+                totalRow
             }
-            .sharpitListRows()
         }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+    }
+
+    private var totalRow: some View {
+        let split = split
+        return HStack {
+            Text("Total")
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+            Spacer(minLength: SharpitSpacing.xs)
+            Text("\(split.total) %")
+                .font(SharpitTypography.bodyEmphasis)
+                .monospacedDigit()
+                .foregroundStyle(split.isBalanced ? SharpitColor.foreground : SharpitColor.signalRisk)
+                .contentTransition(.numericText(value: Double(split.total)))
+        }
+        .animation(SharpitMotion.selection, value: split.total)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(split.isBalanced ? "\(split.total) %" : String(localized: "\(split.total) %, il faut 100 %"))
     }
 
     @ViewBuilder
-    private var percentSections: some View {
-        let split = split
-        Section(eyebrow: String(localized: "Répartition"), footer: String(localized: "Des nombres entiers. Les grammes suivent ton énergie.")) {
-            NutritionShareRow(title: String(localized: "Protéines"), grams: split.proteinG, text: $proteinPct)
-            NutritionShareRow(title: String(localized: "Glucides"), grams: split.carbsG, text: $carbsPct)
-            NutritionShareRow(title: String(localized: "Lipides"), grams: split.fatG, text: $fatPct)
-            LabeledContent("Total") {
-                Text("\(split.total) %")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .monospacedDigit()
-                    .foregroundStyle(split.isBalanced ? SharpitColor.foreground : SharpitColor.signalRisk)
-                    .contentTransition(.numericText(value: Double(split.total)))
-            }
-            .animation(SharpitMotion.selection, value: split.total)
-            .accessibilityValue(split.isBalanced ? "\(split.total) %" : String(localized: "\(split.total) %, il faut 100 %"))
+    private var problemNote: some View {
+        if let problem = mode == .percent ? percentProblem(split) : (gramsTargets == nil ? gramsProblem : nil) {
+            Label(problem, systemImage: "exclamationmark.triangle.fill")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.signalRisk)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .sharpitListRows()
+    }
 
-        if let problem = percentProblem(split) {
-            Section {
-                Text(problem)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalRisk)
-            }
-            .sharpitListRows()
-        }
+    private var gramsProblem: String {
+        String(localized: "Une valeur sort des bornes : 800 à 8 000 kcal, au plus 600 g de protéines, 1 500 g de glucides, 500 g de lipides.")
     }
 
     private func percentProblem(_ split: NutritionTargetSplit) -> String? {
@@ -273,26 +314,26 @@ private struct NutritionShareRow: View {
     @Binding var text: String
 
     var body: some View {
-        LabeledContent {
-            HStack(spacing: SharpitSpacing.xxs) {
-                TextField("—", text: $text)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.trailing)
-                    .monospacedDigit()
-                    .accessibilityLabel("\(title) en pourcentage")
-                Text("%")
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            HStack(alignment: .firstTextBaseline) {
+                SharpitFieldLabel(title)
+                Spacer(minLength: SharpitSpacing.xs)
                 Text(grams.map { "≈ \(FoodPortion.gramsLabel(Double($0)))" } ?? "— g")
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .contentTransition(.numericText(value: Double(grams ?? 0)))
             }
-            .animation(SharpitMotion.selection, value: grams)
+            HStack(spacing: SharpitSpacing.xxs) {
+                TextField("—", text: $text)
+                    .keyboardType(.numberPad)
+                    .font(SharpitTypography.body)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityLabel("\(title) en pourcentage")
+                Text("%").foregroundStyle(SharpitColor.mutedForeground)
+            }
+            .sharpitFieldWell()
         }
+        .animation(SharpitMotion.selection, value: grams)
     }
 }
