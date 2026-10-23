@@ -13,16 +13,6 @@ extension ActivityStatusId {
     }
 }
 
-extension ActivityStatusId {
-    /// What the chip says: nothing for the normal state, which is not news; the mode and the day
-    /// it ends otherwise.
-    func chipTitle(untilDay: String?, calendar: Calendar = .current) -> String? {
-        guard self != .active else { return nil }
-        guard let untilDay, let date = ActivityStatusDate.date(from: untilDay, calendar: calendar) else { return label }
-        return "\(label) · \(date.sharpitFormatted(.dateTime.day().month(.abbreviated)))"
-    }
-}
-
 /// The toolbar chip that opens the mode drawer, and the drawer itself.
 struct ActivityStatusButton: View {
     @Bindable var store: ActivityStatusStore
@@ -40,11 +30,9 @@ struct ActivityStatusButton: View {
                     Image(systemName: store.store.status.symbolName)
                         .foregroundStyle(store.store.status.tone)
                         .contentTransition(.symbolEffect(.replace))
-                    if let title = store.store.status.chipTitle(untilDay: store.store.retention.untilDate) {
-                        Text(title)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .contentTransition(.opacity)
-                    }
+                    Text(store.store.status.label)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .contentTransition(.opacity)
                 }
                 .sharpitGlassChip()
             } else {
@@ -82,23 +70,13 @@ private struct ActivityStatusDrawer: View {
                             .foregroundStyle(SharpitColor.signalCaution)
                     }
 
-                    SharpitEyebrow(String(localized: "Mode d'entraînement"))
-                    VStack(spacing: SharpitSpacing.xs) {
-                        ForEach(ActivityStatusId.allCases, id: \.self) { status in
-                            ActivityStatusOptionRow(
-                                status: status,
-                                isSelected: store.store.status == status
-                            ) {
-                                Task { await pick(status) }
-                            }
-                        }
-                    }
-
-                    impactSection
+                    statusPlate
+                    modesCard
                     if store.store.status != .active {
                         deadlineSection
                     }
                 }
+                .animation(SharpitMotion.reveal, value: store.store.status)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(SharpitSpacing.pageInset)
             }
@@ -118,18 +96,72 @@ private struct ActivityStatusDrawer: View {
         .onAppear(perform: syncFromStore)
     }
 
-    /// What the mode does to the plan and the coach, so a pick is never a blind one.
-    private var impactSection: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(String(localized: "Ce que ça change"))
-            Text(store.store.status.planningImpact)
+    /// The mode now, on the ink plate this tab leads with: what it is, what it changes for the
+    /// plan and the coach, until when.
+    private var statusPlate: some View {
+        let status = store.store.status
+        return VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                Image(systemName: status.symbolName)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .frame(width: 44, height: 44)
+                    .background(SharpitColor.highlight, in: Circle())
+                    .contentTransition(.symbolEffect(.replace))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    SharpitEyebrow(String(localized: "Mode actuel"))
+                        .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.6))
+                    Text(status.label)
+                        .font(SharpitTypography.cardTitle)
+                        .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                        .contentTransition(.opacity)
+                }
+                Spacer(minLength: 0)
+                if let until = untilLabel {
+                    SharpitPill(until, style: .lime)
+                }
+            }
+            Text(status.planningImpact)
                 .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
+                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.78))
                 .fixedSize(horizontal: false, vertical: true)
-            if store.store.status != .active {
-                CoachDiscussButton(title: String(localized: "En parler au coach")) {
+            if status != .active {
+                Button {
                     router.discussWithCoach(about: CoachDiscuss.describe(.planning(horizonDays: 7)))
                     dismiss()
+                } label: {
+                    Label(String(localized: "En parler au coach"), systemImage: "arrow.up.right")
+                        .labelStyle(.titleAndIcon)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.inkAccent)
+                }
+                .buttonStyle(.sharpitPressable)
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.ink)
+    }
+
+    /// « 3 nov. » while a mode has an end, nothing when it holds until changed.
+    private var untilLabel: String? {
+        guard let day = store.store.retention.untilDate,
+              let date = ActivityStatusDate.date(from: day) else { return nil }
+        return String(localized: "Jusqu'au \(date.sharpitFormatted(.dateTime.day().month(.abbreviated)))")
+    }
+
+    private var modesCard: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitEyebrow(String(localized: "Changer de mode"))
+            SharpitInsetGroup {
+                ForEach(ActivityStatusId.allCases, id: \.self) { status in
+                    ActivityStatusOptionRow(
+                        status: status,
+                        isSelected: store.store.status == status
+                    ) {
+                        Task { await pick(status) }
+                    }
                 }
             }
         }
@@ -205,12 +237,8 @@ private struct ActivityStatusOptionRow: View {
 
     var body: some View {
         Button(action: onPick) {
-            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                Image(systemName: status.symbolName)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(status.tone)
-                    .frame(width: 28, height: 28)
-                    .accessibilityHidden(true)
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                SharpitIconTile(symbol: status.symbolName, size: 40)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(status.label)
@@ -226,16 +254,12 @@ private struct ActivityStatusOptionRow: View {
 
                 Spacer(minLength: 0)
 
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.primary)
-                        .accessibilityHidden(true)
-                }
+                SharpitCheckBox(isOn: isSelected)
             }
-            .padding(SharpitSpacing.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(isSelected ? .panelAlt : .panel)
+            .padding(.horizontal, SharpitSpacing.rowPaddingX)
+            .padding(.vertical, SharpitSpacing.xs)
+            .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
