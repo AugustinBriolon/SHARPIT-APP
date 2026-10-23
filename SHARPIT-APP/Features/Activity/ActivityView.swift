@@ -49,6 +49,7 @@ struct ActivityView: View {
                     }
                 }
             }
+            .tint(SharpitColor.foreground)
             .sheet(isPresented: $isLogging) {
                 if let mutator = client as? any ActivityMutating {
                     ActivityFormSheet(mode: .create, draft: .new(), client: mutator, tokenProvider: tokenProvider) { id in
