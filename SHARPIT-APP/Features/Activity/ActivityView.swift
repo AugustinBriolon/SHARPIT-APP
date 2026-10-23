@@ -38,6 +38,10 @@ struct ActivityView: View {
             .modifier(LiquidNavChrome())
             .searchable(text: $filter.query, placement: .navigationBarDrawer, prompt: String(localized: "Rechercher une séance"))
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Records", systemImage: "trophy") { openRecords() }
+                        .accessibilityHint("Ouvrir les records")
+                }
                 if case .loaded(let activities) = phase {
                     ToolbarItem(placement: .primaryAction) {
                         ActivityFilterMenu(filter: $filter, sports: ActivityFilter.sports(in: activities))
@@ -118,7 +122,6 @@ struct ActivityView: View {
                     week: filter.isActive ? nil : ActivityHistory.week(activities),
                     hasMore: hasMore,
                     selectedActivity: $selectedActivity,
-                    openRecords: filter.isActive ? nil : { openRecords() },
                     loadMore: { _ = Task { await loadMore() } }
                 )
             }
@@ -220,11 +223,17 @@ struct ActivityView: View {
             } catch let error as SharpitAPIError where error == .unauthorized {
                 phase = .unauthorized
                 return false
-            } catch let error as ActivityClientError {
-                phase = .failed(error.localizedDescription)
-                return false
             } catch {
-                phase = .failed(String(localized: "Impossible de charger l’historique : \(error.localizedDescription)"))
+                // A history already shown stays: the toast says the refresh failed.
+                if case .loaded = phase {
+                    SharpitWriteFailures.shared.reportStaleRead(SharpitErrorGuidance.message(for: error, subject: String(localized: "L’historique")))
+                    return false
+                }
+                if let error = error as? ActivityClientError {
+                    phase = .failed(error.localizedDescription)
+                } else {
+                    phase = .failed(String(localized: "Impossible de charger l’historique : \(error.localizedDescription)"))
+                }
                 return false
             }
         }
@@ -246,19 +255,12 @@ private struct ActivityListContent: View {
     let week: ActivityWeekSummary?
     let hasMore: Bool
     @Binding var selectedActivity: V1ActivityListItem?
-    var openRecords: (() -> Void)?
     let loadMore: () -> Void
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: SharpitSpacing.section) {
             if let week {
                 ActivityWeekCard(week: week)
-            }
-            if let openRecords {
-                Button(action: openRecords) {
-                    RecordsEntryTile()
-                }
-                .buttonStyle(.sharpitPressable)
             }
 
             ForEach(ActivityHistory.months(activities)) { month in
@@ -380,34 +382,6 @@ private struct ActivityMonthSection: View {
             .padding(.vertical, SharpitSpacing.xxs)
             .sharpitSurface(.panel)
         }
-    }
-}
-
-/// The way into Records from the history: what the sessions add up to, one tap away.
-private struct RecordsEntryTile: View {
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            SharpitIconTile(symbol: "trophy")
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Records")
-                    .font(SharpitTypography.cardTitle)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text("Tes meilleures performances par sport")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
-        }
-        .padding(.horizontal, SharpitSpacing.md)
-        .padding(.vertical, SharpitSpacing.sm + 2)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-        .contentShape(RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Ouvrir les records")
     }
 }
 
@@ -541,7 +515,8 @@ private struct ActivityFilterMenu: View {
     var body: some View {
         Menu {
             menuItems
-                // The menu's rows took the app's lime too, unreadable on the light menu glass.
+                // The menu's rows are UIKit's and take the app's accent (`AccentColor`, ink), not
+                // SwiftUI's tint; these keep the SwiftUI-drawn parts ink as well.
                 .tint(SharpitColor.foreground)
                 .foregroundStyle(SharpitColor.foreground)
         } label: {
@@ -553,7 +528,7 @@ private struct ActivityFilterMenu: View {
             )
             .foregroundStyle(SharpitColor.foreground)
         }
-        // The toolbar tints its buttons with the app's lime; a label colour alone lost to it.
+        // The toolbar tints its buttons with the app's accent; a label colour alone lost to it.
         .tint(SharpitColor.foreground)
         .accessibilityValue(filter.narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
     }

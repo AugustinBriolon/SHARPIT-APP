@@ -263,6 +263,9 @@ What makes a surface feel finished, applied everywhere new work lands:
   streak counters.
 - **No dead ends.** An empty day offers the next step (sync, another day, link a source); a
   failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server).
+  A read that fails under content already on screen (read before, or cached) keeps it and says so
+  in the toast (`SharpitWriteFailures.reportStaleRead`, once per outage) — an error state only
+  stands where there is nothing to show.
 - **Haptics: a notch under the finger, nothing else.** A ruler's units, days painted, a curve
   scrubbed — the finger dialling. Never a tap, a choice, a toggle, a send, a success or navigation:
   the screen already shows it, and felt everywhere it read as noise (the athlete's call,
@@ -270,7 +273,8 @@ What makes a surface feel finished, applied everywhere new work lands:
 - **Haptics through `SharpitHaptics` only** — Core Haptics. On the athlete's iPhone neither
   `UIFeedbackGenerator` nor SwiftUI's `sensoryFeedback` played anything in the app, while a Core
   Haptics transient did; never reach for either.
-- **Animate meaning only.** Figures move between days and a seal arrives once; nothing animates on
+- **Animate meaning only.** A seal arrives once; a new day's words and figures change in place (no
+  roll, no fade — the athlete's call, 2026-10-23), only the page slides; nothing animates on
   input or on every refresh, and `SharpitMotion` honours Reduce Motion.
 
 Screen structure follows the web causal column: state → evidence → recommendation →

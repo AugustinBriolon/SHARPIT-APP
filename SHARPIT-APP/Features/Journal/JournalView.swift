@@ -118,21 +118,9 @@ struct JournalView: View {
             }
     }
 
-    @ViewBuilder
-    private var content: some View {
-        switch store.phase {
-        case .failed(let message):
-            ContentUnavailableView {
-                Label("Journal indisponible", systemImage: "wifi.slash")
-            } description: {
-                Text(message)
-            } actions: {
-                Button("Réessayer") { Task { await store.load() } }
-            }
-        case .loading, .ready:
-            entries
-        }
-    }
+    /// The date picker stays whatever the day's state: a day that failed to load is still one
+    /// swipe or one tap away from another.
+    private var content: some View { entries }
 
     /// Picker pinned above the scroll — as the day screens do — so a day swipe moves the
     /// journal's rows without fighting the scroll, and without sliding the week strip.
@@ -144,9 +132,19 @@ struct JournalView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    if store.phase == .loading {
+                    switch store.phase {
+                    case .loading:
                         JournalLoadingRows()
-                    } else {
+                    case .failed(let message):
+                        ContentUnavailableView {
+                            Label("Journal indisponible", systemImage: "wifi.slash")
+                        } description: {
+                            Text(message)
+                        } actions: {
+                            Button("Réessayer") { Task { await store.load() } }
+                        }
+                        .padding(.top, SharpitSpacing.xl)
+                    case .ready:
                         if store.hasNothingToShow {
                             ContentUnavailableView {
                                 Label("Rien à suivre", systemImage: "book.closed")
@@ -157,15 +155,7 @@ struct JournalView: View {
                             }
                             .padding(.top, SharpitSpacing.xl)
                         }
-
-                        // The web's order, top to bottom: the day's values, then the night that
-                        // ended this morning, then the day's own signals. Grouped by when a signal
-                        // happened rather than by what kind of thing it is — an athlete answers a
-                        // journal in the order they lived it.
-                        dayMetricsSection
-                        checklistSection
-                        priorNightSection
-                        daySignalsSection
+                        daySections(pending: store.isReadingDay)
                     }
                 }
                 .padding(.horizontal, SharpitSpacing.pageInset)
@@ -176,16 +166,42 @@ struct JournalView: View {
             .scrollDisabled(store.phase == .loading)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } } neighbor: { _ in
-                // The day beside, in its loading shape: its answers are read once it is the page.
+                // The day beside: once the preferences are known, its own rows with their values
+                // pending — only the very first read draws the whole skeleton.
                 ScrollView {
-                    JournalLoadingRows()
-                        .padding(.horizontal, SharpitSpacing.pageInset)
-                        .padding(.top, SharpitSpacing.section)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Group {
+                        if store.hasReadPrefs {
+                            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                                daySections(pending: true)
+                            }
+                        } else {
+                            JournalLoadingRows()
+                        }
+                    }
+                    .padding(.horizontal, SharpitSpacing.pageInset)
+                    .padding(.top, SharpitSpacing.section)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollDisabled(true)
             }
         }
+    }
+
+    /// The web's order, top to bottom: the day's values, then the night that ended this
+    /// morning, then the day's own signals. Grouped by when a signal happened rather than by
+    /// what kind of thing it is — an athlete answers a journal in the order they lived it.
+    /// `pending`: the rows are known, the day's answers are not — values redacted, nothing
+    /// tappable, and none of the shown day's own lines (checklist, dates) carried over.
+    @ViewBuilder
+    private func daySections(pending: Bool) -> some View {
+        Group {
+            dayMetricsSection
+            if !pending { checklistSection }
+            priorNightSection(pending: pending)
+            daySignalsSection
+        }
+        .environment(\.journalValuesPending, pending)
+        .allowsHitTesting(!pending)
     }
 
     /// Caféine, Humeur, Hydratation — values the athlete sets, not answers they give.
@@ -226,10 +242,10 @@ struct JournalView: View {
     }
 
     @ViewBuilder
-    private var priorNightSection: some View {
+    private func priorNightSection(pending: Bool) -> some View {
         let trackables = store.priorNightTrackables
         if !trackables.isEmpty {
-            JournalSection(isGrouped: true, title: String(localized: "Nuit"), hint: priorNightHint) {
+            JournalSection(isGrouped: true, title: String(localized: "Nuit"), hint: pending ? nil : priorNightHint) {
                 ForEach(trackables) { trackable in
                     JournalTrackableRow(trackable: trackable, store: store)
                 }
@@ -284,6 +300,11 @@ private struct JournalLoadingRows: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Chargement du journal")
     }
+}
+
+extension EnvironmentValues {
+    /// The journal's rows are drawn before the day's answers arrive: values redacted.
+    @Entry var journalValuesPending = false
 }
 
 struct JournalSection<Content: View>: View {
@@ -365,6 +386,7 @@ private struct JournalTrackableRow: View {
     var onOpenCaffeine: () -> Void = {}
     var onOpenHydration: () -> Void = {}
     var onOpenDriving: () -> Void = {}
+    @Environment(\.journalValuesPending) private var isPending
 
     var body: some View {
         switch trackable.kind {
@@ -372,10 +394,10 @@ private struct JournalTrackableRow: View {
             JournalFactorRow(
                 label: trackable.label,
                 symbolName: trackable.symbolName,
-                state: store.entry.state(of: trackable.id)
-            ) { newState in
-                store.set(factorId: trackable.id, to: newState)
-            }
+                state: store.entry.state(of: trackable.id),
+                onChange: { newState in store.set(factorId: trackable.id, to: newState) },
+                isPending: isPending
+            )
             .equatable()
         case .caffeine:
             JournalMetricRow(
@@ -415,15 +437,16 @@ private struct JournalTrackableRow: View {
 private struct JournalCustomItemRow: View {
     let item: JournalCustomItem
     @Bindable var store: JournalStore
+    @Environment(\.journalValuesPending) private var isPending
 
     var body: some View {
         JournalFactorRow(
             label: item.label,
             symbolName: JournalCatalogue.customSymbolName,
-            state: store.entry.state(of: item.id)
-        ) { newState in
-            store.set(factorId: item.id, to: newState)
-        }
+            state: store.entry.state(of: item.id),
+            onChange: { newState in store.set(factorId: item.id, to: newState) },
+            isPending: isPending
+        )
         .equatable()
     }
 }
@@ -435,6 +458,7 @@ struct JournalMetricRow: View {
     let symbolName: String
     let value: String
     let onOpen: () -> Void
+    @Environment(\.journalValuesPending) private var isPending
 
     var body: some View {
         Button(action: onOpen) {
@@ -450,6 +474,7 @@ struct JournalMetricRow: View {
                 Text(value)
                     .font(SharpitTypography.system(size: 15, weight: isUnset ? .regular : .semibold, relativeTo: .subheadline, digits: true))
                     .foregroundStyle(isUnset ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                    .redacted(reason: isPending ? .placeholder : [])
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
@@ -534,11 +559,15 @@ struct JournalFactorRow: View, Equatable {
     let symbolName: String
     let state: JournalFactorState
     let onChange: (JournalFactorState) -> Void
+    /// The answer is not read yet: passed in rather than read from the environment, so the
+    /// equatable row redraws when it arrives.
+    var isPending = false
 
     static func == (lhs: JournalFactorRow, rhs: JournalFactorRow) -> Bool {
         lhs.label == rhs.label &&
         lhs.symbolName == rhs.symbolName &&
-        lhs.state == rhs.state
+        lhs.state == rhs.state &&
+        lhs.isPending == rhs.isPending
     }
 
     var body: some View {
@@ -553,8 +582,13 @@ struct JournalFactorRow: View, Equatable {
 
             Spacer(minLength: SharpitSpacing.xs)
 
-            JournalAnswerToggle(state: state, onChange: onChange)
-                .equatable()
+            if isPending {
+                // The answer is on its way: the toggle's track alone, no position to misread.
+                JournalAnswerToggle.pendingTrack
+            } else {
+                JournalAnswerToggle(state: state, onChange: onChange)
+                    .equatable()
+            }
         }
         .padding(.vertical, SharpitSpacing.xxs)
         .frame(minHeight: JournalRowMetrics.minHeight)
@@ -632,6 +666,15 @@ private struct JournalAnswerToggle: View, Equatable {
 
     private var selectedIndex: Int {
         Self.order.firstIndex(of: state) ?? 1
+    }
+
+    /// The track without its pill, for a row whose answer is not read yet.
+    static var pendingTrack: some View {
+        Capsule()
+            .fill(SharpitColor.chipSurface)
+            .frame(width: trackWidth, height: trackHeight)
+            .frame(width: trackWidth, height: SharpitSpacing.minimumTouchTarget)
+            .accessibilityLabel(String(localized: "Chargement"))
     }
 
     var body: some View {

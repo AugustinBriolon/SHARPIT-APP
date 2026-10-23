@@ -16,6 +16,11 @@ final class JournalStore {
     }
 
     private(set) var phase: Phase = .loading
+    /// The preferences are known, so the rows the journal shows are too: a day not read yet
+    /// is drawn as those rows with only their values pending, never the whole skeleton again.
+    private(set) var hasReadPrefs = false
+    /// The day's answers are on their way: the rows stand, their values are drawn redacted.
+    private(set) var isReadingDay = false
     private(set) var entry: V1DayJournalEntry
     private(set) var prefs: JournalPrefs = .empty
     private(set) var isPro = false
@@ -84,6 +89,7 @@ final class JournalStore {
             entry = try await entryResult
             prefs = loadedPrefs
             isPro = loadedIsPro
+            hasReadPrefs = true
             phase = .ready
             // After the preferences, because they decide whether it is worth asking.
             await loadChecklist(token: token)
@@ -111,7 +117,10 @@ final class JournalStore {
         ), !cached.isEmpty else { return false }
 
         if let cachedEntry = cached.entry { entry = cachedEntry }
-        if let cachedPrefs = cached.prefs { prefs = cachedPrefs }
+        if let cachedPrefs = cached.prefs {
+            prefs = cachedPrefs
+            hasReadPrefs = true
+        }
         checklist = cached.signals?.checklist ?? []
         phase = .ready
         return true
@@ -265,12 +274,24 @@ final class JournalStore {
 
         let hadCache = hydrateFromCache()
         if !hadCache {
-            phase = .loading
+            if hasReadPrefs, phase == .ready {
+                isReadingDay = true
+            } else {
+                phase = .loading
+            }
+        }
+        defer {
+            // Only the day still shown settles the rows: a later pick owns them now.
+            if entry.trainingDayId == newDayId { isReadingDay = false }
         }
 
         do {
             let token = try await tokenProvider()
-            entry = try await client.dayJournal(trainingDayId: newDayId, token: token)
+            let read = try await client.dayJournal(trainingDayId: newDayId, token: token)
+            // The athlete may have moved on while the day was read.
+            guard entry.trainingDayId == newDayId else { return }
+            entry = read
+            isReadingDay = false
             phase = .ready
             await loadChecklist(token: token)
             await loadCheckinMood(token: token)
@@ -278,6 +299,7 @@ final class JournalStore {
             updateCompletionState()
         } catch is CancellationError {
         } catch {
+            guard entry.trainingDayId == newDayId else { return }
             let message = Self.message(for: error, fallback: String(localized: "Impossible de charger le journal pour ce jour."))
             if hadCache {
                 saveFailure = message

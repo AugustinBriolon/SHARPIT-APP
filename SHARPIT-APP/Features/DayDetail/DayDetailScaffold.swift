@@ -31,12 +31,14 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                 // A day not read yet slides in in the shape of the one before, its figures
                 // hidden until they arrive — never the old day's numbers under the new date.
                 .redacted(reason: store.isSwitchingDay ? .placeholder : [])
-                .animation(SharpitMotion.fade, value: store.isSwitchingDay)
+                // A new day's words and figures are simply there: no roll, no fade, no sweep
+                // (the athlete's call, 2026-10-23). Only the page's slide moves, outside this.
+                .transaction(value: store.phase) { $0.animation = nil }
+                .transaction(value: store.isSwitchingDay) { $0.animation = nil }
+                .transaction(value: store.selectedDay) { $0.animation = nil }
                 .daySwipe(day: store.selectedDay) { day in Task { await store.select(day) } } neighbor: { day in
                     neighborPage(day)
                 }
-                // A new day's figures move to their values rather than jumping.
-                .animation(SharpitMotion.reveal, value: store.phase)
         }
         .background(SharpitCanvasBackground())
         .navigationTitle(title)

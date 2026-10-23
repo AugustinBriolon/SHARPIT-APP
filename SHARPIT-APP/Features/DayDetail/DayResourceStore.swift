@@ -179,7 +179,10 @@ final class DayResourceStore<Payload: V1DayResource> {
             phase = .unauthorized
         } catch {
             guard requestedDay == trainingDayId else { return }
-            if keepingDayOnFailure, case .loaded = phase { return }
+            if keepingDayOnFailure, case .loaded = phase {
+                SharpitWriteFailures.shared.reportStaleRead(Self.failure(error, fallback: failureMessage))
+                return
+            }
             phase = .failed(Self.failure(error, fallback: failureMessage))
         }
     }

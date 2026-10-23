@@ -805,6 +805,13 @@ struct ActivityDetailView: View {
         } catch let error as SharpitAPIError where error == .unauthorized {
             phase = .unauthorized
         } catch {
+            isEnriching = false
+            // The session opened from the list keeps its row's figures; the toast says the rest
+            // did not come.
+            if case .loaded = phase {
+                SharpitWriteFailures.shared.reportStaleRead(SharpitErrorGuidance.message(for: error, subject: String(localized: "Le détail de la séance")))
+                return
+            }
             phase = .failed(String(localized: "Impossible de récupérer cette activité pour le moment."))
         }
     }
@@ -858,7 +865,7 @@ private struct ActivityDetailContent: View {
     /// The map layout ignores the safe area: the sheet itself grows by the tab bar's height, so its
     /// last card clears the bar and no map shows under the sheet.
     var bottomInset: CGFloat = 0
-    @State private var selectedChartMetrics: [ActivityChartMetric] = [.heartRate]
+    @State private var selectedChartMetrics: [ActivityChartMetric] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -1063,8 +1070,7 @@ private struct ActivityDetailContent: View {
                 ActivityChartsSection(
                     samples: streamPayload?.samples ?? [],
                     metrics: availableChartMetrics,
-                    selection: $selectedChartMetrics,
-                    tone: tone
+                    selection: $selectedChartMetrics
                 )
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
@@ -1575,197 +1581,6 @@ enum ActivityChartMetric: String, CaseIterable, Identifiable {
         case .heartRate, .power, .elevation, .cadence:
             return "\(Int(value.rounded()))"
         }
-    }
-}
-
-private struct ActivityChartPoint: Identifiable {
-    let id: Int
-    let time: Double
-    let value: Double
-    let metric: ActivityChartMetric
-}
-
-struct ActivityChartsSection: View {
-    let samples: [V1ActivityStreamSample]
-    let metrics: [ActivityChartMetric]
-    @Binding var selection: [ActivityChartMetric]
-    let tone: Color
-
-    /// Monochrome (ADR-085): the first curve ink, the second lime — told apart by position.
-    private func color(for metric: ActivityChartMetric) -> Color {
-        metric == selection.first ? SharpitColor.foreground : SharpitColor.highlight
-    }
-
-    /// Keeps the selection to what this session recorded, so a ride without heart rate opens on
-    /// its first curve instead of an empty chart.
-    private func reconcile(with available: [ActivityChartMetric]) {
-        selection = selection.filter { available.contains($0) }
-        if selection.isEmpty, let first = available.first {
-            selection = [first]
-        }
-    }
-
-    private func points(for metric: ActivityChartMetric) -> [ActivityChartPoint] {
-        samples.enumerated().compactMap { index, sample in
-            guard let value = metric.value(for: sample), value.isFinite else { return nil }
-            return ActivityChartPoint(id: index, time: sample.t / 60, value: value, metric: metric)
-        }
-    }
-
-    private func domain(for metric: ActivityChartMetric) -> ClosedRange<Double> {
-        let values = points(for: metric).map(\.value)
-        guard let minValue = values.min(), let maxValue = values.max() else { return 0...1 }
-        let margin = maxValue == minValue ? Swift.max(maxValue * 0.08, 0.08) : (maxValue - minValue) * 0.12
-        return Swift.max(0, minValue - margin)...(maxValue + margin)
-    }
-
-    private var timeDomain: ClosedRange<Double> {
-        let times = samples.map { $0.t / 60 }
-        guard let first = times.min(), let last = times.max(), first < last else { return 0...1 }
-        return first...last
-    }
-
-    private func axisValues(for metric: ActivityChartMetric) -> [String] {
-        let range = domain(for: metric)
-        return [range.upperBound, (range.lowerBound + range.upperBound) / 2, range.lowerBound]
-            .map { metric.formatted($0) }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(title: String(localized: "Courbes"), symbol: "waveform.path.ecg", showsChevron: false) {
-                // A swatch carries the curve's colour; the unit stays legible in muted ink.
-                HStack(spacing: SharpitSpacing.sm) {
-                    ForEach(selection) { metric in
-                        HStack(spacing: 4) {
-                            Capsule().fill(color(for: metric)).frame(width: 12, height: 4)
-                            Text(metric.unit)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                    }
-                }
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(metrics) { metric in
-                        Button {
-                            if selection.contains(metric) {
-                                if selection.count > 1 {
-                                    selection.removeAll { $0 == metric }
-                                }
-                            } else if selection.count < 2 {
-                                selection.append(metric)
-                            }
-                        } label: {
-                            ActivityMetricToggleLabel(metric: metric, isSelected: selection.contains(metric))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-            .onAppear { reconcile(with: metrics) }
-            .onChange(of: metrics) { _, available in reconcile(with: available) }
-
-            if selection.contains(where: { points(for: $0).count > 1 }) {
-                HStack(alignment: .top, spacing: 6) {
-                    if let first = selection.first {
-                        ActivityChartAxisLabels(values: axisValues(for: first), alignment: .trailing)
-                    }
-                    ZStack {
-                        if let first = selection.first {
-                        Chart(points(for: first)) { point in
-                            LineMark(
-                                x: .value(String(localized: "Temps"), point.time),
-                                y: .value(first.unit, point.value)
-                            )
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(color(for: first))
-                            .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        }
-                        .chartXScale(domain: timeDomain)
-                        .chartYScale(domain: domain(for: first))
-                        .chartYAxis(.hidden)
-                        .chartXAxis {
-                            AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                                AxisGridLine().foregroundStyle(.secondary.opacity(0.12))
-                                AxisValueLabel {
-                                    if let minutes = value.as(Double.self) {
-                                        Text("\(Int(minutes))′")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if selection.count > 1 {
-                        let second = selection[1]
-                        Chart(points(for: second)) { point in
-                            LineMark(
-                                x: .value(String(localized: "Temps"), point.time),
-                                y: .value(second.unit, point.value)
-                            )
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(color(for: second))
-                            .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        }
-                        .chartXScale(domain: timeDomain)
-                        .chartYScale(domain: domain(for: second))
-                        .chartXAxis(.hidden)
-                        .chartYAxis(.hidden)
-                    }
-                    }
-                    .frame(maxWidth: .infinity)
-                    if selection.count > 1 {
-                        let second = selection[1]
-                        ActivityChartAxisLabels(values: axisValues(for: second), alignment: .leading)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 190)
-                .clipped()
-            } else {
-                Text("Pas assez de données pour afficher cette courbe.")
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .frame(maxWidth: .infinity, minHeight: 150, alignment: .center)
-            }
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-    }
-}
-
-private struct ActivityChartAxisLabels: View {
-    let values: [String]
-    let alignment: HorizontalAlignment
-
-    var body: some View {
-        VStack(alignment: alignment, spacing: 0) {
-            ForEach(values.indices, id: \.self) { index in
-                Text(values[index])
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .frame(maxHeight: .infinity, alignment: index == 0 ? .top : index == values.count - 1 ? .bottom : .center)
-            }
-        }
-        .frame(width: 34, height: 155)
-        .padding(.top, 3)
-    }
-}
-
-private struct ActivityMetricToggleLabel: View {
-    let metric: ActivityChartMetric
-    let isSelected: Bool
-
-    var body: some View {
-        Text(metric.label)
-            .font(SharpitTypography.bodyEmphasis.weight(.semibold))
-            .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
-            .padding(.horizontal, SharpitSpacing.sm)
-            .frame(height: SharpitSpacing.minimumTouchTarget)
-            .background(isSelected ? SharpitColor.primary : SharpitColor.chipSurface, in: Capsule())
     }
 }
 
