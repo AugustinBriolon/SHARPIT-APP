@@ -1989,6 +1989,7 @@
       }
     },
     "%lld h" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3110,6 +3111,22 @@
         }
       }
     },
+    "1 h à 2 h" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 h to 2 h"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 h à 2 h"
+          }
+        }
+      }
+    },
     "1 jour" : {
       "localizations" : {
         "en" : {
@@ -3510,6 +3527,22 @@
         }
       }
     },
+    "30 min à 1 h" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 min to 1 h"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 min à 1 h"
+          }
+        }
+      }
+    },
     "72,0" : {
       "localizations" : {
         "en" : {
@@ -3682,6 +3715,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "à l'instant"
+          }
+        }
+      }
+    },
+    "À propos de mon alimentation : " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About my nutrition: "
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À propos de mon alimentation : "
           }
         }
       }
@@ -4294,6 +4343,22 @@
         }
       }
     },
+    "Adapte ma semaine : " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust my week: "
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adapte ma semaine : "
+          }
+        }
+      }
+    },
     "Adresse e-mail" : {
       "localizations" : {
         "en" : {
@@ -4418,6 +4483,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Afficher %@"
+          }
+        }
+      }
+    },
+    "Afficher le mot de passe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show password"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher le mot de passe"
           }
         }
       }
@@ -5177,6 +5258,22 @@
         }
       }
     },
+    "Ajuste ma séance d'aujourd'hui : " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust today's session: "
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuste ma séance d'aujourd'hui : "
+          }
+        }
+      }
+    },
     "Ajuster le planning" : {
       "localizations" : {
         "en" : {
@@ -5189,6 +5286,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajuster le planning"
+          }
+        }
+      }
+    },
+    "Ajuster ma semaine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust my week"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuster ma semaine"
+          }
+        }
+      }
+    },
+    "Ajuster une séance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust a session"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuster une séance"
           }
         }
       }
@@ -8844,6 +8973,22 @@
         }
       }
     },
+    "Ce que ça change" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What it changes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce que ça change"
+          }
+        }
+      }
+    },
     "Ce que ça implique" : {
       "localizations" : {
         "en" : {
@@ -11760,6 +11905,22 @@
         }
       }
     },
+    "Connexion impossible. Vérifie ton réseau et réessaie." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't connect. Check your network and try again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexion impossible. Vérifie ton réseau et réessaie."
+          }
+        }
+      }
+    },
     "Connexion instantanée · Données synchronisées" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -13634,6 +13795,22 @@
         }
       }
     },
+    "Démarrer une demande" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a request"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Démarrer une demande"
+          }
+        }
+      }
+    },
     "Démonstration de l’exercice" : {
       "localizations" : {
         "en" : {
@@ -14078,6 +14255,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Des nombres entiers. Les grammes suivent ton énergie."
+          }
+        }
+      }
+    },
+    "Désactive ton compte immédiatement. La suppression définitive de tes données interviendra après un délai de grâce de 14 jours." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deactivates your account immediately. Your data is permanently deleted after a 14-day grace period."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désactive ton compte immédiatement. La suppression définitive de tes données interviendra après un délai de grâce de 14 jours."
           }
         }
       }
@@ -15284,6 +15477,7 @@
       }
     },
     "Efface ton compte et toutes tes données, tout de suite. Pour les garder, exporte-les d'abord, juste au-dessus." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -15888,6 +16082,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "En mouvement"
+          }
+        }
+      }
+    },
+    "En parler au coach" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talk to the coach about it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En parler au coach"
           }
         }
       }
@@ -20648,6 +20858,70 @@
         }
       }
     },
+    "Je ne peux pas m'entraîner" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can't train"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je ne peux pas m'entraîner"
+          }
+        }
+      }
+    },
+    "Je ne peux pas m'entraîner " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can't train "
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je ne peux pas m'entraîner "
+          }
+        }
+      }
+    },
+    "Je suis fatigué ou blessé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'm tired or injured"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je suis fatigué ou blessé"
+          }
+        }
+      }
+    },
+    "Je suis fatigué ou blessé : " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'm tired or injured: "
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je suis fatigué ou blessé : "
+          }
+        }
+      }
+    },
     "Jeu" : {
       "localizations" : {
         "en" : {
@@ -23001,6 +23275,7 @@
       }
     },
     "Le statut n'a pas pu être changé." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24666,6 +24941,22 @@
         }
       }
     },
+    "Masquer le mot de passe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide password"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer le mot de passe"
+          }
+        }
+      }
+    },
     "Massage" : {
       "localizations" : {
         "en" : {
@@ -25466,6 +25757,22 @@
         }
       }
     },
+    "Modification non enregistrée." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change not saved."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modification non enregistrée."
+          }
+        }
+      }
+    },
     "Modifie la quantité ou le repas" : {
       "localizations" : {
         "en" : {
@@ -25658,6 +25965,22 @@
         }
       }
     },
+    "Moins de 30 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under 30 min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moins de 30 min"
+          }
+        }
+      }
+    },
     "Mollet" : {
       "localizations" : {
         "en" : {
@@ -25750,6 +26073,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mot de passe"
+          }
+        }
+      }
+    },
+    "Mot de passe incorrect, ou compte introuvable. Réessaie." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wrong password, or account not found. Try again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mot de passe incorrect, ou compte introuvable. Réessaie."
           }
         }
       }
@@ -26396,6 +26735,7 @@
       }
     },
     "Norme basse" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -26412,6 +26752,7 @@
       }
     },
     "Norme haute" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -28299,6 +28640,22 @@
         }
       }
     },
+    "Parler de ma nutrition" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talk about my nutrition"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parler de ma nutrition"
+          }
+        }
+      }
+    },
     "Parts" : {
       "localizations" : {
         "en" : {
@@ -29402,6 +29759,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plus d'échange pour l'instant · de nouveau %@"
+          }
+        }
+      }
+    },
+    "Plus de 2 h" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Over 2 h"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus de 2 h"
           }
         }
       }
@@ -34531,6 +34904,22 @@
         }
       }
     },
+    "Se connecter avec un mot de passe à la place" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in with a password instead"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se connecter avec un mot de passe à la place"
+          }
+        }
+      }
+    },
     "Se coucher à la même heure compte autant que la durée." : {
       "localizations" : {
         "en" : {
@@ -36885,6 +37274,22 @@
         }
       }
     },
+    "Statut non enregistré." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status not saved."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statut non enregistré."
+          }
+        }
+      }
+    },
     "Strain du jour · 0–21" : {
       "localizations" : {
         "en" : {
@@ -38647,6 +39052,7 @@
       }
     },
     "Tes activités, ton plan, tes objectifs et ton profil sont effacés, et tes connexions Strava, Withings et autres sont révoquées. C'est irréversible." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -39394,6 +39800,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ton compte"
+          }
+        }
+      }
+    },
+    "Ton compte sera désactivé immédiatement et tes connexions Strava, Withings et autres révoquées. Tu auras un délai de grâce de 14 jours pour changer d'avis et réactiver ton compte en te reconnectant avant la suppression définitive de toutes tes données." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your account will be deactivated immediately and your Strava, Withings and other connections revoked. You have a 14-day grace period to change your mind and reactivate your account by signing back in before all your data is permanently deleted."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton compte sera désactivé immédiatement et tes connexions Strava, Withings et autres révoquées. Tu auras un délai de grâce de 14 jours pour changer d'avis et réactiver ton compte en te reconnectant avant la suppression définitive de toutes tes données."
           }
         }
       }
@@ -40261,6 +40683,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tout SharpIt est ouvert pour toi."
+          }
+        }
+      }
+    },
+    "Toutes les durées" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All durations"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toutes les durées"
           }
         }
       }
@@ -42202,6 +42640,7 @@
       }
     },
     "VFC" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

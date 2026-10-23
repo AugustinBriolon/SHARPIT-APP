@@ -445,7 +445,7 @@ private struct SleepHistorySection: View {
                 points: nights.map { SharpitScrubPoint(date: $0.date, value: $0.minutes / 60) },
                 kind: .bars,
                 target: targetMin / 60,
-                targetLabel: "cible \(SleepReadout.duration(targetMin))",
+                targetLabel: String(localized: "cible \(SleepReadout.duration(targetMin))"),
                 barTint: { $0 * 60 >= targetMin ? SharpitColor.foreground : SharpitColor.signalCaution },
                 axisName: String(localized: "Heures"),
                 yAxisStride: 2,

@@ -149,7 +149,7 @@ struct CorpsMetricDrawer: View {
             points: points.map { SharpitScrubPoint(date: $0.date, value: $0.value) },
             band: metric.baseline,
             target: target,
-            targetLabel: target.map { "cible \(CorpsReadout.format($0, for: metric.key))" },
+            targetLabel: target.map { String(localized: "cible \(CorpsReadout.format($0, for: metric.key))") },
             axisName: metric.key.label,
             height: 220,
             redrawToken: redrawToken,
