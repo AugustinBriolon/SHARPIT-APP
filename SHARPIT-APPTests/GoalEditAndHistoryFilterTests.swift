@@ -119,6 +119,28 @@ private let history: [V1ActivityListItem] = [
     #expect(filter.narrows)
 }
 
+@Test func aDurationBucketKeepsOnlySessionsOfThatLength() {
+    let timed = [
+        V1ActivityListItem(id: "s", type: .run, date: now, title: nil, duration: 1_200),
+        V1ActivityListItem(id: "m", type: .run, date: now, title: nil, duration: 1_800),
+        V1ActivityListItem(id: "l", type: .bike, date: now, title: nil, duration: 5_400),
+        V1ActivityListItem(id: "x", type: .bike, date: now, title: nil, duration: 9_000),
+        V1ActivityListItem(id: "n", type: .other, date: now, title: nil, duration: nil),
+    ]
+    var filter = ActivityFilter()
+    #expect(filter.apply(to: timed, now: now).count == 5)
+
+    filter.effortTime = .short
+    #expect(filter.apply(to: timed, now: now).map(\.id) == ["s"])
+    filter.effortTime = .medium
+    #expect(filter.apply(to: timed, now: now).map(\.id) == ["m"])
+    filter.effortTime = .long
+    #expect(filter.apply(to: timed, now: now).map(\.id) == ["l"])
+    filter.effortTime = .veryLong
+    #expect(filter.apply(to: timed, now: now).map(\.id) == ["x"])
+    #expect(filter.narrows)
+}
+
 @Test func theSearchIgnoresCaseAndAccents() {
     var filter = ActivityFilter()
     filter.query = "fractionne"

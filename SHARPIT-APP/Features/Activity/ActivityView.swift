@@ -552,12 +552,19 @@ private struct ActivityFilterMenu: View {
                 }
             }
             .pickerStyle(.menu)
+            Picker("Durée", selection: $filter.effortTime.animation(SharpitMotion.selection)) {
+                ForEach(ActivityFilter.EffortTime.allCases) { effortTime in
+                    Text(effortTime.label).tag(effortTime)
+                }
+            }
+            .pickerStyle(.menu)
             if filter.narrows {
                 Divider()
                 Button("Réinitialiser les filtres", systemImage: "arrow.counterclockwise") {
                     SharpitMotion.run(SharpitMotion.selection) {
                         filter.sport = nil
                         filter.period = .all
+                        filter.effortTime = .any
                     }
                 }
             }
@@ -568,6 +575,7 @@ private struct ActivityFilterMenu: View {
                     ? "line.3.horizontal.decrease.circle.fill"
                     : "line.3.horizontal.decrease.circle"
             )
+            .foregroundStyle(SharpitColor.foreground)
         }
         .accessibilityValue(filter.narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
     }

@@ -5,7 +5,43 @@ import Foundation
 nonisolated struct ActivityFilter: Equatable, Sendable {
     var sport: V1ActivityType?
     var period: Period = .all
+    var effortTime: EffortTime = .any
     var query = ""
+
+    /// How long the session lasted, in buckets an athlete thinks in.
+    enum EffortTime: String, CaseIterable, Identifiable, Sendable {
+        case any, short, medium, long, veryLong
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .any: String(localized: "Toutes les durées")
+            case .short: String(localized: "Moins de 30 min")
+            case .medium: String(localized: "30 min à 1 h")
+            case .long: String(localized: "1 h à 2 h")
+            case .veryLong: String(localized: "Plus de 2 h")
+            }
+        }
+
+        /// Seconds, lower bound kept, upper bound dropped.
+        private var seconds: Range<Double> {
+            switch self {
+            case .any: 0..<Double.infinity
+            case .short: 0..<1_800
+            case .medium: 1_800..<3_600
+            case .long: 3_600..<7_200
+            case .veryLong: 7_200..<Double.infinity
+            }
+        }
+
+        /// A session without a duration is kept by no bucket but `any`.
+        func keeps(_ duration: Double?) -> Bool {
+            guard self != .any else { return true }
+            guard let duration else { return false }
+            return seconds.contains(duration)
+        }
+    }
 
     enum Period: String, CaseIterable, Identifiable, Sendable {
         case week, month, quarter, year, all
@@ -35,8 +71,8 @@ nonisolated struct ActivityFilter: Equatable, Sendable {
         }
     }
 
-    /// Sport or period chosen; the search field shows its own state.
-    var narrows: Bool { sport != nil || period != .all }
+    /// Sport, period or duration chosen; the search field shows its own state.
+    var narrows: Bool { sport != nil || period != .all || effortTime != .any }
 
     var isActive: Bool { narrows || !trimmedQuery.isEmpty }
 
@@ -48,6 +84,7 @@ nonisolated struct ActivityFilter: Equatable, Sendable {
         return activities.filter { activity in
             if let sport, activity.type != sport { return false }
             if let start, activity.date < start { return false }
+            if !effortTime.keeps(activity.duration) { return false }
             if !words.isEmpty {
                 let haystack = [activity.title, activity.type.label].compactMap { $0 }.joined(separator: " ")
                 if haystack.range(of: words, options: [.caseInsensitive, .diacriticInsensitive]) == nil { return false }
