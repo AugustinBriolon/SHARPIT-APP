@@ -123,31 +123,29 @@ struct ActivityFormSheet: View {
     }
 }
 
-/// The fields of a done session, in the order the athlete remembers it: what, when, how long,
-/// what the watch would have said, then how it felt.
+/// The fields of a done session, in the order the athlete remembers it: what and how long on the
+/// ink plate, when, what the watch would have said, then how it felt.
 private struct ActivityFormContent: View {
     @Binding var draft: ActivityDraft
     let requirement: String?
     let failure: String?
 
-    private let grid = Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3)
-    private let rpeGrid = Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xxs), count: 5)
+    private let durationPresets = [30, 45, 60, 90, 120]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                sportPicker
-                SharpitFormField(String(localized: "Titre (facultatif)"), placeholder: draft.sport.label, text: $draft.title)
-                whenField
-                durationField
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                plate
+                whenCard
                 if draft.isStrength {
                     StrengthExercisesEditor(exercises: $draft.exercises)
+                        .padding(SharpitSpacing.cardPadding)
+                        .sharpitSurface(.panel)
                 } else if draft.measuresDistance || draft.measuresElevation {
-                    measures
+                    measuresCard
                 }
-                rpePicker
-                feelingPicker
-                notesField
+                effortCard
+                detailsCard
                 messages
             }
             .padding(SharpitSpacing.pageInset)
@@ -157,46 +155,165 @@ private struct ActivityFormContent: View {
         .background(SharpitCanvasBackground())
     }
 
-    private var sportPicker: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(String(localized: "Sport"))
+    // MARK: - Plate
+
+    /// The sport and the time, big, with what they add up to while it is typed.
+    private var plate: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            sportMenu
+            durationReadout
+            durationPresetRow
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.ink)
+    }
+
+    private var sportMenu: some View {
+        Menu {
             Picker("Sport", selection: $draft.sport) {
                 ForEach(ActivityDraft.sports, id: \.self) { sport in
                     Label { Text(sport.label) } icon: { Image(sharpitSymbol: sport.symbolName) }.tag(sport)
                 }
             }
-            .pickerStyle(.menu)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitFieldWell()
+        } label: {
+            HStack(spacing: SharpitSpacing.xs) {
+                Image(sharpitSymbol: draft.sport.symbolName)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .frame(width: 40, height: 40)
+                    .background(SharpitColor.highlight, in: Circle())
+                    .contentTransition(.symbolEffect(.replace))
+                Text(draft.sport.label)
+                    .font(SharpitTypography.cardTitle)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.6))
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Sport")
+        .accessibilityValue(draft.sport.label)
+    }
+
+    private var durationReadout: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            stepButton(symbol: "minus", label: String(localized: "Moins 5 minutes")) { draft.adjustDuration(by: -5) }
+            VStack(spacing: 2) {
+                Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? "—")
+                    .font(SharpitTypography.heroScore)
+                    .tracking(SharpitTypography.heroScoreTracking)
+                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                    .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                summary
+            }
+            .frame(maxWidth: .infinity)
+            stepButton(symbol: "plus", label: String(localized: "Plus 5 minutes")) { draft.adjustDuration(by: 5) }
         }
     }
 
-    private var whenField: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+    /// « 10 km · 5:30 /km »: the distance and the pace the time makes, once they can be told.
+    @ViewBuilder
+    private var summary: some View {
+        let parts = [draft.measuresDistance && !draft.distanceText.isEmpty ? "\(draft.distanceText) \(draft.distanceUnit)" : nil, draft.paceText]
+            .compactMap { $0 }
+        if !parts.isEmpty {
+            Text(parts.joined(separator: " · "))
+                .font(SharpitTypography.bodyEmphasis)
+                .monospacedDigit()
+                .foregroundStyle(SharpitColor.inkAccent)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
+    private func stepButton(symbol: String, label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            SharpitMotion.run(SharpitMotion.selection, action)
+            SharpitHaptics.play(.notch(major: false))
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
+                .background(SharpitColor.inkSurfaceForeground.opacity(0.12), in: Circle())
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel(label)
+    }
+
+    private var durationPresetRow: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: SharpitSpacing.xs) {
+                ForEach(durationPresets, id: \.self) { minutes in
+                    let isSelected = draft.durationMin == minutes
+                    Button {
+                        SharpitMotion.run(SharpitMotion.selection) { draft.durationMin = minutes }
+                    } label: {
+                        Text(PlannedSessionFormat.duration(minutes))
+                            .font(SharpitTypography.bodyEmphasis)
+                            .monospacedDigit()
+                            .foregroundStyle(isSelected ? SharpitColor.highlightForeground : SharpitColor.inkSurfaceForeground)
+                            .padding(.horizontal, SharpitSpacing.sm)
+                            .frame(minHeight: 36)
+                            .background(
+                                isSelected ? SharpitColor.highlight : SharpitColor.inkSurfaceForeground.opacity(0.12),
+                                in: Capsule()
+                            )
+                    }
+                    .buttonStyle(.sharpitPressable)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Cards
+
+    private var whenCard: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitFieldLabel(String(localized: "Quand"))
+            SharpitSegmentedChoice(
+                options: [0, 1, 2],
+                label: dayLabel,
+                selection: Binding(
+                    get: { dayOffset },
+                    set: { if let days = $0 { draft.move(toDaysAgo: days) } }
+                )
+            )
             DatePicker("Début", selection: $draft.date, in: ...Date.now, displayedComponents: [.date, .hourAndMinute])
                 .font(SharpitTypography.body)
                 .sharpitFieldWell()
         }
         .tint(SharpitColor.primary)
         .environment(\.locale, AppLanguage.locale)
+        .padding(SharpitSpacing.cardPadding)
+        .sharpitSurface(.panel)
     }
 
-    private var durationField: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(String(localized: "Durée"))
-            Stepper(value: duration, in: 5...1440, step: 5) {
-                Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? String(localized: "Non précisée"))
-                    .font(SharpitTypography.body)
-                    .monospacedDigit()
-                    .foregroundStyle(draft.durationMin == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
-                    .contentTransition(.numericText())
-            }
-            .sharpitFieldWell()
+    /// 0, 1 or 2 when the session sits on today, yesterday or the day before; nil elsewhere.
+    private var dayOffset: Int? {
+        let days = Calendar.current.dateComponents(
+            [.day],
+            from: Calendar.current.startOfDay(for: draft.date),
+            to: Calendar.current.startOfDay(for: .now)
+        ).day
+        return days.flatMap { (0...2).contains($0) ? $0 : nil }
+    }
+
+    private func dayLabel(_ daysAgo: Int) -> String {
+        switch daysAgo {
+        case 0: String(localized: "Aujourd’hui")
+        case 1: String(localized: "Hier")
+        default: String(localized: "Avant-hier")
         }
     }
 
-    private var measures: some View {
+    private var measuresCard: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             if draft.measuresDistance {
                 SharpitFormField(
@@ -206,17 +323,6 @@ private struct ActivityFormContent: View {
                     keyboard: .decimalPad
                 )
             }
-            if let pace = draft.paceText {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    SharpitFieldLabel(String(localized: "Allure"))
-                    Text(pace)
-                        .font(SharpitTypography.body)
-                        .monospacedDigit()
-                        .foregroundStyle(SharpitColor.foreground)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .sharpitFieldWell()
-                }
-            }
             if draft.measuresElevation {
                 SharpitFormField(String(localized: "Dénivelé positif (m)"), placeholder: "120", text: $draft.elevationText, keyboard: .numberPad)
             }
@@ -224,53 +330,117 @@ private struct ActivityFormContent: View {
                 SharpitFormField(String(localized: "FC moyenne (bpm)"), placeholder: "145", text: $draft.avgHrText, keyboard: .numberPad)
             }
         }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
         .transition(.opacity)
     }
 
-    private var rpePicker: some View {
+    private var effortCard: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            rpeSlider
+            feelingRow
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+    }
+
+    private var rpeSlider: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(String(localized: "Effort perçu (RPE)"))
-            LazyVGrid(columns: rpeGrid, spacing: SharpitSpacing.xxs) {
-                ForEach(1...10, id: \.self) { value in
-                    OnboardingChoiceChip(title: "\(value)", isSelected: draft.rpe == value) {
-                        // A second tap on the pick takes it back: the effort is optional.
-                        SharpitMotion.run(SharpitMotion.selection) { draft.rpe = draft.rpe == value ? nil : value }
+            HStack(alignment: .firstTextBaseline) {
+                SharpitFieldLabel(String(localized: "Effort perçu (RPE)"))
+                Spacer()
+                if let rpe = draft.rpe {
+                    Text("\(rpe)/10 · \(ActivityDraft.effortWord(rpe))")
+                        .font(SharpitTypography.bodyEmphasis)
+                        .monospacedDigit()
+                        .foregroundStyle(SharpitColor.foreground)
+                        .contentTransition(.numericText(value: Double(rpe)))
+                    Button {
+                        SharpitMotion.run(SharpitMotion.selection) { draft.rpe = nil }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(SharpitColor.mutedForeground)
                     }
-                    .accessibilityLabel("Effort \(value) sur 10")
+                    .buttonStyle(.sharpitPressable)
+                    .accessibilityLabel("Effacer l’effort")
+                } else {
+                    Text("Non précisé")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
                 }
             }
+            Slider(
+                value: Binding(
+                    get: { Double(draft.rpe ?? 5) },
+                    set: { value in
+                        let next = Int(value.rounded())
+                        guard next != draft.rpe else { return }
+                        draft.rpe = next
+                        SharpitHaptics.play(.notch(major: next % 5 == 0))
+                    }
+                ),
+                in: 1...10,
+                step: 1
+            )
+            .tint(SharpitColor.highlight)
+            .opacity(draft.rpe == nil ? 0.5 : 1)
+            .accessibilityLabel("Effort perçu")
+            .accessibilityValue(draft.rpe.map { "\($0) sur 10" } ?? String(localized: "Non précisé"))
         }
     }
 
-    private var feelingPicker: some View {
+    private var feelingRow: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             SharpitFieldLabel(String(localized: "Ressenti"))
-            LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
+            HStack(spacing: SharpitSpacing.xxs) {
                 ForEach(SessionFeeling.allCases) { feeling in
-                    OnboardingChoiceChip(title: feeling.storedValue, isSelected: draft.feeling == feeling) {
+                    let isSelected = draft.feeling == feeling
+                    Button {
                         SharpitMotion.run(SharpitMotion.selection) {
-                            draft.feeling = draft.feeling == feeling ? nil : feeling
+                            draft.feeling = isSelected ? nil : feeling
                         }
+                    } label: {
+                        Text(feeling.emoji)
+                            .font(.system(size: 26))
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .background(
+                                isSelected ? SharpitColor.highlight : SharpitColor.analysisSurfaceAlt,
+                                in: RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
+                            )
+                            .scaleEffect(isSelected ? 1.06 : 1)
                     }
+                    .buttonStyle(.sharpitPressable)
+                    .accessibilityLabel(feeling.storedValue)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
             if let feeling = draft.feeling {
-                Text(feeling.hint)
+                Text("\(feeling.storedValue) — \(feeling.hint)")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
+                    .transition(.opacity)
             }
         }
+        .animation(SharpitMotion.selection, value: draft.feeling)
     }
 
-    private var notesField: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(String(localized: "Notes"))
-            TextField("Ce qu’il faut retenir de la séance", text: $draft.notes, axis: .vertical)
-                .font(SharpitTypography.body)
-                .lineLimit(3...8)
-                .padding(.vertical, SharpitSpacing.sm)
-                .sharpitFieldWell()
+    private var detailsCard: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            SharpitFormField(String(localized: "Titre (facultatif)"), placeholder: draft.sport.label, text: $draft.title)
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                SharpitFieldLabel(String(localized: "Notes"))
+                TextField("Ce qu’il faut retenir de la séance", text: $draft.notes, axis: .vertical)
+                    .font(SharpitTypography.body)
+                    .lineLimit(3...8)
+                    .padding(.vertical, SharpitSpacing.sm)
+                    .sharpitFieldWell()
+            }
         }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
     }
 
     @ViewBuilder
@@ -285,10 +455,6 @@ private struct ActivityFormContent: View {
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.mutedForeground)
         }
-    }
-
-    private var duration: Binding<Int> {
-        Binding(get: { draft.durationMin ?? 45 }, set: { draft.durationMin = $0 })
     }
 }
 

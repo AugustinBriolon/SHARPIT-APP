@@ -173,3 +173,40 @@ private extension Date {
         (try? Date.fromAPI(text)) ?? .distantPast
     }
 }
+
+@Test func durationStepsStayInsideTheRange() {
+    var draft = ActivityDraft(date: .now)
+    draft.durationMin = nil
+    draft.adjustDuration(by: 5)
+    #expect(draft.durationMin == 50)
+    draft.durationMin = 5
+    draft.adjustDuration(by: -5)
+    #expect(draft.durationMin == 5)
+    draft.durationMin = 1440
+    draft.adjustDuration(by: 5)
+    #expect(draft.durationMin == 1440)
+}
+
+@Test func movingTheDayKeepsTheTimeOfDay() {
+    let calendar = Calendar.current
+    let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 23, hour: 20, minute: 0))!
+    let started = calendar.date(from: DateComponents(year: 2026, month: 10, day: 23, hour: 7, minute: 30))!
+    var draft = ActivityDraft(date: started)
+    draft.move(toDaysAgo: 1, now: now)
+    let parts = calendar.dateComponents([.day, .hour, .minute], from: draft.date)
+    #expect(parts.day == 22 && parts.hour == 7 && parts.minute == 30)
+}
+
+@Test func movingToTodayNeverLandsInTheFuture() {
+    let calendar = Calendar.current
+    let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 23, hour: 8, minute: 0))!
+    let started = calendar.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 18, minute: 0))!
+    var draft = ActivityDraft(date: started)
+    draft.move(toDaysAgo: 0, now: now)
+    #expect(draft.date == now)
+}
+
+@Test func effortWordsCoverTheScale() {
+    #expect(ActivityDraft.effortWord(1) != ActivityDraft.effortWord(10))
+    #expect((1...10).allSatisfy { !ActivityDraft.effortWord($0).isEmpty })
+}

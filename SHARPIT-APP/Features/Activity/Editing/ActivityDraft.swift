@@ -73,6 +73,35 @@ struct ActivityDraft: Equatable {
         guard let paceSeconds, let total = Int(exactly: paceSeconds.rounded()) else { return nil }
         return String(format: "%d:%02d %@", total / 60, total % 60, paceUnit)
     }
+    static let durationRange = 5...1440
+
+    /// The word for an RPE on the 1–10 scale.
+    static func effortWord(_ rpe: Int) -> String {
+        switch rpe {
+        case ...2: String(localized: "Très facile")
+        case 3...4: String(localized: "Facile")
+        case 5...6: String(localized: "Modéré")
+        case 7...8: String(localized: "Difficile")
+        default: String(localized: "Maximal")
+        }
+    }
+
+    /// Moves the duration by `minutes`, starting from 45 when none is set, kept inside the range.
+    mutating func adjustDuration(by minutes: Int) {
+        let next = (durationMin ?? 45) + minutes
+        durationMin = min(max(next, Self.durationRange.lowerBound), Self.durationRange.upperBound)
+    }
+
+    /// Puts the session on the day `daysAgo` days back, keeping its time of day.
+    mutating func move(toDaysAgo daysAgo: Int, now: Date = .now, calendar: Calendar = .current) {
+        guard let day = calendar.date(byAdding: .day, value: -daysAgo, to: now) else { return }
+        let time = calendar.dateComponents([.hour, .minute], from: date)
+        var parts = calendar.dateComponents([.year, .month, .day], from: day)
+        parts.hour = time.hour
+        parts.minute = time.minute
+        if let moved = calendar.date(from: parts) { date = min(moved, now) }
+    }
+
     var measuresElevation: Bool { [.run, .bike, .hike].contains(sport) }
     var measuresHeartRate: Bool { [.run, .hike].contains(sport) }
     var isStrength: Bool { sport == .strength }
