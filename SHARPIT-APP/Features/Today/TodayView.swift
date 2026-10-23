@@ -904,7 +904,8 @@ private struct TodayFoldView: View {
                     tone: .success,
                     autoDismissAfter: 3.0
                 )
-                onSessionLinked()
+                // Résumé reads the day again from it, and Plan and Activité follow.
+                router.noteActivitiesChanged()
             }
         )
     }

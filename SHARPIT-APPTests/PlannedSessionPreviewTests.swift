@@ -256,3 +256,35 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
     #expect(card.brickLegMetrics?.map(\.label) == ["Vélo", "Course", "Total"])
     #expect(card.brickLegMetrics?.last?.value == "80")
 }
+
+/// A strength line from Résumé carries its exercises, so « Lancer la séance » shows as the
+/// drawer opens rather than after a read of the plan.
+@Test func aTodayStrengthLineCanBeFollowedAtOnce() throws {
+    let json = """
+    {
+      "id": "ps-1", "kind": "planned", "title": "Muscu haut du corps", "subtitle": null,
+      "metrics": [], "plannedSessionId": "ps-1",
+      "strengthPrescription": { "version": 1, "sets": [{ "exercise": "Développé couché", "sets": 4, "reps": 8 }] }
+    }
+    """
+    let session = try JSONDecoder().decode(V1TodaySession.self, from: Data(json.utf8))
+    let card = SessionCardModel(
+        id: session.id,
+        kind: .planned,
+        title: session.title,
+        subtitle: session.subtitle,
+        metrics: session.metrics,
+        sport: "Musculation",
+        priority: true,
+        plannedSessionId: session.plannedSessionId,
+        strengthPrescription: session.strengthPrescription
+    )
+
+    #expect(PlannedSessionPreview(card: card).canFollowOnPhone)
+}
+
+@Test func aTodayLineFromAnOlderServerStillDecodes() throws {
+    let json = #"{ "id": "s1", "kind": "planned", "title": "Seuil", "subtitle": null, "metrics": [] }"#
+    let session = try JSONDecoder().decode(V1TodaySession.self, from: Data(json.utf8))
+    #expect(session.strengthPrescription == nil)
+}

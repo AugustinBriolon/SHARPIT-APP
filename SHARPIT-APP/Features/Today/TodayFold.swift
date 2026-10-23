@@ -83,6 +83,8 @@ struct SessionCardModel: Sendable, Equatable, Identifiable {
     var isKey = false
     /// Why the coach wrote this session — Decision Memory rationale.
     var rationale: String? = nil
+    /// A planned strength session's exercises, when the server sent them.
+    var strengthPrescription: JSONValue? = nil
     /// A done session's match to its plan, 0–100.
     var complianceScore: Int? = nil
 }
@@ -198,6 +200,7 @@ enum TodayFoldMapper {
                     brickGroupId: session.brickGroupId,
                     isKey: session.isKey ?? false,
                     rationale: session.rationale,
+                    strengthPrescription: session.strengthPrescription,
                     complianceScore: session.complianceScore
                 )
             },

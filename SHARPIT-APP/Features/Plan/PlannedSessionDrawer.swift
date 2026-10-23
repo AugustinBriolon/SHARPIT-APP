@@ -182,10 +182,11 @@ extension PlannedSessionPreview {
             },
             notes: card.subtitle,
             rationale: card.rationale,
-            // Today's payload carries the line, not the prescription behind it. The
-            // breakdown arrives with the plan, so it is shown there.
+            // Today's payload carries the line and its exercises, not the steps behind it:
+            // the breakdown arrives with the plan, so it is shown there.
             steps: [],
             stepsAreDerived: false,
+            strengthPrescription: card.strengthPrescription,
             isKey: card.isKey
         )
     }
