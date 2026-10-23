@@ -110,7 +110,6 @@ struct PlanView: View {
                         onOpenMacroPlan: { showingMacroPlan = true },
                         onOpenGenerator: { router.isShowingPlanGenerator = true },
                         onOpenWeeklyReview: { router.isShowingWeeklyReview = true },
-                        onOpenAdapter: { showingAdapter = true },
                         onDiscussWithCoach: {
                             router.discussWithCoach(
                                 about: CoachDiscuss.describe(.planning(horizonDays: 7))
@@ -400,7 +399,6 @@ private struct PlanActionsMenu: View {
     let onOpenMacroPlan: () -> Void
     let onOpenGenerator: () -> Void
     let onOpenWeeklyReview: () -> Void
-    let onOpenAdapter: () -> Void
     let onDiscussWithCoach: () -> Void
 
     var body: some View {
@@ -414,9 +412,6 @@ private struct PlanActionsMenu: View {
             }
             Button(action: onOpenGenerator) {
                 Label("Remplir ma semaine", systemImage: "calendar.badge.plus")
-            }
-            Button(action: onOpenAdapter) {
-                Label("Ajuster le planning", systemImage: "slider.horizontal.3")
             }
             Button(action: onOpenWeeklyReview) {
                 Label("Bilan de la semaine", systemImage: "doc.text.magnifyingglass")

@@ -393,6 +393,8 @@ struct CoachView: View {
                     dictationBar
                 } else {
                     HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
+                        quickActionsMenu
+
                         TextField(
                             store.hasPendingApproval ? String(localized: "Réponds à la proposition, ou écris pour l'ignorer") : String(localized: "Pose ta question"),
                             text: $store.draft,
@@ -433,6 +435,30 @@ struct CoachView: View {
         .padding(.bottom, SharpitSpacing.sm)
         .animation(SharpitMotion.reveal, value: composerIsFocused)
         .animation(SharpitMotion.reveal, value: dictation.isListening)
+    }
+
+    /// « + », the mirror of the microphone: starting points that tag the conversation and open
+    /// the question, for the asks the coach answers best (adjusting a session or the week).
+    private var quickActionsMenu: some View {
+        Menu {
+            ForEach(CoachQuickAction.allCases) { action in
+                Button(action.label, systemImage: action.symbol) { start(action) }
+            }
+        } label: {
+            Image(systemName: "plus")
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .frame(width: Self.controlHeight, height: Self.controlHeight)
+                .sharpitGlassControl(in: Circle(), fallback: SharpitColor.radialTrack)
+        }
+        .disabled(store.isReplying)
+        .accessibilityLabel("Démarrer une demande")
+    }
+
+    private func start(_ action: CoachQuickAction) {
+        store.attach(action.context(trainingDayId: TrainingDayId.today()))
+        store.draft = action.draft
+        composerIsFocused = true
     }
 
     /// Full-width listening bar (field morphs away) — stop sits on the trailing edge.
