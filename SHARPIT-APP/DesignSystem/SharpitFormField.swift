@@ -81,9 +81,12 @@ struct SharpitSegmentedChoice<Option: Hashable>: View {
     @Binding var selection: Option?
 
     @Namespace private var thumb
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(spacing: 4) {
+        // At the accessibility sizes the options stack: side by side they broke mid-word.
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 4))
+        layout {
             ForEach(options, id: \.self) { option in
                 let isSelected = selection == option
                 Button {
@@ -92,6 +95,9 @@ struct SharpitSegmentedChoice<Option: Hashable>: View {
                     Text(label(option))
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .padding(.horizontal, SharpitSpacing.xs)
                         .frame(maxWidth: .infinity, minHeight: 42)
                         .background {
                             if isSelected {
@@ -107,7 +113,10 @@ struct SharpitSegmentedChoice<Option: Hashable>: View {
             }
         }
         .padding(4)
-        .background(Capsule().fill(SharpitColor.analysisSurfaceAlt))
+        .background(
+            RoundedRectangle(cornerRadius: typeSize.isAccessibilitySize ? 25 : 100, style: .continuous)
+                .fill(SharpitColor.analysisSurfaceAlt)
+        )
     }
 }
 

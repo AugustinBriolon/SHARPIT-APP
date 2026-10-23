@@ -50,7 +50,7 @@ struct ActivityStatusButton: View {
     }
 }
 
-private struct ActivityStatusDrawer: View {
+struct ActivityStatusDrawer: View {
     @Bindable var store: ActivityStatusStore
     @Environment(\.dismiss) private var dismiss
     @Environment(ShellRouter.self) private var router
@@ -59,6 +59,7 @@ private struct ActivityStatusDrawer: View {
     /// the athlete commits it.
     @State private var untilDate = ActivityStatusDate.defaultUntil()
     @State private var usesDeadline = false
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         NavigationStack {
@@ -118,9 +119,16 @@ private struct ActivityStatusDrawer: View {
                         .contentTransition(.opacity)
                 }
                 Spacer(minLength: 0)
-                if let until = untilLabel {
+                if let until = untilLabel, !typeSize.isAccessibilitySize {
                     SharpitPill(until, style: .lime)
                 }
+            }
+            // A pill never shrinks: beside the title at the largest sizes it pushed the plate off screen.
+            if let until = untilLabel, typeSize.isAccessibilitySize {
+                Text(until)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.inkAccent)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Text(status.planningImpact)
                 .font(SharpitTypography.body)
@@ -234,11 +242,14 @@ private struct ActivityStatusOptionRow: View {
     let status: ActivityStatusId
     let isSelected: Bool
     let onPick: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         Button(action: onPick) {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-                SharpitIconTile(symbol: status.symbolName, size: 40)
+                if !typeSize.isAccessibilitySize {
+                    SharpitIconTile(symbol: status.symbolName, size: 40)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(status.label)

@@ -131,6 +131,7 @@ private struct ActivityFormContent: View {
     let failure: String?
 
     private let durationPresets = [30, 45, 60, 90, 120]
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         ScrollView {
@@ -199,8 +200,21 @@ private struct ActivityFormContent: View {
     }
 
     private var durationReadout: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            stepButton(symbol: "minus", label: String(localized: "Moins 5 minutes")) { draft.adjustDuration(by: -5) }
+        let minus = stepButton(symbol: "minus", label: String(localized: "Moins 5 minutes")) { draft.adjustDuration(by: -5) }
+        let plus = stepButton(symbol: "plus", label: String(localized: "Plus 5 minutes")) { draft.adjustDuration(by: 5) }
+        return Group {
+            if typeSize.isAccessibilitySize {
+                VStack(spacing: SharpitSpacing.sm) {
+                    durationFigure
+                    HStack { minus; Spacer(); plus }
+                }
+            } else {
+                HStack(alignment: .center, spacing: SharpitSpacing.sm) { minus; durationFigure; plus }
+            }
+        }
+    }
+
+    private var durationFigure: some View {
             VStack(spacing: 2) {
                 Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? "—")
                     .font(SharpitTypography.heroScore)
@@ -212,8 +226,6 @@ private struct ActivityFormContent: View {
                 summary
             }
             .frame(maxWidth: .infinity)
-            stepButton(symbol: "plus", label: String(localized: "Plus 5 minutes")) { draft.adjustDuration(by: 5) }
-        }
     }
 
     /// « 10 km · 5:30 /km »: the distance and the pace the time makes, once they can be told.
@@ -226,6 +238,8 @@ private struct ActivityFormContent: View {
                 .font(SharpitTypography.bodyEmphasis)
                 .monospacedDigit()
                 .foregroundStyle(SharpitColor.inkAccent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
                 .transition(.opacity.combined(with: .move(edge: .top)))
         }
     }
@@ -245,31 +259,35 @@ private struct ActivityFormContent: View {
         .accessibilityLabel(label)
     }
 
+    /// Equal shares of the plate's width: a scrolled row cut its last preset at the edge.
     private var durationPresetRow: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: SharpitSpacing.xs) {
-                ForEach(durationPresets, id: \.self) { minutes in
-                    let isSelected = draft.durationMin == minutes
-                    Button {
-                        SharpitMotion.run(SharpitMotion.selection) { draft.durationMin = minutes }
-                    } label: {
-                        Text(PlannedSessionFormat.duration(minutes))
-                            .font(SharpitTypography.bodyEmphasis)
-                            .monospacedDigit()
-                            .foregroundStyle(isSelected ? SharpitColor.highlightForeground : SharpitColor.inkSurfaceForeground)
-                            .padding(.horizontal, SharpitSpacing.sm)
-                            .frame(minHeight: 36)
-                            .background(
-                                isSelected ? SharpitColor.highlight : SharpitColor.inkSurfaceForeground.opacity(0.12),
-                                in: Capsule()
-                            )
-                    }
-                    .buttonStyle(.sharpitPressable)
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+        let columns = Array(
+            repeating: GridItem(.flexible(), spacing: SharpitSpacing.xxs),
+            count: typeSize.isAccessibilitySize ? 2 : durationPresets.count
+        )
+        return LazyVGrid(columns: columns, spacing: SharpitSpacing.xxs) {
+            ForEach(durationPresets, id: \.self) { minutes in
+                let isSelected = draft.durationMin == minutes
+                Button {
+                    SharpitMotion.run(SharpitMotion.selection) { draft.durationMin = minutes }
+                } label: {
+                    Text(PlannedSessionFormat.duration(minutes))
+                        .font(SharpitTypography.bodyEmphasis)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .foregroundStyle(isSelected ? SharpitColor.highlightForeground : SharpitColor.inkSurfaceForeground)
+                        .padding(.horizontal, 4)
+                        .frame(maxWidth: .infinity, minHeight: 36)
+                        .background(
+                            isSelected ? SharpitColor.highlight : SharpitColor.inkSurfaceForeground.opacity(0.12),
+                            in: Capsule()
+                        )
                 }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-        .scrollIndicators(.hidden)
     }
 
     // MARK: - Cards
@@ -348,10 +366,14 @@ private struct ActivityFormContent: View {
 
     private var rpeSlider: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(alignment: .firstTextBaseline) {
+            let header = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: SharpitSpacing.xxs))
+                : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+            header {
                 SharpitFieldLabel(String(localized: "Effort perçu (RPE)"))
-                Spacer()
+                Spacer(minLength: 0)
                 if let rpe = draft.rpe {
+                    HStack(spacing: SharpitSpacing.xs) {
                     Text("\(rpe)/10 · \(ActivityDraft.effortWord(rpe))")
                         .font(SharpitTypography.bodyEmphasis)
                         .monospacedDigit()
@@ -365,6 +387,7 @@ private struct ActivityFormContent: View {
                     }
                     .buttonStyle(.sharpitPressable)
                     .accessibilityLabel("Effacer l’effort")
+                    }
                 } else {
                     Text("Non précisé")
                         .font(SharpitTypography.meta)

@@ -22,6 +22,7 @@ struct CoachView: View {
     /// The quota card, closed by the athlete; it comes back with the next question typed.
     @State private var isQuotaNoticeHidden = false
     @State private var showsQuickActions = false
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var scrollPosition = ScrollPosition(idType: String.self)
     @State private var dictation = CoachDictation()
     /// Set by a send, so only a question just asked rises to the top.
@@ -32,6 +33,7 @@ struct CoachView: View {
     #if DEBUG
     /// Questions asked by themselves, one after the other — the simulator demo only.
     var demoQuestions: [String] = []
+    var demoOpensQuickActions = false
     #endif
 
     init(
@@ -470,15 +472,33 @@ struct CoachView: View {
 
     /// The choices, rising from the « + » one after another; a pick closes them.
     private var quickActionsList: some View {
+        // Capped and scrolled: at the largest text the five choices ran past the top of the screen.
+        Group {
+            if typeSize.isAccessibilitySize {
+                ScrollView { quickActionsStack }
+                    .frame(height: 320)
+            } else {
+                quickActionsStack
+            }
+        }
+    }
+
+    private var quickActionsStack: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             ForEach(Array(CoachQuickAction.allCases.enumerated()), id: \.element) { index, action in
                 Button { start(action) } label: {
                     Label(action.label, systemImage: action.symbol)
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, SharpitSpacing.md)
+                        .padding(.vertical, SharpitSpacing.xs)
                         .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                        .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.chipSurface)
+                        .sharpitGlassControl(
+                            in: RoundedRectangle(cornerRadius: SharpitSpacing.minimumTouchTarget / 2, style: .continuous),
+                            fallback: SharpitColor.chipSurface
+                        )
                 }
                 .buttonStyle(.sharpitPressable)
                 .transition(
@@ -548,6 +568,11 @@ struct CoachView: View {
 
     #if DEBUG
     private func askDemoQuestions() async {
+        if demoOpensQuickActions {
+            try? await Task.sleep(for: .seconds(1))
+            SharpitMotion.run(SharpitMotion.selection) { showsQuickActions = true }
+            return
+        }
         for question in demoQuestions {
             try? await Task.sleep(for: .seconds(1.5))
             store.draft = question
