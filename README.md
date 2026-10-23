@@ -99,7 +99,8 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
 - Shell: five tabs (Résumé / Plan / Coach / Activité / Moi)
 - Résumé: `GET /api/v1/today` via `SharpitClient` + Bearer token from `clerk.auth.getToken()`.
   The server links the day's finished activities to their planned sessions on that read
-  ([ADR-042](../SHARPIT/docs/adr/ADR-042-today-links-activities-on-read.md)); a session it
+  ([ADR-042](../SHARPIT/docs/adr/ADR-042-today-links-activities-on-read.md)), for today and
+  yesterday only: an older day is read as it was (web ADR-101); a session it
   missed can be linked by hand from the planned session's drawer. A done brick is one entry in
   Plan and opens as one chain; once every leg is done, its evaluation (overall RPE, transitions, feeling, notes) is
   read and saved on tap through `/api/v1/planned-sessions/brick/evaluation` (web ADR-059).
@@ -138,7 +139,10 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   the network answers and offline. The server stays the source of truth — a write always goes
   to `/api` and the cache is written from its echo — and the cache never leaves the iPhone:
   it holds health-derived data, which Apple forbids in iCloud
-  ([ADR 0009](docs/adr/0009-the-read-cache-stays-on-the-device.md))
+  ([ADR 0009](docs/adr/0009-the-read-cache-stays-on-the-device.md)). Past days' reads (Résumé,
+  Sommeil, Récupération, …) are also kept on disk as the server sent them, so they open without
+  the network after a relaunch until the app writes something new, and the day screens read
+  ahead three days at a time ([ADR 0021](docs/adr/0021-past-days-are-kept-on-disk-and-read-ahead-three-at-a-time.md))
 - Weather chip: WeatherKit + Core Location (not API weather)
 - Design system: `SHARPIT-APP/DesignSystem/`. Colour and radius are **generated** from the
   web design system — edit `../SHARPIT/src/lib/brand/brand-tokens.ts` or
