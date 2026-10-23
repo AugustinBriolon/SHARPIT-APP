@@ -138,3 +138,34 @@ private struct OfflineTodayClient: TodayServing {
 
     if case .loaded = store.phase {} else { Issue.record("a day already read must not wait on the network") }
 }
+
+/// Today answers slowly; the past day asked for meanwhile must still be read.
+private struct SlowTodayClient: TodayServing {
+    let days: RequestedDays
+
+    func today(trainingDayId: String, token: String) async throws -> V1TodayResponse {
+        await days.note(trainingDayId)
+        if trainingDayId == TrainingDayId.today() { try await Task.sleep(for: .milliseconds(80)) }
+        return try await FixtureTodayClient().today(trainingDayId: trainingDayId, token: token)
+    }
+}
+
+@MainActor
+@Test func aDayPickedWhileTodayStillLoadsIsReadAndShown() async throws {
+    let days = RequestedDays()
+    let store = TodayStore(client: SlowTodayClient(days: days), tokenProvider: { "token" }, dayReads: DayReadCache())
+    let past = try #require(Calendar.current.date(from: DateComponents(year: 2001, month: 2, day: 3)))
+    let pastId = TrainingDayId.today(now: past)
+
+    async let arrival: Void = store.load(resetToLoading: true)
+    try await Task.sleep(for: .milliseconds(10))
+    await store.select(day: past)
+    await arrival
+
+    #expect(await days.ids.contains(pastId))
+    guard case .loaded(let fold) = store.phase else {
+        Issue.record("the picked day must not stay loading")
+        return
+    }
+    #expect(fold.trainingDayId == pastId)
+}

@@ -56,3 +56,31 @@ private final class RunCounter {
     #expect(await gate.run { runs.bump(); return true })
     #expect(runs.count == 2)
 }
+
+/// A day picked while another still loads is read, not answered with the other day's run.
+@Test @MainActor func anotherKeyDoesNotJoinTheRunInFlight() async {
+    let gate = LoadGate()
+    let runs = RunCounter()
+
+    async let previous: Bool = gate.run(key: "2026-10-22") {
+        try? await Task.sleep(for: .milliseconds(30))
+        runs.bump()
+        return true
+    }
+    async let picked: Bool = gate.run(key: "2026-09-01") {
+        runs.bump()
+        return true
+    }
+    _ = await (previous, picked)
+    #expect(runs.count == 2)
+}
+
+@Test @MainActor func freshnessHoldsForItsOwnKeyOnly() async {
+    let gate = LoadGate(now: { Date(timeIntervalSince1970: 1_000) })
+    let runs = RunCounter()
+
+    #expect(await gate.run(key: "a") { runs.bump(); return true })
+    #expect(await gate.run(key: "b") { runs.bump(); return true })
+    #expect(await gate.run(key: "b") { runs.bump(); return true } == false)
+    #expect(runs.count == 2)
+}

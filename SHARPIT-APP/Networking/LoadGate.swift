@@ -10,30 +10,39 @@ final class LoadGate {
     static let tabStaleAfter: TimeInterval = 45
 
     private var lastSuccessAt: Date?
-    private var inFlight: Task<Bool, Never>?
+    /// What the last success and the run in flight were for: a day, say.
+    private var lastSuccessKey: String?
+    private var inFlight: (key: String, task: Task<Bool, Never>)?
     private let now: () -> Date
 
     init(now: @escaping () -> Date = Date.init) {
         self.now = now
     }
 
-    /// Runs `work` once. Concurrent callers await the same task. Skips when a success is still
-    /// fresh unless `force`. `work` returns whether to advance the freshness clock.
+    /// Runs `work` once. Concurrent callers for the same `key` await the same task; another key
+    /// runs its own — a day picked while the one before still loads must be read, not joined.
+    /// Skips when a success for the key is still fresh unless `force`. `work` returns whether to
+    /// advance the freshness clock.
     @discardableResult
     func run(
+        key: String = "",
         force: Bool = false,
         staleAfter: TimeInterval = tabStaleAfter,
         _ work: @escaping @MainActor () async -> Bool
     ) async -> Bool {
-        if let inFlight { return await inFlight.value }
-        if !force, let last = lastSuccessAt, now().timeIntervalSince(last) < staleAfter {
+        if let inFlight, inFlight.key == key { return await inFlight.task.value }
+        if !force, lastSuccessKey == key, let last = lastSuccessAt, now().timeIntervalSince(last) < staleAfter {
             return false
         }
         let task = Task { await work() }
-        inFlight = task
+        inFlight = (key, task)
         let ok = await task.value
-        inFlight = nil
-        if ok { lastSuccessAt = now() }
+        // A later run for another key may have taken the slot since.
+        if inFlight?.key == key { inFlight = nil }
+        if ok {
+            lastSuccessAt = now()
+            lastSuccessKey = key
+        }
         return ok
     }
 

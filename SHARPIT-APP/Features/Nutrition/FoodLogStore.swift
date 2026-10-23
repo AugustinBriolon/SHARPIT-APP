@@ -108,7 +108,7 @@ final class FoodLogStore {
             phase = .loading
             loadGate.invalidate()
         }
-        await loadGate.run(force: force || dayChanged) {
+        await loadGate.run(key: dayId, force: force || dayChanged) {
             do {
                 let day = try await self.client.day(trainingDayId: dayId, token: try await self.tokenProvider())
                 guard dayId == self.trainingDayId else { return false }

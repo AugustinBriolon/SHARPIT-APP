@@ -128,7 +128,7 @@ final class TodayStore {
             return
         }
 
-        await networkGate.run(force: force) {
+        await networkGate.run(key: dayId, force: force) {
             await self.fetchToday(dayId: dayId, tokenProvider: tokenProvider, hadCache: hadCache)
         }
     }
