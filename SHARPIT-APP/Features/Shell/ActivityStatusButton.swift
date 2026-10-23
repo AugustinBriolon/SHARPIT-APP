@@ -13,6 +13,16 @@ extension ActivityStatusId {
     }
 }
 
+extension ActivityStatusId {
+    /// What the chip says: nothing for the normal state, which is not news; the mode and the day
+    /// it ends otherwise.
+    func chipTitle(untilDay: String?, calendar: Calendar = .current) -> String? {
+        guard self != .active else { return nil }
+        guard let untilDay, let date = ActivityStatusDate.date(from: untilDay, calendar: calendar) else { return label }
+        return "\(label) · \(date.sharpitFormatted(.dateTime.day().month(.abbreviated)))"
+    }
+}
+
 /// The toolbar chip that opens the mode drawer, and the drawer itself.
 struct ActivityStatusButton: View {
     @Bindable var store: ActivityStatusStore
@@ -30,9 +40,11 @@ struct ActivityStatusButton: View {
                     Image(systemName: store.store.status.symbolName)
                         .foregroundStyle(store.store.status.tone)
                         .contentTransition(.symbolEffect(.replace))
-                    Text(store.store.status.label)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .contentTransition(.opacity)
+                    if let title = store.store.status.chipTitle(untilDay: store.store.retention.untilDate) {
+                        Text(title)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .contentTransition(.opacity)
+                    }
                 }
                 .sharpitGlassChip()
             } else {
@@ -53,6 +65,7 @@ struct ActivityStatusButton: View {
 private struct ActivityStatusDrawer: View {
     @Bindable var store: ActivityStatusStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(ShellRouter.self) private var router
 
     /// Mirrors the store while the sheet is open so the date picker can move before
     /// the athlete commits it.
@@ -81,6 +94,7 @@ private struct ActivityStatusDrawer: View {
                         }
                     }
 
+                    impactSection
                     if store.store.status != .active {
                         deadlineSection
                     }
@@ -102,6 +116,26 @@ private struct ActivityStatusDrawer: View {
         .sharpitSheet()
         .presentationDragIndicator(.visible)
         .onAppear(perform: syncFromStore)
+    }
+
+    /// What the mode does to the plan and the coach, so a pick is never a blind one.
+    private var impactSection: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitEyebrow(String(localized: "Ce que ça change"))
+            Text(store.store.status.planningImpact)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+            if store.store.status != .active {
+                CoachDiscussButton(title: String(localized: "En parler au coach")) {
+                    router.discussWithCoach(about: CoachDiscuss.describe(.planning(horizonDays: 7)))
+                    dismiss()
+                }
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
     }
 
     private var deadlineSection: some View {
