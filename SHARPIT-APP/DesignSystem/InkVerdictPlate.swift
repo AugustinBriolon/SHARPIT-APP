@@ -60,15 +60,16 @@ struct InkVerdictPlate: View {
                         .padding(.top, 2)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if let confidence = plate.confidencePct {
                 confidenceBar(confidence)
             }
         }
-        .opacity(contentOpacity)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.ink)
+        .opacity(contentOpacity)
         .opacity(revealed ? 1 : 0)
         .scaleEffect(revealed ? 1 : 0.96, anchor: .top)
         .offset(y: revealed ? 0 : 8)
@@ -93,31 +94,57 @@ struct InkVerdictPlate: View {
         }
     }
 
-    private var header: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            Image(systemName: plate.stateCode?.symbolName ?? "circle.fill")
-                .font(.system(size: 19, weight: .bold))
-                .foregroundStyle(SharpitColor.highlightForeground)
-                .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Verdict du jour")
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(ink)
-                if let vs = plate.vsYesterdayLabel, !vs.isEmpty {
-                    Text(vs)
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(ink.opacity(0.6))
-                }
-            }
-            .lineLimit(1)
-            Spacer(minLength: SharpitSpacing.xs)
-            if !plate.statusLabel.isEmpty {
-                SharpitPill(plate.statusLabel, style: .lime)
+    private var tile: some View {
+        Image(systemName: plate.stateCode?.symbolName ?? "circle.fill")
+            .font(.system(size: 19, weight: .bold))
+            .foregroundStyle(SharpitColor.highlightForeground)
+            .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
+            .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
+            .accessibilityHidden(true)
+    }
+
+    private var titles: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Verdict du jour")
+                .font(SharpitTypography.cardTitle)
+                .tracking(SharpitTypography.cardTitleTracking)
+                .foregroundStyle(ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            if let vs = plate.vsYesterdayLabel, !vs.isEmpty {
+                Text(vs)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(ink.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
+    }
+
+    @ViewBuilder
+    private var pill: some View {
+        if !plate.statusLabel.isEmpty {
+            SharpitPill(plate.statusLabel, style: .lime)
+        }
+    }
+
+    private var header: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                tile
+                titles
+                Spacer(minLength: SharpitSpacing.xs)
+                pill
+            }
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                    tile
+                    titles
+                }
+                pill
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func confidenceBar(_ confidence: Int) -> some View {
@@ -125,6 +152,7 @@ struct InkVerdictPlate: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(plate.confidenceLabel ?? String(localized: "Confiance"))
                     .foregroundStyle(ink.opacity(0.6))
+                    .lineLimit(1)
                 Spacer(minLength: SharpitSpacing.xs)
                 Text("\(confidence) %")
                     .fontWeight(.bold)
@@ -142,6 +170,7 @@ struct InkVerdictPlate: View {
             }
             .frame(height: 6)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var accessibilityLabel: String {

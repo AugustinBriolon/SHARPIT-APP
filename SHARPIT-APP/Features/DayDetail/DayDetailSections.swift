@@ -34,10 +34,12 @@ struct DayDetailVerdictCard: View {
                         .font(SharpitTypography.cardTitle)
                         .tracking(SharpitTypography.cardTitleTracking)
                         .foregroundStyle(tone)
+                        .fixedSize(horizontal: false, vertical: true)
                     if let capacity {
                         Text(capacity)
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
