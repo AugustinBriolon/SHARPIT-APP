@@ -176,3 +176,15 @@ extension WidgetSnapshot.Goal {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 }
+
+/// How large a dial's figure may be drawn: the ticks sit close to the centre, and « 100 » at
+/// full size touched them.
+enum DialFigureScale {
+    static func factor(for figure: String) -> CGFloat {
+        switch figure.filter(\.isNumber).count {
+        case ...2: 1
+        case 3: 0.78
+        default: 0.62
+        }
+    }
+}

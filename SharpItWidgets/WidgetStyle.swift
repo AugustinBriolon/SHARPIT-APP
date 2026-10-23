@@ -60,6 +60,30 @@ struct WidgetFigure: View {
     }
 }
 
+/// A row of figures that never truncates: the large face if all fit, else the body face, else
+/// the first figure alone — a cut « 1:2… » reads as broken, a dropped second figure does not.
+struct WidgetFigureRow: View {
+    let figures: [WidgetSnapshot.Figure]
+    var spacing: CGFloat = 12
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            row(figures, large: true)
+            row(figures, large: false)
+            row(Array(figures.prefix(1)), large: false)
+        }
+    }
+
+    private func row(_ shown: [WidgetSnapshot.Figure], large: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: spacing) {
+            ForEach(Array(shown.enumerated()), id: \.offset) { _, figure in
+                WidgetFigure(figure: figure, large: large)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+    }
+}
+
 /// Done: a filled check — a status mark, the one place a symbol is filled.
 struct DoneSeal: View {
     var body: some View {

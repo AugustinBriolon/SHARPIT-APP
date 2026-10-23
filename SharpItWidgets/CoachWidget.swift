@@ -38,6 +38,8 @@ struct CoachWidgetView: View {
                     Text("Ta question…")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     Spacer(minLength: 0)
                     SendMark()
                 }

@@ -248,3 +248,11 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     #expect(bike.figureText == "1 h 15")
     #expect(bike.days[1].value == 75)
 }
+
+@Test func aDialFigureShrinksFromThreeDigits() {
+    #expect(DialFigureScale.factor(for: "7") == 1)
+    #expect(DialFigureScale.factor(for: "84") == 1)
+    #expect(DialFigureScale.factor(for: "100") < 1)
+    #expect(DialFigureScale.factor(for: "1 250") < DialFigureScale.factor(for: "100"))
+    #expect(DialFigureScale.factor(for: "—") == 1)
+}

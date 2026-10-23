@@ -100,12 +100,8 @@ struct LastActivityView: View {
                 WidgetEyebrow(text: activity.sport.label, tint: tone)
                 WidgetTitle(text: activity.title)
                     .padding(.top, 2)
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    ForEach(figures(activity, limit: 2), id: \.label) { row in
-                        WidgetFigure(figure: .init(value: row.value, unit: row.unit), large: true)
-                    }
-                }
-                .padding(.top, 8)
+                WidgetFigureRow(figures: figures(activity, limit: 2).map { .init(value: $0.value, unit: $0.unit) })
+                    .padding(.top, 8)
             }
             .widgetURL(activity.link)
         } else if entry.snapshot == nil {

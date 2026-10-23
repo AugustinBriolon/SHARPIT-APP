@@ -10,6 +10,8 @@ struct DialReadout: View {
 
     var body: some View {
         SharpitTickGauge(score: score)
+            // The dial fits its height, so it is narrower than the card: centred, not left, like its caption.
+            .frame(maxWidth: .infinity, alignment: .center)
             .sharpitDialCentre {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(figure)
@@ -17,7 +19,7 @@ struct DialReadout: View {
                         .tracking(SharpitTypography.gaugeScoreTracking)
                         .foregroundStyle(SharpitColor.foreground)
                         .monospacedDigit()
-                        .minimumScaleFactor(0.6)
+                        .scaleEffect(DialFigureScale.factor(for: figure))
                     if let unit {
                         Text(unit)
                             .font(SharpitTypography.meta)

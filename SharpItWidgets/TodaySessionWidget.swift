@@ -148,10 +148,8 @@ private struct SessionHero: View {
             WidgetEyebrow(text: session.isDone ? String(localized: "Faite · \(session.sport.label)") : session.sport.label, tint: SharpitColor.foreground)
             WidgetTitle(text: session.title)
                 .padding(.top, 2)
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                ForEach(session.figures.prefix(2), id: \.value) { WidgetFigure(figure: $0, large: true) }
-            }
-            .padding(.top, 8)
+            WidgetFigureRow(figures: Array(session.figures.prefix(2)))
+                .padding(.top, 8)
         }
     }
 }
@@ -171,9 +169,7 @@ private struct SessionLine: View {
                     .font(SharpitTypography.cardTitle)
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(1)
-                HStack(spacing: 10) {
-                    ForEach(session.figures.prefix(2), id: \.value) { WidgetFigure(figure: $0) }
-                }
+                WidgetFigureRow(figures: Array(session.figures.prefix(2)), spacing: 10)
             }
             Spacer(minLength: 4)
             if session.isDone { DoneSeal() }
