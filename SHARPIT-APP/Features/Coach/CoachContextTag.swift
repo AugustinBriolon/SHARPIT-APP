@@ -12,27 +12,35 @@ struct CoachContextTag: View {
     var body: some View {
         HStack(spacing: SharpitSpacing.xs) {
             Image(systemName: "paperclip")
-                .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.primary)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(SharpitColor.inkAccent)
+                .frame(width: 24, height: 24)
+                .background(SharpitColor.inkSurface, in: Circle())
                 .accessibilityHidden(true)
 
             Text(context.label)
-                .font(SharpitTypography.meta)
+                .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(1)
 
             if let onDismiss {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(SharpitTypography.label)
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(SharpitColor.mutedForeground)
+                        .frame(width: 24, height: 24)
+                        .background(SharpitColor.track, in: Circle())
+                        .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.sharpitPressable)
+                .padding(.trailing, -SharpitSpacing.xs)
                 .accessibilityLabel("Retirer le contexte")
             }
         }
-        .padding(.horizontal, SharpitSpacing.sm)
-        .padding(.vertical, SharpitSpacing.xs)
+        .padding(.leading, SharpitSpacing.xs)
+        .padding(.trailing, onDismiss == nil ? SharpitSpacing.sm : SharpitSpacing.xxs)
+        .padding(.vertical, SharpitSpacing.xxs)
         .background(Capsule().fill(SharpitColor.chipSurface).sharpitShadow(.control))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Contexte joint : \(context.label)")

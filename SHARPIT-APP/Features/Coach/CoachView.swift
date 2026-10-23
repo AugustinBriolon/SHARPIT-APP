@@ -21,6 +21,7 @@ struct CoachView: View {
     @State private var showsJumpToLatest = false
     /// The quota card, closed by the athlete; it comes back with the next question typed.
     @State private var isQuotaNoticeHidden = false
+    @State private var showsQuickActions = false
     @State private var scrollPosition = ScrollPosition(idType: String.self)
     @State private var dictation = CoachDictation()
     /// Set by a send, so only a question just asked rises to the top.
@@ -383,9 +384,13 @@ struct CoachView: View {
             if !isQuotaNoticeHidden, let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
                 quotaGauge(quota, line: line)
             }
+            if showsQuickActions, !dictation.isListening {
+                quickActionsList
+            }
             if let context = store.pendingContext {
                 CoachContextTag(context: context) { store.dropContext() }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.scale(scale: 0.9, anchor: .bottomLeading).combined(with: .opacity))
             }
 
             SharpitGlassGroup {
@@ -435,29 +440,60 @@ struct CoachView: View {
         .padding(.bottom, SharpitSpacing.sm)
         .animation(SharpitMotion.reveal, value: composerIsFocused)
         .animation(SharpitMotion.reveal, value: dictation.isListening)
+        .animation(SharpitMotion.reveal, value: store.pendingContext)
+        .onChange(of: store.draft) { _, draft in
+            if !draft.isEmpty, showsQuickActions { SharpitMotion.run(SharpitMotion.selection) { showsQuickActions = false } }
+        }
     }
 
     /// « + », the mirror of the microphone: starting points that tag the conversation and open
     /// the question, for the asks the coach answers best (adjusting a session or the week).
     private var quickActionsMenu: some View {
-        Menu {
-            ForEach(CoachQuickAction.allCases) { action in
-                Button(action.label, systemImage: action.symbol) { start(action) }
-            }
+        Button {
+            SharpitMotion.run(SharpitMotion.selection) { showsQuickActions.toggle() }
         } label: {
             Image(systemName: "plus")
                 .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(showsQuickActions ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
+                .rotationEffect(.degrees(showsQuickActions ? 45 : 0))
                 .frame(width: Self.controlHeight, height: Self.controlHeight)
-                .sharpitGlassControl(in: Circle(), fallback: SharpitColor.radialTrack)
+                .sharpitGlassControl(
+                    in: Circle(),
+                    tint: showsQuickActions ? SharpitColor.primary : nil,
+                    fallback: SharpitColor.radialTrack
+                )
         }
+        .buttonStyle(.plain)
         .disabled(store.isReplying)
-        .accessibilityLabel("Démarrer une demande")
+        .accessibilityLabel(showsQuickActions ? "Fermer les demandes" : "Démarrer une demande")
+    }
+
+    /// The choices, rising from the « + » one after another; a pick closes them.
+    private var quickActionsList: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            ForEach(Array(CoachQuickAction.allCases.enumerated()), id: \.element) { index, action in
+                Button { start(action) } label: {
+                    Label(action.label, systemImage: action.symbol)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .padding(.horizontal, SharpitSpacing.md)
+                        .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                        .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.chipSurface)
+                }
+                .buttonStyle(.sharpitPressable)
+                .transition(
+                    .move(edge: .bottom).combined(with: .opacity)
+                        .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: CoachQuickAction.allCases.count - 1 - index)))
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func start(_ action: CoachQuickAction) {
         store.attach(action.context(trainingDayId: TrainingDayId.today()))
         store.draft = action.draft
+        SharpitMotion.run(SharpitMotion.selection) { showsQuickActions = false }
         composerIsFocused = true
     }
 
