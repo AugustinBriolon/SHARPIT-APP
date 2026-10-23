@@ -122,6 +122,54 @@ enum SleepReadout {
         }
     }
 
+    /// The rows of the night's course: awake on top, deep at the foot.
+    enum TimelineLevel: CaseIterable, Identifiable {
+        case awake, light, rem, deep
+
+        var id: Self { self }
+
+        static let rowOrder: [TimelineLevel] = [.awake, .light, .rem, .deep]
+        static let legendOrder: [TimelineLevel] = [.light, .rem, .deep, .awake]
+
+        /// Nil for « in bed », which says nothing about the sleep itself.
+        init?(_ stage: HealthSleepSample.Stage) {
+            switch stage {
+            case .awake: self = .awake
+            case .asleep, .core: self = .light
+            case .rem: self = .rem
+            case .deep: self = .deep
+            case .inBed: return nil
+            }
+        }
+
+        var label: String {
+            switch self {
+            case .awake: String(localized: "Éveillé")
+            case .light: Stage.light.label
+            case .rem: Stage.rem.label
+            case .deep: Stage.deep.label
+            }
+        }
+
+        var tone: Color {
+            switch self {
+            case .awake: SharpitColor.signalCaution
+            case .light: Stage.light.tone
+            case .rem: Stage.rem.tone
+            case .deep: Stage.deep.tone
+            }
+        }
+
+        func minutes(in stages: V1SleepStages) -> Double? {
+            switch self {
+            case .awake: stages.awakeMin
+            case .light: stages.lightMin
+            case .rem: stages.remMin
+            case .deep: stages.deepMin
+            }
+        }
+    }
+
     /// Each stage's share of the sleep, or nil when no stage was recorded.
     static func stageShares(_ stages: V1SleepStages) -> [(stage: Stage, share: Double)]? {
         let values = Stage.allCases.map { ($0, max($0.minutes(in: stages) ?? 0, 0)) }

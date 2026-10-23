@@ -7,6 +7,8 @@ import SwiftUI
 struct SleepView: View {
     @State private var store: DayResourceStore<V1SleepResponse>
     @State private var showsTargets = false
+    @State private var segments: [HealthSleepSample] = []
+    private let day: Date
     private let tokenProvider: () async throws -> String
     private let profileClient: any AthleteProfileServing
     private let syncClient: any SyncServing
@@ -19,6 +21,7 @@ struct SleepView: View {
         syncClient: any SyncServing = SharpitClient(),
         profileClient: any AthleteProfileServing = AthleteProfileClient()
     ) {
+        self.day = day
         self.syncClient = syncClient
         self.tokenProvider = tokenProvider
         self.profileClient = profileClient
@@ -45,7 +48,7 @@ struct SleepView: View {
             emptySymbol: "moon.zzz",
             unavailableTitle: String(localized: "Sommeil indisponible"),
             store: store,
-            content: { sleep in SleepSections(sleep: sleep) },
+            content: { sleep in SleepSections(sleep: sleep, segments: segments) },
             emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload)
         )
         // The sleep targets, set where they are read — right of the title, beside « Aujourd'hui ».
@@ -58,6 +61,10 @@ struct SleepView: View {
                 }
             }
         }
+        .task(id: day) {
+            let reader = HealthKitReader()
+            if reader.isAvailable { segments = await reader.sleepSegments(nightEndingOn: day) }
+        }
         .sheet(isPresented: $showsTargets, onDismiss: { Task { await store.load() } }) {
             SleepTargetsSheet(profileClient: profileClient, tokenProvider: tokenProvider)
         }
@@ -67,16 +74,14 @@ struct SleepView: View {
 /// The column itself, apart from its scroll view so it can be rendered on its own.
 struct SleepSections: View {
     let sleep: V1SleepResponse
+    var segments: [HealthSleepSample] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             SleepHero(sleep: sleep)
             SleepCoachCard(sleep: sleep)
             if sleep.nightStatus == .present {
-                SleepNightDetailCard(sleep: sleep)
-            }
-            if sleep.nightStatus == .present, let shares = SleepReadout.stageShares(sleep.stages) {
-                SleepStructureSection(stages: sleep.stages, shares: shares)
+                SleepNightCard(sleep: sleep, segments: segments)
             }
             SleepBankSection(sleep: sleep)
             if sleep.history.contains(where: { $0.minutes != nil }) {
@@ -297,95 +302,108 @@ private struct SleepCoachCard: View {
     }
 }
 
-// MARK: - Last night in detail
+// MARK: - Last night
 
-/// The night as it went: when it started and ended, how much of the time in bed was sleep,
-/// and how long the athlete lay awake.
-private struct SleepNightDetailCard: View {
+/// The night in one card: when it started and ended, how much of the time in bed was sleep,
+/// then its course hour by hour. The course comes from Apple Health on this iPhone (the server
+/// keeps only totals); without it the card shows the share of each stage instead.
+private struct SleepNightCard: View {
     let sleep: V1SleepResponse
+    let segments: [HealthSleepSample]
 
     private var inBed: Double? { SleepReadout.timeInBed(bedtime: sleep.bedtimeMin, wake: sleep.wakeMin) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(title: String(localized: "Nuit passée"), symbol: "bed.double.fill", showsChevron: false)
-            Grid(alignment: .leading, horizontalSpacing: SharpitSpacing.md, verticalSpacing: SharpitSpacing.md) {
-                GridRow {
-                    SharpitStatTile(caption: String(localized: "Coucher"), value: SleepReadout.clock(sleep.bedtimeMin), isFlat: true)
-                    SharpitStatTile(caption: String(localized: "Lever"), value: SleepReadout.clock(sleep.wakeMin), isFlat: true)
-                }
-                GridRow {
-                    SharpitStatTile(caption: String(localized: "Efficacité"), value: SleepReadout.efficiency(asleep: sleep.durationMin, inBed: inBed), isFlat: true)
-                    SharpitStatTile(caption: String(localized: "Éveillé"), value: SleepReadout.duration(sleep.stages.awakeMin), isFlat: true)
-                }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: SharpitSpacing.md, alignment: .top)], alignment: .leading, spacing: SharpitSpacing.md) {
+                SharpitStatTile(caption: String(localized: "Coucher"), value: SleepReadout.clock(sleep.bedtimeMin), isFlat: true)
+                SharpitStatTile(caption: String(localized: "Lever"), value: SleepReadout.clock(sleep.wakeMin), isFlat: true)
+                SharpitStatTile(caption: String(localized: "Efficacité"), value: SleepReadout.efficiency(asleep: sleep.durationMin, inBed: inBed), isFlat: true)
             }
+            if segments.isEmpty {
+                shareBar
+            } else {
+                SleepTimeline(segments: segments)
+            }
+            legend
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
     }
-}
 
-// MARK: - Structure
-
-private struct SleepStructureSection: View {
-    let stages: V1SleepStages
-    let shares: [(stage: SleepReadout.Stage, share: Double)]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: String(localized: "Structure du sommeil"), symbol: "chart.bar.xaxis", showsChevron: false)
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                GeometryReader { geo in
-                    HStack(spacing: 2) {
-                        ForEach(shares, id: \.stage) { item in
-                            if item.share > 0 {
-                                Rectangle()
-                                    .fill(item.stage.tone)
-                                    .frame(width: max(geo.size.width * item.share - 2, 2))
-                            }
+    @ViewBuilder
+    private var shareBar: some View {
+        if let shares = SleepReadout.stageShares(sleep.stages) {
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    ForEach(shares, id: \.stage) { item in
+                        if item.share > 0 {
+                            Rectangle()
+                                .fill(item.stage.tone)
+                                .frame(width: max(geo.size.width * item.share - 2, 2))
                         }
                     }
                 }
-                .frame(height: 14)
-                .clipShape(Capsule())
+            }
+            .frame(height: 14)
+            .clipShape(Capsule())
+            .accessibilityHidden(true)
+        }
+    }
 
-                HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                    ForEach(shares, id: \.stage) { item in
-                        StageReadout(stage: item.stage, minutes: item.stage.minutes(in: stages), share: item.share)
+    private var legend: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: SharpitSpacing.sm, alignment: .top)], alignment: .leading, spacing: SharpitSpacing.md) {
+            ForEach(SleepReadout.TimelineLevel.legendOrder) { level in
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: SharpitSpacing.xxs + 2) {
+                        Circle().fill(level.tone).frame(width: 8, height: 8)
+                        Text(level.label)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .lineLimit(1)
                     }
+                    Text(SleepReadout.duration(level.minutes(in: sleep.stages)))
+                        .font(SharpitTypography.data)
+                        .tracking(SharpitTypography.dataTracking)
+                        .foregroundStyle(SharpitColor.foreground)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 }
 
-private struct StageReadout: View {
-    let stage: SleepReadout.Stage
-    let minutes: Double?
-    let share: Double
+/// The hypnogram: one block per stretch of a stage, the awake band on top and deep sleep at the foot.
+private struct SleepTimeline: View {
+    let segments: [HealthSleepSample]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: SharpitSpacing.xxs + 2) {
-                Circle().fill(stage.tone).frame(width: 8, height: 8)
-                Text(stage.label)
+        Chart(segments, id: \.start) { segment in
+            if let level = SleepReadout.TimelineLevel(segment.stage) {
+                RectangleMark(
+                    xStart: .value("Début", segment.start),
+                    xEnd: .value("Fin", segment.end),
+                    y: .value("Phase", level.label)
+                )
+                .foregroundStyle(level.tone)
+                .cornerRadius(3)
+            }
+        }
+        .chartYScale(domain: SleepReadout.TimelineLevel.rowOrder.map(\.label))
+        .chartYAxis(.hidden)
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .hour, count: 2)) { _ in
+                AxisGridLine().foregroundStyle(SharpitColor.track)
+                AxisValueLabel(format: .dateTime.hour())
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
             }
-            Text("\(Int((share * 100).rounded())) %")
-                .font(SharpitTypography.data)
-                .tracking(SharpitTypography.dataTracking)
-                .foregroundStyle(SharpitColor.foreground)
-            Text(SleepReadout.duration(minutes))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+        .frame(height: 150)
+        .accessibilityLabel("Déroulé de la nuit par phase")
     }
 }
 

@@ -43741,6 +43741,22 @@
           }
         }
       }
+    },
+    "Déroulé de la nuit par phase" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night by stage"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déroulé de la nuit par phase"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

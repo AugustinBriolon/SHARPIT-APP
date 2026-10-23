@@ -218,3 +218,16 @@ private actor DayRecorder {
     #expect(SleepReadout.efficiency(asleep: nil, inBed: 500) == "—")
     #expect(SleepReadout.efficiency(asleep: 450, inBed: 0) == "—")
 }
+
+@Test func theNightsCourseComesFromTheSourceThatRecordedTheMostSleep() {
+    let start = Date(timeIntervalSince1970: 0)
+    func sample(_ stage: HealthSleepSample.Stage, _ minutes: Double, _ source: String) -> HealthSleepSample {
+        HealthSleepSample(start: start, end: start.addingTimeInterval(minutes * 60), stage: stage, source: source)
+    }
+    let watch = [sample(.deep, 90, "Watch"), sample(.awake, 30, "Watch")]
+    let phone = [sample(.asleep, 60, "iPhone")]
+    #expect(HealthSleepSample.fromDominantSource(phone + watch) == watch)
+    #expect(HealthSleepSample.fromDominantSource([sample(.awake, 20, "Watch")]).isEmpty)
+    #expect(SleepReadout.TimelineLevel(.core) == .light)
+    #expect(SleepReadout.TimelineLevel(.inBed) == nil)
+}

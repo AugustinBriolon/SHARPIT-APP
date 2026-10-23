@@ -104,6 +104,27 @@ final class HealthKitReader: HealthReading, @unchecked Sendable {
         }
     }
 
+    /// The stretches of the night that ends on `day`, between 18:00 the evening before and 14:00,
+    /// from the one source that recorded the most sleep (two watches would draw the night twice).
+    func sleepSegments(nightEndingOn day: Date, calendar: Calendar = .current) async -> [HealthSleepSample] {
+        let midnight = calendar.startOfDay(for: day)
+        guard let start = calendar.date(byAdding: .hour, value: -6, to: midnight),
+              let end = calendar.date(byAdding: .hour, value: 14, to: midnight) else { return [] }
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.categorySample(
+                type: HKCategoryType(.sleepAnalysis),
+                predicate: HKQuery.predicateForSamples(withStart: start, end: end)
+            )],
+            sortDescriptors: [SortDescriptor(\.startDate)]
+        )
+        guard let samples = try? await descriptor.result(for: store) else { return [] }
+        let stages = samples.compactMap { sample -> HealthSleepSample? in
+            guard let stage = HealthSleepSample.Stage(healthValue: sample.value), stage != .inBed else { return nil }
+            return HealthSleepSample(start: sample.startDate, end: sample.endDate, stage: stage, source: sample.sourceRevision.source.name)
+        }
+        return HealthSleepSample.fromDominantSource(stages)
+    }
+
     // MARK: - Workouts for upload
 
     func workouts(endingIn interval: DateInterval) async -> [HealthWorkout] {

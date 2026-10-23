@@ -27,6 +27,14 @@ nonisolated struct HealthSleepSample: Equatable, Sendable {
     var source: String = ""
 
     var minutes: Double { end.timeIntervalSince(start) / 60 }
+
+    /// The samples of the source that recorded the most sleep, in the order given.
+    static func fromDominantSource(_ samples: [HealthSleepSample]) -> [HealthSleepSample] {
+        let asleepBySource = Dictionary(grouping: samples.filter(\.stage.isAsleep), by: \.source)
+            .mapValues { $0.reduce(0) { $0 + $1.minutes } }
+        guard let source = asleepBySource.max(by: { $0.value < $1.value })?.key else { return [] }
+        return samples.filter { $0.source == source }
+    }
 }
 
 /// One day of Apple Health, in the shape SHARPIT stores a day of health data.
