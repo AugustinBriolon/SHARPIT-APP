@@ -230,6 +230,12 @@ struct PlanView: View {
                 router.pendingPlannedSessionId = nil
                 Task { await openPlannedSession(id: id) }
             }
+            // Régularité tapped on another day: the week holding it.
+            .onChange(of: router.planFocusDay, initial: true) { _, day in
+                guard let day else { return }
+                router.planFocusDay = nil
+                store.selectedOffset = store.offset(forWeekContaining: day)
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { Task { await generation.resume() } }
             }

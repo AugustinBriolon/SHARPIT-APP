@@ -96,6 +96,14 @@ final class ShellRouter {
         selectedTab = tab
     }
 
+    /// A day Plan should open on — the week holding it. Read and cleared by Plan.
+    var planFocusDay: Date?
+
+    func openPlan(on day: Date) {
+        planFocusDay = day
+        selectedTab = .plan
+    }
+
     func openSettings(on route: SettingsRoute? = nil) {
         settingsRoute = route
         isShowingSettings = true

@@ -31,7 +31,7 @@ touch. `TodayStore.select(day:)` names the page at once; the new day arrives fro
 (`/api/v1/today?trainingDayId=`, snapshot cached per day; any day read this launch,
 today included, opens at once from `DayReadCache` while the server answers behind, and a past day is
 not asked for again until a write or a pull-to-refresh); `selectedDayId` nil
-follows today, midnight included. A past day is read-only: no ressenti, no check-in invitation, and it never
+follows today, midnight included. The page returns to the top when the day changes (`.id` on the fold), the loading shape keeps the chips row, and Sommeil, Récupération, Nutrition and Régularité (`ShellRouter.openPlan(on:)`, read by Plan as `planFocusDay`) open on the day shown. A past day is read-only: no ressenti, no check-in invitation, and it never
 reaches the widgets. The ressenti opens on its own only from 6 h, once last night's sleep is in
 or from 10 h (`RessentiPromptTiming`).
 

@@ -125,6 +125,7 @@ struct TodayView: View {
                         controls: AnyView(controlsRow),
                         activityStatusStore: activityStatusStore
                     )
+                    .id(fold.trainingDayId)
                 case .empty(let empty):
                     TodayEmptyView(empty: empty)
                         .safeAreaInset(edge: .top) { pinnedDayTitle }
@@ -343,7 +344,10 @@ extension TodayView {
         } else {
             SharpitLoadingInstrument()
                 .safeAreaInset(edge: .top) {
-                    title
+                    VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                        title
+                        chips
+                    }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, SharpitSpacing.pageInset)
                         .padding(.vertical, SharpitSpacing.xs)
@@ -354,10 +358,13 @@ extension TodayView {
     /// The date over a page that has no fold to carry it — loading, empty or failed — so the
     /// athlete can always pick another day.
     fileprivate var pinnedDayTitle: some View {
-        dayTitle
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.vertical, SharpitSpacing.xs)
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            dayTitle
+            chips
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.vertical, SharpitSpacing.xs)
     }
 
     fileprivate var chips: some View {
@@ -629,7 +636,7 @@ private struct TodayFoldView: View {
                         consistency: consistency,
                         consecutiveWeeks: consecutiveWeeks
                     ) {
-                        router.select(.plan)
+                        router.openPlan(on: foldDay)
                     }
                     .opacity(phase.showsGauges ? 1 : 0)
                     .offset(y: phase.showsGauges ? 0 : 18)
@@ -821,16 +828,18 @@ private struct TodayFoldView: View {
         }
     }
 
+    private var foldDay: Date { TrainingDayId.date(fold.trainingDayId) ?? .now }
+
     @ViewBuilder
     private func nutritionDetail(for destination: NutritionDestination) -> some View {
         switch destination {
         case .day:
             if let nutritionClient, let tokenProvider {
-                NutritionView(client: nutritionClient, tokenProvider: tokenProvider)
+                NutritionView(client: nutritionClient, tokenProvider: tokenProvider, day: foldDay)
             }
         case .scan:
             if let nutritionClient, let tokenProvider {
-                NutritionView(client: nutritionClient, tokenProvider: tokenProvider, opensScanner: true)
+                NutritionView(client: nutritionClient, tokenProvider: tokenProvider, day: foldDay, opensScanner: true)
             }
         }
     }
@@ -840,9 +849,9 @@ private struct TodayFoldView: View {
         if let signalClient, let tokenProvider {
             switch key {
             case .sleep:
-                SleepView(client: signalClient, tokenProvider: tokenProvider)
+                SleepView(client: signalClient, tokenProvider: tokenProvider, day: foldDay)
             case .recovery:
-                RecoveryView(client: signalClient, tokenProvider: tokenProvider)
+                RecoveryView(client: signalClient, tokenProvider: tokenProvider, day: foldDay)
             case .effort, .adaptation, .stress:
                 EmptyView()
             }
