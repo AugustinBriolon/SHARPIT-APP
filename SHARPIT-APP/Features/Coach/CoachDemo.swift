@@ -16,6 +16,7 @@ struct CoachDemoHost: View {
     var body: some View {
         var view = CoachView(client: DemoCoachClient(), conversations: DemoConversations(), quota: DemoQuota(), tokenProvider: { "demo" })
         view.demoQuestions = [String(localized: "Comment était ma nuit ?"), String(localized: "Et pour jeudi, je fais quoi ?")]
+        view.demoOpensQuickActions = ProcessInfo.processInfo.arguments.contains("-SharpitCoachQuickActions")
         return view.environment(router)
     }
 }

@@ -332,6 +332,19 @@ struct ScreenDemoHost: View {
                         )
                     )
                 }
+            case "form", "form-stress", "form-stress-bottom":
+                ActivityFormSheet(
+                    mode: .create,
+                    draft: screen == "form" ? .new() : StressDemo.formDraft,
+                    client: DemoActivityMutator(),
+                    tokenProvider: { "demo" },
+                    onSaved: { _ in }
+                )
+                .defaultScrollAnchor(screen.hasSuffix("bottom") ? .bottom : .top)
+            case "status":
+                Color.clear.sheet(isPresented: .constant(true)) {
+                    ActivityStatusButtonDemo()
+                }
             default:
                 TabView {
                     Tab("Résumé", systemImage: "sun.max") { TodayView() }
@@ -393,6 +406,20 @@ struct ScreenDemoHost: View {
 /// `defaults write app.sharpit.ios SharpitScreenDemo stress|stress-sleep|stress-strength`.
 private enum StressDemo {
     static let longName = String(localized: "Développé couché prise serrée sur banc incliné à 30° avec chaînes et élastiques")
+
+    static var formDraft: ActivityDraft {
+        var draft = ActivityDraft(date: .now.addingTimeInterval(-86_400))
+        draft.sport = .run
+        draft.title = longName
+        draft.durationMin = 1435
+        draft.distanceText = "999,99"
+        draft.elevationText = "88888"
+        draft.avgHrText = "219"
+        draft.rpe = 10
+        draft.feeling = .veryBad
+        draft.notes = String(repeating: "Jambes lourdes, vent de face. ", count: 12)
+        return draft
+    }
 
     @MainActor static var cards: some View {
         VStack(spacing: SharpitSpacing.md) {
@@ -517,6 +544,30 @@ private struct DemoRecords: RecordsServing {
         }
         """#
         return try JSONDecoder().decode(V1Records.self, from: Data(json.utf8))
+    }
+}
+private struct DemoActivityMutator: ActivityMutating {
+    func createActivity(_ fields: [String: JSONValue], token: String) async throws -> String { "demo" }
+    func updateActivity(id: String, fields: [String: JSONValue], token: String) async throws {}
+    func deleteActivity(id: String, token: String) async throws {}
+}
+
+private struct DemoActivityStatus: ActivityStatusServing {
+    func activityStatus(token: String) async throws -> V1ActivityStatusStore {
+        V1ActivityStatusStore(status: .injured, retention: .untilDate("2026-12-31"))
+    }
+    func setActivityStatus(_ write: V1ActivityStatusWrite, token: String) async throws -> V1ActivityStatusStore {
+        V1ActivityStatusStore(status: write.status, retention: write.retention ?? .untilModified)
+    }
+}
+
+/// The status drawer opened at once on a mode with an end date.
+private struct ActivityStatusButtonDemo: View {
+    @State private var store = ActivityStatusStore(client: DemoActivityStatus(), tokenProvider: { "demo" })
+
+    var body: some View {
+        ActivityStatusDrawer(store: store)
+            .task { await store.load() }
     }
 }
 #endif
