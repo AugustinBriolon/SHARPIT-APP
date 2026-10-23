@@ -160,13 +160,14 @@ private struct ActivityFormContent: View {
     private var sportPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             SharpitFieldLabel(String(localized: "Sport"))
-            LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
+            Picker("Sport", selection: $draft.sport) {
                 ForEach(ActivityDraft.sports, id: \.self) { sport in
-                    OnboardingChoiceChip(title: sport.label, symbol: sport.symbolName, isSelected: draft.sport == sport) {
-                        SharpitMotion.run(SharpitMotion.selection) { draft.sport = sport }
-                    }
+                    Label { Text(sport.label) } icon: { Image(sharpitSymbol: sport.symbolName) }.tag(sport)
                 }
             }
+            .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .sharpitFieldWell()
         }
     }
 
@@ -204,6 +205,17 @@ private struct ActivityFormContent: View {
                     text: $draft.distanceText,
                     keyboard: .decimalPad
                 )
+            }
+            if let pace = draft.paceText {
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    SharpitFieldLabel(String(localized: "Allure"))
+                    Text(pace)
+                        .font(SharpitTypography.body)
+                        .monospacedDigit()
+                        .foregroundStyle(SharpitColor.foreground)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .sharpitFieldWell()
+                }
             }
             if draft.measuresElevation {
                 SharpitFormField(String(localized: "Dénivelé positif (m)"), placeholder: "120", text: $draft.elevationText, keyboard: .numberPad)

@@ -52,7 +52,27 @@ struct ActivityDraft: Equatable {
 
     // MARK: - What the sport measures
 
-    var measuresDistance: Bool { [.run, .swim, .hike].contains(sport) }
+    var measuresDistance: Bool { [.run, .bike, .swim, .hike].contains(sport) }
+
+    /// Seconds per km on foot, per 100 m in the water; nil when the sport has no pace or the
+    /// distance or duration is missing.
+    var paceSeconds: Double? {
+        guard let distanceM, distanceM > 0, let durationMin, durationMin > 0 else { return nil }
+        let seconds = Double(durationMin * 60)
+        switch sport {
+        case .run: return seconds / (distanceM / 1000)
+        case .swim: return seconds / (distanceM / 100)
+        default: return nil
+        }
+    }
+
+    var paceUnit: String { sport == .swim ? "/100 m" : "/km" }
+
+    /// « 5:30 /km », or nil while the pace cannot be told.
+    var paceText: String? {
+        guard let paceSeconds, let total = Int(exactly: paceSeconds.rounded()) else { return nil }
+        return String(format: "%d:%02d %@", total / 60, total % 60, paceUnit)
+    }
     var measuresElevation: Bool { [.run, .bike, .hike].contains(sport) }
     var measuresHeartRate: Bool { [.run, .hike].contains(sport) }
     var isStrength: Bool { sport == .strength }
@@ -129,6 +149,14 @@ struct ActivityDraft: Equatable {
         }
     }
 
+    private var paceKey: String? {
+        switch sport {
+        case .run: "paceSecPerKm"
+        case .swim: "avgPaceSecPer100m"
+        default: nil
+        }
+    }
+
     private var distanceM: Double? {
         guard let value = Self.parse(distanceText) else { return nil }
         return sport == .swim ? value : value * 1000
@@ -139,6 +167,11 @@ struct ActivityDraft: Equatable {
         var object: [String: JSONValue] = [:]
         if measuresDistance, original.map({ $0.distanceText != distanceText }) ?? !distanceText.isEmpty {
             object["distanceM"] = distanceM.map(JSONValue.number) ?? .null
+        }
+        // The pace follows distance and duration, so it moves with either.
+        let paceMoved = original.map { $0.distanceText != distanceText || $0.durationMin != durationMin } ?? true
+        if paceMoved, let paceKey, !(original == nil && paceSeconds == nil) {
+            object[paceKey] = paceSeconds.map(JSONValue.number) ?? .null
         }
         if measuresElevation, original.map({ $0.elevationText != elevationText }) ?? !elevationText.isEmpty {
             object["elevationM"] = Self.parse(elevationText).map(JSONValue.number) ?? .null

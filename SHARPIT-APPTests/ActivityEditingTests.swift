@@ -30,6 +30,54 @@ import Testing
     #expect(draft.creation()["swimMetrics"]?["distanceM"] == .number(1500))
 }
 
+@Test func aRunTellsItsPaceFromDistanceAndDuration() {
+    var draft = ActivityDraft(date: TrainingDayId.date("2026-10-04")!)
+    draft.durationMin = 50
+    draft.distanceText = "10"
+
+    #expect(draft.paceText == "5:00 /km")
+    #expect(draft.creation()["runMetrics"]?["paceSecPerKm"] == .number(300))
+}
+
+@Test func aSwimTellsItsPacePer100Metres() {
+    var draft = ActivityDraft(date: .now.addingTimeInterval(-600))
+    draft.sport = .swim
+    draft.durationMin = 30
+    draft.distanceText = "1500"
+
+    #expect(draft.paceText == "2:00 /100 m")
+    #expect(draft.creation()["swimMetrics"]?["avgPaceSecPer100m"] == .number(120))
+}
+
+@Test func noDistanceMeansNoPace() {
+    var draft = ActivityDraft(date: .now.addingTimeInterval(-600))
+    #expect(draft.paceText == nil)
+    #expect(draft.creation()["runMetrics"] == nil)
+
+    draft.sport = .bike
+    draft.distanceText = "40"
+    #expect(draft.paceText == nil)
+}
+
+@Test func aRideCarriesItsDistanceInMetres() {
+    var draft = ActivityDraft(date: .now.addingTimeInterval(-600))
+    draft.sport = .bike
+    draft.distanceText = "42,5"
+
+    #expect(draft.creation()["bikeMetrics"]?["distanceM"] == .number(42_500))
+    #expect(draft.creation()["bikeMetrics"]?["paceSecPerKm"] == nil)
+}
+
+@Test func changingTheDurationOfARunSendsTheNewPace() {
+    var original = ActivityDraft(date: TrainingDayId.date("2026-10-04")!)
+    original.durationMin = 50
+    original.distanceText = "10"
+    var draft = original
+    draft.durationMin = 60
+
+    #expect(draft.changes(from: original)["runMetrics"]?["paceSecPerKm"] == .number(360))
+}
+
 @Test func aStrengthSessionNeedsAnExerciseAndSendsItsSets() {
     var draft = ActivityDraft(date: .now.addingTimeInterval(-600))
     draft.sport = .strength
