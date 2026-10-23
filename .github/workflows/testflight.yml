@@ -1,0 +1,122 @@
+name: TestFlight
+
+# Archives the app and uploads it to App Store Connect, where TestFlight picks it up: after CI
+# passed on main, or by hand (Actions › TestFlight › Run workflow, any branch).
+#
+# Signing is automatic and cloud-managed: xcodebuild signs with an App Store Connect API key, so
+# no certificate or profile lives in the repository or the secrets. The key needs the Admin role
+# (cloud-managed distribution certificates). Repository secrets:
+#   ASC_KEY_ID      the key's ID (App Store Connect › Users and Access › Integrations)
+#   ASC_ISSUER_ID   the issuer ID shown on the same page
+#   ASC_KEY_P8      the contents of AuthKey_<ID>.p8, pasted whole
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# One upload at a time, none cancelled: a build half-uploaded is worse than one queued.
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    # From CI only when it passed on a push to main — never for a pull request's run.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The commit CI tested, not whatever main is by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Select the newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Write the App Store Connect key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          test -n "$ASC_KEY_P8" || { echo "::error::ASC_KEY_P8 is not set"; exit 1; }
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
+
+      # The build number is the UTC minute, as the hand bumps wrote it (202610231720): always
+      # higher than the last, and the same for the app and its widgets.
+      - name: Pick the build number
+        id: build
+        run: echo "number=$(date -u +%Y%m%d%H%M)" >> "$GITHUB_OUTPUT"
+
+      - name: Archive
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project SHARPIT-APP.xcodeproj \
+            -scheme SHARPIT-APP \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/SharpIt.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM=6X5CP5SFAG \
+            CURRENT_PROJECT_VERSION=${{ steps.build.outputs.number }} \
+            | tee archive.log | grep -E "error:|warning: .*[Ss]ign|ARCHIVE (SUCCEEDED|FAILED)"
+
+      # `Config/ExportOptions.plist` has `destination: upload`: the export is the upload.
+      - name: Upload to App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/SharpIt.xcarchive" \
+            -exportOptionsPlist Config/ExportOptions.plist \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            | tee export.log | grep -E "error:|Upload|EXPORT (SUCCEEDED|FAILED)"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Build ${{ steps.build.outputs.number }} sent to App Store Connect"
+            echo "Commit \`${{ github.event.workflow_run.head_sha || github.sha }}\`. TestFlight lists it once Apple has processed it (usually 10–30 min)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Show why it failed
+        if: failure()
+        run: |
+          for log in archive.log export.log; do
+            test -f "$log" && grep -nE "error:|No signing certificate|provisioning profile|requires a provisioning|not authorized|403" "$log" | head -60 || true
+          done
+
+      - name: Upload the logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testflight-logs
+          path: |
+            archive.log
+            export.log
+          if-no-files-found: ignore
+
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

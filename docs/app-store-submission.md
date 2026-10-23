@@ -126,5 +126,8 @@ Connect asks for the iPhone set alone.
    production (the server stores the athlete's language there).
 9. **Sandbox check**: on TestFlight, buy with a Sandbox account, confirm Paramètres › SharpIt Pro
    shows Pro and that the subscription row exists on the server.
-10. **Upload the build** from Xcode Organizer (CLI export needs an Apple account in Xcode).
+10. **Upload the build**: the `TestFlight` workflow (`.github/workflows/testflight.yml`) archives and
+    uploads after CI passes on main, or by hand from Actions › TestFlight › Run workflow. It signs
+    with an App Store Connect API key (Admin role, secrets `ASC_KEY_ID`, `ASC_ISSUER_ID`,
+    `ASC_KEY_P8`) and stamps the UTC minute as the build number. Xcode Organizer still works.
 11. **Submit for Review** with the subscriptions included in the same submission.

@@ -33,6 +33,10 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   test -only-testing:SHARPIT-APPTests/TodayStoreTests
 ```
 
+TestFlight: `.github/workflows/testflight.yml` archives and uploads every main that passed CI (or on
+demand), signing with an App Store Connect API key and stamping the UTC minute as the build number
+— no hand bump of `CURRENT_PROJECT_VERSION`.
+
 Requirements: Xcode 27 / Swift 6 language mode, iOS 27 simulator (Liquid Glass), Clerk
 Native API enabled with the same publishable key as the web app.
 
