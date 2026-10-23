@@ -18,6 +18,12 @@ enum SleepReadout {
         return sign + duration(abs(minutes))
     }
 
+    /// « 91 % »: the share of the time in bed spent asleep.
+    static func efficiency(asleep: Double?, inBed: Double?) -> String {
+        guard let asleep, let inBed, inBed > 0 else { return "—" }
+        return "\(Int(min(asleep / inBed, 1) * 100)) %"
+    }
+
     /// « ↑ 8 vs moy. »: the night's score against the recent average. Nil when either is
     /// unknown or they round to the same point.
     static func scoreDelta(score: Double?, average: Double?) -> String? {

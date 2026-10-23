@@ -211,3 +211,10 @@ private actor DayRecorder {
     #expect(parts.map(\.label) == ["Durée", "Récupération"])
     #expect(parts.map(\.value) == [94, 88])
 }
+
+@Test func sleepEfficiencyIsTheShareOfTimeInBedAsleep() {
+    #expect(SleepReadout.efficiency(asleep: 450, inBed: 500) == "90 %")
+    #expect(SleepReadout.efficiency(asleep: 520, inBed: 500) == "100 %")
+    #expect(SleepReadout.efficiency(asleep: nil, inBed: 500) == "—")
+    #expect(SleepReadout.efficiency(asleep: 450, inBed: 0) == "—")
+}

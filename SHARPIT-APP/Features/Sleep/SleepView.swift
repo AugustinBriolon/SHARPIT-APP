@@ -72,6 +72,9 @@ struct SleepSections: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             SleepHero(sleep: sleep)
             SleepCoachCard(sleep: sleep)
+            if sleep.nightStatus == .present {
+                SleepNightDetailCard(sleep: sleep)
+            }
             if sleep.nightStatus == .present, let shares = SleepReadout.stageShares(sleep.stages) {
                 SleepStructureSection(stages: sleep.stages, shares: shares)
             }
@@ -79,7 +82,6 @@ struct SleepSections: View {
             if sleep.history.contains(where: { $0.minutes != nil }) {
                 SleepHistorySection(history: sleep.history, targetMin: sleep.targetMin)
             }
-            SharpitConfidenceLine(pct: sleep.confidencePct)
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.bottom, SharpitSpacing.xl)
@@ -295,6 +297,35 @@ private struct SleepCoachCard: View {
     }
 }
 
+// MARK: - Last night in detail
+
+/// The night as it went: when it started and ended, how much of the time in bed was sleep,
+/// and how long the athlete lay awake.
+private struct SleepNightDetailCard: View {
+    let sleep: V1SleepResponse
+
+    private var inBed: Double? { SleepReadout.timeInBed(bedtime: sleep.bedtimeMin, wake: sleep.wakeMin) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            SharpitCardHeader(title: String(localized: "Nuit passée"), symbol: "bed.double.fill", showsChevron: false)
+            Grid(alignment: .leading, horizontalSpacing: SharpitSpacing.md, verticalSpacing: SharpitSpacing.md) {
+                GridRow {
+                    SharpitStatTile(caption: String(localized: "Coucher"), value: SleepReadout.clock(sleep.bedtimeMin), isFlat: true)
+                    SharpitStatTile(caption: String(localized: "Lever"), value: SleepReadout.clock(sleep.wakeMin), isFlat: true)
+                }
+                GridRow {
+                    SharpitStatTile(caption: String(localized: "Efficacité"), value: SleepReadout.efficiency(asleep: sleep.durationMin, inBed: inBed), isFlat: true)
+                    SharpitStatTile(caption: String(localized: "Éveillé"), value: SleepReadout.duration(sleep.stages.awakeMin), isFlat: true)
+                }
+            }
+        }
+        .padding(SharpitSpacing.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitSurface(.panel)
+    }
+}
+
 // MARK: - Structure
 
 private struct SleepStructureSection: View {
@@ -441,6 +472,11 @@ private struct SleepHistorySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(title: String(localized: "Tendances"), symbol: "chart.bar.fill", subtitle: String(localized: "\(history.count) dernières nuits"), showsChevron: false)
+            SharpitStatTile(
+                caption: String(localized: "Durée moyenne · sur \(SleepReadout.duration(targetMin))"),
+                value: SleepReadout.duration(nights.isEmpty ? nil : nights.map(\.minutes).reduce(0, +) / Double(nights.count)),
+                isFlat: true
+            )
             SharpitScrubChart(
                 points: nights.map { SharpitScrubPoint(date: $0.date, value: $0.minutes / 60) },
                 kind: .bars,
