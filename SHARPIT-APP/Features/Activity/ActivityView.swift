@@ -540,35 +540,10 @@ private struct ActivityFilterMenu: View {
 
     var body: some View {
         Menu {
-            Picker("Sport", selection: $filter.sport.animation(SharpitMotion.selection)) {
-                Text("Tous les sports").tag(V1ActivityType?.none)
-                ForEach(sports, id: \.self) { sport in
-                    Label { Text(sport.label) } icon: { Image(sharpitSymbol: sport.symbolName) }.tag(V1ActivityType?.some(sport))
-                }
-            }
-            .pickerStyle(.menu)
-            Picker("Période", selection: $filter.period.animation(SharpitMotion.selection)) {
-                ForEach(ActivityFilter.Period.allCases) { period in
-                    Text(period.label).tag(period)
-                }
-            }
-            .pickerStyle(.menu)
-            Picker("Durée", selection: $filter.effortTime.animation(SharpitMotion.selection)) {
-                ForEach(ActivityFilter.EffortTime.allCases) { effortTime in
-                    Text(effortTime.label).tag(effortTime)
-                }
-            }
-            .pickerStyle(.menu)
-            if filter.narrows {
-                Divider()
-                Button("Réinitialiser les filtres", systemImage: "arrow.counterclockwise") {
-                    SharpitMotion.run(SharpitMotion.selection) {
-                        filter.sport = nil
-                        filter.period = .all
-                        filter.effortTime = .any
-                    }
-                }
-            }
+            menuItems
+                // The menu's rows took the app's lime too, unreadable on the light menu glass.
+                .tint(SharpitColor.foreground)
+                .foregroundStyle(SharpitColor.foreground)
         } label: {
             Label(
                 String(localized: "Filtrer"),
@@ -581,5 +556,37 @@ private struct ActivityFilterMenu: View {
         // The toolbar tints its buttons with the app's lime; a label colour alone lost to it.
         .tint(SharpitColor.foreground)
         .accessibilityValue(filter.narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
+    }
+
+    @ViewBuilder private var menuItems: some View {
+        Picker("Sport", selection: $filter.sport.animation(SharpitMotion.selection)) {
+            Text("Tous les sports").tag(V1ActivityType?.none)
+            ForEach(sports, id: \.self) { sport in
+                Label { Text(sport.label) } icon: { Image(sharpitSymbol: sport.symbolName) }.tag(V1ActivityType?.some(sport))
+            }
+        }
+        .pickerStyle(.menu)
+        Picker("Période", selection: $filter.period.animation(SharpitMotion.selection)) {
+            ForEach(ActivityFilter.Period.allCases) { period in
+                Text(period.label).tag(period)
+            }
+        }
+        .pickerStyle(.menu)
+        Picker("Durée", selection: $filter.effortTime.animation(SharpitMotion.selection)) {
+            ForEach(ActivityFilter.EffortTime.allCases) { effortTime in
+                Text(effortTime.label).tag(effortTime)
+            }
+        }
+        .pickerStyle(.menu)
+        if filter.narrows {
+            Divider()
+            Button("Réinitialiser les filtres", systemImage: "arrow.counterclockwise") {
+                SharpitMotion.run(SharpitMotion.selection) {
+                    filter.sport = nil
+                    filter.period = .all
+                    filter.effortTime = .any
+                }
+            }
+        }
     }
 }
