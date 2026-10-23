@@ -577,6 +577,8 @@ private struct ActivityFilterMenu: View {
             )
             .foregroundStyle(SharpitColor.foreground)
         }
+        // The toolbar tints its buttons with the app's lime; a label colour alone lost to it.
+        .tint(SharpitColor.foreground)
         .accessibilityValue(filter.narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
     }
 }

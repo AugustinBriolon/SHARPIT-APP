@@ -58,7 +58,7 @@ struct CoachView: View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 thread
-                if showsJumpToLatest {
+                if showsJumpToLatest, !showsQuickActions {
                     jumpToLatestButton
                         .padding(.bottom, SharpitSpacing.sm)
                 }
@@ -249,6 +249,15 @@ struct CoachView: View {
                 try? await Task.sleep(for: .milliseconds(60))
                 withAnimation(SharpitMotion.reveal) {
                     scrollPosition.scrollTo(id: CoachThreadLayout.turnId(id), anchor: .top)
+                }
+            }
+        }
+        // The Coach tab tapped again: the system scrolls to the top, the thread goes to its latest.
+        .onChange(of: router.coachReselectTick) { _, _ in
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(60))
+                withAnimation(SharpitMotion.reveal) {
+                    scrollPosition.scrollTo(id: CoachThreadLayout.endId, anchor: .bottom)
                 }
             }
         }
@@ -495,10 +504,12 @@ struct CoachView: View {
                         .padding(.horizontal, SharpitSpacing.md)
                         .padding(.vertical, SharpitSpacing.xs)
                         .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                        .sharpitGlassControl(
-                            in: RoundedRectangle(cornerRadius: SharpitSpacing.minimumTouchTarget / 2, style: .continuous),
-                            fallback: SharpitColor.chipSurface
+                        // Opaque: glass let the thread's text show through the choices.
+                        .background(
+                            SharpitColor.chipSurface,
+                            in: RoundedRectangle(cornerRadius: SharpitSpacing.minimumTouchTarget / 2, style: .continuous)
                         )
+                        .sharpitShadow(.control)
                 }
                 .buttonStyle(.sharpitPressable)
                 .transition(

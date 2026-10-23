@@ -98,10 +98,13 @@ final class ShellRouter {
 
     /// Bumped when the Plan tab is tapped while already showing: Plan returns to the active week.
     private(set) var planReselectTick = 0
+    /// Bumped when the Coach tab is tapped while already showing: the thread goes to its latest message.
+    private(set) var coachReselectTick = 0
 
     /// A tap on the tab bar. `select` is for code; this one also sees a tap on the tab already shown.
     func tabBarSelected(_ tab: ShellTab) {
         if tab == .plan, selectedTab == .plan { planReselectTick += 1 }
+        if tab == .coach, selectedTab == .coach { coachReselectTick += 1 }
         selectedTab = tab
     }
 
