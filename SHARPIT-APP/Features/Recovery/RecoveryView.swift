@@ -305,42 +305,22 @@ private struct RecoveryHistorySection: View {
         }
     }
 
+    private var baseline: ClosedRange<Double>? {
+        guard let low = today.hrvBaselineLow, let high = today.hrvBaselineHigh, low <= high else { return nil }
+        return low...high
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             SharpitEyebrow(String(localized: "VFC · \(history.count) derniers jours"))
-            Chart {
-                if let low = today.hrvBaselineLow, let high = today.hrvBaselineHigh,
-                   let first = points.first?.date, let last = points.last?.date {
-                    RectangleMark(
-                        xStart: .value(String(localized: "Début"), first),
-                        xEnd: .value(String(localized: "Fin"), last),
-                        yStart: .value(String(localized: "Norme basse"), low),
-                        yEnd: .value(String(localized: "Norme haute"), high)
-                    )
-                    .foregroundStyle(SharpitColor.signalRecovery.opacity(0.12))
-                }
-                ForEach(points, id: \.date) { point in
-                    LineMark(x: .value(String(localized: "Jour"), point.date, unit: .day), y: .value("VFC", point.hrv))
-                        .foregroundStyle(SharpitColor.primary)
-                        .interpolationMethod(.monotone)
-                    PointMark(x: .value(String(localized: "Jour"), point.date, unit: .day), y: .value("VFC", point.hrv))
-                        .foregroundStyle(SharpitColor.primary)
-                        .symbolSize(18)
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .day, count: 3)) { _ in
-                    AxisValueLabel(format: .dateTime.day(), centered: false)
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading) { _ in
-                    AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
-                    AxisValueLabel()
-                }
-            }
-            .chartYScale(domain: .automatic(includesZero: false))
-            .frame(height: 150)
+            SharpitScrubChart(
+                points: points.map { SharpitScrubPoint(date: $0.date, value: $0.hrv) },
+                band: baseline,
+                axisName: "VFC",
+                height: 150,
+                axisLabel: { String(Int($0.rounded())) },
+                readout: { "\(Int($0.rounded())) ms" }
+            )
             .padding(SharpitSpacing.md)
             .sharpitSurface(.panel)
         }

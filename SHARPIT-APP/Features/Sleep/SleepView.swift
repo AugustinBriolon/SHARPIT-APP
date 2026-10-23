@@ -441,38 +441,18 @@ private struct SleepHistorySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             SharpitCardHeader(title: String(localized: "Tendances"), symbol: "chart.bar.fill", subtitle: String(localized: "\(history.count) dernières nuits"), showsChevron: false)
-            Chart {
-                ForEach(nights, id: \.date) { night in
-                    BarMark(
-                        x: .value(String(localized: "Nuit"), night.date, unit: .day),
-                        y: .value(String(localized: "Heures"), night.minutes / 60)
-                    )
-                    .foregroundStyle(night.minutes >= targetMin ? SharpitColor.foreground : SharpitColor.signalCaution)
-                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                }
-                RuleMark(y: .value(String(localized: "Cible"), targetMin / 60))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                    .annotation(position: .top, alignment: .trailing) {
-                        Text("cible \(SleepReadout.duration(targetMin))")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .day, count: 3)) { _ in
-                    AxisValueLabel(format: .dateTime.day(), centered: true)
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading, values: .stride(by: 2)) { value in
-                    AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
-                    AxisValueLabel {
-                        if let hours = value.as(Double.self) { Text("\(Int(hours)) h") }
-                    }
-                }
-            }
-            .frame(height: 160)
+            SharpitScrubChart(
+                points: nights.map { SharpitScrubPoint(date: $0.date, value: $0.minutes / 60) },
+                kind: .bars,
+                target: targetMin / 60,
+                targetLabel: "cible \(SleepReadout.duration(targetMin))",
+                barTint: { $0 * 60 >= targetMin ? SharpitColor.foreground : SharpitColor.signalCaution },
+                axisName: String(localized: "Heures"),
+                yAxisStride: 2,
+                height: 160,
+                axisLabel: { "\(Int($0)) h" },
+                readout: { SleepReadout.duration($0 * 60) }
+            )
         }
         .padding(SharpitSpacing.cardPadding)
         .sharpitSurface(.panel)

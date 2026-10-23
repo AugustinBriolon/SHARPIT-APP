@@ -274,19 +274,17 @@ struct SanteMarkerTile: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                 HStack(alignment: .top, spacing: SharpitSpacing.xxs) {
                     Image(systemName: SanteReadout.symbol(marker.key))
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(SharpitColor.foreground)
                     Text(SanteReadout.title(marker.key))
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(SharpitColor.mutedForeground)
                         .accessibilityHidden(true)
                 }
                 Spacer(minLength: SharpitSpacing.xs)
@@ -309,13 +307,13 @@ struct SanteMarkerTile: View {
                         // The month's change, beside the value it moved.
                         Text(SanteReadout.signedDelta(trend.delta, for: marker.key))
                             .font(SharpitTypography.label.weight(.semibold))
-                            .foregroundStyle(trend.tone == .neutral ? SharpitColor.foreground : trend.tone.color)
+                            .foregroundStyle(SharpitColor.foreground)
                             .lineLimit(1)
                             .fixedSize()
                             .padding(.horizontal, SharpitSpacing.xs)
                             .padding(.vertical, 3)
                             .background(
-                                (trend.tone == .neutral ? SharpitColor.mutedForeground : trend.tone.color).opacity(0.15),
+                                (trend.tone == .neutral ? SharpitColor.mutedForeground : trend.tone.color).opacity(0.22),
                                 in: Capsule()
                             )
                     }
@@ -324,13 +322,12 @@ struct SanteMarkerTile: View {
                     Text(marker.norm?.label ?? SanteReadout.basis(marker))
                         .font(SharpitTypography.meta.weight(.semibold))
                         .foregroundStyle(marker.norm?.tone.color ?? SharpitColor.mutedForeground)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.85)
+                        .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                     if marker.series.count > 2 {
                         CorpsSparkline(points: marker.series, tone: SharpitColor.primary)
-                            .frame(width: 40, height: 18)
+                            .frame(width: 56, height: 26)
                     }
                 }
             }

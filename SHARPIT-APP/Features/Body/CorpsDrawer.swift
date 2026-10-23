@@ -26,7 +26,7 @@ struct CorpsSparkline: View {
                 LineMark(x: .value(String(localized: "Jour"), point.date), y: .value(String(localized: "Valeur"), point.value))
                     .interpolationMethod(.monotone)
                     .foregroundStyle(tone)
-                    .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
             }
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
@@ -53,11 +53,8 @@ struct CorpsMetricDrawer: View {
     @State private var range: CorpsRange = .ninetyDays
     @State private var loaded: [CorpsPoint]?
     @State private var isLoading = false
-    /// Where the finger is on the chart; the nearest measure is read out.
-    @State private var scrubbedDate: Date?
-    /// The curve drawn left to right, then its dots, each time a range arrives.
-    @State private var drawProgress: CGFloat = 0
-    @State private var dotScale: CGFloat = 0
+    /// Bumped when a new range arrives, so the curve draws anew.
+    @State private var redrawToken = 0
 
     var body: some View {
         NavigationStack {
@@ -107,21 +104,14 @@ struct CorpsMetricDrawer: View {
         .task(id: range) {
             isLoading = true
             let fetched = await loadSeries(range)
-            scrubbedDate = nil
             isLoading = false
             // The first answer refines the curve already drawn from the tile; a new range draws anew.
             guard loaded != nil else {
                 SharpitMotion.run { loaded = fetched }
                 return
             }
-            drawProgress = 0
-            dotScale = 0
             loaded = fetched
-            drawCurve()
-        }
-        .onAppear(perform: drawCurve)
-        .onChange(of: scrubbed?.date) { _, date in
-            if date != nil { SharpitHaptics.play(.notch(major: false)) }
+            redrawToken += 1
         }
     }
 
@@ -154,102 +144,21 @@ struct CorpsMetricDrawer: View {
         loaded ?? range.filter(metric.series)
     }
 
-    private func drawCurve() {
-        withAnimation(SharpitMotion.gaugeFill) { drawProgress = 1 }
-        withAnimation(SharpitMotion.reveal.delay(SharpitMotion.reduceMotion ? 0 : 0.45)) { dotScale = 1 }
-    }
-
-    private var scrubbed: CorpsPoint? {
-        scrubbedDate.flatMap { CorpsFormat.nearest(points, to: $0) }
-    }
-
     private var chart: some View {
-        let shown = points
-        let values = shown.map(\.value) + [metric.baseline?.lowerBound, metric.baseline?.upperBound, target].compactMap { $0 }
-        return Chart {
-            if let band = metric.baseline, let first = shown.first, let last = shown.last {
-                RectangleMark(
-                    xStart: .value(String(localized: "Début"), first.date),
-                    xEnd: .value(String(localized: "Fin"), last.date),
-                    yStart: .value(String(localized: "Bas"), band.lowerBound),
-                    yEnd: .value(String(localized: "Haut"), band.upperBound)
-                )
-                .foregroundStyle(SharpitColor.signalRecovery.opacity(0.12))
-            }
-            if let target, target > 0 {
-                RuleMark(y: .value(String(localized: "Cible"), target))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                    .annotation(position: .top, alignment: .trailing) {
-                        Text("cible \(CorpsReadout.format(target, for: metric.key))")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                    }
-            }
-            ForEach(shown) { point in
-                LineMark(x: .value(String(localized: "Jour"), point.date), y: .value(metric.key.label, point.value))
-                    .interpolationMethod(.monotone)
-                    .foregroundStyle(SharpitColor.primary)
-                PointMark(x: .value(String(localized: "Jour"), point.date), y: .value(metric.key.label, point.value))
-                    .foregroundStyle(SharpitColor.primary)
-                    .symbolSize((shown.count > 40 ? 6 : 22) * dotScale)
-            }
-            if let scrubbed {
-                RuleMark(x: .value(String(localized: "Jour"), scrubbed.date))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
-                    .lineStyle(StrokeStyle(lineWidth: 1))
-                PointMark(x: .value(String(localized: "Jour"), scrubbed.date), y: .value(metric.key.label, scrubbed.value))
-                    .foregroundStyle(SharpitColor.primary)
-                    .symbolSize(90)
-                    .annotation(position: .top, spacing: 6, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                        scrubLabel(scrubbed)
-                    }
-            }
-        }
-        .chartXSelection(value: $scrubbedDate)
-        .mask(alignment: .leading) {
-            GeometryReader { geo in
-                Rectangle().frame(width: geo.size.width * drawProgress)
-            }
-        }
-        // Never zero-based: these measures move by a few percent, and a zero axis would
-        // flatten every real change.
-        .chartYScale(domain: CorpsFormat.domain(values, padding: 0.08), range: .plotDimension(padding: 4))
-        .chartYAxis {
-            AxisMarks(position: .leading) { value in
-                AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
-                AxisValueLabel {
-                    if let number = value.as(Double.self) {
-                        Text(CorpsReadout.format(number, for: metric.key))
-                    }
-                }
-            }
-        }
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                AxisValueLabel(format: .dateTime.day().month(.abbreviated))
-            }
-        }
-        .frame(height: 220)
+        SharpitScrubChart(
+            points: points.map { SharpitScrubPoint(date: $0.date, value: $0.value) },
+            band: metric.baseline,
+            target: target,
+            targetLabel: target.map { "cible \(CorpsReadout.format($0, for: metric.key))" },
+            axisName: metric.key.label,
+            height: 220,
+            redrawToken: redrawToken,
+            axisLabel: { CorpsReadout.format($0, for: metric.key) },
+            readout: { CorpsReadout.format($0, for: metric.key) + (metric.key.unit.map { " \($0)" } ?? "") }
+        )
         .padding(SharpitSpacing.md)
         .sharpitSurface(.panel)
         .accessibilityLabel("\(metric.key.label), \(range.label)")
-    }
-
-    private func scrubLabel(_ point: CorpsPoint) -> some View {
-        VStack(spacing: 1) {
-            Text(CorpsReadout.format(point.value, for: metric.key) + (metric.key.unit.map { " \($0)" } ?? ""))
-                .font(SharpitTypography.instrument)
-                .monospacedDigit()
-                .foregroundStyle(SharpitColor.foreground)
-            Text(point.date.sharpitFormatted(.dateTime.day().month(.abbreviated)))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .sharpitConcentricBackground(SharpitElevatedColor.panelOnSheet, minimum: SharpitRadius.small)
-        .sharpitShadow(.control)
     }
 
     @ViewBuilder
@@ -308,11 +217,6 @@ enum CorpsFormat {
     }
 
     /// Padding either side so a flat series still has room, never a zero-based axis.
-    /// The measure closest in time to where the finger is.
-    static func nearest(_ points: [CorpsPoint], to date: Date) -> CorpsPoint? {
-        points.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
-    }
-
     static func domain(_ values: [Double], padding: Double) -> ClosedRange<Double> {
         guard let low = values.min(), let high = values.max() else { return 0...1 }
         let span = max(high - low, abs(high) * 0.02, 0.5)
