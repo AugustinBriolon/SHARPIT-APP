@@ -38,7 +38,7 @@ struct RootView: View {
     @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
 
     var body: some View {
-        TabView(selection: $router.selectedTab) {
+        TabView(selection: Binding(get: { router.selectedTab }, set: { router.tabBarSelected($0) })) {
             Tab("Résumé", systemImage: "sun.max", value: ShellTab.today) {
                 TodayView(
                     client: SharpitClient(),

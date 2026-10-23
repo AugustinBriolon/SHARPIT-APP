@@ -96,6 +96,15 @@ final class ShellRouter {
         selectedTab = tab
     }
 
+    /// Bumped when the Plan tab is tapped while already showing: Plan returns to the active week.
+    private(set) var planReselectTick = 0
+
+    /// A tap on the tab bar. `select` is for code; this one also sees a tap on the tab already shown.
+    func tabBarSelected(_ tab: ShellTab) {
+        if tab == .plan, selectedTab == .plan { planReselectTick += 1 }
+        selectedTab = tab
+    }
+
     /// A day Plan should open on — the week holding it. Read and cleared by Plan.
     var planFocusDay: Date?
 

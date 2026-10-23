@@ -14,6 +14,19 @@ struct ShellRouterPlanFocusTests {
         #expect(router.planFocusDay == day)
     }
 
+    @Test func tappingPlanAgainBumpsTheReselectTick() {
+        let router = ShellRouter()
+        router.tabBarSelected(.plan)
+        #expect(router.planReselectTick == 0)
+
+        router.tabBarSelected(.plan)
+        #expect(router.planReselectTick == 1)
+
+        router.tabBarSelected(.coach)
+        router.tabBarSelected(.coach)
+        #expect(router.planReselectTick == 1)
+    }
+
     @Test func foldDayIdRoundTripsToItsLocalMidnight() {
         let date = TrainingDayId.date("2026-10-20")
 

@@ -230,6 +230,10 @@ struct PlanView: View {
                 router.pendingPlannedSessionId = nil
                 Task { await openPlannedSession(id: id) }
             }
+            // The Plan tab tapped again: back to the active week.
+            .onChange(of: router.planReselectTick) { _, _ in
+                if !store.isCurrentWeek { store.goToToday() }
+            }
             // Régularité tapped on another day: the week holding it.
             .onChange(of: router.planFocusDay, initial: true) { _, day in
                 guard let day else { return }
