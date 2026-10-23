@@ -384,7 +384,8 @@ extension PlanView {
                     tone: .success,
                     autoDismissAfter: 3.0
                 )
-                Task { await store.loadAroundSelection() }
+                // Forced, everywhere: the week already shown would keep the session as to do.
+                router.noteActivitiesChanged()
             }
         )
     }
