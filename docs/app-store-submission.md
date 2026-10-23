@@ -99,12 +99,11 @@ Update `docs/beta-testflight.md` « Beta App Review notes » with the demo accou
 
 ## Screenshots
 
-`TARGETED_DEVICE_FAMILY = 1,2`: the app ships on iPad too, so App Store Connect requires both sets.
-Either provide them or switch the target to iPhone only before the first submission (decision).
+The app ships on iPhone only (`TARGETED_DEVICE_FAMILY = 1`, `docs/adr/0022`), so App Store
+Connect asks for the iPhone set alone.
 
 - iPhone 6.9" (1320 × 2868), 3 to 10 shots: Aujourd'hui (verdict du matin), Plan de la semaine,
   « Rattraper ma semaine », Course (projection), Coach, Journal alimentaire, SharpIt Pro.
-- iPad 13" (2064 × 2752), same screens — only if iPad stays supported.
 
 ## Only the account holder can do this — in order
 
