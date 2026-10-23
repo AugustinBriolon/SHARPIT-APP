@@ -129,17 +129,11 @@ struct LastActivityView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         WidgetEyebrow(text: activity.sport.label, tint: tone)
                         WidgetTitle(text: activity.title)
-                        HStack(alignment: .firstTextBaseline, spacing: 14) {
-                            ForEach(figures(activity, limit: 3), id: \.label) { row in
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(row.label)
-                                        .font(SharpitTypography.label)
-                                        .tracking(SharpitTypography.labelTracking)
-                                        .textCase(.uppercase)
-                                        .foregroundStyle(SharpitColor.mutedForeground)
-                                    WidgetFigure(figure: .init(value: row.value, unit: row.unit))
-                                }
-                            }
+                        // Three columns while they fit, then two: a long distance pushed the pace out.
+                        ViewThatFits(in: .horizontal) {
+                            labeledFigures(figures(activity, limit: 3))
+                            labeledFigures(figures(activity, limit: 2))
+                            labeledFigures(figures(activity, limit: 1))
                         }
                         .padding(.top, 6)
                     }
@@ -158,6 +152,23 @@ struct LastActivityView: View {
                     .padding(.top, 4)
             }
             .widgetURL(entry.link("/activity"))
+        }
+    }
+
+    private func labeledFigures(_ rows: [LabeledFigure]) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 14) {
+            ForEach(rows, id: \.label) { row in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(row.label)
+                        .font(SharpitTypography.label)
+                        .tracking(SharpitTypography.labelTracking)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .lineLimit(1)
+                    WidgetFigure(figure: .init(value: row.value, unit: row.unit))
+                }
+                .fixedSize(horizontal: true, vertical: false)
+            }
         }
     }
 

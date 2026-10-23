@@ -61,7 +61,8 @@ struct WidgetFigure: View {
 }
 
 /// A row of figures that never truncates: the large face if all fit, else the body face, else
-/// the first figure alone — a cut « 1:2… » reads as broken, a dropped second figure does not.
+/// the first figure alone, then that figure shrunk — a cut « 1:2… » reads as broken, a dropped second
+/// figure does not.
 struct WidgetFigureRow: View {
     let figures: [WidgetSnapshot.Figure]
     var spacing: CGFloat = 12
@@ -71,6 +72,10 @@ struct WidgetFigureRow: View {
             row(figures, large: true)
             row(figures, large: false)
             row(Array(figures.prefix(1)), large: false)
+            // Last resort for one figure wider than the widget: it shrinks rather than spill.
+            if let first = figures.first {
+                WidgetFigure(figure: first).minimumScaleFactor(0.5)
+            }
         }
     }
 
