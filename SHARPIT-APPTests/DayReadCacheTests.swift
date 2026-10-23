@@ -77,4 +77,48 @@ struct DayReadCacheTests {
         #expect(cache.lastKnown(Int.self, day: "2026-10-12") == 1)
         #expect(cache.settled(Int.self, day: "2026-10-11") == 2)
     }
+
+    /// A cache as a fresh launch would build it, over the same disk and defaults.
+    private static func launch(on directory: URL, defaults: UserDefaults) -> DayReadCache {
+        DayReadCache(today: { "2026-10-17" }, disk: ActivityDiskCache(directory: directory), defaults: defaults)
+    }
+
+    private static func scratch() -> (URL, UserDefaults) {
+        let name = "DayReadCacheTests-\(UUID().uuidString)"
+        return (FileManager.default.temporaryDirectory.appending(path: name), UserDefaults(suiteName: name)!)
+    }
+
+    @Test func aPastDayReadSurvivesARelaunch() async throws {
+        let (directory, defaults) = Self.scratch()
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CountingURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        CountingURLProtocol.hits = 0
+
+        let first = SharpitClient(session: session, baseURL: URL(string: "https://sharpit.app")!,
+                                  dayReads: Self.launch(on: directory, defaults: defaults))
+        _ = try await first.trainingLoad(trainingDayId: "2026-10-12", token: "t")
+        let relaunched = SharpitClient(session: session, baseURL: URL(string: "https://sharpit.app")!,
+                                       dayReads: Self.launch(on: directory, defaults: defaults))
+        let again = try await relaunched.trainingLoad(trainingDayId: "2026-10-12", token: "t")
+
+        #expect(again.trainingDayId == "2026-10-12")
+        #expect(CountingURLProtocol.hits == 1)
+    }
+
+    @Test func aWriteMakesTheDiskCopyStaleButStillKnown() {
+        let (directory, defaults) = Self.scratch()
+        Self.launch(on: directory, defaults: defaults).keep(1, day: "2026-10-12", data: Data("1".utf8))
+        Self.launch(on: directory, defaults: defaults).expireAll()
+
+        let relaunched = Self.launch(on: directory, defaults: defaults)
+        #expect(relaunched.settled(Int.self, day: "2026-10-12") == nil)
+        #expect(relaunched.lastKnown(Int.self, day: "2026-10-12") == 1)
+    }
+
+    @Test func todayIsNeverWrittenToDisk() {
+        let (directory, defaults) = Self.scratch()
+        Self.launch(on: directory, defaults: defaults).keep(1, day: "2026-10-17", data: Data("1".utf8))
+        #expect(Self.launch(on: directory, defaults: defaults).lastKnown(Int.self, day: "2026-10-17") == nil)
+    }
 }

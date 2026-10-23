@@ -17,6 +17,8 @@ nonisolated struct ActivityDiskCache: Sendable {
         /// A planned session's breakdown, which Today's payload does not carry: shown at once
         /// from here while the plan is asked again.
         case plannedBreakdown
+        /// A past day's read (`DayReadCache`), so it opens at once after a relaunch too.
+        case dayRead
     }
 
     let directory: URL
@@ -75,6 +77,8 @@ nonisolated enum ActivityCachePolicy {
         // A plan is edited — by the athlete, the coach, an adaptation — so its copy is shown
         // but always asked again.
         case .plannedBreakdown: false
+        // `DayReadCache` decides: fresh until the app writes something new.
+        case .dayRead: false
         }
     }
 

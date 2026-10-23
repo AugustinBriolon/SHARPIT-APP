@@ -163,6 +163,34 @@ private actor DayRecorder {
     #expect(store.isSwitchingDay == false)
 }
 
+private actor InFlightGauge {
+    private var current = 0
+    private(set) var peak = 0
+    func enter() { current += 1; peak = max(peak, current) }
+    func leave() { current -= 1 }
+}
+
+/// The days read ahead go out together, not one after the other.
+@MainActor
+@Test func daysAheadAreReadTogether() async throws {
+    let gauge = InFlightGauge()
+    let payload = try decodedSleep()
+    let store = DayResourceStore<V1SleepResponse>(
+        failureMessage: "failed",
+        tokenProvider: { "t" },
+        day: try #require(TrainingDayId.date("2026-09-21"))
+    ) { day, _ in
+        guard day != "2026-09-21" else { return payload }
+        await gauge.enter()
+        try await Task.sleep(for: .milliseconds(50))
+        await gauge.leave()
+        return payload
+    }
+    await store.load()
+
+    #expect(await gauge.peak == 2)
+}
+
 /// A failed day must not leave the previous day's night under the new date.
 @MainActor
 @Test func aFailedDaySwitchSaysSoInsteadOfShowingTheOldDay() async throws {

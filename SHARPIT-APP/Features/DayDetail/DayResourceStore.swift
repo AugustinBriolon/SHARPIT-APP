@@ -50,6 +50,9 @@ final class DayResourceStore<Payload: V1DayResource> {
 
     /// Days with data read ahead after the first load.
     static var prefetchCount: Int { 6 }
+    /// Reads in flight at once while reading ahead: enough to hide the network's latency,
+    /// few enough to leave room for the day the athlete taps.
+    static var prefetchWidth: Int { 3 }
 
     private(set) var phase: Phase = .loading
     /// The day on screen. Changing it goes through `select(_:)`.
@@ -187,10 +190,7 @@ final class DayResourceStore<Payload: V1DayResource> {
             .compactMap { DaySwipe.day(after: $0, from: selectedDay) }
             .map { TrainingDayId.today(now: $0) }
             .filter { known($0) == nil }
-        for dayId in around {
-            guard let token = try? await tokenProvider(),
-                  let payload = try? await fetch(dayId, token)
-            else { continue }
+        for (dayId, payload) in await fetchAhead(around) {
             cache[dayId] = payload
         }
     }
@@ -205,13 +205,30 @@ final class DayResourceStore<Payload: V1DayResource> {
             .prefix(Self.prefetchCount)
         guard !ahead.isEmpty else { return }
         prefetchTask = Task { [weak self] in
-            for dayId in ahead {
-                guard let self, !Task.isCancelled else { return }
-                guard let token = try? await self.tokenProvider(),
-                      let payload = try? await self.fetch(dayId, token)
-                else { continue }
+            guard let self else { return }
+            for (dayId, payload) in await self.fetchAhead(Array(ahead)) where !Task.isCancelled {
                 self.cache[dayId] = payload
             }
         }
+    }
+
+    /// Reads days ahead of the athlete, `prefetchWidth` at a time; a day that fails is skipped.
+    private func fetchAhead(_ dayIds: [String]) async -> [(String, Payload)] {
+        guard !dayIds.isEmpty, let token = try? await tokenProvider() else { return [] }
+        let fetch = fetch
+        var read: [(String, Payload)] = []
+        await withTaskGroup(of: (String, Payload)?.self) { group in
+            var pending = dayIds.makeIterator()
+            func start() {
+                guard let dayId = pending.next() else { return }
+                group.addTask { (try? await fetch(dayId, token)).map { (dayId, $0) } }
+            }
+            for _ in 0..<Self.prefetchWidth { start() }
+            for await result in group {
+                if let result { read.append(result) }
+                if !Task.isCancelled { start() }
+            }
+        }
+        return read
     }
 }

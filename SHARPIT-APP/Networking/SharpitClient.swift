@@ -233,19 +233,42 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
         token: String
     ) async throws -> Payload {
         if let settled = dayReads.settled(type, day: trainingDayId) { return settled }
-        let payload = try await send(
-            type,
+        let data = try await sendData(
             path: path,
             method: "GET",
             query: [URLQueryItem(name: "trainingDayId", value: trainingDayId)],
             token: token
         )
-        dayReads.keep(payload, day: trainingDayId)
+        let payload = try Self.decode(type, from: data)
+        dayReads.keep(payload, day: trainingDayId, data: data)
         return payload
     }
 
     private func send<Payload: Decodable>(
-        _: Payload.Type,
+        _ type: Payload.Type,
+        path: String,
+        method: String,
+        query: [URLQueryItem] = [],
+        token: String,
+        timeout: TimeInterval = 60,
+        body: Data? = nil
+    ) async throws -> Payload {
+        try Self.decode(
+            type,
+            from: await sendData(path: path, method: method, query: query, token: token, timeout: timeout, body: body)
+        )
+    }
+
+    nonisolated private static func decode<Payload: Decodable>(_: Payload.Type, from data: Data) throws -> Payload {
+        do {
+            return try JSONDecoder().decode(Payload.self, from: data)
+        } catch {
+            throw SharpitAPIError.server
+        }
+    }
+
+    /// The body of a 2xx answer, as the server sent it; any other status thrown as its error.
+    private func sendData(
         path: String,
         method: String,
         query: [URLQueryItem] = [],
@@ -253,7 +276,7 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
         timeout: TimeInterval = 60,
         body: Data? = nil,
         allowingAuthRetry: Bool = true
-    ) async throws -> Payload {
+    ) async throws -> Data {
         guard var components = URLComponents(
             url: baseURL.appending(path: path),
             resolvingAgainstBaseURL: false
@@ -300,8 +323,7 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
             // owed, Pro, a coach quota): signing out on it logged new accounts out mid-onboarding.
             if statusCode == 401 {
                 if allowingAuthRetry, let refreshed = await AuthSession.shared.refreshTokenOnce() {
-                    return try await send(
-                        Payload.self,
+                    return try await sendData(
                         path: path,
                         method: method,
                         query: query,
@@ -343,11 +365,7 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
             }
         }
 
-        do {
-            return try JSONDecoder().decode(Payload.self, from: data)
-        } catch {
-            throw SharpitAPIError.server
-        }
+        return data
     }
 }
 
