@@ -7,6 +7,8 @@ import SentrySwift
 /// Replay stays masked and only uploads the ~30s buffer when an error/crash happens.
 /// A report must never carry what the athlete measured or wrote. Breadcrumbs keep network
 /// URLs only by path, and every event is stripped of request bodies before it leaves.
+/// Nonisolated: Sentry runs `beforeSend` / `beforeBreadcrumb` on its own queues, and a
+/// main-actor closure there traps at launch (libdispatch "expected main-thread").
 enum CrashReporting {
     /// A DSN is a public client key — safe in the binary, it can only send events.
     static let dsn = "https://82d4a00ff393d0fa14999292cb2cf454@o4512180262535168.ingest.de.sentry.io/4512180266860624"

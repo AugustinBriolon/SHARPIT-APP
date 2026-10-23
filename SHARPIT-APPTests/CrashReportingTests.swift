@@ -44,3 +44,25 @@ import Testing
     #expect(scrubbed?.data?["url"] as? String == "https://api.sharpit.app/api/v1/planned-sessions/brick/evaluation")
     #expect(scrubbed?.data?["status_code"] as? Int == 200)
 }
+
+/// Sentry calls its hooks from background queues; a main-actor hook crashed the app at launch.
+@Test func sentryHooksRunOffTheMainThread() {
+    let options = Options()
+    CrashReporting.configure(options, environment: "test")
+    let crumb = Breadcrumb(level: .info, category: "http")
+    crumb.setData(value: "https://api.sharpit.app/api/v1/today?date=2026-10-01", key: "url")
+
+    // A real thread: `DispatchQueue.sync` would run the block on the calling main thread.
+    nonisolated(unsafe) var url: String?
+    nonisolated(unsafe) var sent: Event?
+    let done = DispatchSemaphore(value: 0)
+    Thread {
+        url = options.beforeBreadcrumb?(crumb)?.data?["url"] as? String
+        sent = options.beforeSend?(Event(level: .error))
+        done.signal()
+    }.start()
+    done.wait()
+
+    #expect(url == "https://api.sharpit.app/api/v1/today")
+    #expect(sent != nil)
+}
