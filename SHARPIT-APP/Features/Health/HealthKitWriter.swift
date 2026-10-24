@@ -115,22 +115,31 @@ final class HealthKitWriter: HealthWriting, @unchecked Sendable {
         let end = date.addingTimeInterval(BodyMassMirror.dateTolerance)
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
         let samples: [HKQuantitySample] = try await withCheckedThrowingContinuation { continuation in
-            let query = HKSampleQuery(
-                sampleType: type,
-                predicate: predicate,
-                limit: HKObjectQueryNoLimit,
-                sortDescriptors: nil
-            ) { _, results, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                continuation.resume(returning: (results as? [HKQuantitySample]) ?? [])
-            }
-            store.execute(query)
+            store.execute(Self.bodyMassQuery(type: type, predicate: predicate, continuation: continuation))
         }
         let bundleId = Bundle.main.bundleIdentifier
         return samples.filter { $0.sourceRevision.source.bundleIdentifier == bundleId }
+    }
+
+    /// Built outside the main actor: HealthKit calls the handler on its own queue, where a
+    /// main-actor closure would trap.
+    nonisolated private static func bodyMassQuery(
+        type: HKQuantityType,
+        predicate: NSPredicate,
+        continuation: CheckedContinuation<[HKQuantitySample], Error>
+    ) -> HKSampleQuery {
+        HKSampleQuery(
+            sampleType: type,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: nil
+        ) { _, results, error in
+            if let error {
+                continuation.resume(throwing: error)
+                return
+            }
+            continuation.resume(returning: (results as? [HKQuantitySample]) ?? [])
+        }
     }
 
     /// `yyyy-MM-dd` in the athlete's current calendar → that local day.
