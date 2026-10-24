@@ -515,8 +515,8 @@ private struct ActivityFilterMenu: View {
     var body: some View {
         Menu {
             menuItems
-                // The menu's rows are UIKit's and take the app's accent (`AccentColor`, ink), not
-                // SwiftUI's tint; these keep the SwiftUI-drawn parts ink as well.
+                // Inline pickers, never `.menu`: a picker's submenu is drawn by UIKit in its own
+                // colours (grey rows, tinted glyphs) that no tint or accent reaches.
                 .tint(SharpitColor.foreground)
                 .foregroundStyle(SharpitColor.foreground)
         } label: {
@@ -537,22 +537,27 @@ private struct ActivityFilterMenu: View {
         Picker("Sport", selection: $filter.sport.animation(SharpitMotion.selection)) {
             Text("Tous les sports").tag(V1ActivityType?.none)
             ForEach(sports, id: \.self) { sport in
-                Label { Text(sport.label) } icon: { Image(sharpitSymbol: sport.symbolName) }.tag(V1ActivityType?.some(sport))
+                Label { Text(sport.label) } icon: {
+                    Image(sharpitSymbol: sport.symbolName)
+                        .renderingMode(.template)
+                        .foregroundStyle(SharpitColor.foreground)
+                }
+                .tag(V1ActivityType?.some(sport))
             }
         }
-        .pickerStyle(.menu)
+        .pickerStyle(.inline)
         Picker("Période", selection: $filter.period.animation(SharpitMotion.selection)) {
             ForEach(ActivityFilter.Period.allCases) { period in
                 Text(period.label).tag(period)
             }
         }
-        .pickerStyle(.menu)
+        .pickerStyle(.inline)
         Picker("Durée", selection: $filter.effortTime.animation(SharpitMotion.selection)) {
             ForEach(ActivityFilter.EffortTime.allCases) { effortTime in
                 Text(effortTime.label).tag(effortTime)
             }
         }
-        .pickerStyle(.menu)
+        .pickerStyle(.inline)
         if filter.narrows {
             Divider()
             Button("Réinitialiser les filtres", systemImage: "arrow.counterclockwise") {

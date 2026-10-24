@@ -27,8 +27,9 @@ hairlines. Months are laid out lazily.
 **History filters.** Activité filters what it has read in place (`ActivityFilter`): the search
 field on the title and sport, and the bar's filter menu — a sport the athlete did (the most
 frequent first) and a period; the list's foot keeps reading older pages, and an empty result offers
-« Chercher plus loin » while more waits. Its glyph fills while a filter narrows the list; the menu's rows are UIKit's and draw in the app's
-`AccentColor` (ink, near-white in dark — set as the global accent), never system blue or lime;
+« Chercher plus loin » while more waits. Its glyph fills while a filter narrows the list; its pickers are inline, all at the menu's
+first level, which draws in the app's `AccentColor` (ink, near-white in dark): a picker's own submenu
+(`.pickerStyle(.menu)`) is drawn by UIKit in grey rows with tinted glyphs that no tint reaches;
 a filter that empties it offers « Tout afficher ».
 
 **Logging and editing a session.** Activité's « + » opens « Saisir une séance »
