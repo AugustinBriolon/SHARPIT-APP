@@ -59,7 +59,7 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
         case .google:
             String(localized: "Tes séances ne seront plus écrites dans ton agenda et le coach ne lira plus tes disponibilités ; l'accès est révoqué chez Google. Les événements déjà créés restent dans l'agenda.")
         case .garmin:
-            String(localized: "SharpIt ne recevra plus tes séances ni ta santé Garmin, et ta clé API est effacée de nos serveurs. Ce qui est déjà importé est conservé.")
+            String(localized: "SharpIt ne recevra plus tes séances ni ta santé Garmin, et l'autorisation est révoquée chez Garmin. Ce qui est déjà importé est conservé.")
         }
     }
 
@@ -75,7 +75,7 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
     }
 
     /// The sources the phone connects itself, in the web's Compte → Sources order.
-    static let oauthConnectable: [DisconnectableSource] = [.withings, .google, .strava]
+    static let oauthConnectable: [DisconnectableSource] = [.withings, .google, .strava, .garmin]
 
     var connectsViaOAuthHandoff: Bool { Self.oauthConnectable.contains(self) }
 }

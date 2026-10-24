@@ -47,20 +47,20 @@ import UIKit
     }
 }
 
-/// Garmin is linked only through its official Personal API key (web ADR-103, `docs/adr/0023`): the
-/// app target calls the key and disconnect routes, never the retired SSO handoff, the token importer
-/// nor a workout push, which Garmin reserves to its business tiers.
-@Test func theAppLinksGarminOnlyThroughItsOfficialKey() throws {
+/// Garmin is linked only through the Connect Developer Program OAuth (web ADR-105,
+/// `docs/adr/0024`): the in-app handoff, like Strava and Withings — never the retired SSO,
+/// the token importer, nor a personal API key.
+@Test func theAppLinksGarminOnlyThroughItsOAuthHandoff() throws {
+    #expect(DisconnectableSource.garmin.connectsViaOAuthHandoff)
     let sources = URL(filePath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
         .appending(path: "SHARPIT-APP")
     let files = try #require(FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil))
     for case let file as URL in files where file.pathExtension == "swift" {
         let text = try String(contentsOf: file, encoding: .utf8)
-        #expect(!text.contains("garmin/handoff"), "\(file.lastPathComponent) opens the retired Garmin SSO")
         #expect(!text.contains("import-garmin"), "\(file.lastPathComponent) imports from Garmin")
-        #expect(!text.contains("connect/garmin"), "\(file.lastPathComponent) handles a Garmin SSO callback")
-        #expect(!text.contains("garmin/workouts"), "\(file.lastPathComponent) pushes a workout to Garmin")
+        #expect(!text.contains("garmin/connect\""), "\(file.lastPathComponent) posts a Garmin key")
+        #expect(!text.contains("personalApiToken"), "\(file.lastPathComponent) asks for a personal key")
     }
 }
 

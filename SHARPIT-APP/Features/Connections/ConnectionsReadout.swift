@@ -92,20 +92,6 @@ enum ConnectionsReadout {
         return (connected, available)
     }
 
-    /// Garmin's row: its masked key, the only part of it the app ever sees.
-    static func garminKeyLine(last4: String?) -> Line {
-        guard let last4, !last4.isEmpty else {
-            return Line(text: String(localized: "Clé API à renouveler"), isProblem: true)
-        }
-        return Line(text: String(localized: "Clé ••••\(last4)"), isProblem: false)
-    }
-
-    /// A key Garmin refused says why (the server's message); anything else, the usual fix.
-    static func garminKeyFailure(_ error: any Error) -> String {
-        if case .message(let text)? = error as? SharpitAPIError { return text }
-        return SharpitErrorGuidance.message(for: error, subject: String(localized: "La connexion Garmin"))
-    }
-
     /// Choosing between sources only matters from two on.
     static func offersPriorities(connectedCount: Int) -> Bool { connectedCount >= 2 }
 

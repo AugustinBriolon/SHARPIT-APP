@@ -73,6 +73,7 @@ private func connectOAuth(
     #expect(ProviderOAuthConnectOutcome(status: "already_connected") == .alreadyConnected)
     #expect(ProviderOAuthConnectOutcome(status: "unknown") == .failed)
     #expect(ProviderOAuthConnect.callbackPath(for: .withings) == "/connect/withings/callback")
+    #expect(ProviderOAuthConnect.callbackPath(for: .garmin) == "/connect/garmin/callback")
     #expect(ProviderOAuthConnectOutcome.connected.message(for: .strava).hasPrefix("Strava connecté"))
     #expect(ProviderOAuthConnectOutcome.cancelled.tone == .syncing)
 }

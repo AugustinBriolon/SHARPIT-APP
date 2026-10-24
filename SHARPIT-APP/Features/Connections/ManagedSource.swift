@@ -1,7 +1,7 @@
 import Foundation
 
 /// Every data source Paramètres › Sources de données lists, whatever links it: the two the
-/// iPhone owns (Apple Health, Apple Calendar) and the three it hands to an in-app OAuth flow, and Garmin, linked by a personal API key.
+/// iPhone owns (Apple Health, Apple Calendar) and the four it hands to an in-app OAuth flow.
 /// One type so the connected list, the manage sheet and the « + » sheet speak about a source
 /// the same way (`docs/adr/0014`).
 nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {

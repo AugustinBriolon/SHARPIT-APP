@@ -20,6 +20,7 @@ private var utcCalendar: Calendar {
     #expect(DisconnectableSource.strava.path == "/api/v1/strava/disconnect")
     #expect(DisconnectableSource.withings.path == "/api/v1/withings/disconnect")
     #expect(DisconnectableSource.google.path == "/api/v1/google/disconnect")
+    #expect(DisconnectableSource.garmin.path == "/api/v1/garmin/disconnect")
     #expect(DisconnectableSource.google.confirmationTitle == "Déconnecter Google Agenda ?")
 }
 
@@ -38,7 +39,7 @@ private var utcCalendar: Calendar {
 
 @Test func theSourcesFooterSaysSourcesConnectInApp() {
     #expect(ConnectionsReadout.sourcesFooter.hasPrefix("Touche une source"))
-    #expect(DisconnectableSource.oauthConnectable == [.withings, .google, .strava])
+    #expect(DisconnectableSource.oauthConnectable == [.withings, .google, .strava, .garmin])
     #expect(ConnectionsReadout.disconnected(.strava).text == "Non connecté")
 }
 
