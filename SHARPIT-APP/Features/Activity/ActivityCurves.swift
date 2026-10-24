@@ -171,7 +171,9 @@ struct ActivityChartsSection: View {
                         }
                     }
                 }
-                .scrollClipDisabled()
+                // Scrolls edge to edge of the card and clips there: unclipped, the chips slid out of it.
+                .contentMargins(.horizontal, SharpitSpacing.cardPadding, for: .scrollContent)
+                .padding(.horizontal, -SharpitSpacing.cardPadding)
             }
 
             if shownCurves.isEmpty {
