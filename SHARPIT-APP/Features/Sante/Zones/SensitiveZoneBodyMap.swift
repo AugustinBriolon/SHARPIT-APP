@@ -46,35 +46,48 @@ nonisolated enum SensitiveZoneBody {
         var spots: [Spot] = []
         // Face: what is felt from the front.
         spots.append(single("Cou", .front, y: 0.135))
-        spots += pair("Épaule", .front, x: 0.3, y: 0.175)
+        spots += pair("Épaule", .front, x: 0.29, y: 0.2)
         spots += pair("Pectoraux", .front, x: 0.41, y: 0.23)
-        spots += pair("Bras", .front, x: 0.275, y: 0.25)
-        spots += pair("Poignet", .front, x: 0.24, y: 0.5)
+        spots += pair("Bras", .front, x: 0.272, y: 0.27)
+        spots += pair("Poignet", .front, x: 0.215, y: 0.48)
         spots.append(single("Abdominaux", .front, y: 0.34))
-        spots += pair("Hanche", .front, x: 0.345, y: 0.465)
+        spots += pair("Hanche", .front, x: 0.36, y: 0.47)
         spots += pair("Psoas", .front, x: 0.44, y: 0.45)
         spots.append(single("Bassin", .front, y: 0.515))
         spots += pair("Adducteurs", .front, x: 0.455, y: 0.575)
-        spots += pair("Quadriceps", .front, x: 0.4, y: 0.635)
+        spots += pair("Quadriceps", .front, x: 0.415, y: 0.635)
         // The onboarding's word for the same place: drawn on the zones page, never offered.
-        spots += pair("Cuisse", .front, x: 0.4, y: 0.635)
+        spots += pair("Cuisse", .front, x: 0.415, y: 0.635)
         spots += pair("Genou", .front, x: 0.425, y: 0.725)
         spots += pair("Tibia", .front, x: 0.425, y: 0.81)
-        spots += pair("Cheville", .front, x: 0.425, y: 0.895)
-        spots += pair("Pied", .front, x: 0.415, y: 0.965)
+        spots += pair("Cheville", .front, x: 0.43, y: 0.905)
+        spots += pair("Pied", .front, x: 0.415, y: 0.97)
         // Dos: the back of the body.
         spots.append(single("Cou", .back, y: 0.135))
-        spots += pair("Trapèzes", .back, x: 0.4, y: 0.165)
-        spots += pair("Épaule", .back, x: 0.3, y: 0.19)
+        spots += pair("Trapèzes", .back, x: 0.41, y: 0.19)
+        spots += pair("Épaule", .back, x: 0.29, y: 0.2)
         spots.append(single("Dos", .back, y: 0.26))
-        spots += pair("Coude", .back, x: 0.255, y: 0.33)
+        spots += pair("Coude", .back, x: 0.262, y: 0.33)
         spots.append(single("Lombaires", .back, y: 0.4))
         spots += pair("Fessier", .back, x: 0.42, y: 0.49)
         spots += pair("Ischio", .back, x: 0.425, y: 0.62)
         spots += pair("Mollet", .back, x: 0.425, y: 0.8)
-        spots += pair("Tendon d'Achille", .back, x: 0.425, y: 0.905)
+        spots += pair("Tendon d'Achille", .back, x: 0.43, y: 0.91)
         return spots
     }()
+
+    /// The spots placed on a figure: a woman's arms hang narrower and closer to the body, so the
+    /// spots on them move in.
+    static func spots(for figure: SensitiveZoneFigure) -> [Spot] {
+        guard figure == .female else { return spots }
+        return spots.map { spot in
+            guard armParts.contains(spot.part) else { return spot }
+            let inward = spot.x < 0.5 ? 0.03 : -0.03
+            return Spot(part: spot.part, side: spot.side, face: spot.face, x: spot.x + inward, y: spot.y)
+        }
+    }
+
+    private static let armParts: Set<String> = ["Épaule", "Bras", "Coude", "Poignet"]
 
     static let mappedParts: Set<String> = Set(spots.map(\.part))
 
@@ -87,9 +100,9 @@ nonisolated enum SensitiveZoneBody {
     }
 
     /// The spots of one face the server offers — a part it does not list is never drawn.
-    static func spots(on face: Face, offered: [String]) -> [Spot] {
+    static func spots(on face: Face, offered: [String], figure: SensitiveZoneFigure = .male) -> [Spot] {
         let offered = Set(offered)
-        return spots.filter { $0.face == face && offered.contains($0.part) }
+        return spots(for: figure).filter { $0.face == face && offered.contains($0.part) }
     }
 
     /// The spot a finger at `point` (a share of the silhouette, as `x` and `y`) means: the
@@ -166,43 +179,80 @@ nonisolated enum SensitiveZoneBody {
     }
 }
 
-/// A plain standing figure, one fill: head, neck, trunk, arms and legs as rounded shapes laid out
-/// on the same unit square as the spots.
+/// A standing figure, one fill, drawn as the athlete declared themself: a man's broader shoulders
+/// and straighter waist, a woman's narrower shoulders and waist and wider hips. Anything else, or
+/// nothing declared, draws the man's figure.
+nonisolated enum SensitiveZoneFigure: Sendable {
+    case male, female
+
+    init(sex: AthleteSex?) {
+        self = sex == .female ? .female : .male
+    }
+
+    /// The right half of the outline as the viewer sees it, from the crown down the arm and back up
+    /// its inside, then the flank and the leg and back up its inside to the crotch — in shares of
+    /// the figure's width (`x`, 0.5 the centre line) and height (`y`). The left half is its mirror.
+    var halfOutline: [CGPoint] {
+        let points: [(Double, Double)] = switch self {
+        case .male: [
+            (0.5, 0.0), (0.56, 0.008), (0.59, 0.035), (0.595, 0.065), (0.585, 0.095), (0.56, 0.12),
+            (0.545, 0.132), (0.54, 0.148), (0.56, 0.165), (0.62, 0.176), (0.70, 0.186), (0.745, 0.205),
+            (0.765, 0.24), (0.775, 0.29), (0.78, 0.33), (0.79, 0.38), (0.80, 0.43), (0.805, 0.47),
+            (0.815, 0.50), (0.815, 0.535), (0.80, 0.56), (0.78, 0.555), (0.77, 0.53), (0.765, 0.48),
+            (0.75, 0.43), (0.735, 0.37), (0.725, 0.33), (0.71, 0.29), (0.69, 0.245), (0.68, 0.27),
+            (0.668, 0.32), (0.652, 0.37), (0.655, 0.41), (0.664, 0.45), (0.67, 0.49), (0.665, 0.53),
+            (0.655, 0.58), (0.64, 0.64), (0.625, 0.70), (0.62, 0.73), (0.625, 0.77), (0.62, 0.82),
+            (0.60, 0.88), (0.59, 0.92), (0.60, 0.95), (0.62, 0.975), (0.615, 0.99), (0.56, 0.995),
+            (0.545, 0.985), (0.545, 0.95), (0.55, 0.90), (0.545, 0.84), (0.545, 0.79), (0.54, 0.74),
+            (0.535, 0.68), (0.52, 0.60), (0.51, 0.548), (0.5, 0.54),
+        ]
+        case .female: [
+            (0.5, 0.0), (0.555, 0.008), (0.583, 0.035), (0.588, 0.065), (0.578, 0.095), (0.555, 0.12),
+            (0.54, 0.132), (0.535, 0.15), (0.555, 0.166), (0.61, 0.177), (0.68, 0.19), (0.715, 0.21),
+            (0.735, 0.245), (0.745, 0.29), (0.75, 0.33), (0.76, 0.38), (0.77, 0.43), (0.775, 0.47),
+            (0.785, 0.50), (0.785, 0.53), (0.77, 0.555), (0.75, 0.55), (0.74, 0.525), (0.735, 0.48),
+            (0.72, 0.43), (0.705, 0.37), (0.695, 0.33), (0.68, 0.29), (0.665, 0.25), (0.668, 0.27),
+            (0.66, 0.30), (0.635, 0.34), (0.625, 0.37), (0.64, 0.41), (0.665, 0.45), (0.685, 0.49),
+            (0.685, 0.53), (0.67, 0.58), (0.65, 0.64), (0.625, 0.70), (0.615, 0.73), (0.62, 0.77),
+            (0.612, 0.82), (0.595, 0.88), (0.585, 0.92), (0.595, 0.95), (0.612, 0.975), (0.605, 0.99),
+            (0.555, 0.995), (0.542, 0.985), (0.542, 0.95), (0.547, 0.90), (0.542, 0.84), (0.54, 0.79),
+            (0.535, 0.74), (0.528, 0.68), (0.515, 0.60), (0.505, 0.55), (0.5, 0.54),
+        ]
+        }
+        return points.map { CGPoint(x: $0.0, y: $0.1) }
+    }
+
+    /// The whole outline, closed: the right half, then its mirror from the crotch back to the crown.
+    var outline: [CGPoint] {
+        let right = halfOutline
+        return right + right.dropFirst().dropLast().reversed().map { CGPoint(x: 1 - $0.x, y: $0.y) }
+    }
+}
+
+/// The figure's outline smoothed through its points (Catmull-Rom as cubic Béziers), on the same
+/// unit square as the spots.
 nonisolated struct SensitiveZoneSilhouette: Shape {
+    var figure: SensitiveZoneFigure = .male
+
     func path(in rect: CGRect) -> Path {
+        let points = figure.outline.map {
+            CGPoint(x: rect.minX + rect.width * $0.x, y: rect.minY + rect.height * $0.y)
+        }
         var path = Path()
-        func box(_ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double) -> CGRect {
-            CGRect(
-                x: rect.minX + rect.width * x0,
-                y: rect.minY + rect.height * y0,
-                width: rect.width * (x1 - x0),
-                height: rect.height * (y1 - y0)
+        guard let first = points.first else { return path }
+        path.move(to: first)
+        for index in points.indices {
+            let p0 = points[(index - 1 + points.count) % points.count]
+            let p1 = points[index]
+            let p2 = points[(index + 1) % points.count]
+            let p3 = points[(index + 2) % points.count]
+            path.addCurve(
+                to: p2,
+                control1: CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6),
+                control2: CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6)
             )
         }
-        func rounded(_ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double, radius: Double) {
-            let frame = box(x0, y0, x1, y1)
-            let corner = min(frame.width, frame.height) * radius
-            path.addRoundedRect(in: frame, cornerSize: CGSize(width: corner, height: corner), style: .continuous)
-        }
-        func limb(_ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double) {
-            // Both sides, the second mirrored.
-            rounded(x0, y0, x1, y1, radius: 0.5)
-            rounded(1 - x1, y0, 1 - x0, y1, radius: 0.5)
-        }
-
-        path.addEllipse(in: box(0.415, 0.0, 0.585, 0.105))
-        rounded(0.455, 0.09, 0.545, 0.16, radius: 0.3)
-        // Trunk and pelvis.
-        rounded(0.31, 0.145, 0.69, 0.45, radius: 0.28)
-        rounded(0.34, 0.41, 0.66, 0.54, radius: 0.35)
-        // Arms: upper, fore, hand.
-        limb(0.235, 0.155, 0.315, 0.34)
-        limb(0.21, 0.32, 0.285, 0.5)
-        limb(0.205, 0.49, 0.275, 0.55)
-        // Legs: thigh, shin, foot.
-        limb(0.355, 0.5, 0.495, 0.74)
-        limb(0.37, 0.72, 0.48, 0.93)
-        limb(0.355, 0.92, 0.475, 0.985)
+        path.closeSubpath()
         return path
     }
 }
@@ -217,6 +267,7 @@ struct SensitiveZoneBodyMap: View {
     /// Nil draws marks only.
     var onTap: ((SensitiveZoneBody.Spot) -> Void)?
     var height: CGFloat = 400
+    var figure: SensitiveZoneFigure = .male
 
     private var width: CGFloat { height / 2 }
     /// A dot's own target; a tap off every dot still reaches the nearest one.
@@ -225,7 +276,7 @@ struct SensitiveZoneBodyMap: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            SensitiveZoneSilhouette()
+            SensitiveZoneSilhouette(figure: figure)
                 .fill(SharpitColor.mutedForeground.opacity(0.14))
                 .frame(width: width, height: height)
                 .contentShape(.rect)
@@ -272,6 +323,7 @@ struct SensitiveZoneBodyMap: View {
 /// from where the finger landed — and the zone named under it.
 struct SensitiveZoneBodyPicker: View {
     let offered: [String]
+    var figure: SensitiveZoneFigure = .male
     @Binding var part: String?
     @Binding var side: String
     /// Called on every tap, so the form leaves its own free-text part.
@@ -279,8 +331,15 @@ struct SensitiveZoneBodyPicker: View {
 
     @State private var face: SensitiveZoneBody.Face
 
-    init(offered: [String], part: Binding<String?>, side: Binding<String>, onPick: @escaping () -> Void = {}) {
+    init(
+        offered: [String],
+        figure: SensitiveZoneFigure = .male,
+        part: Binding<String?>,
+        side: Binding<String>,
+        onPick: @escaping () -> Void = {}
+    ) {
         self.offered = offered
+        self.figure = figure
         _part = part
         _side = side
         self.onPick = onPick
@@ -298,7 +357,7 @@ struct SensitiveZoneBodyPicker: View {
             )
             SensitiveZoneBodyMap(
                 face: face,
-                spots: SensitiveZoneBody.spots(on: face, offered: offered),
+                spots: SensitiveZoneBody.spots(on: face, offered: offered, figure: figure),
                 tint: { spot in
                     SensitiveZoneBody.isSelected(spot, part: part, side: side) ? SharpitColor.highlight : nil
                 },
@@ -310,7 +369,8 @@ struct SensitiveZoneBodyPicker: View {
                     }
                     onPick()
                 },
-                height: 460
+                height: 460,
+                figure: figure
             )
             .frame(maxWidth: .infinity)
             .padding(.vertical, SharpitSpacing.xs)
@@ -330,20 +390,21 @@ struct SensitiveZoneBodyPicker: View {
 /// does to the plan. Only zones on a part the map knows are drawn; the list below names them all.
 struct SensitiveZonesBodyOverview: View {
     let zones: [V1SensitiveZone]
+    var figure: SensitiveZoneFigure = .male
 
     private func tint(_ spot: SensitiveZoneBody.Spot) -> Color? {
         zones.first { SensitiveZoneBody.isSelected(spot, part: $0.bodyPart, side: $0.side) }?.strategy.tint
     }
 
     private func spots(_ face: SensitiveZoneBody.Face) -> [SensitiveZoneBody.Spot] {
-        SensitiveZoneBody.spots.filter { $0.face == face && tint($0) != nil }
+        SensitiveZoneBody.spots(for: figure).filter { $0.face == face && tint($0) != nil }
     }
 
     var body: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.lg) {
             ForEach(SensitiveZoneBody.Face.allCases, id: \.self) { face in
                 VStack(spacing: SharpitSpacing.xs) {
-                    SensitiveZoneBodyMap(face: face, spots: spots(face), tint: tint, height: 220)
+                    SensitiveZoneBodyMap(face: face, spots: spots(face), tint: tint, height: 220, figure: figure)
                     Text(face == .front ? String(localized: "Face") : String(localized: "Dos"))
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)

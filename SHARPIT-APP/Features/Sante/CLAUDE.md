@@ -16,7 +16,8 @@ tint (`SensitiveZonesBodyOverview`);
 a zone (`SensitiveZoneDetailView`) shows what the plan does with it, the upcoming sessions that load
 it, its 0–10 curve and timeline (readings and status changes, a relapse named), and moves it along —
 « Faire le point » (`ZoneCheckinSheet`: severity, what the athlete could do, a word), edit and
-declare (`SensitiveZoneFormSheet`, the body part touched on a silhouette, face or back —
+declare (`SensitiveZoneFormSheet`, the body part touched on a silhouette, face or back — a man's or a woman's figure from the
+profile's sex (`SensitiveZoneFigure`, the man's for anything else), every spot inside both (tested) —
 `SensitiveZoneBodyPicker`, `SensitiveZoneBody`: every part of the web's list has its spot, a paired
 part takes the side the finger landed on, both sides read « des deux côtés », the side question
 only asked off the body; a part the server offers that the map does not draw stays a chip, « Autre… »

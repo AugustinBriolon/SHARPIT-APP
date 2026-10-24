@@ -17,24 +17,33 @@ final class SensitiveZonesStore {
 
     private(set) var phase: Phase = .loading
     private(set) var zones: V1SensitiveZones?
+    /// The body drawn under the zones, from the sex declared in the profile.
+    private(set) var figure: SensitiveZoneFigure = .male
     /// The last change the web refused, for the page to say so.
     var saveError: String?
 
     private let client: any SensitiveZoneServing
+    private let profileClient: any AthleteProfileServing
     private let tokenProvider: () async throws -> String
     private let modelContext: ModelContext?
 
     init(
         client: any SensitiveZoneServing = PhysicalNoteClient(),
+        profileClient: any AthleteProfileServing = AthleteProfileClient(),
         tokenProvider: @escaping () async throws -> String,
         modelContext: ModelContext? = nil
     ) {
         self.client = client
+        self.profileClient = profileClient
         self.tokenProvider = tokenProvider
         self.modelContext = modelContext
         if let cached = ResponseCache.read(V1SensitiveZones.self, key: ResponseCacheKey.sensitiveZones, context: modelContext) {
             zones = cached
             phase = .loaded
+        }
+        // The profile Settings last read, so the right body paints before the network answers.
+        if let profile = ResponseCache.read(V1AthleteProfile.self, key: ResponseCacheKey.athleteProfile, context: modelContext) {
+            figure = SensitiveZoneFigure(sex: profile.sex)
         }
     }
 
@@ -60,6 +69,13 @@ final class SensitiveZonesStore {
                 phase = .failed(String(localized: "Lecture de tes zones impossible."))
             }
         }
+        await refreshFigure()
+    }
+
+    /// The sex may have changed in Settings since; a failed read keeps the figure shown.
+    private func refreshFigure() async {
+        guard let profile = try? await profileClient.athleteProfile(token: try await tokenProvider()) else { return }
+        figure = SensitiveZoneFigure(sex: profile.sex)
     }
 
     @discardableResult

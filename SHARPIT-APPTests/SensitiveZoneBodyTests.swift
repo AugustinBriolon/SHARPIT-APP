@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import Sharpit
 
@@ -75,4 +76,24 @@ private func spot(_ part: String, _ side: SensitiveZoneBody.Side, _ face: Sensit
     let near = SensitiveZoneBody.nearest(to: CGPoint(x: knee.x + 0.02, y: knee.y + 0.02), in: spots)
     #expect(near == knee)
     #expect(SensitiveZoneBody.nearest(to: CGPoint(x: 0.5, y: 0.1), in: spots) == nil)
+}
+
+@Test func theDeclaredSexChoosesTheFigure() {
+    #expect(SensitiveZoneFigure(sex: .female) == .female)
+    #expect(SensitiveZoneFigure(sex: .male) == .male)
+    #expect(SensitiveZoneFigure(sex: .other) == .male)
+    #expect(SensitiveZoneFigure(sex: nil) == .male)
+}
+
+/// A spot off the body reads as a misplaced dot: every one sits inside both figures.
+@Test(arguments: [SensitiveZoneFigure.male, .female])
+func everySpotSitsOnTheBody(figure: SensitiveZoneFigure) {
+    let rect = CGRect(x: 0, y: 0, width: 200, height: 400)
+    let body = SensitiveZoneSilhouette(figure: figure).path(in: rect)
+    for spot in SensitiveZoneBody.spots(for: figure) {
+        #expect(
+            body.contains(CGPoint(x: spot.x * rect.width, y: spot.y * rect.height)),
+            "\(spot.part) \(spot.side.rawValue) on the \(spot.face.rawValue)"
+        )
+    }
 }

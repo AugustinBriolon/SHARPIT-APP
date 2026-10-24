@@ -5,6 +5,7 @@ import SwiftUI
 struct SensitiveZoneFormSheet: View {
     @State var draft: SensitiveZoneDraft
     let bodyParts: [String]
+    var figure: SensitiveZoneFigure = .male
     let isNew: Bool
     let onSave: (SensitiveZoneDraft) async -> Bool
 
@@ -103,6 +104,7 @@ struct SensitiveZoneFormSheet: View {
             if bodyParts.contains(where: SensitiveZoneBody.mappedParts.contains) {
                 SensitiveZoneBodyPicker(
                     offered: bodyParts,
+                    figure: figure,
                     part: Binding(
                         get: { writesOwnPart ? nil : draft.bodyPart },
                         set: { draft.bodyPart = $0 }

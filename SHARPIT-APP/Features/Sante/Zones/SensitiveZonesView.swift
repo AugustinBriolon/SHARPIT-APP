@@ -118,6 +118,7 @@ struct SensitiveZonesView: View {
             SensitiveZoneFormSheet(
                 draft: SensitiveZoneDraft(),
                 bodyParts: store.zones?.bodyParts ?? [],
+                figure: store.figure,
                 isNew: true
             ) { draft in
                 await store.declare(draft)
@@ -135,7 +136,7 @@ struct SensitiveZonesView: View {
                     emptyState
                 } else {
                     if zones.open.contains(where: { SensitiveZoneBody.isOnMap($0.bodyPart) }) {
-                        SensitiveZonesBodyOverview(zones: zones.open)
+                        SensitiveZonesBodyOverview(zones: zones.open, figure: store.figure)
                     }
                     group(String(localized: "En cours"), zones.open)
                     group(String(localized: "Résolues"), zones.resolved)
@@ -324,6 +325,7 @@ struct SensitiveZoneDetailView: View {
             SensitiveZoneFormSheet(
                 draft: SensitiveZoneDraft(zone: zone, offered: store.zones?.bodyParts ?? []),
                 bodyParts: store.zones?.bodyParts ?? [],
+                figure: store.figure,
                 isNew: false
             ) { draft in
                 await store.update(zone, with: draft)

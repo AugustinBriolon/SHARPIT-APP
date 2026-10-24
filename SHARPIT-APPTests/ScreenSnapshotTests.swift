@@ -25,6 +25,16 @@ struct ScreenSnapshotTests {
         try await assertSnapshot(onCanvas(picker), named: "zone-picker-empty", style: style)
     }
 
+    @Test func aWomanSeesAWomansFigure() async throws {
+        let picker = SensitiveZoneBodyPicker(
+            offered: Array(SensitiveZoneBody.mappedParts),
+            figure: .female,
+            part: .constant("Hanche"),
+            side: .constant("LEFT")
+        )
+        try await assertSnapshot(onCanvas(picker), named: "zone-picker-female")
+    }
+
     @Test func aChosenZoneFillsBothSidesAndIsNamed() async throws {
         let picker = SensitiveZoneBodyPicker(
             offered: Array(SensitiveZoneBody.mappedParts),
