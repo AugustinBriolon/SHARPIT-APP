@@ -47,27 +47,27 @@ import UIKit
     }
 }
 
-/// Garmin's access is unofficial and its developer program closed (App Review 5.2.2): the app
-/// target never links it, pushes to it nor imports from it. Its data reaches SHARPIT through
-/// Apple Health or an account linked on the web.
-@Test func theAppNeverLinksGarmin() throws {
+/// Garmin is linked only through its official Personal API key (web ADR-103, `docs/adr/0023`): the
+/// app target calls the key and disconnect routes, never the retired SSO handoff, the token importer
+/// nor a workout push, which Garmin reserves to its business tiers.
+@Test func theAppLinksGarminOnlyThroughItsOfficialKey() throws {
     let sources = URL(filePath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
         .appending(path: "SHARPIT-APP")
     let files = try #require(FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil))
     for case let file as URL in files where file.pathExtension == "swift" {
         let text = try String(contentsOf: file, encoding: .utf8)
-        #expect(!text.contains("/api/v1/garmin"), "\(file.lastPathComponent) calls a Garmin route")
+        #expect(!text.contains("garmin/handoff"), "\(file.lastPathComponent) opens the retired Garmin SSO")
         #expect(!text.contains("import-garmin"), "\(file.lastPathComponent) imports from Garmin")
-        #expect(!text.contains("connect/garmin"), "\(file.lastPathComponent) handles a Garmin connection")
+        #expect(!text.contains("connect/garmin"), "\(file.lastPathComponent) handles a Garmin SSO callback")
+        #expect(!text.contains("garmin/workouts"), "\(file.lastPathComponent) pushes a workout to Garmin")
     }
 }
 
-/// A Garmin logo or label in the UI is a trademark claim like a Garmin connection (5.2.2): the
-/// logo set has no Garmin, and a Garmin id from the server draws no mark.
-@Test func theAppShowsNoGarminMark() {
-    #expect(ProviderLogo.Provider(integrationId: "garmin") == nil)
-    #expect(UIImage(named: "Provider/Garmin") == nil)
+/// The official source shows its own mark, as the other sources do.
+@Test func garminShowsItsOwnMark() {
+    #expect(ProviderLogo.Provider(integrationId: "garmin") == .garmin)
+    #expect(UIImage(named: "Provider/Garmin") != nil)
 }
 
 /// The barcode scanner opens the camera: App Review refuses a build that asks without saying why.

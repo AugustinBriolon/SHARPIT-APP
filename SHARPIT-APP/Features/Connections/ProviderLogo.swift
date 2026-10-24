@@ -14,6 +14,7 @@ struct ProviderLogo: View {
         case withings
         case renpho
         case google
+        case garmin
         case appleCalendar
 
         /// The web's integration id (`strava`, `apple-health`…), for lists the web sends.
@@ -26,6 +27,7 @@ struct ProviderLogo: View {
             case "withings": self = .withings
             case "renpho": self = .renpho
             case "google": self = .google
+            case "garmin": self = .garmin
             default: return nil
             }
         }
@@ -38,6 +40,7 @@ struct ProviderLogo: View {
             case .withings: "Provider/Withings"
             case .renpho: "Provider/Renpho"
             case .google: "Provider/Google"
+            case .garmin: "Provider/Garmin"
             case .appleCalendar: "Provider/AppleCalendar"
             }
         }
@@ -47,7 +50,7 @@ struct ProviderLogo: View {
             case .appleHealth: "heart.fill"
             case .appleCalendar: "calendar"
             case .sharpit: "fork.knife"
-            case .strava: "figure.run"
+            case .strava, .garmin: "figure.run"
             case .withings, .renpho: "scalemass"
             case .google: "calendar"
             }

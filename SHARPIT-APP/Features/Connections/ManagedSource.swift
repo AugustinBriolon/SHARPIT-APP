@@ -1,7 +1,7 @@
 import Foundation
 
 /// Every data source Paramètres › Sources de données lists, whatever links it: the two the
-/// iPhone owns (Apple Health, Apple Calendar) and the three it hands to an in-app OAuth flow.
+/// iPhone owns (Apple Health, Apple Calendar) and the three it hands to an in-app OAuth flow, and Garmin, linked by a personal API key.
 /// One type so the connected list, the manage sheet and the « + » sheet speak about a source
 /// the same way (`docs/adr/0014`).
 nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
@@ -10,6 +10,7 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
     case withings
     case google
     case strava
+    case garmin
 
     var id: String { rawValue }
 
@@ -20,6 +21,7 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
         case .withings: .withings
         case .google: .google
         case .strava: .strava
+        case .garmin: .garmin
         }
     }
 
@@ -27,7 +29,7 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .appleHealth: String(localized: "Apple Santé")
         case .appleCalendar: String(localized: "Calendrier Apple")
-        case .withings, .google, .strava: oauth?.name ?? rawValue
+        case .withings, .google, .strava, .garmin: oauth?.name ?? rawValue
         }
     }
 
@@ -38,6 +40,7 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
         case .withings: .withings
         case .google: .google
         case .strava: .strava
+        case .garmin: .garmin
         }
     }
 
@@ -46,7 +49,7 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .appleHealth: String(localized: "Séances, sommeil et cœur de ta montre")
         case .appleCalendar: String(localized: "Séances planifiées et créneaux occupés")
-        case .withings, .google, .strava: oauth?.purpose ?? ""
+        case .withings, .google, .strava, .garmin: oauth?.purpose ?? ""
         }
     }
 
@@ -63,6 +66,8 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
             String(localized: "Le coach voit tes créneaux libres dans Google Agenda et place tes séances quand tu es disponible.")
         case .strava:
             String(localized: "Tes sorties Strava rejoignent ton historique : le coach compte toute ta charge, même hors montre.")
+        case .garmin:
+            String(localized: "Tes séances, ton sommeil et ta VFC Garmin arrivent seuls : le coach lit ta récupération sans rien saisir.")
         }
     }
 
@@ -77,7 +82,7 @@ nonisolated enum ManagedSource: String, CaseIterable, Identifiable, Sendable {
             String(localized: "SharpIt ne lira plus tes séances, ton sommeil ni ton cœur depuis Santé. Ce qui est déjà importé est conservé.")
         case .appleCalendar:
             String(localized: "Tes séances ne seront plus copiées dans le calendrier de ton iPhone et le coach ne lira plus tes créneaux occupés.")
-        case .withings, .google, .strava:
+        case .withings, .google, .strava, .garmin:
             oauth?.confirmationMessage ?? ""
         }
     }

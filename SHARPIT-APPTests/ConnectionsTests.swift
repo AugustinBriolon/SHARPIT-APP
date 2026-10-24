@@ -83,8 +83,8 @@ private func connectOAuth(
         appleHealthEnabled: true,
         appleCalendarLinked: true
     )
-    #expect(linked.count == 5)
-    #expect(ConnectionsReadout.sourcesSummary(linked) == "5 sources connectées")
+    #expect(linked.count == 6)
+    #expect(ConnectionsReadout.sourcesSummary(linked) == "6 sources connectées")
     #expect(ConnectionsReadout.sourcesSummary([.appleHealth]) == "Apple Santé connecté")
     #expect(ConnectionsReadout.sourcesSummary([]) == "Aucune source connectée")
 }

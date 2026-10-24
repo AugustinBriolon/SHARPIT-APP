@@ -8,6 +8,7 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
     case strava
     case withings
     case google
+    case garmin
 
     var id: String { rawValue }
 
@@ -22,6 +23,7 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
         case .strava: String(localized: "Strava")
         case .withings: String(localized: "Withings")
         case .google: String(localized: "Google Agenda")
+        case .garmin: String(localized: "Garmin")
         }
     }
 
@@ -30,6 +32,7 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
         case .strava: .strava
         case .withings: .withings
         case .google: .google
+        case .garmin: .garmin
         }
     }
 
@@ -39,6 +42,7 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
         case .strava: String(localized: "Séances et activités")
         case .withings: String(localized: "Poids et composition corporelle")
         case .google: String(localized: "Planning et disponibilités")
+        case .garmin: String(localized: "Séances, sommeil et cœur de ta montre")
         }
     }
 
@@ -54,6 +58,8 @@ nonisolated enum DisconnectableSource: String, CaseIterable, Identifiable, Senda
             String(localized: "SharpIt ne recevra plus tes pesées ni ta composition corporelle, et l'accès est révoqué chez Withings. Les mesures importées sont conservées.")
         case .google:
             String(localized: "Tes séances ne seront plus écrites dans ton agenda et le coach ne lira plus tes disponibilités ; l'accès est révoqué chez Google. Les événements déjà créés restent dans l'agenda.")
+        case .garmin:
+            String(localized: "SharpIt ne recevra plus tes séances ni ta santé Garmin, et ta clé API est effacée de nos serveurs. Ce qui est déjà importé est conservé.")
         }
     }
 
@@ -78,7 +84,7 @@ nonisolated protocol SourceDisconnecting: Sendable {
     func disconnect(_ source: DisconnectableSource, token: String) async throws
 }
 
-/// `POST /api/v1/{strava,withings,google}/disconnect`.
+/// `POST /api/v1/{strava,withings,google,garmin}/disconnect`.
 actor SourceDisconnectClient: SourceDisconnecting {
     private let session: URLSession
     private let baseURL: URL

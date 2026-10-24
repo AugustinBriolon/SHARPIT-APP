@@ -8,7 +8,7 @@ import Testing
     let lists = ConnectionsReadout.split(linked: [.strava, .appleHealth])
 
     #expect(lists.connected == [.appleHealth, .strava])
-    #expect(lists.available == [.appleCalendar, .withings, .google])
+    #expect(lists.available == [.appleCalendar, .withings, .google, .garmin])
 }
 
 @Test func aSourceTheDeviceCannotRunIsNeverOffered() {

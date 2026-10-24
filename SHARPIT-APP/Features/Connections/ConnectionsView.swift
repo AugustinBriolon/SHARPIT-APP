@@ -4,6 +4,7 @@ import SwiftUI
 /// Paramètres → Sources de données: the sources that are linked, each opening a sheet to manage
 /// or disconnect it, and a « + » that offers the rest (`docs/adr/0014`). Apple Health and Apple
 /// Calendar are the iPhone's own; Strava / Withings / Google go through an in-app OAuth handoff,
+/// Garmin through a personal API key (`GarminKeySheet`),
 /// and a disconnection asks first, then `/api/v1/<source>/disconnect`.
 ///
 /// Each source is one two-line row — its own mark, its name, one short status — so the rows
@@ -17,6 +18,7 @@ struct ConnectionsView: View {
     var oauthHandoffClient: any ProviderOAuthHandoffServing = SharpitClient()
     var disconnectClient: any SourceDisconnecting = SourceDisconnectClient()
     var sourcePrefsClient: any SourcePrefsServing = SharpitClient()
+    var garminKeyClient: any GarminKeyServing = GarminKeyClient()
 
     @Environment(SharpitToastCenter.self) private var toastCenter
     @State private var status: V1SyncStatus?
@@ -26,6 +28,8 @@ struct ConnectionsView: View {
     @State private var disconnecting: DisconnectableSource?
     @State private var managing: ManagedSource?
     @State private var showingAdd = false
+    @State private var garminStatus = V1GarminKeyStatus.unavailable
+    @State private var enteringGarminKey = false
 
     private var linked: Set<ManagedSource> {
         ConnectionsReadout.linkedSources(
@@ -36,7 +40,10 @@ struct ConnectionsView: View {
     }
 
     private var sourceLists: (connected: [ManagedSource], available: [ManagedSource]) {
-        ConnectionsReadout.split(linked: linked, unavailable: appleHealth.isAvailable ? [] : [.appleHealth])
+        var unavailable: Set<ManagedSource> = appleHealth.isAvailable ? [] : [.appleHealth]
+        // Garmin's key form is open to the athletes the server allows (web ADR-103).
+        if !garminStatus.available { unavailable.insert(.garmin) }
+        return ConnectionsReadout.split(linked: linked, unavailable: unavailable)
     }
 
     var body: some View {
@@ -83,7 +90,12 @@ struct ConnectionsView: View {
         .task { await loadStatus() }
         .refreshable { await loadStatus() }
         .sheet(item: $managing) { source in
-            SourceManageSheet(source: source, status: statusLine(source), calendarPicker: calendarPicker(for: source)) {
+            SourceManageSheet(
+                source: source,
+                status: statusLine(source),
+                calendarPicker: calendarPicker(for: source),
+                onReplaceKey: source == .garmin ? { replaceGarminKey() } : nil
+            ) {
                 managing = nil
                 Task { await disconnectSource(source) }
             }
@@ -93,6 +105,9 @@ struct ConnectionsView: View {
                 showingAdd = false
                 Task { await connect(source) }
             }
+        }
+        .sheet(isPresented: $enteringGarminKey) {
+            GarminKeySheet { apiKey in await connectGarmin(apiKey: apiKey) }
         }
         .onChange(of: appleHealth.state) { _, state in
             switch state {
@@ -179,6 +194,8 @@ struct ConnectionsView: View {
             ConnectionsReadout.appleCalendarSubtitle(state: appleCalendar.state)
         case .withings, .google, .strava:
             ConnectionsReadout.Line(text: source.purpose, isProblem: false)
+        case .garmin:
+            ConnectionsReadout.garminKeyLine(last4: garminStatus.apiKeyLast4)
         }
     }
 
@@ -193,6 +210,9 @@ struct ConnectionsView: View {
             guard let oauth = source.oauth else { return }
             try? await Task.sleep(for: .milliseconds(400))
             await connectOAuth(oauth)
+        case .garmin:
+            try? await Task.sleep(for: .milliseconds(400))
+            enteringGarminKey = true
         }
     }
 
@@ -202,7 +222,7 @@ struct ConnectionsView: View {
             await appleHealth.disable(token: tokenProvider)
         case .appleCalendar:
             await appleCalendar.disable(token: tokenProvider)
-        case .withings, .google, .strava:
+        case .withings, .google, .strava, .garmin:
             guard let oauth = source.oauth else { return }
             await disconnect(oauth)
         }
@@ -238,6 +258,45 @@ struct ConnectionsView: View {
                 autoDismissAfter: 4
             )
         }
+    }
+
+    /// The manage sheet is gone before the key sheet is asked to present.
+    private func replaceGarminKey() {
+        managing = nil
+        Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            enteringGarminKey = true
+        }
+    }
+
+    /// Garmin checks the key before the server keeps it, so the answer is awaited, retried, and a
+    /// refusal stays in the sheet. Once linked, the first pull runs like an OAuth source's.
+    private func connectGarmin(apiKey: String) async -> String? {
+        do {
+            try await SharpitRetry.run {
+                try await garminKeyClient.connect(apiKey: apiKey, token: try await tokenProvider())
+            }
+        } catch {
+            return ConnectionsReadout.garminKeyFailure(error)
+        }
+        await loadStatus()
+        toastCenter.show(
+            String(localized: "Garmin connecté"),
+            symbol: "checkmark.circle.fill",
+            tone: .success,
+            autoDismissAfter: 3
+        )
+        do {
+            status = try await syncClient.sync(token: try await tokenProvider())
+        } catch {
+            toastCenter.show(
+                SharpitErrorGuidance.message(for: error, subject: String(localized: "La synchronisation")),
+                symbol: "exclamationmark.triangle",
+                tone: .error,
+                autoDismissAfter: 4
+            )
+        }
+        return nil
     }
 
     /// Waits for the server — a disconnection revokes access at the provider, so the row only
@@ -279,6 +338,8 @@ struct ConnectionsView: View {
             status = try await syncClient.syncStatus(token: tok)
             let answer = try await sourcePrefsClient.sourcePrefs(token: tok)
             appleCalendar.syncLinkedFromServer(answer.connected.contains(AppleCalendarSync.providerId))
+            // An older server without the route reads as Garmin closed, never as a failure.
+            garminStatus = (try? await garminKeyClient.status(token: tok)) ?? .unavailable
         } catch {
             toastCenter.show(
                 SharpitErrorGuidance.message(for: error, subject: String(localized: "L’état des connexions")),
