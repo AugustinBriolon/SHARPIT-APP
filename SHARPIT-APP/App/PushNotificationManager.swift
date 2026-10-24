@@ -116,7 +116,11 @@ final class PushNotificationManager {
 
     /// Handles a tapped notification: remembers where it leads, and drops the icon badge.
     func didReceiveNotificationResponse(userInfo: [AnyHashable: Any]) {
-        pendingDestination = Self.destination(for: userInfo)
+        didReceiveNotificationResponse(destination: Self.destination(for: userInfo))
+    }
+
+    func didReceiveNotificationResponse(destination: NotificationDestination?) {
+        pendingDestination = destination
         pendingDeliveryToken &+= 1
         clearIconBadge()
     }

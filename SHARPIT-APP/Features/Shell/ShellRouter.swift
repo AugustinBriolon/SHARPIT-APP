@@ -186,7 +186,7 @@ final class ShellRouter {
 }
 
 /// Where a tapped notification leads.
-enum NotificationDestination: Equatable {
+enum NotificationDestination: Equatable, Sendable {
     case tab(ShellTab)
     case planGenerator
     case weeklyReview

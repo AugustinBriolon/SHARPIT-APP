@@ -48,27 +48,24 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         #endif
     }
 
+    // UserNotifications calls these on its own queue, not main: a main-actor delegate method
+    // traps there (`_dispatch_assert_queue_fail`), as a local reminder firing at launch did.
+
     // Foreground: banner + sound. No badge — the athlete is already in the app.
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification,
-        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
-    ) {
-        completionHandler([.banner, .sound])
+        willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .sound]
     }
 
-    // Action when user taps on the push notification banner.
-    func userNotificationCenter(
+    // Action when user taps on the push notification banner. The destination is stored before
+    // returning — otherwise a cold launch could finish the callback before RootView sees a tap.
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse,
-        withCompletionHandler completionHandler: @escaping () -> Void
-    ) {
-        let userInfo = response.notification.request.content.userInfo
-        // Destination must be stored before we tell the system we're done — otherwise a cold
-        // launch can finish the callback before MainActor runs and RootView never sees a tap.
-        Task { @MainActor in
-            PushNotificationManager.shared.didReceiveNotificationResponse(userInfo: userInfo)
-            completionHandler()
-        }
+        didReceive response: UNNotificationResponse
+    ) async {
+        let destination = PushNotificationManager.destination(for: response.notification.request.content.userInfo)
+        await PushNotificationManager.shared.didReceiveNotificationResponse(destination: destination)
     }
 }
