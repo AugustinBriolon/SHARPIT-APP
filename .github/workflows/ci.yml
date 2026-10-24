@@ -62,10 +62,18 @@ jobs:
       # Unit tests never cold-launch the app: a crash at launch only shows when it is opened.
       - name: Cold-launch smoke test
         run: |
+          # The tests build unsigned, and an unsigned app dies at launch on Clerk's Keychain
+          # (-34018): the simulator reads the entitlements linked into the binary, so a signature
+          # added afterwards is not enough. Rebuild signed to run locally, as Xcode does.
+          set -o pipefail
+          xcodebuild build \
+            -project SHARPIT-APP.xcodeproj \
+            -scheme SHARPIT-APP \
+            -destination "id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
+            | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
           APP=~/Library/Developer/Xcode/DerivedData/ci/Build/Products/Debug-iphonesimulator/SharpIt.app
-          # Built unsigned; an unsigned app dies at launch on Clerk's Keychain (-34018). Sign it to
-          # run locally, as a simulator build does.
-          codesign --force --deep --sign - "$APP"
           scripts/smoke-launch.sh "${{ steps.simulator.outputs.udid }}" "$APP"
 
       # A compiler crash prints no `error:` line, only « Command SwiftCompile failed »: show the
