@@ -59,6 +59,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             | tee xcodebuild.log | grep -E "error:|✘|Test run with|TEST (SUCCEEDED|FAILED)"
 
+      # Unit tests never cold-launch the app: a crash at launch only shows when it is opened.
+      - name: Cold-launch smoke test
+        run: |
+          APP=~/Library/Developer/Xcode/DerivedData/ci/Build/Products/Debug-iphonesimulator/SharpIt.app
+          # Built unsigned; an unsigned app dies at launch on Clerk's Keychain (-34018). Sign it to
+          # run locally, as a simulator build does.
+          codesign --force --deep --sign - "$APP"
+          scripts/smoke-launch.sh "${{ steps.simulator.outputs.udid }}" "$APP"
+
       # A compiler crash prints no `error:` line, only « Command SwiftCompile failed »: show the
       # diagnostics, the crash and the end of the log so the cause is readable in the job.
       - name: Show why the build failed

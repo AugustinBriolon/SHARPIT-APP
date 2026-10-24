@@ -191,7 +191,15 @@ the API.
 
 **Framework callbacks.** Callbacks handed to system frameworks (Speech, AVAudio, HealthKit…) are
 built in nonisolated functions: main-actor closures trap when the framework calls them on its own
-queue.
+queue. `FrameworkCallbackIsolationTests` fails on a HealthKit query, a speech or audio tap callback, or a
+`UNUserNotificationCenterDelegate` method built otherwise.
+
+**Screen snapshots.** `ScreenSnapshotTests` pins the surfaces fixed again and again by hand (zone
+silhouette, activity curves) as PNGs in `SHARPIT-APPTests/__Snapshots__`, hosted in a real window
+(`Snapshot.swift`, no dependency). A missing reference is recorded and fails once; re-record them
+all with `TEST_RUNNER_SNAPSHOT_RECORD=1` on the `xcodebuild test` line, and look at every PNG
+before committing it. CI also cold-launches the built app five times (`scripts/smoke-launch.sh`):
+unit tests never open it, so a crash at launch only shows there.
 
 ## Design system
 
