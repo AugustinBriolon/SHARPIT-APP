@@ -4,7 +4,7 @@ Date: 2026-10-24
 
 ## Status
 
-Accepted
+Superseded by [0024](0024-garmin-connects-through-the-in-app-oauth-handoff.md)
 
 ## Context
 
