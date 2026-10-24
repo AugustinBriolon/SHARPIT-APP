@@ -11,12 +11,16 @@ Then: « À surveiller » (only when something deserves attention — resting HR
 under the athlete's range, short nights, a fast weight change), then « Zones sensibles »
 (`SensitiveZonesCard`: what the open zones do to the plan, the question owed), which pushes their
 own page (`SensitiveZonesView`, `SensitiveZonesStore`, `/api/v1/sensitive-zones`, SHARPIT ADR-068):
-the open zones by the web's strategy (à protéger, en reprise, à corriger), then the resolved ones;
+the open zones by the web's strategy (à protéger, en reprise, à corriger), then the resolved ones, under the open zones marked on both faces of the body in their strategy's
+tint (`SensitiveZonesBodyOverview`);
 a zone (`SensitiveZoneDetailView`) shows what the plan does with it, the upcoming sessions that load
 it, its 0–10 curve and timeline (readings and status changes, a relapse named), and moves it along —
 « Faire le point » (`ZoneCheckinSheet`: severity, what the athlete could do, a word), edit and
-declare (`SensitiveZoneFormSheet`, the body part picked from the web's list so the plan can check
-it), under watch, resolved (proposed when two weeks of readings say 0/10, never automatic), « Ça
+declare (`SensitiveZoneFormSheet`, the body part touched on a silhouette, face or back —
+`SensitiveZoneBodyPicker`, `SensitiveZoneBody`: every part of the web's list has its spot, a paired
+part takes the side the finger landed on, both sides read « des deux côtés », the side question
+only asked off the body; a part the server offers that the map does not draw stays a chip, « Autre… »
+writes one — so the plan can check it), under watch, resolved (proposed when two weeks of readings say 0/10, never automatic), « Ça
 revient ». Every change goes out through `SharpitRetry`. A status change (« Ça revient », resolve, monitor) shows on the tap and is put back with an inline error if the web refuses it; the other changes wait on their sheet, then read the zones again: the strategy is
 the web's. Then
 « Signes vitaux » (resting HR, HRV, sleep, VO₂max), « Corps » (weight with its target, body fat,

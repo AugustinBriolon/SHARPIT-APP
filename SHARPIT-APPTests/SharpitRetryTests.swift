@@ -78,3 +78,17 @@ private actor Attempts {
     #expect(await attempts.count == 1)
     #expect(await attempts.pauses.isEmpty)
 }
+
+@Test func aFailedRefreshUnderShownContentIsSaidOncePerOutage() {
+    let failures = SharpitWriteFailures()
+    let start = Date(timeIntervalSince1970: 0)
+
+    failures.reportStaleRead("Pas de connexion", now: start)
+    let first = failures.latest
+    failures.reportStaleRead("Pas de connexion", now: start.addingTimeInterval(20))
+    #expect(failures.latest == first)
+
+    failures.reportStaleRead("Pas de connexion", now: start.addingTimeInterval(61))
+    #expect(failures.latest != first)
+    #expect(failures.latest?.message == "Pas de connexion")
+}

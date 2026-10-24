@@ -14,8 +14,6 @@ struct DayDetailDatePicker: View {
     private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
     @State private var weekOffset: Int
     @State private var showingCalendar = false
-    /// The day the title showed last, so a change knows which way it went.
-    @State private var shownDay: Date
 
     init(
         selectedDay: Date,
@@ -28,7 +26,6 @@ struct DayDetailDatePicker: View {
         self.onShowWeek = onShowWeek
         self.onSelect = onSelect
         _weekOffset = State(initialValue: weeks.offset(forWeekContaining: selectedDay))
-        _shownDay = State(initialValue: selectedDay)
     }
 
     var body: some View {
@@ -41,9 +38,8 @@ struct DayDetailDatePicker: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
-                        // The date rolls the way the day went, as the page slides.
-                        .contentTransition(.numericText(countsDown: selectedDay < shownDay))
-                        .animation(SharpitMotion.selection, value: selectedDay)
+                        // The date changes in place: no roll, the page's slide says the direction.
+                        .contentTransition(.identity)
                     Image(systemName: "chevron.down")
                         .font(SharpitTypography.label)
                         .foregroundStyle(SharpitColor.mutedForeground)
@@ -82,7 +78,6 @@ struct DayDetailDatePicker: View {
         }
         .onChange(of: weekOffset) { _, offset in onShowWeek(weeks.weekStart(forOffset: offset)) }
         .onChange(of: selectedDay) { _, day in
-            shownDay = day
             let target = weeks.offset(forWeekContaining: day)
             if weekOffset != target {
                 SharpitMotion.run(SharpitMotion.selection) { weekOffset = target }

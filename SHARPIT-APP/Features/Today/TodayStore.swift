@@ -202,8 +202,11 @@ final class TodayStore {
     }
 
     private func keepOrFail(hadCache: Bool, error: Error) -> Bool {
-        if hadCache, case .loaded = phase { return false }
-        if case .loaded = phase { return false }
+        if case .loaded = phase {
+            // The plate on screen stays; the toast says it could not be refreshed.
+            SharpitWriteFailures.shared.reportStaleRead(Self.failureMessage(for: error))
+            return false
+        }
         phase = .failed(Self.failureMessage(for: error))
         return false
     }

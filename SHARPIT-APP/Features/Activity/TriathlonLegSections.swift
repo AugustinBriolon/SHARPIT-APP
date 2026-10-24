@@ -13,7 +13,7 @@ struct TriathlonLegSections: View {
     init(track: TriathlonLegTrack, race: V1ActivityDetail) {
         self.track = track
         self.race = race
-        _chartSelection = State(initialValue: Array(ActivityChartMetric.available(in: track.samples).prefix(1)))
+        _chartSelection = State(initialValue: ActivityCurve.defaultSelection(from: ActivityChartMetric.available(in: track.samples)))
     }
 
     var body: some View {
@@ -51,7 +51,7 @@ struct TriathlonLegSections: View {
                 ActivitySplitsSection(splits: splits, tone: tone, segmentDistance: detail.type.splitDistance)
             }
             if !chartMetrics.isEmpty {
-                ActivityChartsSection(samples: track.samples, metrics: chartMetrics, selection: $chartSelection, tone: tone)
+                ActivityChartsSection(samples: track.samples, metrics: chartMetrics, selection: $chartSelection)
             }
         }
     }

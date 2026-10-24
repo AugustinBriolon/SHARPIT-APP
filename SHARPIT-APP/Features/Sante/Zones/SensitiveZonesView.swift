@@ -134,6 +134,9 @@ struct SensitiveZonesView: View {
                 if zones.zones.isEmpty {
                     emptyState
                 } else {
+                    if zones.open.contains(where: { SensitiveZoneBody.isOnMap($0.bodyPart) }) {
+                        SensitiveZonesBodyOverview(zones: zones.open)
+                    }
                     group(String(localized: "En cours"), zones.open)
                     group(String(localized: "Résolues"), zones.resolved)
                 }

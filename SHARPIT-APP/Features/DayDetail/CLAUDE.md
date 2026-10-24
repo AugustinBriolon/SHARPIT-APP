@@ -17,8 +17,9 @@ turns the day (`DaySwipe`: right for the day before, left for the day after, nev
 days turn as pages: the day before and the day after are drawn right against the page (as read,
 else in their loading shape; the store reads them ahead), the finger drags all three and a turn
 brings the one beside into place — no fade, no gap; it resists where no day lies; a day picked in
-the strip or the calendar nudges in from its side of time; the title's date rolls the same
-way, a day not read yet shows redacted in its shape, Reduce Motion only fades; a swipe that
+the strip or the calendar nudges in from its side of time; the title's date and the day's words
+and figures change in place — no roll, no fade, no sweep (`.transaction` drops the animation on
+the content, the slide stays) — a day not read yet shows redacted in its shape; a swipe that
 starts on a row or a button never opens it — the turn is an exclusive UIKit pan that fails on
 vertical drags, so the scroll keeps those) and
 the left edge stays « back » — these screens and Journal turn off iOS 26's pop-from-anywhere

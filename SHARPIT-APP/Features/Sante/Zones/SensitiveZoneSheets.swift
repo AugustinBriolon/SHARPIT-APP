@@ -21,7 +21,10 @@ struct SensitiveZoneFormSheet: View {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                     choices(String(localized: "Qu'est-ce que c'est ?"), SensitiveZoneOptions.categories, selection: $draft.category)
                     bodyPartPicker
-                    choices(String(localized: "Quel côté ?"), SensitiveZoneOptions.sides, selection: $draft.side)
+                    // On the body the finger already said the side; a part off it still asks.
+                    if !SensitiveZoneBody.isOnMap(draft.region) {
+                        choices(String(localized: "Quel côté ?"), SensitiveZoneOptions.sides, selection: $draft.side)
+                    }
                     severityPicker
                     impactPicker
                     SharpitFormField(String(localized: "Nom (facultatif)"), placeholder: draft.resolvedTitle, text: $draft.title)
@@ -88,11 +91,29 @@ struct SensitiveZoneFormSheet: View {
         }
     }
 
+    /// The parts the server offers that the silhouette does not draw, as chips under it.
+    private var offListParts: [String] {
+        bodyParts.filter { !SensitiveZoneBody.mappedParts.contains($0) }
+    }
+
     private var bodyPartPicker: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             SharpitFieldLabel(String(localized: "Où ?"))
+            if bodyParts.contains(where: SensitiveZoneBody.mappedParts.contains) {
+                SensitiveZoneBodyPicker(
+                    offered: bodyParts,
+                    part: Binding(
+                        get: { writesOwnPart ? nil : draft.bodyPart },
+                        set: { draft.bodyPart = $0 }
+                    ),
+                    side: $draft.side,
+                    onPick: { writesOwnPart = false }
+                )
+                .padding(SharpitSpacing.cardPadding)
+                .sharpitSurface(.panel)
+            }
             LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
-                ForEach(bodyParts, id: \.self) { part in
+                ForEach(offListParts, id: \.self) { part in
                     OnboardingChoiceChip(title: part, isSelected: draft.bodyPart == part && !writesOwnPart) {
                         writesOwnPart = false
                         draft.bodyPart = part

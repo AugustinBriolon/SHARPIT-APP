@@ -58,9 +58,10 @@ nonisolated enum SharpitRetry {
     }
 }
 
-/// Where a background write that failed for good is said. Stores cannot read the environment,
-/// and a form may be closed by the time its write gives up, so the failure goes to this one
-/// place and `RootView` shows it in the app's toast slot.
+/// Where a background write that failed for good is said — and a read that failed while the
+/// screen kept what it already showed. Stores cannot read the environment, and a form may be
+/// closed by the time its write gives up, so the failure goes to this one place and `RootView`
+/// shows it in the app's toast slot.
 @MainActor
 @Observable
 final class SharpitWriteFailures {
@@ -75,5 +76,16 @@ final class SharpitWriteFailures {
 
     func report(_ message: String) {
         latest = Failure(message: message)
+    }
+
+    @ObservationIgnored private var lastStaleRead: (message: String, at: Date)?
+
+    /// A refresh that failed under content already on screen (read before, or cached): the
+    /// page stays as it is and a toast says why — never an error state in its place. Said once
+    /// per outage: the same words within a minute (a pull, a foreground, a tab) are not repeated.
+    func reportStaleRead(_ message: String, now: Date = .now) {
+        if let lastStaleRead, lastStaleRead.message == message, now.timeIntervalSince(lastStaleRead.at) < 60 { return }
+        lastStaleRead = (message, now)
+        report(message)
     }
 }

@@ -20,14 +20,15 @@ included). The points are evenly spaced in time, so the line runs faster where t
 **History.** Activité reads the history a page at a time (`activityPage`, 60 sessions, the server's
 `before` cursor) and the next page when the list's foot comes into view; a refresh asks the newest
 page again and keeps the older ones read. It opens on « Cette semaine », the tab's one ink card
-(sessions, time, distance, the days lit), then Records, then one card per month (`ActivityHistory`:
+(sessions, time, distance, the days lit), then one card per month (`ActivityHistory`:
 months keyed by year and month, each with its count and time), its sessions as rows split by
 hairlines. Months are laid out lazily.
 
 **History filters.** Activité filters what it has read in place (`ActivityFilter`): the search
 field on the title and sport, and the bar's filter menu — a sport the athlete did (the most
 frequent first) and a period; the list's foot keeps reading older pages, and an empty result offers
-« Chercher plus loin » while more waits. Its glyph fills while a filter narrows the list;
+« Chercher plus loin » while more waits. Its glyph fills while a filter narrows the list; the menu's rows are UIKit's and draw in the app's
+`AccentColor` (ink, near-white in dark — set as the global accent), never system blue or lime;
 a filter that empties it offers « Tout afficher ».
 
 **Logging and editing a session.** Activité's « + » opens « Saisir une séance »
@@ -45,8 +46,7 @@ A session of the last week asks about each open pain or injury with no reading s
 (`PainReassessment`, the web's `dueReassessments` « after_session » rule), worst first, each row
 opening the zone's own `ZoneCheckinSheet`.
 
-**Records.** Activité's list opens with a « Records » tile (under « Ce que tu as fait », hidden while a
-filter narrows the history) that pushes `RecordsView` in Activité's stack — the web keeps records in
+**Records.** A trophy at the bar's leading edge (no tile in the list) pushes `RecordsView` in Activité's stack — the web keeps records in
 Progression › Performance, and the app has no Progression tab, so they sit with the sessions they
 come from. `RecordsStore` (owned by `ActivityView`, created on the first open, so a reopen shows at
 once and refreshes quietly; a failed refresh keeps what is shown) reads `/api/v1/records`
