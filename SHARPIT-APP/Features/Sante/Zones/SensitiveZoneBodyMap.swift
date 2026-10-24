@@ -145,7 +145,7 @@ nonisolated enum SensitiveZoneBody {
 
 /// A plain standing figure, one fill: head, neck, trunk, arms and legs as rounded shapes laid out
 /// on the same unit square as the spots.
-struct SensitiveZoneSilhouette: Shape {
+nonisolated struct SensitiveZoneSilhouette: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         func box(_ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double) -> CGRect {
