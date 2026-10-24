@@ -19,8 +19,9 @@ struct SensitiveZoneFormSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    choices(String(localized: "Qu'est-ce que c'est ?"), SensitiveZoneOptions.categories, selection: $draft.category)
+                    // Where first: the body is the question the athlete came with.
                     bodyPartPicker
+                    choices(String(localized: "Qu'est-ce que c'est ?"), SensitiveZoneOptions.categories, selection: $draft.category)
                     // On the body the finger already said the side; a part off it still asks.
                     if !SensitiveZoneBody.isOnMap(draft.region) {
                         choices(String(localized: "Quel côté ?"), SensitiveZoneOptions.sides, selection: $draft.side)

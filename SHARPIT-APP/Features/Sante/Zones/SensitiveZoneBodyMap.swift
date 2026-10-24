@@ -46,18 +46,30 @@ nonisolated enum SensitiveZoneBody {
         var spots: [Spot] = []
         // Face: what is felt from the front.
         spots.append(single("Cou", .front, y: 0.135))
-        spots += pair("Épaule", .front, x: 0.33, y: 0.175)
-        spots += pair("Hanche", .front, x: 0.37, y: 0.47)
-        spots.append(single("Bassin", .front, y: 0.5))
-        spots += pair("Cuisse", .front, x: 0.425, y: 0.61)
+        spots += pair("Épaule", .front, x: 0.3, y: 0.175)
+        spots += pair("Pectoraux", .front, x: 0.41, y: 0.23)
+        spots += pair("Bras", .front, x: 0.275, y: 0.25)
+        spots += pair("Poignet", .front, x: 0.24, y: 0.5)
+        spots.append(single("Abdominaux", .front, y: 0.34))
+        spots += pair("Hanche", .front, x: 0.345, y: 0.465)
+        spots += pair("Psoas", .front, x: 0.44, y: 0.45)
+        spots.append(single("Bassin", .front, y: 0.515))
+        spots += pair("Adducteurs", .front, x: 0.455, y: 0.575)
+        spots += pair("Quadriceps", .front, x: 0.4, y: 0.635)
+        // The onboarding's word for the same place: drawn on the zones page, never offered.
+        spots += pair("Cuisse", .front, x: 0.4, y: 0.635)
         spots += pair("Genou", .front, x: 0.425, y: 0.725)
+        spots += pair("Tibia", .front, x: 0.425, y: 0.81)
         spots += pair("Cheville", .front, x: 0.425, y: 0.895)
         spots += pair("Pied", .front, x: 0.415, y: 0.965)
         // Dos: the back of the body.
         spots.append(single("Cou", .back, y: 0.135))
-        spots += pair("Épaule", .back, x: 0.33, y: 0.175)
+        spots += pair("Trapèzes", .back, x: 0.4, y: 0.165)
+        spots += pair("Épaule", .back, x: 0.3, y: 0.19)
         spots.append(single("Dos", .back, y: 0.26))
+        spots += pair("Coude", .back, x: 0.255, y: 0.33)
         spots.append(single("Lombaires", .back, y: 0.4))
+        spots += pair("Fessier", .back, x: 0.42, y: 0.49)
         spots += pair("Ischio", .back, x: 0.425, y: 0.62)
         spots += pair("Mollet", .back, x: 0.425, y: 0.8)
         spots += pair("Tendon d'Achille", .back, x: 0.425, y: 0.905)
@@ -78,6 +90,17 @@ nonisolated enum SensitiveZoneBody {
     static func spots(on face: Face, offered: [String]) -> [Spot] {
         let offered = Set(offered)
         return spots.filter { $0.face == face && offered.contains($0.part) }
+    }
+
+    /// The spot a finger at `point` (a share of the silhouette, as `x` and `y`) means: the
+    /// nearest one, measured on the figure's 1:2 frame, within `reach` of it.
+    static func nearest(to point: CGPoint, in spots: [Spot], reach: Double = 0.09) -> Spot? {
+        func distance(_ spot: Spot) -> Double {
+            // The figure is twice as tall as it is wide: a share across is half a share down.
+            hypot((spot.x - point.x) / 2, spot.y - point.y)
+        }
+        guard let best = spots.min(by: { distance($0) < distance($1) }), distance(best) <= reach else { return nil }
+        return best
     }
 
     /// The face a part opens on: the back for the back of the body, else the front.
@@ -196,14 +219,22 @@ struct SensitiveZoneBodyMap: View {
     var height: CGFloat = 400
 
     private var width: CGFloat { height / 2 }
-    /// A finger's target, kept apart from its neighbours by the layout.
-    private var target: CGFloat { max(28, height * 0.085) }
-    private var dot: CGFloat { max(10, height * 0.045) }
+    /// A dot's own target; a tap off every dot still reaches the nearest one.
+    private var target: CGFloat { max(22, height * 0.06) }
+    private var dot: CGFloat { max(10, height * 0.034) }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             SensitiveZoneSilhouette()
                 .fill(SharpitColor.mutedForeground.opacity(0.14))
+                .frame(width: width, height: height)
+                .contentShape(.rect)
+                // Anywhere on the figure, not only on a dot: the nearest part is the one meant.
+                .onTapGesture(coordinateSpace: .local) { location in
+                    guard let onTap else { return }
+                    let point = CGPoint(x: location.x / width, y: location.y / height)
+                    if let spot = SensitiveZoneBody.nearest(to: point, in: spots) { onTap(spot) }
+                }
                 .accessibilityHidden(true)
             ForEach(spots) { spot in
                 spotView(spot)
@@ -278,7 +309,8 @@ struct SensitiveZoneBodyPicker: View {
                         side = next.side
                     }
                     onPick()
-                }
+                },
+                height: 460
             )
             .frame(maxWidth: .infinity)
             .padding(.vertical, SharpitSpacing.xs)

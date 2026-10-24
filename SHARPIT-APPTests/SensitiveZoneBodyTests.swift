@@ -56,3 +56,23 @@ private func spot(_ part: String, _ side: SensitiveZoneBody.Side, _ face: Sensit
     #expect(spots.count == 2)
     #expect(spots.allSatisfy { $0.part == "Genou" })
 }
+
+/// The web's `COMMON_BODY_PARTS`: none of them should fall back to a chip under the body.
+@Test func everyCommonBodyPartHasAPlaceOnTheBody() {
+    let common = [
+        "Pied", "Cheville", "Tendon d'Achille", "Mollet", "Tibia", "Genou", "Quadriceps", "Ischio",
+        "Adducteurs", "Hanche", "Fessier", "Psoas", "Bassin", "Abdominaux", "Lombaires", "Dos",
+        "Trapèzes", "Épaule", "Pectoraux", "Cou", "Bras", "Coude", "Poignet",
+    ]
+    for part in common {
+        #expect(SensitiveZoneBody.isOnMap(part), "\(part)")
+    }
+}
+
+@Test func aTapOffEveryDotTakesTheNearestPartWithinReach() throws {
+    let spots = SensitiveZoneBody.spots(on: .front, offered: ["Genou", "Cheville"])
+    let knee = try spot("Genou", .left)
+    let near = SensitiveZoneBody.nearest(to: CGPoint(x: knee.x + 0.02, y: knee.y + 0.02), in: spots)
+    #expect(near == knee)
+    #expect(SensitiveZoneBody.nearest(to: CGPoint(x: 0.5, y: 0.1), in: spots) == nil)
+}
