@@ -63,6 +63,10 @@ struct FoodEntryEditSheet: View {
                 }
                 .sharpitListRows()
 
+                if let health = entry.health {
+                    FoodHealthSections(health: health)
+                }
+
                 Section {
                     Button("Supprimer l'aliment", role: .destructive) {
                         Task { await store.delete(entry) }
