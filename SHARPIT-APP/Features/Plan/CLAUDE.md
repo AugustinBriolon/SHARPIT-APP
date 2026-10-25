@@ -57,8 +57,9 @@ first trip's name, « +1 » for more); `PlanTravel` compares calendar days — a
 midnights on the server, the week's are local — and the chip opens the coach's memory as a sheet.
 
 **Editing the plan by hand.** Plan's « + » opens « Nouvelle séance » (`PlannedSessionCreateSheet`);
-a session's drawer carries « … » (`SessionActionsMenu`: Modifier, Déplacer to one of the next seven
-days, Supprimer after a confirmation). « Modifier » is pushed inside the drawer, one sheet at a
+a session's drawer carries « … » (`SessionActionsMenu`: Envoyer sur ma montre, Lier à une séance
+réalisée, then Modifier, Déplacer to one of the next seven days, Supprimer after a confirmation —
+each group only where the screen offers it, and no « … » when none is). « Modifier » is pushed inside the drawer, one sheet at a
 time. `PlanEditor`, owned by `PlanView`, writes them: an edit, a move and a deletion show on the tap
 (`PlanStore.show` / `showRemoved`) and go out behind through `SharpitRetry`; a creation waits for
 the server's id. Every write bumps `calendarRevision`, and that reload is what puts a refused change
@@ -72,10 +73,10 @@ A done session's « Conformité au plan » sheet can delink the activity (`link`
 `activityId: null`): the session is to do again and its analysis is gone.
 
 **Sending to the watch.** A run, ride or pool session not done carries « Envoyer sur ma montre » in its
-drawer (`SessionWatchPushRow`, `docs/adr/0025`) when Garmin is linked — `PlanView` reads
+drawer's « … » (`docs/adr/0025`) when Garmin is linked — `PlanView` reads
 `/api/v1/sync-status` with its extras. It posts `/api/v1/garmin/workouts/from-planned-session`
 (`GarminWorkoutClient`); the server resolves the targets and schedules the workout on the session's
-day. The row reads the receipt the plan carries (`garminWorkoutId`, `garminWorkoutScheduledDate`,
-kept through a local edit by `applying`): sent, or moved since (`WatchPushState`), and a resend
-replaces the workout. Pro-only: a Free athlete sees `SharpitProTeaser`. A Garmin refusal is a 403 or
+day. The entry reads the receipt the plan carries (`garminWorkoutId`, `garminWorkoutScheduledDate`,
+kept through a local edit by `applying`): « Renvoyer sur ma montre » once sent (`WatchPushState`),
+asked before replacing unless the day moved. Pro-only: a Free athlete's tap opens the paywall. A Garmin refusal is a 403 or
 429 in the server's words, shown in the toast, never a sign-out.
