@@ -5,6 +5,8 @@ import SwiftUI
 struct SharpitIconTile: View {
     let symbol: String
     var size: CGFloat = SharpitTokens.tileSize
+    /// On an ink card an ink tile would vanish: the same squircle turns lime, its glyph ink.
+    var onInk = false
 
     @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
@@ -12,12 +14,12 @@ struct SharpitIconTile: View {
         let side = size * scale
         Image(systemName: symbol)
             .font(.system(size: side * 0.42, weight: .bold))
-            .foregroundStyle(SharpitColor.inkAccent)
+            .foregroundStyle(onInk ? SharpitColor.highlightForeground : SharpitColor.inkAccent)
             .frame(width: side, height: side)
             // A fixed squircle: concentric, a tile in a list's first or last row took the card's
             // corner and read as a circle beside the squares of the middle rows.
             .background(
-                SharpitColor.inkSurface,
+                onInk ? SharpitColor.highlight : SharpitColor.inkSurface,
                 in: RoundedRectangle(cornerRadius: SharpitRadius.tile * side / SharpitTokens.tileSize, style: .continuous)
             )
             .accessibilityHidden(true)

@@ -92,12 +92,7 @@ struct InkVerdictPlate: View {
     /// The state, named once: glyph, label, and yesterday's state only when it changed.
     private var eyebrow: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            Image(systemName: plate.stateCode?.symbolName ?? "circle.fill")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(SharpitColor.highlightForeground)
-                .frame(width: 30, height: 30)
-                .background(SharpitColor.highlight, in: Circle())
-                .accessibilityHidden(true)
+            SharpitIconTile(symbol: plate.stateCode?.symbolName ?? "circle.fill", onInk: true)
             Text(plate.statusLabel)
                 .font(SharpitTypography.cardTitle)
                 .tracking(SharpitTypography.cardTitleTracking)
