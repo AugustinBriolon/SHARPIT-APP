@@ -31,15 +31,21 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
 
     /// A silent push after the server synced the athlete's sources: today is read again so the
     /// widgets show what just came in, app open or not.
-    // On the main actor: UIKit's bridged fetch completion handler is called when this returns, and
-    // off main it asserts "Call must be made on main thread" while the app snapshots (APPLE-IOS-7).
-    @MainActor
+    // On the main actor: UIKit's fetch completion handler must be called on the main thread,
+    // otherwise UIKit asserts "Call must be made on main thread" while snapshotting (APPLE-IOS-7).
     func application(
         _ application: UIApplication,
-        didReceiveRemoteNotification userInfo: [AnyHashable: Any]
-    ) async -> UIBackgroundFetchResult {
-        guard userInfo["refresh"] as? String == "today" else { return .noData }
-        return await WidgetSnapshotPublisher.refreshInBackground() ? .newData : .failed
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        guard userInfo["refresh"] as? String == "today" else {
+            completionHandler(.noData)
+            return
+        }
+        Task { @MainActor in
+            let success = await WidgetSnapshotPublisher.refreshInBackground()
+            completionHandler(success ? .newData : .failed)
+        }
     }
 
     func application(

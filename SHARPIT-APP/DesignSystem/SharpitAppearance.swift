@@ -45,6 +45,7 @@ nonisolated enum AppearancePreference: String, CaseIterable, Identifiable, Senda
 /// reached an open sheet only when it was reopened — switching Apparence left the page itself in
 /// the old scheme. The window override reaches everything it presents at once, and going back
 /// to « Système » really clears it, which `preferredColorScheme(nil)` does not always do.
+@MainActor
 struct SharpitAppearanceModifier: ViewModifier {
     @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .system
 
@@ -55,6 +56,7 @@ struct SharpitAppearanceModifier: ViewModifier {
     }
 }
 
+@MainActor
 enum SharpitAppearance {
     static func apply(_ preference: AppearancePreference) {
         let style: UIUserInterfaceStyle = switch preference {

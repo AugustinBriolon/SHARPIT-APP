@@ -35,6 +35,15 @@ nonisolated enum CrashReporting {
         // MetricKit: hangs, CPU spikes, disk-write exceptions that are not NSExceptions.
         options.enableMetricKit = true
 
+        // App Hang tracking: disable in debug to avoid false positives during local development
+        // and simulator launches; in release, use a 5s threshold to capture true blocking hangs.
+        #if DEBUG
+        options.enableAppHangTracking = false
+        #else
+        options.enableAppHangTracking = true
+        options.appHangTimeoutInterval = 5.0
+        #endif
+
         // Concurrency frames in crash stacks (HealthKit / MainActor traps).
         options.swiftAsyncStacktraces = true
 

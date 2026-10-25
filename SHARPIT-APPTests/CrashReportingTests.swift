@@ -24,6 +24,12 @@ import Testing
     #expect(options.sessionReplay.networkDetailAllowUrls.isEmpty)
     #expect(options.sessionReplay.onErrorSampleRate == 1)
     #expect(options.sessionReplay.sessionSampleRate == 0)
+    #if DEBUG
+    #expect(options.enableAppHangTracking == false)
+    #else
+    #expect(options.enableAppHangTracking == true)
+    #expect(options.appHangTimeoutInterval == 5.0)
+    #endif
 }
 
 @Test func crashReportsGoToTheEURegion() throws {

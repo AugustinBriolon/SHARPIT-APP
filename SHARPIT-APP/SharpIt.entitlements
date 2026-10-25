@@ -23,9 +23,5 @@
 	<array>
 		<string>group.app.sharpit.ios</string>
 	</array>
-	<key>keychain-access-groups</key>
-	<array>
-		<string>$(AppIdentifierPrefix)app.sharpit.ios</string>
-	</array>
 </dict>
 </plist>
