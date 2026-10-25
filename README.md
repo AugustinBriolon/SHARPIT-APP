@@ -112,10 +112,10 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
 - Freshness: Today starts a provider pull on launch, foreground and pull-to-refresh
   (`/api/v1/sync`), and Moi can switch on Apple Health as a gap-filling source, with a
   diagnostic of what Apple Health holds ([ADR 0005](docs/adr/0005-app-started-sync-and-apple-health.md))
-- No Garmin in the app ([ADR 0013](docs/adr/0013-remove-garmin-from-the-ios-app.md)): its access
-  is unofficial and its developer program takes no new applications (App Review 5.2.2), so the app
-  has no connect, history import, threshold import or workout push. A Garmin watch reaches SHARPIT
-  through Apple Health; an account already linked on the web keeps syncing server-side
+- Garmin through the Connect Developer Program: connected with the in-app OAuth handoff
+  ([ADR 0024](docs/adr/0024-garmin-connects-through-the-in-app-oauth-handoff.md)), and a Pro athlete
+  sends a planned run, ride or pool session to the watch from its drawer
+  ([ADR 0025](docs/adr/0025-a-planned-session-is-sent-to-the-watch-from-its-drawer.md))
 - Journal: the day's signals via `/api/day-journal`, and what it asks for via
   `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
   render — the nutrition panel, thresholds — survive a save from the phone.

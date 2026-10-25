@@ -70,3 +70,12 @@ steps. A strength exercise keeps the keys the form does not show (rest, the watc
 rename drops the two that name the old one. A brick is the coach's chain and is not edited by hand.
 A done session's « Conformité au plan » sheet can delink the activity (`link` with
 `activityId: null`): the session is to do again and its analysis is gone.
+
+**Sending to the watch.** A run, ride or pool session not done carries « Envoyer sur ma montre » in its
+drawer (`SessionWatchPushRow`, `docs/adr/0025`) when Garmin is linked — `PlanView` reads
+`/api/v1/sync-status` with its extras. It posts `/api/v1/garmin/workouts/from-planned-session`
+(`GarminWorkoutClient`); the server resolves the targets and schedules the workout on the session's
+day. The row reads the receipt the plan carries (`garminWorkoutId`, `garminWorkoutScheduledDate`,
+kept through a local edit by `applying`): sent, or moved since (`WatchPushState`), and a resend
+replaces the workout. Pro-only: a Free athlete sees `SharpitProTeaser`. A Garmin refusal is a 403 or
+429 in the server's words, shown in the toast, never a sign-out.
