@@ -123,7 +123,10 @@ extension V1PlannedSessionItem {
             breakdown: sportChanged ? nil : breakdown,
             brickGroupId: brickGroupId,
             brickOrder: brickOrder,
-            isKey: isKey
+            isKey: isKey,
+            // The watch keeps what was sent: a new day reads as moved until it is sent again.
+            garminWorkoutId: garminWorkoutId,
+            garminWorkoutScheduledDate: garminWorkoutScheduledDate
         )
     }
 }

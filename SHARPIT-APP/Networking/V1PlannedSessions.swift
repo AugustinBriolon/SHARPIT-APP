@@ -34,11 +34,16 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     let isKey: Bool
     /// Why the coach wrote this session — Decision Memory rationale; absent on older payloads.
     let rationale: String?
+    /// The Garmin workout this session was last sent as, nil when it never reached the watch.
+    let garminWorkoutId: String?
+    /// The day that workout was scheduled on, "yyyy-MM-dd": a moved session no longer matches.
+    let garminWorkoutScheduledDate: String?
 
     enum CodingKeys: String, CodingKey {
         case id, date, startTime, title, type, durationMin, intensity, load, notes, breakdown
         case description, strengthPrescription, endurancePrescription
         case goalId, completed, activityId, activity, brickGroupId, brickOrder, isKey, rationale
+        case garminWorkoutId, garminWorkoutScheduledDate
     }
 
     init(
@@ -62,7 +67,9 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         brickGroupId: String? = nil,
         brickOrder: Int? = nil,
         isKey: Bool = false,
-        rationale: String? = nil
+        rationale: String? = nil,
+        garminWorkoutId: String? = nil,
+        garminWorkoutScheduledDate: String? = nil
     ) {
         self.id = id
         self.date = date
@@ -85,6 +92,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         self.brickOrder = brickOrder
         self.isKey = isKey
         self.rationale = rationale
+        self.garminWorkoutId = garminWorkoutId
+        self.garminWorkoutScheduledDate = garminWorkoutScheduledDate
     }
 
     init(from decoder: Decoder) throws {
@@ -113,6 +122,8 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         brickOrder = try container.decodeIfPresent(Int.self, forKey: .brickOrder)
         isKey = (try? container.decodeIfPresent(Bool.self, forKey: .isKey)) ?? false
         rationale = try container.decodeIfPresent(String.self, forKey: .rationale)
+        garminWorkoutId = try? container.decodeIfPresent(String.self, forKey: .garminWorkoutId)
+        garminWorkoutScheduledDate = try? container.decodeIfPresent(String.self, forKey: .garminWorkoutScheduledDate)
     }
 
     /// A JSON `null` read as absent, so « has a prescription » is one nil check.

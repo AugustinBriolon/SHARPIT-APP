@@ -38,6 +38,8 @@ struct PlanView: View {
     @State private var travels: [CoachMemoryEntry] = []
     @State private var showingTravel = false
     @State private var extrasGate = LoadGate()
+    /// Garmin linked: the drawer then offers to send an endurance session to the watch.
+    @State private var isGarminLinked = false
 
     init(
         client: any PlannedSessionServing,
@@ -125,6 +127,7 @@ struct PlanView: View {
                         preview: PlannedSessionPreview(session: session, isExpertReading: isExpertReading),
                         linking: linkContext(on: session.date),
                         editing: editingContext(for: session),
+                        watch: watchContext(for: session),
                         guidedFinish: guidedFinishContext()
                     ) { context in
                         router.discussWithCoach(about: context)
@@ -290,6 +293,7 @@ extension PlanView {
     fileprivate func loadPlanExtras(force: Bool = false) async {
         await extrasGate.run(force: force) {
             await loadTravels()
+            await loadGarminLink()
             await loadTrajectory()
             await loadTrainingLoad(force: true)
             return true
@@ -361,6 +365,26 @@ extension PlanView {
     }
 
     /// Hand editing of a single session. A brick's legs are the coach's chain: not edited here.
+    /// Nil for a session done, a sport the watch does not take yet, or without Garmin.
+    fileprivate func watchContext(for session: V1PlannedSessionItem) -> SessionWatchContext? {
+        guard isGarminLinked, session.completed != true, WatchPushState.canSend(type: session.type) else {
+            return nil
+        }
+        return SessionWatchContext(
+            session: session,
+            client: GarminWorkoutClient(),
+            tokenProvider: tokenProvider,
+            onSent: { Task { await store.reload(around: session.date) } }
+        )
+    }
+
+    /// A failed read keeps what was known: the row is a convenience, not a state to lose.
+    fileprivate func loadGarminLink() async {
+        guard let token = try? await tokenProvider(),
+              let status = try? await SharpitClient().syncStatus(token: token) else { return }
+        isGarminLinked = status.providers.contains { $0.key == DisconnectableSource.garmin.statusKey }
+    }
+
     fileprivate func editingContext(for session: V1PlannedSessionItem) -> SessionEditingContext {
         SessionEditingContext(
             session: session,

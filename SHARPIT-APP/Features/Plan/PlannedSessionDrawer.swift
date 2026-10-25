@@ -203,6 +203,8 @@ struct PlannedSessionDrawer: View {
     var linking: SessionLinkContext?
     /// Lets the athlete edit, move or delete the session; nil where the plan cannot be changed.
     var editing: SessionEditingContext?
+    /// Sends the session to the Garmin watch; nil where Garmin is not linked or the sport waits.
+    var watch: SessionWatchContext?
     /// Creates the STRENGTH activity after a phone-guided follow; nil where the screen cannot write.
     var guidedFinish: GuidedStrengthFinishContext?
     /// Fetches the session's breakdown when the preview arrived without one — Today's
@@ -329,6 +331,9 @@ struct PlannedSessionDrawer: View {
                     ) {
                         showingLinkPicker = true
                     }
+                }
+                if let watch {
+                    SessionWatchPushRow(context: watch)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
