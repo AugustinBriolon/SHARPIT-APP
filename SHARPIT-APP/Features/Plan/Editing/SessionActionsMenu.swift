@@ -1,33 +1,63 @@
 import SwiftUI
 
-/// The drawer's « … »: what the athlete can do to the session itself. Asking the coach,
-/// linking and the watch stay in the drawer's body, where they were.
+/// The drawer's « … »: everything the athlete can do to the session besides asking the coach,
+/// who keeps his pill beside the title. Each group is there only where the screen offers it.
 struct SessionActionsMenu: View {
-    let session: V1PlannedSessionItem
-    let onEdit: () -> Void
-    let onMove: (Date) -> Void
-    let onDelete: () -> Void
+    /// Edit, move and delete; nil where the plan cannot be changed (Résumé, a brick's leg).
+    var editing: SessionMenuEditing?
+    /// « Envoyer sur ma montre », titled by where the session stands on the watch.
+    var watch: SessionMenuAction?
+    var onLink: (() -> Void)?
+
+    /// Nothing to offer: the drawer shows no « … » at all rather than an empty menu.
+    var isEmpty: Bool { editing == nil && watch == nil && onLink == nil }
 
     var body: some View {
         Menu {
-            Button(action: onEdit) {
-                Label("Modifier", systemImage: "pencil")
-            }
-            Menu {
-                ForEach(PlanMoveDays.days(for: session), id: \.self) { day in
-                    Button(PlanMoveDays.label(day)) { onMove(day) }
+            if let watch {
+                Button(action: watch.action) {
+                    Label(watch.title, systemImage: watch.symbolName)
                 }
-            } label: {
-                Label("Déplacer", systemImage: "calendar")
             }
-            Divider()
-            SharpitDeleteMenuButton(action: onDelete)
+            if let onLink {
+                Button(action: onLink) {
+                    Label("Lier à une séance réalisée", systemImage: "link")
+                }
+            }
+            if let editing {
+                if watch != nil || onLink != nil { Divider() }
+                Button(action: editing.onEdit) {
+                    Label("Modifier", systemImage: "pencil")
+                }
+                Menu {
+                    ForEach(PlanMoveDays.days(for: editing.session), id: \.self) { day in
+                        Button(PlanMoveDays.label(day)) { editing.onMove(day) }
+                    }
+                } label: {
+                    Label("Déplacer", systemImage: "calendar")
+                }
+                Divider()
+                SharpitDeleteMenuButton(action: editing.onDelete)
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .font(SharpitTypography.bodyEmphasis)
         }
         .accessibilityLabel("Actions de la séance")
     }
+}
+
+struct SessionMenuEditing {
+    let session: V1PlannedSessionItem
+    let onEdit: () -> Void
+    let onMove: (Date) -> Void
+    let onDelete: () -> Void
+}
+
+struct SessionMenuAction {
+    let title: String
+    let symbolName: String
+    let action: () -> Void
 }
 
 /// Where « Déplacer » offers to take a session: the seven days from today, its own day left

@@ -64,8 +64,20 @@ private func day(_ id: String) -> Date { TrainingDayId.date(id)! }
 
     @Test func aTargetSentWithoutGuidanceIsSaidAfterTheSend() {
         let plain = V1GarminWorkoutReceipt(workoutId: "1", scheduledDate: "2026-10-27", warnings: [], derived: false)
-        #expect(SessionWatchPushRow.sentMessage(for: plain) == "Séance envoyée sur ta montre")
+        #expect(SessionWatchContext.sentMessage(for: plain) == "Séance envoyée sur ta montre")
         let warned = V1GarminWorkoutReceipt(workoutId: "1", scheduledDate: "2026-10-27", warnings: ["FTP inconnue."], derived: false)
-        #expect(SessionWatchPushRow.sentMessage(for: warned).hasSuffix("FTP inconnue."))
+        #expect(SessionWatchContext.sentMessage(for: warned).hasSuffix("FTP inconnue."))
+    }
+
+    @Test func theMenuOffersASendThenAResend() {
+        #expect(WatchPushState.notSent.menuTitle == "Envoyer sur ma montre")
+        #expect(WatchPushState.sent.menuTitle == "Renvoyer sur ma montre")
+        #expect(WatchPushState.moved.menuTitle == "Renvoyer sur ma montre")
+    }
+
+    @Test func theDrawerShowsNoMenuWhenItHasNothingToOffer() {
+        #expect(SessionActionsMenu().isEmpty)
+        #expect(!SessionActionsMenu(onLink: {}).isEmpty)
+        #expect(!SessionActionsMenu(watch: SessionMenuAction(title: "Envoyer", symbolName: "paperplane") {}).isEmpty)
     }
 }

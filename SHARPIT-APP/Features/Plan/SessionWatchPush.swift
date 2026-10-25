@@ -1,4 +1,4 @@
-import SwiftUI
+import Foundation
 
 /// Where a planned session stands on the athlete's Garmin watch.
 enum WatchPushState: Equatable {
@@ -24,6 +24,17 @@ enum WatchPushState: Equatable {
     static func canSend(type: String?) -> Bool {
         ["RUN", "BIKE", "SWIM"].contains(type?.uppercased() ?? "")
     }
+
+    /// The « … » entry says where the session stands: a resend is what is offered once sent.
+    var menuTitle: String {
+        self == .notSent
+            ? String(localized: "Envoyer sur ma montre")
+            : String(localized: "Renvoyer sur ma montre")
+    }
+
+    var symbolName: String {
+        self == .notSent ? "paperplane" : "arrow.triangle.2.circlepath"
+    }
 }
 
 /// What the drawer needs to send its session to the watch; nil where it cannot — Garmin not
@@ -34,111 +45,20 @@ struct SessionWatchContext {
     let tokenProvider: () async throws -> String
     /// The session reached the watch; the screen reads its plan again.
     let onSent: () -> Void
-}
 
-/// « Envoyer sur ma montre » in a session's drawer. Pro-only, as every push to the watch is:
-/// a Free athlete sees the teaser in its place.
-struct SessionWatchPushRow: View {
-    let context: SessionWatchContext
-
-    @Environment(ProStore.self) private var pro: ProStore?
-    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
-    @State private var isSending = false
-    @State private var isConfirmingResend = false
-    /// The day just sent, until the plan read again brings the server's copy.
-    @State private var sentDay: String?
-
-    private var state: WatchPushState {
-        WatchPushState.of(
-            garminWorkoutId: sentDay == nil ? context.session.garminWorkoutId : "sent",
-            scheduledDate: sentDay ?? context.session.garminWorkoutScheduledDate,
-            sessionDate: context.session.date
-        )
-    }
-
-    var body: some View {
-        if let pro, !pro.isPro {
-            SharpitProTeaser(
-                title: String(localized: "Sur ta montre"),
-                message: String(localized: "Envoie la séance sur ta Garmin, cibles comprises, avec SharpIt Pro.")
-            )
-        } else {
-            DrawerActionRow(symbolName: symbolName, title: title, subtitle: subtitle) {
-                if state == .sent {
-                    isConfirmingResend = true
-                } else {
-                    Task { await send(replace: state == .moved) }
-                }
-            }
-            .disabled(isSending)
-            .overlay(alignment: .trailing) {
-                if isSending {
-                    ProgressView()
-                        .padding(.trailing, SharpitSpacing.cardPadding + SharpitSpacing.md)
-                }
-            }
-            .confirmationDialog(
-                String(localized: "Renvoyer la séance ?"),
-                isPresented: $isConfirmingResend,
-                titleVisibility: .visible
-            ) {
-                Button("Renvoyer") { Task { await send(replace: true) } }
-                Button("Annuler", role: .cancel) {}
-            } message: {
-                Text("La version déjà sur ta montre est remplacée.")
-            }
-        }
-    }
-
-    private var symbolName: String {
-        switch state {
-        case .notSent: "paperplane"
-        case .sent: "checkmark.circle"
-        case .moved: "arrow.triangle.2.circlepath"
-        }
-    }
-
-    private var title: String {
-        switch state {
-        case .notSent: String(localized: "Envoyer sur ma montre")
-        case .sent: String(localized: "Sur ta montre")
-        case .moved: String(localized: "Renvoyer sur ma montre")
-        }
-    }
-
-    private var subtitle: String {
-        switch state {
-        case .notSent: String(localized: "Garmin la reçoit à la prochaine synchro de la montre")
-        case .sent: String(localized: "Envoyée sur Garmin · touche pour la renvoyer")
-        case .moved: String(localized: "Le jour a changé depuis l’envoi")
-        }
-    }
-
-    private func send(replace: Bool) async {
-        guard !isSending else { return }
-        isSending = true
-        defer { isSending = false }
+    /// Sends the session, and says how it went in the toast's words. The receipt is nil on a
+    /// failure.
+    func send(replace: Bool) async -> (receipt: V1GarminWorkoutReceipt?, message: String) {
         do {
-            let receipt = try await context.client.sendToWatch(
-                plannedSessionId: context.session.id,
+            let receipt = try await client.sendToWatch(
+                plannedSessionId: session.id,
                 replace: replace,
-                token: try await context.tokenProvider()
+                token: try await tokenProvider()
             )
-            sentDay = receipt.scheduledDate
-            toastCenter?.show(
-                Self.sentMessage(for: receipt),
-                symbol: "checkmark.circle.fill",
-                tone: .success,
-                autoDismissAfter: 4
-            )
-            context.onSent()
+            onSent()
+            return (receipt, Self.sentMessage(for: receipt))
         } catch {
-            toastCenter?.show(
-                Self.failureMessage(for: error),
-                symbol: "exclamationmark.triangle",
-                tone: .error,
-                autoDismissAfter: 5
-            )
+            return (nil, Self.failureMessage(for: error))
         }
     }
 
@@ -150,6 +70,7 @@ struct SessionWatchPushRow: View {
         return String(localized: "Séance envoyée sur ta montre")
     }
 
+    /// A Garmin refusal comes in the server's words (no permission, quota): said as it is.
     static func failureMessage(for error: Error) -> String {
         if case .message(let text)? = error as? SharpitAPIError { return text }
         return SharpitErrorGuidance.message(for: error, subject: String(localized: "L’envoi sur la montre"))

@@ -229,6 +229,12 @@ struct PlannedSessionDrawer: View {
     @State private var guidedSession: GuidedStrengthSession?
     @State private var isEditing = false
     @State private var isConfirmingDeletion = false
+    @Environment(ProStore.self) private var pro: ProStore?
+    @State private var isSendingToWatch = false
+    @State private var isConfirmingWatchResend = false
+    @State private var isShowingProPaywall = false
+    /// The day just sent, until the plan read again brings the server's copy.
+    @State private var watchSentDay: String?
 
     private var effectivePrescription: JSONValue? {
         preview.strengthPrescription ?? loadedPrescription
@@ -252,18 +258,6 @@ struct PlannedSessionDrawer: View {
         } else {
             NavigationStack {
                 page
-                    .toolbar {
-                        if let editing {
-                            ToolbarItem(placement: .primaryAction) {
-                                SessionActionsMenu(
-                                    session: editing.session,
-                                    onEdit: { isEditing = true },
-                                    onMove: { day in editing.onSaved(editing.editor.move(editing.session, to: day)) },
-                                    onDelete: { isConfirmingDeletion = true }
-                                )
-                            }
-                        }
-                    }
                     .navigationDestination(isPresented: $isEditing) {
                         if let editing {
                             PlannedSessionEditPage(session: editing.session, editor: editing.editor, onSaved: editing.onSaved)
@@ -322,19 +316,6 @@ struct PlannedSessionDrawer: View {
                         }
                     }
                 }
-                // Same reason as the coach button: linking needs to know *which* session.
-                if preview.sessionId != nil, linking != nil {
-                    DrawerActionRow(
-                        symbolName: "link",
-                        title: String(localized: "Lier à une séance réalisée"),
-                        subtitle: String(localized: "Si elle n'a pas été rapprochée toute seule")
-                    ) {
-                        showingLinkPicker = true
-                    }
-                }
-                if let watch {
-                    SessionWatchPushRow(context: watch)
-                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(SharpitSpacing.pageInset)
@@ -345,6 +326,27 @@ struct PlannedSessionDrawer: View {
         .task { await fetchBreakdownIfMissing() }
         .navigationTitle(isEmbedded ? preview.sport : String(localized: "Séance prévue"))
         .navigationBarTitleDisplayMode(.inline)
+        // On the page, not the stack: a brick's leg, pushed in its brick's stack, keeps its « … ».
+        .toolbar {
+            if isSendingToWatch {
+                ToolbarItem(placement: .primaryAction) { ProgressView() }
+            } else if !actionsMenu.isEmpty {
+                ToolbarItem(placement: .primaryAction) { actionsMenu }
+            }
+        }
+        .confirmationDialog(
+            String(localized: "Renvoyer la séance ?"),
+            isPresented: $isConfirmingWatchResend,
+            titleVisibility: .visible
+        ) {
+            Button("Renvoyer") { Task { await sendToWatch(replace: true) } }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("La version déjà sur ta montre est remplacée.")
+        }
+        .sheet(isPresented: $isShowingProPaywall) {
+            if let pro { SharpitProPaywallSheet(store: pro) }
+        }
         .sheet(isPresented: $showingLinkPicker) {
             if let sessionId = preview.sessionId, let linking {
                 SessionLinkPicker(sessionId: sessionId, context: linking) {
@@ -358,6 +360,61 @@ struct PlannedSessionDrawer: View {
                 GuidedStrengthWorkoutView(session: guided, finish: guidedFinish)
             }
         }
+    }
+
+    private var actionsMenu: SessionActionsMenu {
+        SessionActionsMenu(
+            editing: editing.map { editing in
+                SessionMenuEditing(
+                    session: editing.session,
+                    onEdit: { isEditing = true },
+                    onMove: { day in editing.onSaved(editing.editor.move(editing.session, to: day)) },
+                    onDelete: { isConfirmingDeletion = true }
+                )
+            },
+            watch: watch.map { _ in
+                SessionMenuAction(title: watchState.menuTitle, symbolName: watchState.symbolName) {
+                    requestWatchSend()
+                }
+            },
+            // Linking needs to know *which* session, as the coach button does.
+            onLink: preview.sessionId != nil && linking != nil ? { showingLinkPicker = true } : nil
+        )
+    }
+
+    private var watchState: WatchPushState {
+        guard let session = watch?.session else { return .notSent }
+        return WatchPushState.of(
+            garminWorkoutId: watchSentDay == nil ? session.garminWorkoutId : "sent",
+            scheduledDate: watchSentDay ?? session.garminWorkoutScheduledDate,
+            sessionDate: session.date
+        )
+    }
+
+    /// Pro-only: a Free athlete is shown the offer. A session on the watch asks first, a moved one
+    /// is replaced at once — the watch holds the wrong day.
+    private func requestWatchSend() {
+        if let pro, !pro.isPro {
+            isShowingProPaywall = true
+        } else if watchState == .sent {
+            isConfirmingWatchResend = true
+        } else {
+            Task { await sendToWatch(replace: watchState == .moved) }
+        }
+    }
+
+    private func sendToWatch(replace: Bool) async {
+        guard let watch, !isSendingToWatch else { return }
+        isSendingToWatch = true
+        defer { isSendingToWatch = false }
+        let (receipt, message) = await watch.send(replace: replace)
+        if let receipt { watchSentDay = receipt.scheduledDate }
+        toastCenter?.show(
+            message,
+            symbol: receipt == nil ? "exclamationmark.triangle" : "checkmark.circle.fill",
+            tone: receipt == nil ? .error : .success,
+            autoDismissAfter: receipt == nil ? 5 : 4
+        )
     }
 
     private func fetchBreakdownIfMissing() async {
@@ -437,58 +494,6 @@ struct GuidedSessionLaunchButton: View {
         .buttonStyle(.sharpitPressable)
         .accessibilityLabel("Lancer la séance")
         .accessibilityHint("Ouvre le suivi guidé sur le téléphone")
-    }
-}
-
-/// A row that does one thing to the session in the drawer.
-///
-/// A row, not a filled block. The old coach button was a solid Forest slab with an arrow at
-/// each end, which read as the loudest thing on a screen whose job is the session — and
-/// the design law reserves filled surfaces for the verdict. This carries the same weight
-/// as the panels around it: the panel surface, one leading mark.
-struct DrawerActionRow: View {
-    let symbolName: String
-    let title: String
-    var subtitle: String?
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: symbolName)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.primary)
-                    .frame(width: 28, height: 28)
-                    .background(SharpitColor.chipSurface, in: Circle())
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .multilineTextAlignment(.leading)
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
-                            .multilineTextAlignment(.leading)
-                    }
-                }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .accessibilityHidden(true)
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
-        }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
     }
 }
 
