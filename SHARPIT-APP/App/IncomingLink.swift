@@ -7,7 +7,8 @@ import Observation
 /// link on any other host — `api.`, `web.`, or a look-alike — is not ours to act on. The
 /// custom scheme belongs to Clerk's OAuth redirects and is not a navigation link.
 enum IncomingLink: Equatable {
-    /// Strava / Google / Withings handoff outcome (`?strava=` / `?google=` / `?withings=`).
+    /// An OAuth handoff outcome (`/connect/<provider>/callback?<provider>=<status>`), for every
+    /// `DisconnectableSource.oauthConnectable` provider.
     case oauthCallback(provider: String, status: String?)
     case tab(ShellTab)
     /// Paramètres, on one of its pages when the path names it.
@@ -30,7 +31,7 @@ enum IncomingLink: Equatable {
               components.host == trustedHost
         else { return nil }
 
-        for provider in ["strava", "google", "withings"] {
+        for provider in DisconnectableSource.oauthConnectable.map(\.rawValue) {
             if components.path == "/connect/\(provider)/callback" {
                 let status = components.queryItems?.first(where: { $0.name == provider })?.value
                 return .oauthCallback(provider: provider, status: status)
