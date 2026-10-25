@@ -130,31 +130,36 @@ struct CoachFollowUpsView: View {
     let onSelect: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        // Set apart from the answer they follow, and small: a way on, not more of the answer.
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(suggestions, id: \.self) { suggestion in
                 Button {
                     onSelect(suggestion)
                 } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xxs) {
                         Text(suggestion)
-                            .font(SharpitTypography.body)
+                            .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.foreground)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                         Image(systemName: "arrow.up.right")
-                            .font(SharpitTypography.meta)
+                            .font(SharpitTypography.label)
                             .foregroundStyle(SharpitColor.mutedForeground)
                             .accessibilityHidden(true)
                     }
-                    .padding(.horizontal, SharpitSpacing.md)
-                    .padding(.vertical, SharpitSpacing.sm)
-                    .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                    .padding(.horizontal, SharpitSpacing.sm)
+                    .padding(.vertical, 6)
                     .background(SharpitColor.chipSurface, in: Capsule())
+                    // The chip draws small; the tap keeps a full target around it.
+                    .padding(.vertical, SharpitSpacing.xxs)
+                    .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.sharpitPressable)
                 .accessibilityHint(String(localized: "Envoie cette question au coach"))
             }
         }
+        .padding(.top, SharpitSpacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
