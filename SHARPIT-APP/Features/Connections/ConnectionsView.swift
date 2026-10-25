@@ -231,8 +231,9 @@ struct ConnectionsView: View {
         do {
             status = try await syncClient.sync(token: try await tokenProvider())
         } catch {
+            guard let message = ProviderOAuthConnect.followUpSyncFailureMessage(for: error) else { return }
             toastCenter.show(
-                SharpitErrorGuidance.message(for: error, subject: String(localized: "La synchronisation")),
+                message,
                 symbol: "exclamationmark.triangle",
                 tone: .error,
                 autoDismissAfter: 4

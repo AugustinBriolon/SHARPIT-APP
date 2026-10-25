@@ -71,6 +71,13 @@ enum ProviderOAuthConnectOutcome: Equatable {
 enum ProviderOAuthConnect {
     typealias Authenticate = (_ url: URL, _ callbackPath: String) async throws -> URL
 
+    /// What to say when the pull after a connection fails, or nil to say nothing: a 429 means a
+    /// pull ran moments ago (the app syncs on open), so what the server holds is already fresh.
+    static func followUpSyncFailureMessage(for error: Error) -> String? {
+        if let apiError = error as? SharpitAPIError, apiError == .rateLimited { return nil }
+        return SharpitErrorGuidance.message(for: error, subject: String(localized: "La synchronisation"))
+    }
+
     static func callbackPath(for source: DisconnectableSource) -> String {
         "/connect/\(source.rawValue)/callback"
     }

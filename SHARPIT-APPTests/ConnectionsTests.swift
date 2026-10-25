@@ -69,6 +69,11 @@ private func connectOAuth(
     #expect(mismatch == .failed)
 }
 
+@Test func thePullAfterAConnectionStaysQuietWhenOneJustRan() {
+    #expect(ProviderOAuthConnect.followUpSyncFailureMessage(for: SharpitAPIError.rateLimited) == nil)
+    #expect(ProviderOAuthConnect.followUpSyncFailureMessage(for: SharpitAPIError.unauthorized) != nil)
+}
+
 @Test func oauthOutcomesReadTheWebsStatusesAndSayThemInFrench() {
     #expect(ProviderOAuthConnectOutcome(status: "already_connected") == .alreadyConnected)
     #expect(ProviderOAuthConnectOutcome(status: "unknown") == .failed)
