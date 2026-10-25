@@ -25,8 +25,9 @@ report on demand).
 > Merci de tester SharpIt ! Pendant 4 semaines, utilise-le pour préparer ta course :
 >
 > 1. À l'arrivée : renseigne ta course (format, date) et laisse le coach préparer ta première
->    semaine. Branche Apple Santé (si tu as une Garmin, active le partage Garmin → Apple Santé :
->    c'est le chemin de la bêta, pas de connexion Garmin dans l'app).
+>    semaine. Branche tes sources : Apple Santé, Strava ou, si tu as une montre Garmin, Garmin
+>    directement (Paramètres › Sources). Tu peux ensuite envoyer une séance d'endurance sur ta
+>    montre depuis le menu « … » de la séance.
 > 2. Le matin : regarde la proposition du jour. Si ta nuit a été courte, SharpIt peut te proposer
 >    d'alléger — accepte ou garde ton plan.
 > 3. Après une séance : tu dois recevoir « Séance dans la boîte » dans l'heure qui suit la
@@ -44,15 +45,19 @@ report on demand).
 >
 > Apple Santé est en lecture seule et optionnel : il sert à lire le sommeil, la variabilité
 > cardiaque et les séances. Les données de santé restent sur nos serveurs en Europe et ne sont
-> jamais synchronisées sur iCloud. Une montre Garmin n'est pas branchée dans l'app : l'athlète
-> partage Garmin Connect → Apple Santé, et SharpIt lit Santé uniquement.
+> jamais synchronisées sur iCloud. Une montre Garmin se connecte par le programme officiel Garmin
+> (connexion sécurisée dans le navigateur) ; SharpIt reçoit alors les séances, le sommeil et la
+> variabilité cardiaque, et peut envoyer une séance prévue sur la montre. Garmin → Apple Santé
+> reste possible.
 >
 > Les notifications (verdict du matin, séance faite, séance manquée, rappels) se règlent dans
 > Paramètres › Notifications.
 
-The app has no Garmin integration at all (`docs/adr/0013`): no connect, history import, threshold
-import or workout push (App Review 5.2.2). Garmin watches reach SHARPIT when the athlete enables
-Garmin → Apple Health.
+Garmin is linked through the official Garmin Connect Developer Program: OAuth2 PKCE in a web
+authentication session (`docs/adr/0024`, superseding the personal-API-key link of `0023`). Garmin pushes new activities and health data to the API, and an
+endurance session is sent to the watch through the Training API (`docs/adr/0025`, Pro). Tell App
+Review the link uses Garmin's own sign-in, and that no Garmin credential is typed in or kept by
+the app.
 
 ## Invitation message
 
