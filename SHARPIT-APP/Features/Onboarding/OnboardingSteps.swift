@@ -1003,7 +1003,7 @@ struct OnboardingFirstWeekStep: View {
 
 // MARK: - Sources
 
-/// Where the readings come from: Apple Health, Strava, Withings, Google Calendar, Apple Calendar.
+/// Where the readings come from: Apple Health, Strava, Garmin, Withings, Google Calendar, Apple Calendar.
 /// Connecting nothing is a valid path: Finaliser is never held back by this step.
 struct OnboardingSourcesStep: View {
     let appleHealth: AppleHealthSource
@@ -1038,6 +1038,14 @@ struct OnboardingSourcesStep: View {
                 detail: String(localized: "Toutes tes sorties GPS, même sans montre.")
             ) {
                 oauthControl(for: .strava)
+            }
+
+            OnboardingSourceCard(
+                provider: .garmin,
+                title: String(localized: "Garmin"),
+                detail: String(localized: "Séances, sommeil et VFC de ta montre, et tes séances prévues envoyées dessus.")
+            ) {
+                oauthControl(for: .garmin)
             }
 
             OnboardingSourceCard(

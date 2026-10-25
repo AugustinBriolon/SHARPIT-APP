@@ -37,8 +37,9 @@ consent — `PlanInputs`) stay the same: `startFirstWeek` called again does not 
 changed answer drops the week and writes it again. Then `/api/v1/onboarding/complete`
 finishes the wizard. Without AI consent the step says so and finishes without a week. Sources switches
 Apple Health on — a switch per Clerk account (`AppleHealthSource.bind(userId:)`), so a new account
-on the same iPhone starts off — and offers nothing for Garmin or MyFitnessPal, which the app never
-links (`docs/adr/0013`, `docs/adr/0010`). Debug builds open the wizard on in-memory
+on the same iPhone starts off — and links Strava, Garmin, Withings and the calendars through the same OAuth
+hand-off as Settings › Sources, but offers nothing for MyFitnessPal, which the app never links
+(`docs/adr/0013`, `docs/adr/0010`). Debug builds open the wizard on in-memory
 services with the `-SharpitOnboardingDemo` launch argument (`OnboardingDemoHost`).
 
 The page is one page: the header's tick dial (`SharpitTickGauge`, animatable, so it sweeps from step
