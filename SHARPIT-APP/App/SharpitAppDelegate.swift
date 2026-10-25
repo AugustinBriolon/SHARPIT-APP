@@ -31,6 +31,9 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
 
     /// A silent push after the server synced the athlete's sources: today is read again so the
     /// widgets show what just came in, app open or not.
+    // On the main actor: UIKit's bridged fetch completion handler is called when this returns, and
+    // off main it asserts "Call must be made on main thread" while the app snapshots (APPLE-IOS-7).
+    @MainActor
     func application(
         _ application: UIApplication,
         didReceiveRemoteNotification userInfo: [AnyHashable: Any]
