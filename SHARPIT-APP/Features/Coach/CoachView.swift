@@ -281,9 +281,23 @@ struct CoachView: View {
             isReplying: store.isReplying,
             onAnswer: answerHandler,
             onRetry: retryHandler,
-            onOpenNutrition: { router.openToday(.nutrition) }
+            onOpenNutrition: { router.openToday(.nutrition) },
+            onFollowUp: followUpHandler(for: message)
         )
         .id(message.id)
+    }
+
+    /// A suggestion under the last answer, sent as the athlete's question — not while a reply runs
+    /// or a proposal waits, since a new question would refuse it.
+    private func followUpHandler(for message: CoachMessage) -> ((String) -> Void)? {
+        guard message.id == store.messages.last?.id, !store.isReplying, !store.hasPendingApproval else { return nil }
+        return { question in
+            dictation.stop()
+            composerIsFocused = false
+            store.draft = question
+            risesOnSend = true
+            Task { await store.send() }
+        }
     }
 
     /// Answers a proposal card. Always available — `respond` stops an in-flight stream first,
@@ -666,6 +680,8 @@ private struct CoachMessageRow: View {
     let onAnswer: ((String, Bool, JSONValue?, String?) -> Void)?
     let onRetry: ((String, JSONValue?) -> Void)?
     let onOpenNutrition: (() -> Void)?
+    /// Nil unless this is the thread's last answer, settled: older suggestions are spent.
+    var onFollowUp: ((String) -> Void)? = nil
 
     var body: some View {
         switch message.role {
@@ -710,6 +726,12 @@ private struct CoachMessageRow: View {
                             onOpenNutrition: onOpenNutrition,
                             isReplying: isReplying
                         )
+                    case .workout(_, let workout):
+                        CoachWorkoutCard(workout: workout)
+                    case .followUps(_, let suggestions):
+                        if let onFollowUp {
+                            CoachFollowUpsView(suggestions: suggestions, onSelect: onFollowUp)
+                        }
                     }
                 }
                 if isStreaming {
@@ -826,18 +848,22 @@ extension CoachMessageRow {
     }
 }
 
-/// A coach turn read in order: its prose, and its proposals where the coach made them.
+/// A coach turn read in order: its prose, its proposals and its cards where the coach made them.
 /// Consecutive text parts read as one; reasoning, steps and read-only tools are not shown.
 nonisolated enum CoachSegment: Identifiable, Equatable {
     case text(id: String, String)
     case proposal(CoachProposal)
     case foodLog(CoachFoodLogProposal)
+    case workout(id: String, CoachWorkout)
+    case followUps(id: String, [String])
 
     var id: String {
         switch self {
         case .text(let id, _): id
         case .proposal(let proposal): "proposal-\(proposal.id)"
         case .foodLog(let proposal): "food-\(proposal.id)"
+        case .workout(let id, _): "workout-\(id)"
+        case .followUps(let id, _): "follow-ups-\(id)"
         }
     }
 
@@ -861,6 +887,12 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
             } else if let proposal = CoachProposal(part: part) {
                 flush()
                 segments.append(.proposal(proposal))
+            } else if let workout = CoachWorkout(part: part) {
+                flush()
+                segments.append(.workout(id: part["toolCallId"]?.string ?? "\(segments.count)", workout))
+            } else if let followUps = CoachFollowUps(part: part) {
+                flush()
+                segments.append(.followUps(id: part["toolCallId"]?.string ?? "\(segments.count)", followUps.suggestions))
             }
         }
         flush()

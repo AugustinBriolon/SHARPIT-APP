@@ -93,7 +93,8 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         "THRESHOLD": String(localized: "Seuil"), "VO2MAX": "VO2max", "RACE": String(localized: "Compétition"),
     ]
 
-    private static let stepKinds = [
+    /// The French name of an endurance step kind, shared with the workout card.
+    static let stepKinds = [
         "warmup": String(localized: "Échauffement"), "interval": String(localized: "Travail"), "recovery": String(localized: "Récup"),
         "rest": String(localized: "Repos"), "cooldown": String(localized: "Retour au calme"),
     ]

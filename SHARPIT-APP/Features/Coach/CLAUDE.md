@@ -15,6 +15,15 @@ back and the server carries out the approved ones and goes on writing in the sam
 (`dismissingUnresolved`), and an applied change bumps `ShellRouter.calendarRevision` so Plan and
 Résumé reload. The wording follows the web's `coach-tool-approval-helpers.tsx`.
 
+**Coach cards.** Display tools draw native cards (SHARPIT ADR-111): `tool-presentWorkout` is a
+`CoachWorkoutCard` (blocks in order, repeats, efforts, the athlete's cautions; it writes nothing),
+`tool-suggestFollowUps` is `CoachFollowUpsView`, shown under the last settled answer only and
+sent as the athlete's question on a tap. `CoachCards.swift` decodes the part's input into typed
+models once it is `input-available` / `output-available`, and never when the server refused it
+or stamped another `schemaVersion`; a card that does not decode is left out, the prose reads on.
+The contract is the web's `coach-cards.ts`; `SHARPIT-APPTests/Fixtures/CoachCards` is a copy of its
+fixtures, kept identical by the web's test.
+
 **Coach thread.** The thread reads like ChatGPT's: a question sent rises to the top
 (`CoachThreadLayout` splits the turn under way, which fills at least the screen) and the answer
 unrolls below without moving the view; once it runs past the composer, a small glass arrow takes

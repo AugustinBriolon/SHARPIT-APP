@@ -105,7 +105,9 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   Plan and opens as one chain; once every leg is done, its evaluation (overall RPE, transitions, feeling, notes) is
   read and saved on tap through `/api/v1/planned-sessions/brick/evaluation` (web ADR-059).
 - Coach: `/api/coach/chat` streams the answer; the conversation is kept server-side through
-  `/api/coach/conversations`, and the history sheet lists, reopens and deletes them
+  `/api/coach/conversations`, and the history sheet lists, reopens and deletes them; a proposed
+  session reads as a native workout card and the answer ends with tappable follow-up questions
+  (web ADR-111)
 - Sommeil / Récupération: drill-downs opened from the Today gauges, read from
   `/api/v1/sleep` and `/api/v1/recovery` (projections of the web's view models), with a day
   picker shared with Plan

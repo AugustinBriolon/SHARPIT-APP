@@ -3,7 +3,8 @@ import SwiftUI
 
 /// The coach on a scripted answer, to check how the thread moves in the simulator without an
 /// account: a question rises to the top, the answer unrolls without moving the view, and the
-/// arrow down appears once it runs past the screen. Debug builds only: `-SharpitCoachDemo`.
+/// arrow down appears once it runs past the screen. Debug builds only: `-SharpitCoachDemo`;
+/// `-SharpitCoachCardsDemo` ends each answer with a workout card and follow-ups (ADR-111).
 enum CoachDemo {
     static var isRequested: Bool {
         ProcessInfo.processInfo.arguments.contains("-SharpitCoachDemo")
@@ -55,12 +56,43 @@ private struct DemoCoachClient: CoachChatServing {
                     continuation.yield(chunk(["type": "text-delta", "id": "t", "delta": "\(word) "]))
                 }
                 continuation.yield(chunk(["type": "text-end", "id": "t"]))
+                if ProcessInfo.processInfo.arguments.contains("-SharpitCoachCardsDemo") {
+                    Self.cards.forEach { continuation.yield($0) }
+                }
                 continuation.yield(chunk(["type": "finish-step"]))
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
         }
     }
+
+    /// The web's contract fixtures, streamed as the route sends them.
+    private static let cards: [JSONValue] = {
+        let workout: JSONValue = .object([
+            "type": .string("RUN"), "title": .string("6 × 1000 m au seuil"),
+            "purpose": .string("Relever ton seuil à six semaines du semi, sur des jambes fraîches."),
+            "intensity": .string("THRESHOLD"), "durationMin": .number(60), "load": .number(72),
+            "endurancePrescription": .object(["blocks": .array([
+                .object(["steps": .array([.object(["kind": .string("warmup"), "minutes": .number(15), "effort": .string("ENDURANCE")])])]),
+                .object(["times": .number(6), "steps": .array([
+                    .object(["kind": .string("interval"), "meters": .number(1000), "effort": .string("THRESHOLD"), "notes": .string("Régulier, pas plus vite au dernier.")]),
+                    .object(["kind": .string("recovery"), "minutes": .number(2), "effort": .string("RECOVERY")]),
+                ])]),
+                .object(["steps": .array([.object(["kind": .string("cooldown"), "minutes": .number(10), "effort": .string("RECOVERY")])])]),
+            ])]),
+            "warnings": .array([.string("Ton mollet gauche était sensible mardi : arrête au moindre pincement.")]),
+        ])
+        let followUps: JSONValue = .object(["suggestions": .array([
+            .string("Et si je n’ai que 45 min ?"), .string("Je peux la faire sur home trainer ?"),
+        ])])
+        let drawn: JSONValue = .object(["ok": .bool(true), "schemaVersion": .number(1)])
+        return [("presentWorkout", workout), ("suggestFollowUps", followUps)].flatMap { name, input in
+            [
+                JSONValue.object(["type": .string("tool-input-available"), "toolCallId": .string("demo-\(name)"), "toolName": .string(name), "input": input]),
+                JSONValue.object(["type": .string("tool-output-available"), "toolCallId": .string("demo-\(name)"), "output": drawn]),
+            ]
+        }
+    }()
 
     private func chunk(_ fields: [String: String]) -> JSONValue {
         .object(fields.mapValues(JSONValue.string))
