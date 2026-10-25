@@ -277,6 +277,10 @@ What makes a surface feel finished, applied everywhere new work lands:
   only when the athlete asked.
 - **Reward, don't nag.** A kept day earns its seal (`NutritionGoalSeal`), found by opening it. No
   streak counters.
+- **Let the layout explain.** No subtitle, detail line, list footer or helper sentence that restates
+  the title, the value or the structure around it. Kept: text that carries data, names an error and
+  its fix, offers the next step of an actionable empty state, confirms a destructive action, or
+  states consent / legal terms (ADR 0026).
 - **No dead ends.** An empty day offers the next step (sync, another day, link a source); a
   failure names its cause and the fix (`SharpitErrorGuidance`: network, session, server).
   A read that fails under content already on screen (read before, or cached) keeps it and says so

@@ -258,7 +258,7 @@ struct ThresholdsView: View {
         let running = store.profile.vo2maxRunning
         let cycling = store.profile.vo2maxCycling
         if running != nil || cycling != nil {
-            disciplineCard(title: String(localized: "Mesuré par ta montre"), symbol: "applewatch", subtitle: String(localized: "Se règle sur la montre")) {
+            disciplineCard(title: String(localized: "Mesuré par ta montre"), symbol: "applewatch") {
                 if let running { measuredRow(String(localized: "VO₂max course"), value: running) }
                 if let cycling { measuredRow(String(localized: "VO₂max vélo"), value: cycling) }
             }

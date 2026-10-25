@@ -37,7 +37,6 @@ struct CoachUsageSheet: View {
             SharpitCardHeader(
                 title: quota.isPro ? String(localized: "Coach Pro") : String(localized: "Coach gratuit"),
                 symbol: "gauge.with.dots.needle.33percent",
-                subtitle: String(localized: "Sur 24 h glissantes"),
                 showsChevron: false
             )
             SharpitProgressBar(

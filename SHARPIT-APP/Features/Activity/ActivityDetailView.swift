@@ -1470,7 +1470,6 @@ struct ActivitySplitsSection: View {
             SharpitCardHeader(
                 title: segmentDistance == 5_000 ? String(localized: "Splits tous les 5 km") : String(localized: "Splits au kilomètre"),
                 symbol: "flag.pattern.checkered",
-                subtitle: String(localized: "Barre longue, allure vive"),
                 showsChevron: false
             )
             VStack(spacing: SharpitSpacing.sm) {

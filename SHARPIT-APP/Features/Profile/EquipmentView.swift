@@ -342,9 +342,7 @@ struct EquipmentView: View {
 
     @ViewBuilder
     private var footer: some View {
-        if hasEndurance {
-            SharpitListFooter(String(localized: "Touche un sport pour régler son matériel. Le coach adapte les séances à ce que tu possèdes."))
-        } else {
+        if !hasEndurance {
             Label("Garde au moins un sport d'endurance : SharpIt construit tes plans dessus.", systemImage: "exclamationmark.circle")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.signalCaution)

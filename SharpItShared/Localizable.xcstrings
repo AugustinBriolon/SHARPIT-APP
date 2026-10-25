@@ -7643,22 +7643,6 @@
         }
       }
     },
-    "Barre longue, allure vive" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Long barbell, brisk pace"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Barre longue, allure vive"
-          }
-        }
-      }
-    },
     "Barres de dips" : {
       "localizations" : {
         "en" : {
@@ -11968,22 +11952,6 @@
         }
       }
     },
-    "Consentements, CGU, données, compte" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Consents, terms, data, account"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Consentements, CGU, données, compte"
-          }
-        }
-      }
-    },
     "Consigne" : {
       "localizations" : {
         "en" : {
@@ -12924,22 +12892,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Créer une recette"
-          }
-        }
-      }
-    },
-    "Créer, modifier, supprimer" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create, edit, delete"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Créer, modifier, supprimer"
           }
         }
       }
@@ -14798,22 +14750,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Distance (%@)"
-          }
-        }
-      }
-    },
-    "Distances de référence" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reference distances"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Distances de référence"
           }
         }
       }
@@ -17477,22 +17413,6 @@
         }
       }
     },
-    "Face à ta norme" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Against your range"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face à ta norme"
-          }
-        }
-      }
-    },
     "Facile" : {
       "localizations" : {
         "en" : {
@@ -18562,22 +18482,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fréquence cardiaque la plus basse de la nuit. Une hausse durable accompagne souvent la fatigue ou la maladie."
-          }
-        }
-      }
-    },
-    "FTP, FC, allure, CSS" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FTP, HR, pace, CSS"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FTP, FC, allure, CSS"
           }
         }
       }
@@ -23044,22 +22948,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le dénivelé n’est pas un nombre."
-          }
-        }
-      }
-    },
-    "Le détail du score est plus bas." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The score breakdown is further down."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le détail du score est plus bas."
           }
         }
       }
@@ -31157,22 +31045,6 @@
         }
       }
     },
-    "Puissance moyenne maximale par durée" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Best average power by duration"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Puissance moyenne maximale par durée"
-          }
-        }
-      }
-    },
     "Puissance tenue une heure" : {
       "localizations" : {
         "en" : {
@@ -34918,22 +34790,6 @@
         }
       }
     },
-    "Se coucher à la même heure compte autant que la durée." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Going to bed at the same time counts as much as duration."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se coucher à la même heure compte autant que la durée."
-          }
-        }
-      }
-    },
     "Se déconnecter" : {
       "localizations" : {
         "en" : {
@@ -34962,22 +34818,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se déconnecter ?"
-          }
-        }
-      }
-    },
-    "Se règle sur la montre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Set on the watch"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se règle sur la montre"
           }
         }
       }
@@ -37784,22 +37624,6 @@
         }
       }
     },
-    "Sur 24 h glissantes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Over a rolling 24 h"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sur 24 h glissantes"
-          }
-        }
-      }
-    },
     "sur 100" : {
       "localizations" : {
         "en" : {
@@ -39290,22 +39114,6 @@
         }
       }
     },
-    "Tes nuits et ta dette de sommeil se lisent face à ce repère." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your nights and your sleep debt are read against this marker."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tes nuits et ta dette de sommeil se lisent face à ce repère."
-          }
-        }
-      }
-    },
     "Tes plans ne s'appuieront plus sur ce sport. Ton matériel reste enregistré." : {
       "localizations" : {
         "en" : {
@@ -40327,22 +40135,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Touche un aliment pour le modifier, glisse vers la gauche pour le supprimer."
-          }
-        }
-      }
-    },
-    "Touche un sport pour régler son matériel. Le coach adapte les séances à ce que tu possèdes." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap a sport to set its equipment. The coach adapts sessions to what you own."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Touche un sport pour régler son matériel. Le coach adapte les séances à ce que tu possèdes."
           }
         }
       }

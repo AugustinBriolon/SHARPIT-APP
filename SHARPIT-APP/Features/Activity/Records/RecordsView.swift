@@ -228,7 +228,6 @@ private struct RunBestsCard: View {
             SharpitCardHeader(
                 title: String(localized: "Meilleurs temps"),
                 symbol: "stopwatch",
-                subtitle: String(localized: "Distances de référence"),
                 showsChevron: false
             )
             SharpitInsetGroup {
@@ -298,7 +297,6 @@ private struct PowerCurveCard: View {
             SharpitCardHeader(
                 title: String(localized: "Courbe de puissance"),
                 symbol: "bolt.fill",
-                subtitle: String(localized: "Puissance moyenne maximale par durée"),
                 showsChevron: false
             )
 

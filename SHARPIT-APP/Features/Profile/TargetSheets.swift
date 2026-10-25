@@ -63,7 +63,6 @@ struct SleepTargetsSheet: View {
             SharpitCardHeader(
                 title: String(localized: "Durée visée"),
                 symbol: "moon.zzz.fill",
-                subtitle: String(localized: "Tes nuits et ta dette de sommeil se lisent face à ce repère."),
                 showsChevron: false
             )
             HStack {
@@ -103,7 +102,6 @@ struct SleepTargetsSheet: View {
                 SharpitCardHeader(
                     title: String(localized: "Heure fixe"),
                     symbol: "bed.double.fill",
-                    subtitle: String(localized: "Se coucher à la même heure compte autant que la durée."),
                     showsChevron: false
                 )
             }

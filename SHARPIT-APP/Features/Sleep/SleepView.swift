@@ -223,7 +223,7 @@ private struct SleepCoachCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: String(localized: "Coach du sommeil"), symbol: "bed.double.fill", subtitle: String(localized: "Ce soir"), showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Coach du sommeil"), symbol: "bed.double.fill", showsChevron: false)
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if let bedtime = sleep.recommendedBedtimeMin {
                     HStack(spacing: SharpitSpacing.md) {

@@ -226,7 +226,7 @@ private struct RecoveryMorningSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: String(localized: "Ce matin"), symbol: "sunrise", subtitle: String(localized: "Face à ta norme"), showsChevron: false)
+            SharpitCardHeader(title: String(localized: "Ce matin"), symbol: "sunrise", showsChevron: false)
 
             HStack(alignment: .top, spacing: SharpitSpacing.md) {
                 SharpitStatTile(

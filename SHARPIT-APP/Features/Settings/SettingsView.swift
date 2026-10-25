@@ -111,7 +111,7 @@ struct SettingsView: View {
                     // Endurance thresholds mean nothing to a strength-only athlete.
                     if !PracticedSportCatalog.isStrengthOnly(profile.profile.practicedSports?.sports ?? []) {
                         NavigationLink(value: SettingsRoute.thresholds) {
-                            SharpitSettingsLabel(symbol: "gauge.with.dots.needle.67percent", title: String(localized: "Seuils d'entraînement"), detail: String(localized: "FTP, FC, allure, CSS"))
+                            SharpitSettingsLabel(symbol: "gauge.with.dots.needle.67percent", title: String(localized: "Seuils d'entraînement"))
                         }
                     }
                 }
@@ -134,7 +134,7 @@ struct SettingsView: View {
                 if features.isOn(.nutrition) {
                     Section(eyebrow: String(localized: "Nutrition")) {
                         NavigationLink(value: SettingsRoute.ownFoods) {
-                            SharpitSettingsLabel(symbol: "fork.knife", title: String(localized: "Mes aliments"), detail: String(localized: "Créer, modifier, supprimer"))
+                            SharpitSettingsLabel(symbol: "fork.knife", title: String(localized: "Mes aliments"))
                         }
                     }
                     .sharpitListRows()
@@ -145,7 +145,7 @@ struct SettingsView: View {
                         SharpitSettingsLabel(symbol: "bubble.left.and.text.bubble.right", title: String(localized: "Donner un avis"), detail: String(localized: "Un bug, une idée : je lis tout"))
                     }
                     NavigationLink(value: SettingsRoute.privacy) {
-                        SharpitSettingsLabel(symbol: "hand.raised", title: String(localized: "Confidentialité & conditions"), detail: String(localized: "Consentements, CGU, données, compte"))
+                        SharpitSettingsLabel(symbol: "hand.raised", title: String(localized: "Confidentialité & conditions"))
                     }
                 } header: {
                     SharpitEyebrow(String(localized: "Aide"))

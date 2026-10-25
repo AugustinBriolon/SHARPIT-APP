@@ -449,8 +449,6 @@ struct FoodPortionPage: View {
                     FoodDietConflictLine(health: health)
                 } header: {
                     SharpitEyebrow(String(localized: "Score Sharpit"))
-                } footer: {
-                    SharpitListFooter(String(localized: "Le détail du score est plus bas."))
                 }
                 .sharpitListRows()
             }
