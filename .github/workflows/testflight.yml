@@ -74,6 +74,7 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM=6X5CP5SFAG \
             CURRENT_PROJECT_VERSION=${{ steps.build.outputs.number }} \
+            OTHER_SWIFT_FLAGS='$(inherited) -Xllvm -sil-disable-pass=early-inline' \
             | tee archive.log | grep -E "error:|warning: .*[Ss]ign|ARCHIVE (SUCCEEDED|FAILED)"
 
       # `Config/ExportOptions.plist` has `destination: upload`: the export is the upload.
