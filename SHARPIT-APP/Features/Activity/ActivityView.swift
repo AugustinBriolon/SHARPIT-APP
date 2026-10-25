@@ -515,8 +515,6 @@ private struct ActivityFilterMenu: View {
     var body: some View {
         Menu {
             menuItems
-                // Inline pickers, never `.menu`: a picker's submenu is drawn by UIKit in its own
-                // colours (grey rows, tinted glyphs) that no tint or accent reaches.
                 .tint(SharpitColor.foreground)
                 .foregroundStyle(SharpitColor.foreground)
         } label: {
@@ -533,31 +531,45 @@ private struct ActivityFilterMenu: View {
         .accessibilityValue(filter.narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
     }
 
+    /// One submenu per filter, named with its current value. Each holds an inline picker: a
+    /// submenu's own rows draw in ink, a `.menu` picker's do not (UIKit's grey rows).
     @ViewBuilder private var menuItems: some View {
-        Picker("Sport", selection: $filter.sport.animation(SharpitMotion.selection)) {
-            Text("Tous les sports").tag(V1ActivityType?.none)
-            ForEach(sports, id: \.self) { sport in
-                Label { Text(sport.label) } icon: {
-                    Image(sharpitSymbol: sport.symbolName)
-                        .renderingMode(.template)
-                        .foregroundStyle(SharpitColor.foreground)
+        Menu {
+            Picker("Sport", selection: $filter.sport.animation(SharpitMotion.selection)) {
+                Text("Tous les sports").tag(V1ActivityType?.none)
+                ForEach(sports, id: \.self) { sport in
+                    Label { Text(sport.label) } icon: {
+                        Image(sharpitSymbol: sport.symbolName)
+                            .renderingMode(.template)
+                            .foregroundStyle(SharpitColor.foreground)
+                    }
+                    .tag(V1ActivityType?.some(sport))
                 }
-                .tag(V1ActivityType?.some(sport))
             }
+            .pickerStyle(.inline)
+        } label: {
+            submenuLabel("Sport", value: filter.sport?.label ?? String(localized: "Tous les sports"))
         }
-        .pickerStyle(.inline)
-        Picker("Période", selection: $filter.period.animation(SharpitMotion.selection)) {
-            ForEach(ActivityFilter.Period.allCases) { period in
-                Text(period.label).tag(period)
+        Menu {
+            Picker("Période", selection: $filter.period.animation(SharpitMotion.selection)) {
+                ForEach(ActivityFilter.Period.allCases) { period in
+                    Text(period.label).tag(period)
+                }
             }
+            .pickerStyle(.inline)
+        } label: {
+            submenuLabel("Période", value: filter.period.label)
         }
-        .pickerStyle(.inline)
-        Picker("Durée", selection: $filter.effortTime.animation(SharpitMotion.selection)) {
-            ForEach(ActivityFilter.EffortTime.allCases) { effortTime in
-                Text(effortTime.label).tag(effortTime)
+        Menu {
+            Picker("Durée", selection: $filter.effortTime.animation(SharpitMotion.selection)) {
+                ForEach(ActivityFilter.EffortTime.allCases) { effortTime in
+                    Text(effortTime.label).tag(effortTime)
+                }
             }
+            .pickerStyle(.inline)
+        } label: {
+            submenuLabel("Durée", value: filter.effortTime.label)
         }
-        .pickerStyle(.inline)
         if filter.narrows {
             Divider()
             Button("Réinitialiser les filtres", systemImage: "arrow.counterclockwise") {
@@ -567,6 +579,14 @@ private struct ActivityFilterMenu: View {
                     filter.effortTime = .any
                 }
             }
+        }
+    }
+
+    /// « Période » over « 30 derniers jours »: the menu row shows what the filter is set to.
+    private func submenuLabel(_ title: LocalizedStringKey, value: String) -> some View {
+        VStack {
+            Text(title)
+            Text(value)
         }
     }
 }
