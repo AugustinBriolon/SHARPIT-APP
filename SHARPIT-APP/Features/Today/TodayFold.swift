@@ -39,6 +39,10 @@ struct InkPlateModel: Sendable, Equatable {
     var vsYesterdayLabel: String? = nil
     var showHeadline: Bool = true
     var stateCode: VerdictStateCode? = nil
+    /// What held up overnight, by importance.
+    var supportSignals: [SupportSignalCode] = []
+    /// « Hier : Prudence » — set only when the verdict changed since yesterday.
+    var yesterdayLabel: String? = nil
 
     /// Explanation for the current reading density — plain text only.
     func explanation(isExpert: Bool) -> String? {
@@ -52,8 +56,26 @@ struct InkPlateModel: Sendable, Equatable {
             ?? VerdictCopySanitizer.display(actionLine, fallback: VerdictCopySanitizer.fallbackInstruction)
     }
 
-    func limiterChip(isExpert: Bool) -> String? {
-        LimiterChipCopy.text(codes: limiterSignals, isExpert: isExpert)
+    /// The facts the verdict was read from: up to two freins, then what held up — three at most.
+    func reasons(isExpert: Bool) -> [VerdictReason] {
+        let freins = limiterSignals.compactMap { code in
+            code.label(isExpert: isExpert).map { VerdictReason(label: $0, isSupport: false) }
+        }
+        let supports = supportSignals.map { VerdictReason(label: $0.label(isExpert: isExpert), isSupport: true) }
+        return Array((freins.prefix(2) + supports).prefix(3))
+    }
+
+    /// Only when the reading is partial: what is missing, so the athlete knows what would sharpen it.
+    var estimationNote: String? {
+        switch packTier {
+        case .partial, .low:
+            let gap = estimationGaps.first.map { " · \($0)" } ?? ""
+            return String(localized: "Estimation partielle") + gap
+        case .insufficient:
+            return String(localized: "Données insuffisantes pour un verdict fiable")
+        case .full, nil:
+            return nil
+        }
     }
 
     /// Whether the large headline should paint (false when the server says so, or empty).
@@ -61,6 +83,12 @@ struct InkPlateModel: Sendable, Equatable {
         guard showHeadline else { return false }
         return !headline.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
+}
+
+struct VerdictReason: Sendable, Equatable, Hashable {
+    var label: String
+    /// False for a frein, true for what held up.
+    var isSupport: Bool
 }
 
 struct SessionCardModel: Sendable, Equatable, Identifiable {
@@ -183,7 +211,11 @@ enum TodayFoldMapper {
                 vsYesterdayLabel: verdict.vsYesterdayLabel?
                     .trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
                 showHeadline: verdict.showHeadline ?? true,
-                stateCode: Self.resolvedStateCode(verdict.stateCode)
+                stateCode: Self.resolvedStateCode(verdict.stateCode),
+                supportSignals: (verdict.supportSignals ?? []).compactMap(SupportSignalCode.init(rawValue:)),
+                yesterdayLabel: verdict.vsYesterday == "changed"
+                    ? verdict.vsYesterdayVerdictLabel?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+                    : nil
             ),
             sessions: response.sessions.map { session in
                 SessionCardModel(

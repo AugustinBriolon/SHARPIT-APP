@@ -34,7 +34,6 @@ struct TodayView: View {
     /// Shown when the sheet reopens after a failed optimistic save.
     @State private var ressentiFailureMessage: String?
     /// Bumped when a wellness save changed the morning verdict — fades the ink plate.
-    @State private var verdictFadeToken = 0
     /// Résumé's push stack — Journal from the chip or a day-check-in notification.
     @State private var path = NavigationPath()
     /// Held as well as handed to the store, because the journal opened from here caches its
@@ -106,7 +105,6 @@ struct TodayView: View {
                         hasCompletedArrival: store.hasCompletedArrival,
                         pulseScores: store.pulseScores,
                         sessionDoneCelebrations: store.sessionDoneCelebrations,
-                        verdictFadeToken: verdictFadeToken,
                         tokenProvider: tokenProvider,
                         signalClient: signalClient,
                         nutrition: nutrition,
@@ -430,28 +428,10 @@ extension TodayView {
     }
 
     @MainActor
-    fileprivate func handleRessentiSaved(_ summary: V1WellnessVerdictSummary?) {
-        let previous = currentStateCode()
-        let next = summary?.overallVerdict
-        let verdictChanged: Bool = {
-            guard let next else { return true }
-            if let previous { return previous != next }
-            return true
-        }()
+    /// The verdict cross-fades on its own when the reload brings a new one.
+    fileprivate func handleRessentiSaved(_: V1WellnessVerdictSummary?) {
         router.noteMorningCheckIn()
-        Task {
-            await store.load(resetToLoading: false)
-            if verdictChanged {
-                verdictFadeToken += 1
-            }
-        }
-    }
-
-    fileprivate func currentStateCode() -> VerdictStateCode? {
-        if case .loaded(let fold) = store.phase {
-            return fold.plate.stateCode
-        }
-        return nil
+        Task { await store.load(resetToLoading: false) }
     }
 
     /// Pulls the providers — always when asked, otherwise only when the last pull is stale —
@@ -481,7 +461,6 @@ private struct TodayFoldView: View {
     var hasCompletedArrival: Bool = false
     var pulseScores: Bool = false
     var sessionDoneCelebrations: Set<String> = []
-    var verdictFadeToken: Int = 0
     var tokenProvider: (() async throws -> String)?
     var signalClient: (any SleepServing & RecoveryServing)?
     var nutrition: NutritionTodayStore?
@@ -520,7 +499,6 @@ private struct TodayFoldView: View {
         hasCompletedArrival: Bool = false,
         pulseScores: Bool = false,
         sessionDoneCelebrations: Set<String> = [],
-        verdictFadeToken: Int = 0,
         tokenProvider: (() async throws -> String)? = nil,
         signalClient: (any SleepServing & RecoveryServing)? = nil,
         nutrition: NutritionTodayStore? = nil,
@@ -537,7 +515,6 @@ private struct TodayFoldView: View {
         self.hasCompletedArrival = hasCompletedArrival
         self.pulseScores = pulseScores
         self.sessionDoneCelebrations = sessionDoneCelebrations
-        self.verdictFadeToken = verdictFadeToken
         self.tokenProvider = tokenProvider
         self.signalClient = signalClient
         self.nutrition = nutrition
@@ -571,11 +548,7 @@ private struct TodayFoldView: View {
                             value: phase.showsPlate
                         )
                 }
-                InkVerdictPlate(
-                    plate: fold.plate,
-                    revealed: phase.showsPlate,
-                    contentFadeToken: verdictFadeToken
-                )
+                InkVerdictPlate(plate: fold.plate, revealed: phase.showsPlate)
 
                 if let store = activityStatusStore, store.current != .active, store.phase != .loading {
                     ActivityStatusAlertLine(status: store.current)

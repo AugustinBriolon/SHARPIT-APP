@@ -84,6 +84,27 @@ extension LimiterSignalCode: Codable {
     }
 }
 
+/// « Porté par » codes — what held up overnight. Unknown wire values are dropped, never labelled.
+nonisolated enum SupportSignalCode: String, Sendable, CaseIterable {
+    case hrvOk = "hrv_ok"
+    case rhrOk = "rhr_ok"
+    case sleepAdequate = "sleep_adequate"
+    case sleepQualityOk = "sleep_quality_ok"
+    case subjectiveOk = "subjective_ok"
+    case loadManaged = "load_managed"
+
+    func label(isExpert: Bool) -> String {
+        switch self {
+        case .hrvOk: isExpert ? String(localized: "VFC dans la norme") : String(localized: "Corps bien récupéré")
+        case .rhrOk: isExpert ? String(localized: "FC repos normale") : String(localized: "Cœur calme au repos")
+        case .sleepAdequate: isExpert ? String(localized: "Sommeil suffisant") : String(localized: "Nuit suffisante")
+        case .sleepQualityOk: isExpert ? String(localized: "Sommeil de qualité") : String(localized: "Nuit réparatrice")
+        case .subjectiveOk: isExpert ? String(localized: "Ressenti élevé") : String(localized: "Bonne forme ressentie")
+        case .loadManaged: isExpert ? String(localized: "Charge maîtrisée") : String(localized: "Charge bien gérée")
+        }
+    }
+}
+
 /// Frein chip copy for the verdict plate — density-aware, never jargon defaults.
 nonisolated enum LimiterChipCopy {
     static let prefix = String(localized: "Frein")

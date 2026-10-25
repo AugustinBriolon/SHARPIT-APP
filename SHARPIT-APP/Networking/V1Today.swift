@@ -185,6 +185,12 @@ nonisolated struct V1TodayVerdict: Codable, Sendable, Equatable {
     var limiterSignal: LimiterSignalCode? = nil
     /// Additive. Compared to yesterday for this athlete only.
     var vsYesterdayLabel: String? = nil
+    /// Additive. `same` or `changed` — the code behind `vsYesterdayLabel`.
+    var vsYesterday: String? = nil
+    /// Additive. Yesterday's verdict tag, e.g. « Hier : Prudence ».
+    var vsYesterdayVerdictLabel: String? = nil
+    /// Additive. « Porté par » codes, by importance; unknown codes are dropped by the mapper.
+    var supportSignals: [String]? = nil
     /// Additive. New clients hide the headline when false / empty (legacy keeps `headline`).
     var showHeadline: Bool? = nil
     /// Additive. Stable machine code for colour / icon.
