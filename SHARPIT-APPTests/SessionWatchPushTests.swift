@@ -73,6 +73,8 @@ private func day(_ id: String) -> Date { TrainingDayId.date(id)! }
         #expect(WatchPushState.notSent.menuTitle == "Envoyer sur ma montre")
         #expect(WatchPushState.sent.menuTitle == "Renvoyer sur ma montre")
         #expect(WatchPushState.moved.menuTitle == "Renvoyer sur ma montre")
+        #expect(WatchPushState.notSent.symbolName == "applewatch")
+        #expect(WatchPushState.sent.symbolName == "applewatch.and.arrow.forward")
     }
 
     @Test func theDrawerShowsNoMenuWhenItHasNothingToOffer() {

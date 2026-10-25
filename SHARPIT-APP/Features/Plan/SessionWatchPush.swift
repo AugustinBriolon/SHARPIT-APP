@@ -33,7 +33,7 @@ enum WatchPushState: Equatable {
     }
 
     var symbolName: String {
-        self == .notSent ? "paperplane" : "arrow.triangle.2.circlepath"
+        self == .notSent ? "applewatch" : "applewatch.and.arrow.forward"
     }
 }
 

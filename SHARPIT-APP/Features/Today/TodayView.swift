@@ -686,8 +686,10 @@ private struct TodayFoldView: View {
         }
 
         .sheet(item: $selectedPreview) { preview in
-            PlannedSessionDrawer(
+            TodayPlannedSessionSheet(
                 preview: preview,
+                day: TrainingDayId.date(fold.trainingDayId) ?? .now,
+                tokenProvider: tokenProvider,
                 linking: linkContext,
                 guidedFinish: guidedFinishContext,
                 loadBreakdown: breakdownLoader(for: preview),
