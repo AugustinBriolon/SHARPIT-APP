@@ -44,3 +44,21 @@ import Testing
     #expect(scrubbed?.data?["url"] as? String == "https://api.sharpit.app/api/v1/planned-sessions/brick/evaluation")
     #expect(scrubbed?.data?["status_code"] as? Int == 200)
 }
+
+/// Sentry builds network breadcrumbs on URLSession's queue: the hooks must run off the main
+/// actor, or the isolation check traps the app on a cancelled request at launch.
+@Test func sentryHooksRunOffTheMainThread() async {
+    let options = Options()
+    CrashReporting.configure(options, environment: "test")
+    nonisolated(unsafe) let hooks = options
+    let survived = await withCheckedContinuation { continuation in
+        DispatchQueue.global().async {
+            let crumb = Breadcrumb(level: .info, category: "http")
+            crumb.setData(value: "https://api.sharpit.app/api/v1/today?day=1", key: "url")
+            _ = hooks.beforeBreadcrumb?(crumb)
+            _ = hooks.beforeSend?(Event(level: .error))
+            continuation.resume(returning: !Thread.isMainThread)
+        }
+    }
+    #expect(survived)
+}
