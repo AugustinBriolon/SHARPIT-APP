@@ -20,8 +20,10 @@ else
 fi
 cd "$worktree"
 
-udid=$(xcrun simctl list devices available -j \
-  | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print([x['udid'] for k,v in sorted(d.items()) if 'iOS' in k for x in v if x['name'].startswith('iPhone')][-1])")
+# PREPUSH_SIMULATOR_UDID pins the device when the last iPhone of the list (a custom one, say) will
+# not boot a test runner.
+udid=${PREPUSH_SIMULATOR_UDID:-$(xcrun simctl list devices available -j \
+  | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print([x['udid'] for k,v in sorted(d.items()) if 'iOS' in k for x in v if x['name'].startswith('iPhone')][-1])")}
 
 echo "pre-push 1/2 · unit tests, serial and unsigned"
 xcodebuild test \
