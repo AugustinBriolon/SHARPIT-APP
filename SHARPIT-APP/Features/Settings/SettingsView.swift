@@ -195,7 +195,7 @@ struct SettingsView: View {
             prefs.missedSession ? String(localized: "séances manquées") : nil,
             prefs.syncAlerts ? "alertes" : nil,
         ].compactMap { $0 }
-        return on.isEmpty ? String(localized: "Aucune") : on.joined(separator: ", ").capitalizedFirstLetter
+        return on.isEmpty ? String(localized: "Aucune") : on.joined(separator: ", ").capitalizedFirst
     }
 
     private var sourcesDetail: String {
@@ -297,10 +297,6 @@ enum SettingsRoute: Hashable {
     case features
     case ownFoods
     case feedback
-}
-
-private extension String {
-    var capitalizedFirstLetter: String { prefix(1).uppercased() + dropFirst() }
 }
 
 // MARK: - Building blocks

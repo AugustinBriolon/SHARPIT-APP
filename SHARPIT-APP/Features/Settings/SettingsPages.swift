@@ -311,10 +311,6 @@ nonisolated enum AccountAge {
     }
 }
 
-private extension String {
-    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
-}
-
 // MARK: - Notifications
 
 /// Which pushes the athlete wants (`notificationPrefs` on the profile). Each switch saves on the

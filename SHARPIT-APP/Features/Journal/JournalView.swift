@@ -859,7 +859,3 @@ private struct JournalDatePicker: View {
     }
 }
 
-private extension String {
-    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
-}
-

@@ -16,3 +16,8 @@ extension Date {
         style.locale(SharpitLocale.current).format(self)
     }
 }
+
+extension String {
+    /// « lundi 26 octobre » opening a line takes a capital; French formats it lower case.
+    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
+}
