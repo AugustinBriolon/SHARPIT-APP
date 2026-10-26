@@ -225,7 +225,7 @@ import ClerkKit
 import SwiftUI
 
 /// A screen on demo data, to check its look in the simulator without an account.
-/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|strength|sleep|records`.
+/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|strength|sleep|records|session`.
 enum ScreenDemo {
     static var requested: String? {
         UserDefaults.standard.string(forKey: "SharpitScreenDemo")
@@ -341,6 +341,18 @@ struct ScreenDemoHost: View {
                     onSaved: { _ in }
                 )
                 .defaultScrollAnchor(screen.hasSuffix("bottom") ? .bottom : .top)
+            case "session":
+                // Full screen rather than in its sheet: the simulator cannot drag a detent open.
+                PlannedSessionDrawer(
+                    preview: .demo,
+                    watch: SessionWatchContext(
+                        session: V1PlannedSessionItem(id: "demo", date: PlannedSessionPreview.demoDate, type: "RUN"),
+                        client: GarminWorkoutClient(),
+                        tokenProvider: { "demo" },
+                        onSent: {}
+                    ),
+                    onDiscussWithCoach: { _ in }
+                )
             case "status":
                 Color.clear.sheet(isPresented: .constant(true)) {
                     ActivityStatusButtonDemo()
@@ -568,6 +580,55 @@ private struct ActivityStatusButtonDemo: View {
     var body: some View {
         ActivityStatusDrawer(store: store)
             .task { await store.load() }
+    }
+}
+
+/// A threshold run with its routines, one of them the coach's: the drawer's demo
+/// (`SharpitScreenDemo session`) and its snapshot.
+extension PlannedSessionPreview {
+    /// Monday 26 October 2026, noon: a fixed day so the snapshot does not move with the clock.
+    static let demoDate = Date(timeIntervalSince1970: 1_793_008_800)
+
+    static var demo: PlannedSessionPreview {
+        func move(_ name: String, _ dose: String, _ cue: String? = nil) -> V1RoutineMove {
+            V1RoutineMove(name: name, dose: dose, cue: cue)
+        }
+        return PlannedSessionPreview(
+            sessionId: "demo",
+            title: String(localized: "Seuil 5 × 3 min"),
+            sport: String(localized: "Course"),
+            symbolName: "figure.run",
+            date: demoDate,
+            metrics: [
+                PlannedSessionMetric(label: String(localized: "Durée"), value: "50 min"),
+                PlannedSessionMetric(label: String(localized: "Intensité"), value: String(localized: "Seuil")),
+                PlannedSessionMetric(label: String(localized: "Charge"), value: "62"),
+            ],
+            durationMin: 50,
+            notes: nil,
+            rationale: String(localized: "Ta VFC est revenue dans ta moyenne : on remet un peu d'intensité avant le week-end long."),
+            steps: [
+                V1PlannedSessionStep(key: "0-0", label: String(localized: "Échauffement"), detail: String(localized: "15 min"), group: "0"),
+                V1PlannedSessionStep(key: "1-0", label: String(localized: "Bloc"), detail: String(localized: "3 min"), target: "4:05 – 4:20 /km", group: "1", repeatCount: 5),
+                V1PlannedSessionStep(key: "1-1", label: String(localized: "Récup"), detail: "90 s", group: "1", repeatCount: 5),
+                V1PlannedSessionStep(key: "2-0", label: String(localized: "Retour au calme"), detail: String(localized: "10 min"), group: "2"),
+            ],
+            stepsAreDerived: false,
+            routines: V1SessionRoutines(
+                warmup: V1SessionRoutine(moves: [
+                    move("Rotations de chevilles", "10 par côté"),
+                    move("Balancés de jambe avant-arrière", "10 par côté"),
+                    move("Fentes marchées avec rotation du buste", "6 par côté"),
+                    move("Montées de genoux", "2 × 20 m"),
+                ], minutes: 4, source: "library"),
+                cooldown: V1SessionRoutine(moves: [
+                    move("Étirement du mollet contre un mur", "30 s par côté"),
+                    move("Étirement des ischios, talon sur un support bas", "30 s par côté", "Dos droit, bascule du bassin"),
+                    move("Fente basse, étirement du psoas", "30 s par côté", "Bassin rétroversé, sans cambrer"),
+                ], minutes: 3, source: "coach")
+            ),
+            isKey: true
+        )
     }
 }
 #endif

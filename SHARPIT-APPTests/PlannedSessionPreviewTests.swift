@@ -306,3 +306,29 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
     let session = try JSONDecoder().decode(V1TodaySession.self, from: Data(json.utf8))
     #expect(session.strengthPrescription == nil)
 }
+
+// The drawer adds the routines to the session's own time: the athlete blocks all three.
+
+@Test func theSequenceAddsTheRoutinesToTheSession() throws {
+    let sequence = try #require(SessionSequence.of(durationMin: 50, routines: PlannedSessionPreview.demo.routines))
+
+    #expect(sequence.parts.map(\.kind) == [.before, .session, .after])
+    #expect(sequence.parts.map(\.minutes) == [4, 50, 3])
+    #expect(sequence.totalMinutes == 57)
+}
+
+@Test func aSessionWithoutRoutinesOrDurationHasNoSequence() {
+    #expect(SessionSequence.of(durationMin: 50, routines: nil) == nil)
+    #expect(SessionSequence.of(durationMin: nil, routines: PlannedSessionPreview.demo.routines) == nil)
+    #expect(SessionSequence.of(durationMin: 0, routines: PlannedSessionPreview.demo.routines) == nil)
+}
+
+@Test func anEmptyRoutineLeavesNoPartInTheSequence() throws {
+    let empty = V1SessionRoutine(moves: [], minutes: 0, source: "library")
+    let routines = V1SessionRoutines(warmup: empty, cooldown: try #require(PlannedSessionPreview.demo.routines).cooldown)
+
+    let sequence = try #require(SessionSequence.of(durationMin: 40, routines: routines))
+
+    #expect(sequence.parts.map(\.kind) == [.session, .after])
+    #expect(sequence.totalMinutes == 43)
+}

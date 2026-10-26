@@ -12,7 +12,7 @@ struct SharpitIconTile: View {
 
     var body: some View {
         let side = size * scale
-        Image(systemName: symbol)
+        Image(sharpitSymbol: symbol)
             .font(.system(size: side * 0.42, weight: .bold))
             .foregroundStyle(onInk ? SharpitColor.highlightForeground : SharpitColor.inkAccent)
             .frame(width: side, height: side)

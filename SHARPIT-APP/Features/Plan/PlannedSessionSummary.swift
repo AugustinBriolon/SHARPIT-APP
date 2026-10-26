@@ -1,73 +1,95 @@
 import SwiftUI
 
-/// What a session holds, top to bottom: its sport and title, its figures, its steps, the
-/// instruction and why the coach wrote it. Shared by the planned session's drawer and the
-/// proposal's page, so both read the same; each screen adds its own actions under the title.
+/// What a session holds, top to bottom: who and when, its figures and why the coach wrote it,
+/// then the session in time — mobility, steps, stretches — and the instruction. Shared by the
+/// planned session's drawer and the proposal's page, so both read the same; each screen adds
+/// its own actions under the why.
+///
+/// One panel leads, the steps': the routines fold to a line around them, and the figures and
+/// the why sit on the canvas rather than in cards of the same weight.
 struct PlannedSessionSummary<Actions: View>: View {
     let preview: PlannedSessionPreview
     let steps: [V1PlannedSessionStep]
     let stepsAreDerived: Bool
     var isLoadingBreakdown = false
-    /// Warm-up and stretches around the steps (SHARPIT ADR-114), when the session has them.
+    /// Mobility and stretches around the steps (SHARPIT ADR-114), when the session has them.
     var routines: V1SessionRoutines?
     @ViewBuilder var actions: Actions
 
+    @State private var isWhyExpanded = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            header
-            actions
-            if !preview.metrics.isEmpty {
-                metricsRow
-            }
-            if let routines {
-                SessionRoutinePanel(title: String(localized: "Avant"), routine: routines.warmup)
-            }
-            if !steps.isEmpty {
-                PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            } else if isLoadingBreakdown {
-                HStack(spacing: SharpitSpacing.xs) {
-                    ProgressView()
-                    Text("Chargement du déroulé…")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                header
+                if !preview.metrics.isEmpty {
+                    figures
                 }
             }
-            if let routines {
-                SessionRoutinePanel(title: String(localized: "Après"), routine: routines.cooldown)
+            if let rationale = preview.rationale, !rationale.isEmpty {
+                coachWhy(rationale)
+            }
+            actions
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                if let sequence = SessionSequence.of(durationMin: preview.durationMin, routines: routines) {
+                    SessionSequenceBar(sequence: sequence)
+                        .padding(.bottom, SharpitSpacing.xs)
+                }
+                if let routines {
+                    SessionRoutinePanel(title: String(localized: "Mobilité avant"), routine: routines.warmup)
+                }
+                if !steps.isEmpty {
+                    PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                } else if isLoadingBreakdown {
+                    HStack(spacing: SharpitSpacing.xs) {
+                        ProgressView()
+                        Text("Chargement du déroulé…")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                    }
+                }
+                if let routines {
+                    SessionRoutinePanel(title: String(localized: "Étirements après"), routine: routines.cooldown)
+                }
             }
             if let notes = preview.notes, !notes.isEmpty {
-                textPanel(String(localized: "Consigne"), notes)
-            }
-            if let rationale = preview.rationale, !rationale.isEmpty {
-                textPanel(String(localized: "Pourquoi cette séance"), rationale)
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    SharpitEyebrow(String(localized: "Consigne"))
+                    Text(notes)
+                        .font(SharpitTypography.body)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(SharpitSpacing.cardPadding)
+                .sharpitSurface(.panel)
             }
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(spacing: SharpitSpacing.xs) {
-                Image(sharpitSymbol: preview.symbolName)
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitSportTone.label(for: preview.sport))
-                Text(preview.sport)
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(1)
-                if preview.isKey {
-                    SharpitInlineTag(String(localized: "Clé"))
-                }
-                Spacer(minLength: 0)
-                if let date = preview.date {
-                    Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                        .multilineTextAlignment(.trailing)
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            HStack(spacing: SharpitSpacing.sm) {
+                SharpitIconTile(symbol: preview.symbolName)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: SharpitSpacing.xs) {
+                        Text(preview.sport)
+                            .font(SharpitTypography.label)
+                            .tracking(SharpitTypography.labelTracking)
+                            .textCase(.uppercase)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .lineLimit(1)
+                        if preview.isKey {
+                            SharpitInlineTag(String(localized: "Clé"))
+                        }
+                    }
+                    if let date = preview.date {
+                        Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .lineLimit(1)
+                    }
                 }
             }
             Text(preview.title)
@@ -76,24 +98,19 @@ struct PlannedSessionSummary<Actions: View>: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .accessibilityElement(children: .combine)
     }
 
-    private func textPanel(_ eyebrow: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(eyebrow)
-            Text(text)
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
-    }
-
-    private var metricsRow: some View {
+    /// The figures on the canvas, each under its label, split by hairlines — a readout, not a card.
+    private var figures: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.md) {
-            ForEach(preview.metrics, id: \.label) { metric in
+            ForEach(Array(preview.metrics.enumerated()), id: \.element.label) { index, metric in
+                if index > 0 {
+                    Rectangle()
+                        .fill(SharpitColor.analysisBorder)
+                        .frame(width: 1)
+                        .frame(maxHeight: .infinity)
+                }
                 VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                     Text(metric.label)
                         .font(SharpitTypography.label)
@@ -105,15 +122,33 @@ struct PlannedSessionSummary<Actions: View>: View {
                         .font(SharpitTypography.data)
                         .tracking(SharpitTypography.dataTracking)
                         .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.85)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
             }
+            Spacer(minLength: 0)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// The coach's reason, on the canvas under the figures: it is what makes the session his
+    /// and the athlete's, so it is read before the steps rather than after them.
+    private func coachWhy(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+            SharpitEyebrow(String(localized: "Pourquoi cette séance"))
+            Text(text)
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .lineLimit(isWhyExpanded ? nil : 3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(.rect)
+        .onTapGesture {
+            withAnimation(SharpitMotion.reveal) { isWhyExpanded.toggle() }
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 

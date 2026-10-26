@@ -201,8 +201,8 @@ extension PlannedSessionPreview {
 /// What a planned session holds, in a sheet.
 ///
 /// A planned session has no detail screen to open — there is nothing recorded yet, only
-/// an intention. A drawer says what is prescribed and offers the one action that makes
-/// sense before it happens: asking the coach about it.
+/// an intention. A drawer says what is prescribed, lets the athlete ask the coach about it,
+/// and docks the one action that readies it: the watch, or the phone's guided follow.
 struct PlannedSessionDrawer: View {
     let preview: PlannedSessionPreview
     /// Nil where the screen cannot link, so the action is absent rather than dead.
@@ -241,6 +241,10 @@ struct PlannedSessionDrawer: View {
     @State private var isShowingProPaywall = false
     /// The day just sent, until the plan read again brings the server's copy.
     @State private var watchSentDay: String?
+    @State private var isTitleInBar = false
+
+    /// Roughly the sport line and the title: past it, the title is out of sight.
+    private static let headerHeight: CGFloat = 96
 
     private var effectivePrescription: JSONValue? {
         preview.strengthPrescription ?? loadedPrescription
@@ -293,15 +297,6 @@ struct PlannedSessionDrawer: View {
     private var page: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                if canFollowOnPhone, guidedFinish != nil {
-                    GuidedSessionLaunchButton {
-                        guidedSession = GuidedStrengthSession.make(
-                            title: preview.title,
-                            plannedSessionId: preview.sessionId,
-                            prescription: effectivePrescription
-                        )
-                    }
-                }
                 PlannedSessionSummary(
                     preview: preview,
                     steps: steps,
@@ -328,14 +323,26 @@ struct PlannedSessionDrawer: View {
             .padding(SharpitSpacing.pageInset)
         }
         .background(SharpitCanvasBackground())
+        // The title moves to the bar once the header has scrolled away, as a large title does.
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top > Self.headerHeight
+        } action: { _, isPast in
+            withAnimation(SharpitMotion.fade) { isTitleInBar = isPast }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let dockAction {
+                SharpitActionDock { dockButton(dockAction) }
+                    .transition(.opacity)
+            }
+        }
         .animation(SharpitMotion.reveal, value: steps.count)
         .animation(SharpitMotion.reveal, value: canFollowOnPhone)
         .task { await fetchBreakdownIfMissing() }
-        .navigationTitle(isEmbedded ? preview.sport : String(localized: "Séance prévue"))
+        .navigationTitle(isEmbedded ? preview.sport : (isTitleInBar ? preview.title : ""))
         .navigationBarTitleDisplayMode(.inline)
         // On the page, not the stack: a brick's leg, pushed in its brick's stack, keeps its « … ».
         .toolbar {
-            if isSendingToWatch {
+            if isSendingToWatch, dockAction != .watch {
                 ToolbarItem(placement: .primaryAction) { ProgressView() }
             } else if !actionsMenu.isEmpty {
                 ToolbarItem(placement: .primaryAction) { actionsMenu }
@@ -379,7 +386,8 @@ struct PlannedSessionDrawer: View {
                     onDelete: { isConfirmingDeletion = true }
                 )
             },
-            watch: watch.map { _ in
+            // Docked under the page when it is the session's one action, in the menu otherwise.
+            watch: dockAction == .watch ? nil : watch.map { _ in
                 SessionMenuAction(title: watchState.menuTitle, symbolName: watchState.symbolName) {
                     requestWatchSend()
                 }
@@ -387,6 +395,40 @@ struct PlannedSessionDrawer: View {
             // Linking needs to know *which* session, as the coach button does.
             onLink: preview.sessionId != nil && linking != nil ? { showingLinkPicker = true } : nil
         )
+    }
+
+    /// The one thing to do with the session before it happens, docked at the bottom: follow a
+    /// strength session on the phone, or put an endurance one on the watch.
+    private enum DockAction { case guided, watch }
+
+    private var dockAction: DockAction? {
+        if canFollowOnPhone, guidedFinish != nil { return .guided }
+        return watch == nil ? nil : .watch
+    }
+
+    @ViewBuilder
+    private func dockButton(_ action: DockAction) -> some View {
+        switch action {
+        case .guided:
+            SharpitPrimaryButton(title: String(localized: "Lancer la séance"), trailingSymbol: "play.circle.fill") {
+                guidedSession = GuidedStrengthSession.make(
+                    title: preview.title,
+                    plannedSessionId: preview.sessionId,
+                    prescription: effectivePrescription
+                )
+            }
+            .accessibilityHint("Ouvre le suivi guidé sur le téléphone")
+        case .watch:
+            // Once on the watch, a resend is the quieter offer.
+            SharpitPrimaryButton(
+                title: watchState.menuTitle,
+                style: watchState == .sent ? .secondary : .primary,
+                isBusy: isSendingToWatch
+            ) {
+                requestWatchSend()
+            }
+            .disabled(isSendingToWatch)
+        }
     }
 
     private var watchState: WatchPushState {
@@ -451,57 +493,6 @@ struct PlannedSessionDrawer: View {
 
 extension GuidedStrengthSession: Identifiable {
     var id: String { plannedSessionId ?? title }
-}
-
-/// Primary CTA to open the phone-guided strength follow — louder than a drawer row,
-/// still a panel (not a Forest slab): play mark + press scale, optical play offset.
-struct GuidedSessionLaunchButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: SharpitSpacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(SharpitColor.primary)
-                        .frame(width: 44, height: 44)
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        // Play glyph sits optically left of center — nudge it.
-                        .offset(x: 1)
-                }
-                .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Lancer la séance")
-                        .font(SharpitTypography.sectionTitle)
-                        .tracking(SharpitTypography.sectionTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text("Séries, repos et chrono — sur le téléphone")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
-                }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .accessibilityHidden(true)
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .sharpitSurface(.panel)
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(SharpitColor.primary.opacity(0.35), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityLabel("Lancer la séance")
-        .accessibilityHint("Ouvre le suivi guidé sur le téléphone")
-    }
 }
 
 /// The way to hand a subject to the coach. A tinted pill near the top of the screen: it

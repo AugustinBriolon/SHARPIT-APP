@@ -70,6 +70,21 @@ struct ScreenSnapshotTests {
         )
         try await assertSnapshot(onCanvas(section), named: "activity-curves", style: style)
     }
+
+    // MARK: Planned session
+
+    /// One panel leads, the steps': figures and the why on the canvas, the routines folded.
+    @Test(arguments: [UIUserInterfaceStyle.light, .dark])
+    func thePlannedSessionLeadsWithItsSteps(style: UIUserInterfaceStyle) async throws {
+        let preview = PlannedSessionPreview.demo
+        let summary = PlannedSessionSummary(
+            preview: preview, steps: preview.steps, stepsAreDerived: false, routines: preview.routines
+        ) {
+            CoachDiscussButton(title: String(localized: "Discuter de cette séance")) {}
+        }
+        // At its ideal height, as its scroll view lays it out: the step rail's line is flexible.
+        try await assertSnapshot(onCanvas(summary.fixedSize(horizontal: false, vertical: true)), named: "planned-session", style: style)
+    }
 }
 
 extension UIUserInterfaceStyle: @retroactive CustomTestStringConvertible {

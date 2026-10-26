@@ -116,8 +116,10 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
   diagnostic of what Apple Health holds ([ADR 0005](docs/adr/0005-app-started-sync-and-apple-health.md))
 - Garmin through the Connect Developer Program: connected with the in-app OAuth handoff
   ([ADR 0024](docs/adr/0024-garmin-connects-through-the-in-app-oauth-handoff.md)), and a Pro athlete
-  sends a planned run, ride or pool session to the watch from its drawer
-  ([ADR 0025](docs/adr/0025-a-planned-session-is-sent-to-the-watch-from-its-drawer.md))
+  sends a planned run, ride or pool session to the watch with the button docked under its drawer
+  ([ADR 0025](docs/adr/0025-a-planned-session-is-sent-to-the-watch-from-its-drawer.md)). The drawer
+  leads with the steps: figures and the coach's reason first, the total time, then mobility and
+  stretches folded around the steps ([ADR 0027](docs/adr/0027-the-planned-session-drawer-leads-with-its-steps.md))
 - Journal: the day's signals via `/api/day-journal`, and what it asks for via
   `/api/journal-prefs`. Preferences round-trip as raw JSON so the keys the app does not
   render — the nutrition panel, thresholds — survive a save from the phone.

@@ -22,7 +22,7 @@ a sheet only in the onboarding — the system's own transitions: a zoom from the
 the sheet vanishing. It shares `PlannedSessionSummary` with `PlannedSessionDrawer`, fed by
 `PlannedSessionPreview(generated:)`: the steps (`breakdown`, resolved server-side like a planned
 session's) and the coach's one-line rationale — no prose instruction, the coach writes none.
-An endurance breakdown also carries `routines` (SHARPIT ADR-114): `PlannedSessionSummary` shows « Avant » (joint warm-up) above the steps and « Après » (stretches) below, as `SessionRoutinePanel` lists, tagged « Sur mesure » when the coach wrote them; the server resolves them (library + declared zones, or the coach's), the app only reads, and nothing of it goes to the watch.
+An endurance breakdown also carries `routines` (SHARPIT ADR-114): `PlannedSessionSummary` shows « Mobilité avant » above the steps and « Étirements après » below, as `SessionRoutinePanel` lines folded by default (a tap opens the moves), tagged « Sur mesure » when the coach wrote them, and « Au total » (`SessionSequenceBar`) adds them to the session's duration; the server resolves them (library + declared zones, or the coach's), the app only reads, and nothing of it goes to the watch. The summary's order (`docs/adr/0027`): header and figures on the canvas, the coach's reason, the screen's actions, the total, then the steps — the one open panel. `SharpitScreenDemo session` shows the drawer on `PlannedSessionPreview.demo`.
 The row opens the session; its check is a button of its own.
 A brick (legs sharing `brickGroupId`) is one entry in Plan (`PlanEntry.brick`, `PlanBrickCard`) and one
 line in Résumé (`brickLegs`), and opens `BrickSessionDrawer`: the chain, the legs with their steps and the
@@ -58,7 +58,7 @@ first trip's name, « +1 » for more); `PlanTravel` compares calendar days — a
 midnights on the server, the week's are local — and the chip opens the coach's memory as a sheet.
 
 **Editing the plan by hand.** Plan's « + » opens « Nouvelle séance » (`PlannedSessionCreateSheet`);
-a session's drawer carries « … » (`SessionActionsMenu`: Envoyer sur ma montre, Lier à une séance
+a session's drawer carries « … » (`SessionActionsMenu`: Envoyer sur ma montre when it is not docked, Lier à une séance
 réalisée, then Modifier, Déplacer to one of the next seven days, Supprimer after a confirmation —
 each group only where the screen offers it, and no « … » when none is). « Modifier » is pushed inside the drawer, one sheet at a
 time. `PlanEditor`, owned by `PlanView`, writes them: an edit, a move and a deletion show on the tap
@@ -73,8 +73,8 @@ rename drops the two that name the old one. A brick is the coach's chain and is 
 A done session's « Conformité au plan » sheet can delink the activity (`link` with
 `activityId: null`): the session is to do again and its analysis is gone.
 
-**Sending to the watch.** A run, ride or pool session not done carries « Envoyer sur ma montre » in its
-drawer's « … » (`docs/adr/0025`) when Garmin is linked — `PlanView` reads
+**Sending to the watch.** A run, ride or pool session not done carries « Envoyer sur ma montre » docked at the bottom of its
+drawer (`docs/adr/0025`, `0027`; « Lancer la séance » takes the dock for a strength session the phone follows) when Garmin is linked — `PlanView` reads
 `/api/v1/sync-status` with its extras. It posts `/api/v1/garmin/workouts/from-planned-session`
 (`GarminWorkoutClient`); the server resolves the targets and schedules the workout on the session's
 day. The entry reads the receipt the plan carries (`garminWorkoutId`, `garminWorkoutScheduledDate`,
