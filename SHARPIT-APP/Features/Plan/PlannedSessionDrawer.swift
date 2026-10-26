@@ -24,6 +24,8 @@ struct PlannedSessionPreview: Identifiable, Hashable {
     /// True when the breakdown was inferred from duration and intensity rather than
     /// written — worth saying, because the athlete did not choose it.
     let stepsAreDerived: Bool
+    /// Warm-up and stretches (SHARPIT ADR-114) from the breakdown, when the surface has it.
+    let routines: V1SessionRoutines?
     /// STRENGTH / mobilité prescription — drives « Lancer la séance ».
     let strengthPrescription: JSONValue?
 
@@ -49,9 +51,11 @@ struct PlannedSessionPreview: Identifiable, Hashable {
         rationale: String? = nil,
         steps: [V1PlannedSessionStep],
         stepsAreDerived: Bool,
+        routines: V1SessionRoutines? = nil,
         strengthPrescription: JSONValue? = nil,
         isKey: Bool = false
     ) {
+        self.routines = routines
         self.isKey = isKey
         self.sessionId = sessionId
         self.title = title
@@ -116,6 +120,7 @@ extension PlannedSessionPreview {
             rationale: session.rationale,
             steps: session.breakdown?.steps ?? [],
             stepsAreDerived: session.breakdown?.derived ?? false,
+            routines: session.breakdown?.routines,
             strengthPrescription: session.strengthPrescription,
             isKey: session.isKey
         )
@@ -163,6 +168,7 @@ extension PlannedSessionPreview {
             rationale: session.rationale,
             steps: session.breakdown?.steps ?? [],
             stepsAreDerived: session.breakdown?.derived ?? false,
+            routines: session.breakdown?.routines,
             isKey: session.isKey
         )
     }
@@ -300,7 +306,8 @@ struct PlannedSessionDrawer: View {
                     preview: preview,
                     steps: steps,
                     stepsAreDerived: stepsAreDerived,
-                    isLoadingBreakdown: isLoadingBreakdown
+                    isLoadingBreakdown: isLoadingBreakdown,
+                    routines: preview.routines ?? loadedBreakdown?.routines
                 ) {
                     // Without an id the coach cannot be told *which* session, and a tag
                     // naming the wrong one is worse than no tag.

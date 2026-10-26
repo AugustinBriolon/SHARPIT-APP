@@ -8,6 +8,8 @@ struct PlannedSessionSummary<Actions: View>: View {
     let steps: [V1PlannedSessionStep]
     let stepsAreDerived: Bool
     var isLoadingBreakdown = false
+    /// Warm-up and stretches around the steps (SHARPIT ADR-114), when the session has them.
+    var routines: V1SessionRoutines?
     @ViewBuilder var actions: Actions
 
     var body: some View {
@@ -16,6 +18,9 @@ struct PlannedSessionSummary<Actions: View>: View {
             actions
             if !preview.metrics.isEmpty {
                 metricsRow
+            }
+            if let routines {
+                SessionRoutinePanel(title: String(localized: "Avant"), routine: routines.warmup)
             }
             if !steps.isEmpty {
                 PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)
@@ -27,6 +32,9 @@ struct PlannedSessionSummary<Actions: View>: View {
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
+            }
+            if let routines {
+                SessionRoutinePanel(title: String(localized: "Après"), routine: routines.cooldown)
             }
             if let notes = preview.notes, !notes.isEmpty {
                 textPanel(String(localized: "Consigne"), notes)
@@ -111,7 +119,10 @@ struct PlannedSessionSummary<Actions: View>: View {
 
 extension PlannedSessionSummary where Actions == EmptyView {
     init(preview: PlannedSessionPreview) {
-        self.init(preview: preview, steps: preview.steps, stepsAreDerived: preview.stepsAreDerived) { EmptyView() }
+        self.init(
+            preview: preview, steps: preview.steps, stepsAreDerived: preview.stepsAreDerived,
+            routines: preview.routines
+        ) { EmptyView() }
     }
 }
 

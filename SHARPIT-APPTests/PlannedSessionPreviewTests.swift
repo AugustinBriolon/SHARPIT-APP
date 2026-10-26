@@ -136,6 +136,24 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
     #expect(PlannedSessionPreview.breakdown(of: "missing", in: sessions) == nil)
 }
 
+@Test func theWarmUpAndStretchesTravelFromTheBreakdownIntoThePreview() throws {
+    let json = #"""
+    {"steps":[],"derived":true,"warnings":[],"routines":{
+      "warmup":{"moves":[{"name":"Montées de genoux","dose":"2 × 20 m","cue":null}],"minutes":1,"source":"library"},
+      "cooldown":{"moves":[{"name":"Pigeon au sol","dose":"45 s par côté","cue":"Sans douleur"}],"minutes":1,"source":"coach"}
+    }}
+    """#
+    let breakdown = try JSONDecoder().decode(V1PlannedSessionBreakdown.self, from: Data(json.utf8))
+    #expect(breakdown.routines?.warmup.moves.map(\.name) == ["Montées de genoux"])
+    #expect(breakdown.routines?.cooldown.isCustom == true)
+    #expect(breakdown.routines?.cooldown.moves.first?.cue == "Sans douleur")
+
+    let older = try JSONDecoder().decode(
+        V1PlannedSessionBreakdown.self, from: Data(#"{"steps":[],"derived":false,"warnings":[]}"#.utf8)
+    )
+    #expect(older.routines == nil)
+}
+
 // MARK: - Repeated sets
 
 @Test func aBlockAndItsRecoveryRepeatAsOneSet() {

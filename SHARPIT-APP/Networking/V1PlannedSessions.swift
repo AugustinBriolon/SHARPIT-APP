@@ -180,12 +180,41 @@ nonisolated struct V1PlannedSessionBreakdown: Codable, Sendable, Hashable {
     let derived: Bool
     /// Athlete-facing reasons a target could not be resolved.
     let warnings: [String]
+    /// Warm-up before and stretches after (SHARPIT ADR-114); endurance sessions only, absent
+    /// from an older server.
+    let routines: V1SessionRoutines?
 
-    init(steps: [V1PlannedSessionStep], derived: Bool = false, warnings: [String] = []) {
+    init(
+        steps: [V1PlannedSessionStep], derived: Bool = false, warnings: [String] = [],
+        routines: V1SessionRoutines? = nil
+    ) {
         self.steps = steps
         self.derived = derived
         self.warnings = warnings
+        self.routines = routines
     }
+}
+
+/// The session's joint warm-up and its stretches: the sport's, completed for the athlete's
+/// zones, or the coach's when written for this session.
+nonisolated struct V1SessionRoutines: Codable, Sendable, Hashable {
+    let warmup: V1SessionRoutine
+    let cooldown: V1SessionRoutine
+}
+
+nonisolated struct V1SessionRoutine: Codable, Sendable, Hashable {
+    let moves: [V1RoutineMove]
+    let minutes: Int
+    /// `coach` when written for this very session, `library` otherwise.
+    let source: String
+
+    var isCustom: Bool { source == "coach" }
+}
+
+nonisolated struct V1RoutineMove: Codable, Sendable, Hashable {
+    let name: String
+    let dose: String
+    let cue: String?
 }
 
 nonisolated struct V1PlannedSessionStep: Codable, Sendable, Hashable, Identifiable {

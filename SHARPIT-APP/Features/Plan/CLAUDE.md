@@ -22,6 +22,7 @@ a sheet only in the onboarding — the system's own transitions: a zoom from the
 the sheet vanishing. It shares `PlannedSessionSummary` with `PlannedSessionDrawer`, fed by
 `PlannedSessionPreview(generated:)`: the steps (`breakdown`, resolved server-side like a planned
 session's) and the coach's one-line rationale — no prose instruction, the coach writes none.
+An endurance breakdown also carries `routines` (SHARPIT ADR-114): `PlannedSessionSummary` shows « Avant » (joint warm-up) above the steps and « Après » (stretches) below, as `SessionRoutinePanel` lists, tagged « Sur mesure » when the coach wrote them; the server resolves them (library + declared zones, or the coach's), the app only reads, and nothing of it goes to the watch.
 The row opens the session; its check is a button of its own.
 A brick (legs sharing `brickGroupId`) is one entry in Plan (`PlanEntry.brick`, `PlanBrickCard`) and one
 line in Résumé (`brickLegs`), and opens `BrickSessionDrawer`: the chain, the legs with their steps and the
