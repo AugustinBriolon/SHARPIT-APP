@@ -55,7 +55,10 @@ struct FoodLogMealsSection: View {
         HStack(spacing: 0) {
             if section.entries.isEmpty {
                 Button { onAdd(section.meal) } label: {
-                    FoodLogMealRow(section: section, health: nil, flagged: false, opensPage: false)
+                    FoodLogMealRow(
+                        section: section, health: nil, flagged: false, opensPage: false,
+                        skipped: store.isSkipped(section.meal)
+                    )
                 }
                 .buttonStyle(.sharpitPressable)
             } else {
@@ -87,6 +90,26 @@ struct FoodLogMealsSection: View {
             Button { Task { await store.copyFromPreviousDay(section.meal) } } label: {
                 Label("Copier le repas de la veille", systemImage: "doc.on.doc")
             }
+            if section.entries.isEmpty {
+                skipButton(section.meal)
+            }
+        }
+        .accessibilityActions {
+            if section.entries.isEmpty { skipButton(section.meal) }
+        }
+    }
+
+    /// A meal skipped on purpose is a choice the coach's reading respects, not a gap (SHARPIT ADR-113).
+    @ViewBuilder
+    private func skipButton(_ meal: FoodLogMeal) -> some View {
+        if store.isSkipped(meal) {
+            Button { Task { await store.setSkipped(meal, false) } } label: {
+                Label("Annuler « repas sauté »", systemImage: "arrow.uturn.backward")
+            }
+        } else {
+            Button { Task { await store.setSkipped(meal, true) } } label: {
+                Label("J'ai sauté ce repas", systemImage: "fork.knife.circle")
+            }
         }
     }
 
@@ -101,6 +124,7 @@ private struct FoodLogMealRow: View {
     let health: V1MealHealth?
     let flagged: Bool
     let opensPage: Bool
+    var skipped = false
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
@@ -158,7 +182,7 @@ private struct FoodLogMealRow: View {
 
     private var countLabel: String {
         switch section.entries.count {
-        case 0: String(localized: "Rien de noté")
+        case 0: skipped ? String(localized: "Repas sauté") : String(localized: "Rien de noté")
         case 1: String(localized: "1 aliment")
         default: "\(section.entries.count) aliments"
         }

@@ -36,6 +36,9 @@ final class FoodLogStore {
     private(set) var entries: [V1FoodLogEntry] = []
     private(set) var targets: V1NutritionTargets = .none
     private(set) var recent: [V1FoodLogRecentFood] = []
+    /// Meals the athlete chose not to eat (SHARPIT ADR-113). Food logged in one clears it on the
+    /// server, so `isSkipped` only trusts it while the meal is empty.
+    private(set) var skippedMeals: Set<FoodLogMeal> = []
     /// The server's score of each meal and of the day (SHARPIT ADR-070), read with the entries.
     private(set) var health: V1FoodLogDayHealth?
     /// The entries each meal's score was computed on: a meal changed since shows no score until
@@ -89,6 +92,10 @@ final class FoodLogStore {
         return current ? health?.day : nil
     }
 
+    func isSkipped(_ meal: FoodLogMeal) -> Bool {
+        skippedMeals.contains(meal) && !entries.contains { $0.meal == meal }
+    }
+
     func section(_ meal: FoodLogMeal) -> MealSection {
         MealSection(meal: meal, entries: entries.filter { $0.meal == meal })
     }
@@ -105,6 +112,7 @@ final class FoodLogStore {
         if dayChanged {
             trainingDayId = dayId
             entries = []
+            skippedMeals = []
             phase = .loading
             loadGate.invalidate()
         }
@@ -115,6 +123,7 @@ final class FoodLogStore {
                 self.entries = day.entries
                 self.targets = day.targets
                 self.recent = day.recent
+                self.skippedMeals = Set(day.skippedMeals)
                 self.adoptHealth(day)
                 self.phase = .ready
                 return true
@@ -220,6 +229,25 @@ final class FoodLogStore {
         } catch {
             entries.insert(entry, at: min(index, entries.count))
             reportFailure(Self.failureMessage(error, action: String(localized: "Aliment non supprimé")))
+        }
+    }
+
+    /// Marks an empty meal skipped on purpose, or clears it, so the coach's reading does not take
+    /// it for a gap in the diary.
+    func setSkipped(_ meal: FoodLogMeal, _ skipped: Bool) async {
+        let previous = skippedMeals
+        if skipped { skippedMeals.insert(meal) } else { skippedMeals.remove(meal) }
+        let dayId = trainingDayId
+        do {
+            let stored = try await SharpitRetry.run {
+                try await client.setSkipped(meal, skipped: skipped, trainingDayId: dayId, token: try await tokenProvider())
+            }
+            guard dayId == trainingDayId else { return }
+            skippedMeals = Set(stored)
+            await onChange()
+        } catch {
+            skippedMeals = previous
+            reportFailure(Self.failureMessage(error, action: String(localized: "Repas non mis à jour")))
         }
     }
 

@@ -33,6 +33,8 @@ nonisolated protocol FoodLogServing: Sendable {
     func updateCustomFood(id: String, _ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct
     func deleteCustomFood(id: String, token: String) async throws
     func setTargets(_ targets: V1NutritionTargets, trainingDayId: String, token: String) async throws -> V1NutritionTargets
+    /// Marks a meal skipped on purpose, or clears the mark (SHARPIT ADR-113); answers the day's skipped meals.
+    func setSkipped(_ meal: FoodLogMeal, skipped: Bool, trainingDayId: String, token: String) async throws -> [FoodLogMeal]
     /// A meal (or, without `meal`, a whole day) logged again into another day (SHARPIT ADR-071).
     /// Answers the entries written — none when the source was empty.
     func copy(from fromDayId: String, meal: FoodLogMeal?, to toDayId: String, token: String) async throws -> [V1FoodLogEntry]
@@ -130,6 +132,14 @@ actor FoodLogClient: FoodLogServing {
         )
         request.httpBody = try Self.body(for: targets)
         return try decode(V1NutritionTargetsEnvelope.self, from: try await send(request)).targets
+    }
+
+    func setSkipped(_ meal: FoodLogMeal, skipped: Bool, trainingDayId: String, token: String) async throws -> [FoodLogMeal] {
+        var request = try request("\(Self.path)/skipped", method: "PUT", token: token)
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "trainingDayId": trainingDayId, "meal": meal.rawValue, "skipped": skipped,
+        ])
+        return try decode(V1FoodLogSkippedMeals.self, from: try await send(request)).skippedMeals
     }
 
     // MARK: Saved meals and recipes

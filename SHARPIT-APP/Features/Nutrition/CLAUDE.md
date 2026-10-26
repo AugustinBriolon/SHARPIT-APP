@@ -37,7 +37,7 @@ with presets and a live preview, `FoodPortion` mirroring the web's `portionNutri
 page (`FoodLogMealPage`) shows the meal's score (`MealHealthSection`: the energy-weighted mean of its foods' scores and why, SHARPIT ADR-070 — the server's, shown only while the meal's entries are the ones it scored, `FoodLogStore.mealHealth`; the day's sits beside « Repas ») and edits an entry on tap (`FoodEntryEditSheet`) and deletes it on swipe. What MyFitnessPal athletes
 log with every day is one tap away (SHARPIT ADR-071): the page's « … » (and a long press on a meal's
 row) copies the same meal of the day before (`FoodLogStore.copyFromPreviousDay`, `/api/v1/food-log/copy`;
-the empty day's plate offers « Copier la veille » for the whole day) and keeps the meal under a name
+the empty day's plate offers « Copier la veille » for the whole day); the same menu on an empty meal marks it skipped on purpose (« J'ai sauté ce repas », `FoodLogStore.setSkipped`, `/api/v1/food-log/skipped`, SHARPIT ADR-113), so the coach's reading does not take it for a gap — the row then reads « Repas sauté », and food logged in it clears the mark (`isSkipped` trusts it only while the meal is empty) and keeps the meal under a name
 (`saveMeal`, `/api/v1/food-log/meals`); the add sheet's « Mes repas » (`SavedMealsStore`,
 `SavedMealsPage`) logs one whole into the meal, shown at once (`logSavedMeal`), and « Créer une
 recette » (`FoodRecipePage`, `FoodRecipeBuilder`) builds an own food from other foods — ingredients

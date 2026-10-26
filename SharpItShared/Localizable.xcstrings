@@ -32666,7 +32666,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skipped meal"
+            "value" : "Meal skipped"
           }
         },
         "fr" : {
@@ -43546,6 +43546,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Déroulé de la nuit par phase"
+          }
+        }
+      }
+    },
+    "J'ai sauté ce repas" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I skipped this meal"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "J'ai sauté ce repas"
+          }
+        }
+      }
+    },
+    "Annuler « repas sauté »" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo “meal skipped”"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler « repas sauté »"
+          }
+        }
+      }
+    },
+    "Repas non mis à jour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meal not updated"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repas non mis à jour"
           }
         }
       }

@@ -44,6 +44,14 @@ private let dayJSON = """
     #expect(recent.product.servingLabel == "1 portion")
 }
 
+@Test func theSkippedMealsDecodeAndAreEmptyFromAnOlderServer() throws {
+    let older = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(dayJSON.utf8))
+    #expect(older.skippedMeals.isEmpty)
+    let json = #"{"trainingDayId":"2026-10-01","entries":[],"skippedMeals":["LUNCH"]}"#
+    let day = try JSONDecoder().decode(V1FoodLogDay.self, from: Data(json.utf8))
+    #expect(day.skippedMeals == [.lunch])
+}
+
 @Test func searchResultsAndAScannedProductDecode() throws {
     let search = try JSONDecoder().decode(V1FoodSearchResults.self, from: Data("""
     { "own": [{ "id": "c1", "source": "CUSTOM", "ownerId": "a1", "name": "Granola maison", "kcalPer100g": 450,
@@ -597,6 +605,14 @@ private actor StubFoodLog: FoodLogServing {
         return targets
     }
 
+    private(set) var skipped: Set<FoodLogMeal> = []
+
+    func setSkipped(_ meal: FoodLogMeal, skipped isSkipped: Bool, trainingDayId: String, token: String) async throws -> [FoodLogMeal] {
+        if let failure { throw failure }
+        if isSkipped { skipped.insert(meal) } else { skipped.remove(meal) }
+        return Array(skipped)
+    }
+
     // Saved meals and recipes (SHARPIT ADR-071)
     var copySource: [V1FoodLogEntry] = []
     private(set) var copies: [(from: String, meal: FoodLogMeal?, to: String)] = []
@@ -725,6 +741,32 @@ private func makeStore(_ client: StubFoodLog, recorder: Recorder) -> FoodLogStor
     #expect(store.entries.isEmpty)
     #expect(recorder.reloads == 0)
     #expect(recorder.failures == ["Aliment non ajouté. Réessaie dans un instant."])
+}
+
+@MainActor
+@Test func aSkippedMealReadsAsSkippedUntilFoodIsLoggedInIt() async {
+    let client = StubFoodLog(day: V1FoodLogDay(trainingDayId: "2026-10-01", entries: [], skippedMeals: [.breakfast]))
+    let recorder = Recorder()
+    let store = makeStore(client, recorder: recorder)
+    await store.load(trainingDayId: "2026-10-01")
+    #expect(store.isSkipped(.breakfast))
+
+    await store.setSkipped(.lunch, true)
+    #expect(store.isSkipped(.lunch))
+    #expect(recorder.reloads == 1)
+
+    await store.add(FoodLogDraft(trainingDayId: "2026-10-01", meal: .lunch, grams: 155, source: .product(rice)))
+    #expect(!store.isSkipped(.lunch))
+}
+
+@MainActor
+@Test func aSkipThatFailsIsTakenBackAndSaid() async {
+    let recorder = Recorder()
+    let store = makeStore(StubFoodLog(failure: SharpitAPIError.badRequest), recorder: recorder)
+
+    await store.setSkipped(.dinner, true)
+    #expect(!store.isSkipped(.dinner))
+    #expect(recorder.failures == ["Repas non mis à jour. Réessaie dans un instant."])
 }
 
 /// What the day showed while a write was in flight.

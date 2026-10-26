@@ -395,21 +395,25 @@ nonisolated struct V1FoodLogDay: Decodable, Sendable, Equatable {
     let health: V1FoodLogDayHealth?
     let targets: V1NutritionTargets
     let recent: [V1FoodLogRecentFood]
+    /// Meals skipped on purpose (SHARPIT ADR-113); absent from an older server.
+    let skippedMeals: [FoodLogMeal]
 
-    enum CodingKeys: String, CodingKey { case trainingDayId, entries, health, targets, recent }
+    enum CodingKeys: String, CodingKey { case trainingDayId, entries, health, targets, recent, skippedMeals }
 
     init(
         trainingDayId: String,
         entries: [V1FoodLogEntry],
         health: V1FoodLogDayHealth? = nil,
         targets: V1NutritionTargets = .none,
-        recent: [V1FoodLogRecentFood] = []
+        recent: [V1FoodLogRecentFood] = [],
+        skippedMeals: [FoodLogMeal] = []
     ) {
         self.trainingDayId = trainingDayId
         self.entries = entries
         self.health = health
         self.targets = targets
         self.recent = recent
+        self.skippedMeals = skippedMeals
     }
 
     init(from decoder: Decoder) throws {
@@ -419,7 +423,13 @@ nonisolated struct V1FoodLogDay: Decodable, Sendable, Equatable {
         health = try container.decodeIfPresent(V1FoodLogDayHealth.self, forKey: .health)
         targets = try container.decodeIfPresent(V1NutritionTargets.self, forKey: .targets) ?? .none
         recent = try container.decodeIfPresent([V1FoodLogRecentFood].self, forKey: .recent) ?? []
+        skippedMeals = try container.decodeIfPresent([FoodLogMeal].self, forKey: .skippedMeals) ?? []
     }
+}
+
+/// `PUT /api/v1/food-log/skipped`.
+nonisolated struct V1FoodLogSkippedMeals: Decodable, Sendable {
+    let skippedMeals: [FoodLogMeal]
 }
 
 /// A food the athlete logged in the last 90 days that matches the search (SHARPIT ADR-069).
