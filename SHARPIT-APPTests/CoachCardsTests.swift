@@ -87,3 +87,54 @@ private func replacing(_ key: String, with value: JSONValue, in part: JSONValue)
     // The cards are not prose: copying the answer takes its words only.
     #expect(CoachMessageCopy.plainText(of: message) == "Voici ta séance.")
 }
+
+// The data cards (SHARPIT ADR-119): the web's fixtures, decoded the app's way.
+private func dataCardPart(_ name: String) throws -> JSONValue {
+    try JSONDecoder().decode(JSONValue.self, from: fixtureData("CoachDataCards/\(name)"))
+}
+
+@Test func theDayScoresCardKeepsTheToolsOwnFigures() throws {
+    let card = try #require(CoachDataCard(part: try dataCardPart("day-scores.json")))
+
+    guard case .dayScores(let scores) = card else { Issue.record("not a day scores card"); return }
+    #expect(scores.energyBank == .init(value: 71, typicalBaseline: 64))
+    #expect(scores.stress == 38 && scores.readiness == 66)
+    #expect(CoachDataCardFormat.band(try #require(scores.targetBand)) == "8–12")
+}
+
+@Test func theSleepCardReadsAMissingNightAsAbsentNotZero() throws {
+    let card = try #require(CoachDataCard(part: try dataCardPart("sleep-vs-readiness.json")))
+
+    guard case .sleepVsReadiness(let days, let points) = card else { Issue.record("not a sleep card"); return }
+    #expect(days == 7)
+    #expect(points[1].sleepMinutes == nil && points[1].readiness == 55)
+    #expect(CoachDataCardFormat.sleep(try #require(points[0].sleepMinutes)) == "6 h 50")
+}
+
+@Test func theTargetBandCardWordsItsStatus() throws {
+    let card = try #require(CoachDataCard(part: try dataCardPart("target-band.json")))
+
+    guard case .targetBand(_, let band, let readiness) = card else { Issue.record("not a band card"); return }
+    #expect(CoachDataCardFormat.status(band.status) == "sous la cible")
+    #expect(readiness == nil)
+}
+
+@Test func aDataCardOfAnotherVersionOrStillRunningIsLeftOut() throws {
+    let part = try dataCardPart("day-scores.json")
+    guard case .object(var fields) = part, case .object(var output)? = fields["output"] else { return }
+    output["schemaVersion"] = .number(2)
+    fields["output"] = .object(output)
+    #expect(CoachDataCard(part: .object(fields)) == nil)
+
+    fields["state"] = .string("input-available")
+    output["schemaVersion"] = .number(1)
+    fields["output"] = .object(output)
+    #expect(CoachDataCard(part: .object(fields)) == nil)
+}
+
+@Test func aReadToolPartWithoutACardDrawsNothing() throws {
+    let part = try JSONDecoder().decode(JSONValue.self, from: Data("""
+    {"type":"tool-explainDayScores","state":"output-available","input":{},"output":{"ok":true,"markdown":"x"}}
+    """.utf8))
+    #expect(CoachDataCard(part: part) == nil)
+}

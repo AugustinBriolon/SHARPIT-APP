@@ -728,6 +728,8 @@ private struct CoachMessageRow: View {
                         )
                     case .workout(_, let workout):
                         CoachWorkoutCard(workout: workout)
+                    case .dataCard(_, let card):
+                        CoachDataCardView(card: card)
                     case .followUps(_, let suggestions):
                         if let onFollowUp {
                             CoachFollowUpsView(suggestions: suggestions, onSelect: onFollowUp)
@@ -856,6 +858,7 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
     case foodLog(CoachFoodLogProposal)
     case workout(id: String, CoachWorkout)
     case followUps(id: String, [String])
+    case dataCard(id: String, CoachDataCard)
 
     var id: String {
         switch self {
@@ -864,6 +867,7 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
         case .foodLog(let proposal): "food-\(proposal.id)"
         case .workout(let id, _): "workout-\(id)"
         case .followUps(let id, _): "follow-ups-\(id)"
+        case .dataCard(let id, _): "data-card-\(id)"
         }
     }
 
@@ -890,6 +894,9 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
             } else if let workout = CoachWorkout(part: part) {
                 flush()
                 segments.append(.workout(id: part["toolCallId"]?.string ?? "\(segments.count)", workout))
+            } else if let card = CoachDataCard(part: part) {
+                flush()
+                segments.append(.dataCard(id: part["toolCallId"]?.string ?? "\(segments.count)", card))
             } else if let followUps = CoachFollowUps(part: part) {
                 flush()
                 segments.append(.followUps(id: part["toolCallId"]?.string ?? "\(segments.count)", followUps.suggestions))
