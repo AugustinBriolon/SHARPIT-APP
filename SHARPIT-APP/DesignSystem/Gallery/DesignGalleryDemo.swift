@@ -353,6 +353,20 @@ struct ScreenDemoHost: View {
                     ),
                     onDiscussWithCoach: { _ in }
                 )
+            case "session-routines":
+                // The summary alone, writable: the drawer only asks « Fait / Raccourci / Sauté »
+                // with a plan editor, which the demo has none of.
+                ScrollView {
+                    PlannedSessionSummary(
+                        preview: .demo,
+                        steps: PlannedSessionPreview.demo.steps,
+                        stepsAreDerived: false,
+                        routines: PlannedSessionPreview.demo.routines,
+                        onRoutineStatus: { _, _ in }
+                    ) { EmptyView() }
+                    .padding(SharpitSpacing.pageInset)
+                }
+                .background(SharpitCanvasBackground())
             case "status":
                 Color.clear.sheet(isPresented: .constant(true)) {
                     ActivityStatusButtonDemo()

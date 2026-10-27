@@ -12,13 +12,21 @@ struct SessionRoutinePanel: View {
     /// Records what the athlete did with it; nil where it cannot be said (a day ahead, a
     /// surface that cannot write).
     var onStatus: ((V1RoutineStatus?) -> Void)?
-    @State private var isExpanded = false
+    @State private var isExpanded: Bool
     @State private var status: V1RoutineStatus?
+    @Environment(\.dynamicTypeSize) private var typeSize
 
-    init(title: String, routine: V1SessionRoutine, onStatus: ((V1RoutineStatus?) -> Void)? = nil) {
+    /// `isExpanded` opens it from the start: a snapshot or a demo showing the moves.
+    init(
+        title: String,
+        routine: V1SessionRoutine,
+        onStatus: ((V1RoutineStatus?) -> Void)? = nil,
+        isExpanded: Bool = false
+    ) {
         self.title = title
         self.routine = routine
         self.onStatus = onStatus
+        _isExpanded = State(initialValue: isExpanded)
         _status = State(initialValue: routine.routineStatus)
     }
 
@@ -37,11 +45,14 @@ struct SessionRoutinePanel: View {
                 VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                     moves
                     if onStatus != nil {
+                        // A group carrying the question, so each button keeps its own word.
                         SharpitSegmentedChoice(
                             options: V1RoutineStatus.allCases,
                             label: \.label,
-                            selection: $status
+                            selection: $status,
+                            allowsDeselection: true
                         )
+                        .accessibilityElement(children: .contain)
                         .accessibilityLabel(String(localized: "Ce que tu en as fait"))
                     }
                 }
@@ -57,37 +68,77 @@ struct SessionRoutinePanel: View {
         }
     }
 
+    /// Title and figures beside the chevron; at the accessibility sizes the chevron keeps to the
+    /// title's line and the figures and tags take the full width, where side by side they broke
+    /// mid-phrase.
     private var header: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
+        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+            if typeSize.isAccessibilitySize {
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+                    titleText
+                    Spacer(minLength: 0)
+                    chevron
+                }
                 summaryLine
-                    .font(SharpitTypography.meta)
-                    .monospacedDigit()
-                    .foregroundStyle(SharpitColor.mutedForeground)
+            } else {
+                HStack(spacing: SharpitSpacing.sm) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        titleText
+                        summaryLine
+                    }
+                    Spacer(minLength: 0)
+                    chevron
+                }
             }
-            Spacer(minLength: 0)
-            if routine.isCustom {
-                SharpitInlineTag(String(localized: "Sur mesure"))
-            } else if routine.isOptional {
-                SharpitInlineTag(String(localized: "Facultatif"))
-            }
-            Image(systemName: "chevron.down")
-                .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                .accessibilityHidden(true)
+            tags
         }
         .frame(minHeight: 44)
         .contentShape(.rect)
     }
 
+    private var titleText: some View {
+        Text(title)
+            .font(SharpitTypography.bodyEmphasis)
+            .foregroundStyle(SharpitColor.foreground)
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.down")
+            .font(SharpitTypography.label)
+            .foregroundStyle(SharpitColor.mutedForeground)
+            .rotationEffect(.degrees(isExpanded ? 180 : 0))
+            .accessibilityHidden(true)
+    }
+
+    /// Both can hold: stretches the coach wrote are still optional.
+    @ViewBuilder
+    private var tags: some View {
+        if routine.isCustom || routine.isOptional {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: SharpitSpacing.xs) { tagViews }
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) { tagViews }
+            }
+            .padding(.top, SharpitSpacing.xxs)
+        }
+    }
+
+    @ViewBuilder
+    private var tagViews: some View {
+        if routine.isCustom {
+            SharpitInlineTag(String(localized: "Sur mesure"))
+        }
+        if routine.isOptional {
+            SharpitInlineTag(String(localized: "Facultatif"))
+        }
+    }
+
     private var summaryLine: Text {
         let base = Text("^[\(routine.moves.count) mouvement](inflect: true) · ~\(routine.minutes) min")
-        guard let status else { return base }
-        return base + Text(verbatim: " · \(status.label)")
+        let line = status.map { base + Text(verbatim: " · \($0.label)") } ?? base
+        return line
+            .font(SharpitTypography.meta)
+            .monospacedDigit()
+            .foregroundStyle(SharpitColor.mutedForeground)
     }
 
     /// The name on its own line, the dose and the cue under it: a long French name no longer

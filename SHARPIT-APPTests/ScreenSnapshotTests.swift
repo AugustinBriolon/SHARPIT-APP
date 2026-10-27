@@ -85,6 +85,26 @@ struct ScreenSnapshotTests {
         // At its ideal height, as its scroll view lays it out: the step rail's line is flexible.
         try await assertSnapshot(onCanvas(summary.fixedSize(horizontal: false, vertical: true)), named: "planned-session", style: style)
     }
+
+    /// The stretches open, answered: both tags, the moves, the choice with « Fait » picked.
+    private func answeredStretches() throws -> some View {
+        var routine = try #require(PlannedSessionPreview.demo.routines?.cooldown)
+        routine.status = V1RoutineStatus.done.rawValue
+        return SessionRoutinePanel(title: String(localized: "Étirements ciblés"), routine: routine, onStatus: { _ in }, isExpanded: true)
+    }
+
+    @Test(arguments: [UIUserInterfaceStyle.light, .dark])
+    func theRoutinePanelAsksWhatTheAthleteDid(style: UIUserInterfaceStyle) async throws {
+        try await assertSnapshot(onCanvas(try answeredStretches()), named: "routine-panel", style: style)
+    }
+
+    /// At the accessibility sizes the header stacks and the choice goes vertical. The fonts scale
+    /// with the app's text size (`UIFontMetrics`), which a test cannot set, so this pins the
+    /// layout, not the glyphs' size.
+    @Test func theRoutinePanelStacksAtTheAccessibilitySizes() async throws {
+        let panel = try answeredStretches().environment(\.dynamicTypeSize, .accessibility3)
+        try await assertSnapshot(onCanvas(panel), named: "routine-panel-accessibility")
+    }
 }
 
 extension UIUserInterfaceStyle: @retroactive CustomTestStringConvertible {
