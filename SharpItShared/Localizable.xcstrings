@@ -66,6 +66,22 @@
         }
       }
     },
+    "Touche de nouveau pour retirer ta réponse" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap again to clear your answer"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touche de nouveau pour retirer ta réponse"
+          }
+        }
+      }
+    },
     "\n\nTon abonnement SharpIt Pro continue de se renouveler : supprimer ton compte ne l'arrête pas. Annule-le d'abord pour ne plus être facturé." : {
       "localizations" : {
         "en" : {

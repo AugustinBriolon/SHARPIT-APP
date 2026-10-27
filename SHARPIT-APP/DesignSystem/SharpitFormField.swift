@@ -75,10 +75,14 @@ struct SharpitFormField: View {
 }
 
 /// One of a few, side by side in a track; the pick is a pill that slides to it.
+///
+/// `allowsDeselection` lets a second tap on the pick take the answer back to nil, for a
+/// question the athlete may leave unanswered (what they did with a session's warm-up).
 struct SharpitSegmentedChoice<Option: Hashable>: View {
     let options: [Option]
     let label: (Option) -> String
     @Binding var selection: Option?
+    var allowsDeselection = false
 
     @Namespace private var thumb
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -90,7 +94,9 @@ struct SharpitSegmentedChoice<Option: Hashable>: View {
             ForEach(options, id: \.self) { option in
                 let isSelected = selection == option
                 Button {
-                    SharpitMotion.run(SharpitMotion.selection) { selection = option }
+                    SharpitMotion.run(SharpitMotion.selection) {
+                        selection = allowsDeselection && isSelected ? nil : option
+                    }
                 } label: {
                     Text(label(option))
                         .font(SharpitTypography.bodyEmphasis)
@@ -110,6 +116,7 @@ struct SharpitSegmentedChoice<Option: Hashable>: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+                .accessibilityHint(allowsDeselection && isSelected ? String(localized: "Touche de nouveau pour retirer ta réponse") : "")
             }
         }
         .padding(4)
