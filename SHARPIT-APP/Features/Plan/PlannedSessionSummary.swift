@@ -14,6 +14,8 @@ struct PlannedSessionSummary<Actions: View>: View {
     var isLoadingBreakdown = false
     /// Mobility and stretches around the steps (SHARPIT ADR-114), when the session has them.
     var routines: V1SessionRoutines?
+    /// Records what the athlete did with a routine; nil where it cannot be said yet.
+    var onRoutineStatus: ((V1RoutinePart, V1RoutineStatus?) -> Void)?
     @ViewBuilder var actions: Actions
 
     @State private var isWhyExpanded = false
@@ -36,7 +38,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                         .padding(.bottom, SharpitSpacing.xs)
                 }
                 if let routines {
-                    SessionRoutinePanel(title: String(localized: "Mobilité avant"), routine: routines.warmup)
+                    routinePanel(String(localized: "Mobilité avant"), routines.warmup, .warmup)
                 }
                 if !steps.isEmpty {
                     PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)
@@ -50,7 +52,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                     }
                 }
                 if let routines {
-                    SessionRoutinePanel(title: String(localized: "Étirements après"), routine: routines.cooldown)
+                    routinePanel(String(localized: "Étirements ciblés"), routines.cooldown, .cooldown)
                 }
             }
             if let notes = preview.notes, !notes.isEmpty {
@@ -134,6 +136,18 @@ struct PlannedSessionSummary<Actions: View>: View {
 
     /// The coach's reason, on the canvas under the figures: it is what makes the session his
     /// and the athlete's, so it is read before the steps rather than after them.
+    /// A routine with no move — the stretches after a recovery session — leaves no panel.
+    @ViewBuilder
+    private func routinePanel(_ title: String, _ routine: V1SessionRoutine, _ part: V1RoutinePart) -> some View {
+        if !routine.moves.isEmpty {
+            SessionRoutinePanel(
+                title: title,
+                routine: routine,
+                onStatus: onRoutineStatus.map { record in { record(part, $0) } }
+            )
+        }
+    }
+
     private func coachWhy(_ text: String) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
             SharpitEyebrow(String(localized: "Pourquoi cette séance"))

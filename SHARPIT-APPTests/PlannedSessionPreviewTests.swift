@@ -154,6 +154,30 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
     #expect(older.routines == nil)
 }
 
+@Test func aRoutineCarriesWhetherItIsOptionalAndWhatTheAthleteDidWithIt() throws {
+    let json = #"""
+    {"moves":[],"minutes":0,"source":"library","optional":true,"status":"SHORTENED"}
+    """#
+    let routine = try JSONDecoder().decode(V1SessionRoutine.self, from: Data(json.utf8))
+    #expect(routine.isOptional)
+    #expect(routine.routineStatus == .shortened)
+
+    let newer = try JSONDecoder().decode(
+        V1SessionRoutine.self,
+        from: Data(#"{"moves":[],"minutes":0,"source":"library","status":"HALF"}"#.utf8)
+    )
+    #expect(newer.routineStatus == nil)
+    #expect(!newer.isOptional)
+}
+
+@Test func aRoutineStatusIsWrittenToItsOwnFieldAndCleared() {
+    var fields = PlannedSessionFields()
+    fields.setRoutineStatus(.done, for: .warmup)
+    fields.setRoutineStatus(nil, for: .cooldown)
+    #expect(fields["warmupStatus"] == .string("DONE"))
+    #expect(fields["cooldownStatus"] == .null)
+}
+
 // MARK: - Repeated sets
 
 @Test func aBlockAndItsRecoveryRepeatAsOneSet() {

@@ -58,6 +58,11 @@ nonisolated struct PlannedSessionFields: Encodable, Equatable, Sendable {
         values["goalId"] = Self.text(goalId)
     }
 
+    /// What the athlete did with the session's warm-up or stretches (SHARPIT ADR-115).
+    mutating func setRoutineStatus(_ status: V1RoutineStatus?, for part: V1RoutinePart) {
+        values[part.statusField] = status.map { .string($0.rawValue) } ?? .null
+    }
+
     /// `{ version: 1, sets: [...] }` as `StrengthExerciseDraft.prescription` builds it.
     mutating func setStrengthPrescription(_ prescription: JSONValue?) {
         values["strengthPrescription"] = prescription ?? .null

@@ -2,6 +2,70 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {},
+    "Ce que tu en as fait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What you did with it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce que tu en as fait"
+          }
+        }
+      }
+    },
+    "Facultatif" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facultatif"
+          }
+        }
+      }
+    },
+    "Raccourci" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shortened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raccourci"
+          }
+        }
+      }
+    },
+    "Sauté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sauté"
+          }
+        }
+      }
+    },
     "\n\nTon abonnement SharpIt Pro continue de se renouveler : supprimer ton compte ne l'arrête pas. Annule-le d'abord pour ne plus être facturé." : {
       "localizations" : {
         "en" : {
@@ -178,18 +242,18 @@
         }
       }
     },
-    "Étirements après" : {
+    "Étirements ciblés" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stretches after"
+            "value" : "Targeted stretches"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Étirements après"
+            "value" : "Étirements ciblés"
           }
         }
       }

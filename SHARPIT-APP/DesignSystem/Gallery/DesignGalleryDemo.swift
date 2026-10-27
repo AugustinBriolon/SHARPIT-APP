@@ -625,7 +625,7 @@ extension PlannedSessionPreview {
                     move("Étirement du mollet contre un mur", "30 s par côté"),
                     move("Étirement des ischios, talon sur un support bas", "30 s par côté", "Dos droit, bascule du bassin"),
                     move("Fente basse, étirement du psoas", "30 s par côté", "Bassin rétroversé, sans cambrer"),
-                ], minutes: 3, source: "coach")
+                ], minutes: 3, source: "coach", optional: true)
             ),
             isKey: true
         )

@@ -258,6 +258,16 @@ struct PlannedSessionDrawer: View {
         preview.steps.isEmpty ? loadedBreakdown?.steps ?? [] : preview.steps
     }
 
+    /// What the athlete did with a routine can be said from the session's day on, where the
+    /// plan can be written.
+    private var routineStatusRecorder: ((V1RoutinePart, V1RoutineStatus?) -> Void)? {
+        guard let editing,
+              let day = preview.date,
+              Calendar.current.startOfDay(for: day) <= Calendar.current.startOfDay(for: .now)
+        else { return nil }
+        return { part, status in editing.editor.markRoutine(part, of: editing.session, as: status) }
+    }
+
     private var stepsAreDerived: Bool {
         preview.steps.isEmpty ? loadedBreakdown?.derived ?? false : preview.stepsAreDerived
     }
@@ -302,7 +312,8 @@ struct PlannedSessionDrawer: View {
                     steps: steps,
                     stepsAreDerived: stepsAreDerived,
                     isLoadingBreakdown: isLoadingBreakdown,
-                    routines: preview.routines ?? loadedBreakdown?.routines
+                    routines: preview.routines ?? loadedBreakdown?.routines,
+                    onRoutineStatus: routineStatusRecorder
                 ) {
                     // Without an id the coach cannot be told *which* session, and a tag
                     // naming the wrong one is worse than no tag.

@@ -207,8 +207,42 @@ nonisolated struct V1SessionRoutine: Codable, Sendable, Hashable {
     let minutes: Int
     /// `coach` when written for this very session, `library` otherwise.
     let source: String
+    /// True for the stretches (SHARPIT ADR-115). Absent on payloads written before it.
+    var optional: Bool? = nil
+    /// What the athlete said they did with it, as the server stores it; nil until said.
+    var status: String? = nil
 
     var isCustom: Bool { source == "coach" }
+    var isOptional: Bool { optional ?? false }
+    /// An unknown word from a newer server reads as unsaid rather than failing the decode.
+    var routineStatus: V1RoutineStatus? { status.flatMap(V1RoutineStatus.init(rawValue:)) }
+}
+
+/// Which routine of a session: the warm-up before, or the stretches after.
+nonisolated enum V1RoutinePart: Sendable {
+    case warmup, cooldown
+
+    /// The planned session's field that stores what the athlete said of it.
+    var statusField: String {
+        switch self {
+        case .warmup: "warmupStatus"
+        case .cooldown: "cooldownStatus"
+        }
+    }
+}
+
+nonisolated enum V1RoutineStatus: String, CaseIterable, Sendable {
+    case done = "DONE"
+    case shortened = "SHORTENED"
+    case skipped = "SKIPPED"
+
+    var label: String {
+        switch self {
+        case .done: String(localized: "Fait")
+        case .shortened: String(localized: "Raccourci")
+        case .skipped: String(localized: "Sauté")
+        }
+    }
 }
 
 nonisolated struct V1RoutineMove: Codable, Sendable, Hashable {

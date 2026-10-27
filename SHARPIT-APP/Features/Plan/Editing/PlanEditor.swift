@@ -64,6 +64,17 @@ final class PlanEditor {
         return save(draft, from: original, of: session)
     }
 
+    /// Records what the athlete did with a routine. The panel shows the pick itself; the
+    /// plan read again brings it back in the breakdown.
+    func markRoutine(_ part: V1RoutinePart, of session: V1PlannedSessionItem, as status: V1RoutineStatus?) {
+        var patch = PlannedSessionFields()
+        patch.setRoutineStatus(status, for: part)
+        let fields = patch
+        write(failure: Self.saveFailure) { mutator, token in
+            _ = try await mutator.updateSession(id: session.id, fields: fields, token: token)
+        }
+    }
+
     func delete(_ session: V1PlannedSessionItem) {
         plan.showRemoved(sessionId: session.id)
         write(failure: Self.deleteFailure) { mutator, token in
