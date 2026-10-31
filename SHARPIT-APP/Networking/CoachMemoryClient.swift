@@ -4,6 +4,7 @@ protocol CoachMemoryServing: Sendable {
     func snapshot(token: String) async throws -> CoachMemorySnapshot
     func saveProfileContext(_ context: String, token: String) async throws
     func createEntry(_ input: CreateCoachMemoryInput, token: String) async throws -> CoachMemoryEntry
+    func updateEntry(id: String, _ input: CreateCoachMemoryInput, token: String) async throws -> CoachMemoryEntry
     func deleteEntry(id: String, token: String) async throws
 }
 
@@ -35,7 +36,7 @@ actor CoachMemoryClient: CoachMemoryServing {
         var request = makeRequest(path: "/api/v1/coach-memory", method: "POST", token: token)
         request.httpBody = try JSONEncoder().encode(input)
         let (data, response) = try await session.data(for: request)
-        try validate(response: response)
+        try validate(response: response, data: data)
 
         let decoder = JSONDecoder()
         if let direct = try? decoder.decode(CoachMemoryEntry.self, from: data) {
@@ -74,6 +75,18 @@ actor CoachMemoryClient: CoachMemoryServing {
         )
     }
 
+    func updateEntry(id: String, _ input: CreateCoachMemoryInput, token: String) async throws -> CoachMemoryEntry {
+        var request = makeRequest(path: "/api/v1/coach-memory/\(id)", method: "PATCH", token: token)
+        request.httpBody = try JSONEncoder().encode(input)
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data)
+
+        struct EntryContainer: Decodable {
+            let entry: CoachMemoryEntry
+        }
+        return try JSONDecoder().decode(EntryContainer.self, from: data).entry
+    }
+
     func deleteEntry(id: String, token: String) async throws {
         let request = makeRequest(path: "/api/v1/coach-memory/\(id)", method: "DELETE", token: token)
         let (_, response) = try await session.data(for: request)
@@ -89,9 +102,18 @@ actor CoachMemoryClient: CoachMemoryServing {
         return request
     }
 
-    private func validate(response: URLResponse) throws {
+    private func validate(response: URLResponse, data: Data = Data()) throws {
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
+        if status == 429 { throw SharpitAPIError.rateLimited }
+        // A refusal says why, and retrying would only get the same answer.
+        if (400...499).contains(status) {
+            struct Refusal: Decodable { let error: String }
+            if let refusal = try? JSONDecoder().decode(Refusal.self, from: data) {
+                throw SharpitAPIError.message(refusal.error)
+            }
+            throw SharpitAPIError.badRequest
+        }
         guard (200...299).contains(status) else {
             throw SharpitAPIError.server
         }

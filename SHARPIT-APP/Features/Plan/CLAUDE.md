@@ -55,7 +55,11 @@ fixed week in Debug builds.
 **Trips in the week.** The coach's trips (Mémoire du coach, `/api/v1/coach-memory`, type `TRAVEL`) that fall in the week
 shown carry a chip after the week's dates (`PlanTravelChip`, the web's `TravelContextBanner`: the
 first trip's name, « +1 » for more); `PlanTravel` compares calendar days — a trip's days are UTC
-midnights on the server, the week's are local — and the chip opens the coach's memory as a sheet.
+midnights on the server, the week's are local — and the chip opens `PlanTripsView` as a sheet. Plan's « … » →
+« Déplacements » opens the same list (trips and constraints, under way then ahead); injuries, preferences and notes
+stay in the coach's memory. `CoachMemoryEntryForm` is pushed inside either list. `TripTraining` holds the choice:
+the server derives the constraint from the sports as soon as any are sent (`resolveTrainingFields`), so « Allégé »
+carries no sports, and the sentence under the choice says what will really happen.
 
 **Editing the plan by hand.** Plan's « + » opens « Nouvelle séance » (`PlannedSessionCreateSheet`);
 a session's drawer carries « … » (`SessionActionsMenu`: Envoyer sur ma montre when it is not docked, Lier à une séance

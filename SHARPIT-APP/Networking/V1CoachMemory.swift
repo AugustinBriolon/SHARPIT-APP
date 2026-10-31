@@ -19,6 +19,27 @@ nonisolated enum CoachMemoryType: String, Codable, CaseIterable, Identifiable, S
         }
     }
 
+    /// In a choice of kinds, where « Déplacement / voyage » would not fit.
+    var shortLabel: String {
+        switch self {
+        case .travel: String(localized: "Déplacement")
+        case .constraint: String(localized: "Contrainte")
+        case .injury: String(localized: "Blessure")
+        case .preference: String(localized: "Préférence")
+        case .note: String(localized: "Note")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .travel: "airplane"
+        case .constraint: "calendar.badge.exclamationmark"
+        case .injury: "bandage"
+        case .preference: "slider.horizontal.3"
+        case .note: "note.text"
+        }
+    }
+
     /// PREFERENCE / NOTE stay until archived (open-ended end date on the server).
     var isOpenEnded: Bool {
         switch self {
@@ -55,7 +76,7 @@ nonisolated enum TravelTrainingConstraint: String, Codable, CaseIterable, Identi
     }
 }
 
-nonisolated struct CoachMemoryEntry: Identifiable, Codable, Sendable, Equatable {
+nonisolated struct CoachMemoryEntry: Identifiable, Codable, Sendable, Hashable {
     let id: String
     var type: CoachMemoryType
     var label: String?
@@ -139,6 +160,8 @@ nonisolated struct CoachMemoryEntry: Identifiable, Codable, Sendable, Equatable 
         }
         let fmt = DateFormatter()
         fmt.locale = AppLanguage.locale
+        // The server keeps a day as a UTC midnight: read in local time, it is yesterday west of Greenwich.
+        fmt.timeZone = TimeZone(identifier: "UTC")
         fmt.dateFormat = "d MMM"
         let startStr = fmt.string(from: startDate)
         let endStr = fmt.string(from: endDate)
@@ -184,6 +207,16 @@ nonisolated struct CreateCoachMemoryInput: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case type, label, locationLabel, startDate, endDate, note, trainingConstraint, allowedDisciplines
+    }
+
+    /// Whether a stored entry is this one: same kind, same name, same first day.
+    func describes(_ entry: CoachMemoryEntry) -> Bool {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+        return entry.type == type
+            && entry.label == label
+            && entry.locationLabel == locationLabel
+            && utc.isDate(entry.startDate, inSameDayAs: startDate)
     }
 
     func encode(to encoder: Encoder) throws {

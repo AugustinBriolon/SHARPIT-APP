@@ -109,6 +109,7 @@ struct PlanView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     PlanActionsMenu(
                         onOpenGoals: { router.isShowingGoals = true },
+                        onOpenTrips: { showingTravel = true },
                         onOpenMacroPlan: { showingMacroPlan = true },
                         onOpenGenerator: { router.isShowingPlanGenerator = true },
                         onOpenWeeklyReview: { router.isShowingWeeklyReview = true },
@@ -152,7 +153,7 @@ struct PlanView: View {
             }
             .sheet(isPresented: $showingTravel, onDismiss: { Task { await loadTravels() } }) {
                 NavigationStack {
-                    CoachMemoryView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
+                    PlanTripsView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("OK") { showingTravel = false }
@@ -421,6 +422,7 @@ extension PlanView {
 /// and direct bridge to discussion with the Coach.
 private struct PlanActionsMenu: View {
     let onOpenGoals: () -> Void
+    let onOpenTrips: () -> Void
     let onOpenMacroPlan: () -> Void
     let onOpenGenerator: () -> Void
     let onOpenWeeklyReview: () -> Void
@@ -430,6 +432,9 @@ private struct PlanActionsMenu: View {
         Menu {
             Button(action: onOpenGoals) {
                 Label("Objectifs", systemImage: "flag.fill")
+            }
+            Button(action: onOpenTrips) {
+                Label("Déplacements", systemImage: CoachMemoryType.travel.symbol)
             }
             Divider()
             Button(action: onOpenMacroPlan) {

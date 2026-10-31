@@ -25,6 +25,22 @@ nonisolated enum PlanTravel {
             .sorted { $0.startDate < $1.startDate }
     }
 
+    /// The trips and constraints, split on today: those under way, then those ahead, each the
+    /// earliest first. Injuries, preferences and notes belong to the coach's memory.
+    static func schedule(
+        _ entries: [CoachMemoryEntry],
+        today: Date = Date(),
+        calendar: Calendar = .current
+    ) -> (current: [CoachMemoryEntry], upcoming: [CoachMemoryEntry], isEmpty: Bool) {
+        let day = dayKey(today, in: calendar)
+        let dated = entries
+            .filter { $0.type == .travel || $0.type == .constraint }
+            .sorted { $0.startDate < $1.startDate }
+        let current = dated.filter { dayKey($0.startDate, in: utc) <= day }
+        let upcoming = dated.filter { dayKey($0.startDate, in: utc) > day }
+        return (current, upcoming, dated.isEmpty)
+    }
+
     /// The chip's words: the first trip's name, and how many more share the week (« Lisbonne +1 »).
     static func chipTitle(_ trips: [CoachMemoryEntry]) -> String? {
         guard let first = trips.first else { return nil }
@@ -52,7 +68,7 @@ nonisolated enum PlanTravel {
 }
 
 /// The week's trips, beside its dates: the first trip's name in a faint primary capsule — the
-/// inline tag's family, raised to a control. It opens the coach's memory, where trips live.
+/// inline tag's family, raised to a control. It opens the list of trips, where they live.
 struct PlanTravelChip: View {
     let trips: [CoachMemoryEntry]
     let onOpen: () -> Void
@@ -76,7 +92,7 @@ struct PlanTravelChip: View {
             .buttonStyle(.sharpitPressable)
             .frame(maxWidth: 180, alignment: .trailing)
             .accessibilityLabel(PlanTravel.accessibilityLabel(trips))
-            .accessibilityHint("Ouvre la mémoire du coach")
+            .accessibilityHint("Ouvre tes déplacements")
         }
     }
 }

@@ -79,13 +79,46 @@ final class CoachMemoryStore {
             await self.load()
             return true
         } catch {
+            let reason = Self.reason(for: error, fallback: String(localized: "Impossible d'ajouter cette entrée. Réessaie dans un instant."))
             await self.load()
-            if let first = snapshot.entries.first, first.type == input.type {
+            // The answer may have been lost after the server wrote it; only the same entry proves it.
+            if !isRefusal(error), snapshot.entries.contains(where: { input.describes($0) }) {
                 return true
             }
-            errorMessage = String(localized: "Impossible d'ajouter la contrainte")
+            errorMessage = reason
             return false
         }
+    }
+
+    @discardableResult
+    func updateEntry(id: String, _ input: CreateCoachMemoryInput) async -> Bool {
+        do {
+            let updated = try await SharpitRetry.run {
+                try await client.updateEntry(id: id, input, token: try await tokenProvider())
+            }
+            var current = snapshot
+            if let index = current.entries.firstIndex(where: { $0.id == id }) {
+                current.entries[index] = updated
+            }
+            self.snapshot = current
+            await self.load()
+            return true
+        } catch {
+            let reason = Self.reason(for: error, fallback: String(localized: "Modification impossible. Réessaie dans un instant."))
+            await self.load()
+            errorMessage = reason
+            return false
+        }
+    }
+
+    private func isRefusal(_ error: any Error) -> Bool {
+        if case SharpitAPIError.message = error { return true }
+        return false
+    }
+
+    private static func reason(for error: any Error, fallback: String) -> String {
+        if case SharpitAPIError.message(let reason) = error { return reason }
+        return fallback
     }
 
     func deleteEntry(id: String) async {
