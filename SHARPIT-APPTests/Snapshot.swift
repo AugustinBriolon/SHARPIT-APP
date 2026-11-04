@@ -59,10 +59,17 @@ private func render<V: View>(_ view: V, width: CGFloat, style: UIUserInterfaceSt
     window.rootViewController = host
     window.isHidden = false
     defer { window.isHidden = true }
-    // A beat for `onAppear` and the first layout pass, then measured again: content built on
-    // appearing (a card's curves) grows the view after the first measure.
+    // Content built on appearing (a card's curves) grows the view after the first measure, and
+    // under a loaded test run that can take longer than a fixed beat: measure until two readings
+    // in a row agree, so the picture is the settled layout.
     try await Task.sleep(for: .milliseconds(400))
-    let size = host.sizeThatFits(in: CGSize(width: width, height: 4_000))
+    var size = host.sizeThatFits(in: CGSize(width: width, height: 4_000))
+    for _ in 0..<30 {
+        try await Task.sleep(for: .milliseconds(100))
+        let next = host.sizeThatFits(in: CGSize(width: width, height: 4_000))
+        if next == size { break }
+        size = next
+    }
     window.frame = CGRect(origin: .zero, size: size)
     window.layoutIfNeeded()
     try await Task.sleep(for: .milliseconds(200))
