@@ -16,7 +16,28 @@ struct PlanCatchUp: Equatable, Sendable {
             + String(localized: "Réorganise la suite de ma semaine sans surcharge, en gardant les séances clés.")
     }
 
-    static func offer(for entry: PlanEntry, now: Date = .now, calendar: Calendar = .current) -> PlanCatchUp? {
+    /// One miss, once: the session stays missed in the past after the week is reshuffled.
+    var id: String { "\(label)|\(Int(date.timeIntervalSince1970))" }
+
+    private static let settledKey = "planCatchUpSettled"
+
+    func markSettled(in defaults: UserDefaults = .standard) {
+        var settled = defaults.stringArray(forKey: Self.settledKey) ?? []
+        guard !settled.contains(id) else { return }
+        settled.append(id)
+        defaults.set(Array(settled.suffix(50)), forKey: Self.settledKey)
+    }
+
+    private func isSettled(in defaults: UserDefaults) -> Bool {
+        defaults.stringArray(forKey: Self.settledKey)?.contains(id) ?? false
+    }
+
+    static func offer(
+        for entry: PlanEntry,
+        now: Date = .now,
+        calendar: Calendar = .current,
+        defaults: UserDefaults = .standard
+    ) -> PlanCatchUp? {
         let missed: PlanCatchUp? = switch entry {
         case .missed(let session):
             PlanCatchUp(label: session.title ?? session.displayType, date: session.date)
@@ -25,7 +46,7 @@ struct PlanCatchUp: Equatable, Sendable {
         default:
             nil
         }
-        guard let missed else { return nil }
+        guard let missed, !missed.isSettled(in: defaults) else { return nil }
         let age = calendar.dateComponents(
             [.day],
             from: calendar.startOfDay(for: missed.date),

@@ -27,6 +27,7 @@ struct PlanView: View {
     /// Owned here, not by the sheet: closing it mid-generation keeps the week coming.
     @State private var generation: PlanGenerationStore
     @State private var showingAdapter = false
+    @State private var activeCatchUp: PlanCatchUp?
     /// Plan's, not the sheet's: closing it mid-analysis keeps the proposal coming.
     @State private var adjustment: PlanAdjustmentStore
     /// Plan's, not the sheet's: reopening Objectifs shows the goals at once.
@@ -209,6 +210,8 @@ struct PlanView: View {
             .environment(\.planCatchUp, PlanCatchUpAction(run: startCatchUp))
             .sheet(isPresented: $showingAdapter) {
                 PlanAdapterSheet(store: adjustment) {
+                    activeCatchUp?.markSettled()
+                    activeCatchUp = nil
                     // Plan reloads on the revision, and Résumé and the session reminders follow.
                     router.noteCalendarChanged()
                 }
@@ -269,6 +272,7 @@ extension PlanView {
     /// « Rattraper ma semaine »: the adapter opens with the miss said and starts at once.
     fileprivate func startCatchUp(_ catchUp: PlanCatchUp) {
         adjustment.reset()
+        activeCatchUp = catchUp
         adjustment.focus = catchUp.focus()
         showingAdapter = true
         Task { await adjustment.start() }
@@ -698,7 +702,7 @@ private struct PlanSportChain: View {
             ForEach(Array(symbolNames.enumerated()), id: \.offset) { index, symbol in
                 if index > 0 {
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
                 Image(systemName: symbol)

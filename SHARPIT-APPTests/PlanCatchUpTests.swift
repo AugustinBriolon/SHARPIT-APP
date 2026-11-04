@@ -37,3 +37,12 @@ private func missed(_ title: String?, daysAgo days: Int) -> PlanEntry {
     let offer = try #require(PlanCatchUp.offer(for: missed(nil, daysAgo: 3), now: now, calendar: calendar))
     #expect(!offer.label.isEmpty)
 }
+
+@MainActor @Test func aSettledMissNoLongerOffersToCatchUp() throws {
+    let defaults = try #require(UserDefaults(suiteName: "PlanCatchUpTests"))
+    defaults.removePersistentDomain(forName: "PlanCatchUpTests")
+    let entry = missed("Seuil", daysAgo: 2)
+    let offer = try #require(PlanCatchUp.offer(for: entry, now: now, calendar: calendar, defaults: defaults))
+    offer.markSettled(in: defaults)
+    #expect(PlanCatchUp.offer(for: entry, now: now, calendar: calendar, defaults: defaults) == nil)
+}
