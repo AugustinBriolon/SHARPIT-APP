@@ -42,7 +42,7 @@ struct SharpitChartBubble: View {
 
     var body: some View {
         Text(text)
-            .font(SharpitTypography.system(size: 15, weight: .bold, relativeTo: .subheadline, digits: true))
+            .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
             .foregroundStyle(SharpitColor.inkSurfaceForeground)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)

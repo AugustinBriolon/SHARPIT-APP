@@ -131,7 +131,7 @@ struct SharpitDashedAddButton: View {
         Button(action: action) {
             Label(title, systemImage: "plus")
                 .labelStyle(.titleAndIcon)
-                .font(SharpitTypography.system(size: 16, weight: .medium, relativeTo: .body))
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight)
                 .overlay(
@@ -172,7 +172,7 @@ struct SharpitSportBadge: View {
 
     var body: some View {
         Image(sharpitSymbol: type.symbolName)
-            .font(.system(size: size * 0.42, weight: .bold))
+            .font(.system(size: size * 0.42, weight: .semibold))
             .foregroundStyle(SharpitSportTone.tileGlyph(for: type))
             .frame(width: size, height: size)
             .sharpitConcentricBackground(SharpitSportTone.tile(for: type), minimum: SharpitRadius.tile * size / SharpitTokens.tileSize)

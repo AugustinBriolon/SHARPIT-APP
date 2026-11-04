@@ -88,7 +88,7 @@ private struct NutritionDayGlance: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(calories?.goal.map { String(localized: "sur \(NutritionReadout.kcal($0)) kcal") } ?? "kcal")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.system(size: 11, weight: .regular, design: .rounded))
                 .foregroundStyle(SharpitColor.mutedForeground)
             if let calories, calories.goal != nil {
                 NutritionGoalBar(

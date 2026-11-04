@@ -148,7 +148,7 @@ struct CompliancePendingTile: View {
                     .tint(SharpitColor.mutedForeground)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Calcul en cours…")
-                        .font(.subheadline.weight(.medium))
+                        .font(.subheadline.weight(.regular))
                         .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(1)
                     Text("Séance planifiée")

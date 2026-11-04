@@ -266,7 +266,7 @@ private struct MacroPlanHero: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                 Image(systemName: "calendar.badge.clock")
-                    .font(.system(size: 19, weight: .bold))
+                    .font(.system(size: 19, weight: .semibold))
                     .foregroundStyle(SharpitColor.highlightForeground)
                     .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
                     .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
@@ -355,7 +355,7 @@ private struct MacroPhaseRailView: View {
                         .fill(run.isCurrent ? SharpitColor.highlight : SharpitColor.track)
                         .frame(height: 6)
                     Text(run.phase.shortLabel)
-                        .font(SharpitTypography.system(size: 12, weight: run.isCurrent ? .bold : .medium, relativeTo: .caption))
+                        .font(SharpitTypography.system(size: 12, weight: run.isCurrent ? .semibold : .regular, relativeTo: .caption))
                         .foregroundStyle(run.isCurrent ? SharpitColor.foreground : SharpitColor.mutedForeground)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)

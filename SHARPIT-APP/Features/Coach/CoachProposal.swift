@@ -407,7 +407,7 @@ struct CoachProposalCard: View {
                 HStack(alignment: .top, spacing: SharpitSpacing.sm) {
                     VStack(spacing: 0) {
                         Text("\(index + 1)")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
                             .foregroundStyle(tone)
                             .frame(width: 18, height: 18)
                             .background(tone.opacity(0.12), in: Circle())

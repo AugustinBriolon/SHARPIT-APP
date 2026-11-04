@@ -180,7 +180,7 @@ private struct ActivityFormContent: View {
         } label: {
             HStack(spacing: SharpitSpacing.xs) {
                 Image(sharpitSymbol: draft.sport.symbolName)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(SharpitColor.highlightForeground)
                     .frame(width: 40, height: 40)
                     .background(SharpitColor.highlight, in: Circle())
@@ -189,7 +189,7 @@ private struct ActivityFormContent: View {
                     .font(SharpitTypography.cardTitle)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.6))
                 Spacer(minLength: 0)
             }

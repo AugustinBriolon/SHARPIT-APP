@@ -247,7 +247,7 @@ private struct WeeklyReviewHero: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: "calendar")
-                    .font(.system(size: 19, weight: .bold))
+                    .font(.system(size: 19, weight: .semibold))
                     .foregroundStyle(SharpitColor.highlightForeground)
                     .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
                     .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
@@ -269,14 +269,14 @@ private struct WeeklyReviewHero: View {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(alignment: .firstTextBaseline, spacing: 3) {
                                 Text(figure.value)
-                                    .font(SharpitTypography.system(size: 28, weight: .heavy, relativeTo: .title, digits: true))
+                                    .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title, digits: true))
                                     .tracking(-0.6)
                                     .foregroundStyle(ink)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
                                 if let unit = figure.unit {
                                     Text(unit)
-                                        .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline))
+                                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                                         .foregroundStyle(ink.opacity(0.6))
                                 }
                             }
@@ -389,13 +389,13 @@ private struct ReviewHighlightRow: View {
         switch highlight.kind {
         case .win:
             Image(systemName: "checkmark")
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(SharpitColor.highlightForeground)
                 .frame(width: 26, height: 26)
                 .sharpitConcentricBackground(SharpitColor.highlight, minimum: 8)
         case .watch:
             Image(systemName: "exclamationmark")
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 26, height: 26)
                 .sharpitConcentricBackground(SharpitColor.signalCaution, minimum: 8)
@@ -527,7 +527,7 @@ private struct ReviewDayBars: View {
             AxisMarks { value in
                 AxisValueLabel {
                     if let day = value.as(String.self) {
-                        Text(day.prefix(1)).font(.system(size: 10, weight: .medium))
+                        Text(day.prefix(1)).font(.system(size: 10, weight: .regular))
                     }
                 }
             }

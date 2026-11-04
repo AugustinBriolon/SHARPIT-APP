@@ -198,7 +198,7 @@ private struct RecordRow: View {
             SharpitNumberChip(number: entry.rank)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.displayValue)
-                    .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
                 Text(RecordsReadout.meta(entry))
                     .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
@@ -261,7 +261,7 @@ private struct RunBestsCard: View {
             Spacer(minLength: SharpitSpacing.xs)
             VStack(alignment: .trailing, spacing: 2) {
                 Text(entry.displayValue)
-                    .font(SharpitTypography.system(size: 20, weight: .bold, relativeTo: .title3, digits: true))
+                    .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
                 Text(RecordsReadout.meta(entry))
                     .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))

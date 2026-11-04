@@ -284,7 +284,7 @@ private struct TripSportGrid: View {
         } else {
             let side = SharpitTokens.tileSize
             Image(systemName: sport.symbol)
-                .font(.system(size: side * 0.42, weight: .bold))
+                .font(.system(size: side * 0.42, weight: .semibold))
                 .foregroundStyle(SharpitColor.mutedForeground)
                 .frame(width: side, height: side)
                 .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitRadius.tile, style: .continuous))

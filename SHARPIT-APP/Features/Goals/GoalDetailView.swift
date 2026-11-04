@@ -250,7 +250,7 @@ struct GoalDetailView: View {
 
     private func deltaPill(_ delta: RaceDelta) -> some View {
         Text(delta.label)
-            .font(.system(size: 12, weight: .bold))
+            .font(.system(size: 12, weight: .semibold))
             .monospacedDigit()
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
@@ -318,7 +318,7 @@ struct GoalDetailView: View {
 
                 HStack(spacing: 4) {
                     Text(String(format: "%+.1f%@", diff, unitStr))
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 12, weight: .semibold))
                 }
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)

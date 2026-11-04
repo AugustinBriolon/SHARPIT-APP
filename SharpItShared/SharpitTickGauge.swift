@@ -110,7 +110,7 @@ struct SharpitTickGauge: View, Animatable {
                 for (label, x) in [("0", 0.22), ("100", 0.78)] {
                     context.draw(
                         Text(label)
-                            .font(.system(size: 12 * max(scale, 0.8), weight: .medium).monospacedDigit())
+                            .font(.system(size: 12 * max(scale, 0.8), weight: .regular).monospacedDigit())
                             .foregroundStyle(SharpitColor.mutedForeground),
                         at: CGPoint(x: size.width * x, y: SharpitTickGaugeGeometry.scaleLabelY * scale)
                     )

@@ -31,12 +31,12 @@ extension ClerkTheme {
                 border: SharpitColor.border
             ),
             fonts: .init(
-                title: SharpitTypography.system(size: 24, weight: .bold, relativeTo: .title),
+                title: SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title),
                 title2: SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title2),
                 headline: SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline),
-                subheadline: SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline),
+                subheadline: SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline),
                 body: SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body),
-                callout: SharpitTypography.system(size: 15, weight: .medium, relativeTo: .callout),
+                callout: SharpitTypography.system(size: 15, weight: .regular, relativeTo: .callout),
                 footnote: SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote),
                 caption: SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption)
             ),

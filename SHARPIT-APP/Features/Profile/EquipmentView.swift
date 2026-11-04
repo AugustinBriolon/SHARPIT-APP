@@ -105,7 +105,7 @@ struct SportChoiceTile: View {
                 HStack(alignment: .top) {
                     item.image
                         .symbolVariant(isSelected ? .fill : .none)
-                        .font(.system(size: 30, weight: .medium))
+                        .font(.system(size: 30, weight: .regular))
                         .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
                         .frame(height: 36, alignment: .leading)
                     Spacer(minLength: 0)
@@ -226,7 +226,7 @@ struct EquipmentChoiceRow: View {
             HStack(spacing: SharpitSpacing.sm) {
                 if item.sport != .strength && !item.symbolName.isEmpty {
                     Image(systemName: item.symbolName)
-                        .font(.system(size: 17, weight: .medium))
+                        .font(.system(size: 17, weight: .regular))
                         .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
                         .frame(width: 32)
                 }
@@ -417,7 +417,7 @@ struct SportRowLabel: View {
             }
         } icon: {
             item.image
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(SharpitColor.inkAccent)
                 .frame(width: 32, height: 32)
                 .sharpitConcentricBackground(SharpitColor.inkSurface, minimum: SharpitRadius.tile * 32 / SharpitTokens.tileSize)

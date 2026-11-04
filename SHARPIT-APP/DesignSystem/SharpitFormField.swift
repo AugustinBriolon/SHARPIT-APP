@@ -377,7 +377,7 @@ struct SharpitStepButton: View {
             SharpitHaptics.play(.notch(major: false))
         } label: {
             Image(systemName: symbol)
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(SharpitColor.inkSurfaceForeground)
                 .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
                 .background(SharpitColor.inkSurfaceForeground.opacity(0.12), in: Circle())

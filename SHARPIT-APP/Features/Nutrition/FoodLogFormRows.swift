@@ -77,7 +77,7 @@ struct FoodGramsRows: View {
                             text = FoodPortion.editableFigure(preset.grams)
                         } label: {
                             Text(preset.label)
-                                .font(SharpitTypography.meta.weight(.medium))
+                                .font(SharpitTypography.meta.weight(.regular))
                                 .foregroundStyle(isSelected(preset) ? SharpitColor.primaryForeground : SharpitColor.foreground)
                                 .padding(.horizontal, SharpitSpacing.sm)
                                 .frame(minHeight: 32)

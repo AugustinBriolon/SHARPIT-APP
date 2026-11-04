@@ -43,7 +43,7 @@ struct SharpitProgressBar: View {
                     Spacer(minLength: SharpitSpacing.xs)
                     if let value {
                         Text(value)
-                            .font(SharpitTypography.system(size: 16, weight: .bold, relativeTo: .body, digits: true))
+                            .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body, digits: true))
                             .foregroundStyle(SharpitColor.foreground)
                     }
                 }
@@ -122,9 +122,9 @@ struct SharpitGoalTrack: View {
     private var bubble: some View {
         HStack(spacing: 4) {
             Text(nowLabel).foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
-            Text(nowValue).fontWeight(.bold).foregroundStyle(SharpitColor.inkSurfaceForeground)
+            Text(nowValue).fontWeight(.semibold).foregroundStyle(SharpitColor.inkSurfaceForeground)
         }
-        .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline, digits: true))
+        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
         .sharpitConcentricBackground(SharpitColor.inkSurface, minimum: 12)
@@ -133,7 +133,7 @@ struct SharpitGoalTrack: View {
     private func end(value: String, label: String, alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: 4) {
             Text(value)
-                .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .headline, digits: true))
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
             Text(label)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))

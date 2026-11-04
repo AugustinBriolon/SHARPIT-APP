@@ -498,7 +498,7 @@ private struct SignInAwardWinning: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("SOMMEIL")
-                    .font(SharpitTypography.system(size: 9, weight: .medium, digits: true))
+                    .font(SharpitTypography.system(size: 9, weight: .regular, digits: true))
                     .tracking(0.8)
                     .foregroundStyle(SharpitColor.mutedForeground)
 
@@ -528,13 +528,13 @@ private struct SignInAwardWinning: View {
                     .fill(SharpitColor.highlight.opacity(0.25))
                     .frame(width: 32, height: 32)
                 Image(systemName: "waveform.path.ecg")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(SharpitColor.primary)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("RÉCUPÉRATION")
-                    .font(SharpitTypography.system(size: 9, weight: .medium, digits: true))
+                    .font(SharpitTypography.system(size: 9, weight: .regular, digits: true))
                     .tracking(0.8)
                     .foregroundStyle(SharpitColor.mutedForeground)
 
@@ -568,13 +568,13 @@ private struct SignInAwardWinning: View {
         VStack(spacing: 12) {
             // Main App Wordmark
             Text("SharpIt")
-                .font(SharpitTypography.system(size: 36, weight: .bold, relativeTo: .largeTitle))
+                .font(SharpitTypography.system(size: 36, weight: .semibold, relativeTo: .largeTitle))
                 .tracking(-1.0)
                 .foregroundStyle(SharpitColor.foreground)
 
             // Punchy Tagline
             Text("L'intelligence de ton entraînement.")
-                .font(SharpitTypography.system(size: 16, weight: .medium, relativeTo: .headline))
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .headline))
                 .foregroundStyle(SharpitColor.mutedForeground)
 
             // Value Pillar Badges

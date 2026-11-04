@@ -244,7 +244,7 @@ struct SharpitToastView: View {
                     ProgressView().controlSize(.mini)
                 } else {
                     Image(systemName: toast.symbol)
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(toast.accentColor ?? toast.tone.symbolColor)
                 }
             }

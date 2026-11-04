@@ -732,7 +732,7 @@ struct GuidedStrengthWorkoutView: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
                 Spacer()
                 Text("RPE \(rpe.map(String.init) ?? "—")")
-                    .font(SharpitTypography.system(size: 16, weight: .bold, relativeTo: .body, digits: true))
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
                     .contentTransition(.numericText())
             }

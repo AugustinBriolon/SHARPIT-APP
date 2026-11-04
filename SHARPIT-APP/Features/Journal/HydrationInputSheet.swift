@@ -33,7 +33,7 @@ struct HydrationInputSheet: View {
                     VStack(spacing: SharpitSpacing.xxs) {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Text(formatMl(currentMl))
-                                .font(.system(size: 40, weight: .bold, design: .rounded))
+                                .font(.system(size: 40, weight: .semibold, design: .rounded))
                                 .foregroundStyle(SharpitColor.primary)
                                 .contentTransition(.numericText())
                                 .animation(SharpitMotion.selection, value: currentMl)

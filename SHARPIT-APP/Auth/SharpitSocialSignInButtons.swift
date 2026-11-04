@@ -65,7 +65,7 @@ struct SharpitGoogleSignInButton: View {
                     .frame(width: 17, height: 17)
                     .accessibilityHidden(true)
                 Text("Continuer avec Google")
-                    .font(.system(size: 19, weight: .medium))
+                    .font(.system(size: 19, weight: .regular))
                     .foregroundStyle(title)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)

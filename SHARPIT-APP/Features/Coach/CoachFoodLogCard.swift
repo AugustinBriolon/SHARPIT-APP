@@ -331,7 +331,7 @@ struct CoachFoodLogCard: View {
                                 line.wrappedValue.gramsText = FoodPortion.editableFigure(preset.grams)
                             } label: {
                                 Text(preset.label)
-                                    .font(SharpitTypography.meta.weight(.medium))
+                                    .font(SharpitTypography.meta.weight(.regular))
                                     .foregroundStyle(
                                         isPresetSelected(preset, text: line.wrappedValue.gramsText)
                                             ? SharpitColor.primaryForeground

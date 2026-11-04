@@ -61,7 +61,7 @@ private struct SendMark: View {
     var body: some View {
         if renderingMode == .fullColor {
             Image(systemName: "arrow.up")
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(SharpitColor.highlightForeground)
                 .frame(width: 22, height: 22)
                 .background(SharpitColor.inkAccent, in: Circle())

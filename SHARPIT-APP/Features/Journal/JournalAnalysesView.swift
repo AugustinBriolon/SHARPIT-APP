@@ -156,7 +156,7 @@ private struct JournalAnalysesPlate: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: "lightbulb")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(SharpitColor.highlightForeground)
                     .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
                     .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
@@ -174,7 +174,7 @@ private struct JournalAnalysesPlate: View {
             }
 
             Text(sentence)
-                .font(SharpitTypography.system(size: 22, weight: .bold, relativeTo: .title2))
+                .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
                 .tracking(-0.3)
                 .foregroundStyle(ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -258,7 +258,7 @@ private struct JournalAnalysesRowView: View {
 
             HStack(alignment: .firstTextBaseline) {
                 Text(row.mediansLabel)
-                    .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline, digits: true))
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(1)
                     .fixedSize()

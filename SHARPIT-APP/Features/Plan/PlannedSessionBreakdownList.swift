@@ -96,7 +96,7 @@ private struct RailRow<Content: View>: View {
     private var mark: some View {
         if isRepeat {
             Image(systemName: "repeat")
-                .font(.system(size: 7, weight: .bold))
+                .font(.system(size: 7, weight: .semibold))
                 .foregroundStyle(SharpitColor.primaryForeground)
                 .frame(width: 13, height: 13)
                 .background(SharpitColor.primary, in: Circle())

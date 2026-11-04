@@ -151,7 +151,7 @@ struct SleepTargetsSheet: View {
     private func stepButton(_ symbol: String, label: String, delta: Int) -> some View {
         Button { step(delta) } label: {
             Image(systemName: symbol)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(SharpitColor.foreground)
                 .frame(width: 52, height: 52)
                 .background(SharpitColor.chipSurface, in: Circle())

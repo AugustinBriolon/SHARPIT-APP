@@ -65,7 +65,7 @@ struct ConsistencyStrip: View {
 
                 if consistency.thisWeekSessionCount > 0 {
                     Text("\(consistency.thisWeekSessionCount)")
-                        .font(SharpitTypography.system(size: 15, weight: .bold, relativeTo: .subheadline, digits: true))
+                        .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
 
                     let noun = consistency.thisWeekSessionCount == 1 ? String(localized: "séance") : String(localized: "séances")
@@ -141,7 +141,7 @@ private struct ConsistencyDayMark: View {
     var body: some View {
         VStack(spacing: 6) {
             Text(day.weekdayLabel)
-                .font(SharpitTypography.system(size: 12, weight: day.isToday ? .bold : .medium, relativeTo: .caption))
+                .font(SharpitTypography.system(size: 12, weight: day.isToday ? .semibold : .regular, relativeTo: .caption))
                 .foregroundStyle(weekdayColor)
 
             dayCircle
@@ -177,7 +177,7 @@ private struct ConsistencyDayMark: View {
 
             Text("\(day.dayOfMonth)")
                 .font(SharpitTypography.instrument)
-                .fontWeight(day.hasActivity || day.isToday ? .bold : .medium)
+                .fontWeight(day.hasActivity || day.isToday ? .semibold : .regular)
                 .foregroundStyle(numberColor)
         }
         .frame(width: 32, height: 32)

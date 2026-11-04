@@ -66,7 +66,7 @@ struct DesignGalleryHost: View {
                 SharpitTickGauge(score: 86, showsScale: true)
                 VStack(spacing: SharpitSpacing.xxs) {
                     Text("86")
-                        .font(SharpitTypography.system(size: 64, weight: .heavy, relativeTo: .largeTitle, digits: true))
+                        .font(SharpitTypography.system(size: 64, weight: .semibold, relativeTo: .largeTitle, digits: true))
                         .tracking(-2)
                     Text("sur 100")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
@@ -90,12 +90,12 @@ struct DesignGalleryHost: View {
     private func breakdown(_ label: String, _ value: Int) -> some View {
         HStack(spacing: SharpitSpacing.md) {
             Text(label)
-                .font(SharpitTypography.system(size: 16, weight: .medium, relativeTo: .body))
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
                 .frame(width: 130, alignment: .leading)
             SharpitBarTrack(fraction: Double(value) / 100, tone: SharpitColor.foreground)
                 .frame(height: 8)
             Text("\(value)")
-                .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                 .frame(width: 30, alignment: .trailing)
         }
     }
@@ -112,7 +112,7 @@ struct DesignGalleryHost: View {
                 SharpitScoreRing(fraction: 0.8, lineWidth: 18)
                 VStack(spacing: 4) {
                     Text("1:00")
-                        .font(SharpitTypography.system(size: 56, weight: .heavy, relativeTo: .largeTitle, digits: true))
+                        .font(SharpitTypography.system(size: 56, weight: .semibold, relativeTo: .largeTitle, digits: true))
                     Text("avant la prochaine série")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                         .foregroundStyle(SharpitColor.mutedForeground)

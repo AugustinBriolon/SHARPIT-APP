@@ -101,7 +101,7 @@ struct ProWeekHero: View {
     /// A lime squircle with the sport's ink glyph: on the ink band an ink tile would vanish.
     private func tile(_ type: V1ActivityType) -> some View {
         Image(sharpitSymbol: type.symbolName)
-            .font(.system(size: tileSize * 0.44, weight: .bold))
+            .font(.system(size: tileSize * 0.44, weight: .semibold))
             .foregroundStyle(SharpitColor.highlightForeground)
             .frame(width: tileSize, height: tileSize)
             .background(

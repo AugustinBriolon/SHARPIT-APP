@@ -75,7 +75,7 @@ struct FoodLogMealsSection: View {
             Button { onAdd(section.meal) } label: {
                 // A small mark, a full-size target: the circle is drawn at 28 pt, the tap is 44.
                 Image(systemName: "plus")
-                    .font(.footnote.weight(.bold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(SharpitNutritionTone.mealLabel(section.meal.storedName))
                     .frame(width: 28, height: 28)
                     .background(SharpitNutritionTone.meal(section.meal.storedName).opacity(0.12), in: Circle())

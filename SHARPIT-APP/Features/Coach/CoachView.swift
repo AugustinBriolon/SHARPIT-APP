@@ -345,7 +345,7 @@ struct CoachView: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 Text(line)
-                    .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline))
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                     .foregroundStyle(tone)
                     .fixedSize(horizontal: false, vertical: true)
                 ProgressView(value: 1 - quota.usedRatio)
@@ -362,7 +362,7 @@ struct CoachView: View {
                 withAnimation(SharpitMotion.reveal) { isQuotaNoticeHidden = true }
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .frame(width: 28, height: 28)
                     .background(SharpitColor.chipSurface, in: Circle())
@@ -767,7 +767,7 @@ private struct CoachCopyButton: View {
             }
         } label: {
             Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 14, weight: .regular))
                 .foregroundStyle(copied ? SharpitColor.foreground : SharpitColor.mutedForeground)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget, alignment: .leading)

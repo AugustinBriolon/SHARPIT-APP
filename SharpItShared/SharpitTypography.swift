@@ -1,48 +1,39 @@
 import SwiftUI
 import UIKit
 
-/// Font weights the ramp uses, mapped onto SF Pro.
+/// The only two weights the app uses: regular for prose, semibold for everything that leads.
 enum SharpitFontWeight {
     case regular
-    case medium
     case semibold
-    case bold
-    case heavy
 
     var system: Font.Weight {
         switch self {
         case .regular: .regular
-        case .medium: .medium
         case .semibold: .semibold
-        case .bold: .bold
-        case .heavy: .heavy
         }
     }
 
     var uiKit: UIFont.Weight {
         switch self {
         case .regular: .regular
-        case .medium: .medium
         case .semibold: .semibold
-        case .bold: .bold
-        case .heavy: .heavy
         }
     }
 }
 
-/// The Ink & Lime type ramp (ADR-085): SF Pro throughout, heavy figures with tabular
+/// The Ink & Lime type ramp (ADR-085): SF Pro Rounded throughout, heavy figures with tabular
 /// digits, muted units. Every style scales with Dynamic Type through its text style.
 enum SharpitTypography {
     /// `text-verdict` — the plate headline.
-    static var verdict: Font { heading(size: 20, weight: .bold, relativeTo: .title2) }
+    static var verdict: Font { heading(size: 20, weight: .semibold, relativeTo: .title2) }
     static var verdictTracking: CGFloat { tracking(em: -0.02, size: 20) }
 
     /// `text-page-title` so the date reads as the screen's title, not a section's.
-    static var screenTitle: Font { heading(size: 32, weight: .bold, relativeTo: .largeTitle) }
+    static var screenTitle: Font { heading(size: 32, weight: .semibold, relativeTo: .largeTitle) }
     static var screenTitleTracking: CGFloat { tracking(em: -0.025, size: 32) }
 
     /// `text-page-title`
-    static var pageTitle: Font { heading(size: 26, weight: .bold, relativeTo: .title) }
+    static var pageTitle: Font { heading(size: 26, weight: .semibold, relativeTo: .title) }
     static var pageTitleTracking: CGFloat { tracking(em: -0.02, size: 26) }
 
     /// `text-section-title`
@@ -55,7 +46,7 @@ enum SharpitTypography {
 
     /// Body prose.
     static var body: Font { prose(size: 16, weight: .regular, relativeTo: .body) }
-    static var bodyEmphasis: Font { prose(size: 16, weight: .medium, relativeTo: .body) }
+    static var bodyEmphasis: Font { prose(size: 16, weight: .regular, relativeTo: .body) }
 
     /// `text-meta` — caption tier, the floor for text that is read rather than classified.
     static var meta: Font { prose(size: 13, weight: .regular, relativeTo: .caption) }
@@ -72,23 +63,23 @@ enum SharpitTypography {
     static var instrument: Font { instrument(size: 16, weight: .semibold, relativeTo: .body) }
 
     /// `text-data` — the score tier, the largest figures on a plate.
-    static var data: Font { instrument(size: 20, weight: .bold, relativeTo: .title3) }
+    static var data: Font { instrument(size: 20, weight: .semibold, relativeTo: .title3) }
     static var dataTracking: CGFloat { tracking(em: -0.02, size: 20) }
 
     /// The gauge readout — a dial's number is the largest figure on its card.
-    static var gaugeScore: Font { instrument(size: 34, weight: .heavy, relativeTo: .title) }
+    static var gaugeScore: Font { instrument(size: 34, weight: .semibold, relativeTo: .title) }
     static var gaugeScoreTracking: CGFloat { tracking(em: -0.03, size: 34) }
 
     /// A unit beside a figure ("kg", "minutes") — muted, at roughly a third of the hero.
-    static var unit: Font { prose(size: 22, weight: .medium, relativeTo: .title3) }
+    static var unit: Font { prose(size: 22, weight: .regular, relativeTo: .title3) }
 
     /// The one number a drill-down screen is about — the night's score, the day's readiness.
-    static var heroScore: Font { instrument(size: 64, weight: .heavy, relativeTo: .largeTitle) }
+    static var heroScore: Font { instrument(size: 64, weight: .semibold, relativeTo: .largeTitle) }
     static var heroScoreTracking: CGFloat { tracking(em: -0.04, size: 64) }
 
     /// The one number a whole tab stands on — Santé's biological age. Twice a drill-down's hero,
     /// alone on its halo, never inside a card.
-    static var showcaseScore: Font { instrument(size: 96, weight: .heavy, relativeTo: .largeTitle) }
+    static var showcaseScore: Font { instrument(size: 96, weight: .semibold, relativeTo: .largeTitle) }
     static var showcaseScoreTracking: CGFloat { tracking(em: -0.05, size: 96) }
 
     /// CSS tracking is relative to the font size; SwiftUI's is absolute.
@@ -98,7 +89,7 @@ enum SharpitTypography {
 
     // MARK: - Resolution
 
-    /// SF Pro at a fixed design size, scaled with Dynamic Type through `style`.
+    /// SF Pro Rounded at a fixed design size, scaled with Dynamic Type through `style`.
     /// `digits` switches to tabular figures so numbers do not jitter as they change.
     static func system(
         size: CGFloat,
@@ -106,7 +97,9 @@ enum SharpitTypography {
         relativeTo style: Font.TextStyle = .body,
         digits: Bool = false
     ) -> Font {
-        let base = UIFont.systemFont(ofSize: size, weight: weight.uiKit)
+        let system = UIFont.systemFont(ofSize: size, weight: weight.uiKit)
+        let base = system.fontDescriptor.withDesign(.rounded)
+            .map { UIFont(descriptor: $0, size: size) } ?? system
         let scaled = UIFontMetrics(forTextStyle: style.uiKit).scaledFont(for: base)
         let font = Font(scaled)
         return digits ? font.monospacedDigit() : font

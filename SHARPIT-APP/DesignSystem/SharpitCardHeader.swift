@@ -102,7 +102,7 @@ struct SharpitTelemetryCapsule: View {
     var body: some View {
         HStack(spacing: 4) {
             Text(lead)
-                .font(.system(size: 13, weight: value == nil ? .medium : .regular))
+                .font(.system(size: 13, weight: value == nil ? .regular : .regular))
                 .foregroundStyle(SharpitColor.mutedForeground)
             if let value {
                 Text("·")

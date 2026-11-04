@@ -50,6 +50,7 @@ struct SharpitApp: App {
                     PersistenceCannotStartView()
                 }
             }
+            .fontDesign(.rounded)
             .background(SharpitCanvasBackground())
             .environment(Clerk.shared)
             .environment(\.clerkTheme, .sharpit)

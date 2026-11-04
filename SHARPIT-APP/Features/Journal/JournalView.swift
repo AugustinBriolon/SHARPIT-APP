@@ -503,7 +503,7 @@ private struct JournalChecklistRow: View {
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
             Image(systemName: item.status.symbolName)
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(item.status == .done ? SharpitColor.highlightForeground : SharpitColor.mutedForeground)
                 .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
                 .sharpitConcentricBackground(item.status == .done ? SharpitColor.highlight : SharpitColor.chipSurface, minimum: 9)

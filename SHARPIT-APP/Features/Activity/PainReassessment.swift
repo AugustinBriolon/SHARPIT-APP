@@ -57,7 +57,7 @@ struct PainReassessmentSection: View {
                         }
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
+                            .font(.caption.weight(.semibold))
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
                     .padding(SharpitSpacing.cardPadding)

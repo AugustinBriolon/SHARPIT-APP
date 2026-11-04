@@ -23,7 +23,7 @@ struct SharpitStatTile: View {
                     .contentTransition(.numericText())
                 if let unit {
                     Text(unit)
-                        .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline))
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                         .foregroundStyle(SharpitColor.mutedForeground)
                 }
             }
@@ -166,7 +166,7 @@ struct SharpitHeroScore: View {
                 .foregroundStyle(SharpitColor.mutedForeground)
             Spacer(minLength: 0)
             Text(label)
-                .font(SharpitTypography.system(size: 14, weight: .bold, relativeTo: .subheadline))
+                .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.foreground)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)

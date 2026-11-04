@@ -12,7 +12,7 @@ struct CoachContextTag: View {
     var body: some View {
         HStack(spacing: SharpitSpacing.xs) {
             Image(systemName: "paperclip")
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(SharpitColor.inkAccent)
                 .frame(width: 24, height: 24)
                 .background(SharpitColor.inkSurface, in: Circle())
@@ -26,7 +26,7 @@ struct CoachContextTag: View {
             if let onDismiss {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .frame(width: 24, height: 24)
                         .background(SharpitColor.track, in: Circle())

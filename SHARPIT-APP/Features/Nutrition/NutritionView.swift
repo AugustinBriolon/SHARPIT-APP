@@ -247,7 +247,7 @@ private struct NutritionEmptyDayPlate: View {
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundStyle(SharpitColor.mutedForeground)
                         Text("0 kcal")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundStyle(SharpitColor.mutedForeground)
                     }
                 }
@@ -368,7 +368,7 @@ private struct NutritionEnergyPlate: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .contentTransition(.numericText())
                     Text("kcal consommées")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
                         .foregroundStyle(SharpitColor.mutedForeground.opacity(0.85))
                 }
             }
@@ -838,7 +838,7 @@ private struct NutritionRegularitySection: View {
                 }
             }
             Text(weekday(day.date))
-                .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground)
                 .frame(height: 14)
         }

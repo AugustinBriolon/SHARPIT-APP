@@ -18,7 +18,7 @@ struct LiveActivityTile: View {
 
     var body: some View {
         Image(systemName: symbol)
-            .font(.system(size: size * 0.44, weight: .bold))
+            .font(.system(size: size * 0.44, weight: .semibold))
             .foregroundStyle(SharpitColor.highlightForeground)
             .frame(width: size, height: size)
             .background(LiveActivityStyle.accent, in: RoundedRectangle(cornerRadius: size * 0.3, style: .continuous))

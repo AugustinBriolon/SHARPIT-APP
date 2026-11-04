@@ -209,7 +209,7 @@ struct SanteHero: View {
                 if index > 0 { Divider() }
                 HStack(spacing: SharpitSpacing.sm) {
                     Image(systemName: highlight.delta >= 0 ? "arrow.up.right" : "arrow.down.right")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(highlight.tone.markColor)
                         .frame(width: 26, height: 26)
                         .background(SharpitColor.foreground.opacity(0.08), in: Circle())

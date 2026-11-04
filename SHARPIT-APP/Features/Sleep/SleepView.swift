@@ -169,7 +169,7 @@ private struct SleepHero: View {
             .sharpitDialCentre {
             VStack(spacing: SharpitSpacing.xxs) {
                 Text(sleep.score.map { "\(Int($0.rounded()))" } ?? "—")
-                    .font(SharpitTypography.system(size: 64, weight: .heavy, relativeTo: .largeTitle, digits: true))
+                    .font(SharpitTypography.system(size: 64, weight: .semibold, relativeTo: .largeTitle, digits: true))
                     .tracking(SharpitTypography.heroScoreTracking)
                     .foregroundStyle(sleep.score == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
                 Text("sur 100")
@@ -191,13 +191,13 @@ private struct SleepHero: View {
     private func breakdownRow(_ label: String, _ value: Double) -> some View {
         HStack(spacing: SharpitSpacing.md) {
             Text(label)
-                .font(SharpitTypography.system(size: 16, weight: .medium, relativeTo: .body))
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
                 .foregroundStyle(SharpitColor.foreground)
                 .frame(width: 120, alignment: .leading)
             SharpitBarTrack(fraction: value / 100, tone: SharpitColor.foreground)
                 .frame(height: SharpitTokens.barThickness)
             Text("\(Int(value.rounded()))")
-                .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
                 // A full 100 broke onto two lines in a 32 pt slot.
                 .fixedSize()
@@ -232,7 +232,7 @@ private struct SleepCoachCard: View {
                                 .font(SharpitTypography.meta)
                                 .foregroundStyle(SharpitColor.mutedForeground)
                             Text(SleepReadout.clock(bedtime))
-                                .font(SharpitTypography.system(size: 34, weight: .heavy, relativeTo: .title, digits: true))
+                                .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .title, digits: true))
                                 .tracking(SharpitTypography.gaugeScoreTracking)
                                 .foregroundStyle(SharpitColor.foreground)
                             // Callers: SleepCoachCard. API: windDownStartMin. User: fix all — P3 bedtime.
@@ -423,7 +423,7 @@ private struct SleepBankSection: View {
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.mutedForeground)
                         Text(SleepReadout.bankBalance(debtMin: sleep.debt7Min))
-                            .font(SharpitTypography.system(size: 34, weight: .heavy, relativeTo: .title, digits: true))
+                            .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .title, digits: true))
                             .tracking(SharpitTypography.gaugeScoreTracking)
                             .foregroundStyle(SleepReadout.bankTone(debtMin: sleep.debt7Min))
                     }
@@ -463,7 +463,7 @@ private struct SleepBankSection: View {
     private func bankFact(caption: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .body, digits: true))
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
             Text(caption)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))

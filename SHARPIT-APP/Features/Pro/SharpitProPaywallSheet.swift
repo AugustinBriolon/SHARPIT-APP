@@ -151,7 +151,7 @@ struct SharpitProPaywallSheet: View {
                 }
                 Spacer(minLength: SharpitSpacing.xs)
                 Text(price)
-                    .font(SharpitTypography.system(size: 17, weight: .bold, relativeTo: .headline, digits: true))
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
                     .multilineTextAlignment(.trailing)
             }
@@ -176,7 +176,7 @@ struct SharpitProPaywallSheet: View {
     private var closeButton: some View {
         Button { dismiss() } label: {
             Image(systemName: "xmark")
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(SharpitColor.foreground)
                 .frame(width: 32, height: 32)
                 .background(SharpitColor.chipSurface, in: Circle())

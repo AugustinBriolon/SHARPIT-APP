@@ -165,9 +165,10 @@ private func hex(_ color: Color, style: UIUserInterfaceStyle = .light) -> String
     #expect(SharpitTypography.sectionTitleTracking < 0)
 }
 
-@Test func figuresAreHeavierThanTitles() {
-    // The references hang on heavy figures: the hero number outweighs every title.
-    #expect(SharpitFontWeight.heavy.uiKit.rawValue > SharpitFontWeight.bold.uiKit.rawValue)
+@Test func typographyUsesTwoRoundedWeights() {
+    #expect(SharpitFontWeight.semibold.uiKit.rawValue > SharpitFontWeight.regular.uiKit.rawValue)
+    let font = UIFont.systemFont(ofSize: 16).fontDescriptor.withDesign(.rounded)
+    #expect(font != nil)
     #expect(SharpitTypography.heroScoreTracking < SharpitTypography.pageTitleTracking)
 }
 

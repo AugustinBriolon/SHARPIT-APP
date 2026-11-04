@@ -267,7 +267,7 @@ private struct SharpitCalendarView: UIViewRepresentable {
         let view = UICalendarView()
         view.calendar = calendar
         view.locale = SharpitLocale.current
-        view.fontDesign = .default
+        view.fontDesign = .rounded
         view.tintColor = UIColor(SharpitColor.primary)
         view.availableDateRange = DateInterval(start: range.lowerBound, end: range.upperBound)
         view.delegate = context.coordinator
@@ -311,7 +311,7 @@ private struct SharpitCalendarView: UIViewRepresentable {
         /// A bold stroke, so the ring holds up at the decoration's small size.
         private static let ring = UIImage(
             systemName: "circle",
-            withConfiguration: UIImage.SymbolConfiguration(weight: .heavy)
+            withConfiguration: UIImage.SymbolConfiguration(weight: .semibold)
         )
 
         func calendarView(_: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {

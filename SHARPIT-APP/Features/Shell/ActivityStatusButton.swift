@@ -104,7 +104,7 @@ struct ActivityStatusDrawer: View {
         return VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                 Image(systemName: status.symbolName)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(SharpitColor.highlightForeground)
                     .frame(width: 44, height: 44)
                     .background(SharpitColor.highlight, in: Circle())

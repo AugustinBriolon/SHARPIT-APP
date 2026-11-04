@@ -695,7 +695,7 @@ private struct FoodScannerPage: View {
                 Text("Vise le code-barres de l'emballage.")
             }
         }
-        .font(SharpitTypography.meta.weight(.medium))
+        .font(SharpitTypography.meta.weight(.regular))
         .foregroundStyle(SharpitColor.foreground)
         .padding(.horizontal, SharpitSpacing.md)
         .padding(.vertical, SharpitSpacing.sm)

@@ -26,7 +26,7 @@ struct GuidedStrengthRestLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     GuidedStrengthClock(state: state, startedAt: startedAt)
-                        .font(.system(size: 30, weight: .bold).monospacedDigit())
+                        .font(.system(size: 30, weight: .semibold).monospacedDigit())
                         .foregroundStyle(state.kind == .resting ? LiveActivityStyle.accent : .white)
                         .multilineTextAlignment(.trailing)
                         .frame(maxWidth: 96, alignment: .trailing)
@@ -149,7 +149,7 @@ private struct GuidedStrengthNextLine: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
         }
-        .font(.system(size: 15, weight: .medium))
+        .font(.system(size: 15, weight: .regular))
     }
 }
 
@@ -163,7 +163,7 @@ private struct GuidedStrengthMinimal: View {
                 EmptyView()
             } currentValueLabel: {
                 Image(systemName: "timer")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(LiveActivityStyle.accent)
             }
             .progressViewStyle(.circular)
@@ -196,7 +196,7 @@ private struct GuidedStrengthSessionLockScreen: View {
                 }
                 Spacer(minLength: 8)
                 GuidedStrengthClock(state: state, startedAt: startedAt)
-                    .font(.system(size: 36, weight: .bold).monospacedDigit())
+                    .font(.system(size: 36, weight: .semibold).monospacedDigit())
                     .foregroundStyle(LiveActivityStyle.ink)
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: 120, alignment: .trailing)

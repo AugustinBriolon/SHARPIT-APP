@@ -21,7 +21,7 @@ struct WeatherChip: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .contentTransition(.symbolEffect(.replace))
                     Text("\(reading.temperatureCelsius)°")
-                        .font(SharpitTypography.instrument.weight(.medium))
+                        .font(SharpitTypography.instrument.weight(.regular))
                         .monospacedDigit()
                         .foregroundStyle(SharpitColor.foreground)
                         .contentTransition(.numericText(value: Double(reading.temperatureCelsius)))
