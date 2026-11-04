@@ -1,8 +1,9 @@
 name: CI
 
-# Builds the app and runs SHARPIT-APPTests on a simulator, on each push to main and each pull
-# request. No signing: CI needs no team, and Config/Local.xcconfig (gitignored) is an optional
-# include, so the Debug build reaches its default origins.
+# Builds the app and cold-launches it on a simulator, on each push to main and each pull request.
+# The unit tests run before each push, in .githooks/pre-push (scripts/pre-push.sh), not here.
+# No signing: CI needs no team, and Config/Local.xcconfig (gitignored) is an optional include,
+# so the Debug build reaches its default origins.
 on:
   push:
     branches: [main]
@@ -18,9 +19,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  build:
     runs-on: xcode-27
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,25 +47,12 @@ jobs:
           test -n "$UDID" && test "$UDID" != "null"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
-      # Serial, as locally: tests sharing `AuthSession.shared` raced each other on parallel clones.
-      - name: Test
-        run: |
-          set -o pipefail
-          xcodebuild test \
-            -project SHARPIT-APP.xcodeproj \
-            -scheme SHARPIT-APP \
-            -destination "id=${{ steps.simulator.outputs.udid }}" \
-            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
-            -parallel-testing-enabled NO \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee xcodebuild.log | grep -E "error:|✘|Test run with|TEST (SUCCEEDED|FAILED)"
-
       # Unit tests never cold-launch the app: a crash at launch only shows when it is opened.
       - name: Cold-launch smoke test
         run: |
-          # The tests build unsigned, and an unsigned app dies at launch on Clerk's Keychain
-          # (-34018): the simulator reads the entitlements linked into the binary, so a signature
-          # added afterwards is not enough. Rebuild signed to run locally, as Xcode does.
+          # An unsigned app dies at launch on Clerk's Keychain (-34018): the simulator reads the
+          # entitlements linked into the binary, so a signature added afterwards is not enough.
+          # Rebuild signed to run locally, as Xcode does.
           set -o pipefail
           xcodebuild build \
             -project SHARPIT-APP.xcodeproj \
@@ -72,7 +60,7 @@ jobs:
             -destination "id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
-            | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
+            | tee xcodebuild.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
           APP=~/Library/Developer/Xcode/DerivedData/ci/Build/Products/Debug-iphonesimulator/SharpIt.app
           scripts/smoke-launch.sh "${{ steps.simulator.outputs.udid }}" "$APP"
 
