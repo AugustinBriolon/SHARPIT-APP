@@ -69,12 +69,20 @@ final class SharpitAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     }
 
     // Action when user taps on the push notification banner. The destination is stored before
-    // returning — otherwise a cold launch could finish the callback before RootView sees a tap.
+    // the completion handler runs — otherwise a cold launch could finish the callback before
+    // RootView sees a tap. The handler is called on the main thread: UIKit takes its app snapshot
+    // when it returns, and the async form of this method called it from a background thread
+    // ("Call must be made on main thread", TestFlight 1.0 202610311205).
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
         let destination = PushNotificationManager.destination(for: response.notification.request.content.userInfo)
-        await PushNotificationManager.shared.didReceiveNotificationResponse(destination: destination)
+        nonisolated(unsafe) let finish = completionHandler
+        Task { @MainActor in
+            PushNotificationManager.shared.didReceiveNotificationResponse(destination: destination)
+            finish()
+        }
     }
 }
