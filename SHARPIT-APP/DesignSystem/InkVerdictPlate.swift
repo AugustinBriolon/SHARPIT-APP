@@ -41,7 +41,7 @@ struct InkVerdictPlate: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 if let decision = decisionText {
                     Text(decision)
-                        .font(SharpitTypography.system(size: 28, weight: .bold, relativeTo: .title))
+                        .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
                         .tracking(-0.5)
                         .foregroundStyle(ink)
                         .fixedSize(horizontal: false, vertical: true)
@@ -92,7 +92,12 @@ struct InkVerdictPlate: View {
     /// The state, named once: glyph, label, and yesterday's state only when it changed.
     private var eyebrow: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            SharpitIconTile(symbol: plate.stateCode?.symbolName ?? "circle.fill", onInk: true)
+            Image(systemName: plate.stateCode?.symbolName ?? "circle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(SharpitColor.highlightForeground)
+                .frame(width: 30, height: 30)
+                .background(SharpitColor.highlight, in: Circle())
+                .accessibilityHidden(true)
             Text(plate.statusLabel)
                 .font(SharpitTypography.cardTitle)
                 .tracking(SharpitTypography.cardTitleTracking)
@@ -101,7 +106,7 @@ struct InkVerdictPlate: View {
             Spacer(minLength: SharpitSpacing.xs)
             if let yesterday = plate.yesterdayLabel {
                 Text(yesterday)
-                    .font(SharpitTypography.system(size: 13, weight: .medium, relativeTo: .footnote))
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
                     .foregroundStyle(ink.opacity(0.55))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -115,11 +120,11 @@ struct InkVerdictPlate: View {
                 .foregroundStyle(ink.opacity(reason.isSupport ? 0.72 : 0.92))
         } icon: {
             Image(systemName: reason.isSupport ? "checkmark" : "arrow.down.right")
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(reason.isSupport ? SharpitColor.inkAccent : ink.opacity(0.6))
                 .frame(width: 16)
         }
-        .font(SharpitTypography.system(size: 15, weight: .medium, relativeTo: .subheadline))
+        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
         .fixedSize(horizontal: false, vertical: true)
     }
 

@@ -5,21 +5,19 @@ import SwiftUI
 struct SharpitIconTile: View {
     let symbol: String
     var size: CGFloat = SharpitTokens.tileSize
-    /// On an ink card an ink tile would vanish: the same squircle turns lime, its glyph ink.
-    var onInk = false
 
     @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
     var body: some View {
         let side = size * scale
-        Image(sharpitSymbol: symbol)
-            .font(.system(size: side * 0.42, weight: .bold))
-            .foregroundStyle(onInk ? SharpitColor.highlightForeground : SharpitColor.inkAccent)
+        Image(systemName: symbol)
+            .font(.system(size: side * 0.42, weight: .semibold))
+            .foregroundStyle(SharpitColor.inkAccent)
             .frame(width: side, height: side)
             // A fixed squircle: concentric, a tile in a list's first or last row took the card's
             // corner and read as a circle beside the squares of the middle rows.
             .background(
-                onInk ? SharpitColor.highlight : SharpitColor.inkSurface,
+                SharpitColor.inkSurface,
                 in: RoundedRectangle(cornerRadius: SharpitRadius.tile * side / SharpitTokens.tileSize, style: .continuous)
             )
             .accessibilityHidden(true)
@@ -54,7 +52,7 @@ struct SharpitCheckBox: View {
             .overlay {
                 if isOn {
                     Image(systemName: "checkmark")
-                        .font(.system(size: side * 0.48, weight: .bold))
+                        .font(.system(size: side * 0.48, weight: .semibold))
                         .foregroundStyle(SharpitColor.highlightForeground)
                 }
             }
@@ -85,7 +83,7 @@ struct SharpitPill: View {
 
     var body: some View {
         Text(text)
-            .font(SharpitTypography.system(size: 14, weight: style == .limeSoft ? .medium : .bold, relativeTo: .subheadline, digits: true))
+            .font(SharpitTypography.system(size: 14, weight: style == .limeSoft ? .regular : .semibold, relativeTo: .subheadline, digits: true))
             .foregroundStyle(foreground)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
