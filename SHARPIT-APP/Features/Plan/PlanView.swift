@@ -38,6 +38,9 @@ struct PlanView: View {
     /// The coach's trips, for the week's « Déplacement » chip (the web's `TravelContextBanner`).
     @State private var travels: [CoachMemoryEntry] = []
     @State private var showingTravel = false
+    /// The last trip or constraint saved in that sheet, looked at once the sheet closes.
+    @State private var savedTrip: CreateCoachMemoryInput?
+    @Environment(ProStore.self) private var pro: ProStore?
     @State private var extrasGate = LoadGate()
     /// Garmin linked: the drawer then offers to send an endurance session to the watch.
     @State private var isGarminLinked = false
@@ -152,9 +155,14 @@ struct PlanView: View {
             .sheet(isPresented: $showingCalendar) {
                 PlanCalendarSheet(store: store)
             }
-            .sheet(isPresented: $showingTravel, onDismiss: { Task { await loadTravels() } }) {
+            .sheet(isPresented: $showingTravel, onDismiss: {
+                Task {
+                    await loadTravels()
+                    await offerTripAdaptation()
+                }
+            }) {
                 NavigationStack {
-                    PlanTripsView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
+                    PlanTripsView(client: CoachMemoryClient(), tokenProvider: tokenProvider) { savedTrip = $0 }
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("OK") { showingTravel = false }
@@ -276,6 +284,24 @@ extension PlanView {
         adjustment.focus = catchUp.focus()
         showingAdapter = true
         Task { await adjustment.start() }
+    }
+
+    /// A trip that narrows training over sessions still to do: the adapter opens with it said
+    /// and starts, the coach's changes waiting for the athlete. A known Free athlete is not
+    /// shown the paywall for a save; the trip still reaches the plan's context on the server.
+    fileprivate func offerTripAdaptation() async {
+        guard let saved = savedTrip else { return }
+        savedTrip = nil
+        if let tier = pro?.pro, !tier.isPro { return }
+        let days = PlanTripAdaptation.dayRange(of: saved)
+        guard let token = try? await tokenProvider(),
+              let sessions = try? await client.plannedSessions(from: days.lowerBound, to: days.upperBound, token: token),
+              let offer = PlanTripAdaptation.offer(for: saved, sessions: sessions) else { return }
+        adjustment.reset()
+        activeCatchUp = nil
+        adjustment.focus = offer.focus()
+        showingAdapter = true
+        await adjustment.start()
     }
 
     /// Shows today's week and opens the session's drawer once the week is read.

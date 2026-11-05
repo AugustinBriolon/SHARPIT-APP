@@ -16,6 +16,8 @@ struct CoachMemoryEntryForm: View {
     let store: CoachMemoryStore
     let kinds: [CoachMemoryType]
     let entry: CoachMemoryEntry?
+    /// Told what was saved, once the server took it.
+    let onSaved: (CreateCoachMemoryInput) -> Void
 
     @State private var draft: MemoryEntryDraft
     private let initial: MemoryEntryDraft
@@ -26,10 +28,16 @@ struct CoachMemoryEntryForm: View {
     @State private var isSelectingSuggestion = false
     @Environment(\.dismiss) private var dismiss
 
-    init(store: CoachMemoryStore, kinds: [CoachMemoryType], entry: CoachMemoryEntry?) {
+    init(
+        store: CoachMemoryStore,
+        kinds: [CoachMemoryType],
+        entry: CoachMemoryEntry?,
+        onSaved: @escaping (CreateCoachMemoryInput) -> Void = { _ in }
+    ) {
         self.store = store
         self.kinds = kinds
         self.entry = entry
+        self.onSaved = onSaved
         let start = entry.map { MemoryEntryDraft(entry: $0) } ?? MemoryEntryDraft(type: kinds.first ?? .travel)
         initial = start
         _draft = State(initialValue: start)
@@ -240,6 +248,7 @@ struct CoachMemoryEntryForm: View {
             await store.createEntry(input)
         }
         if saved {
+            onSaved(input)
             dismiss()
         } else {
             failure = store.errorMessage

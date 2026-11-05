@@ -59,7 +59,11 @@ midnights on the server, the week's are local — and the chip opens `PlanTripsV
 « Déplacements » opens the same list (trips and constraints, under way then ahead); injuries, preferences and notes
 stay in the coach's memory. `CoachMemoryEntryForm` is pushed inside either list. `TripTraining` holds the choice:
 the server derives the constraint from the sports as soon as any are sent (`resolveTrainingFields`), so « Allégé »
-carries no sports, and the sentence under the choice says what will really happen.
+carries no sports, and the sentence under the choice says what will really happen. The server sends a trip's
+days as `yyyy-MM-dd`; `CoachMemoryEntry` reads them as UTC midnights and refuses a day it cannot read (it once
+fell back to today, showing every trip as starting today). When the sheet closes after a save that narrows
+training over a session still to do within the adapter's 14 days, Plan opens « Ajuster le planning » with the
+trip said (`PlanTripAdaptation`, `docs/adr/0028`), unless the athlete is known Free.
 
 **Editing the plan by hand.** Plan's « + » opens « Nouvelle séance » (`PlannedSessionCreateSheet`);
 a session's drawer carries « … » (`SessionActionsMenu`: Envoyer sur ma montre when it is not docked, Lier à une séance
