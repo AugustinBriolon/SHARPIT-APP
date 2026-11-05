@@ -88,6 +88,34 @@ private final class StubCoachMemoryClient: CoachMemoryServing, @unchecked Sendab
     #expect(entry.allowedDisciplines == nil)
 }
 
+@Test func coachMemoryEntryReadsTheServerDayNotToday() throws {
+    let json = """
+    {"id": "trip", "type": "TRAVEL", "locationLabel": "Lyon",
+     "startDate": "2026-11-07", "endDate": "2026-11-08", "trainingConstraint": "FULL"}
+    """
+    let entry = try JSONDecoder().decode(CoachMemoryEntry.self, from: Data(json.utf8))
+    var utc = Calendar(identifier: .gregorian)
+    utc.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+    #expect(utc.dateComponents([.month, .day], from: entry.startDate) == DateComponents(month: 11, day: 7))
+    #expect(utc.dateComponents([.month, .day], from: entry.endDate) == DateComponents(month: 11, day: 8))
+
+    // The edit form opens on those days, wherever the iPhone is.
+    var paris = Calendar(identifier: .gregorian)
+    paris.timeZone = TimeZone(identifier: "Europe/Paris") ?? .gmt
+    let draft = MemoryEntryDraft(entry: entry, calendar: paris)
+    #expect(paris.component(.day, from: draft.startDay) == 7)
+    #expect(paris.component(.day, from: draft.endDay) == 8)
+}
+
+@Test func coachMemoryEntryRefusesAnUnreadableDay() {
+    let json = """
+    {"id": "trip", "type": "TRAVEL", "startDate": "soon", "endDate": "2026-11-08"}
+    """
+    #expect(throws: DecodingError.self) {
+        try JSONDecoder().decode(CoachMemoryEntry.self, from: Data(json.utf8))
+    }
+}
+
 @Test func coachMemoryEntryDecodesAllowedDisciplinesFromJson() throws {
     let json = """
     {

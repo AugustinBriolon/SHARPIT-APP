@@ -125,12 +125,28 @@ nonisolated struct CoachMemoryEntry: Identifiable, Codable, Sendable, Hashable {
         locationLabel = try container.decodeIfPresent(String.self, forKey: .locationLabel)
         let startRaw = try container.decode(String.self, forKey: .startDate)
         let endRaw = try container.decode(String.self, forKey: .endDate)
-        startDate = (try? Date.fromAPI(startRaw)) ?? Date()
-        endDate = (try? Date.fromAPI(endRaw)) ?? Date()
+        startDate = try Self.serverDay(startRaw, key: .startDate, in: container)
+        endDate = try Self.serverDay(endRaw, key: .endDate, in: container)
         note = try container.decodeIfPresent(String.self, forKey: .note)
         trainingConstraint = (try? container.decode(TravelTrainingConstraint.self, forKey: .trainingConstraint)) ?? .full
         allowedDisciplines = try container.decodeIfPresent([String].self, forKey: .allowedDisciplines)
         isActive = (try? container.decodeIfPresent(Bool.self, forKey: .isActive)) ?? false
+    }
+
+    /// The server sends a day as "yyyy-MM-dd" (an instant once): read as UTC midnight, the shape
+    /// every reader of these entries expects. A day it cannot read fails the entry rather than
+    /// silently becoming today, which once showed a trip on the 7th as starting the 5th.
+    private static func serverDay(
+        _ raw: String,
+        key: CodingKeys,
+        in container: KeyedDecodingContainer<CodingKeys>
+    ) throws -> Date {
+        if let instant = try? Date.fromAPI(raw) { return instant }
+        let day = ISO8601DateFormatter()
+        day.formatOptions = [.withFullDate]
+        day.timeZone = TimeZone(identifier: "UTC")
+        if let date = day.date(from: raw) { return date }
+        throw DecodingError.dataCorruptedError(forKey: key, in: container, debugDescription: "Invalid day \(raw)")
     }
 
     func encode(to encoder: Encoder) throws {
