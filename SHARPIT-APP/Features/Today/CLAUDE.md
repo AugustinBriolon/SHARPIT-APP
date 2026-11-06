@@ -14,6 +14,13 @@ waiting with one read with it.
 (`TodayStore.respondToMorningProposal`): the card leaves on the tap, comes back with the server's
 reason if refused, and an accepted proposal reloads Résumé and bumps `calendarRevision`.
 
+**Trip conflict.** `/api/v1/today`'s `travelConflict` (today only, SHARPIT ADR-120) names the first
+trip or constraint of the next 14 days whose sessions to do do not fit it — a pause, a sport off its
+list, or a key or hard session under « Allégé ». `TravelConflictCard` shows it under `PlanHorizonCard`
+(« Ton déplacement à Lyon bouscule ton plan », « 2 séances ne collent pas, du … ») and opens Plan's
+adapter with the trip said (`ShellRouter.openTravelConflict`, `docs/adr/0029`). The server reads it
+again on every load, so the card leaves once the sessions fit; it has no « Ignorer ».
+
 **Activity status.** The mode chip in Today's toolbar writes `/api/activity-status` on every
 pick — no explicit save, as on the web. A deadline that has passed is resolved back to
 `active` server-side on read, so the app never expires one itself. Trips are not modelled:

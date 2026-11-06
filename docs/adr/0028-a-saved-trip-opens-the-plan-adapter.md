@@ -4,7 +4,7 @@ Date: 2026-11-06
 
 ## Status
 
-Accepted
+Superseded by [ADR-0029](0029-resume-shows-a-trip-the-plan-no-longer-fits.md)
 
 ## Context
 
