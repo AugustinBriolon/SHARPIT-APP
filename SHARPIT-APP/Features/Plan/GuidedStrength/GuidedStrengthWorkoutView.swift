@@ -98,6 +98,9 @@ struct GuidedStrengthWorkoutView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .principal) { sessionStatus }
+                    if dock != nil {
+                        ToolbarItem(placement: .primaryAction) { minimizeButton }
+                    }
                 }
             }
         }
@@ -147,13 +150,6 @@ struct GuidedStrengthWorkoutView: View {
         ToolbarItem(placement: .cancellationAction) {
             // Menu (not confirmationDialog): opens from Quitter instead of page center.
             Menu {
-                if let dock {
-                    // Out of sight, still running: the bar above the tabs brings it back.
-                    Button("Réduire la séance", systemImage: "chevron.down") {
-                        focusedField = nil
-                        dock.minimize()
-                    }
-                }
                 Section("Les séries cochées ne seront pas enregistrées") {
                     Button("Quitter sans enregistrer", role: .destructive) {
                         stopTimers()
@@ -165,6 +161,9 @@ struct GuidedStrengthWorkoutView: View {
             }
             .tint(SharpitColor.destructive)
             .disabled(isSaving)
+        }
+        if dock != nil {
+            ToolbarItem(placement: .topBarLeading) { minimizeButton }
         }
         if phase == .overview {
             ToolbarItem(placement: .principal) { sessionStatus }
@@ -555,7 +554,8 @@ struct GuidedStrengthWorkoutView: View {
                     Spacer(minLength: 0)
                 }
 
-                if set.isHold, !set.isDone {
+                if set.isHold {
+                    // Kept in place once the set is done, hidden: the row's text must not shift on a tick.
                     Button {
                         focusedField = nil
                         path.append(.hold(set.id))
@@ -567,6 +567,9 @@ struct GuidedStrengthWorkoutView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .opacity(set.isDone ? 0 : 1)
+                    .disabled(set.isDone)
+                    .accessibilityHidden(set.isDone)
                     .accessibilityLabel(set.perSide ? String(localized: "Lancer le maintien, côté gauche puis droit") : String(localized: "Lancer le maintien"))
                 }
 
@@ -590,6 +593,18 @@ struct GuidedStrengthWorkoutView: View {
             .sharpitSurface(.row)
             .animation(SharpitMotion.reveal, value: set.isDone)
         }
+    }
+
+    /// Out of sight, still running: the bar above the tabs brings it back.
+    private var minimizeButton: some View {
+        Button {
+            focusedField = nil
+            dock?.minimize()
+        } label: {
+            Image(systemName: "chevron.down")
+        }
+        .accessibilityLabel("Réduire la séance")
+        .accessibilityHint("La séance continue ; la barre au-dessus des onglets la rouvre")
     }
 
     @ViewBuilder

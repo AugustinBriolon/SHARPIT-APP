@@ -65,6 +65,26 @@ private let hipStretch: JSONValue = .object([
     #expect(GuidedHoldPage.next(clock.phase(elapsed: 41), clock: clock) == nil)
 }
 
+@Test func theButtonGoesToTheOtherSideBeforeEndingTheSet() {
+    let clock = GuidedHoldClock(durationSec: 30, perSide: true)
+    // Count-in → first side; first side or switch → second side; second side → done.
+    #expect(clock.skipTarget(from: clock.phase(elapsed: 2)) == 5)
+    #expect(GuidedHoldPage.actionTitle(clock.phase(elapsed: 2), clock: clock) == "Commencer")
+    #expect(clock.skipTarget(from: clock.phase(elapsed: 12)) == 40)
+    #expect(GuidedHoldPage.actionTitle(clock.phase(elapsed: 12), clock: clock) == "Passer au côté droit")
+    #expect(clock.skipTarget(from: clock.phase(elapsed: 37)) == 40)
+    #expect(GuidedHoldPage.actionTitle(clock.phase(elapsed: 37), clock: clock) == "Commencer le côté droit")
+    #expect(clock.phase(elapsed: 40) == .running(.hold(side: 1), remaining: 30))
+    #expect(clock.skipTarget(from: clock.phase(elapsed: 45)) == nil)
+    #expect(GuidedHoldPage.actionTitle(clock.phase(elapsed: 45), clock: clock) == "Terminer la série")
+}
+
+@Test func aHoldWithoutSidesEndsTheSetFromItsHold() {
+    let clock = GuidedHoldClock(durationSec: 45, perSide: false)
+    #expect(clock.skipTarget(from: clock.phase(elapsed: 1)) == 5)
+    #expect(clock.skipTarget(from: clock.phase(elapsed: 20)) == nil)
+}
+
 @Test func aHoldWithoutSidesIsCountedInThenOneCountdown() {
     let clock = GuidedHoldClock(durationSec: 45, perSide: false)
     #expect(clock.phase(elapsed: 2) == .running(.prepare, remaining: 3))

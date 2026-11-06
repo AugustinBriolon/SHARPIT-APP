@@ -296,18 +296,7 @@ struct ScreenDemoHost: View {
                     .padding(SharpitSpacing.pageInset)
                 }
                 .background(SharpitCanvasBackground())
-            case "strength":
-                if let session = Self.strengthSession {
-                    GuidedStrengthWorkoutView(
-                        session: session,
-                        finish: GuidedStrengthFinishContext(
-                            client: ActivityClient(),
-                            linker: PlannedSessionClient(),
-                            tokenProvider: { "demo" }
-                        )
-                    )
-                }
-            case "strength-dock":
+            case "strength", "strength-dock":
                 // The session run by the app: « Réduire » slides it away, the bar brings it back.
                 GalleryWorkoutDockDemo(session: Self.strengthSession)
             case "stress":

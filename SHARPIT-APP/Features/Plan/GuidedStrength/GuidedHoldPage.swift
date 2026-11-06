@@ -57,6 +57,19 @@ nonisolated struct GuidedHoldClock: Equatable, Sendable {
         return .finished
     }
 
+    /// Where the button jumps to from this step: the start of the next hold (the count-in, the
+    /// first side and the switch all lead to a side), or nil on the last hold, which ends the set.
+    func skipTarget(from phase: Phase) -> TimeInterval? {
+        guard case .running(let step, _) = phase,
+              let index = segments.firstIndex(where: { $0.step == step }) else { return nil }
+        var start = 0
+        for (offset, segment) in segments.enumerated() {
+            if offset > index, case .hold = segment.step { return TimeInterval(start) }
+            start += segment.seconds
+        }
+        return nil
+    }
+
     /// The hold segments only — what the sequence strip lists.
     var holds: [Segment] { segments.filter { if case .hold = $0.step { true } else { false } } }
 }
@@ -78,11 +91,11 @@ struct GuidedHoldPage: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
                 TimelineView(.periodic(from: startedAt, by: 0.25)) { context in
                     let phase = clock.phase(elapsed: context.date.timeIntervalSince(startedAt))
-                    content(phase)
-                        .onChange(of: phase) { old, new in cue(from: old, to: new) }
-                }
-                SharpitPrimaryButton(title: String(localized: "Terminer le maintien"), trailingSymbol: "checkmark.circle.fill") {
-                    finish()
+                    VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+                        content(phase)
+                        actionButton(phase)
+                    }
+                    .onChange(of: phase) { old, new in cue(from: old, to: new) }
                 }
             }
             .padding(SharpitSpacing.cardPadding)
@@ -122,6 +135,27 @@ struct GuidedHoldPage: View {
             .frame(width: 220, height: 220)
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// Forward one step at a time: into the first side, on to the other side, then the set is done.
+    private func actionButton(_ phase: GuidedHoldClock.Phase) -> some View {
+        let target = clock.skipTarget(from: phase)
+        return SharpitPrimaryButton(
+            title: Self.actionTitle(phase, clock: clock),
+            trailingSymbol: target == nil ? "checkmark.circle.fill" : "forward.circle.fill"
+        ) {
+            guard let target else { return finish() }
+            startedAt = Date().addingTimeInterval(-target)
+        }
+    }
+
+    static func actionTitle(_ phase: GuidedHoldClock.Phase, clock: GuidedHoldClock) -> String {
+        guard clock.skipTarget(from: phase) != nil else { return String(localized: "Terminer la série") }
+        switch phase {
+        case .running(.hold(side: 0), _): return String(localized: "Passer au côté droit")
+        case .running(.switchSides, _): return String(localized: "Commencer le côté droit")
+        default: return String(localized: "Commencer")
         }
     }
 
