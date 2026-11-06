@@ -90,3 +90,17 @@ day. The entry reads the receipt the plan carries (`garminWorkoutId`, `garminWor
 kept through a local edit by `applying`): « Renvoyer sur ma montre » once sent (`WatchPushState`),
 asked before replacing unless the day moved. Pro-only: a Free athlete's tap opens the paywall. A Garmin refusal is a 403 or
 429 in the server's words, shown in the toast, never a sign-out.
+
+**Guided strength session.** « Lancer la séance » closes the drawer and hands the session to
+`GuidedWorkoutDock` (`RootView`'s, in the environment; `docs/adr/0030`): the same
+`GuidedStrengthWorkoutView` is mounted over the tabs (`GuidedWorkoutDockHost`) and « Réduire la séance »
+(in « Quitter ») only slides it away — sets, rest, clock and heart rate keep running — while the tab
+bar's bottom accessory (« Push day · 12:34 », a glass capsule before iOS 26.1) brings it back. One
+session at a time: a second launch reopens the running one. The summary offers « Reprendre la séance ».
+A hold set has a ▶ that pushes `GuidedHoldPage` (`GuidedHoldClock`): « Mets-toi en place » (5 s), then
+the hold, or for a `perSide` set « Côté gauche », « Change de côté » (5 s), « Côté droit » (one set covers
+both sides), the whole sequence shown from the start and the next step always named; a sound on each
+step and its last 3 s, VoiceOver told, screen kept awake; ticked at the end. Set lines say
+« par côté » and never show a 0 kg load; the server shapes the sets (SHARPIT ADR-121: no load on
+mobility, a one-rep stretch becomes a 30 s hold, `perSide` from the coach or the taxonomy).
+`SharpitScreenDemo strength-dock` shows the dock in a two-tab shell.
