@@ -644,6 +644,7 @@ extension PlannedSessionPreview {
 }
 #endif
 
+#if DEBUG
 private struct GalleryWorkoutDockDemo: View {
     let session: GuidedStrengthSession?
     @State private var dock = GuidedWorkoutDock()
@@ -666,3 +667,4 @@ private struct GalleryWorkoutDockDemo: View {
         }
     }
 }
+#endif
