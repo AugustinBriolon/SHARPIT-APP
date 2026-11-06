@@ -227,6 +227,7 @@ struct PlannedSessionDrawer: View {
     let onDiscussWithCoach: (CoachDiscussContext) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(GuidedWorkoutDock.self) private var workoutDock: GuidedWorkoutDock?
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var showingLinkPicker = false
     @State private var loadedBreakdown: V1PlannedSessionBreakdown?
@@ -422,11 +423,18 @@ struct PlannedSessionDrawer: View {
         switch action {
         case .guided:
             SharpitPrimaryButton(title: String(localized: "Lancer la séance"), trailingSymbol: "play.circle.fill") {
-                guidedSession = GuidedStrengthSession.make(
+                let guided = GuidedStrengthSession.make(
                     title: preview.title,
                     plannedSessionId: preview.sessionId,
                     prescription: effectivePrescription
                 )
+                // Run by the app, not by this drawer, so it outlives it and can be reduced.
+                if let workoutDock, let guided, let guidedFinish {
+                    workoutDock.start(guided, finish: guidedFinish)
+                    dismiss()
+                } else {
+                    guidedSession = guided
+                }
             }
             .accessibilityHint("Ouvre le suivi guidé sur le téléphone")
         case .watch:

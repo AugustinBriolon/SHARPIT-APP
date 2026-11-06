@@ -27,6 +27,8 @@ struct RootView: View {
     @State private var features = FeatureStore(client: AthleteProfileClient())
     /// The app's one toast slot — a sync starting or failing, wherever the athlete is.
     @State private var toastCenter = SharpitToastCenter()
+    /// The guided strength session running, reduced or not, across every tab.
+    @State private var workoutDock = GuidedWorkoutDock()
     /// Push notification manager for Moment 1 (Wake / Morning verdict) APNs registration and routing.
     @State private var pushManager = PushNotificationManager.shared
     /// SharpIt Pro: the tier as the web states it, and every App Store transaction handed to
@@ -108,6 +110,7 @@ struct RootView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .modifier(GuidedWorkoutDockHost(dock: workoutDock))
         // A tab turned off while showing, or a link to it, lands on Résumé.
         .onChange(of: router.selectedTab, initial: true) { _, tab in
             if tab == .body, !features.isOn(.health) { router.select(.today) }

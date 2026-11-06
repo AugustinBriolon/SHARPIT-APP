@@ -307,6 +307,9 @@ struct ScreenDemoHost: View {
                         )
                     )
                 }
+            case "strength-dock":
+                // The session run by the app: « Réduire » slides it away, the bar brings it back.
+                GalleryWorkoutDockDemo(session: Self.strengthSession)
             case "stress":
                 NavigationStack {
                     ScrollView { StressDemo.cards }
@@ -421,6 +424,11 @@ struct ScreenDemoHost: View {
                     exercise(String(localized: "Développé couché"), sets: 4, reps: 8, kg: 100, order: 0),
                     exercise(String(localized: "Développé militaire"), sets: 4, reps: 8, kg: 60, order: 1),
                     exercise(String(localized: "Écarté poulie"), sets: 3, reps: 12, kg: 20, order: 2),
+                    .object([
+                        "exercise": .string(String(localized: "Étirement des fléchisseurs de la hanche")),
+                        "sets": .number(3), "reps": .number(0), "durationSec": .number(30),
+                        "perSide": .bool(true), "order": .number(3),
+                    ]),
                 ]),
             ])
         )
@@ -646,3 +654,26 @@ extension PlannedSessionPreview {
     }
 }
 #endif
+
+private struct GalleryWorkoutDockDemo: View {
+    let session: GuidedStrengthSession?
+    @State private var dock = GuidedWorkoutDock()
+
+    var body: some View {
+        TabView {
+            Tab("Résumé", systemImage: "sun.max") {
+                NavigationStack { Text("Résumé").navigationTitle("Résumé") }
+            }
+            Tab("Plan", systemImage: "calendar") {
+                NavigationStack { Text("Plan").navigationTitle("Plan") }
+            }
+        }
+        .modifier(GuidedWorkoutDockHost(dock: dock))
+        .task {
+            guard let session else { return }
+            dock.start(session, finish: GuidedStrengthFinishContext(
+                client: ActivityClient(), linker: PlannedSessionClient(), tokenProvider: { "demo" }
+            ))
+        }
+    }
+}

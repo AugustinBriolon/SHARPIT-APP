@@ -16,6 +16,8 @@ struct GuidedStrengthWorkoutView: View {
     let finish: GuidedStrengthFinishContext
 
     @Environment(\.dismiss) private var dismiss
+    /// Nil when shown on its own (the design gallery): then it is a plain cover.
+    @Environment(GuidedWorkoutDock.self) private var dock: GuidedWorkoutDock?
     @State private var phase: Phase = .overview
     /// Pushed pages over the overview — the system push/pop and its edge swipe.
     @State private var path: [Route] = []
@@ -51,6 +53,8 @@ struct GuidedStrengthWorkoutView: View {
     private enum Route: Hashable {
         case exercise(String)
         case rest
+        /// A timed hold's countdown, both sides for a one-sided move.
+        case hold(UUID)
     }
 
     private var focusedExercise: String? {
@@ -87,6 +91,7 @@ struct GuidedStrengthWorkoutView: View {
                     switch route {
                     case let .exercise(name): exercisePage(name: name)
                     case .rest: restPage
+                    case let .hold(id): holdPage(id: id)
                     }
                 }
                 .background(SharpitCanvasBackground())
@@ -142,10 +147,17 @@ struct GuidedStrengthWorkoutView: View {
         ToolbarItem(placement: .cancellationAction) {
             // Menu (not confirmationDialog): opens from Quitter instead of page center.
             Menu {
+                if let dock {
+                    // Out of sight, still running: the bar above the tabs brings it back.
+                    Button("Réduire la séance", systemImage: "chevron.down") {
+                        focusedField = nil
+                        dock.minimize()
+                    }
+                }
                 Section("Les séries cochées ne seront pas enregistrées") {
                     Button("Quitter sans enregistrer", role: .destructive) {
                         stopTimers()
-                        dismiss()
+                        close()
                     }
                 }
             } label: {
@@ -494,6 +506,7 @@ struct GuidedStrengthWorkoutView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Passer en kilos")
                     .accessibilityHint("Affiche répétitions et charge")
+                    sideTag(set)
                     Spacer(minLength: 0)
                 } else {
                     TextField("0", text: repsText(for: set.id))
@@ -511,7 +524,8 @@ struct GuidedStrengthWorkoutView: View {
                         .padding(.leading, -SharpitSpacing.xs)
                         .padding(.trailing, SharpitSpacing.sm)
 
-                    TextField("0", text: weightText(for: set.id))
+                    // No load prescribed: an empty field, not a « 0 » read as a weight.
+                    TextField("—", text: weightText(for: set.id))
                         .keyboardType(.decimalPad)
                         .font(SharpitTypography.data)
                         .foregroundStyle(SharpitColor.foreground)
@@ -537,7 +551,23 @@ struct GuidedStrengthWorkoutView: View {
                     .accessibilityLabel("Passer en durée")
                     .accessibilityHint("Affiche une durée en minutes")
 
+                    sideTag(set)
                     Spacer(minLength: 0)
+                }
+
+                if set.isHold, !set.isDone {
+                    Button {
+                        focusedField = nil
+                        path.append(.hold(set.id))
+                    } label: {
+                        Image(systemName: "play.circle")
+                            .font(.title2)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(set.perSide ? String(localized: "Lancer le maintien, côté gauche puis droit") : String(localized: "Lancer le maintien"))
                 }
 
                 Button {
@@ -559,6 +589,32 @@ struct GuidedStrengthWorkoutView: View {
             .frame(minHeight: SharpitSpacing.rowHeight)
             .sharpitSurface(.row)
             .animation(SharpitMotion.reveal, value: set.isDone)
+        }
+    }
+
+    @ViewBuilder
+    private func holdPage(id: UUID) -> some View {
+        if let set = session.targets.first(where: { $0.id == id }) {
+            GuidedHoldPage(
+                exerciseName: set.exerciseName,
+                clock: GuidedHoldClock(
+                    durationSec: set.loggedDurationSec ?? set.targetDurationSec ?? GuidedHoldClock.fallbackSec,
+                    perSide: set.perSide
+                )
+            ) {
+                completeSet(id: id)
+                if path.last == .hold(id) { path.removeLast() }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sideTag(_ set: GuidedStrengthSetTarget) -> some View {
+        if set.perSide {
+            Text("par côté")
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .lineLimit(1)
         }
     }
 
@@ -707,6 +763,16 @@ struct GuidedStrengthWorkoutView: View {
                 ) {
                     Task { await save() }
                 }
+                .disabled(isSaving)
+
+                // « Terminer » is not a one-way door: back to the sets, nothing lost.
+                Button("Reprendre la séance") {
+                    failure = nil
+                    SharpitMotion.run { phase = .overview }
+                }
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight)
                 .disabled(isSaving)
             }
             .padding(SharpitSpacing.cardPadding)
@@ -915,9 +981,14 @@ struct GuidedStrengthWorkoutView: View {
         )
     }
 
+    /// Saved or quit: off the dock when it runs there, else the cover closes.
+    private func close() {
+        if let dock { dock.end() } else { dismiss() }
+    }
+
     private func save() async {
         if session.completedCount == 0 {
-            dismiss()
+            close()
             return
         }
         isSaving = true
@@ -937,7 +1008,7 @@ struct GuidedStrengthWorkoutView: View {
                 try? await finish.linker.link(sessionId: plannedId, activityId: activityId, token: token)
             }
             finish.onFinished(activityId)
-            dismiss()
+            close()
         } catch let SharpitAPIError.message(reason) {
             failure = reason
         } catch {
