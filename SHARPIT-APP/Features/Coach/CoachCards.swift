@@ -70,6 +70,8 @@ nonisolated struct CoachWorkout: Decodable, Equatable, Sendable {
         let reps: Int
         let durationSec: Int?
         let weightKg: Double?
+        /// One side then the other (SHARPIT ADR-121); absent before the coach declared it.
+        var perSide: Bool? = nil
         let restMode: String?
         let restSec: Int?
         let notes: String?
@@ -114,11 +116,13 @@ enum CoachWorkoutFormat {
         let work = exercise.reps == 0
             ? exercise.durationSec.map { "\(exercise.sets) × \($0) s" } ?? "\(exercise.sets) séries"
             : "\(exercise.sets) × \(exercise.reps)"
+        let side = exercise.perSide == true && (exercise.reps > 0 || exercise.durationSec != nil)
+            ? String(localized: " par côté") : ""
         let weight = exercise.weightKg.flatMap { $0 > 0 ? "\(number($0)) kg" : nil }
         let rest: String? = exercise.restMode == "time"
             ? exercise.restSec.map { String(localized: "repos \($0) s") }
             : String(localized: "repos au Lap")
-        return [work, weight, rest].compactMap { $0 }.joined(separator: " · ")
+        return [work + side, weight, rest].compactMap { $0 }.joined(separator: " · ")
     }
 
     /// « 60 min · charge 72 », or nil when the coach gave neither.

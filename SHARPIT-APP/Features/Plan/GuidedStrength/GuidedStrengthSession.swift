@@ -14,6 +14,8 @@ struct GuidedStrengthSetTarget: Identifiable, Equatable, Sendable {
     let restSec: Int?
     let restIsTimed: Bool
     let notes: String?
+    /// Done one side then the other: the reps or the hold are per side, each set covers both.
+    var perSide = false
 
     var loggedReps: Int
     var loggedWeightKg: Double?
@@ -33,25 +35,29 @@ struct GuidedStrengthSetTarget: Identifiable, Equatable, Sendable {
 
     var targetLine: String {
         if let duration = targetDurationSec, duration > 0, targetReps == 0 || usesDuration {
-            return PlannedSessionFormat.durationSeconds(duration)
+            return PlannedSessionFormat.durationSeconds(duration) + sideSuffix
         }
-        var parts = ["\(targetReps) rep\(targetReps == 1 ? "" : "s")"]
-        if let kg = targetWeightKg { parts.append(Self.kilograms(kg)) }
+        var parts = ["\(targetReps) rep\(targetReps == 1 ? "" : "s")" + sideSuffix]
+        if let kg = targetWeightKg, kg > 0 { parts.append(Self.kilograms(kg)) }
         return parts.joined(separator: " · ")
     }
+
+    /// « par côté », or nothing.
+    var sideSuffix: String { perSide ? String(localized: " par côté") : "" }
 
     /// `12 × 95 kg` as logged (or the prescription when still open).
     var readoutLine: String {
         if isHold {
             let sec = loggedDurationSec ?? targetDurationSec ?? 0
-            return PlannedSessionFormat.durationSeconds(sec)
+            return PlannedSessionFormat.durationSeconds(sec) + sideSuffix
         }
         let reps = isDone ? loggedReps : max(loggedReps, targetReps)
         let kg = isDone ? loggedWeightKg : (loggedWeightKg ?? targetWeightKg)
-        if let kg {
-            return "\(reps) × \(Self.kilograms(kg))"
+        // No load is no load: « 1 × 0 kg » read as a weight lifted.
+        if let kg, kg > 0 {
+            return "\(reps) × \(Self.kilograms(kg))" + sideSuffix
         }
-        return "\(reps) rep\(reps == 1 ? "" : "s")"
+        return "\(reps) rep\(reps == 1 ? "" : "s")" + sideSuffix
     }
 
     static func defaultUsesDuration(reps: Int, durationSec: Int?) -> Bool {
@@ -140,6 +146,7 @@ struct GuidedStrengthSession: Equatable, Sendable {
                         restSec: exercise.restSec,
                         restIsTimed: restIsTimed && (exercise.restSec ?? 0) > 0,
                         notes: number == 1 ? exercise.notes : nil,
+                        perSide: exercise.perSide,
                         loggedReps: max(exercise.reps, exercise.durationSec == nil ? 1 : 0),
                         loggedWeightKg: exercise.weightKg,
                         loggedDurationSec: exercise.durationSec,
@@ -243,6 +250,7 @@ struct GuidedStrengthSession: Equatable, Sendable {
             restSec: last.restSec,
             restIsTimed: last.restIsTimed,
             notes: nil,
+            perSide: last.perSide,
             loggedReps: last.loggedReps,
             loggedWeightKg: last.loggedWeightKg,
             loggedDurationSec: last.loggedDurationSec,

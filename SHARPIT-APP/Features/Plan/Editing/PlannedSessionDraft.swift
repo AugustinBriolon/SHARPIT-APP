@@ -215,6 +215,9 @@ struct StrengthExerciseDraft: Identifiable, Equatable {
 
     var notes: String? { preserved["notes"]?.string }
 
+    /// Done one side then the other: reps and hold are per side (SHARPIT ADR-121).
+    var perSide: Bool { preserved["perSide"]?.bool ?? false }
+
     /// Catalog id when the server (or a prior resolve) attached form media.
     var exerciseCatalogId: String? {
         guard let value = preserved["exerciseCatalogId"]?.string else { return nil }

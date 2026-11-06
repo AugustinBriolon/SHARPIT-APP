@@ -50,6 +50,10 @@ nonisolated enum JSONValue: Codable, Hashable, Sendable {
         if case .number(let value) = self { value } else { nil }
     }
 
+    var bool: Bool? {
+        if case .bool(let value) = self { value } else { nil }
+    }
+
     var array: [JSONValue]? {
         if case .array(let value) = self { value } else { nil }
     }
