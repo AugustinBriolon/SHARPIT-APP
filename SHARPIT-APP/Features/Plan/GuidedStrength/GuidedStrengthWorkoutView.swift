@@ -147,37 +147,38 @@ struct GuidedStrengthWorkoutView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .cancellationAction) {
-            // Menu (not confirmationDialog): opens from Quitter instead of page center.
-            Menu {
-                Section("Les séries cochées ne seront pas enregistrées") {
-                    Button("Quitter sans enregistrer", role: .destructive) {
-                        stopTimers()
-                        close()
-                    }
-                }
-            } label: {
-                Text("Quitter")
-            }
-            .tint(SharpitColor.destructive)
-            .disabled(isSaving)
-        }
+        // « Réduire » stays one tap away, in the open; finishing and quitting are rarer and
+        // one tap further, in « … » (a Menu, not a confirmationDialog: it opens from the button).
         if dock != nil {
             ToolbarItem(placement: .topBarLeading) { minimizeButton }
         }
         if phase == .overview {
             ToolbarItem(placement: .principal) { sessionStatus }
         }
-        // Only on the session overview — never on a single exercise's sets.
-        if phase == .overview {
-            ToolbarItem(placement: .primaryAction) {
-                Button("Terminer") {
+        ToolbarItem(placement: .primaryAction) { moreMenu }
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            // Only on the session overview — never on a single exercise's sets.
+            if phase == .overview {
+                Button("Terminer la séance", systemImage: "checkmark.circle") {
                     stopTimers()
                     SharpitMotion.run { phase = .summary }
                 }
                 .disabled(session.completedCount == 0)
             }
+            Section("Les séries cochées ne seront pas enregistrées") {
+                Button("Quitter sans enregistrer", systemImage: "xmark.circle", role: .destructive) {
+                    stopTimers()
+                    close()
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis")
         }
+        .disabled(isSaving)
+        .accessibilityLabel("Plus d'actions")
     }
 
     private var sessionStatus: some View {

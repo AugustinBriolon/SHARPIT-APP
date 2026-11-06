@@ -94,7 +94,7 @@ asked before replacing unless the day moved. Pro-only: a Free athlete's tap open
 **Guided strength session.** « Lancer la séance » closes the drawer and hands the session to
 `GuidedWorkoutDock` (`RootView`'s, in the environment; `docs/adr/0030`): the same
 `GuidedStrengthWorkoutView` is mounted over the tabs (`GuidedWorkoutDockHost`) and « Réduire la séance »
-(the ⌄ beside « Quitter », and on every pushed page) only slides it away — sets, rest, clock and heart rate keep running — while the tab
+(a ⌄ at the top left, and on every pushed page; « Terminer la séance » and « Quitter » sit in the « … » at the right) only slides it away — sets, rest, clock and heart rate keep running — while the tab
 bar's bottom accessory (« Push day · 12:34 », a glass capsule before iOS 26.1) brings it back. One
 session at a time: a second launch reopens the running one. The summary offers « Reprendre la séance ».
 A hold set has a ▶ that pushes `GuidedHoldPage` (`GuidedHoldClock`): « Mets-toi en place » (5 s), then
