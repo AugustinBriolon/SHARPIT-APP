@@ -10,6 +10,8 @@ struct TodayFold: Sendable, Equatable {
     var morningProposal: V1TodayMorningProposal? = nil
     /// The next week SharpIt wrote as the plan runs out (ADR-095).
     var planHorizon: V1TodayPlanHorizon? = nil
+    /// A trip or constraint ahead that sessions of the plan do not fit (`docs/adr/0029`).
+    var travelConflict: V1TodayTravelConflict? = nil
     /// Race day, or the result in the days after it.
     var race: RaceMomentModel? = nil
     /// ADR-079. Callers: WidgetSnapshotPublisher. API: V1TodayResponse.energyBank.
@@ -245,6 +247,7 @@ enum TodayFoldMapper {
             weather: response.weather,
             morningProposal: response.morningProposal,
             planHorizon: response.planHorizon,
+            travelConflict: response.travelConflict,
             race: RaceMomentMapper.map(response.race, trainingDayId: response.trainingDayId),
             energyBank: response.energyBank,
             timeline: response.timeline ?? []

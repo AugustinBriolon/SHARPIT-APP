@@ -23,6 +23,20 @@ nonisolated struct V1TodayResponse: Codable, Sendable, Equatable {
     var timeline: [V1DayTimelineEvent]? = nil
     /// A week SharpIt wrote because the plan was running out, waiting to be looked at (ADR-095).
     var planHorizon: V1TodayPlanHorizon? = nil
+    /// The first trip or constraint ahead with sessions that do not fit it (`docs/adr/0029`).
+    var travelConflict: V1TodayTravelConflict? = nil
+}
+
+nonisolated struct V1TodayTravelConflict: Codable, Sendable, Equatable {
+    var travelId: String
+    var type: CoachMemoryType
+    /// The trip's place or the constraint's title.
+    var name: String
+    /// yyyy-MM-dd, both inclusive.
+    var startDate: String
+    var endDate: String
+    var trainingConstraint: TravelTrainingConstraint
+    var sessionCount: Int
 }
 
 nonisolated struct V1TodayPlanHorizon: Codable, Sendable, Equatable {

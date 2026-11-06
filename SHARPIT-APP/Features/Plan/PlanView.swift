@@ -38,9 +38,6 @@ struct PlanView: View {
     /// The coach's trips, for the week's « Déplacement » chip (the web's `TravelContextBanner`).
     @State private var travels: [CoachMemoryEntry] = []
     @State private var showingTravel = false
-    /// The last trip or constraint saved in that sheet, looked at once the sheet closes.
-    @State private var savedTrip: CreateCoachMemoryInput?
-    @Environment(ProStore.self) private var pro: ProStore?
     @State private var extrasGate = LoadGate()
     /// Garmin linked: the drawer then offers to send an endurance session to the watch.
     @State private var isGarminLinked = false
@@ -155,14 +152,9 @@ struct PlanView: View {
             .sheet(isPresented: $showingCalendar) {
                 PlanCalendarSheet(store: store)
             }
-            .sheet(isPresented: $showingTravel, onDismiss: {
-                Task {
-                    await loadTravels()
-                    await offerTripAdaptation()
-                }
-            }) {
+            .sheet(isPresented: $showingTravel, onDismiss: { Task { await loadTravels() } }) {
                 NavigationStack {
-                    PlanTripsView(client: CoachMemoryClient(), tokenProvider: tokenProvider) { savedTrip = $0 }
+                    PlanTripsView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("OK") { showingTravel = false }
@@ -238,6 +230,12 @@ struct PlanView: View {
                 router.pendingCatchUp = nil
                 startCatchUp(catchUp)
             }
+            // Résumé's « … bouscule ton plan » tapped: the adapter, the trip already said.
+            .onChange(of: router.pendingTravelConflict, initial: true) { _, conflict in
+                guard let conflict else { return }
+                router.pendingTravelConflict = nil
+                startAdapter(focus: PlanTripAdaptation.focus(for: conflict))
+            }
             // A session to do, tapped in a widget: today's week, its drawer open.
             .onChange(of: router.pendingPlannedSessionId, initial: true) { _, id in
                 guard let id else { return }
@@ -279,29 +277,16 @@ struct PlanView: View {
 extension PlanView {
     /// « Rattraper ma semaine »: the adapter opens with the miss said and starts at once.
     fileprivate func startCatchUp(_ catchUp: PlanCatchUp) {
-        adjustment.reset()
-        activeCatchUp = catchUp
-        adjustment.focus = catchUp.focus()
-        showingAdapter = true
-        Task { await adjustment.start() }
+        startAdapter(focus: catchUp.focus(), catchUp: catchUp)
     }
 
-    /// A trip that narrows training over sessions still to do: the adapter opens with it said
-    /// and starts, the coach's changes waiting for the athlete. A known Free athlete is not
-    /// shown the paywall for a save; the trip still reaches the plan's context on the server.
-    fileprivate func offerTripAdaptation() async {
-        guard let saved = savedTrip else { return }
-        savedTrip = nil
-        if let tier = pro?.pro, !tier.isPro { return }
-        let days = PlanTripAdaptation.dayRange(of: saved)
-        guard let token = try? await tokenProvider(),
-              let sessions = try? await client.plannedSessions(from: days.lowerBound, to: days.upperBound, token: token),
-              let offer = PlanTripAdaptation.offer(for: saved, sessions: sessions) else { return }
+    /// The adapter opens with what changed already said, and starts at once.
+    fileprivate func startAdapter(focus: String, catchUp: PlanCatchUp? = nil) {
         adjustment.reset()
-        activeCatchUp = nil
-        adjustment.focus = offer.focus()
+        activeCatchUp = catchUp
+        adjustment.focus = focus
         showingAdapter = true
-        await adjustment.start()
+        Task { await adjustment.start() }
     }
 
     /// Shows today's week and opens the session's drawer once the week is read.

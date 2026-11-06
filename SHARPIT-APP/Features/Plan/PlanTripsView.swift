@@ -6,16 +6,10 @@ struct PlanTripsView: View {
     @State private var store: CoachMemoryStore
     @State private var route: CoachMemoryFormRoute?
     @State private var hasLoaded = false
-    private let onSaved: (CreateCoachMemoryInput) -> Void
 
     private static let kinds: [CoachMemoryType] = [.travel, .constraint]
 
-    init(
-        client: any CoachMemoryServing,
-        tokenProvider: @escaping () async throws -> String,
-        onSaved: @escaping (CreateCoachMemoryInput) -> Void = { _ in }
-    ) {
-        self.onSaved = onSaved
+    init(client: any CoachMemoryServing, tokenProvider: @escaping () async throws -> String) {
         _store = State(initialValue: CoachMemoryStore(client: client, tokenProvider: tokenProvider))
     }
 
@@ -32,7 +26,7 @@ struct PlanTripsView: View {
                 }
             }
             .navigationDestination(item: $route) { route in
-                CoachMemoryEntryForm(store: store, kinds: Self.kinds, entry: route.entry, onSaved: onSaved)
+                CoachMemoryEntryForm(store: store, kinds: Self.kinds, entry: route.entry)
             }
             .task {
                 await store.load()

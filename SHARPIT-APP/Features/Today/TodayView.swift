@@ -570,6 +570,10 @@ private struct TodayFoldView: View {
                     PlanHorizonCard(horizon: horizon) { router.open(.planGenerator) }
                 }
 
+                if let conflict = fold.travelConflict {
+                    TravelConflictCard(conflict: conflict) { router.openTravelConflict(conflict) }
+                }
+
                 evidenceSection
                     .opacity(phase.showsSession ? 1 : 0)
                     .offset(y: phase.showsSession ? 0 : 18)

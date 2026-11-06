@@ -2,78 +2,45 @@ import Foundation
 import Testing
 @testable import Sharpit
 
-private let paris: Calendar = {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(identifier: "Europe/Paris")!
-    return calendar
-}()
-
-private func day(_ value: Int, month: Int = 11) -> Date {
-    paris.date(from: DateComponents(year: 2026, month: month, day: value, hour: 12))!
-}
-
-private func trip(
-    from start: Int,
-    to end: Int,
-    constraint: TravelTrainingConstraint = .reduced,
-    sports: [String]? = nil,
-    type: CoachMemoryType = .travel
-) -> CreateCoachMemoryInput {
-    CreateCoachMemoryInput(
-        type: type, label: type == .travel ? nil : "Boulot", locationLabel: type == .travel ? "Lyon" : nil,
-        startDate: day(start), endDate: day(end), note: nil,
-        trainingConstraint: constraint, allowedDisciplines: sports
+private func conflict(
+    type: CoachMemoryType = .travel,
+    name: String = "Lyon",
+    from start: String = "2026-11-07",
+    to end: String = "2026-11-08",
+    constraint: TravelTrainingConstraint = .none,
+    sessions: Int = 2
+) -> V1TodayTravelConflict {
+    V1TodayTravelConflict(
+        travelId: "trip", type: type, name: name, startDate: start, endDate: end,
+        trainingConstraint: constraint, sessionCount: sessions
     )
 }
 
-private func session(on date: Int, completed: Bool? = nil) -> V1PlannedSessionItem {
-    V1PlannedSessionItem(id: "s\(date)", date: day(date), title: "Seuil", type: "RUN", durationMin: 55, completed: completed)
+@Test func theTodayPayloadCarriesTheConflict() throws {
+    let json = """
+    {"travelId": "trip", "type": "TRAVEL", "name": "Lyon", "startDate": "2026-11-07",
+     "endDate": "2026-11-08", "trainingConstraint": "REDUCED", "sessionCount": 3}
+    """
+    let decoded = try JSONDecoder().decode(V1TodayTravelConflict.self, from: Data(json.utf8))
+    #expect(decoded == conflict(constraint: .reduced, sessions: 3))
 }
 
-private let today = day(5)
-
-@Test func aLighterTripOverASessionOffersTheAdapter() {
-    let offer = PlanTripAdaptation.offer(for: trip(from: 7, to: 8), sessions: [session(on: 8)], now: today, calendar: paris)
-    #expect(offer != nil)
+@Test func theCardNamesTheTripAndCountsTheSessions() {
+    let trip = conflict()
+    #expect(TravelConflictReadout.title(trip) == "Ton déplacement à Lyon bouscule ton plan")
+    #expect(TravelConflictReadout.subtitle(trip).hasPrefix("2 séances ne collent pas, du "))
+    #expect(TravelConflictReadout.subtitle(conflict(sessions: 1)).hasPrefix("1 séance ne colle pas"))
 }
 
-@Test func aTripThatChangesNothingLeavesThePlanAlone() {
-    let offer = PlanTripAdaptation.offer(
-        for: trip(from: 7, to: 8, constraint: .full), sessions: [session(on: 7)], now: today, calendar: paris
-    )
-    #expect(offer == nil)
-}
-
-@Test func narrowedSportsAtTheUsualLoadStillNeedALook() {
-    let offer = PlanTripAdaptation.offer(
-        for: trip(from: 7, to: 7, constraint: .full, sports: ["RUN"]), sessions: [session(on: 7)], now: today, calendar: paris
-    )
-    #expect(offer != nil)
-}
-
-@Test func noSessionToDoOnThoseDaysOffersNothing() {
-    let sessions = [session(on: 6), session(on: 7, completed: true), session(on: 9)]
-    #expect(PlanTripAdaptation.offer(for: trip(from: 7, to: 8), sessions: sessions, now: today, calendar: paris) == nil)
-}
-
-@Test func aTripPastTheAdaptersTwoWeeksOffersNothing() {
-    let offer = PlanTripAdaptation.offer(
-        for: trip(from: 25, to: 26), sessions: [session(on: 25)], now: today, calendar: paris
-    )
-    #expect(offer == nil)
-}
-
-@Test func injuriesAndNotesAreNotTrips() {
-    let offer = PlanTripAdaptation.offer(
-        for: trip(from: 7, to: 8, type: .injury), sessions: [session(on: 7)], now: today, calendar: paris
-    )
-    #expect(offer == nil)
+@Test func aOneDayConstraintReadsAsOneDay() {
+    let work = conflict(type: .constraint, name: "Boulot", from: "2026-11-09", to: "2026-11-09")
+    #expect(TravelConflictReadout.title(work) == "« Boulot » bouscule ton plan")
+    #expect(TravelConflictReadout.days(work).hasPrefix("le "))
 }
 
 @Test func theCoachIsToldThePlaceTheDaysAndTheTraining() {
-    let focus = PlanTripAdaptation(saved: trip(from: 7, to: 8, constraint: .none)).focus(calendar: paris)
-    #expect(focus.contains("Lyon"))
-    #expect(focus.contains("7"))
-    #expect(focus.contains("8"))
-    #expect(focus.contains("aucune séance"))
+    let focus = PlanTripAdaptation.focus(for: conflict())
+    #expect(focus.hasPrefix("Je suis en déplacement à Lyon du "))
+    #expect(focus.contains("pas d'entraînement possible"))
+    #expect(focus.contains("séances clés"))
 }

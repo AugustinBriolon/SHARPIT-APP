@@ -37,6 +37,8 @@ final class ShellRouter {
     var pendingPlannedSessionId: String?
     /// A missed session to catch up on in Plan, once — « Dommage pour hier » tapped.
     var pendingCatchUp: PlanCatchUp?
+    /// A trip the plan no longer fits, to adjust in Plan, once — Résumé's conflict card tapped.
+    var pendingTravelConflict: V1TodayTravelConflict?
     /// A page of Résumé to show, once — a widget tapped: the day itself, Sommeil, Nutrition or
     /// its barcode scanner.
     var pendingTodayPage: TodayPage?
@@ -113,6 +115,11 @@ final class ShellRouter {
 
     func openPlan(on day: Date) {
         planFocusDay = day
+        selectedTab = .plan
+    }
+
+    func openTravelConflict(_ conflict: V1TodayTravelConflict) {
+        pendingTravelConflict = conflict
         selectedTab = .plan
     }
 
