@@ -102,21 +102,11 @@ final class ActivityStatusStore {
 /// `yyyy-MM-dd` in the athlete's own calendar, which is what the API stores.
 enum ActivityStatusDate {
     nonisolated static func string(from date: Date, calendar: Calendar = .current) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = calendar.timeZone
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        APIDate.dayString(date, calendar: calendar)
     }
 
     nonisolated static func date(from string: String, calendar: Calendar = .current) -> Date? {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = calendar.timeZone
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: string)
+        APIDate.day(string, calendar: calendar)
     }
 
     /// The date a freshly picked deadline starts on. A week out, because a mode ending

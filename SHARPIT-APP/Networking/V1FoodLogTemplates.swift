@@ -137,15 +137,10 @@ nonisolated extension TrainingDayId {
     static func previous(_ trainingDayId: String) -> String? {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .gmt
-        let parser = DateFormatter()
-        parser.calendar = calendar
-        parser.timeZone = calendar.timeZone
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: trainingDayId),
+        guard let date = APIDate.day(trainingDayId, calendar: calendar),
               let before = calendar.date(byAdding: .day, value: -1, to: date)
         else { return nil }
-        return parser.string(from: before)
+        return APIDate.dayString(before, calendar: calendar)
     }
 }
 

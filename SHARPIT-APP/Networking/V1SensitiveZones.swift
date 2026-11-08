@@ -160,9 +160,5 @@ private nonisolated enum V1ZoneDate {
         return parse(text)
     }
 
-    static func parse(_ text: String) -> Date? {
-        let precise = ISO8601DateFormatter()
-        precise.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return precise.date(from: text) ?? ISO8601DateFormatter().date(from: text)
-    }
+    static func parse(_ text: String) -> Date? { APIDate.instant(text) }
 }

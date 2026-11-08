@@ -559,21 +559,11 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
 extension Date {
     /// The API's ISO-8601 timestamps, with or without fractional seconds.
     nonisolated static func fromAPI(_ value: String) throws -> Date {
-        let fractional = ISO8601DateFormatter()
-        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let standard = ISO8601DateFormatter()
-        standard.formatOptions = [.withInternetDateTime]
-        if let date = fractional.date(from: value) ?? standard.date(from: value) {
-            return date
-        }
+        if let date = APIDate.instant(value) { return date }
         throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Invalid activity date"))
     }
 
     /// The inverse of `fromAPI`, for a payload the app writes itself rather than sends —
     /// today, only its own read cache (`docs/adr/0007`).
-    nonisolated var toAPI: String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.string(from: self)
-    }
+    nonisolated var toAPI: String { APIDate.string(from: self) }
 }

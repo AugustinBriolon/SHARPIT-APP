@@ -332,13 +332,7 @@ nonisolated enum TrainingDayId {
     }
 
     /// Local midnight of the day, or nil when the id is not `yyyy-MM-dd`.
-    static func date(_ trainingDayId: String) -> Date? {
-        let parser = DateFormatter()
-        parser.calendar = Calendar(identifier: .gregorian)
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.dateFormat = "yyyy-MM-dd"
-        return parser.date(from: trainingDayId)
-    }
+    static func date(_ trainingDayId: String) -> Date? { APIDate.day(trainingDayId) }
 
     static func displayName(_ trainingDayId: String) -> String {
         guard let date = date(trainingDayId) else {

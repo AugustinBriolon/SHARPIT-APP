@@ -107,11 +107,7 @@ enum CoachDataCardFormat {
 
     /// « lun. 26 » from a `yyyy-MM-dd` day id; the id itself when it does not parse.
     static func day(_ trainingDayId: String) -> String {
-        let parser = DateFormatter()
-        parser.calendar = Calendar(identifier: .gregorian)
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: trainingDayId) else { return trainingDayId }
+        guard let date = APIDate.day(trainingDayId) else { return trainingDayId }
         return date.formatted(.dateTime.weekday(.abbreviated).day().locale(AppLanguage.locale))
     }
 }

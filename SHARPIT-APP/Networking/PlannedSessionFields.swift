@@ -23,9 +23,7 @@ nonisolated struct PlannedSessionFields: Encodable, Equatable, Sendable {
     /// to the day before or after (the server reads a bare `yyyy-MM-dd` as UTC midnight).
     mutating func setDay(_ day: Date, calendar: Calendar = .current) {
         let noon = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: day) ?? day
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        values["date"] = .string(formatter.string(from: noon))
+        values["date"] = .string(APIDate.string(from: noon))
     }
 
     /// `HH:mm`, athlete-local; nil clears it.

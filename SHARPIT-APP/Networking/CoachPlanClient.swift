@@ -100,9 +100,7 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
             payload["focus"] = focus.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         if let startDate {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            payload["startDate"] = formatter.string(from: startDate)
+            payload["startDate"] = APIDate.dayString(startDate)
         }
 
         return try await streamCoach(

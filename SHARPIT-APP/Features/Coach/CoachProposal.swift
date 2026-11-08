@@ -248,11 +248,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
     /// « 2026-09-26 » → « samedi 26 septembre »; anything else as it came.
     static func formattedDate(_ raw: String) -> String {
         let day = String(raw.prefix(10))
-        let parser = DateFormatter()
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.timeZone = .current
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: day) else { return raw }
+        guard let date = APIDate.day(day) else { return raw }
         let formatter = DateFormatter()
         formatter.locale = AppLanguage.locale
         formatter.setLocalizedDateFormatFromTemplate("EEEE d MMMM")

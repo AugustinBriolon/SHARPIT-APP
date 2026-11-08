@@ -153,17 +153,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
 
 extension Date {
     nonisolated static func fromPlannedAPI(_ value: String) throws -> Date {
-        let fractional = ISO8601DateFormatter()
-        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let standard = ISO8601DateFormatter()
-        standard.formatOptions = [.withInternetDateTime]
-        if let date = fractional.date(from: value) ?? standard.date(from: value) {
-            return date
-        }
-        let day = DateFormatter()
-        day.locale = Locale(identifier: "en_US_POSIX")
-        day.dateFormat = "yyyy-MM-dd"
-        if let date = day.date(from: value) { return date }
+        if let date = APIDate.instant(value) ?? APIDate.day(value) { return date }
         throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Invalid planned session date"))
     }
 }

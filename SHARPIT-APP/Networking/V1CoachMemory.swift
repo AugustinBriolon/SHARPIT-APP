@@ -141,11 +141,8 @@ nonisolated struct CoachMemoryEntry: Identifiable, Codable, Sendable, Hashable {
         key: CodingKeys,
         in container: KeyedDecodingContainer<CodingKeys>
     ) throws -> Date {
-        if let instant = try? Date.fromAPI(raw) { return instant }
-        let day = ISO8601DateFormatter()
-        day.formatOptions = [.withFullDate]
-        day.timeZone = TimeZone(identifier: "UTC")
-        if let date = day.date(from: raw) { return date }
+        if let instant = APIDate.instant(raw) { return instant }
+        if let date = APIDate.day(raw, calendar: APIDate.utcCalendar) { return date }
         throw DecodingError.dataCorruptedError(forKey: key, in: container, debugDescription: "Invalid day \(raw)")
     }
 

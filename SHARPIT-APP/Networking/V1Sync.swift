@@ -28,11 +28,7 @@ nonisolated struct V1SyncStatus: Decodable, Sendable, Equatable {
     }
 
     /// `toISOString()` always writes milliseconds, which the default ISO parser rejects.
-    static func date(_ value: String) -> Date? {
-        let parser = ISO8601DateFormatter()
-        parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return parser.date(from: value) ?? ISO8601DateFormatter().date(from: value)
-    }
+    static func date(_ value: String) -> Date? { APIDate.instant(value) }
 }
 
 nonisolated struct V1SyncProvider: Decodable, Sendable, Equatable, Identifiable {

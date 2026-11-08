@@ -391,13 +391,11 @@ final class AppleCalendarSync {
     private func busyIntervals(from start: Date, to end: Date) -> [V1CalendarBusyInterval] {
         let calendars = store.calendars(for: .event)
         let predicate = store.predicateForEvents(withStart: start, end: end, calendars: calendars)
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let capped = store.events(matching: predicate).prefix(2_000)
         return capped.map {
             V1CalendarBusyInterval(
-                start: formatter.string(from: $0.startDate),
-                end: formatter.string(from: $0.endDate)
+                start: APIDate.string(from: $0.startDate),
+                end: APIDate.string(from: $0.endDate)
             )
         }
     }
