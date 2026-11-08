@@ -43,3 +43,16 @@ private func cachedRows(_ context: ModelContext) throws -> Int {
 
     #expect(try cachedRows(context) == 1)
 }
+
+/// The day reads held in memory are the previous account's too: a wipe forgets them.
+@MainActor
+@Test func aWipeForgetsTheDayReadsHeldInMemory() throws {
+    let (_, defaults, disk) = try fixture()
+    let dayReads = DayReadCache(today: { "2026-10-17" })
+    dayReads.keep(1, day: "2026-10-12")
+
+    LocalAccountData.eraseWithoutSwiftData(defaults: defaults, disk: disk, dayReads: dayReads)
+
+    #expect(dayReads.settled(Int.self, day: "2026-10-12") == nil)
+    #expect(dayReads.lastKnown(Int.self, day: "2026-10-12") == nil)
+}

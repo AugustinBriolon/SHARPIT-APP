@@ -121,4 +121,23 @@ struct DayReadCacheTests {
         Self.launch(on: directory, defaults: defaults).keep(1, day: "2026-10-17", data: Data("1".utf8))
         #expect(Self.launch(on: directory, defaults: defaults).lastKnown(Int.self, day: "2026-10-17") == nil)
     }
+
+    @Test func clearForgetsEverythingRead() {
+        cache.keep(1, day: "2026-10-12")
+        cache.keep(2, day: "2026-10-17")
+        cache.clear()
+        #expect(cache.settled(Int.self, day: "2026-10-12") == nil)
+        #expect(cache.lastKnown(Int.self, day: "2026-10-12") == nil)
+        #expect(cache.lastKnown(Int.self, day: "2026-10-17") == nil)
+    }
+
+    @Test func anAnswerThatOutlivesAClearIsDropped() {
+        let before = cache.generation
+        cache.clear()
+        cache.keep(1, day: "2026-10-12", generation: before)
+        #expect(cache.lastKnown(Int.self, day: "2026-10-12") == nil)
+
+        cache.keep(2, day: "2026-10-12", generation: cache.generation)
+        #expect(cache.lastKnown(Int.self, day: "2026-10-12") == 2)
+    }
 }

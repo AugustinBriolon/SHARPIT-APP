@@ -48,9 +48,11 @@ enum LocalAccountData {
     /// Disk / preference wipe when no `ModelContext` is bound yet (or after it was cleared).
     static func eraseWithoutSwiftData(
         defaults: UserDefaults = .standard,
-        disk: ActivityDiskCache = .shared
+        disk: ActivityDiskCache = .shared,
+        dayReads: DayReadCache = .shared
     ) {
         disk.removeAll()
+        dayReads.clear()
         WellnessCheckInLocalStore.shared.erase()
         GuidedHeartRatePreference.clear()
         defaults.removeObject(forKey: ownerKey)

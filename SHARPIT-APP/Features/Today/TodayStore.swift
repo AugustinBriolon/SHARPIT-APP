@@ -165,8 +165,9 @@ final class TodayStore {
     }
 
     private func applyNetworkToday(dayId: String, token: String) async throws -> Bool {
+        let generation = dayReads.generation
         let payload = try await client.today(trainingDayId: dayId, token: token)
-        dayReads.keep(payload, day: dayId)
+        dayReads.keep(payload, day: dayId, generation: generation)
         neighborFolds[dayId] = nil
         // A late answer for a day left since must not replace the one now asked for.
         guard dayId == self.dayId else { return false }
@@ -194,10 +195,11 @@ final class TodayStore {
         for step in [DaySwipe.Step.previous, .next] {
             guard let day = DaySwipe.day(after: step, from: shown) else { continue }
             let dayId = TrainingDayId.today(now: day)
+            let generation = dayReads.generation
             guard dayReads.lastKnown(V1TodayResponse.self, day: dayId) == nil,
                   let payload = try? await client.today(trainingDayId: dayId, token: token)
             else { continue }
-            dayReads.keep(payload, day: dayId)
+            dayReads.keep(payload, day: dayId, generation: generation)
         }
     }
 

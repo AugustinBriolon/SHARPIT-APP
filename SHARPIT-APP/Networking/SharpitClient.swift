@@ -233,6 +233,7 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
         token: String
     ) async throws -> Payload {
         if let settled = dayReads.settled(type, day: trainingDayId) { return settled }
+        let generation = dayReads.generation
         let data = try await sendData(
             path: path,
             method: "GET",
@@ -240,7 +241,7 @@ actor SharpitClient: TodayServing, MorningProposalServing, SleepServing, Recover
             token: token
         )
         let payload = try Self.decode(type, from: data)
-        dayReads.keep(payload, day: trainingDayId, data: data)
+        dayReads.keep(payload, day: trainingDayId, data: data, generation: generation)
         return payload
     }
 

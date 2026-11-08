@@ -21,7 +21,13 @@ nonisolated final class DayReadCache: Sendable {
         var isFresh: Bool
     }
 
-    private let entries = OSAllocatedUnfairLock(initialState: [String: Entry]())
+    /// `generation` counts the wipes: a read that began before one must not refill the cache after it.
+    private struct State {
+        var entries: [String: Entry] = [:]
+        var generation = 0
+    }
+
+    private let state = OSAllocatedUnfairLock(initialState: State())
     private let today: @Sendable () -> String
     private let disk: ActivityDiskCache?
     private let expiredAtKey: String
@@ -44,7 +50,7 @@ nonisolated final class DayReadCache: Sendable {
     func settled<Payload: Decodable & Sendable>(_: Payload.Type, day: String) -> Payload? {
         guard day < today() else { return nil }
         let key = Self.key(Payload.self, day)
-        if let fresh = entries.withLock({ state in state[key].flatMap { $0.isFresh ? $0.payload : nil } }) {
+        if let fresh = state.withLock({ $0.entries[key].flatMap { $0.isFresh ? $0.payload : nil } }) {
             return fresh as? Payload
         }
         guard let stored = fromDisk(Payload.self, key: key), stored.isFresh else { return nil }
@@ -54,27 +60,44 @@ nonisolated final class DayReadCache: Sendable {
     /// The last answer for the day, fresh or not: what a screen paints while it reads again.
     func lastKnown<Payload: Decodable & Sendable>(_: Payload.Type, day: String) -> Payload? {
         let key = Self.key(Payload.self, day)
-        if let known = entries.withLock({ $0[key]?.payload }) { return known as? Payload }
+        if let known = state.withLock({ $0.entries[key]?.payload }) { return known as? Payload }
         return fromDisk(Payload.self, key: key)?.payload
     }
 
+    /// The wipe count to read before a request, so `keep` can tell its answer belongs to a past session.
+    var generation: Int { state.withLock { $0.generation } }
+
     /// Keeps the day's answer; with the bytes the server sent, a past day survives a relaunch.
-    func keep<Payload: Sendable>(_ payload: Payload, day: String, data: Data? = nil) {
+    /// With the `generation` read before the request, an answer that outlived a `clear()` is dropped.
+    func keep<Payload: Sendable>(_ payload: Payload, day: String, data: Data? = nil, generation: Int? = nil) {
         let key = Self.key(Payload.self, day)
-        entries.withLock { $0[key] = Entry(payload: payload, isFresh: true) }
-        if let data, day < today() { disk?.write(data, .dayRead, id: key) }
+        let accepted = state.withLock { state in
+            guard generation == nil || generation == state.generation else { return false }
+            state.entries[key] = Entry(payload: payload, isFresh: true)
+            return true
+        }
+        if accepted, let data, day < today() { disk?.write(data, .dayRead, id: key) }
+    }
+
+    /// Another athlete may sign in next: nothing read for this one stays in memory.
+    /// The files on disk go with `ActivityDiskCache.removeAll()`.
+    func clear() {
+        state.withLock {
+            $0.entries.removeAll()
+            $0.generation += 1
+        }
     }
 
     /// Pull-to-refresh: the read that follows rewrites the day, in memory and on disk.
     func expire(day: String) {
-        entries.withLock { state in
-            for key in state.keys where key.hasSuffix("?\(day)") { state[key]?.isFresh = false }
+        state.withLock { state in
+            for key in state.entries.keys where key.hasSuffix("?\(day)") { state.entries[key]?.isFresh = false }
         }
     }
 
     func expireAll() {
-        entries.withLock { state in
-            for key in state.keys { state[key]?.isFresh = false }
+        state.withLock { state in
+            for key in state.entries.keys { state.entries[key]?.isFresh = false }
         }
         defaults.set(Date.now, forKey: expiredAtKey)
     }
@@ -86,8 +109,8 @@ nonisolated final class DayReadCache: Sendable {
         else { return nil }
         let expiredAt = defaults.object(forKey: expiredAtKey) as? Date ?? .distantPast
         let isFresh = stored.savedAt > expiredAt
-        entries.withLock { state in
-            if state[key] == nil { state[key] = Entry(payload: payload, isFresh: isFresh) }
+        state.withLock { state in
+            if state.entries[key] == nil { state.entries[key] = Entry(payload: payload, isFresh: isFresh) }
         }
         return (payload, isFresh)
     }
