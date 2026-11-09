@@ -15,6 +15,9 @@ nonisolated struct V1TrainingAvailability: Codable, Sendable, Equatable {
     var version: Int = 1
     var targetSessionsPerWeek: Int?
     var availableWeekdays: [Int] = []
+    /// How hard the athlete wants the weeks — asked before the days in the onboarding
+    /// (SHARPIT ADR-123); nil when only days were declared.
+    var intensity: TrainingIntensity?
 
     /// A training week starts on Monday, not Sunday.
     static let weekdaysMondayFirst = [1, 2, 3, 4, 5, 6, 0]
@@ -25,12 +28,21 @@ nonisolated struct V1TrainingAvailability: Codable, Sendable, Equatable {
         targetSessionsPerWeek = ordered.isEmpty ? nil : ordered.count
     }
 
+    /// Intensity first, then a count, then that many days: the count is its own answer here.
+    init(intensity: TrainingIntensity?, sessionsPerWeek: Int?, availableWeekdays: [Int]) {
+        self.intensity = intensity
+        targetSessionsPerWeek = sessionsPerWeek
+        self.availableWeekdays = Self.ordered(availableWeekdays)
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         version = (try? container.decodeIfPresent(Int.self, forKey: .version)) ?? 1
         targetSessionsPerWeek = try? container.decodeIfPresent(Int.self, forKey: .targetSessionsPerWeek)
         let days = (try? container.decodeIfPresent([Int].self, forKey: .availableWeekdays)) ?? []
         availableWeekdays = Self.ordered(days)
+        // A word this build does not know reads as undeclared, as the server does.
+        intensity = (try? container.decodeIfPresent(String.self, forKey: .intensity)).flatMap(TrainingIntensity.init(rawValue:))
     }
 
     /// Monday-first and deduplicated — storage order matches reading order, and a value
@@ -38,6 +50,53 @@ nonisolated struct V1TrainingAvailability: Codable, Sendable, Equatable {
     static func ordered(_ days: [Int]) -> [Int] {
         let present = Set(days)
         return weekdaysMondayFirst.filter { present.contains($0) }
+    }
+}
+
+/// The effort the athlete wants from a week, mirroring the web's `TRAINING_INTENSITIES`.
+/// Each level carries the session count it usually takes; the athlete can move it.
+nonisolated enum TrainingIntensity: String, CaseIterable, Identifiable, Codable, Sendable {
+    case easy
+    case steady
+    case hard
+    case max
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .easy: String(localized: "Tranquille")
+        case .steady: String(localized: "Régulier")
+        case .hard: String(localized: "Soutenu")
+        case .max: String(localized: "Intensif")
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .easy: String(localized: "Bouger, sans forcer.")
+        case .steady: String(localized: "Progresser à ton rythme.")
+        case .hard: String(localized: "Viser un vrai cap.")
+        case .max: String(localized: "Tout donner pour ton objectif.")
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .easy: "figure.walk"
+        case .steady: "figure.run"
+        case .hard: "speedometer"
+        case .max: "flame"
+        }
+    }
+
+    var idealSessions: Int {
+        switch self {
+        case .easy: 2
+        case .steady: 3
+        case .hard: 4
+        case .max: 5
+        }
     }
 }
 
@@ -399,11 +458,12 @@ nonisolated struct AthleteProfilePatch: Equatable, Sendable {
     /// Records the declared training week. An empty week is sent as declared-empty, not as
     /// `null`, as the web's onboarding does when the athlete skips the step.
     mutating func setTrainingAvailability(_ availability: V1TrainingAvailability) {
-        let obj: [String: JSONValue] = [
+        var obj: [String: JSONValue] = [
             "version": .number(Double(availability.version)),
             "targetSessionsPerWeek": availability.targetSessionsPerWeek.map { JSONValue.number(Double($0)) } ?? .null,
             "availableWeekdays": .array(availability.availableWeekdays.map { JSONValue.number(Double($0)) })
         ]
+        if let intensity = availability.intensity { obj["intensity"] = .string(intensity.rawValue) }
         fields[AthleteProfileField.trainingAvailability.rawValue] = .object(obj)
     }
 

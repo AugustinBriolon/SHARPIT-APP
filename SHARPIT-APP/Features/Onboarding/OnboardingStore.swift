@@ -168,7 +168,8 @@ final class OnboardingStore {
         case .goal: intention.isValid
         case .privacy: consents.requiredAccepted
         case .firstWeek: firstWeek != .generating
-        case .equipment, .week, .injuries, .sources: true
+        case .week: canContinueFromWeek
+        case .equipment, .injuries, .sources: true
         }
     }
 
@@ -295,13 +296,44 @@ final class OnboardingStore {
         equipmentIsDirty = true
     }
 
-    /// N days ⇒ N possible sessions, derived rather than asked.
+    /// The intensity seeds the count it usually takes; days beyond it are let go.
+    func setIntensity(_ intensity: TrainingIntensity) {
+        setWeek(intensity: intensity, sessions: intensity.idealSessions)
+    }
+
+    /// One session per day, so the count never passes the week.
+    func setSessionsPerWeek(_ count: Int) {
+        guard let intensity = availability.intensity else { return }
+        setWeek(intensity: intensity, sessions: min(max(count, 1), 7))
+    }
+
+    /// A day is added only while fewer days than sessions are picked.
     func setWeekday(_ day: Int, available: Bool) {
         var days = availability.availableWeekdays
         let has = days.contains(day)
         guard has != available else { return }
-        if available { days.append(day) } else { days.removeAll { $0 == day } }
-        availability = V1TrainingAvailability(availableWeekdays: days)
+        if available {
+            guard days.count < sessionsPerWeek else { return }
+            days.append(day)
+        } else {
+            days.removeAll { $0 == day }
+        }
+        availability.availableWeekdays = V1TrainingAvailability.ordered(days)
+    }
+
+    var sessionsPerWeek: Int { availability.targetSessionsPerWeek ?? 0 }
+
+    /// The week is told once its intensity is chosen and every session has its day.
+    var canContinueFromWeek: Bool {
+        availability.intensity != nil && availability.availableWeekdays.count == sessionsPerWeek
+    }
+
+    private func setWeek(intensity: TrainingIntensity, sessions: Int) {
+        availability = V1TrainingAvailability(
+            intensity: intensity,
+            sessionsPerWeek: sessions,
+            availableWeekdays: Array(availability.availableWeekdays.prefix(sessions))
+        )
     }
 
     func toggleWeekday(_ day: Int) {
@@ -398,7 +430,7 @@ final class OnboardingStore {
 
     private func leaveSports() {
         record(.sports)
-        if isStrengthOnly { intention.kind = .metric }
+        if isStrengthOnly, intention.kind == .race { intention.kind = .metric }
         moveNext()
     }
 

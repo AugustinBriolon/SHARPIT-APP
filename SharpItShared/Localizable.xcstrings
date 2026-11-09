@@ -2,6 +2,102 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {},
+    "Ancienne blessure, encore fragile" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Past injury, still fragile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancienne blessure, encore fragile"
+          }
+        }
+      }
+    },
+    "Asthme, diabète…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asthma, diabetes…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asthme, diabète…"
+          }
+        }
+      }
+    },
+    "Autre (optionnel)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other (optional)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autre (optionnel)"
+          }
+        }
+      }
+    },
+    "Blessure en cours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current injury"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blessure en cours"
+          }
+        }
+      }
+    },
+    "Bouger régulièrement et rester en forme, sans échéance." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move regularly and stay fit, with no deadline."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bouger régulièrement et rester en forme, sans échéance."
+          }
+        }
+      }
+    },
+    "Bouger, sans forcer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move, without pushing."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bouger, sans forcer."
+          }
+        }
+      }
+    },
     "Ce que tu en as fait" : {
       "localizations" : {
         "en" : {
@@ -14,6 +110,166 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ce que tu en as fait"
+          }
+        }
+      }
+    },
+    "choisi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "chosen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "choisi"
+          }
+        }
+      }
+    },
+    "Choisis d'abord une intensité." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose an intensity first."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis d'abord une intensité."
+          }
+        }
+      }
+    },
+    "Choisis encore %lld jours." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose %lld more days."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis encore %lld jours."
+          }
+        }
+      }
+    },
+    "Choisis encore 1 jour." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose 1 more day."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis encore 1 jour."
+          }
+        }
+      }
+    },
+    "Choisis l'intensité que tu veux donner à tes semaines, puis les jours qui vont avec." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose how hard you want your weeks to be, then the days that go with it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisis l'intensité que tu veux donner à tes semaines, puis les jours qui vont avec."
+          }
+        }
+      }
+    },
+    "Cycle menstruel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menstrual cycle"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cycle menstruel"
+          }
+        }
+      }
+    },
+    "Douleur, blessure en cours ou ancienne, ou un terrain à ménager : le coach en tient compte." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pain, a current or past injury, or a condition to look after: the coach takes it into account."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Douleur, blessure en cours ou ancienne, ou un terrain à ménager : le coach en tient compte."
+          }
+        }
+      }
+    },
+    "En plus, si tu as" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extras, if you have them"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En plus, si tu as"
+          }
+        }
+      }
+    },
+    "Environ %lld séances par semaine." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About %lld sessions a week."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Environ %lld séances par semaine."
+          }
+        }
+      }
+    },
+    "Face" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Front"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face"
           }
         }
       }
@@ -34,6 +290,150 @@
         }
       }
     },
+    "Fragilité" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fragile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fragilité"
+          }
+        }
+      }
+    },
+    "Garder la forme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep fit"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Garder la forme"
+          }
+        }
+      }
+    },
+    "gêne %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ discomfort"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "gêne %@"
+          }
+        }
+      }
+    },
+    "Intensif" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intense"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intensif"
+          }
+        }
+      }
+    },
+    "Montre, téléphone ou rien du tout : Apple Santé compte déjà tes pas et tes marches. Tu pourras brancher une montre plus tard." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch, phone or nothing at all: Apple Health already counts your steps and walks. You can connect a watch later."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Montre, téléphone ou rien du tout : Apple Santé compte déjà tes pas et tes marches. Tu pourras brancher une montre plus tard."
+          }
+        }
+      }
+    },
+    "non choisi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not chosen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "non choisi"
+          }
+        }
+      }
+    },
+    "Optionnel : ce qui ouvre d'autres séances. Sans rien coché, le coach prévoit des séances dehors, sans matériel." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional: what opens up other sessions. With nothing ticked, the coach plans sessions outdoors, without equipment."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optionnel : ce qui ouvre d'autres séances. Sans rien coché, le coach prévoit des séances dehors, sans matériel."
+          }
+        }
+      }
+    },
+    "Ostéoporose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Osteoporosis"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ostéoporose"
+          }
+        }
+      }
+    },
+    "Progresser à ton rythme." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progress at your own pace."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progresser à ton rythme."
+          }
+        }
+      }
+    },
     "Raccourci" : {
       "localizations" : {
         "en" : {
@@ -50,6 +450,54 @@
         }
       }
     },
+    "Rien à signaler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing to report"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien à signaler"
+          }
+        }
+      }
+    },
+    "Régulier" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steady"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Régulier"
+          }
+        }
+      }
+    },
+    "Rétention d'eau" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Water retention"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rétention d'eau"
+          }
+        }
+      }
+    },
     "Sauté" : {
       "localizations" : {
         "en" : {
@@ -62,6 +510,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sauté"
+          }
+        }
+      }
+    },
+    "Soutenu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hard"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soutenu"
+          }
+        }
+      }
+    },
+    "Terrain de santé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Health condition"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terrain de santé"
+          }
+        }
+      }
+    },
+    "Tes jours : %lld sur %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your days: %1$lld of %2$lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes jours : %lld sur %lld"
+          }
+        }
+      }
+    },
+    "Tes sources" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sources"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes sources"
+          }
+        }
+      }
+    },
+    "Ton corps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your body"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton corps"
           }
         }
       }
@@ -254,6 +782,150 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "^[%lld mouvement](inflect: true) · ~%lld min"
+          }
+        }
+      }
+    },
+    "Touche la zone concernée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the area concerned"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touche la zone concernée"
+          }
+        }
+      }
+    },
+    "Tout donner pour ton objectif." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give everything for your goal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout donner pour ton objectif."
+          }
+        }
+      }
+    },
+    "Tranquille" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Easy"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tranquille"
+          }
+        }
+      }
+    },
+    "Un chiffre à atteindre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A figure to reach"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un chiffre à atteindre"
+          }
+        }
+      }
+    },
+    "Un terrain à ménager ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A condition to look after?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un terrain à ménager ?"
+          }
+        }
+      }
+    },
+    "Une course, un chiffre ou juste la régularité : ton plan se construit autour." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A race, a figure or just regularity: your plan is built around it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une course, un chiffre ou juste la régularité : ton plan se construit autour."
+          }
+        }
+      }
+    },
+    "Une date, une distance." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A date, a distance."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une date, une distance."
+          }
+        }
+      }
+    },
+    "Une FTP, une VMA, une charge…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An FTP, a VMA, a lift…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une FTP, une VMA, une charge…"
+          }
+        }
+      }
+    },
+    "Viser un vrai cap." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aim for a real step up."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viser un vrai cap."
           }
         }
       }

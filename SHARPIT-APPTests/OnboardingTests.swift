@@ -527,6 +527,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 @MainActor
 @Test func paintingADayTwiceKeepsItOnce() {
     let store = makeStore()
+    store.setIntensity(.steady)
 
     store.setWeekday(2, available: true)
     store.setWeekday(2, available: true)
@@ -534,6 +535,47 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     store.toggleWeekday(2)
 
     #expect(store.availability.availableWeekdays == [4])
+}
+
+@MainActor
+@Test func theIntensitySeedsTheCountAndTheDaysStopThere() {
+    let store = makeStore()
+    #expect(!store.canContinueFromWeek)
+
+    store.setIntensity(.hard)
+    #expect(store.sessionsPerWeek == 4)
+    for day in [1, 2, 3, 4, 5] { store.setWeekday(day, available: true) }
+
+    #expect(store.availability.availableWeekdays == [1, 2, 3, 4])
+    #expect(store.canContinueFromWeek)
+}
+
+@MainActor
+@Test func loweringTheCountLetsTheLastDaysGo() {
+    let store = makeStore()
+    store.setIntensity(.steady)
+    for day in [1, 3, 5] { store.setWeekday(day, available: true) }
+
+    store.setSessionsPerWeek(2)
+
+    #expect(store.availability.availableWeekdays == [1, 3])
+    #expect(store.availability.intensity == .steady)
+    store.setSessionsPerWeek(9)
+    #expect(store.sessionsPerWeek == 7)
+    #expect(!store.canContinueFromWeek)
+}
+
+@Test func theTrainingWeekPatchCarriesTheIntensity() {
+    var patch = AthleteProfilePatch()
+
+    patch.setTrainingAvailability(V1TrainingAvailability(intensity: .easy, sessionsPerWeek: 2, availableWeekdays: [6, 2]))
+
+    #expect(patch.fields["trainingAvailability"] == .object([
+        "version": .number(1),
+        "targetSessionsPerWeek": .number(2),
+        "availableWeekdays": .array([.number(2), .number(6)]),
+        "intensity": .string("easy"),
+    ]))
 }
 
 /// The whole path of a new account: goal, consents with AI, the week generated towards the

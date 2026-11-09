@@ -163,15 +163,18 @@ private struct GoalFormFields: View {
                 } else {
                     TextField("Nom de l’objectif", text: $draft.title)
                         .textInputAutocapitalization(.sentences)
-                    TextField("Valeur cible", text: $draft.targetValueText)
-                        .keyboardType(.decimalPad)
-                    TextField("Valeur actuelle", text: $draft.currentValueText)
-                        .keyboardType(.decimalPad)
-                    TextField("Unité (W, km, kg…)", text: $draft.unit)
-                        .textInputAutocapitalization(.never)
-                    Toggle("Date cible", isOn: $draft.hasTargetDate.animation(SharpitMotion.selection))
-                    if draft.hasTargetDate {
-                        DatePicker("Pour le", selection: $draft.targetDate, displayedComponents: .date)
+                    // Keep fit has neither a figure nor a day: a name is all it takes.
+                    if draft.kind == .metric {
+                        TextField("Valeur cible", text: $draft.targetValueText)
+                            .keyboardType(.decimalPad)
+                        TextField("Valeur actuelle", text: $draft.currentValueText)
+                            .keyboardType(.decimalPad)
+                        TextField("Unité (W, km, kg…)", text: $draft.unit)
+                            .textInputAutocapitalization(.never)
+                        Toggle("Date cible", isOn: $draft.hasTargetDate.animation(SharpitMotion.selection))
+                        if draft.hasTargetDate {
+                            DatePicker("Pour le", selection: $draft.targetDate, displayedComponents: .date)
+                        }
                     }
                 }
             }

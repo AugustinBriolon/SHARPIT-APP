@@ -313,6 +313,11 @@ private struct OnboardingActionBar: View {
     private var hint: String? {
         switch store.step {
         case .sports where !store.canContinueFromSports: String(localized: "Choisis un sport d'endurance, ou la musculation.")
+        case .week where store.availability.intensity == nil: String(localized: "Choisis d'abord une intensité.")
+        case .week where !store.canContinueFromWeek:
+            store.sessionsPerWeek - store.availability.availableWeekdays.count == 1
+                ? String(localized: "Choisis encore 1 jour.")
+                : String(localized: "Choisis encore \(store.sessionsPerWeek - store.availability.availableWeekdays.count) jours.")
         case .privacy where !store.consents.requiredAccepted: String(localized: "Les deux documents et les données de santé sont nécessaires.")
         default: nil
         }
@@ -331,7 +336,7 @@ private struct OnboardingActionBar: View {
         case .identity: store.isBusy ? String(localized: "Enregistrement…") : String(localized: "Commencer")
         case .injuries where !store.hasAccount:
             store.isBusy ? String(localized: "Enregistrement…") : String(localized: "Continuer et créer mon compte")
-        case .injuries where store.injuries.isEmpty: String(localized: "Aucune blessure")
+        case .injuries where store.injuries.isEmpty: String(localized: "Rien à signaler")
         case .privacy: String(localized: "Accepter et continuer")
         case .firstWeek:
             switch store.firstWeek {

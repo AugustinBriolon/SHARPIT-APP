@@ -29,7 +29,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Codable, Senda
         case .equipment: String(localized: "Matériel")
         case .week: String(localized: "Ta semaine")
         case .goal: String(localized: "Objectif")
-        case .injuries: String(localized: "Blessures")
+        case .injuries: String(localized: "Corps")
         case .privacy: String(localized: "Confidentialité")
         case .sources: String(localized: "Sources")
         case .firstWeek: String(localized: "Première semaine")
@@ -41,12 +41,12 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Codable, Senda
         case .identity: String(localized: "Construisons ton coach")
         case .motivation: String(localized: "Ce que tu viens chercher")
         case .sports: String(localized: "Tes sports")
-        case .equipment: String(localized: "Ton matériel")
+        case .equipment: String(localized: "En plus, si tu as")
         case .week: String(localized: "Ta semaine type")
         case .goal: String(localized: "Ton objectif")
-        case .injuries: String(localized: "Tes blessures")
+        case .injuries: String(localized: "Ton corps")
         case .privacy: String(localized: "Tes données, tes règles")
-        case .sources: String(localized: "Branche tes appareils")
+        case .sources: String(localized: "Tes sources")
         case .firstWeek: String(localized: "Ta première semaine")
         }
     }
@@ -60,17 +60,17 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Identifiable, Codable, Senda
         case .sports:
             String(localized: "Touche tes disciplines. Un sport d'endurance, ou la musculation seule.")
         case .equipment:
-            String(localized: "Seulement ce qui sert à tes sports, pour des séances que tu peux vraiment faire.")
+            String(localized: "Optionnel : ce qui ouvre d'autres séances. Sans rien coché, le coach prévoit des séances dehors, sans matériel.")
         case .week:
-            String(localized: "Glisse le doigt sur les jours où tu peux t'entraîner.")
+            String(localized: "Choisis l'intensité que tu veux donner à tes semaines, puis les jours qui vont avec.")
         case .goal:
-            String(localized: "Une course ou un palier : tout le plan se construit vers lui.")
+            String(localized: "Une course, un chiffre ou juste la régularité : ton plan se construit autour.")
         case .injuries:
-            String(localized: "Une douleur ou une blessure en cours ? Le coach adapte tes séances pour la ménager.")
+            String(localized: "Douleur, blessure en cours ou ancienne, ou un terrain à ménager : le coach en tient compte.")
         case .privacy:
             String(localized: "Avant de brancher tes appareils, choisis ce que SharpIt peut faire de tes données.")
         case .sources:
-            String(localized: "Ta montre, ton téléphone et ton journal alimentaire nourrissent ton coach. Tu pourras en ajouter plus tard.")
+            String(localized: "Montre, téléphone ou rien du tout : Apple Santé compte déjà tes pas et tes marches. Tu pourras brancher une montre plus tard.")
         case .firstWeek:
             String(localized: "Le coach place tes premières séances sur tes jours.")
         }
@@ -112,20 +112,50 @@ nonisolated struct OnboardingIdentityDraft: Equatable, Codable, Sendable {
     }
 }
 
-/// A pain or an injury declared in the onboarding: a zone of the body, what it is, the side and
-/// how much it bothers. Nothing is chosen for the athlete; it is complete once each question
-/// that applies is answered. Kept on the phone until the health consent is given, then written
-/// as a physical note.
+/// What the athlete declares on the body step: a zone that hurts, an injury in progress, an old
+/// one still fragile — each placed on the silhouette — or a health ground with no zone
+/// (osteoporosis, water retention…). Nothing is chosen for the athlete; it is complete once each
+/// question that applies is answered. Kept on the phone until the health consent is given, then
+/// written as a physical note.
 nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Sendable {
     enum Kind: String, CaseIterable, Identifiable, Codable, Sendable {
         case pain = "PAIN"
         case injury = "INJURY"
+        /// Healed, but the coach should still go easy on it (SHARPIT `MONITORING`).
+        case fragile = "FRAGILE"
+        /// A health ground with no zone on the body.
+        case condition = "CONDITION"
 
         var id: String { rawValue }
+
+        /// The kinds asked of a zone on the body.
+        static let zoneKinds: [Kind] = [.pain, .injury, .fragile]
+
         var label: String {
             switch self {
             case .pain: String(localized: "Douleur")
+            case .injury: String(localized: "Blessure en cours")
+            case .fragile: String(localized: "Ancienne blessure, encore fragile")
+            case .condition: String(localized: "Terrain de santé")
+            }
+        }
+
+        /// The note's first word.
+        var titleWord: String {
+            switch self {
+            case .pain: String(localized: "Douleur")
             case .injury: String(localized: "Blessure")
+            case .fragile: String(localized: "Fragilité")
+            case .condition: ""
+            }
+        }
+
+        /// The web's `PhysicalCategory`.
+        var category: String {
+            switch self {
+            case .pain: "PAIN"
+            case .injury, .fragile: "INJURY"
+            case .condition: "OTHER"
             }
         }
     }
@@ -161,39 +191,48 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Send
         }
     }
 
-    /// The web's `COMMON_BODY_PARTS`, so a note written here reads the same on the web.
-    static let bodyParts = [
-        String(localized: "Genou"), String(localized: "Cheville"), String(localized: "Pied"), String(localized: "Mollet"), String(localized: "Cuisse"), String(localized: "Ischio"), String(localized: "Hanche"),
-        String(localized: "Bassin"), String(localized: "Dos"), String(localized: "Lombaires"), String(localized: "Épaule"), String(localized: "Cou"), String(localized: "Tendon d'Achille"),
-    ]
+    /// The grounds offered under the body; the cycle only to a woman.
+    static func conditions(for sex: AthleteSex?) -> [String] {
+        let shared = [String(localized: "Ostéoporose"), String(localized: "Rétention d'eau")]
+        return sex == .female ? shared + [String(localized: "Cycle menstruel")] : shared
+    }
 
-    /// Grouped under « Bas du corps » in the injuries step.
-    static let lowerBodyParts: Set<String> = [
-        String(localized: "Genou"), String(localized: "Cheville"), String(localized: "Pied"), String(localized: "Mollet"), String(localized: "Cuisse"), String(localized: "Ischio"), String(localized: "Hanche"), String(localized: "Bassin"), String(localized: "Tendon d'Achille"),
-    ]
-
-    /// Zones that come in pairs, and so ask for a side.
-    static let pairedParts: Set<String> = [
-        String(localized: "Genou"), String(localized: "Cheville"), String(localized: "Pied"), String(localized: "Mollet"), String(localized: "Cuisse"), String(localized: "Ischio"), String(localized: "Hanche"), String(localized: "Épaule"), String(localized: "Tendon d'Achille"),
-    ]
+    /// The web's `COMMON_BODY_PARTS` the silhouette draws — never the onboarding's old « Cuisse ».
+    static let bodyParts: [String] = SensitiveZoneBody.mappedParts.filter { $0 != "Cuisse" }.sorted()
 
     var id: String { bodyPart }
+    /// The zone, or the ground's name for a condition.
     let bodyPart: String
     var kind: Kind?
     var side: Side?
     var level: Level?
 
-    init(bodyPart: String) {
+    init(bodyPart: String, side: Side? = nil) {
         self.bodyPart = bodyPart
+        self.side = side
     }
 
-    var asksForSide: Bool { Self.pairedParts.contains(bodyPart) }
+    static func condition(_ name: String) -> OnboardingInjuryDraft {
+        var draft = OnboardingInjuryDraft(bodyPart: name)
+        draft.kind = .condition
+        return draft
+    }
 
-    var isComplete: Bool { kind != nil && level != nil && (!asksForSide || side != nil) }
+    var isCondition: Bool { kind == .condition }
 
-    /// « Douleur genou droit » — the note's title, as an athlete would write it.
+    var asksForSide: Bool { !isCondition && SensitiveZoneBody.isPaired(bodyPart) }
+
+    /// A fragile zone or a ground does not hurt now: no level to ask.
+    var asksForLevel: Bool { kind == .pain || kind == .injury }
+
+    var isComplete: Bool {
+        kind != nil && (!asksForLevel || level != nil) && (!asksForSide || side != nil)
+    }
+
+    /// « Douleur genou droit », « Fragilité cheville gauche », « Ostéoporose ».
     var title: String {
-        var words = [(kind ?? .pain).label, bodyPart.lowercased()]
+        if isCondition { return bodyPart }
+        var words = [(kind ?? .pain).titleWord, bodyPart.lowercased()]
         switch side {
         case .left: words.append("gauche")
         case .right: words.append("droit")
@@ -204,13 +243,16 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Send
     }
 
     var note: CreatePhysicalNoteInput {
-        CreatePhysicalNoteInput(
-            category: (kind ?? .pain).rawValue,
+        let kind = kind ?? .pain
+        return CreatePhysicalNoteInput(
+            category: kind.category,
             title: title,
-            bodyPart: bodyPart,
+            bodyPart: isCondition ? nil : bodyPart,
             side: side?.rawValue ?? "NA",
-            severity: (level ?? .moderate).rawValue,
-            affectsTraining: true
+            severity: asksForLevel ? (level ?? .moderate).rawValue : Level.light.rawValue,
+            affectsTraining: true,
+            // Nothing hurts now: the coach watches it rather than treating it.
+            status: asksForLevel ? nil : "MONITORING"
         )
     }
 }
@@ -220,13 +262,32 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Send
 nonisolated enum OnboardingIntentionKind: String, CaseIterable, Identifiable, Codable, Sendable {
     case race
     case metric
+    /// Keep fit, train regularly: no date and no figure.
+    case habit
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .race: String(localized: "Une course")
-        case .metric: String(localized: "Un objectif chiffré")
+        case .metric: String(localized: "Un chiffre à atteindre")
+        case .habit: String(localized: "Garder la forme")
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .race: "flag.checkered"
+        case .metric: "gauge.with.needle"
+        case .habit: "figure.walk.motion"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .race: String(localized: "Une date, une distance.")
+        case .metric: String(localized: "Une FTP, une VMA, une charge…")
+        case .habit: String(localized: "Bouger régulièrement et rester en forme, sans échéance.")
         }
     }
 }
@@ -270,6 +331,8 @@ nonisolated struct OnboardingIntentionDraft: Equatable, Codable, Sendable {
         case .metric:
             guard let target = metricTarget, target.isFinite, target > 0 else { return false }
             return !metricTitle.trimmed.isEmpty && !metricUnit.trimmed.isEmpty
+        case .habit:
+            return true
         }
     }
 
@@ -304,6 +367,8 @@ nonisolated struct OnboardingIntentionDraft: Equatable, Codable, Sendable {
                 targetValue: metricTarget,
                 unit: metricUnit.trimmed
             )
+        case .habit:
+            return CreateGoalInput(title: String(localized: "Garder la forme"), kind: .habit)
         }
     }
 }

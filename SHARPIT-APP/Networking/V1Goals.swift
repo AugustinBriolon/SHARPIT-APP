@@ -61,6 +61,8 @@ nonisolated struct V1SeasonConflict: Codable, Sendable, Equatable {
 nonisolated enum GoalKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case race = "RACE"
     case metric = "METRIC"
+    /// Keep fit: no date, no figure — the plan aims at consistency (SHARPIT ADR-123).
+    case habit = "HABIT"
 
     var id: String { rawValue }
 
@@ -68,6 +70,7 @@ nonisolated enum GoalKind: String, Codable, CaseIterable, Identifiable, Sendable
         switch self {
         case .race: String(localized: "Course / Compétition")
         case .metric: String(localized: "Objectif chiffré")
+        case .habit: String(localized: "Garder la forme")
         }
     }
 }
