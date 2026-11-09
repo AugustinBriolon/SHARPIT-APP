@@ -13,6 +13,21 @@ enum OnboardingDemo {
 
 struct OnboardingDemoHost: View {
     @State private var finished = false
+    // Held, not built in `body`: a redraw handed the view a fresh store stuck on loading.
+    @State private var store = OnboardingStore(
+        services: OnboardingServices(
+            profile: DemoProfileClient(),
+            goals: DemoGoalClient(),
+            onboarding: DemoOnboardingClient(),
+            consents: DemoConsentClient(),
+            plan: DemoPlanClient(),
+            physicalNotes: DemoPhysicalNoteClient(),
+            saveFirstName: { _ in await demoLatency() }
+        ),
+        consentsOwed: true,
+        firstName: String(localized: "Zoé"),
+        tokenProvider: { "demo" }
+    )
 
     var body: some View {
         if finished {
@@ -23,20 +38,7 @@ struct OnboardingDemoHost: View {
             )
         } else {
             OnboardingView(
-                store: OnboardingStore(
-                    services: OnboardingServices(
-                        profile: DemoProfileClient(),
-                        goals: DemoGoalClient(),
-                        onboarding: DemoOnboardingClient(),
-                        consents: DemoConsentClient(),
-                        plan: DemoPlanClient(),
-                        physicalNotes: DemoPhysicalNoteClient(),
-                        saveFirstName: { _ in await demoLatency() }
-                    ),
-                    consentsOwed: true,
-                    firstName: String(localized: "Zoé"),
-                    tokenProvider: { "demo" }
-                ),
+                store: store,
                 appleHealth: AppleHealthSource(reader: HealthKitReader(), client: SharpitClient()),
                 tokenProvider: { "demo" }
             ) {
