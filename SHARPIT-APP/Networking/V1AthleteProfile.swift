@@ -22,6 +22,21 @@ nonisolated struct V1TrainingAvailability: Codable, Sendable, Equatable {
     /// A training week starts on Monday, not Sunday.
     static let weekdaysMondayFirst = [1, 2, 3, 4, 5, 6, 0]
 
+    /// Days spread across the week for a session count, about 48 h apart where the week allows,
+    /// so a pre-filled week already reads as recovery between efforts.
+    static func spread(_ count: Int) -> [Int] {
+        switch count {
+        case ...0: []
+        case 1: [6]
+        case 2: [2, 6]
+        case 3: [2, 4, 6]
+        case 4: [1, 3, 5, 0]
+        case 5: [1, 2, 4, 5, 0]
+        case 6: [1, 2, 3, 5, 6, 0]
+        default: weekdaysMondayFirst
+        }
+    }
+
     init(availableWeekdays: [Int] = []) {
         let ordered = Self.ordered(availableWeekdays)
         self.availableWeekdays = ordered

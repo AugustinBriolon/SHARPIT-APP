@@ -5,8 +5,7 @@ nonisolated struct CreatePhysicalNoteInput: Codable, Equatable, Sendable {
     /// `PAIN`, `INJURY`, `MOBILITY`, `POSTURE` or `OTHER` (the web's `PhysicalCategory`).
     let category: String
     let title: String
-    /// Nil for a ground with no zone (osteoporosis…).
-    let bodyPart: String?
+    let bodyPart: String
     /// `LEFT`, `RIGHT`, `BILATERAL` or `NA`.
     let side: String
     /// 0…10.
@@ -18,6 +17,8 @@ nonisolated struct CreatePhysicalNoteInput: Codable, Equatable, Sendable {
     var description: String? = nil
     /// `ACTIVE` (the server's default when absent), `MONITORING` or `RESOLVED`.
     var status: String? = nil
+    /// `yyyy-MM-dd`; absent means today.
+    var startDate: String? = nil
 }
 
 /// What changes on a declared zone; only the fields set are sent.

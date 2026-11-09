@@ -22,6 +22,7 @@ struct OnboardingDemoHost: View {
             consents: DemoConsentClient(),
             plan: DemoPlanClient(),
             physicalNotes: DemoPhysicalNoteClient(),
+            healthGrounds: DemoHealthGroundClient(),
             saveFirstName: { _ in await demoLatency() }
         ),
         consentsOwed: true,
@@ -51,6 +52,12 @@ struct OnboardingDemoHost: View {
 /// A beat of network, so busy states show as they do for real.
 private func demoLatency() async {
     try? await Task.sleep(for: .milliseconds(600))
+}
+
+private struct DemoHealthGroundClient: HealthGroundWriting {
+    func replaceHealthGrounds(_ grounds: [HealthGroundInput], token: String) async throws {
+        await demoLatency()
+    }
 }
 
 private struct DemoProfileClient: AthleteProfileServing {

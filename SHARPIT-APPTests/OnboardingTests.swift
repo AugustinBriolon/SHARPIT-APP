@@ -102,6 +102,12 @@ private actor NoteRecorder: PhysicalNoteCreating {
     func createNote(_ input: CreatePhysicalNoteInput, token _: String) async throws { notes.append(input) }
 }
 
+private actor GroundRecorder: HealthGroundWriting {
+    private(set) var sets: [[HealthGroundInput]] = []
+
+    func replaceHealthGrounds(_ grounds: [HealthGroundInput], token _: String) async throws { sets.append(grounds) }
+}
+
 private actor NameRecorder {
     private(set) var names: [String] = []
 
@@ -132,6 +138,7 @@ private func makeStore(
     consents: StubConsentClient = StubConsentClient(),
     plan: RecordingPlanClient = RecordingPlanClient(),
     notes: NoteRecorder = NoteRecorder(),
+    grounds: GroundRecorder = GroundRecorder(),
     names: NameRecorder = NameRecorder(),
     consentsOwed: Bool = false,
     currentConsents: V1PrivacyConsents? = nil,
@@ -149,6 +156,7 @@ private func makeStore(
             consents: consents,
             plan: plan,
             physicalNotes: notes,
+            healthGrounds: grounds,
             saveFirstName: { await names.save($0) }
         ),
         consentsOwed: consentsOwed,
@@ -534,7 +542,7 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     store.setWeekday(4, available: true)
     store.toggleWeekday(2)
 
-    #expect(store.availability.availableWeekdays == [4])
+    #expect(store.availability.availableWeekdays == [4, 6])
 }
 
 @MainActor
@@ -544,21 +552,31 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
     store.setIntensity(.hard)
     #expect(store.sessionsPerWeek == 4)
-    for day in [1, 2, 3, 4, 5] { store.setWeekday(day, available: true) }
-
-    #expect(store.availability.availableWeekdays == [1, 2, 3, 4])
+    // Spread for recovery before anything is touched: Monday, Wednesday, Friday, Sunday.
+    #expect(store.availability.availableWeekdays == [1, 3, 5, 0])
     #expect(store.canContinueFromWeek)
+
+    store.setWeekday(2, available: true)
+    #expect(store.availability.availableWeekdays == [1, 3, 5, 0])
+    store.setWeekday(0, available: false)
+    store.setWeekday(2, available: true)
+    #expect(store.availability.availableWeekdays == [1, 2, 3, 5])
 }
 
 @MainActor
 @Test func loweringTheCountLetsTheLastDaysGo() {
     let store = makeStore()
     store.setIntensity(.steady)
-    for day in [1, 3, 5] { store.setWeekday(day, available: true) }
-
     store.setSessionsPerWeek(2)
+    // Untouched, the week is spread again for the new count.
+    #expect(store.availability.availableWeekdays == [2, 6])
 
-    #expect(store.availability.availableWeekdays == [1, 3])
+    store.setSessionsPerWeek(3)
+    store.setWeekday(6, available: false)
+    store.setWeekday(5, available: true)
+    store.setSessionsPerWeek(2)
+    // Touched, the athlete's days stay and only the last goes.
+    #expect(store.availability.availableWeekdays == [2, 4])
     #expect(store.availability.intensity == .steady)
     store.setSessionsPerWeek(9)
     #expect(store.sessionsPerWeek == 7)
@@ -605,7 +623,9 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     var knee = OnboardingInjuryDraft(bodyPart: "Genou")
     knee.kind = .pain
     knee.side = .right
-    knee.level = .moderate
+    knee.onset = .weeks
+    knee.pain = 5
+    knee.impact = "MILD"
     store.saveInjury(knee)
     await store.advance()
     #expect(store.step == .privacy)
@@ -805,17 +825,45 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
     var knee = OnboardingInjuryDraft(bodyPart: "Genou")
     #expect(!knee.isComplete)
     knee.kind = .pain
-    knee.level = .light
-    #expect(!knee.isComplete)
     knee.side = .both
+    knee.onset = .recent
+    knee.pain = 3
+    #expect(!knee.isComplete)
+    knee.impact = "MILD"
     #expect(knee.isComplete)
     #expect(knee.title == "Douleur genou des deux côtés")
 
     var back = OnboardingInjuryDraft(bodyPart: "Dos")
     back.kind = .injury
-    back.level = .moderate
+    back.onset = .persistent
+    back.pain = 6
+    back.impact = "LIMITING"
     #expect(back.isComplete)
-    #expect(back.note.side == "NA")
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let note = back.note(now: now)
+    #expect(note.side == "NA")
+    #expect(note.severity == 6)
+    #expect(note.functionalImpact == "LIMITING")
+    #expect(note.startDate == ProfileFieldFormat.isoDay(Calendar.current.date(byAdding: .day, value: -120, to: now)))
+}
+
+@Test func aFragileZoneIsWatchedWithoutPainQuestions() {
+    var wrist = OnboardingInjuryDraft(bodyPart: "Poignet", side: .right)
+    wrist.kind = .fragile
+    #expect(wrist.isComplete)
+    #expect(wrist.title == "Fragilité poignet droit")
+    let note = wrist.note()
+    #expect(note.category == "INJURY")
+    #expect(note.status == "MONITORING")
+    #expect(note.severity == 2)
+    #expect(note.startDate == nil)
+
+    var ankle = OnboardingInjuryDraft(bodyPart: "Cheville", side: .left)
+    ankle.kind = .injury
+    ankle.onset = .recent
+    ankle.pain = 8
+    ankle.impact = "STOPPED"
+    #expect(ankle.warrantsCare)
 }
 
 @MainActor
@@ -829,11 +877,15 @@ private func freshDefaults(_ name: String) throws -> UserDefaults {
 
     var back = OnboardingInjuryDraft(bodyPart: "Dos")
     back.kind = .pain
-    back.level = .light
+    back.onset = .recent
+    back.pain = 2
+    back.impact = "NONE"
     store.saveInjury(back)
     var ankle = OnboardingInjuryDraft(bodyPart: "Cheville")
     ankle.kind = .injury
-    ankle.level = .strong
+    ankle.onset = .recent
+    ankle.pain = 8
+    ankle.impact = "LIMITING"
     store.saveInjury(ankle)
     #expect(store.injuries.count == 1)
     ankle.side = .left
@@ -1208,7 +1260,9 @@ private func kneePain() -> OnboardingInjuryDraft {
     var knee = OnboardingInjuryDraft(bodyPart: "Genou")
     knee.kind = .pain
     knee.side = .right
-    knee.level = .moderate
+    knee.onset = .weeks
+    knee.pain = 5
+    knee.impact = "MILD"
     return knee
 }
 
@@ -1385,4 +1439,49 @@ private func answerTheProfileSteps(_ store: OnboardingStore) async {
     #expect(store.canGoBack)
     store.goBack()
     #expect(left == 1)
+}
+
+@MainActor
+@Test func healthGroundsWaitForTheConsentThenGoOutAsOneSet() async {
+    let grounds = GroundRecorder()
+    let store = makeStore(grounds: grounds, consentsOwed: true)
+    await storeOnEquipment(store)
+    await store.skip()
+    await store.skip()
+    await store.skip()
+
+    store.saveHealthGround(HealthGroundInput(key: "asthma", stage: "controlled"))
+    store.saveHealthGround(HealthGroundInput(key: "asthma", stage: "uncontrolled"))
+    store.saveHealthGround(HealthGroundInput(key: "osteoporosis", stage: "osteopenia"))
+    #expect(store.healthGrounds.count == 2)
+    await store.advance()
+    #expect(store.step == .privacy)
+    await store.flushWrites()
+    #expect(await grounds.sets.isEmpty)
+
+    store.consents.acceptAll()
+    await store.advance()
+    await store.flushWrites()
+    #expect(await grounds.sets == [[
+        HealthGroundInput(key: "asthma", stage: "uncontrolled"),
+        HealthGroundInput(key: "osteoporosis", stage: "osteopenia"),
+    ]])
+}
+
+@Test func theGroundsMirrorTheServerStagesAndOfferTheCycleToWomenOnly() {
+    #expect(HealthGroundCatalog.entries(for: .female).contains { $0.key == "menstrual_cycle" })
+    #expect(!HealthGroundCatalog.entries(for: .male).contains { $0.key == "menstrual_cycle" })
+    #expect(!HealthGroundCatalog.entries(for: nil).contains { $0.key == "pregnancy" })
+    #expect(HealthGroundCatalog.needsClearance(HealthGroundInput(key: "osteoporosis", stage: "vertebral_fracture")))
+    #expect(!HealthGroundCatalog.needsClearance(HealthGroundInput(key: "osteoporosis", stage: "osteopenia")))
+    for stage in HealthGroundCatalog.clearanceStages {
+        let parts = stage.split(separator: ".").map(String.init)
+        #expect(HealthGroundCatalog.entry(parts[0])?.stage(parts[1]) != nil)
+    }
+}
+
+@Test func theWeekSpreadLeavesADayBetweenEffortsWhereItCan() {
+    #expect(V1TrainingAvailability.spread(3) == [2, 4, 6])
+    #expect(V1TrainingAvailability.spread(4) == [1, 3, 5, 0])
+    #expect((0...8).allSatisfy { V1TrainingAvailability.spread($0).count == min(max($0, 0), 7) })
 }

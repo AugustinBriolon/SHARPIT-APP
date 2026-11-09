@@ -2,6 +2,102 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {},
+    "%lld/10" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/10"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/10"
+          }
+        }
+      }
+    },
+    "1er trimestre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1st trimester"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1er trimestre"
+          }
+        }
+      }
+    },
+    "2 semaines à 3 mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2 weeks to 3 months"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2 semaines à 3 mois"
+          }
+        }
+      }
+    },
+    "2e trimestre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2nd trimester"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2e trimestre"
+          }
+        }
+      }
+    },
+    "3e trimestre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3rd trimester"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3e trimestre"
+          }
+        }
+      }
+    },
+    "6 à 12 semaines" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 to 12 weeks"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 à 12 semaines"
+          }
+        }
+      }
+    },
     "Ancienne blessure, encore fragile" : {
       "localizations" : {
         "en" : {
@@ -14,6 +110,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ancienne blessure, encore fragile"
+          }
+        }
+      }
+    },
+    "Arthrose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Osteoarthritis"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arthrose"
+          }
+        }
+      }
+    },
+    "Asthme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asthma"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asthme"
           }
         }
       }
@@ -34,6 +162,22 @@
         }
       }
     },
+    "Au-delà de 5, le coach allège les séances qui sollicitent la zone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Above 5, the coach lightens sessions that load the area."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Au-delà de 5, le coach allège les séances qui sollicitent la zone."
+          }
+        }
+      }
+    },
     "Autre (optionnel)" : {
       "localizations" : {
         "en" : {
@@ -46,6 +190,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Autre (optionnel)"
+          }
+        }
+      }
+    },
+    "Avec fracture vertébrale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With a vertebral fracture"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avec fracture vertébrale"
           }
         }
       }
@@ -194,6 +354,54 @@
         }
       }
     },
+    "Combien ça fait mal ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much does it hurt?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Combien ça fait mal ?"
+          }
+        }
+      }
+    },
+    "Comment est ton cycle ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How is your cycle?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comment est ton cycle ?"
+          }
+        }
+      }
+    },
+    "Contrôlé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlled"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contrôlé"
+          }
+        }
+      }
+    },
     "Cycle menstruel" : {
       "localizations" : {
         "en" : {
@@ -206,6 +414,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cycle menstruel"
+          }
+        }
+      }
+    },
+    "Demande l'avis de ton médecin avant les séances intenses. D'ici là, le coach reste sur une intensité modérée." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask your doctor before hard sessions. Until then, the coach keeps the intensity moderate."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demande l'avis de ton médecin avant les séances intenses. D'ici là, le coach reste sur une intensité modérée."
+          }
+        }
+      }
+    },
+    "Depuis l'accouchement ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Since giving birth?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depuis l'accouchement ?"
+          }
+        }
+      }
+    },
+    "Depuis quand ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Since when?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depuis quand ?"
+          }
+        }
+      }
+    },
+    "Diabète" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diabetes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diabète"
+          }
+        }
+      }
+    },
+    "Diagnostiquée ou évidente : entorse, déchirure, tendinite…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnosed or obvious: sprain, tear, tendinitis…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostiquée ou évidente : entorse, déchirure, tendinite…"
           }
         }
       }
@@ -226,6 +514,22 @@
         }
       }
     },
+    "Déclaré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Declared"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déclaré"
+          }
+        }
+      }
+    },
     "En plus, si tu as" : {
       "localizations" : {
         "en" : {
@@ -238,6 +542,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "En plus, si tu as"
+          }
+        }
+      }
+    },
+    "En quelques mots" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In a few words"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En quelques mots"
           }
         }
       }
@@ -322,6 +642,38 @@
         }
       }
     },
+    "Grossesse" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pregnancy"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grossesse"
+          }
+        }
+      }
+    },
+    "Guérie, mais elle revient si tu forces." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Healed, but it comes back if you push."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guérie, mais elle revient si tu forces."
+          }
+        }
+      }
+    },
     "gêne %@" : {
       "localizations" : {
         "en" : {
@@ -338,6 +690,22 @@
         }
       }
     },
+    "Hypoglycémies récentes ou équilibre instable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent hypos or unstable control"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hypoglycémies récentes ou équilibre instable"
+          }
+        }
+      }
+    },
     "Intensif" : {
       "localizations" : {
         "en" : {
@@ -350,6 +718,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Intensif"
+          }
+        }
+      }
+    },
+    "Irrégulier ou absent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irregular or absent"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irrégulier ou absent"
+          }
+        }
+      }
+    },
+    "Jusqu'à 5, le coach peut garder de la charge en surveillant." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to 5, the coach can keep some load while watching it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jusqu'à 5, le coach peut garder de la charge en surveillant."
+          }
+        }
+      }
+    },
+    "Moins de 2 semaines" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Less than 2 weeks"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moins de 2 semaines"
+          }
+        }
+      }
+    },
+    "Moins de 6 semaines" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Less than 6 weeks"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moins de 6 semaines"
           }
         }
       }
@@ -418,6 +850,150 @@
         }
       }
     },
+    "Ostéoporose / ostéopénie" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Osteoporosis / osteopenia"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ostéoporose / ostéopénie"
+          }
+        }
+      }
+    },
+    "Ostéoporose diagnostiquée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnosed osteoporosis"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ostéoporose diagnostiquée"
+          }
+        }
+      }
+    },
+    "Ostéopénie (densité basse)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Osteopenia (low density)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ostéopénie (densité basse)"
+          }
+        }
+      }
+    },
+    "Où en es-tu ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where are you with it?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Où en es-tu ?"
+          }
+        }
+      }
+    },
+    "Pas bien contrôlé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not well controlled"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas bien contrôlé"
+          }
+        }
+      }
+    },
+    "Pas encore d'avis médical" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No medical opinion yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore d'avis médical"
+          }
+        }
+      }
+    },
+    "Plus de 12 semaines" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More than 12 weeks"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus de 12 semaines"
+          }
+        }
+      }
+    },
+    "Plus de 3 mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More than 3 months"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus de 3 mois"
+          }
+        }
+      }
+    },
+    "Post-partum" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postpartum"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Post-partum"
+          }
+        }
+      }
+    },
     "Progresser à ton rythme." : {
       "localizations" : {
         "en" : {
@@ -434,6 +1010,38 @@
         }
       }
     },
+    "Précise en quelques mots" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe it in a few words"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Précise en quelques mots"
+          }
+        }
+      }
+    },
+    "Quelle gêne au quotidien ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much does it bother you day to day?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quelle gêne au quotidien ?"
+          }
+        }
+      }
+    },
     "Raccourci" : {
       "localizations" : {
         "en" : {
@@ -446,6 +1054,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Raccourci"
+          }
+        }
+      }
+    },
+    "repos" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rest"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "repos"
+          }
+        }
+      }
+    },
+    "Retire un jour pour en choisir un autre." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove a day to choose another one."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retire un jour pour en choisir un autre."
           }
         }
       }
@@ -482,6 +1122,38 @@
         }
       }
     },
+    "Régulier, avec symptômes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regular, with symptoms"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Régulier, avec symptômes"
+          }
+        }
+      }
+    },
+    "Régulier, sans gêne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regular, no trouble"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Régulier, sans gêne"
+          }
+        }
+      }
+    },
     "Rétention d'eau" : {
       "localizations" : {
         "en" : {
@@ -514,6 +1186,22 @@
         }
       }
     },
+    "Si ça ne s'améliore pas en quelques jours, consulte un professionnel de santé." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If it does not improve within a few days, see a health professional."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si ça ne s'améliore pas en quelques jours, consulte un professionnel de santé."
+          }
+        }
+      }
+    },
     "Soutenu" : {
       "localizations" : {
         "en" : {
@@ -530,6 +1218,54 @@
         }
       }
     },
+    "Suivi et feu vert du médecin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Followed, with the doctor's go-ahead"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suivi et feu vert du médecin"
+          }
+        }
+      }
+    },
+    "séance %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "session %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "séance %lld"
+          }
+        }
+      }
+    },
+    "Tension ou cœur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blood pressure or heart"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tension ou cœur"
+          }
+        }
+      }
+    },
     "Terrain de santé" : {
       "localizations" : {
         "en" : {
@@ -542,6 +1278,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Terrain de santé"
+          }
+        }
+      }
+    },
+    "Tes jours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your days"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes jours"
           }
         }
       }
@@ -574,6 +1326,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tes sources"
+          }
+        }
+      }
+    },
+    "Ton asthme est-il contrôlé ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Is your asthma under control?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton asthme est-il contrôlé ?"
           }
         }
       }
@@ -834,6 +1602,38 @@
         }
       }
     },
+    "Type 1, équilibré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type 1, well controlled"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type 1, équilibré"
+          }
+        }
+      }
+    },
+    "Type 2, équilibré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type 2, well controlled"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type 2, équilibré"
+          }
+        }
+      }
+    },
     "Un chiffre à atteindre" : {
       "localizations" : {
         "en" : {
@@ -926,6 +1726,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Viser un vrai cap."
+          }
+        }
+      }
+    },
+    "À quel trimestre ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which trimester?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À quel trimestre ?"
+          }
+        }
+      }
+    },
+    "Ça fait mal, sans blessure identifiée." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It hurts, with no identified injury."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ça fait mal, sans blessure identifiée."
           }
         }
       }

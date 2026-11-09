@@ -112,31 +112,42 @@ nonisolated struct OnboardingIdentityDraft: Equatable, Codable, Sendable {
     }
 }
 
-/// What the athlete declares on the body step: a zone that hurts, an injury in progress, an old
-/// one still fragile — each placed on the silhouette — or a health ground with no zone
-/// (osteoporosis, water retention…). Nothing is chosen for the athlete; it is complete once each
-/// question that applies is answered. Kept on the phone until the health consent is given, then
-/// written as a physical note.
+/// A zone the athlete declares on the body step — a pain, an injury in progress, an old one
+/// still fragile — placed on the silhouette. The questions follow how a zone is managed: what it
+/// is, since when, how much it hurts (0 to 10, the pain-monitoring scale: up to 5 the plan can keep
+/// loading, above it lightens) and what the athlete can still do (`functionalImpact`, SHARPIT
+/// ADR-068). Nothing is chosen for the athlete. Kept on the phone until the health consent is
+/// given, then written as a physical note.
 nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Sendable {
     enum Kind: String, CaseIterable, Identifiable, Codable, Sendable {
         case pain = "PAIN"
         case injury = "INJURY"
         /// Healed, but the coach should still go easy on it (SHARPIT `MONITORING`).
         case fragile = "FRAGILE"
-        /// A health ground with no zone on the body.
-        case condition = "CONDITION"
 
         var id: String { rawValue }
-
-        /// The kinds asked of a zone on the body.
-        static let zoneKinds: [Kind] = [.pain, .injury, .fragile]
 
         var label: String {
             switch self {
             case .pain: String(localized: "Douleur")
             case .injury: String(localized: "Blessure en cours")
             case .fragile: String(localized: "Ancienne blessure, encore fragile")
-            case .condition: String(localized: "Terrain de santé")
+            }
+        }
+
+        var detail: String {
+            switch self {
+            case .pain: String(localized: "Ça fait mal, sans blessure identifiée.")
+            case .injury: String(localized: "Diagnostiquée ou évidente : entorse, déchirure, tendinite…")
+            case .fragile: String(localized: "Guérie, mais elle revient si tu forces.")
+            }
+        }
+
+        var symbolName: String {
+            switch self {
+            case .pain: "bolt"
+            case .injury: "bandage"
+            case .fragile: "shield.lefthalf.filled"
             }
         }
 
@@ -146,7 +157,6 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Send
             case .pain: String(localized: "Douleur")
             case .injury: String(localized: "Blessure")
             case .fragile: String(localized: "Fragilité")
-            case .condition: ""
             }
         }
 
@@ -155,7 +165,6 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Send
             switch self {
             case .pain: "PAIN"
             case .injury, .fragile: "INJURY"
-            case .condition: "OTHER"
             }
         }
     }
@@ -175,63 +184,68 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Send
         }
     }
 
-    /// How much it bothers, in words — stored on the web's 0…10 severity.
-    enum Level: Int, CaseIterable, Identifiable, Codable, Sendable {
-        case light = 2
-        case moderate = 5
-        case strong = 8
+    /// Since when it hurts: acute, settling, or persistent — where load management starts from.
+    enum Onset: String, CaseIterable, Identifiable, Codable, Sendable {
+        case recent
+        case weeks
+        case persistent
 
-        var id: Int { rawValue }
+        var id: String { rawValue }
         var label: String {
             switch self {
-            case .light: String(localized: "Légère")
-            case .moderate: String(localized: "Modérée")
-            case .strong: String(localized: "Forte")
+            case .recent: String(localized: "Moins de 2 semaines")
+            case .weeks: String(localized: "2 semaines à 3 mois")
+            case .persistent: String(localized: "Plus de 3 mois")
             }
         }
-    }
 
-    /// The grounds offered under the body; the cycle only to a woman.
-    static func conditions(for sex: AthleteSex?) -> [String] {
-        let shared = [String(localized: "Ostéoporose"), String(localized: "Rétention d'eau")]
-        return sex == .female ? shared + [String(localized: "Cycle menstruel")] : shared
+        /// The note's start, as far back as the answer reaches.
+        func startDate(from now: Date, calendar: Calendar = .current) -> Date {
+            let days = switch self {
+            case .recent: 7
+            case .weeks: 42
+            case .persistent: 120
+            }
+            return calendar.date(byAdding: .day, value: -days, to: now) ?? now
+        }
     }
 
     /// The web's `COMMON_BODY_PARTS` the silhouette draws — never the onboarding's old « Cuisse ».
     static let bodyParts: [String] = SensitiveZoneBody.mappedParts.filter { $0 != "Cuisse" }.sorted()
 
+    /// The pain-monitoring threshold: above it the plan lightens instead of loading.
+    static let painThreshold = 5
+
     var id: String { bodyPart }
-    /// The zone, or the ground's name for a condition.
     let bodyPart: String
     var kind: Kind?
     var side: Side?
-    var level: Level?
+    var onset: Onset?
+    /// 0…10.
+    var pain: Int?
+    /// `NONE` … `STOPPED` (`SensitiveZoneOptions.impacts`).
+    var impact: String?
 
     init(bodyPart: String, side: Side? = nil) {
         self.bodyPart = bodyPart
         self.side = side
     }
 
-    static func condition(_ name: String) -> OnboardingInjuryDraft {
-        var draft = OnboardingInjuryDraft(bodyPart: name)
-        draft.kind = .condition
-        return draft
-    }
+    var asksForSide: Bool { SensitiveZoneBody.isPaired(bodyPart) }
 
-    var isCondition: Bool { kind == .condition }
-
-    var asksForSide: Bool { !isCondition && SensitiveZoneBody.isPaired(bodyPart) }
-
-    /// A fragile zone or a ground does not hurt now: no level to ask.
-    var asksForLevel: Bool { kind == .pain || kind == .injury }
+    /// A fragile zone does not hurt now: no onset, pain or impact to ask.
+    var asksForState: Bool { kind == .pain || kind == .injury }
 
     var isComplete: Bool {
-        kind != nil && (!asksForLevel || level != nil) && (!asksForSide || side != nil)
+        guard kind != nil, !asksForSide || side != nil else { return false }
+        return !asksForState || (onset != nil && pain != nil && impact != nil)
     }
 
-    /// « Douleur genou droit », « Fragilité cheville gauche », « Ostéoporose ».
+    /// Stopped, or hurting beyond 7: say to see a professional.
+    var warrantsCare: Bool { impact == "STOPPED" || (pain ?? 0) > 7 }
+
+    /// « Douleur genou droit », « Fragilité cheville gauche ».
     var title: String {
-        if isCondition { return bodyPart }
         var words = [(kind ?? .pain).titleWord, bodyPart.lowercased()]
         switch side {
         case .left: words.append("gauche")
@@ -242,17 +256,19 @@ nonisolated struct OnboardingInjuryDraft: Identifiable, Equatable, Codable, Send
         return words.joined(separator: " ")
     }
 
-    var note: CreatePhysicalNoteInput {
+    func note(now: Date = Date()) -> CreatePhysicalNoteInput {
         let kind = kind ?? .pain
         return CreatePhysicalNoteInput(
             category: kind.category,
             title: title,
-            bodyPart: isCondition ? nil : bodyPart,
+            bodyPart: bodyPart,
             side: side?.rawValue ?? "NA",
-            severity: asksForLevel ? (level ?? .moderate).rawValue : Level.light.rawValue,
+            severity: asksForState ? (pain ?? 5) : 2,
             affectsTraining: true,
+            functionalImpact: asksForState ? impact : "NONE",
             // Nothing hurts now: the coach watches it rather than treating it.
-            status: asksForLevel ? nil : "MONITORING"
+            status: asksForState ? nil : "MONITORING",
+            startDate: onset.flatMap { ProfileFieldFormat.isoDay($0.startDate(from: now)) }
         )
     }
 }

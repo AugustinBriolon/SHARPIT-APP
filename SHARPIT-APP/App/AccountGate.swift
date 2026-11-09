@@ -290,6 +290,7 @@ struct AccountGate<Content: View>: View {
             consents: PrivacyConsentClient(),
             plan: CoachPlanClient(),
             physicalNotes: PhysicalNoteClient(),
+            healthGrounds: HealthGroundClient(),
             saveFirstName: { firstName in
                 guard let user = await Clerk.shared.user, user.firstName != firstName else { return }
                 _ = try await user.update(.init(firstName: firstName))

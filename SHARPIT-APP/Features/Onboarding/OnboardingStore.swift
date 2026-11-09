@@ -65,10 +65,14 @@ final class OnboardingStore {
     var ownedEquipment: Set<String> = []
     var strengthVenue: V1AthleteEquipment.StrengthVenue = .bodyweight
     var availability = V1TrainingAvailability()
+    /// Whether the athlete chose days themselves (or brought them from their profile).
+    private var daysEdited = false
     var intention = OnboardingIntentionDraft()
     var consents = OnboardingConsents()
     /// One per zone, in the order the athlete touched them.
     private(set) var injuries: [OnboardingInjuryDraft] = []
+    /// Health grounds (SHARPIT ADR-124): conditions with no zone, each with its stage.
+    private(set) var healthGrounds: [HealthGroundInput] = []
 
     /// The steps this athlete walks: the privacy one only when the consents are owed.
     let path: [OnboardingStep]
@@ -83,6 +87,7 @@ final class OnboardingStore {
     /// Injuries are health data: with the consents still owed they wait on the phone and are
     /// written once the privacy step is accepted, before the first week is planned.
     private var injuriesAwaitingConsent: [OnboardingInjuryDraft] = []
+    private var groundsAwaitingConsent: [HealthGroundInput] = []
 
     /// False for the wizard before sign-up: nothing goes to the server, the draft holds it all.
     let hasAccount: Bool
@@ -225,6 +230,7 @@ final class OnboardingStore {
         }
         if let declared = profile.trainingAvailability {
             availability = declared
+            daysEdited = !declared.availableWeekdays.isEmpty
         }
     }
 
@@ -237,8 +243,10 @@ final class OnboardingStore {
         ownedEquipment = draft.ownedEquipment
         strengthVenue = draft.strengthVenue
         availability = draft.availability
+        daysEdited = !draft.availability.availableWeekdays.isEmpty
         intention = draft.intention
         injuries = draft.injuries
+        healthGrounds = draft.healthGrounds ?? []
         answered = draft.answered
     }
 
@@ -259,7 +267,8 @@ final class OnboardingStore {
         OnboardingDraft(
             step: step, answered: answered, identity: identity, motivations: motivations,
             sports: sports, ownedEquipment: ownedEquipment, strengthVenue: strengthVenue,
-            availability: availability, intention: intention, injuries: injuries
+            availability: availability, intention: intention, injuries: injuries,
+            healthGrounds: healthGrounds
         )
     }
 
@@ -286,6 +295,19 @@ final class OnboardingStore {
         injuries.removeAll { $0.bodyPart == bodyPart }
     }
 
+    /// Adds a ground, or replaces the stage of the one with the same key.
+    func saveHealthGround(_ ground: HealthGroundInput) {
+        if let index = healthGrounds.firstIndex(where: { $0.key == ground.key }) {
+            healthGrounds[index] = ground
+        } else {
+            healthGrounds.append(ground)
+        }
+    }
+
+    func removeHealthGround(_ key: String) {
+        healthGrounds.removeAll { $0.key == key }
+    }
+
     func toggleEquipment(_ id: String) {
         if ownedEquipment.contains(id) { ownedEquipment.remove(id) } else { ownedEquipment.insert(id) }
         equipmentIsDirty = true
@@ -307,7 +329,8 @@ final class OnboardingStore {
         setWeek(intensity: intensity, sessions: min(max(count, 1), 7))
     }
 
-    /// A day is added only while fewer days than sessions are picked.
+    /// A day is added only while fewer days than sessions are picked. The first touch makes the
+    /// week the athlete's: a later intensity or count keeps their days instead of re-spreading.
     func setWeekday(_ day: Int, available: Bool) {
         var days = availability.availableWeekdays
         let has = days.contains(day)
@@ -318,6 +341,7 @@ final class OnboardingStore {
         } else {
             days.removeAll { $0 == day }
         }
+        daysEdited = true
         availability.availableWeekdays = V1TrainingAvailability.ordered(days)
     }
 
@@ -328,11 +352,16 @@ final class OnboardingStore {
         availability.intensity != nil && availability.availableWeekdays.count == sessionsPerWeek
     }
 
+    /// Until the athlete touches a day, the week is spread for them; after, their days stay
+    /// and only those beyond the count are let go.
     private func setWeek(intensity: TrainingIntensity, sessions: Int) {
+        let days = daysEdited
+            ? Array(availability.availableWeekdays.prefix(sessions))
+            : V1TrainingAvailability.spread(sessions)
         availability = V1TrainingAvailability(
             intensity: intensity,
             sessionsPerWeek: sessions,
-            availableWeekdays: Array(availability.availableWeekdays.prefix(sessions))
+            availableWeekdays: days
         )
     }
 
@@ -382,6 +411,7 @@ final class OnboardingStore {
             moveNext()
         case .injuries:
             injuries = []
+            healthGrounds = []
             leaveInjuries()
         default: break
         }
@@ -498,11 +528,14 @@ final class OnboardingStore {
             }
         case .injuries:
             let declared = injuries
+            let grounds = healthGrounds
             if path.contains(.privacy) {
                 injuriesAwaitingConsent = declared
-            } else if !declared.isEmpty {
+                groundsAwaitingConsent = grounds
+            } else if !declared.isEmpty || !grounds.isEmpty {
                 enqueue(failure: String(localized: "Impossible d'enregistrer tes blessures.")) { token in
                     try await self.write(declared, token: token)
+                    try await self.write(grounds, token: token)
                 }
             }
         case .privacy, .sources, .firstWeek:
@@ -512,20 +545,28 @@ final class OnboardingStore {
 
     private func write(_ declared: [OnboardingInjuryDraft], token: String) async throws {
         for injury in declared {
-            try await services.physicalNotes.createNote(injury.note, token: token)
+            try await services.physicalNotes.createNote(injury.note(), token: token)
         }
+    }
+
+    private func write(_ grounds: [HealthGroundInput], token: String) async throws {
+        guard !grounds.isEmpty else { return }
+        try await services.healthGrounds.replaceHealthGrounds(grounds, token: token)
     }
 
     /// The consents go first in the queue, then the injuries they allow; the first week is
     /// generated once both are in (`startFirstWeek` waits for the queue).
     private func leavePrivacy() {
         let waiting = injuriesAwaitingConsent
+        let waitingGrounds = groundsAwaitingConsent
         let update = PrivacyConsentUpdate.wall(ai: consents.ai, unofficialProviders: false)
         enqueue(failure: String(localized: "Impossible d'enregistrer tes choix de confidentialité.")) { token in
             _ = try await self.services.consents.updateConsents(update, token: token)
             try await self.write(waiting, token: token)
+            try await self.write(waitingGrounds, token: token)
         }
         injuriesAwaitingConsent = []
+        groundsAwaitingConsent = []
         hasAIConsent = consents.ai
         // Generated while the athlete links their sources, so it is waiting at the end.
         startFirstWeek()
@@ -617,6 +658,7 @@ final class OnboardingStore {
         let availability: V1TrainingAvailability
         let intention: OnboardingIntentionDraft
         let injuries: [OnboardingInjuryDraft]
+        let healthGrounds: [HealthGroundInput]
         let hasAIConsent: Bool
     }
 
@@ -624,7 +666,7 @@ final class OnboardingStore {
         PlanInputs(
             identity: identity, sports: sports, ownedEquipment: ownedEquipment,
             strengthVenue: strengthVenue, availability: availability, intention: intention,
-            injuries: injuries, hasAIConsent: hasAIConsent
+            injuries: injuries, healthGrounds: healthGrounds, hasAIConsent: hasAIConsent
         )
     }
 
@@ -788,6 +830,7 @@ struct OnboardingServices {
     let consents: any PrivacyConsentServing
     let plan: any CoachPlanServing
     let physicalNotes: any PhysicalNoteCreating
+    var healthGrounds: any HealthGroundWriting = HealthGroundClient()
     /// The first name lives on the Clerk account, not the profile.
     let saveFirstName: @Sendable (String) async throws -> Void
 }

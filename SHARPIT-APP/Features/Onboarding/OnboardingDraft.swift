@@ -16,6 +16,8 @@ nonisolated struct OnboardingDraft: Codable, Equatable, Sendable {
     var availability = V1TrainingAvailability()
     var intention = OnboardingIntentionDraft()
     var injuries: [OnboardingInjuryDraft] = []
+    /// Optional so a draft saved before health grounds still decodes.
+    var healthGrounds: [HealthGroundInput]? = nil
 }
 
 /// The draft on disk: Application Support, protected until first unlock and out of device

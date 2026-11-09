@@ -299,7 +299,8 @@ struct ZoneCheckinSheet: View {
 }
 
 /// 0 to 10 in two comfortable rows — a pain is reported, not measured. Unanswered until touched.
-private struct ZoneSeverityScale: View {
+/// Also the onboarding's pain question.
+struct ZoneSeverityScale: View {
     @Binding var severity: Int?
 
     var body: some View {
@@ -345,7 +346,8 @@ private struct ZoneSeverityScale: View {
     }
 }
 
-private struct ZoneImpactPicker: View {
+/// Also the onboarding's « what you can still do ».
+struct ZoneImpactPicker: View {
     @Binding var selection: String?
 
     var body: some View {
