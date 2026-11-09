@@ -16,7 +16,16 @@ plan and its generation are never switched off) and four rows ticked by their fi
 at once (`AthleteProfilePatch.setFeatures`), so what stays unticked is out of the app from the first
 tab, back through Paramètres › Pages et widgets. Sports accepts an endurance sport or strength alone (SHARPIT ADR-086,
 `PracticedSportCatalog.isPlannable`); a strength-only athlete gets a palier goal only and no
-Seuils row in Paramètres. `AccountGateModel` owns the
+Seuils row in Paramètres. Ta semaine asks the effort first (`TrainingIntensity`: Tranquille 2 · Régulier 3 · Soutenu 4 ·
+Intensif 5 sessions), a stepper moves the count (1…7), then exactly that many days — the store
+refuses one more and Continue waits for the count (`canContinueFromWeek`); the intensity goes out as
+`trainingAvailability.intensity`. Objectif offers a race, a figure or « Garder la forme » (`HABIT`, no
+date, no figure — SHARPIT ADR-123); strength alone drops the race. Corps (`docs/adr/0031`) draws the
+Santé silhouette (`SensitiveZoneBodyMap`, the figure from the declared sex): a tap opens the zone's
+sheet on the side touched, asking in turn what it is (douleur, blessure en cours, ancienne blessure
+encore fragile — `MONITORING`, no level), the side, the level; under it « Un terrain à ménager ? »
+(osteoporosis, water retention, the cycle for a woman, « Autre ») writes `OTHER` notes with no body
+part. Both are `OnboardingInjuryDraft`s, so they wait for the health consent like the injuries. `AccountGateModel` owns the
 `OnboardingStore`, so a session refresh that resolves the gate again never rebuilds the wizard, and
 `OnboardingStepMemory` reopens the step reached after a quit. Each step is written as the athlete
 leaves it: the first name on the Clerk user, the body, practiced sports, equipment,
