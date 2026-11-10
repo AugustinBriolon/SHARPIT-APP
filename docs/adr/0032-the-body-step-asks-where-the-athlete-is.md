@@ -32,6 +32,18 @@ On the simulator, the athlete found three things that 0031 left short:
   - Each row opens a sheet asking the stage. A stage that owes a medical go-ahead says the coach stays at a moderate intensity until then.
   - The set goes out whole through `PUT /api/v1/health-grounds`. Like the injuries, it waits for the health consent, and it counts among the answers the first week is planned from.
 
+### Amendment (same day): one question per page
+
+On screen, a long sheet left half its height empty and asked everything with the same small chips.
+The zone sheet became `OnboardingZoneSheet`:
+- One question per page, each answer sliding the next in (a spring forward, back from the leading edge, a cross-fade under Reduce Motion).
+- The answers line up as chips at the top, and each leads back to its question.
+- Since when and pain are a `NotchTrack`, dragged or tapped with a notch under the finger, the 5 threshold standing taller on the pain one.
+- What the athlete can still do is a five-rung ladder.
+- A summary reads everything back with « Ajouter ».
+
+The ground sheet draws its stages as an ordered track that fills to the one chosen, with a stethoscope on the stages owing a medical go-ahead, and fits its content.
+
 ## Options considered
 
 - **Keep the paint gesture with tap fallback:** it competes with the scroll and lost taps on the simulator. Taps alone are enough for seven keys.
