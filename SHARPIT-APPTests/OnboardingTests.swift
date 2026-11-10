@@ -1485,3 +1485,26 @@ private func answerTheProfileSteps(_ store: OnboardingStore) async {
     #expect(V1TrainingAvailability.spread(4) == [1, 3, 5, 0])
     #expect((0...8).allSatisfy { V1TrainingAvailability.spread($0).count == min(max($0, 0), 7) })
 }
+
+@Test func theZoneSheetAsksOnlyWhatIsStillOpenAndSkipsTheSideTheFingerGave() {
+    var knee = OnboardingInjuryDraft(bodyPart: "Genou", side: .right)
+    #expect(ZoneQuestion.path(for: knee) == [.kind, .side, .onset, .pain, .impact, .summary])
+    #expect(ZoneQuestion.firstOpen(in: knee) == .kind)
+
+    knee.kind = .pain
+    // The side came from the tap: the next question is since when.
+    #expect(ZoneQuestion.firstOpen(in: knee, after: .kind) == .onset)
+    knee.onset = .recent
+    knee.pain = 4
+    #expect(ZoneQuestion.firstOpen(in: knee, after: .pain) == .impact)
+    knee.impact = "MILD"
+    #expect(ZoneQuestion.firstOpen(in: knee, after: .impact) == .summary)
+    // Reopened, a complete zone lands on its summary.
+    #expect(ZoneQuestion.firstOpen(in: knee) == .summary)
+
+    var back = OnboardingInjuryDraft(bodyPart: "Lombaires")
+    back.kind = .fragile
+    #expect(ZoneQuestion.path(for: back) == [.kind, .summary])
+    #expect(ZoneQuestion.firstOpen(in: back, after: .kind) == .summary)
+    #expect(ZoneQuestion.pain.answer(in: knee) == "4/10")
+}

@@ -34,6 +34,22 @@
         }
       }
     },
+    "2 sem. – 3 mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2 wk – 3 mo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2 sem. – 3 mois"
+          }
+        }
+      }
+    },
     "2 semaines à 3 mois" : {
       "localizations" : {
         "en" : {
@@ -98,6 +114,38 @@
         }
       }
     },
+    "< 2 sem." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "< 2 wk"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "< 2 sem."
+          }
+        }
+      }
+    },
+    "> 3 mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "> 3 mo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "> 3 mois"
+          }
+        }
+      }
+    },
     "Ancienne blessure, encore fragile" : {
       "localizations" : {
         "en" : {
@@ -142,6 +190,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Asthme"
+          }
+        }
+      }
+    },
+    "Asthme d'effort, hernie discale…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exercise asthma, herniated disc…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asthme d'effort, hernie discale…"
           }
         }
       }
@@ -206,6 +270,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Avec fracture vertébrale"
+          }
+        }
+      }
+    },
+    "Avis médical conseillé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medical advice recommended"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avis médical conseillé"
           }
         }
       }
@@ -418,6 +498,22 @@
         }
       }
     },
+    "Côté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Side"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Côté"
+          }
+        }
+      }
+    },
     "Demande l'avis de ton médecin avant les séances intenses. D'ici là, le coach reste sur une intensité modérée." : {
       "localizations" : {
         "en" : {
@@ -434,6 +530,22 @@
         }
       }
     },
+    "Depuis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Since"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depuis"
+          }
+        }
+      }
+    },
     "Depuis l'accouchement ?" : {
       "localizations" : {
         "en" : {
@@ -446,6 +558,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Depuis l'accouchement ?"
+          }
+        }
+      }
+    },
+    "Depuis quand" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Since when"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depuis quand"
           }
         }
       }
@@ -494,6 +622,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diagnostiquée ou évidente : entorse, déchirure, tendinite…"
+          }
+        }
+      }
+    },
+    "Douleur sur 10" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pain out of 10"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Douleur sur 10"
           }
         }
       }
@@ -606,6 +750,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Facultatif"
+          }
+        }
+      }
+    },
+    "Fais glisser jusqu'à ton niveau de douleur." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slide to your pain level."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fais glisser jusqu'à ton niveau de douleur."
+          }
+        }
+      }
+    },
+    "Fais glisser ou touche une durée." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slide or tap a duration."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fais glisser ou touche une durée."
           }
         }
       }
@@ -818,6 +994,22 @@
         }
       }
     },
+    "On récapitule" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let's recap"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On récapitule"
+          }
+        }
+      }
+    },
     "Optionnel : ce qui ouvre d'autres séances. Sans rien coché, le coach prévoit des séances dehors, sans matériel." : {
       "localizations" : {
         "en" : {
@@ -926,6 +1118,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pas bien contrôlé"
+          }
+        }
+      }
+    },
+    "Pas encore choisi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not chosen yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore choisi"
           }
         }
       }
@@ -1214,6 +1422,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Soutenu"
+          }
+        }
+      }
+    },
+    "Suivant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suivant"
           }
         }
       }
@@ -1570,6 +1794,22 @@
         }
       }
     },
+    "Touchez pour modifier." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to change."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touchez pour modifier."
+          }
+        }
+      }
+    },
     "Tout donner pour ton objectif." : {
       "localizations" : {
         "en" : {
@@ -1598,6 +1838,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tranquille"
+          }
+        }
+      }
+    },
+    "Tu adaptes certaines séances." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You adapt some sessions."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu adaptes certaines séances."
+          }
+        }
+      }
+    },
+    "Tu fais tout comme d'habitude." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You do everything as usual."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu fais tout comme d'habitude."
+          }
+        }
+      }
+    },
+    "Tu la sens, sans changer ta séance." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You feel it, without changing your session."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu la sens, sans changer ta séance."
+          }
+        }
+      }
+    },
+    "Tu ne peux pas t'entraîner." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You cannot train."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu ne peux pas t'entraîner."
+          }
+        }
+      }
+    },
+    "Tu réduis ou coupes des séances." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You cut back or drop sessions."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu réduis ou coupes des séances."
           }
         }
       }

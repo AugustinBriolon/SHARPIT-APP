@@ -538,7 +538,7 @@ struct OnboardingInjuriesStep: View {
             groundsBlock
         }
         .sheet(item: $editing) { draft in
-            OnboardingInjurySheet(
+            OnboardingZoneSheet(
                 draft: draft,
                 isDeclared: store.injuries.contains { $0.id == draft.id }
             ) { saved in
@@ -547,8 +547,6 @@ struct OnboardingInjuriesStep: View {
                 store.removeInjury(draft.bodyPart)
             }
             .sharpitSheet()
-            // Full height: its questions arrive one under another and must land in view.
-            .presentationDetents([.large])
         }
         .sheet(item: $editingGround) { entry in
             HealthGroundSheet(
@@ -560,7 +558,6 @@ struct OnboardingInjuriesStep: View {
                 store.removeHealthGround(entry.key)
             }
             .sharpitSheet()
-            .presentationDetents([.medium, .large])
         }
     }
 
@@ -813,258 +810,6 @@ private struct OnboardingInjuryRow: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
             withAnimation(SharpitMotion.reveal) {
                 onRemove()
-            }
-        }
-    }
-}
-
-/// The questions for one zone, one after another: what it is, then — for a pain or an injury in
-/// progress — since when, how much (0 to 10) and what the athlete can still do. Each appears once
-/// the one above is answered; nothing is picked in advance.
-private struct OnboardingInjurySheet: View {
-    @State var draft: OnboardingInjuryDraft
-    let isDeclared: Bool
-    let onSave: (OnboardingInjuryDraft) -> Void
-    let onRemove: () -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    private var place: String {
-        SensitiveZoneBody.caption(part: draft.bodyPart, side: draft.side?.rawValue ?? "NA") ?? draft.bodyPart
-    }
-
-    /// The last question shown, which the sheet scrolls to as it arrives.
-    private var latestQuestion: String {
-        if draft.isComplete, draft.warrantsCare { return "care" }
-        if draft.asksForState, draft.pain != nil { return "impact" }
-        if draft.asksForState, draft.onset != nil { return "pain" }
-        if draft.asksForState, !draft.asksForSide || draft.side != nil { return "onset" }
-        return draft.kind != nil && draft.asksForSide ? "side" : "kind"
-    }
-
-    var body: some View {
-        NavigationStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                        question(String(localized: "Qu'est-ce que c'est ?")) {
-                            VStack(spacing: SharpitSpacing.xs) {
-                                ForEach(OnboardingInjuryDraft.Kind.allCases) { kind in
-                                    MotivationRow(
-                                        symbol: kind.symbolName,
-                                        title: kind.label,
-                                        detail: kind.detail,
-                                        isSelected: draft.kind == kind
-                                    ) { draft.kind = kind }
-                                }
-                            }
-                        }
-                        if draft.kind != nil, draft.asksForSide {
-                            question(String(localized: "Quel côté ?")) {
-                                HStack(spacing: SharpitSpacing.xs) {
-                                    ForEach(OnboardingInjuryDraft.Side.allCases) { side in
-                                        OnboardingChoiceChip(title: side.label, isSelected: draft.side == side) { draft.side = side }
-                                    }
-                                }
-                            }
-                            .id("side")
-                            .revealed(true, index: 0)
-                        }
-                        if draft.asksForState, !draft.asksForSide || draft.side != nil {
-                            question(String(localized: "Depuis quand ?")) {
-                                VStack(spacing: SharpitSpacing.xs) {
-                                    ForEach(OnboardingInjuryDraft.Onset.allCases) { onset in
-                                        OnboardingChoiceChip(title: onset.label, isSelected: draft.onset == onset) { draft.onset = onset }
-                                    }
-                                }
-                            }
-                            .id("onset")
-                            .revealed(true, index: 0)
-                        }
-                        if draft.asksForState, draft.onset != nil {
-                            painBlock
-                                .id("pain")
-                                .revealed(true, index: 0)
-                        }
-                        if draft.asksForState, draft.pain != nil {
-                            question(String(localized: "Ce que tu peux encore faire")) {
-                                ZoneImpactPicker(selection: $draft.impact)
-                            }
-                            .id("impact")
-                            .revealed(true, index: 0)
-                        }
-                        if draft.isComplete, draft.warrantsCare {
-                            Label(
-                                String(localized: "Si ça ne s'améliore pas en quelques jours, consulte un professionnel de santé."),
-                                systemImage: "stethoscope"
-                            )
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalCaution)
-                            .id("care")
-                            .revealed(true, index: 0)
-                        }
-                    }
-                    .padding(.horizontal, SharpitSpacing.pageInset)
-                    .padding(.top, SharpitSpacing.md)
-                    .padding(.bottom, SharpitSpacing.xl)
-                }
-                // A new question lands in view: the athlete never has to look for it.
-                .onChange(of: latestQuestion) { _, latest in
-                    SharpitMotion.run(SharpitMotion.reveal) { proxy.scrollTo(latest, anchor: .bottom) }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    onSave(draft)
-                    dismiss()
-                } label: {
-                    Text(isDeclared ? String(localized: "Enregistrer") : String(localized: "Ajouter"))
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        .frame(maxWidth: .infinity)
-                }
-                .sharpitGlassButton(prominent: true)
-                .tint(SharpitColor.primary)
-                .disabled(!draft.isComplete)
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.vertical, SharpitSpacing.sm)
-            }
-            .animation(SharpitMotion.reveal, value: draft)
-            .navigationTitle(place)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
-                }
-                if isDeclared {
-                    ToolbarItem(placement: .destructiveAction) {
-                        Button("Retirer", role: .destructive) {
-                            onRemove()
-                            dismiss()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// The pain-monitoring scale: up to 5 the plan keeps loading, above it lightens.
-    private var painBlock: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .lastTextBaseline) {
-                SharpitFieldLabel(String(localized: "Combien ça fait mal ?"))
-                Spacer()
-                Text(draft.pain.map { "\($0)/10" } ?? "—")
-                    .font(SharpitTypography.gaugeScore)
-                    .foregroundStyle(ZoneSeverityTint.color(draft.pain))
-                    .contentTransition(.numericText())
-            }
-            ZoneSeverityScale(severity: $draft.pain)
-            if let pain = draft.pain {
-                Text(pain <= OnboardingInjuryDraft.painThreshold
-                     ? String(localized: "Jusqu'à 5, le coach peut garder de la charge en surveillant.")
-                     : String(localized: "Au-delà de 5, le coach allège les séances qui sollicitent la zone."))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .contentTransition(.opacity)
-            }
-        }
-    }
-
-    private func question(_ title: String, @ViewBuilder choices: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(title)
-            choices()
-        }
-    }
-}
-
-/// One ground's question: where the athlete is with it, a stage per row; « Autre » asks for a few
-/// words instead. A stage that owes a medical go-ahead says so — the coach caps intensity until then.
-private struct HealthGroundSheet: View {
-    let entry: HealthGroundCatalog.Entry
-    let onSave: (HealthGroundInput) -> Void
-    let onRemove: () -> Void
-    private let isDeclared: Bool
-    @State private var stage: String?
-    @State private var details: String
-    @Environment(\.dismiss) private var dismiss
-
-    init(
-        entry: HealthGroundCatalog.Entry,
-        declared: HealthGroundInput?,
-        onSave: @escaping (HealthGroundInput) -> Void,
-        onRemove: @escaping () -> Void
-    ) {
-        self.entry = entry
-        self.onSave = onSave
-        self.onRemove = onRemove
-        isDeclared = declared != nil
-        _stage = State(initialValue: declared?.stage ?? (entry.asksDetails ? entry.stages.first?.id : nil))
-        _details = State(initialValue: declared?.details ?? "")
-    }
-
-    private var trimmedDetails: String { details.trimmingCharacters(in: .whitespacesAndNewlines) }
-    private var canSave: Bool { stage != nil && (!entry.asksDetails || !trimmedDetails.isEmpty) }
-    private var draft: HealthGroundInput? {
-        stage.map { HealthGroundInput(key: entry.key, stage: $0, details: trimmedDetails.isEmpty ? nil : trimmedDetails) }
-    }
-
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                SharpitFieldLabel(entry.question)
-                if entry.asksDetails {
-                    SharpitFormField(String(localized: "En quelques mots"), placeholder: String(localized: "Asthme, diabète…"), text: $details)
-                } else {
-                    VStack(spacing: SharpitSpacing.xs) {
-                        ForEach(entry.stages) { option in
-                            OnboardingChoiceChip(title: option.label, isSelected: stage == option.id) {
-                                SharpitMotion.run(SharpitMotion.selection) { stage = option.id }
-                            }
-                        }
-                    }
-                }
-                if let draft, HealthGroundCatalog.needsClearance(draft) {
-                    Label(
-                        String(localized: "Demande l'avis de ton médecin avant les séances intenses. D'ici là, le coach reste sur une intensité modérée."),
-                        systemImage: "stethoscope"
-                    )
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalCaution)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-                }
-                Spacer(minLength: 0)
-                Button {
-                    if let draft { onSave(draft) }
-                    dismiss()
-                } label: {
-                    Text(isDeclared ? String(localized: "Enregistrer") : String(localized: "Ajouter"))
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        .frame(maxWidth: .infinity)
-                }
-                .sharpitGlassButton(prominent: true)
-                .tint(SharpitColor.primary)
-                .disabled(!canSave)
-            }
-            .padding(SharpitSpacing.pageInset)
-            .animation(SharpitMotion.selection, value: stage)
-            .navigationTitle(entry.label)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
-                }
-                if isDeclared {
-                    ToolbarItem(placement: .destructiveAction) {
-                        Button("Retirer", role: .destructive) {
-                            onRemove()
-                            dismiss()
-                        }
-                    }
-                }
             }
         }
     }

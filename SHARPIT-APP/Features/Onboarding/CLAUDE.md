@@ -21,13 +21,16 @@ Intensif 5 sessions), a stepper moves the count (1…7), and the week arrives sp
 (`V1TrainingAvailability.spread`) until the athlete taps a day: sessions are tokens, a chosen day a
 lime disc with its number, free days fade once all are placed (`docs/adr/0032`). Objectif offers a
 race, a figure or « Garder la forme » (`HABIT`, SHARPIT ADR-123). Corps draws the Santé silhouette
-(the figure from the declared sex); a tap opens the zone's sheet on the side touched, asking in
-turn what it is (douleur, blessure en cours, ancienne blessure encore fragile — `MONITORING`, no
-pain questions), the side off the body, since when (the note's `startDate`), pain 0–10
-(`ZoneSeverityScale`, the pain-monitoring rule under it) and what the athlete can still do
-(`ZoneImpactPicker`). « Un terrain à ménager ? » lists `HealthGroundCatalog` (mirror of SHARPIT
-ADR-124's catalog; cycle, pregnancy, postpartum for a woman only), each asking its stage, sent as
-one set to `/api/v1/health-grounds`. Zones and grounds wait for the health consent. `AccountGateModel` owns the
+(the figure from the declared sex); a tap opens `OnboardingZoneSheet`, one question per page
+(`ZoneQuestion`: what it is — douleur, blessure en cours, ancienne blessure encore fragile
+(`MONITORING`, no pain questions) —, the side, already given by the tap, since when (a `NotchTrack`,
+the note's `startDate`), pain 0–10 (a `NotchTrack` with the threshold at 5 and the pain-monitoring
+rule under it, notches under the finger), what the athlete can still do (a five-rung ladder)), each
+answer sliding the next page in, the answers lined up as chips that lead back, then a summary with
+« Ajouter ». « Un terrain à ménager ? » lists `HealthGroundCatalog` (mirror of SHARPIT
+ADR-124's catalog; cycle, pregnancy, postpartum for a woman only), each asking its stage on an
+ordered track (`HealthGroundSheet`, sized to its content, a stethoscope on the stages owing a medical
+go-ahead), sent as one set to `/api/v1/health-grounds`. Zones and grounds wait for the health consent. `AccountGateModel` owns the
 `OnboardingStore`, so a session refresh that resolves the gate again never rebuilds the wizard, and
 `OnboardingStepMemory` reopens the step reached after a quit. Each step is written as the athlete
 leaves it: the first name on the Clerk user, the body, practiced sports, equipment,
