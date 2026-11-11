@@ -126,7 +126,7 @@ private func loadedProposal(_ store: TodayStore) -> V1TodayMorningProposal? {
 @Test @MainActor func thePlanHorizonCardSaysHowManySessionsAndFromWhen() {
     let subtitle = PlanHorizonReadout.subtitle(V1TodayPlanHorizon(startDate: "2026-10-27", sessionCount: 4))
     #expect(subtitle.hasPrefix("4 séances dès mardi 27"))
-    #expect(subtitle.hasSuffix("garde celles qui te vont"))
+    #expect(subtitle.hasSuffix("Garde celles qui te vont"))
     #expect(PlanHorizonReadout.subtitle(V1TodayPlanHorizon(startDate: "bad", sessionCount: 1)) == "1 séance. Garde celles qui te vont")
 }
 
