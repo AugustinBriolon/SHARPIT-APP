@@ -94,10 +94,10 @@ private struct ThresholdChangeRow: View {
 
 /// The card's words, kept apart so they are tested.
 nonisolated enum ThresholdSuggestionReadout {
-    /// « Capacité démontrée sur 120 jours — pas le record de toujours. »
+    /// « Capacité démontrée sur 120 jours, pas le record de toujours. »
     static func window(_ days: Int?) -> String {
-        guard let days, days > 0 else { return String(localized: "Capacité démontrée récemment — pas le record de toujours.") }
-        return String(localized: "Capacité démontrée sur \(days) jours — pas le record de toujours.")
+        guard let days, days > 0 else { return String(localized: "Capacité démontrée récemment, pas le record de toujours.") }
+        return String(localized: "Capacité démontrée sur \(days) jours, pas le record de toujours.")
     }
 
     /// « Appliquer », or « Appliquer (2) » when some proposals were left out.

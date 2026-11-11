@@ -232,7 +232,7 @@ struct JournalView: View {
             JournalSection(
                 isGrouped: true,
                 title: String(localized: "Checklist auto"),
-                hint: String(localized: "Dérivée de tes données santé et activités — lecture seule.")
+                hint: String(localized: "Dérivée de tes données santé et activités. Lecture seule.")
             ) {
                 ForEach(store.checklist) { item in
                     JournalChecklistRow(item: item)

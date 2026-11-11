@@ -95,7 +95,7 @@ struct RecoverySections: View {
             .font(SharpitTypography.body)
 
             if recovery.isCalibrating {
-                Label("Calibration en cours — ta norme se construit encore.", systemImage: "hourglass")
+                Label("Calibration en cours. Ta norme se construit encore.", systemImage: "hourglass")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.mutedForeground)
             }

@@ -155,7 +155,7 @@ private struct AdaptationDimensionsSection: View {
                     )
                 }
                 if AdaptationReadout.isNeuromuscularMissing(adaptation) {
-                    Text("Efficacité neuromusculaire indisponible — moyenne de dérive FC sur 14 jours. Il faut au moins une sortie course/vélo ≥ 30 min avec stream FC + vitesse GPS (ou puissance) dans cette fenêtre.")
+                    Text("Efficacité neuromusculaire indisponible. Moyenne de dérive FC sur 14 jours. Il faut au moins une sortie course/vélo ≥ 30 min avec stream FC + vitesse GPS (ou puissance) dans cette fenêtre.")
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)

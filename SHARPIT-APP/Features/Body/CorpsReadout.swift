@@ -105,7 +105,7 @@ nonisolated enum CorpsMetricKey: String, CaseIterable, Identifiable, Sendable {
         case .vascularAge:
             String(localized: "Estimé par ta balance à partir de la vitesse de l'onde de pouls. Une indication, pas un diagnostic.")
         case .ftp, .lthr, .runThresholdPace, .swimCss:
-            String(localized: "Chaque point est une valeur enregistrée — importée de ta montre, estimée ou saisie.")
+            String(localized: "Chaque point est une valeur enregistrée, importée de ta montre, estimée ou saisie.")
         case .maxHr:
             String(localized: "La fréquence la plus haute que ton cœur atteint. Elle sert à caler tes zones.")
         }

@@ -273,9 +273,9 @@ nonisolated enum ProReadout {
             }
             return String(localized: "Actif")
         case "grace_period":
-            return String(localized: "Paiement en attente — l'accès est maintenu")
+            return String(localized: "Paiement en attente. L'accès est maintenu")
         case "billing_retry":
-            return String(localized: "Paiement refusé — mets à jour ton moyen de paiement")
+            return String(localized: "Paiement refusé. Mets à jour ton moyen de paiement")
         case "revoked":
             return String(localized: "Abonnement remboursé")
         default:

@@ -53,7 +53,7 @@ struct BrickEvaluationSheet: View {
                         title: String(localized: "Effort global"),
                         value: store.rpe,
                         outOf: 10,
-                        caption: String(localized: "Le brick entier, transitions comprises — pas chaque sport."),
+                        caption: String(localized: "Le brick entier, transitions comprises, pas chaque sport."),
                         tone: store.rpe.map(SessionFeedbackTone.effort)
                     ) {
                         RatingGrid(

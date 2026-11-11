@@ -31,7 +31,7 @@ enum ProviderOAuthConnectOutcome: Equatable {
 
     func message(for source: DisconnectableSource) -> String {
         switch self {
-        case .connected: String(localized: "\(source.name) connecté — synchronisation en cours…")
+        case .connected: String(localized: "\(source.name) connecté. Synchronisation en cours…")
         case .alreadyConnected: String(localized: "\(source.name) est déjà connecté")
         case .cancelled: String(localized: "Connexion \(source.name) annulée")
         case .consentRequired: String(localized: "Autorisation requise pour \(source.name)")

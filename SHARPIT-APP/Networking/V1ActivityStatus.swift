@@ -30,9 +30,9 @@ nonisolated enum ActivityStatusId: String, Codable, CaseIterable, Sendable {
     var planningImpact: String {
         switch self {
         case .active: String(localized: "Charge et séances suivent le plan.")
-        case .paused: String(localized: "Pas de charge volontaire — plan en veille jusqu'à reprise.")
-        case .injured: String(localized: "Priorité sécurité — adapter ou reporter les séances à risque.")
-        case .sick: String(localized: "Repos avant la charge — reprendre seulement quand le corps suit.")
+        case .paused: String(localized: "Pas de charge volontaire. Plan en veille jusqu'à reprise.")
+        case .injured: String(localized: "Priorité sécurité : adapter ou reporter les séances à risque.")
+        case .sick: String(localized: "Repos avant la charge. Reprendre seulement quand le corps suit.")
         }
     }
 
@@ -41,9 +41,9 @@ nonisolated enum ActivityStatusId: String, Codable, CaseIterable, Sendable {
     var alertLine: String {
         switch self {
         case .active: ""
-        case .paused: String(localized: "En pause — le plan est en veille jusqu'à reprise.")
-        case .injured: String(localized: "Blessé — priorité sécurité, les séances à risque sont adaptées ou reportées.")
-        case .sick: String(localized: "Repos — reprenez quand le corps suit.")
+        case .paused: String(localized: "En pause. Le plan est en veille jusqu'à reprise.")
+        case .injured: String(localized: "Blessé : priorité sécurité, les séances à risque sont adaptées ou reportées.")
+        case .sick: String(localized: "Repos. Reprenez quand le corps suit.")
         }
     }
 

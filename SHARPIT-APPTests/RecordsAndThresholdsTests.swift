@@ -166,7 +166,7 @@ private nonisolated func decodedPreview() throws -> V1ThresholdApplyPreview {
         #expect(ThresholdSuggestionReadout.applyLabel(accepted: 2, offered: 2) == "Appliquer")
         #expect(ThresholdSuggestionReadout.applyLabel(accepted: 1, offered: 2) == "Appliquer (1)")
         #expect(ThresholdSuggestionReadout.applyLabel(accepted: 0, offered: 2) == "Appliquer")
-        #expect(ThresholdSuggestionReadout.window(120) == "Capacité démontrée sur 120 jours — pas le record de toujours.")
+        #expect(ThresholdSuggestionReadout.window(120) == "Capacité démontrée sur 120 jours, pas le record de toujours.")
         #expect(ThresholdSuggestionReadout.directionLabel(.down) == "Baisse")
     }
 

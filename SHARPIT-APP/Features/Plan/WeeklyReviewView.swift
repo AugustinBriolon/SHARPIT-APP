@@ -125,7 +125,7 @@ struct WeeklyReviewView: View {
         case .proRequired:
             SharpitProTeaser(
                 title: String(localized: "Bilan hebdomadaire"),
-                message: String(localized: "Volume, charge, sommeil et récupération de la semaine, synthétisés par le coach — avec un plan pour la semaine suivante.")
+                message: String(localized: "Volume, charge, sommeil et récupération de la semaine, synthétisés par le coach, avec un plan pour la semaine suivante.")
             )
         case .failed(let message):
             SharpitStateMessage.failed(message) { Task { await store.load() } }
@@ -134,7 +134,7 @@ struct WeeklyReviewView: View {
                 Text("Pas encore de bilan")
                     .font(SharpitTypography.cardTitle)
                     .foregroundStyle(SharpitColor.foreground)
-                Text("Le coach relit ta semaine — volume, charge, sommeil, récupération — et prépare la suivante.")
+                Text("Le coach relit ta semaine (volume, charge, sommeil, récupération) et prépare la suivante.")
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)

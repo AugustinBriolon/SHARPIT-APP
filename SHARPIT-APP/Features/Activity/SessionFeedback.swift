@@ -28,7 +28,7 @@ enum SessionFeeling: Int, CaseIterable, Identifiable, Sendable {
     /// The web's hint, shown under the selected step.
     var hint: String {
         switch self {
-        case .veryBad: String(localized: "Très dur — signes de surmenage ou inconfort.")
+        case .veryBad: String(localized: "Très dur. Signes de surmenage ou inconfort.")
         case .bad: String(localized: "Difficile, jambes lourdes ou manque d’énergie.")
         case .okay: String(localized: "Séance faite, sans plus ni moins.")
         case .good: String(localized: "Bon ressenti, effort maîtrisé.")

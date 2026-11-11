@@ -25,7 +25,7 @@ enum DayCheckInReminderPlanner {
             id: identifierPrefix + "mood",
             hour: 14, minute: 0,
             title: String(localized: "Humeur"),
-            body: String(localized: "Un mot sur ton état — ça affine la lecture du Twin.")
+            body: String(localized: "Un mot sur ton état. Ça affine la lecture du Twin.")
         ),
         DayCheckInReminder(
             id: identifierPrefix + "caffeine",

@@ -102,7 +102,7 @@ struct ThresholdsView: View {
 
     private var sourceText: String {
         if let syncedAt = store.profile.thresholdsSyncedAt {
-            return String(localized: "Importés de ta montre ") + SyncReadout.age(of: syncedAt, now: .now) + String(localized: " — ils s'y règlent aussi.")
+            return String(localized: "Importés de ta montre ") + SyncReadout.age(of: syncedAt, now: .now) + String(localized: ". Ils s'y règlent aussi.")
         }
         return String(localized: "Saisis à la main. Ils règlent tes zones et la charge de chaque séance.")
     }

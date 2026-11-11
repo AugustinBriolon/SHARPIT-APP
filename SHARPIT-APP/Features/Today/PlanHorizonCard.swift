@@ -24,13 +24,13 @@ struct PlanHorizonCard: View {
 }
 
 enum PlanHorizonReadout {
-    /// « 4 séances dès lundi 27 oct. — garde celles qui te vont ».
+    /// « 4 séances dès lundi 27 oct. Garde celles qui te vont ».
     static func subtitle(_ horizon: V1TodayPlanHorizon) -> String {
         let count = String(localized: "\(horizon.sessionCount) séance\(horizon.sessionCount > 1 ? "s" : "")")
         guard let day = TrainingDayId.date(horizon.startDate) else {
-            return String(localized: "\(count) — garde celles qui te vont")
+            return String(localized: "\(count). Garde celles qui te vont")
         }
         let label = day.formatted(.dateTime.weekday(.wide).day().month(.abbreviated).locale(SharpitLocale.current))
-        return String(localized: "\(count) dès \(label) — garde celles qui te vont")
+        return String(localized: "\(count) dès \(label). Garde celles qui te vont")
     }
 }

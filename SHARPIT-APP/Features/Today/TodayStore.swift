@@ -345,7 +345,7 @@ final class TodayStore {
         case .unauthorized:
             return String(localized: "Session expirée")
         case .rateLimited:
-            return String(localized: "Trop de requêtes — réessaie dans un instant")
+            return String(localized: "Trop de requêtes. Réessaie dans un instant")
         case .message(let text), .googleNeedsReconnect(let text):
             return text
         case .proRequired:

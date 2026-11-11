@@ -35,15 +35,15 @@ import Testing
 }
 
 @Test func alertTextForPaused() {
-    #expect(ActivityStatusId.paused.alertLine == "En pause — le plan est en veille jusqu'à reprise.")
+    #expect(ActivityStatusId.paused.alertLine == "En pause. Le plan est en veille jusqu'à reprise.")
 }
 
 @Test func alertTextForInjured() {
-    #expect(ActivityStatusId.injured.alertLine == "Blessé — priorité sécurité, les séances à risque sont adaptées ou reportées.")
+    #expect(ActivityStatusId.injured.alertLine == "Blessé : priorité sécurité, les séances à risque sont adaptées ou reportées.")
 }
 
 @Test func alertTextForSick() {
-    #expect(ActivityStatusId.sick.alertLine == "Repos — reprenez quand le corps suit.")
+    #expect(ActivityStatusId.sick.alertLine == "Repos. Reprenez quand le corps suit.")
 }
 
 // MARK: - Store.current mapping

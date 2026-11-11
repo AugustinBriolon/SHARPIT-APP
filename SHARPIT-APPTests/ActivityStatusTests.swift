@@ -105,15 +105,15 @@ private func encodedWrite(_ write: V1ActivityStatusWrite) throws -> [String: Any
 }
 
 @Test func alertLineIsFrenchForPaused() {
-    #expect(ActivityStatusId.paused.alertLine == "En pause — le plan est en veille jusqu'à reprise.")
+    #expect(ActivityStatusId.paused.alertLine == "En pause. Le plan est en veille jusqu'à reprise.")
 }
 
 @Test func alertLineIsFrenchForInjured() {
-    #expect(ActivityStatusId.injured.alertLine == "Blessé — priorité sécurité, les séances à risque sont adaptées ou reportées.")
+    #expect(ActivityStatusId.injured.alertLine == "Blessé : priorité sécurité, les séances à risque sont adaptées ou reportées.")
 }
 
 @Test func alertLineIsFrenchForSick() {
-    #expect(ActivityStatusId.sick.alertLine == "Repos — reprenez quand le corps suit.")
+    #expect(ActivityStatusId.sick.alertLine == "Repos. Reprenez quand le corps suit.")
 }
 
 // MARK: - Store.current visibility

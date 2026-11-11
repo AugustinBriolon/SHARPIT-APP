@@ -91,7 +91,7 @@ private let overviewJSON = """
     #expect(ProReadout.status(nil, isPro: false) == "Version gratuite")
     #expect(ProReadout.status(nil, isPro: true) == "Accès Pro offert")
     #expect(ProReadout.status(V1ProSubscription(status: "grace_period", source: "apple"), isPro: true)
-        == "Paiement en attente — l'accès est maintenu")
+        == "Paiement en attente. L'accès est maintenu")
 }
 
 // MARK: - Profile

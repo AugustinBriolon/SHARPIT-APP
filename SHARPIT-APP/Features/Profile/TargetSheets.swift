@@ -309,7 +309,7 @@ struct WeightTargetSheet: View {
                 .frame(maxWidth: .infinity)
                 SharpitStepButton(symbol: "plus", label: String(localized: "Plus 0,5 kg")) { step(0.5) }
             }
-            Text("Optionnel. Tracé sur ta courbe de poids et pris en compte dans la lecture nutritionnelle — jamais une alerte.")
+            Text("Optionnel. Tracé sur ta courbe de poids et pris en compte dans la lecture nutritionnelle, jamais une alerte.")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
                 .fixedSize(horizontal: false, vertical: true)

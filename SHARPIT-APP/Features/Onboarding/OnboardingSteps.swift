@@ -1121,7 +1121,7 @@ struct OnboardingSourcesStep: View {
 
     private var appleHealthDetail: String {
         let line = ConnectionsReadout.appleHealthSubtitle(isAvailable: appleHealth.isAvailable, state: appleHealth.state)
-        return appleHealth.isAvailable && !line.isProblem ? String(localized: "Séances, sommeil, VFC et poids — ceux de ta montre aussi.") : line.text
+        return appleHealth.isAvailable && !line.isProblem ? String(localized: "Séances, sommeil, VFC et poids, ceux de ta montre aussi.") : line.text
     }
 
     private var appleHealthBinding: Binding<Bool> {

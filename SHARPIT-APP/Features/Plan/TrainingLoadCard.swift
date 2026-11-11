@@ -46,11 +46,11 @@ struct TrainingLoadCard: View {
     private func calibrationCaption(_ calibration: V1TrainingLoad.Calibration) -> String {
         let remaining = max(0, calibration.daysNeeded - calibration.daysWithLoad)
         if remaining == 0 {
-            return String(localized: "En calibration — encore quelques jours de charge.")
+            return String(localized: "En calibration. Encore quelques jours de charge.")
         }
         return remaining == 1
-            ? String(localized: "En calibration — encore 1 jour de charge pour fiabiliser la forme.")
-            : String(localized: "En calibration — encore \(remaining) jours de charge pour fiabiliser la forme.")
+            ? String(localized: "En calibration. Encore 1 jour de charge pour fiabiliser la forme.")
+            : String(localized: "En calibration. Encore \(remaining) jours de charge pour fiabiliser la forme.")
     }
 
     private func figure(_ label: String, value: String, caption: String, tone: Color) -> some View {

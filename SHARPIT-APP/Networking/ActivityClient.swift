@@ -9,7 +9,7 @@ enum ActivityClientError: Error, Equatable, LocalizedError {
         case .invalidResponse(let status, let body):
             return "API \(status) — \(body)"
         case .decoding(let message):
-            return String(localized: "Réponse API incompatible — \(message)")
+            return String(localized: "Réponse API incompatible : \(message)")
         }
     }
 }

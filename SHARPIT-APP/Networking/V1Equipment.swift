@@ -35,7 +35,7 @@ nonisolated struct V1AthleteEquipment: Codable, Sendable, Equatable {
 
         var description: String {
             switch self {
-            case .gym: String(localized: "Inscription en salle — machines, racks et câbles.")
+            case .gym: String(localized: "Inscription en salle : machines, racks et câbles.")
             case .home: String(localized: "Matériel à domicile uniquement.")
             case .both: String(localized: "Salle + matériel à la maison.")
             case .bodyweight: String(localized: "Séances au poids du corps uniquement.")

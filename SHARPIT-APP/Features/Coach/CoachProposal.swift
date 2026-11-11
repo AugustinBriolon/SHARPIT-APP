@@ -260,7 +260,7 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         guard let raw, !raw.isEmpty else { return nil }
         let lower = raw.lowercased()
         if lower.hasPrefix("an error occurred") { return String(localized: "L'opération n'a pas abouti") }
-        if lower.contains("fetch failed") || lower.contains("network") { return String(localized: "Problème de connexion — réessaie dans un instant") }
+        if lower.contains("fetch failed") || lower.contains("network") { return String(localized: "Problème de connexion. Réessaie dans un instant") }
         if lower.contains("timeout") || lower.contains("timed out") { return String(localized: "La requête a pris trop de temps") }
         if raw.range(of: "[àâäéèêëïîôùûüç]", options: [.regularExpression, .caseInsensitive]) != nil { return raw }
         return String(localized: "L'opération n'a pas abouti")

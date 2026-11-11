@@ -103,7 +103,7 @@ struct PrivacyConsentWallView: View {
 
     private var optionalPanel: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            Text("OPTIONNEL — TU POURRAS AUSSI LES ACTIVER PLUS TARD")
+            Text("OPTIONNEL. TU POURRAS AUSSI LES ACTIVER PLUS TARD")
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .foregroundStyle(SharpitColor.mutedForeground)
