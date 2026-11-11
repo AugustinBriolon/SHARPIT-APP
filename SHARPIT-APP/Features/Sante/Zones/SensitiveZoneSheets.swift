@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Declares a zone, or edits one. The body part is picked from the web's list, so the plan can
-/// always check it spares the zone; a free-text one stays possible, flagged as unchecked.
+/// Declares or edits a zone, one question per page — same flow as the onboarding zone sheet
+/// (ADR-0032): chips to go back, NotchTrack for pain, impact ladder, summary with optional extras.
 struct SensitiveZoneFormSheet: View {
     @State var draft: SensitiveZoneDraft
     let bodyParts: [String]
@@ -9,66 +9,98 @@ struct SensitiveZoneFormSheet: View {
     let isNew: Bool
     let onSave: (SensitiveZoneDraft) async -> Bool
 
+    @State private var question: ZoneFormQuestion = .where
+    @State private var isForward = true
+    @State private var contentHeight: CGFloat = 420
     @State private var writesOwnPart = false
     @State private var isSaving = false
     @State private var failed = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let grid = Array(repeating: GridItem(.flexible(), spacing: SharpitSpacing.xs), count: 3)
 
+    init(
+        draft: SensitiveZoneDraft,
+        bodyParts: [String],
+        figure: SensitiveZoneFigure = .male,
+        isNew: Bool,
+        onSave: @escaping (SensitiveZoneDraft) async -> Bool
+    ) {
+        _draft = State(initialValue: draft)
+        self.bodyParts = bodyParts
+        self.figure = figure
+        self.isNew = isNew
+        self.onSave = onSave
+        _writesOwnPart = State(initialValue: draft.bodyPart == nil && !draft.customBodyPart.isEmpty)
+        // Editing opens on the summary; a new zone on its first open question.
+        _question = State(initialValue: isNew ? ZoneFormQuestion.firstOpen(in: draft) : .summary)
+    }
+
+    private var place: String {
+        SensitiveZoneBody.caption(part: draft.region, side: draft.side)
+            ?? draft.region
+            ?? (isNew ? String(localized: "Nouvelle zone") : String(localized: "Modifier la zone"))
+    }
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    // Where first: the body is the question the athlete came with.
-                    bodyPartPicker
-                    choices(String(localized: "Qu'est-ce que c'est ?"), SensitiveZoneOptions.categories, selection: $draft.category)
-                    // On the body the finger already said the side; a part off it still asks.
-                    if !SensitiveZoneBody.isOnMap(draft.region) {
-                        choices(String(localized: "Quel côté ?"), SensitiveZoneOptions.sides, selection: $draft.side)
-                    }
-                    severityPicker
-                    impactPicker
-                    SharpitFormField(String(localized: "Nom (facultatif)"), placeholder: draft.resolvedTitle, text: $draft.title)
-                    descriptionField
-                    Toggle(isOn: $draft.affectsTraining) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Prise en compte dans le plan")
-                                .font(SharpitTypography.bodyEmphasis)
-                            Text("Le coach adapte les séances à cette zone.")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
-                        }
-                    }
-                    .tint(SharpitColor.primary)
-                    if failed {
-                        Text("L'enregistrement a échoué. Réessaie.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalRisk)
-                    }
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                answers
+                ZStack(alignment: .top) {
+                    page(question)
+                        .id(question)
+                        .transition(pageTransition)
                 }
-                .padding(SharpitSpacing.pageInset)
+                .frame(maxWidth: .infinity, alignment: .top)
+                .clipped()
             }
-            .navigationTitle(isNew ? String(localized: "Déclarer une zone") : String(localized: "Modifier la zone"))
+            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.top, SharpitSpacing.sm)
+            .padding(.bottom, SharpitSpacing.md)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                SharpitMotion.run(SharpitMotion.reveal) { contentHeight = height + 64 }
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .navigationTitle(place)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(isNew ? String(localized: "Ajouter") : String(localized: "Enregistrer")) { save() }
-                        .disabled(!draft.isComplete || isSaving)
-                }
             }
-            .onAppear { writesOwnPart = draft.bodyPart == nil && !draft.customBodyPart.isEmpty }
         }
-        .presentationDetents([.large])
+        .presentationDetents(question == .where ? [.large] : [.height(max(contentHeight, 320)), .large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
 
+    // MARK: Flow
+
+    private var pageTransition: AnyTransition {
+        if reduceMotion { return .opacity }
+        let insertion: Edge = isForward ? .trailing : .leading
+        let removal: Edge = isForward ? .leading : .trailing
+        return .asymmetric(
+            insertion: .move(edge: insertion).combined(with: .opacity),
+            removal: .move(edge: removal).combined(with: .opacity)
+        )
+    }
+
+    private func go(to next: ZoneFormQuestion) {
+        let path = ZoneFormQuestion.path(for: draft)
+        isForward = (path.firstIndex(of: next) ?? 0) >= (path.firstIndex(of: question) ?? 0)
+        SharpitMotion.run(SharpitMotion.reveal) { question = next }
+    }
+
+    private func advance() {
+        go(to: ZoneFormQuestion.firstOpen(in: draft, after: question))
+    }
+
     private func save() {
+        guard !isSaving else { return }
         isSaving = true
+        failed = false
         Task {
             let saved = await onSave(draft)
             isSaving = false
@@ -76,31 +108,65 @@ struct SensitiveZoneFormSheet: View {
         }
     }
 
-    private func choices(
-        _ question: String,
-        _ options: [SensitiveZoneOptions.Choice],
-        selection: Binding<String>
-    ) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(question)
-            LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
-                ForEach(options) { option in
-                    OnboardingChoiceChip(title: option.label, isSelected: selection.wrappedValue == option.value) {
-                        selection.wrappedValue = option.value
+    // MARK: Answers
+
+    private var answers: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: SharpitSpacing.xs) {
+                ForEach(ZoneFormQuestion.path(for: draft).filter { $0 != .summary }, id: \.self) { step in
+                    if let value = step.answer(in: draft) {
+                        Button { go(to: step) } label: {
+                            Text(value)
+                                .font(SharpitTypography.meta.weight(.semibold))
+                                .foregroundStyle(step == question ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                                .padding(.horizontal, SharpitSpacing.sm)
+                                .frame(minHeight: 32)
+                                .background(
+                                    Capsule().fill(step == question ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt)
+                                )
+                        }
+                        .buttonStyle(.sharpitPressable)
+                        .accessibilityLabel("\(step.title) : \(value)")
+                        .accessibilityHint(String(localized: "Touchez pour modifier."))
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                     }
                 }
             }
+            .animation(SharpitMotion.selection, value: draft)
         }
+        .scrollIndicators(.hidden)
+        .frame(minHeight: 32)
     }
 
-    /// The parts the server offers that the silhouette does not draw, as chips under it.
+    // MARK: Pages
+
+    @ViewBuilder
+    private func page(_ step: ZoneFormQuestion) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            Text(step.title)
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            switch step {
+            case .where: wherePage
+            case .category: categoryPage
+            case .side: sidePage
+            case .severity: severityPage
+            case .impact: impactPage
+            case .summary: summaryPage
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
     private var offListParts: [String] {
         bodyParts.filter { !SensitiveZoneBody.mappedParts.contains($0) }
     }
 
-    private var bodyPartPicker: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(String(localized: "Où ?"))
+    private var wherePage: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             if bodyParts.contains(where: SensitiveZoneBody.mappedParts.contains) {
                 SensitiveZoneBodyPicker(
                     offered: bodyParts,
@@ -112,14 +178,13 @@ struct SensitiveZoneFormSheet: View {
                     side: $draft.side,
                     onPick: { writesOwnPart = false }
                 )
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
             }
             LazyVGrid(columns: grid, spacing: SharpitSpacing.xs) {
                 ForEach(offListParts, id: \.self) { part in
                     OnboardingChoiceChip(title: part, isSelected: draft.bodyPart == part && !writesOwnPart) {
                         writesOwnPart = false
                         draft.bodyPart = part
+                        draft.side = "NA"
                     }
                 }
                 OnboardingChoiceChip(title: String(localized: "Autre…"), isSelected: writesOwnPart) {
@@ -136,30 +201,263 @@ struct SensitiveZoneFormSheet: View {
                     .foregroundStyle(SharpitColor.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            nextButton(String(localized: "Suivant"), isEnabled: draft.region != nil, action: advance)
         }
     }
 
-    private var severityPicker: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(SensitiveZoneOptions.isCorrective(draft.category) ? String(localized: "Gêne ressentie") : String(localized: "Douleur aujourd'hui"))
-            ZoneSeverityScale(severity: Binding(get: { draft.severity }, set: { draft.severity = $0 ?? 0 }))
+    private var categoryPage: some View {
+        VStack(spacing: SharpitSpacing.xs) {
+            ForEach(SensitiveZoneOptions.categories) { choice in
+                MotivationRow(
+                    symbol: SensitiveZoneOptions.categorySymbol(choice.value),
+                    title: choice.label,
+                    detail: SensitiveZoneOptions.categoryDetail(choice.value),
+                    isSelected: draft.category == choice.value
+                ) {
+                    draft.category = choice.value
+                    advance()
+                }
+            }
         }
     }
 
-    private var impactPicker: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(String(localized: "Ce que tu peux encore faire"))
-            ZoneImpactPicker(selection: $draft.functionalImpact)
+    private var sidePage: some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            ForEach(SensitiveZoneOptions.sides.filter { $0.value != "NA" }) { choice in
+                ZoneChoiceTile(
+                    symbol: sideSymbol(choice.value),
+                    title: choice.label,
+                    isSelected: draft.side == choice.value
+                ) {
+                    draft.side = choice.value
+                    advance()
+                }
+            }
         }
     }
 
-    private var descriptionField: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(String(localized: "Notes (facultatif)"))
-            TextField("Quand ça apparaît, ce qui soulage…", text: $draft.description, axis: .vertical)
-                .font(SharpitTypography.body)
-                .lineLimit(3...6)
-                .sharpitFieldWell()
+    private func sideSymbol(_ value: String) -> String {
+        switch value {
+        case "LEFT": "arrow.left"
+        case "RIGHT": "arrow.right"
+        case "BILATERAL": "arrow.left.arrow.right"
+        default: "minus"
+        }
+    }
+
+    private var severityPage: some View {
+        let corrective = SensitiveZoneOptions.isCorrective(draft.category ?? "")
+        return VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(draft.severity.map(String.init) ?? "—")
+                    .font(SharpitTypography.heroScore)
+                    .tracking(SharpitTypography.heroScoreTracking)
+                    .foregroundStyle(ZoneSeverityTint.color(draft.severity))
+                    .contentTransition(.numericText(value: Double(draft.severity ?? 0)))
+                Text("/10")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                Spacer()
+                Text(draft.severity.map(ZoneSeverityTint.caption) ?? "")
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .contentTransition(.opacity)
+            }
+            .animation(SharpitMotion.selection, value: draft.severity)
+
+            NotchTrack(
+                stops: 11,
+                value: $draft.severity,
+                marker: SensitiveZoneOptions.painThreshold,
+                tint: { ZoneSeverityTint.color($0) },
+                stopLabels: Self.painStopLabels,
+                accessibilityLabel: corrective
+                    ? String(localized: "Gêne sur 10")
+                    : String(localized: "Douleur sur 10"),
+                valueLabel: { String(localized: "\($0) sur 10") }
+            )
+
+            Text(severityCaption(corrective: corrective))
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+
+            nextButton(String(localized: "Suivant"), isEnabled: draft.severity != nil, action: advance)
+        }
+        .padding(.top, SharpitSpacing.sm)
+    }
+
+    private static let painStopLabels: [String] = (0...10).map { [0, 5, 10].contains($0) ? String($0) : "" }
+
+    private func severityCaption(corrective: Bool) -> String {
+        guard let severity = draft.severity else {
+            return corrective
+                ? String(localized: "Fais glisser jusqu'à ton niveau de gêne.")
+                : String(localized: "Fais glisser jusqu'à ton niveau de douleur.")
+        }
+        return severity <= SensitiveZoneOptions.painThreshold
+            ? String(localized: "Jusqu'à 5, le coach peut garder de la charge en surveillant.")
+            : String(localized: "Au-delà de 5, le coach allège les séances qui sollicitent la zone.")
+    }
+
+    private var impactPage: some View {
+        VStack(spacing: SharpitSpacing.xs) {
+            ForEach(ZoneImpact.all) { impact in
+                ZoneLadderRow(
+                    impact: impact,
+                    isSelected: draft.functionalImpact == impact.value
+                ) {
+                    draft.functionalImpact = impact.value
+                    advance()
+                }
+            }
+        }
+    }
+
+    private var summaryPage: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(
+                    Array(ZoneFormQuestion.path(for: draft).filter { $0 != .summary }.enumerated()),
+                    id: \.element
+                ) { index, step in
+                    if index > 0 {
+                        Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                    }
+                    Button { go(to: step) } label: {
+                        HStack {
+                            Text(step.shortTitle)
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.mutedForeground)
+                            Spacer(minLength: SharpitSpacing.sm)
+                            Text(step.answer(in: draft) ?? "—")
+                                .font(SharpitTypography.bodyEmphasis)
+                                .foregroundStyle(SharpitColor.foreground)
+                                .multilineTextAlignment(.trailing)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                                .accessibilityHidden(true)
+                        }
+                        .padding(.vertical, SharpitSpacing.sm)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.sharpitPressable)
+                }
+            }
+            .padding(.horizontal, SharpitSpacing.cardPadding)
+            .padding(.vertical, SharpitSpacing.xs)
+            .sharpitSurface(.panel)
+
+            SharpitFormField(
+                String(localized: "Nom (facultatif)"),
+                placeholder: draft.resolvedTitle,
+                text: $draft.title
+            )
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                SharpitFieldLabel(String(localized: "Notes (facultatif)"))
+                TextField("Quand ça apparaît, ce qui soulage…", text: $draft.description, axis: .vertical)
+                    .font(SharpitTypography.body)
+                    .lineLimit(2...4)
+                    .sharpitFieldWell()
+            }
+            Toggle(isOn: $draft.affectsTraining) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Prise en compte dans le plan")
+                        .font(SharpitTypography.bodyEmphasis)
+                    Text("Le coach adapte les séances à cette zone.")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.mutedForeground)
+                }
+            }
+            .tint(SharpitColor.primary)
+
+            if failed {
+                Text("L'enregistrement a échoué. Réessaie.")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.signalRisk)
+            }
+
+            nextButton(
+                isNew ? String(localized: "Ajouter") : String(localized: "Enregistrer"),
+                isEnabled: draft.isComplete && !isSaving,
+                action: save
+            )
+        }
+    }
+
+    private func nextButton(_ title: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                if isSaving { ProgressView().tint(SharpitColor.primaryForeground) }
+                Text(title)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.primaryForeground)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .sharpitGlassButton(prominent: true)
+        .tint(SharpitColor.primary)
+        .disabled(!isEnabled)
+        .padding(.bottom, SharpitSpacing.sm)
+    }
+}
+
+/// Questions of the Santé declare / edit sheet, in order.
+enum ZoneFormQuestion: Hashable, CaseIterable {
+    case `where`, category, side, severity, impact, summary
+
+    static func path(for draft: SensitiveZoneDraft) -> [ZoneFormQuestion] {
+        var path: [ZoneFormQuestion] = [.where, .category]
+        if draft.asksForSide { path.append(.side) }
+        path += [.severity, .impact, .summary]
+        return path
+    }
+
+    static func firstOpen(in draft: SensitiveZoneDraft, after current: ZoneFormQuestion? = nil) -> ZoneFormQuestion {
+        let path = path(for: draft)
+        let start = current.flatMap { path.firstIndex(of: $0) }.map { $0 + 1 } ?? 0
+        return path[start...].first { $0 != .summary && $0.answer(in: draft) == nil } ?? .summary
+    }
+
+    var title: String {
+        switch self {
+        case .where: String(localized: "Où ?")
+        case .category: String(localized: "Qu'est-ce que c'est ?")
+        case .side: String(localized: "Quel côté ?")
+        case .severity: String(localized: "Combien ça fait mal ?")
+        case .impact: String(localized: "Ce que tu peux encore faire")
+        case .summary: String(localized: "On récapitule")
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .where: String(localized: "Où")
+        case .category: String(localized: "Type")
+        case .side: String(localized: "Côté")
+        case .severity: String(localized: "Douleur")
+        case .impact: String(localized: "Au quotidien")
+        case .summary: ""
+        }
+    }
+
+    func answer(in draft: SensitiveZoneDraft) -> String? {
+        switch self {
+        case .where:
+            return SensitiveZoneBody.caption(part: draft.region, side: draft.side) ?? draft.region
+        case .category:
+            return draft.category.map { SensitiveZoneOptions.label($0, in: SensitiveZoneOptions.categories) }
+        case .side:
+            // « NA » means not chosen yet for an off-map part (the silhouette sets LEFT/RIGHT itself).
+            guard draft.asksForSide, draft.side != "NA" else { return nil }
+            return SensitiveZoneOptions.label(draft.side, in: SensitiveZoneOptions.sides)
+        case .severity:
+            return draft.severity.map { String(localized: "\($0)/10") }
+        case .impact:
+            return draft.functionalImpact.flatMap { value in ZoneImpact.all.first { $0.value == value }?.label }
+        case .summary:
+            return nil
         }
     }
 }

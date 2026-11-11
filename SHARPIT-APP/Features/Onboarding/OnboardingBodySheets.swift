@@ -416,7 +416,7 @@ struct ZoneImpact: Identifiable, Hashable {
 }
 
 /// A large square choice: symbol over its word, filled when chosen.
-private struct ZoneChoiceTile: View {
+struct ZoneChoiceTile: View {
     let symbol: String
     let title: String
     let isSelected: Bool
@@ -444,7 +444,7 @@ private struct ZoneChoiceTile: View {
 }
 
 /// One rung of the impact ladder: its figure, its words, a bar that grows with the limit.
-private struct ZoneLadderRow: View {
+struct ZoneLadderRow: View {
     let impact: ZoneImpact
     let isSelected: Bool
     let onSelect: () -> Void

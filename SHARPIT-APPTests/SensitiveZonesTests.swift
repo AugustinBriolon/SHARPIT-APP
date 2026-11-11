@@ -83,10 +83,28 @@ private nonisolated func decodedZones() throws -> V1SensitiveZones {
         var draft = SensitiveZoneDraft()
         #expect(!draft.isComplete)
         draft.bodyPart = "Genou"
+        draft.category = "PAIN"
+        draft.severity = 3
         #expect(draft.isComplete)
         #expect(draft.resolvedTitle == "Douleur · Genou")
         draft.title = "  Tendinite rotulienne "
         #expect(draft.createInput.title == "Tendinite rotulienne")
+    }
+
+    @Test func theFormPathSkipsSideWhenTheSilhouetteAlreadyGaveIt() {
+        var draft = SensitiveZoneDraft()
+        draft.bodyPart = "Genou"
+        draft.side = "LEFT"
+        draft.category = "PAIN"
+        #expect(!draft.asksForSide)
+        #expect(ZoneFormQuestion.path(for: draft) == [.where, .category, .severity, .impact, .summary])
+
+        draft.bodyPart = nil
+        draft.customBodyPart = "Plexus"
+        draft.side = "NA"
+        #expect(draft.asksForSide)
+        #expect(ZoneFormQuestion.path(for: draft).contains(.side))
+        #expect(ZoneFormQuestion.firstOpen(in: draft, after: .category) == .side)
     }
 
     @Test func keepsAFreeTextRegion() {

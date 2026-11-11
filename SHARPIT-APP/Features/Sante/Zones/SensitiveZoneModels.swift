@@ -17,6 +17,30 @@ nonisolated enum SensitiveZoneOptions {
         Choice(value: "OTHER", label: String(localized: "Autre")),
     ]
 
+    /// Detail under each category row on the declare sheet.
+    static func categoryDetail(_ value: String) -> String {
+        switch value {
+        case "PAIN": String(localized: "Ça fait mal, sans blessure identifiée.")
+        case "INJURY": String(localized: "Diagnostiquée ou évidente : entorse, déchirure, tendinite…")
+        case "MOBILITY": String(localized: "Amplitude limitée, à travailler plutôt qu'à éviter.")
+        case "POSTURE": String(localized: "Un déséquilibre à corriger dans le geste.")
+        default: String(localized: "Autre chose à faire suivre par le coach.")
+        }
+    }
+
+    static func categorySymbol(_ value: String) -> String {
+        switch value {
+        case "PAIN": "bolt"
+        case "INJURY": "bandage"
+        case "MOBILITY": "figure.flexibility"
+        case "POSTURE": "figure.stand"
+        default: "ellipsis.circle"
+        }
+    }
+
+    /// Same threshold as the onboarding pain track: above it, the coach lightens load on the zone.
+    static let painThreshold = 5
+
     static let sides = [
         Choice(value: "NA", label: String(localized: "Sans objet")),
         Choice(value: "LEFT", label: String(localized: "Gauche")),
@@ -62,7 +86,8 @@ nonisolated enum PhysicalNoteLimits {
 
 /// A zone being declared or edited.
 nonisolated struct SensitiveZoneDraft: Equatable, Sendable {
-    var category = "PAIN"
+    /// Nil until the athlete picks a category on the declare sheet.
+    var category: String?
     var title = "" { didSet { title = PhysicalNoteLimits.clamp(title, to: PhysicalNoteLimits.title) } }
     /// One of the offered body parts, or nil when the athlete writes their own.
     var bodyPart: String?
@@ -70,7 +95,8 @@ nonisolated struct SensitiveZoneDraft: Equatable, Sendable {
         didSet { customBodyPart = PhysicalNoteLimits.clamp(customBodyPart, to: PhysicalNoteLimits.bodyPart) }
     }
     var side = "NA"
-    var severity = 3
+    /// Nil until the pain track is touched — same rule as the onboarding sheet.
+    var severity: Int?
     var functionalImpact: String?
     var description = "" {
         didSet { description = PhysicalNoteLimits.clamp(description, to: PhysicalNoteLimits.description) }
@@ -88,7 +114,7 @@ nonisolated struct SensitiveZoneDraft: Equatable, Sendable {
             customBodyPart = zone.bodyPart ?? ""
         }
         side = zone.side
-        severity = zone.severity ?? 0
+        severity = zone.severity
         functionalImpact = zone.functionalImpact
         description = zone.description ?? ""
         affectsTraining = zone.affectsTraining
@@ -100,15 +126,21 @@ nonisolated struct SensitiveZoneDraft: Equatable, Sendable {
         return custom.isEmpty ? nil : custom
     }
 
+    /// Off-map regions still need an explicit side; the silhouette already set it for mapped ones.
+    var asksForSide: Bool { region != nil && !SensitiveZoneBody.isOnMap(region) }
+
     /// The name the athlete gave, or « Douleur · Genou » when they gave none.
     var resolvedTitle: String {
         let typed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         if !typed.isEmpty { return typed }
-        let kind = SensitiveZoneOptions.label(category, in: SensitiveZoneOptions.categories)
+        let kind = SensitiveZoneOptions.label(
+            category ?? "PAIN",
+            in: SensitiveZoneOptions.categories
+        )
         return [kind, region].compactMap { $0 }.joined(separator: " · ")
     }
 
-    var isComplete: Bool { region != nil }
+    var isComplete: Bool { region != nil && category != nil && severity != nil }
 
     private var trimmedDescription: String? {
         let text = description.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -117,11 +149,11 @@ nonisolated struct SensitiveZoneDraft: Equatable, Sendable {
 
     var createInput: CreatePhysicalNoteInput {
         CreatePhysicalNoteInput(
-            category: category,
+            category: category ?? "PAIN",
             title: resolvedTitle,
             bodyPart: region ?? "",
             side: side,
-            severity: severity,
+            severity: severity ?? 0,
             affectsTraining: affectsTraining,
             functionalImpact: functionalImpact,
             description: trimmedDescription
