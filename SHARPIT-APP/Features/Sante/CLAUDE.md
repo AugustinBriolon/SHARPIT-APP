@@ -37,3 +37,9 @@ arrives. Free except the biological age, which is Pro (`SharpitProTeaser`); Pro 
 the data it needs pushes `AccountView`. The weight target is set from the toolbar
 (`WeightTargetSheet`), the sleep targets from Sommeil's (`SleepTargetsSheet`). Training thresholds are
 not health: Paramètres › Entraînement › Seuils d'entraînement (`ThresholdsView`).
+
+**Analyses de sang.** `BloodTestsCard` pushes `BloodTestImportView` (`Features/BloodTests`, SHARPIT
+ADR-128, `docs/adr/0033`): pick the lab's PDF or scan the paper, read on the device
+(`BloodReportReader`: text layer, else Vision; `BloodReportParser`: by position), correct every value
+in `BloodTestReviewView`, then `POST /api/v1/blood-tests` with the results only. The document is
+never copied or sent, and no test fixture holds a real report.

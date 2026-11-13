@@ -120,6 +120,8 @@ struct SanteView: View {
                         }
                         SensitiveZonesCard(store: zones)
                             .revealed(hasAppeared, index: 1)
+                        BloodTestsCard(tokenProvider: tokenProvider)
+                            .revealed(hasAppeared, index: 1)
                         section(String(localized: "Signes vitaux"), overview.vitals, index: 2)
                         section(String(localized: "Corps"), overview.body, index: 3)
                         section(String(localized: "Au quotidien"), overview.daily, index: 4)

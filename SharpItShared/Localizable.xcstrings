@@ -45645,6 +45645,374 @@
           }
         }
       }
+    },
+    "Active le consentement santé dans Paramètres pour enregistrer une analyse.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on the health consent in Settings to save a blood test."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active le consentement santé dans Paramètres pour enregistrer une analyse."
+          }
+        }
+      }
+    },
+    "Aucun marqueur reconnu dans ce document. Essaie le PDF du laboratoire plutôt qu'une photo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No marker recognised in this document. Try the lab's PDF rather than a photo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun marqueur reconnu dans ce document. Essaie le PDF du laboratoire plutôt qu'une photo."
+          }
+        }
+      }
+    },
+    "Lecture du document impossible.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read the document."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture du document impossible."
+          }
+        }
+      }
+    },
+    "Enregistrement impossible. Réessaie dans un instant.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save. Try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement impossible. Réessaie dans un instant."
+          }
+        }
+      }
+    },
+    "Analyses de sang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blood tests"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyses de sang"
+          }
+        }
+      }
+    },
+    "Importe un compte rendu : seules les valeurs sont gardées, jamais le document.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import a report: only the values are kept, never the document."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importe un compte rendu : seules les valeurs sont gardées, jamais le document."
+          }
+        }
+      }
+    },
+    "Ouvre l'import d'une analyse de sang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the blood test import"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre l'import d'une analyse de sang"
+          }
+        }
+      }
+    },
+    "Lecture sur ton iPhone…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading on your iPhone…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture sur ton iPhone…"
+          }
+        }
+      }
+    },
+    "Analyse enregistrée": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blood test saved"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyse enregistrée"
+          }
+        }
+      }
+    },
+    "Tes valeurs sont chiffrées. Le document n'a pas quitté ton iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your values are encrypted. The document never left your iPhone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes valeurs sont chiffrées. Le document n'a pas quitté ton iPhone."
+          }
+        }
+      }
+    },
+    "Analyse de sang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blood test"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyse de sang"
+          }
+        }
+      }
+    },
+    "Importer un compte rendu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import a report"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer un compte rendu"
+          }
+        }
+      }
+    },
+    "Le document est lu sur ton iPhone. Ton nom, ton adresse et ton médecin ne sont ni lus ni envoyés : seules les valeurs que tu confirmes sont enregistrées.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The document is read on your iPhone. Your name, address and doctor are neither read nor sent: only the values you confirm are saved."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le document est lu sur ton iPhone. Ton nom, ton adresse et ton médecin ne sont ni lus ni envoyés : seules les valeurs que tu confirmes sont enregistrées."
+          }
+        }
+      }
+    },
+    "Choisir le PDF du laboratoire": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the lab's PDF"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisir le PDF du laboratoire"
+          }
+        }
+      }
+    },
+    "Scanner le papier": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan the paper report"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scanner le papier"
+          }
+        }
+      }
+    },
+    "%lld marqueurs lus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld markers read"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld marqueurs lus"
+          }
+        }
+      }
+    },
+    "Lu depuis une image : vérifie chaque valeur.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read from an image: check every value."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lu depuis une image : vérifie chaque valeur."
+          }
+        }
+      }
+    },
+    "Prélèvement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample date"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prélèvement"
+          }
+        }
+      }
+    },
+    "Ajouter un marqueur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a marker"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un marqueur"
+          }
+        }
+      }
+    },
+    "Valeur à corriger": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Value to correct"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valeur à corriger"
+          }
+        }
+      }
+    },
+    "Bas · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low · %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bas · %@"
+          }
+        }
+      }
+    },
+    "Haut · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High · %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haut · %@"
+          }
+        }
+      }
+    },
+    "Sans intervalle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reference range"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sans intervalle"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

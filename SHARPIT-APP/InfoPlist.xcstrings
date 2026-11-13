@@ -75,13 +75,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SharpIt uses the camera to read the barcode of the foods you add to your log. The images stay on your device."
+            "value" : "SharpIt uses the camera to read the barcode of the foods you add to your log and to scan your lab reports. The images stay on your device."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SHARPIT utilise l'appareil photo pour lire le code-barres des aliments que tu ajoutes à ton journal. Les images restent sur ton appareil."
+            "value" : "SHARPIT utilise l'appareil photo pour lire le code-barres des aliments que tu ajoutes à ton journal et scanner tes comptes rendus d'analyses. Les images restent sur ton appareil."
           }
         }
       }
