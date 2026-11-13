@@ -54,6 +54,36 @@ nonisolated struct V1BloodTest: Decodable, Identifiable, Equatable, Sendable {
     }
 }
 
+/// What `GET /api/v1/blood-tests/{id}/reading` answers (SHARPIT ADR-129): the sessions before the
+/// sample and the sourced findings. The server computes it; the app only shows it.
+nonisolated struct V1BloodTestReading: Decodable, Equatable, Sendable {
+    struct Training: Decodable, Equatable, Sendable {
+        let sessionsInWeek: Int
+        let strengthInWeek: Int
+        let sessionsInFourWeeks: Int
+    }
+
+    struct Finding: Decodable, Equatable, Sendable {
+        enum Tone: String, Decodable, Sendable {
+            case context, doctor
+        }
+
+        let key: String
+        let markerKeys: [String]
+        let tone: Tone
+        let text: String
+        let source: String
+    }
+
+    let training: Training
+    let findings: [Finding]
+}
+
+nonisolated protocol BloodTestReading: Sendable {
+    /// Throws `SharpitAPIError.proRequired` below Pro.
+    func reading(testId: String, token: String) async throws -> V1BloodTestReading
+}
+
 nonisolated protocol BloodTestWriting: Sendable {
     func createBloodTest(sampledAt: Date, results: [BloodTestResultInput], token: String) async throws
 }
@@ -66,7 +96,7 @@ nonisolated protocol BloodTestServing: Sendable {
 
 /// `/api/v1/blood-tests` — results only. The body has no field for a document or a name, and the
 /// server refuses any it does not know.
-actor BloodTestClient: BloodTestWriting, BloodTestServing {
+actor BloodTestClient: BloodTestWriting, BloodTestServing, BloodTestReading {
     private let session: URLSession
     private let baseURL: URL
 
@@ -98,6 +128,16 @@ actor BloodTestClient: BloodTestWriting, BloodTestServing {
         let (data, response) = try await session.data(for: request(path: "/api/v1/blood-tests", method: "GET", token: token))
         try Self.check(status: Self.status(response))
         return try JSONDecoder().decode(ListBody.self, from: data).bloodTests
+    }
+
+    func reading(testId: String, token: String) async throws -> V1BloodTestReading {
+        let (data, response) = try await session.data(
+            for: request(path: "/api/v1/blood-tests/\(testId)/reading", method: "GET", token: token)
+        )
+        let status = Self.status(response)
+        if status == 403, SharpitAPIError.isProRequired(data) { throw SharpitAPIError.proRequired }
+        try Self.check(status: status)
+        return try JSONDecoder().decode(V1BloodTestReading.self, from: data)
     }
 
     func deleteBloodTest(id: String, token: String) async throws {

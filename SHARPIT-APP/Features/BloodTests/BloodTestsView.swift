@@ -193,6 +193,7 @@ struct BloodTestDetailView: View {
     let store: BloodTestsStore
     let testId: String
     @State private var isConfirmingDelete = false
+    @State private var reading: BloodTestReadingStore?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -201,6 +202,9 @@ struct BloodTestDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                         table(test)
+                        if let reading {
+                            BloodTestReadingCard(store: reading)
+                        }
                     }
                     .padding(.horizontal, SharpitSpacing.pageInset)
                     .padding(.vertical, SharpitSpacing.md)
@@ -226,6 +230,11 @@ struct BloodTestDetailView: View {
             }
         } message: {
             Text("Ses valeurs sont effacées de SHARPIT. Tu pourras réimporter le compte rendu.")
+        }
+        .task {
+            let store = store.makeReadingStore()
+            reading = store
+            await store.load(testId: testId)
         }
     }
 

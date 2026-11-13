@@ -46,6 +46,11 @@ final class BloodTestsStore {
         BloodMarkerHistory.followed(in: tests)
     }
 
+    /// A test's athlete reading, under the same session.
+    func makeReadingStore() -> BloodTestReadingStore {
+        BloodTestReadingStore(tokenProvider: tokenProvider)
+    }
+
     func history(of markerKey: String) -> BloodMarkerHistory {
         BloodMarkerHistory(markerKey: markerKey, tests: tests)
     }

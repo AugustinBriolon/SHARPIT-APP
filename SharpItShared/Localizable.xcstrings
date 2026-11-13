@@ -46269,6 +46269,86 @@
           }
         }
       }
+    },
+    "Lecture sportive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training reading"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture sportive"
+          }
+        }
+      }
+    },
+    "Ce que ton entraînement explique dans tes résultats, et ce qui mérite l'avis d'un médecin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What your training explains in your results, and what is worth a doctor's view."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que ton entraînement explique dans tes résultats, et ce qui mérite l'avis d'un médecin."
+          }
+        }
+      }
+    },
+    "%lld séance(s) les 7 jours avant le prélèvement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld session(s) in the 7 days before the sample"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld séance(s) les 7 jours avant le prélèvement"
+          }
+        }
+      }
+    },
+    "Rien dans ces résultats que l'entraînement aide à lire.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing in these results that training helps explain."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien dans ces résultats que l'entraînement aide à lire."
+          }
+        }
+      }
+    },
+    "Lecture d'entraînement, pas un diagnostic.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A training reading, not a diagnosis."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture d'entraînement, pas un diagnostic."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -48,3 +48,6 @@ first, then « Évolution », the markers measured in two tests or more (`BloodM
 opens `BloodTestDetailView` (the clean table, delete from « … »), a marker `BloodMarkerHistoryView`
 (its curve over the lab's latest interval, every value). « + » pushes the import, which closes on save.
 `BloodMarkerReadout` words every result, in the review and the history alike.
+Under the table, `BloodTestReadingCard` (`BloodTestReadingStore`, `GET /api/v1/blood-tests/{id}/reading`,
+SHARPIT ADR-129) shows the sourced training reading — the server's findings, doctor-worthy ones
+first — or `SharpitProTeaser` below Pro; it says nothing when the read fails, under real values.

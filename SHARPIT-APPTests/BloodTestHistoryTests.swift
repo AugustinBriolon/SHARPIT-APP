@@ -111,3 +111,32 @@ private actor StubBloodTestServer: BloodTestServing {
 
     #expect(store.tests.map(\.id) == ["t2", "t1"])
 }
+
+// MARK: - Athlete reading
+
+private actor StubReadingServer: BloodTestReading {
+    let result: Result<V1BloodTestReading, SharpitAPIError>
+    init(_ result: Result<V1BloodTestReading, SharpitAPIError>) { self.result = result }
+    func reading(testId: String, token: String) async throws -> V1BloodTestReading { try result.get() }
+}
+
+@Test func aReadingDecodesTheServersFindings() throws {
+    let json = """
+    { "training": { "sessionsInWeek": 3, "strengthInWeek": 1, "sessionsInFourWeeks": 12 },
+      "findings": [ { "key": "transaminases_after_training", "markerKeys": ["ast"], "tone": "context",
+                      "text": "Transaminases…", "source": "Pettersson J. et al." } ] }
+    """
+    let reading = try JSONDecoder().decode(V1BloodTestReading.self, from: Data(json.utf8))
+
+    #expect(reading.training.sessionsInWeek == 3)
+    #expect(reading.findings.first?.tone == .context)
+}
+
+@MainActor
+@Test func aFreeAthleteGetsTheProTeaserRatherThanAnError() async {
+    let store = BloodTestReadingStore(client: StubReadingServer(.failure(.proRequired)), tokenProvider: { "token" })
+
+    await store.load(testId: "t1")
+
+    #expect(store.phase == .proRequired)
+}
