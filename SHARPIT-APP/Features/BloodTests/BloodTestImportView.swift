@@ -204,6 +204,8 @@ private struct BloodTestReviewRow: View {
             .accessibilityLabel("Retirer \(row.marker?.label ?? row.markerKey)")
         }
         .padding(.horizontal, SharpitSpacing.rowPaddingX)
+        // A two-line marker name with its caption outgrows the row height: keep air at the hairlines.
+        .padding(.vertical, SharpitSpacing.xs)
         .frame(minHeight: SharpitSpacing.rowHeight)
     }
 
