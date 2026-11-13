@@ -52,11 +52,17 @@ struct SanteView: View {
                 case .failed(let message):
                     SharpitStateMessage.failed(message) { Task { await reload(force: true) } }
                 case .empty:
-                    SharpitStateMessage(
-                        title: String(localized: "Rien de mesuré pour l'instant"),
-                        symbol: "heart.text.square",
-                        detail: String(localized: "Active Apple Santé dans Paramètres → Sources de données : ton bilan se construira ici.")
-                    )
+                    // Blood tests need no wearable: they stay reachable before anything is measured.
+                    VStack(spacing: SharpitSpacing.section) {
+                        SharpitStateMessage(
+                            title: String(localized: "Rien de mesuré pour l'instant"),
+                            symbol: "heart.text.square",
+                            detail: String(localized: "Active Apple Santé dans Paramètres → Sources de données : ton bilan se construira ici.")
+                        )
+                        BloodTestsCard(tokenProvider: tokenProvider)
+                            .padding(.horizontal, SharpitSpacing.pageInset)
+                            .padding(.bottom, SharpitSpacing.xl)
+                    }
                 case .loading, .loaded:
                     readout
                 }

@@ -70,7 +70,8 @@ final class BloodTestImportStore {
             try await SharpitRetry.run {
                 try await client.createBloodTest(sampledAt: draft.sampledAt, results: draft.inputs, token: try await tokenProvider())
             }
-            self.draft = nil
+            // The draft stays: the review's row bindings read it while the screen closes, and an
+            // emptied draft traps them. The store goes with the screen.
             phase = .saved
         } catch SharpitAPIError.message(let message) {
             errorMessage = message

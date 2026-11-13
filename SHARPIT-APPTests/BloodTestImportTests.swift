@@ -160,7 +160,7 @@ private let confirmedReport = ParsedBloodReport(sampledAt: nil, results: [
 ])
 
 @MainActor
-@Test func savingSendsTheConfirmedResultsAndDropsTheDraft() async {
+@Test func savingSendsTheConfirmedResultsAndKeepsTheDraftForTheClosingScreen() async {
     let client = StubBloodTestClient()
     let store = BloodTestImportStore(client: client, tokenProvider: { "token" })
     store.draft = BloodTestDraft(confirmedReport)
@@ -168,7 +168,7 @@ private let confirmedReport = ParsedBloodReport(sampledAt: nil, results: [
     await store.save()
 
     #expect(store.phase == .saved)
-    #expect(store.draft == nil)
+    #expect(store.draft != nil)
     #expect(await client.sent == [[BloodTestResultInput(markerKey: "ferritin", value: 61, unit: "µg/L", refLow: 30, refHigh: 400)]])
 }
 
