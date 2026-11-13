@@ -43,3 +43,8 @@ ADR-128, `docs/adr/0033`): pick the lab's PDF or scan the paper, read on the dev
 (`BloodReportReader`: text layer, else Vision; `BloodReportParser`: by position), correct every value
 in `BloodTestReviewView`, then `POST /api/v1/blood-tests` with the results only. The document is
 never copied or sent, and no test fixture holds a real report.
+The card now pushes `BloodTestsView` (`BloodTestsStore`, `GET /api/v1/blood-tests`): the tests latest
+first, then « Évolution », the markers measured in two tests or more (`BloodMarkerHistory`). A test
+opens `BloodTestDetailView` (the clean table, delete from « … »), a marker `BloodMarkerHistoryView`
+(its curve over the lab's latest interval, every value). « + » pushes the import, which closes on save.
+`BloodMarkerReadout` words every result, in the review and the history alike.

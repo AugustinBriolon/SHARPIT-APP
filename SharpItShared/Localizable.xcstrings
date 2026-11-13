@@ -46013,6 +46013,262 @@
           }
         }
       }
+    },
+    "Ouvre tes analyses de sang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens your blood tests"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre tes analyses de sang"
+          }
+        }
+      }
+    },
+    "Analyses non actualisées.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blood tests not refreshed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyses non actualisées."
+          }
+        }
+      }
+    },
+    "Lecture de tes analyses impossible.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read your blood tests."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture de tes analyses impossible."
+          }
+        }
+      }
+    },
+    "Suppression de l'analyse impossible.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't delete the blood test."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suppression de l'analyse impossible."
+          }
+        }
+      }
+    },
+    "Importer une analyse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import a blood test"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer une analyse"
+          }
+        }
+      }
+    },
+    "Intervalles du laboratoire, pas un avis médical.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The lab's reference ranges, not medical advice."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervalles du laboratoire, pas un avis médical."
+          }
+        }
+      }
+    },
+    "Aucune analyse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No blood test yet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune analyse"
+          }
+        }
+      }
+    },
+    "Importe le PDF de ton laboratoire : seules les valeurs sont gardées, jamais le document.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import your lab's PDF: only the values are kept, never the document."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importe le PDF de ton laboratoire : seules les valeurs sont gardées, jamais le document."
+          }
+        }
+      }
+    },
+    "%lld marqueurs": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld markers"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld marqueurs"
+          }
+        }
+      }
+    },
+    "%@ · %lld hors intervalle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld out of range"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld hors intervalle"
+          }
+        }
+      }
+    },
+    "%lld hors intervalle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld out of range"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld hors intervalle"
+          }
+        }
+      }
+    },
+    "Supprimer l'analyse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the blood test"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer l'analyse"
+          }
+        }
+      }
+    },
+    "Supprimer cette analyse ?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this blood test?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer cette analyse ?"
+          }
+        }
+      }
+    },
+    "Ses valeurs sont effacées de SHARPIT. Tu pourras réimporter le compte rendu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Its values are erased from SharpIt. You can import the report again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ses valeurs sont effacées de SHARPIT. Tu pourras réimporter le compte rendu."
+          }
+        }
+      }
+    },
+    "Une variation entre deux analyses peut venir du laboratoire, de l'heure ou de l'entraînement de la veille.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A change between two tests can come from the lab, the time of day or the previous day's training."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une variation entre deux analyses peut venir du laboratoire, de l'heure ou de l'entraînement de la veille."
+          }
+        }
+      }
+    },
+    "Courbe de %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ curve"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Courbe de %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

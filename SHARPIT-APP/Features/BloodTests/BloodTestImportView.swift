@@ -4,13 +4,13 @@ import VisionKit
 
 // MARK: - Santé entry
 
-/// Santé's way in to blood tests.
+/// Santé's way in to blood tests: the history, from which a report is imported.
 struct BloodTestsCard: View {
     let tokenProvider: () async throws -> String
 
     var body: some View {
         NavigationLink {
-            BloodTestImportView(tokenProvider: tokenProvider)
+            BloodTestsView(tokenProvider: tokenProvider)
         } label: {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 SharpitCardHeader(title: String(localized: "Analyses de sang"), symbol: "drop")
@@ -25,7 +25,7 @@ struct BloodTestsCard: View {
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Ouvre l'import d'une analyse de sang")
+        .accessibilityHint("Ouvre tes analyses de sang")
     }
 }
 
@@ -60,6 +60,10 @@ struct BloodTestImportView: View {
         .background(SharpitCanvasBackground())
         .navigationTitle("Analyse de sang")
         .navigationBarTitleDisplayMode(.inline)
+        // Back to the history, where the new test is the news.
+        .onChange(of: store.phase) { _, phase in
+            if phase == .saved { dismiss() }
+        }
         .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.pdf, .image]) { result in
             guard case .success(let url) = result else { return }
             Task { await store.readFile(at: url) }
@@ -210,29 +214,13 @@ private struct BloodTestReviewRow: View {
     }
 
     private var caption: String {
-        guard row.isPlausible else { return String(localized: "Valeur à corriger") }
-        switch row.status {
-        case .low: return String(localized: "Bas · \(reference)")
-        case .high: return String(localized: "Haut · \(reference)")
-        case .inRange: return reference
-        case .noReference, nil: return String(localized: "Sans intervalle")
-        }
+        guard row.isPlausible, let status = row.status else { return String(localized: "Valeur à corriger") }
+        return BloodMarkerReadout.caption(status: status, low: row.refLow, high: row.refHigh)
     }
 
     private var captionTone: Color {
-        guard row.isPlausible else { return SharpitColor.signalRisk }
-        return row.status == .low || row.status == .high ? SharpitColor.signalCaution : SharpitColor.mutedForeground
-    }
-
-    /// The lab's interval as it prints it: « 4,1 – 10,8 », « < 1,5 », « > 0,4 ».
-    private var reference: String {
-        let low = row.refLow?.formatted(), high = row.refHigh?.formatted()
-        switch (low, high) {
-        case let (low?, high?): return "\(low) – \(high)"
-        case let (nil, high?): return "< \(high)"
-        case let (low?, nil): return "> \(low)"
-        case (nil, nil): return ""
-        }
+        guard row.isPlausible, let status = row.status else { return SharpitColor.signalRisk }
+        return BloodMarkerReadout.isOutOfRange(status) ? SharpitColor.signalCaution : SharpitColor.mutedForeground
     }
 }
 
