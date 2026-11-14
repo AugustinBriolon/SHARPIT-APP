@@ -426,6 +426,17 @@ struct ScreenDemoHost: View {
                 Color.clear.sheet(isPresented: .constant(true)) {
                     SharpitProPaywallSheet(store: ProStore(tokenProvider: { "demo" }))
                 }
+            case "loading":
+                SharpitLoadingInstrument()
+            case "teaser":
+                ScrollView {
+                    SharpitProTeaser(
+                        title: String(localized: "Plan qui s’adapte"),
+                        message: String(localized: "Le coach écrit ta semaine et la tient à jour avec SharpIt Pro. Tes séances déjà au plan restent à toi.")
+                    )
+                    .padding(24)
+                }
+                .cliniqueSheet(wash: .coach, height: 200)
             case "generator":
                 // The proposal's lines on a fixed week: the sheet itself needs a finished job.
                 ScrollView {
@@ -442,6 +453,14 @@ struct ScreenDemoHost: View {
             case "goals":
                 NavigationStack {
                     GoalsView(store: GoalStore(client: DemoGoals(), plannedSessionClient: nil, profileClient: nil, activityClient: nil, tokenProvider: { "demo" }))
+                }
+            case "equipment":
+                NavigationStack {
+                    EquipmentView(client: DemoEquipment(), tokenProvider: { "demo" })
+                }
+            case "map":
+                NavigationStack {
+                    ActivityDetailView(activity: "demo-map", client: DemoActivities(), tokenProvider: { "demo" })
                 }
             case "thresholds":
                 NavigationStack {
@@ -834,8 +853,31 @@ private struct DemoActivities: ActivityServing {
         return try JSONDecoder().decode([V1ActivityListItem].self, from: Data(json.utf8))
     }
 
-    func activity(id: String, token: String) async throws -> V1ActivityDetail { throw SharpitAPIError.server }
-    func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload { throw SharpitAPIError.server }
+    /// One run with its recording, for the map: every other session has no detail.
+    func activity(id: String, token: String) async throws -> V1ActivityDetail {
+        guard id == "demo-map" else { throw SharpitAPIError.server }
+        return try JSONDecoder().decode(V1ActivityDetail.self, from: Data("""
+        {"id":"demo-map","type":"RUN","date":"2026-11-12T07:30:00Z","title":"Tempo 3 × 10 min","duration":3480,
+         "runMetrics":{"distanceM":12400,"elevationM":68}}
+        """.utf8))
+    }
+
+    /// A loop around a lake, harder in its middle third.
+    func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload {
+        guard id == "demo-map" else { throw SharpitAPIError.server }
+        let count = 160
+        let path = (0..<count).map { index -> String in
+            let angle = Double(index) / Double(count - 1) * 2 * Double.pi
+            return "[\(45.9 + 0.012 * sin(angle)),\(6.13 + 0.02 * cos(angle) + 0.004 * sin(2 * angle))]"
+        }
+        let samples = (0..<count).map { index -> String in
+            let effort = sin(Double(index) / Double(count - 1) * Double.pi)
+            return "{\"t\":\(index * 22),\"d\":\(index * 78),\"hr\":\(128 + 43 * effort),\"speed\":\(3.2 + 0.8 * effort)}"
+        }
+        return try JSONDecoder().decode(V1ActivityStreamPayload.self, from: Data(
+            "{\"available\":true,\"path\":[\(path.joined(separator: ","))],\"samples\":[\(samples.joined(separator: ","))]}".utf8
+        ))
+    }
     func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail { throw SharpitAPIError.server }
     func updateSubjective(id: String, rpe: Double?, feeling: String?, token: String) async throws {}
 }
@@ -1079,3 +1121,21 @@ private struct GalleryWorkoutDockDemo: View {
     }
 }
 #endif
+
+/// A triathlete who also lifts at home, for Matériel.
+private struct DemoEquipment: AthleteProfileServing {
+    private static let profile = Data("""
+    {"practicedSports":{"version":1,"sports":["triathlon","strength"]},
+     "equipment":{"version":1,"strengthVenue":"home","owned":["bike_home_trainer","bike_power_meter","swim_pool","run_track"]}}
+    """.utf8)
+
+    func athleteProfile(token: String) async throws -> V1AthleteProfile {
+        try JSONDecoder().decode(V1AthleteProfile.self, from: Self.profile)
+    }
+
+    func patchAthleteProfile(_ patch: AthleteProfilePatch, token: String) async throws -> V1AthleteProfile {
+        try await athleteProfile(token: token)
+    }
+
+    func thresholdHistory(token: String) async throws -> [V1ThresholdSnapshot] { [] }
+}
