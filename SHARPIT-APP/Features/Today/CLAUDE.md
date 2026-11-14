@@ -47,3 +47,10 @@ or from 10 h (`RessentiPromptTiming`).
 body, stress and a note for the coach wait under « Ajouter un détail », in the same picker with their
 own words (`WellnessDimension.label`). The button says « Choisis ton ressenti » until there is an
 answer; « Plus tard » is the bar's cancel action.
+
+**Clinique pilot.** `CliniqueResumeView` draws the same `TodayFold` in the Clinique look
+(`docs/adr/0034`): verdict as a status pill and a sentence on the sheet's wash, the gauges and the
+week's active days as rings, the morning proposal, the sessions. It is reachable only through the
+Debug screen demo (`-SharpitScreenDemo today-clinique`); `TodayView` is unchanged and still owns the
+day switcher, the sheets and every other card. `CliniqueResumeReadout` holds the mapping (verdict
+tone → status and wash, score → ring fraction) and is tested.
