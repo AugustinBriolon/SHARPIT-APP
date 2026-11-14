@@ -171,7 +171,7 @@ struct MotivationRow: View {
 
 // MARK: - Sports
 
-/// Endurance first, complements after — the same tiles as Paramètres › Sports & équipement.
+/// Endurance first, complements after — the same tiles as Paramètres › Matériel.
 struct OnboardingSportsStep: View {
     let store: OnboardingStore
 
@@ -182,7 +182,7 @@ struct OnboardingSportsStep: View {
 
 // MARK: - Equipment
 
-/// Only the kit the chosen sports use, one card per sport — the same cards as Paramètres.
+/// Only the kit the chosen sports use, one section per sport — the same lines as Paramètres › Matériel.
 struct OnboardingEquipmentStep: View {
     let store: OnboardingStore
 

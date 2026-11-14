@@ -1,6 +1,6 @@
 import Foundation
 
-/// The words and rules of Paramètres › Sports & équipement, kept apart from the views so what a
+/// The words and rules of Paramètres › Matériel, kept apart from the views so what a
 /// row says and when a sport can leave is decided once and tested (`docs/adr/0014`).
 enum SportsReadout {
     /// What the athlete owns for one sport, on its row: a count, or what is left to fill in.

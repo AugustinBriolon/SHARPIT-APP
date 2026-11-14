@@ -64,7 +64,7 @@ enum PracticedSportCatalog {
 }
 
 /// The practiced sports, endurance first, complements after — one grid of tiles, shared by the
-/// onboarding and Paramètres › Sports & équipement so both read and answer the same.
+/// onboarding and Paramètres › Matériel so both read and answer the same.
 struct SportChoiceGroups: View {
     let selected: Set<String>
     let onToggle: (String) -> Void
@@ -78,7 +78,9 @@ struct SportChoiceGroups: View {
 
     private func group(title: String, items: [PracticedSportItem]) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(title)
+            Text(title)
+                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                .foregroundStyle(SharpitColor.slate)
             LazyVGrid(
                 columns: [GridItem(.flexible(), spacing: SharpitSpacing.sm), GridItem(.flexible(), spacing: SharpitSpacing.sm)],
                 spacing: SharpitSpacing.sm
@@ -97,47 +99,51 @@ struct SportChoiceTile: View {
     let isSelected: Bool
     let onToggle: () -> Void
 
+    /// A sport's glyph takes a data hue, so the grid reads at a glance; the choice is the ink
+    /// border and its check, never a fill.
+    private var hue: Color {
+        switch item.id {
+        case "run": SharpitColor.pillarNutrition
+        case "bike": SharpitColor.pillarRecovery
+        case "swim": SharpitColor.pillarSleep
+        default: SharpitColor.pillarCoach
+        }
+    }
+
     var body: some View {
-        Button {
+        let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
+        return Button {
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top) {
                     item.image
-                        .symbolVariant(isSelected ? .fill : .none)
-                        .font(.system(size: 30, weight: .regular))
-                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate)
-                        .frame(height: 36, alignment: .leading)
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(hue)
+                        .frame(height: 30, alignment: .leading)
                     Spacer(minLength: 0)
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate.opacity(0.35))
-                        .contentTransition(.symbolEffect(.replace))
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .opacity(isSelected ? 1 : 0)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.label)
-                        .font(SharpitTypography.cardTitle)
-                        .tracking(SharpitTypography.cardTitleTracking)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                         .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     Text(item.subtitle)
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
                         .foregroundStyle(SharpitColor.slate)
                         .lineLimit(2, reservesSpace: true)
                         .multilineTextAlignment(.leading)
                 }
             }
-            .padding(SharpitSpacing.md)
+            .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(isSelected ? SharpitColor.primary.opacity(0.18) : SharpitColor.card)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(SharpitColor.primary, lineWidth: isSelected ? 2 : 0)
-            )
+            .background(SharpitColor.card, in: shape)
+            .overlay(shape.strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.divider, lineWidth: isSelected ? 2 : 1))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -146,8 +152,8 @@ struct SportChoiceTile: View {
     }
 }
 
-/// The kit the chosen sports use, one card per sport; strength asks where the athlete trains
-/// before listing what they own. Shared by the onboarding and Paramètres.
+/// The kit the chosen sports use, one section per sport, its lines split by hairlines; strength
+/// asks where the athlete trains before listing what they own. Shared by the onboarding and Matériel.
 struct EquipmentBySport: View {
     let sports: [EquipmentSport]
     let venue: V1AthleteEquipment.StrengthVenue
@@ -156,10 +162,13 @@ struct EquipmentBySport: View {
     let onToggle: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+        VStack(alignment: .leading, spacing: 28) {
             ForEach(sports) { sport in
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    SharpitCardHeader(title: sport.label, symbol: sport.symbolName, showsChevron: false)
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    Text(sport.label)
+                        .font(SharpitTypography.sectionTitle)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
                     if sport == .strength {
                         venuePicker
                     }
@@ -173,15 +182,12 @@ struct EquipmentBySport: View {
                             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                                 EquipmentChoiceRow(item: item, isOwned: owned.contains(item.id)) { onToggle(item.id) }
                                 if index < items.count - 1 {
-                                    Rectangle().fill(SharpitColor.divider).frame(height: 1)
-                                        .padding(.leading, (sport != .strength && !item.symbolName.isEmpty) ? 44 : 0)
+                                    CliniqueDivider()
                                 }
                             }
                         }
                     }
                 }
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
             }
         }
     }
@@ -213,7 +219,8 @@ struct EquipmentBySport: View {
     }
 }
 
-/// One piece of equipment: its glyph, what it changes for the coach, whether it is owned.
+/// One piece of equipment as a line: what it is, what it changes for the coach, and whether it is
+/// owned, in a word. A tap flips it.
 struct EquipmentChoiceRow: View {
     let item: EquipmentCatalogItem
     let isOwned: Bool
@@ -223,16 +230,10 @@ struct EquipmentChoiceRow: View {
         Button {
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
-            HStack(spacing: SharpitSpacing.sm) {
-                if item.sport != .strength && !item.symbolName.isEmpty {
-                    Image(systemName: item.symbolName)
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.slate)
-                        .frame(width: 32)
-                }
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(item.label)
-                        .font(SharpitTypography.bodyEmphasis)
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                         .foregroundStyle(SharpitColor.foreground)
                     Text(item.impact)
                         .font(SharpitTypography.meta)
@@ -240,13 +241,13 @@ struct EquipmentChoiceRow: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
                 }
-                Spacer(minLength: 0)
-                Image(systemName: isOwned ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.slate.opacity(0.35))
-                    .contentTransition(.symbolEffect(.replace))
+                Spacer(minLength: SharpitSpacing.xs)
+                Text(isOwned ? "Oui" : "Non")
+                    .font(SharpitTypography.system(size: 16, weight: isOwned ? .semibold : .regular, relativeTo: .callout))
+                    .foregroundStyle(isOwned ? SharpitColor.foreground : SharpitColor.slate)
+                    .contentTransition(.opacity)
             }
-            .padding(.vertical, SharpitSpacing.sm)
+            .padding(.vertical, 14)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -254,8 +255,8 @@ struct EquipmentChoiceRow: View {
     }
 }
 
-/// Réglages › Sports & équipement: the sports practiced, one row each with what the athlete owns
-/// for it, a sport's page for its kit and a « + » for the sports not yet added. Saved as it
+/// Réglages › Matériel: one page — the sports practiced, each a line with what the athlete owns
+/// for it, then the kit by sport, a line a tap flips. « Ajouter » adds a sport. Saved as it
 /// changes (`docs/adr/0014`); the onboarding keeps its tiles.
 struct EquipmentView: View {
     @State private var store: AthleteProfileStore
@@ -265,6 +266,7 @@ struct EquipmentView: View {
     @State private var hasLoaded = false
     @State private var autoSaveTask: Task<Void, Never>?
     @State private var showingAdd = false
+    @State private var removing: PracticedSportItem?
 
     init(
         client: any AthleteProfileServing,
@@ -285,58 +287,104 @@ struct EquipmentView: View {
     }
 
     var body: some View {
-        List {
-            Section {
-                if practicedItems.isEmpty {
-                    Text("Aucun sport pour l'instant. Ajoute-en un avec le +.")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-                ForEach(practicedItems) { item in
-                    NavigationLink {
-                        SportEquipmentView(
-                            sport: item,
-                            venue: $strengthVenue,
-                            owned: $owned,
-                            canRemove: SportsReadout.canRemove(item.id, from: practicedSports),
-                            onChange: scheduleAutoSave,
-                            onRemove: { removeSport(item.id) }
-                        )
-                    } label: {
-                        SportRowLabel(
-                            item: item,
-                            detail: SportsReadout.equipmentSummary(sportId: item.id, owned: owned, venue: strengthVenue)
-                        )
-                    }
-                }
-            } header: {
-                SharpitEyebrow(String(localized: "Mes sports"))
-            } footer: {
-                footer
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                Text("Matériel")
+                    .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                    .tracking(-0.6)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
+                sportsSection
+                EquipmentBySport(
+                    sports: PracticedSportCatalog.equipmentSports(for: practicedSports),
+                    venue: strengthVenue,
+                    owned: owned,
+                    onVenue: { strengthVenue = $0; scheduleAutoSave() },
+                    onToggle: toggle
+                )
             }
-            .sharpitListRows()
+            .padding(.horizontal, 24)
+            .padding(.top, SharpitSpacing.xs)
+            .padding(.bottom, 96)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .sharpitGroupedList()
+        .cliniqueSheet(wash: .neutral, height: 240)
         .disabled(!hasLoaded)
         .redacted(reason: hasLoaded ? [] : .placeholder)
-        .navigationTitle("Sports & équipement")
+        .navigationTitle("Matériel")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) { Text("") }
             ToolbarItem(placement: .primaryAction) {
-                Button { showingAdd = true } label: { Image(systemName: "plus") }
+                Button("Ajouter") { showingAdd = true }
                     .accessibilityLabel("Ajouter un sport")
                     .disabled(!hasLoaded)
             }
         }
+        .cliniqueReturnButton()
         .sheet(isPresented: $showingAdd) {
             SportAddSheet(sports: SportsReadout.addable(to: practicedSports)) { id in
                 showingAdd = false
                 addSport(id)
             }
         }
+        .confirmationDialog(
+            "Retirer \(removing?.label ?? "") ?",
+            isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+            titleVisibility: .visible,
+            presenting: removing
+        ) { item in
+            Button("Retirer \(item.label)", role: .destructive) { removeSport(item.id) }
+            Button("Annuler", role: .cancel) {}
+        } message: { _ in
+            Text("Tes plans ne s'appuieront plus sur ce sport. Ton matériel reste enregistré.")
+        }
         .task {
             await store.load()
             syncFromProfile()
+        }
+    }
+
+    /// The sports practiced, each a line: its glyph, its name, what is owned for it, and the way
+    /// to take it out of the plan — closed for the last sport a plan can stand on.
+    private var sportsSection: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            Text("Mes sports")
+                .font(SharpitTypography.sectionTitle)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            if practicedItems.isEmpty {
+                Text("Aucun sport pour l'instant. Ajoute-en un.")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
+            }
+            VStack(spacing: 0) {
+                ForEach(Array(practicedItems.enumerated()), id: \.element.id) { index, item in
+                    HStack(spacing: SharpitSpacing.sm) {
+                        SportRowLabel(
+                            item: item,
+                            detail: SportsReadout.equipmentSummary(sportId: item.id, owned: owned, venue: strengthVenue)
+                        )
+                        Spacer(minLength: SharpitSpacing.xs)
+                        Menu {
+                            Button("Retirer \(item.label)", role: .destructive) { removing = item }
+                                .disabled(!SportsReadout.canRemove(item.id, from: practicedSports))
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 17, weight: .regular))
+                                .foregroundStyle(SharpitColor.slate)
+                                .frame(width: 44, height: 44)
+                                .contentShape(.rect)
+                        }
+                        .accessibilityLabel("Options pour \(item.label)")
+                    }
+                    .padding(.vertical, 6)
+                    if index < practicedItems.count - 1 {
+                        CliniqueDivider()
+                    }
+                }
+            }
+            footer
         }
     }
 
@@ -347,6 +395,11 @@ struct EquipmentView: View {
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.signalCaution)
         }
+    }
+
+    private func toggle(_ id: String) {
+        if owned.contains(id) { owned.remove(id) } else { owned.insert(id) }
+        scheduleAutoSave()
     }
 
     private func addSport(_ id: String) {
@@ -399,88 +452,29 @@ struct EquipmentView: View {
     }
 }
 
-/// One practiced sport as a settings row: its glyph in the ink tile, its name, what is owned.
+/// One practiced sport as a line: its glyph in the round neutral tile, its name, what is owned.
 struct SportRowLabel: View {
     let item: PracticedSportItem
     let detail: String
 
     var body: some View {
-        Label {
-            VStack(alignment: .leading, spacing: 1) {
+        HStack(spacing: SharpitSpacing.sm) {
+            item.image
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(width: 36, height: 36)
+                .background(SharpitColor.tile, in: Circle())
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(item.label)
-                    .font(SharpitTypography.bodyEmphasis)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                     .foregroundStyle(SharpitColor.foreground)
                 Text(detail)
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
             }
-        } icon: {
-            item.image
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(SharpitColor.inkAccent)
-                .frame(width: 32, height: 32)
-                .sharpitConcentricBackground(SharpitColor.inkSurface, minimum: SharpitRadius.tile * 32 / SharpitTokens.tileSize)
-                .accessibilityHidden(true)
         }
-    }
-}
-
-/// A sport's page: the kit it uses (strength asks where the athlete trains first) and the way to
-/// take the sport out of the plan.
-struct SportEquipmentView: View {
-    let sport: PracticedSportItem
-    @Binding var venue: V1AthleteEquipment.StrengthVenue
-    @Binding var owned: Set<String>
-    let canRemove: Bool
-    let onChange: () -> Void
-    let onRemove: () -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var confirmingRemoval = false
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xl) {
-                EquipmentBySport(
-                    sports: PracticedSportCatalog.equipmentSports(for: [sport.id]),
-                    venue: venue,
-                    owned: owned,
-                    onVenue: { venue = $0; onChange() },
-                    onToggle: toggle
-                )
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    SharpitPrimaryButton(title: String(localized: "Retirer \(sport.label)"), style: .secondary) {
-                        confirmingRemoval = true
-                    }
-                    .disabled(!canRemove)
-                    if !canRemove {
-                        Text("C'est ton dernier sport d'endurance : ajoute-en un autre avant de le retirer.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                    }
-                }
-            }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.vertical, SharpitSpacing.md)
-        }
-        .background(SharpitCanvasBackground())
-        .navigationTitle(sport.label)
-        .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("Retirer \(sport.label) ?", isPresented: $confirmingRemoval, titleVisibility: .visible) {
-            Button("Retirer \(sport.label)", role: .destructive) {
-                onRemove()
-                dismiss()
-            }
-            Button("Annuler", role: .cancel) {}
-        } message: {
-            Text("Tes plans ne s'appuieront plus sur ce sport. Ton matériel reste enregistré.")
-        }
-    }
-
-    private func toggle(_ id: String) {
-        if owned.contains(id) { owned.remove(id) } else { owned.insert(id) }
-        onChange()
     }
 }
 
