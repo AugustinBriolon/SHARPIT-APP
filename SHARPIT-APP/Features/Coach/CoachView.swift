@@ -76,33 +76,35 @@ struct CoachView: View {
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        composerIsFocused = false
-                        showingMemory = true
-                    } label: {
-                        Label("Mémoire", systemImage: "brain.head.profile")
-                    }
-                    .disabled(tokenProvider == nil)
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        composerIsFocused = false
-                        showingUsage = true
-                    } label: {
-                        Label("Consommation", systemImage: "gauge.with.dots.needle.33percent")
-                    }
-                    .disabled(tokenProvider == nil)
-                }
+                ToolbarItem(placement: .principal) { Text("") }
+                SharpitBarTitle(String(localized: "Coach"))
+                // The past conversations, and what the coach keeps and costs, behind one button.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        composerIsFocused = false
-                        showingHistory = true
+                    Menu {
+                        Button {
+                            composerIsFocused = false
+                            showingHistory = true
+                        } label: {
+                            Label("Conversations", systemImage: "clock.arrow.circlepath")
+                        }
+                        Button {
+                            composerIsFocused = false
+                            showingMemory = true
+                        } label: {
+                            Label("Mémoire", systemImage: "brain.head.profile")
+                        }
+                        Button {
+                            composerIsFocused = false
+                            showingUsage = true
+                        } label: {
+                            Label("Consommation", systemImage: "gauge.with.dots.needle.33percent")
+                        }
                     } label: {
-                        Label("Historique", systemImage: "clock.arrow.circlepath")
+                        Label("Historique", systemImage: "clock")
                     }
                     .disabled(tokenProvider == nil)
                 }
+                SharpitBarGap()
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         store.startNewConversation()
@@ -423,11 +425,13 @@ struct CoachView: View {
                 if dictation.isListening {
                     dictationBar
                 } else {
-                    HStack(alignment: .bottom, spacing: SharpitSpacing.xs) {
+                    // One glass field, as the mock-up draws it: the question, the microphone and the
+                    // ink send button inside it; « + » opens the starting points.
+                    HStack(alignment: .bottom, spacing: 0) {
                         quickActionsMenu
 
                         TextField(
-                            store.hasPendingApproval ? String(localized: "Réponds à la proposition, ou écris pour l'ignorer") : String(localized: "Pose ta question"),
+                            store.hasPendingApproval ? String(localized: "Réponds à la proposition, ou écris pour l'ignorer") : String(localized: "Écris au coach"),
                             text: $store.draft,
                             axis: .vertical
                         )
@@ -446,18 +450,23 @@ struct CoachView: View {
                                     submit()
                                 }
                             }
-                            .padding(.horizontal, SharpitSpacing.md)
                             .padding(.vertical, SharpitSpacing.xs + 2)
                             .frame(minHeight: Self.controlHeight)
-                            .sharpitGlassControl(
-                                in: RoundedRectangle(cornerRadius: Self.controlHeight / 2, style: .continuous),
-                                fallback: SharpitColor.tile
-                            )
                             .animation(SharpitMotion.selection, value: store.draft.count / 40)
                             .submitLabel(.send)
 
+                        if composerAction == .dictate {
+                            microphoneButton
+                        }
                         composerButton
                     }
+                    .padding(.leading, 2)
+                    .padding(.trailing, 6)
+                    .padding(.vertical, 6)
+                    .sharpitGlassControl(
+                        in: RoundedRectangle(cornerRadius: 28, style: .continuous),
+                        fallback: SharpitColor.tile
+                    )
                 }
             }
         }
@@ -480,14 +489,10 @@ struct CoachView: View {
         } label: {
             Image(systemName: "plus")
                 .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(showsQuickActions ? SharpitColor.primaryForeground : SharpitColor.slate)
+                .foregroundStyle(showsQuickActions ? SharpitColor.foreground : SharpitColor.slate)
                 .rotationEffect(.degrees(showsQuickActions ? 45 : 0))
                 .frame(width: Self.controlHeight, height: Self.controlHeight)
-                .sharpitGlassControl(
-                    in: Circle(),
-                    tint: showsQuickActions ? SharpitColor.primary : nil,
-                    fallback: SharpitColor.divider
-                )
+                .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .disabled(store.isReplying)
@@ -612,29 +617,39 @@ struct CoachView: View {
         CoachComposerAction(isReplying: store.isReplying, isDictating: dictation.isListening, draft: store.draft)
     }
 
-    /// The composer's one round button: the microphone on an empty field, send once there are
-    /// words, stop while listening. The symbol morphs from one to the other.
+    /// The microphone, shown while the field is empty: a plain glyph inside the field.
+    private var microphoneButton: some View {
+        Button { perform(.dictate) } label: {
+            Image(systemName: CoachComposerAction.dictate.symbol)
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.slate)
+                .frame(width: Self.controlHeight, height: Self.controlHeight)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(CoachComposerAction.dictate.accessibilityLabel)
+    }
+
+    /// The field's ink button: send — dimmed until there are words — stop while listening or
+    /// while the coach answers. The symbol morphs from one to the other.
     private var composerButton: some View {
         let action = composerAction
-        return Button { perform(action) } label: {
-            Image(systemName: action.symbol)
+        let sends = action == .dictate || action == .send
+        let isIdle = action == .dictate || (action == .send && store.isOutOfQuota)
+        return Button { perform(action == .dictate ? .send : action) } label: {
+            Image(systemName: sends ? CoachComposerAction.send.symbol : action.symbol)
                 .font(SharpitTypography.bodyEmphasis)
-                // Untinted glass is light: the symbol goes muted there, not white.
-                .foregroundStyle(action.isProminent ? SharpitColor.primaryForeground : SharpitColor.slate)
+                .foregroundStyle(SharpitColor.primaryForeground)
                 .symbolEffect(.variableColor.iterative, isActive: action == .stopDictation)
                 .frame(width: Self.controlHeight, height: Self.controlHeight)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
-                .sharpitGlassControl(
-                    in: Circle(),
-                    tint: action.isProminent ? SharpitColor.primary : nil,
-                    fallback: SharpitColor.divider
-                )
+                .background(SharpitColor.primary, in: Circle())
         }
         .buttonStyle(.plain)
-        // Spent budget: the question stays in the field, the send waits for the quota card's time.
-        .disabled(action == .send && store.isOutOfQuota)
-        .opacity(action == .send && store.isOutOfQuota ? 0.4 : 1)
-        .accessibilityLabel(action.accessibilityLabel)
+        // Nothing to send, or a spent budget: the button waits.
+        .disabled(isIdle)
+        .opacity(isIdle ? 0.35 : 1)
+        .accessibilityLabel(sends ? CoachComposerAction.send.accessibilityLabel : action.accessibilityLabel)
         .animation(SharpitMotion.selection, value: action)
     }
 
@@ -688,29 +703,32 @@ private struct CoachMessageRow: View {
         switch message.role {
         case .user:
             VStack(alignment: .trailing, spacing: SharpitSpacing.xxs) {
-                SharpitEyebrow(String(localized: "Moi"))
                 if let context = message.context {
                     CoachContextTag(context: context)
                 }
                 // A question is copied whole, on a long press: no selection handles on one's own words.
+                // The mock-up's bubble: ink, its corner toward the speaker tightened.
                 Text(message.text)
-                    .font(SharpitTypography.body)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .lineSpacing(3)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground)
                     .multilineTextAlignment(.leading)
-                    .padding(.horizontal, SharpitSpacing.md)
-                    .padding(.vertical, SharpitSpacing.sm)
-                    .sharpitContainerCorner(SharpitRadius.panel)
+                    .padding(.horizontal, 15)
+                    .padding(.vertical, 11)
                     .background(
                         SharpitColor.inkSurface,
-                        in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
+                        in: UnevenRoundedRectangle(
+                            topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6, topTrailingRadius: 20,
+                            style: .continuous
+                        )
                     )
+                    .frame(maxWidth: 280, alignment: .trailing)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .coachCopyMenu(CoachMessageCopy.plainText(of: message))
 
         case .assistant:
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitEyebrow(String(localized: "Coach"))
                 ForEach(CoachSegment.segments(of: message)) { segment in
                     switch segment {
                     case .text(_, let text):
