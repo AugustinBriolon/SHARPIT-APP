@@ -29,6 +29,15 @@ struct SharpitAuthDrawer: View {
         case password(email: String)
     }
 
+    /// The step as a number, for the animation to follow.
+    private var stepOrder: Int {
+        switch step {
+        case .identifier: 0
+        case .codeVerification: 1
+        case .password: 2
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -36,15 +45,21 @@ struct SharpitAuthDrawer: View {
 
                 ScrollView {
                     VStack(spacing: SharpitSpacing.md) {
-                        switch step {
-                        case .identifier:
-                            identifierView
-                        case .codeVerification(let targetEmail):
-                            codeVerificationView(email: targetEmail)
-                        case .password(let targetEmail):
-                            passwordView(email: targetEmail)
+                        Group {
+                            switch step {
+                            case .identifier:
+                                identifierView
+                            case .codeVerification(let targetEmail):
+                                codeVerificationView(email: targetEmail)
+                            case .password(let targetEmail):
+                                passwordView(email: targetEmail)
+                            }
                         }
+                        // A step arrives from the side it leads to and the one before fades: no swap in place.
+                        .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: 24)), removal: .opacity))
                     }
+                    .animation(SharpitMotion.reveal, value: stepOrder)
+                    .animation(SharpitMotion.reveal, value: errorMessage)
                     .padding(.horizontal, SharpitSpacing.pageInset)
                     .padding(.top, SharpitSpacing.xxs)
                     .padding(.bottom, SharpitSpacing.xl)
@@ -396,6 +411,7 @@ struct SharpitAuthDrawer: View {
         .padding(.vertical, SharpitSpacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitConcentricBackground(SharpitColor.destructive.opacity(0.1), minimum: SharpitRadius.small)
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     // MARK: – Authentication Actions

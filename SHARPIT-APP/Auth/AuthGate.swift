@@ -170,6 +170,14 @@ private struct SignInWelcome: View {
                 detail: String(localized: "Il répond avec ta nuit, ta charge et ton plan.")),
     ]
 
+    /// The page composes itself once: the mark, the name, then each line, its ring drawn in turn.
+    @State private var hasAppeared = false
+    @State private var ringsDrawn = 0
+    /// The wash breathes while the page waits; still under Reduce Motion.
+    @State private var washIsFull = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -177,7 +185,9 @@ private struct SignInWelcome: View {
                     Image(systemName: "circle.hexagonpath.fill")
                         .font(.system(size: 40, weight: .regular))
                         .foregroundStyle(SharpitColor.brandMarkGradient)
+                        .symbolEffect(.breathe, isActive: !reduceMotion)
                         .accessibilityHidden(true)
+                        .revealed(hasAppeared, index: 0)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(verbatim: "SharpIt")
                             .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .largeTitle))
@@ -188,11 +198,12 @@ private struct SignInWelcome: View {
                             .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
                             .foregroundStyle(SharpitColor.slate)
                     }
+                    .revealed(hasAppeared, index: 1)
                 }
                 VStack(spacing: 0) {
                     ForEach(Array(promises.enumerated()), id: \.element.id) { index, promise in
                         HStack(spacing: SharpitSpacing.md) {
-                            CliniqueRing(pillar: promise.pillar, fraction: 1, symbol: promise.symbol, size: 44)
+                            CliniqueRing(pillar: promise.pillar, fraction: ringsDrawn > index ? 1 : 0, symbol: promise.symbol, size: 44)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(promise.title)
                                     .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
@@ -206,8 +217,9 @@ private struct SignInWelcome: View {
                         }
                         .padding(.vertical, 14)
                         .accessibilityElement(children: .combine)
+                        .revealed(hasAppeared, index: index + 2)
                         if index < promises.count - 1 {
-                            CliniqueDivider()
+                            CliniqueDivider().opacity(hasAppeared ? 1 : 0)
                         }
                     }
                 }
@@ -230,7 +242,29 @@ private struct SignInWelcome: View {
             .padding(.horizontal, SharpitSpacing.md)
             .padding(.bottom, SharpitSpacing.xs)
             .background(SharpitColor.card)
+            .revealed(hasAppeared, index: SharpitMotion.maxStaggeredItems)
         }
-        .cliniqueSheet(wash: .good, height: 320)
+        .background(alignment: .top) {
+            ZStack(alignment: .top) {
+                SharpitColor.card
+                LinearGradient(colors: [CliniqueWash.good.color, SharpitColor.card], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 360)
+                    .opacity(washIsFull ? 1 : 0.55)
+            }
+            .ignoresSafeArea()
+        }
+        // Under the launch splash nothing would be seen: the page composes itself on the hand-over.
+        .task(id: launchCurtain?.isUp ?? false) {
+            guard launchCurtain?.isUp != true, !hasAppeared else { return }
+            hasAppeared = true
+            if !reduceMotion {
+                withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) { washIsFull = false }
+            }
+            // Each ring starts as its line lands, a beat after the one above it.
+            for drawn in 1...promises.count {
+                try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+                ringsDrawn = drawn
+            }
+        }
     }
 }
