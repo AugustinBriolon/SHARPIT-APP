@@ -224,6 +224,16 @@ components (`defaults write app.sharpit.ios SharpitDesignGallery -bool YES` in t
 work should look like it. A sport is told by its glyph in the ink tile, never by a colour. Apple
 chrome (tab bar, navigation, Liquid Glass) stays system; brand meaning lives in the content.
 
+**Clinique** is replacing that look one screen at a time (SHARPIT-WEBAPP ADR-130 / ADR-131,
+`docs/adr/0034`). Its primitives live in `DesignSystem/Clinique.swift` (`CliniqueStatusPill`,
+`CliniqueRing`, `CliniqueButtonStyle`, `cliniqueSheet(wash:)`, `cliniqueCard()`, `CliniqueDivider`)
+and read only the Clinique tokens (`slate`, `divider`, `outline`, `tile`, `pillar*`, `zone*`,
+`status*`, `wash*`). A screen uses one set or the other, never both. On a swept screen the rules
+are: ink runs the interface and no control is coloured; a hue appears only on a ring, a glyph or a
+chart mark; a status is a pill with a word; one wash at the top of the sheet; hairlines, no card
+shadow. The Ink & Lime rules below still hold for every screen not yet swept. Reference: the Debug
+gallery, `-SharpitCliniqueGallery YES`.
+
 Liquid Glass is chrome only: the tab and navigation bars, toolbar controls — Plan's
 `SharpitTodayButton` sits there, left of its title; the day screens put « Aujourd'hui » beside
 the date instead (`SharpitTodayChip` in `DayDetailDatePicker`), since in the bar it merged into one

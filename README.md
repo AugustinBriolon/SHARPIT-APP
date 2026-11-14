@@ -45,6 +45,13 @@ reference cards rebuilt from the components without an account, run a Debug buil
 xcrun simctl spawn booted defaults write app.sharpit.ios SharpitDesignGallery -bool YES
 ```
 
+The Clinique look is replacing it one screen at a time (`docs/adr/0034`). Its primitives have
+their own gallery:
+
+```bash
+xcrun simctl launch booted app.sharpit.ios -SharpitCliniqueGallery YES
+```
+
 To check the screens against extreme values (six-figure volumes, very long names, a 23 h 59
 night), open a stress screen and set the largest text size:
 
