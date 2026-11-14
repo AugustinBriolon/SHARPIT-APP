@@ -33,8 +33,18 @@ struct ThresholdsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                sourceLine
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Seuils et repères")
+                        .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                        .tracking(-0.6)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(sourceText)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 if let suggestions, suggestions.preview?.hasChanges == true {
                     ThresholdSuggestionCard(
@@ -56,12 +66,16 @@ struct ThresholdsView: View {
 
                 historySection
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.vertical, SharpitSpacing.md)
+            .padding(.horizontal, 24)
+            .padding(.top, SharpitSpacing.xs)
+            .padding(.bottom, 96)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(SharpitCanvasBackground())
-        .navigationTitle("Seuils & repères")
+        .cliniqueSheet(wash: suggestions?.preview?.hasChanges == true ? .watch : .neutral, height: 240)
+        .navigationTitle("Seuils et repères")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .principal) { Text("") } }
+        .cliniqueReturnButton()
         .task {
             if store.phase != .loaded {
                 await store.load()
@@ -88,18 +102,7 @@ struct ThresholdsView: View {
 
     // MARK: - Source
 
-    /// Where the figures come from, said once above the cards rather than as a card of its own.
-    private var sourceLine: some View {
-        Label {
-            Text(sourceText)
-        } icon: {
-            Image(systemName: store.profile.thresholdsSyncedAt != nil ? "arrow.triangle.2.circlepath" : "hand.point.up.left")
-        }
-        .font(SharpitTypography.meta)
-        .foregroundStyle(SharpitColor.slate)
-        .padding(.horizontal, SharpitSpacing.xxs)
-    }
-
+    /// Where the figures come from, said once under the title.
     private var sourceText: String {
         if let syncedAt = store.profile.thresholdsSyncedAt {
             return String(localized: "Importés de ta montre ") + SyncReadout.age(of: syncedAt, now: .now) + String(localized: ". Ils s'y règlent aussi.")
@@ -110,7 +113,7 @@ struct ThresholdsView: View {
     // MARK: - Disciplines
 
     private var cardioSection: some View {
-        disciplineCard(title: String(localized: "Cardio"), symbol: "heart") {
+        disciplineCard(title: String(localized: "Cardio")) {
             ThresholdRow(
                 label: String(localized: "FC max"),
                 text: $form.maxHr,
@@ -143,7 +146,7 @@ struct ThresholdsView: View {
     }
 
     private var bikeSection: some View {
-        disciplineCard(title: String(localized: "Vélo"), symbol: "bicycle") {
+        disciplineCard(title: String(localized: "Vélo")) {
             ThresholdRow(
                 label: "FTP",
                 text: $form.ftpW,
@@ -165,7 +168,7 @@ struct ThresholdsView: View {
     }
 
     private var runSection: some View {
-        disciplineCard(title: String(localized: "Course à pied"), symbol: "figure.run") {
+        disciplineCard(title: String(localized: "Course à pied")) {
             ThresholdRow(
                 label: String(localized: "Allure seuil"),
                 text: $form.runThresholdPace,
@@ -217,7 +220,7 @@ struct ThresholdsView: View {
     }
 
     private var swimSection: some View {
-        disciplineCard(title: String(localized: "Natation"), symbol: "figure.pool.swim") {
+        disciplineCard(title: String(localized: "Natation")) {
             ThresholdRow(
                 label: String(localized: "Vitesse critique"),
                 text: $form.swimCss,
@@ -247,7 +250,6 @@ struct ThresholdsView: View {
             )
             .frame(width: 148)
         }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .padding(.vertical, SharpitSpacing.sm)
     }
 
@@ -258,7 +260,7 @@ struct ThresholdsView: View {
         let running = store.profile.vo2maxRunning
         let cycling = store.profile.vo2maxCycling
         if running != nil || cycling != nil {
-            disciplineCard(title: String(localized: "Mesuré par ta montre"), symbol: "applewatch") {
+            disciplineCard(title: String(localized: "Mesuré par ta montre")) {
                 if let running { measuredRow(String(localized: "VO₂max course"), value: running) }
                 if let cycling { measuredRow(String(localized: "VO₂max vélo"), value: cycling) }
             }
@@ -273,7 +275,6 @@ struct ThresholdsView: View {
             Spacer(minLength: SharpitSpacing.xs)
             SharpitRowFigure(value: "\(value)", unit: "ml/kg/min")
         }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .frame(minHeight: SharpitSpacing.rowHeight)
         .accessibilityElement(children: .combine)
     }
@@ -283,7 +284,7 @@ struct ThresholdsView: View {
     @ViewBuilder
     private var historySection: some View {
         if !store.history.isEmpty {
-            disciplineCard(title: String(localized: "Historique"), symbol: "clock.arrow.circlepath") {
+            disciplineCard(title: String(localized: "Historique")) {
                 ForEach(store.history) { snapshot in
                     historyRow(snapshot)
                 }
@@ -306,7 +307,6 @@ struct ThresholdsView: View {
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
         }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .padding(.vertical, SharpitSpacing.sm)
         .accessibilityElement(children: .combine)
     }
@@ -326,22 +326,26 @@ struct ThresholdsView: View {
 
     // MARK: - Card
 
-    /// A sport is told by its glyph in the ink tile, never by a colour (ADR-085).
+    /// A discipline's references: its name, then its lines split by hairlines.
     private func disciplineCard<Content: View>(
         title: String,
-        symbol: String,
-        subtitle: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(title: title, symbol: symbol, subtitle: subtitle, showsChevron: false)
-            // The last row's own padding already sits above the card's: pulled in so the foot
-            // does not read as an empty row.
-            SharpitInsetGroup { content() }
-                .padding(.bottom, -SharpitSpacing.sm)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) {
+                Group(subviews: content()) { rows in
+                    ForEach(rows) { row in
+                        if row.id != rows.first?.id { CliniqueDivider() }
+                        row
+                    }
+                }
+            }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
     // MARK: - Auto-Save
@@ -404,7 +408,7 @@ private struct ThresholdRow: View {
         HStack(spacing: SharpitSpacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(SharpitTypography.bodyEmphasis)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                     .foregroundStyle(SharpitColor.foreground)
                 if let line = error ?? hint {
                     Text(line)
@@ -416,7 +420,7 @@ private struct ThresholdRow: View {
             Spacer(minLength: SharpitSpacing.xs)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 TextField(placeholder, text: $text)
-                    .font(SharpitTypography.data)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                     .foregroundStyle(error != nil ? SharpitColor.signalRisk : SharpitColor.foreground)
                     .multilineTextAlignment(.trailing)
                     .keyboardType(keyboard)
@@ -428,8 +432,7 @@ private struct ThresholdRow: View {
                     .foregroundStyle(SharpitColor.slate)
             }
         }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
-        .padding(.vertical, SharpitSpacing.sm)
+        .padding(.vertical, 12)
         .frame(minHeight: SharpitSpacing.rowHeight)
         .contentShape(.rect)
         .onTapGesture { isFocused = true }

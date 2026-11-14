@@ -23,6 +23,7 @@ struct SettingsView: View {
     let privacyClient: any PrivacyConsentServing
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(ShellRouter.self) private var router: ShellRouter?
     @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .system
     @State private var profile: AthleteProfileStore
     @State private var push = PushNotificationManager.shared
@@ -66,89 +67,92 @@ struct SettingsView: View {
             List {
                 Section {
                     NavigationLink(value: SettingsRoute.account) {
-                        AccountRow(isPro: isPro)
-                    }
-                }
-                .sharpitListRows()
-
-                // The page's one ink plate, as the verdict is on Résumé.
-                Section {
-                    NavigationLink(value: SettingsRoute.pro) {
-                        ProRow(isPro: isPro)
-                    }
-                    .environment(\.colorScheme, .dark)
-                    .listRowBackground(SharpitColor.inkSurface)
-                }
-
-                Section(eyebrow: String(localized: "Apparence"), footer: String(localized: "Propre à cet iPhone.")) {
-                    SharpitSegmentedControl(
-                        selection: $appearance,
-                        options: AppearancePreference.allCases.map {
-                            SharpitSegmentedControl<AppearancePreference>.Option(value: $0, label: $0.label, symbol: $0.symbol)
-                        }
-                    )
-                    .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: SharpitSpacing.sm, bottom: SharpitSpacing.sm, trailing: SharpitSpacing.sm))
-                }
-                .sharpitListRows()
-
-                Section(eyebrow: String(localized: "Données")) {
-                    NavigationLink(value: SettingsRoute.sources) {
-                        SharpitSettingsLabel(symbol: "link", title: String(localized: "Sources de données"), detail: sourcesDetail)
-                    }
-                    // A page, not a quick setting: the switch and the kinds it sends are one
-                    // decision, and iOS may have the last word on it.
-                    NavigationLink(value: SettingsRoute.notifications) {
-                        SharpitSettingsLabel(symbol: "bell.badge", title: String(localized: "Notifications"), detail: notificationsDetail)
-                    }
-                }
-                .sharpitListRows()
-
-                Section(eyebrow: String(localized: "Entraînement")) {
-                    NavigationLink(value: SettingsRoute.equipment) {
-                        SharpitSettingsLabel(symbol: "figure.run.square.stack", title: String(localized: "Sports & équipement"), detail: sportsDetail)
+                        SharpitSettingsLabel(title: String(localized: "Ton profil"), detail: profileDetail)
                     }
                     // They calibrate training, not health: here rather than in Santé (SHARPIT ADR-053).
                     // Endurance thresholds mean nothing to a strength-only athlete.
                     if !PracticedSportCatalog.isStrengthOnly(profile.profile.practicedSports?.sports ?? []) {
                         NavigationLink(value: SettingsRoute.thresholds) {
-                            SharpitSettingsLabel(symbol: "gauge.with.dots.needle.67percent", title: String(localized: "Seuils d'entraînement"))
+                            SharpitSettingsLabel(title: String(localized: "Seuils et repères"))
                         }
+                    }
+                    NavigationLink(value: SettingsRoute.equipment) {
+                        SharpitSettingsLabel(title: String(localized: "Matériel"), detail: sportsDetail)
+                    }
+                    // Goals live in Plan: the row closes Paramètres and opens them there.
+                    if let router {
+                        Button {
+                            dismiss()
+                            router.open(.goals)
+                        } label: {
+                            HStack(spacing: SharpitSpacing.sm) {
+                                SharpitSettingsLabel(title: String(localized: "Objectifs"))
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(SharpitColor.slate.opacity(0.5))
+                                    .accessibilityHidden(true)
+                            }
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .sharpitListRows()
-
-                Section(eyebrow: String(localized: "Affichage")) {
-                    NavigationLink(value: SettingsRoute.features) {
-                        SharpitSettingsLabel(symbol: "square.grid.2x2", title: String(localized: "Pages et widgets"), detail: featuresDetail)
-                    }
-                    NavigationLink(value: SettingsRoute.density) {
-                        SharpitSettingsLabel(symbol: "eye", title: String(localized: "Densité de lecture"), detail: displayMode.isExpert ? String(localized: "Expert") : String(localized: "Essentiel"))
-                    }
-                    NavigationLink(value: SettingsRoute.language) {
-                        SharpitSettingsLabel(symbol: "globe", title: String(localized: "Langue"), detail: AppLanguage.chosen.displayName)
-                    }
-                }
-                .sharpitListRows()
-
-                // Hidden with the Nutrition page: switched off, it shows nowhere.
-                if features.isOn(.nutrition) {
-                    Section(eyebrow: String(localized: "Nutrition")) {
-                        NavigationLink(value: SettingsRoute.ownFoods) {
-                            SharpitSettingsLabel(symbol: "fork.knife", title: String(localized: "Mes aliments"))
-                        }
-                    }
-                    .sharpitListRows()
-                }
 
                 Section {
+                    NavigationLink(value: SettingsRoute.coachMemory) {
+                        SharpitSettingsLabel(title: String(localized: "Mémoire du coach"))
+                    }
+                }
+                .sharpitListRows()
+
+                Section {
+                    NavigationLink(value: SettingsRoute.sources) {
+                        SharpitSettingsLabel(title: String(localized: "Connexions"), detail: sourcesDetail)
+                    }
+                    NavigationLink(value: SettingsRoute.features) {
+                        SharpitSettingsLabel(title: String(localized: "Pages et widgets"), detail: featuresDetail)
+                    }
+                    // A page, not a quick setting: the switch and the kinds it sends are one
+                    // decision, and iOS may have the last word on it.
+                    NavigationLink(value: SettingsRoute.notifications) {
+                        SharpitSettingsLabel(title: String(localized: "Notifications"), detail: notificationsDetail)
+                    }
+                    // Answered in place, per iPhone: the row is its own menu.
+                    Picker(selection: $appearance) {
+                        ForEach(AppearancePreference.allCases, id: \.self) { Text($0.label).tag($0) }
+                    } label: {
+                        Text("Affichage")
+                            .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
+                            .padding(.vertical, 3)
+                    }
+                    .pickerStyle(.menu)
+                    .tint(SharpitColor.slate)
+                    NavigationLink(value: SettingsRoute.density) {
+                        SharpitSettingsLabel(title: String(localized: "Densité de lecture"), detail: displayMode.isExpert ? String(localized: "Expert") : String(localized: "Essentiel"))
+                    }
+                    NavigationLink(value: SettingsRoute.language) {
+                        SharpitSettingsLabel(title: String(localized: "Langue"), detail: AppLanguage.chosen.displayName)
+                    }
+                }
+                .sharpitListRows()
+
+                Section {
+                    NavigationLink(value: SettingsRoute.pro) {
+                        SharpitSettingsLabel(title: "SharpIt Pro", detail: isPro || pro?.pro?.subscription != nil ? ProReadout.status(pro?.pro?.subscription, isPro: isPro) : String(localized: "Découvrir"))
+                    }
+                    // Hidden with the Nutrition page: switched off, it shows nowhere.
+                    if features.isOn(.nutrition) {
+                        NavigationLink(value: SettingsRoute.ownFoods) {
+                            SharpitSettingsLabel(title: String(localized: "Mes aliments"))
+                        }
+                    }
                     NavigationLink(value: SettingsRoute.feedback) {
-                        SharpitSettingsLabel(symbol: "bubble.left.and.text.bubble.right", title: String(localized: "Donner un avis"), detail: String(localized: "Un bug, une idée : je lis tout"))
+                        SharpitSettingsLabel(title: String(localized: "Donner un avis"))
                     }
                     NavigationLink(value: SettingsRoute.privacy) {
-                        SharpitSettingsLabel(symbol: "hand.raised", title: String(localized: "Confidentialité & conditions"))
+                        SharpitSettingsLabel(title: String(localized: "Confidentialité & conditions"))
                     }
-                } header: {
-                    SharpitEyebrow(String(localized: "Aide"))
                 } footer: {
                     footer
                 }
@@ -158,8 +162,13 @@ struct SettingsView: View {
             .navigationTitle("Paramètres")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("OK") { dismiss() }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel("Fermer")
+                }
+                // The tier, said once where the page opens.
+                ToolbarItem(placement: .topBarTrailing) {
+                    CliniqueStatusPill(isPro ? String(localized: "Pro") : String(localized: "Gratuit"), status: isPro ? .pro : .unknown)
                 }
             }
             .navigationDestination(for: SettingsRoute.self, destination: destination)
@@ -180,6 +189,10 @@ struct SettingsView: View {
     }
 
     // MARK: - Details
+
+    private var profileDetail: String? {
+        SettingsReadout.profile(birthDate: profile.profile.birthDate, heightCm: profile.profile.heightCm)
+    }
 
     private var notificationsDetail: String {
         if notificationStatus == .denied { return String(localized: "Refusées dans iOS") }
@@ -213,10 +226,10 @@ struct SettingsView: View {
         providerKeys = status.providers.map(\.key)
     }
 
-    private var sportsDetail: String {
+    private var sportsDetail: String? {
         let sports = PracticedSportCatalog.ordered(profile.profile.practicedSports?.sports ?? [])
         let labels = sports.compactMap { id in PracticedSportCatalog.all.first { $0.id == id }?.label }
-        return labels.isEmpty ? String(localized: "Tes disciplines et ton matériel") : labels.joined(separator: " · ")
+        return labels.isEmpty ? nil : labels.joined(separator: " · ")
     }
 
     /// « Tout est affiché », or what is hidden.
@@ -246,6 +259,8 @@ struct SettingsView: View {
         switch route {
         case .account:
             AccountView(profileClient: profileClient, tokenProvider: tokenProvider, modelContext: modelContext)
+        case .coachMemory:
+            CoachMemoryView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
         case .pro:
             if let pro {
                 ProView(store: pro)
@@ -286,6 +301,7 @@ struct SettingsView: View {
 
 enum SettingsRoute: Hashable {
     case account
+    case coachMemory
     case pro
     case sources
     case equipment
@@ -299,72 +315,12 @@ enum SettingsRoute: Hashable {
     case feedback
 }
 
-// MARK: - Building blocks
-
-/// The athlete, as the page opens: face, name, e-mail, tier.
-private struct AccountRow: View {
-    let isPro: Bool
-
-    @Environment(Clerk.self) private var clerk
-    @ScaledMetric(relativeTo: .title2) private var avatarSize: CGFloat = 56
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.md) {
-            AccountAvatar(size: avatarSize)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name)
-                    .font(SharpitTypography.sectionTitle)
-                    .tracking(SharpitTypography.sectionTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(1)
-                if let email = clerk.user?.primaryEmailAddress?.emailAddress {
-                    Text(email)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                        .lineLimit(1)
-                }
-            }
-            Spacer(minLength: 0)
-            SharpitPill(isPro ? String(localized: "Pro") : String(localized: "Gratuit"), style: isPro ? .lime : .neutral)
-        }
-        .padding(.vertical, SharpitSpacing.xs)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Ouvre ton compte")
-    }
-
-    private var name: String {
-        AccountDisplayName.from(first: clerk.user?.firstName, last: clerk.user?.lastName)
-            ?? String(localized: "Ton compte")
-    }
-}
-
-/// SharpIt Pro on the ink row: what it is, and what tapping does.
-private struct ProRow: View {
-    let isPro: Bool
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.md) {
-            SharpitIconTile(symbol: "sparkle")
-            VStack(alignment: .leading, spacing: 2) {
-                // The pill rides the title line, so the description keeps the row's full width.
-                HStack(spacing: SharpitSpacing.xs) {
-                    Text("SharpIt Pro")
-                        .font(SharpitTypography.cardTitle)
-                        .tracking(SharpitTypography.cardTitleTracking)
-                        .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                    if !isPro {
-                        SharpitPill(String(localized: "Découvrir"), style: .lime)
-                    }
-                }
-                Text(isPro ? String(localized: "Tout SharpIt est ouvert pour toi.") : String(localized: "Bilan hebdo, analyse de séance, lecture coach du journal."))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.vertical, SharpitSpacing.xs)
-        .accessibilityElement(children: .combine)
+/// How Paramètres words what a row holds before it is opened.
+nonisolated enum SettingsReadout {
+    /// « 34 ans · 181 cm », with whatever of the two the profile holds.
+    static func profile(birthDate: Date?, heightCm: Int?, now: Date = .now, calendar: Calendar = .current) -> String? {
+        let age = birthDate.flatMap { calendar.dateComponents([.year], from: $0, to: now).year }
+        let parts = [age.map { String(localized: "\($0) ans") }, heightCm.map { "\($0) cm" }].compactMap(\.self)
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 }

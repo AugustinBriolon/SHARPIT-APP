@@ -58,7 +58,7 @@ struct AccountAvatar: View {
                     email: clerk.user?.primaryEmailAddress?.emailAddress
                 ) {
                     Text(initials)
-                        .font(.system(size: size * 0.4, weight: .semibold, design: .rounded))
+                        .font(.system(size: size * 0.4, weight: .semibold))
                 } else {
                     Image(systemName: "person.fill")
                         .font(.system(size: size * 0.42, weight: .semibold))

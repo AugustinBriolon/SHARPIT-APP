@@ -1,14 +1,11 @@
 import AuthenticationServices
 import SwiftUI
 
-/// Paramètres → Sources de données: the sources that are linked, each opening a sheet to manage
-/// or disconnect it, and a « + » that offers the rest (`docs/adr/0014`). Apple Health and Apple
-/// Calendar are the iPhone's own; Strava / Withings / Google / Garmin go through an in-app OAuth handoff,
-/// and a disconnection asks first, then `/api/v1/<source>/disconnect`.
-///
-/// Each source is one two-line row — its own mark, its name, one short status — so the rows
-/// keep the same height whatever the status says. Recency surfaces on the toast shown while a
-/// check is under way, not on a row read at rest (`docs/adr/0008`).
+/// Paramètres → Connexions, on its mock-up (`docs/adr/0035`): every source on one table — the
+/// linked ones with their state as a pill, each opening a sheet to manage or disconnect it, the
+/// others with « Connecter » (`docs/adr/0014`). Apple Health and Apple Calendar are the iPhone's
+/// own; Strava / Withings / Google / Garmin go through an in-app OAuth handoff, and a
+/// disconnection asks first, then `/api/v1/<source>/disconnect`. « Synchroniser » pulls them all.
 struct ConnectionsView: View {
     let appleHealth: AppleHealthSource
     let appleCalendar: AppleCalendarSource
@@ -25,7 +22,7 @@ struct ConnectionsView: View {
     @State private var connectingOAuth: DisconnectableSource?
     @State private var disconnecting: DisconnectableSource?
     @State private var managing: ManagedSource?
-    @State private var showingAdd = false
+    @State private var isSynchronizing = false
 
     private var linked: Set<ManagedSource> {
         ConnectionsReadout.linkedSources(
@@ -41,43 +38,70 @@ struct ConnectionsView: View {
 
     var body: some View {
         let lists = sourceLists
-        List {
-            Section(eyebrow: String(localized: "Connectées"), footer: ConnectionsReadout.sourcesFooter) {
-                if lists.connected.isEmpty {
-                    emptyRow
-                } else {
-                    ForEach(lists.connected) { connectedRow($0) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Connexions")
+                        .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                        .tracking(-0.6)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(ConnectionsReadout.sourcesSummary(linked))
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
                 }
-            }
-            .sharpitListRows()
-
-            if ConnectionsReadout.offersPriorities(connectedCount: lists.connected.count) {
-                Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    sectionTitle(String(localized: "Sources"))
+                    VStack(spacing: 0) {
+                        ForEach(lists.connected + lists.available) { source in
+                            if source != (lists.connected + lists.available).first { CliniqueDivider() }
+                            if lists.connected.contains(source) { connectedRow(source) } else { availableRow(source) }
+                        }
+                    }
+                    Text(ConnectionsReadout.sourcesFooter)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                        .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 8)
+                }
+                if ConnectionsReadout.offersPriorities(connectedCount: lists.connected.count) {
                     NavigationLink {
                         SourcePrioritiesView(tokenProvider: tokenProvider, appleCalendar: appleCalendar)
                     } label: {
-                        Label {
-                            Text("Priorités par catégorie")
-                                .font(SharpitTypography.bodyEmphasis)
-                        } icon: {
-                            SharpitRowIcon.tile("list.number")
+                        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                sectionTitle(String(localized: "Quelle source pour quelle donnée"))
+                                Text("Quand deux sources mesurent la même chose.")
+                                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                                    .foregroundStyle(SharpitColor.slate)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(SharpitColor.slate)
+                                .accessibilityHidden(true)
                         }
+                        .contentShape(.rect)
                     }
-                } footer: {
-                    SharpitListFooter(
-                        String(localized: "Quand deux sources mesurent la même chose, choisis celle qui fait foi. Le calendrier où SharpIt écrit tes séances se choisit en touchant la source.")
-                    )
+                    .buttonStyle(.sharpitPressable)
                 }
-                .sharpitListRows()
             }
+            .padding(.horizontal, 24)
+            .padding(.top, SharpitSpacing.xs)
+            .padding(.bottom, SharpitSpacing.xl)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .sharpitGroupedList()
-        .navigationTitle("Sources de données")
+        .cliniqueSheet(wash: .neutral, height: 240)
+        .navigationTitle("Connexions")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { showingAdd = true } label: { Image(systemName: "plus") }
-                    .accessibilityLabel("Ajouter une source")
+            ToolbarItem(placement: .principal) { Text("") }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Synchroniser") { Task { await synchronize() } }
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .disabled(isSynchronizing)
             }
         }
         .task { await loadStatus() }
@@ -86,12 +110,6 @@ struct ConnectionsView: View {
             SourceManageSheet(source: source, status: statusLine(source), calendarPicker: calendarPicker(for: source)) {
                 managing = nil
                 Task { await disconnectSource(source) }
-            }
-        }
-        .sheet(isPresented: $showingAdd) {
-            SourceAddSheet(sources: lists.available) { source in
-                showingAdd = false
-                Task { await connect(source) }
             }
         }
         .onChange(of: appleHealth.state) { _, state in
@@ -116,51 +134,77 @@ struct ConnectionsView: View {
         }
     }
 
-    private func isOAuthConnected(_ source: DisconnectableSource) -> Bool {
-        status?.providers.contains(where: { $0.key == source.statusKey }) ?? false
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(SharpitTypography.sectionTitle)
+            .tracking(SharpitTypography.sectionTitleTracking)
+            .foregroundStyle(SharpitColor.foreground)
+            .accessibilityAddTraits(.isHeader)
     }
 
-    private var emptyRow: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            Text("Aucune source connectée")
-                .font(SharpitTypography.bodyEmphasis)
-            Text("Relie Apple Santé, Strava ou une balance pour que le coach lise tes données.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-            Button("Ajouter une source") { showingAdd = true }
-                .font(SharpitTypography.bodyEmphasis)
-                .padding(.top, SharpitSpacing.xs)
+    private func sourceWords(_ source: ManagedSource, detail: String, isProblem: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(source.name)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
+            Text(detail)
+                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                .foregroundStyle(isProblem ? SharpitColor.statusAlertMark : SharpitColor.slate)
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// A linked source: what it brings, and its state as a pill. The line opens its sheet.
     private func connectedRow(_ source: ManagedSource) -> some View {
         let line = statusLine(source)
         let isBusy = source.oauth.map { disconnecting == $0 || connectingOAuth == $0 } ?? false
         return Button { managing = source } label: {
             HStack(spacing: SharpitSpacing.sm) {
-                ProviderLogo(provider: source.logo)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(source.name)
-                    Text(line.text)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(line.isProblem ? SharpitColor.signalRisk : SharpitColor.slate)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: SharpitSpacing.xs)
+                sourceWords(source, detail: line.text, isProblem: line.isProblem)
                 if isBusy {
                     ProgressView()
                 } else {
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                        .accessibilityHidden(true)
+                    CliniqueStatusPill(
+                        line.isProblem ? String(localized: "À vérifier") : String(localized: "Connecté"),
+                        status: line.isProblem ? .watch : .good
+                    )
                 }
             }
+            .padding(.vertical, 14)
             .contentShape(.rect)
         }
-        .foregroundStyle(SharpitColor.foreground)
+        .buttonStyle(.sharpitPressable)
         .disabled(isBusy)
         .accessibilityHint("Gérer ou déconnecter \(source.name)")
+    }
+
+    /// A source not linked yet: what it would bring, and the button that links it.
+    private func availableRow(_ source: ManagedSource) -> some View {
+        let isBusy = source.oauth.map { connectingOAuth == $0 } ?? false
+        return HStack(spacing: SharpitSpacing.sm) {
+            sourceWords(source, detail: source.purpose)
+            if isBusy {
+                ProgressView()
+            } else {
+                Button("Connecter") { Task { await connect(source) } }
+                    .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                    .accessibilityLabel("Connecter \(source.name)")
+            }
+        }
+        .padding(.vertical, 14)
+    }
+
+    /// « Synchroniser »: pulls every provider now, then reads the sources again.
+    private func synchronize() async {
+        guard !isSynchronizing else { return }
+        isSynchronizing = true
+        defer { isSynchronizing = false }
+        if let token = try? await tokenProvider() {
+            status = (try? await syncClient.sync(token: token)) ?? status
+        }
+        await loadStatus()
     }
 
     private func calendarPicker(for source: ManagedSource) -> AnyView? {
@@ -182,7 +226,6 @@ struct ConnectionsView: View {
         }
     }
 
-    /// The sheet is gone before a web authentication session is asked to present over the page.
     private func connect(_ source: ManagedSource) async {
         switch source {
         case .appleHealth:
@@ -191,7 +234,6 @@ struct ConnectionsView: View {
             await appleCalendar.enable(token: tokenProvider)
         case .withings, .google, .strava, .garmin:
             guard let oauth = source.oauth else { return }
-            try? await Task.sleep(for: .milliseconds(400))
             await connectOAuth(oauth)
         }
     }

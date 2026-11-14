@@ -42,10 +42,10 @@ struct FeatureShowcase: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .sharpitGlassChip()
                 .padding(.bottom, SharpitSpacing.xs)
-            JournalRowsCard {
-                JournalMetricRow(label: String(localized: "Humeur"), symbolName: "face.smiling", value: String(localized: "Bien")) {}
-                JournalFactorRow(label: String(localized: "Alcool"), symbolName: "wineglass", state: .no) { _ in }
-                JournalFactorRow(label: String(localized: "Écrans tard"), symbolName: "iphone", state: .yes) { _ in }
+            JournalLines {
+                JournalLine(title: String(localized: "Humeur")) { JournalValuePill(text: String(localized: "Bien")) }
+                JournalFactorLine(label: String(localized: "Alcool"), detail: nil, state: .no) {}
+                JournalFactorLine(label: String(localized: "Écrans tard"), detail: nil, state: .yes) {}
             }
         }
     }
@@ -58,15 +58,15 @@ struct FeatureShowcase: View {
     }
 
     private var health: some View {
-        LazyVGrid(
-            columns: [GridItem(.flexible(), spacing: SharpitSpacing.sm), GridItem(.flexible(), spacing: SharpitSpacing.sm)],
-            spacing: SharpitSpacing.sm
-        ) {
-            SanteMarkerTile(marker: Self.marker(.restingHr, 47, from: 50, norm: (String(localized: "Niveau athlète"), .good), trend: .good)) {}
-            SanteMarkerTile(marker: Self.marker(.hrv, 61, from: 57, norm: (String(localized: "Dans ta plage habituelle"), .good), trend: .good)) {}
-            SanteMarkerTile(marker: Self.marker(.sleep, 412, from: 440, norm: (String(localized: "Un peu court"), .neutral), trend: .watch)) {}
-            SanteMarkerTile(marker: Self.marker(.vo2max, 54, from: 53, norm: (String(localized: "Bien au-dessus de ton âge"), .good), trend: nil)) {}
-        }
+        SanteTable(
+            title: SanteReadout.markers(4),
+            rows: [
+                Self.marker(.restingHr, 47, from: 50, norm: (String(localized: "Niveau athlète"), .good), trend: .good),
+                Self.marker(.hrv, 61, from: 57, norm: (String(localized: "Dans ta plage habituelle"), .good), trend: .good),
+                Self.marker(.sleep, 412, from: 440, norm: (String(localized: "Un peu court"), .neutral), trend: .watch),
+                Self.marker(.vo2max, 54, from: 53, norm: (String(localized: "Bien au-dessus de ton âge"), .good), trend: nil),
+            ].map(SanteTable.Row.init)
+        )
     }
 
     private var regularity: some View {

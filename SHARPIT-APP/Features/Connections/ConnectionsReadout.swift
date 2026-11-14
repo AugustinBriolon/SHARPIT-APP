@@ -79,9 +79,9 @@ enum ConnectionsReadout {
     }
 
     static let sourcesFooter =
-        String(localized: "Touche une source pour la gérer ou la déconnecter. Le + en ajoute une.")
+        String(localized: "Touche une source connectée pour la gérer ou la déconnecter.")
 
-    /// Connected sources first, then the ones the « + » sheet offers — each in the screen's order.
+    /// Connected sources first, then the ones still to link — each in the screen's order.
     /// A source the device cannot run (Apple Health on an iPad) is never offered.
     static func split(
         linked: Set<ManagedSource>,

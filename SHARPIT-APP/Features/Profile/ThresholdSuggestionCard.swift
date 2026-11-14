@@ -8,18 +8,23 @@ struct ThresholdSuggestionCard: View {
     let onApply: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Proposition depuis tes records")
-                    .font(SharpitTypography.cardTitle)
-                    .foregroundStyle(SharpitColor.foreground)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("D'après tes records")
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    CliniqueStatusPill(String(localized: "\(store.offered.count) à revoir"), status: .watch)
+                }
                 Text(ThresholdSuggestionReadout.window(store.preview?.estimates.windowDays))
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))
                     .foregroundStyle(SharpitColor.slate)
             }
 
-            VStack(spacing: SharpitSpacing.xs) {
+            VStack(spacing: 0) {
                 ForEach(store.offered) { change in
+                    if change.id != store.offered.first?.id { CliniqueDivider() }
                     ThresholdChangeRow(
                         change: change,
                         isAccepted: store.isAccepted(change.field)
@@ -29,18 +34,14 @@ struct ThresholdSuggestionCard: View {
                 }
             }
 
-            // The house button: the system's prominent style drew ink on ink, a slab with no words.
-            SharpitPrimaryButton(
-                title: ThresholdSuggestionReadout.applyLabel(accepted: store.accepted.count, offered: store.offered.count),
-                trailingSymbol: "checkmark",
-                action: onApply
-            )
+            Button(action: onApply) {
+                Text(ThresholdSuggestionReadout.applyLabel(accepted: store.accepted.count, offered: store.offered.count))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
             .disabled(store.accepted.isEmpty)
-            .opacity(store.accepted.isEmpty ? 0.4 : 1)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+        .cliniqueCard(border: SharpitColor.statusWatchMark.opacity(0.5))
     }
 }
 
@@ -51,43 +52,32 @@ private struct ThresholdChangeRow: View {
     let onToggle: () -> Void
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(change.label)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                    Text(ThresholdSuggestionReadout.directionLabel(change.direction))
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .foregroundStyle(SharpitColor.slate)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 1)
-                        .background(SharpitColor.divider.opacity(0.45), in: Capsule())
+        Button(action: onToggle) {
+            HStack(spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 3) {
+                    (Text(change.label).foregroundStyle(SharpitColor.foreground)
+                        + Text(" · ").foregroundStyle(SharpitColor.slate)
+                        + Text(ThresholdSuggestionReadout.directionLabel(change.direction).lowercased())
+                            .foregroundStyle(SharpitColor.pillarRecovery).fontWeight(.semibold))
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    (Text(change.from).strikethrough().foregroundStyle(SharpitColor.slate)
+                        + Text(" ")
+                        + Text(change.to).fontWeight(.semibold).foregroundStyle(SharpitColor.foreground))
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
                 }
-                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                    Text(change.from)
-                        .font(SharpitTypography.instrument)
-                        .foregroundStyle(SharpitColor.slate)
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(SharpitColor.slate)
-                        .accessibilityHidden(true)
-                    Text(change.to)
-                        .font(SharpitTypography.instrument.weight(.semibold))
-                        .foregroundStyle(SharpitColor.foreground)
-                }
-                .monospacedDigit()
+                Spacer(minLength: SharpitSpacing.xs)
+                Image(systemName: isAccepted ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundStyle(isAccepted ? SharpitColor.foreground : SharpitColor.outline)
+                    .contentTransition(.symbolEffect(.replace))
             }
-            Spacer(minLength: SharpitSpacing.xs)
-            SharpitKeepToggle(isSelected: isAccepted, action: onToggle)
+            .padding(.vertical, 12)
+            .contentShape(.rect)
         }
-        .padding(.horizontal, SharpitSpacing.sm)
-        .padding(.vertical, SharpitSpacing.xs)
-        .sharpitConcentricBackground(SharpitColor.divider.opacity(0.18), minimum: SharpitRadius.small)
-        .opacity(isAccepted ? 1 : 0.55)
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.sharpitPressable)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(change.label), \(change.from) vers \(change.to)")
+        .accessibilityAddTraits(isAccepted ? .isSelected : [])
     }
 }
 

@@ -39,27 +39,54 @@ struct PrivacyConsentWallView: View {
     private var canSubmit: Bool { terms && privacy && health && !isSaving }
 
     var body: some View {
-        ZStack {
-            SharpitCanvasBackground()
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    header
-                        .revealed(hasAppeared, index: 0)
-                    requiredPanel
-                        .revealed(hasAppeared, index: 1)
-                    optionalPanel
-                        .revealed(hasAppeared, index: 2)
-                    disclaimer
-                        .revealed(hasAppeared, index: 3)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                header
+                    .revealed(hasAppeared, index: 0)
+                group(String(localized: "Nécessaires pour utiliser SharpIt")) {
+                    ConsentCheckRow(isOn: $terms, document: .terms, onRead: { openDocument = .terms }) {
+                        ConsentLabel(title: String(localized: "Conditions d'utilisation"))
+                    }
+                    ConsentCheckRow(isOn: $privacy, document: .privacy, onRead: { openDocument = .privacy }) {
+                        ConsentLabel(title: String(localized: "Politique de confidentialité"))
+                    }
+                    ConsentCheckRow(isOn: $health) {
+                        ConsentLabel(
+                            title: String(localized: "Traitement de mes données de santé"),
+                            detail: String(localized: "Sommeil, fréquence cardiaque, poids, analyses : pour lire ta forme.")
+                        )
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.top, SharpitSpacing.xl)
-                .padding(.bottom, SharpitSpacing.xl)
+                .revealed(hasAppeared, index: 1)
+                group(String(localized: "Facultatifs, modifiables à tout moment")) {
+                    ConsentCheckRow(isOn: $ai) {
+                        ConsentLabel(
+                            title: String(localized: "Lecture par l'IA du coach"),
+                            detail: String(localized: "Sans elle : tes données et ton plan, sans coach ni ajustements.")
+                        )
+                    }
+                    ConsentCheckRow(isOn: $unofficialProviders) {
+                        ConsentLabel(
+                            title: String(localized: "Sources non officielles"),
+                            detail: String(localized: "Connexions sans partenariat avec le fabricant, moins stables.")
+                        )
+                    }
+                }
+                .revealed(hasAppeared, index: 2)
+                Text(PrivacyCopy.healthDisclaimer)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .revealed(hasAppeared, index: 3)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) { actionBar }
-            .sharpitRegularColumn()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, SharpitSpacing.xl)
+            .padding(.bottom, SharpitSpacing.xl)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { actionBar }
+        .sharpitRegularColumn()
+        .cliniqueSheet(wash: .neutral, height: 220)
         .sheet(item: $openDocument) { document in
             LegalDocumentSheet(document: document)
         }
@@ -69,73 +96,39 @@ struct PrivacyConsentWallView: View {
     // MARK: - Content
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(reason == .healthWithdrawn ? String(localized: "Données de santé") : String(localized: "Avant de commencer"), systemImage: "hand.raised.fill")
-            Text(title)
-                .font(SharpitTypography.pageTitle)
-                .tracking(SharpitTypography.pageTitleTracking)
+        VStack(alignment: .leading, spacing: 10) {
+            if reason == .healthWithdrawn {
+                CliniqueStatusPill(String(localized: "Consentement santé retiré"), status: .watch)
+            }
+            Text("Avant de continuer")
+                .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .tracking(-0.6)
                 .foregroundStyle(SharpitColor.foreground)
                 .accessibilityAddTraits(.isHeader)
             Text(description)
-                .font(SharpitTypography.body)
+                .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private var requiredPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ConsentCheckRow(isOn: $terms, document: .terms, onRead: { openDocument = .terms }) {
-                Text("J'accepte les Conditions d'utilisation.")
-            }
-            Divider().padding(.leading, 44)
-            ConsentCheckRow(isOn: $privacy, document: .privacy, onRead: { openDocument = .privacy }) {
-                Text("J'accepte la Politique de confidentialité.")
-            }
-            Divider().padding(.leading, 44)
-            ConsentCheckRow(isOn: $health) {
-                Text("J'autorise la synchronisation et le traitement de mes données de santé / physiologiques (Twin, récupération, fatigue).")
-            }
-        }
-        .padding(.horizontal, SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
-    }
-
-    private var optionalPanel: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            Text("OPTIONNEL. TU POURRAS AUSSI LES ACTIVER PLUS TARD")
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
+    /// A named run of consents, split by hairlines.
+    private func group<Rows: View>(_ title: String, @ViewBuilder rows: () -> Rows) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
                 .foregroundStyle(SharpitColor.slate)
-            VStack(alignment: .leading, spacing: 0) {
-                ConsentCheckRow(isOn: $ai) {
-                    Text("J'autorise le traitement par IA (coach, bilans rédigés). Les moteurs déterministes du Twin fonctionnent sans ce consentement.")
-                }
-                Divider().padding(.leading, 44)
-                ConsentCheckRow(isOn: $unofficialProviders) {
-                    Text("Je comprends que certaines connexions fournisseurs peuvent être non officielles.")
+            Group(subviews: rows()) { subviews in
+                ForEach(subviews) { row in
+                    if row.id != subviews.first?.id { CliniqueDivider() }
+                    row
                 }
             }
-            .padding(.horizontal, SharpitSpacing.cardPadding)
-            .sharpitSurface(.panelAlt)
         }
-    }
-
-    private var disclaimer: some View {
-        Text(PrivacyCopy.healthDisclaimer)
-            .font(SharpitTypography.meta)
-            .foregroundStyle(SharpitColor.slate)
-            .padding(.leading, SharpitSpacing.sm)
-            .overlay(alignment: .leading) {
-                Rectangle()
-                    .fill(SharpitColor.divider)
-                    .frame(width: 2)
-            }
-            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var actionBar: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        VStack(spacing: 4) {
             if let error {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .font(SharpitTypography.meta)
@@ -146,46 +139,42 @@ struct PrivacyConsentWallView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             Button {
+                SharpitMotion.run(SharpitMotion.selection) {
+                    terms = true; privacy = true; health = true; ai = true; unofficialProviders = true
+                }
                 Task { await submit() }
             } label: {
-                HStack(spacing: SharpitSpacing.xs) {
-                    if isSaving {
-                        ProgressView().tint(SharpitColor.primaryForeground)
-                    }
-                    Text(isSaving ? ctaBusy : cta)
-                        .contentTransition(.opacity)
+                Group {
+                    if isSaving { ProgressView().tint(SharpitColor.primaryForeground) } else { Text("Tout accepter") }
                 }
                 .frame(maxWidth: .infinity)
             }
-            .sharpitGlassButton(prominent: true)
-            .tint(SharpitColor.primary)
-            .controlSize(.large)
-            .disabled(!canSubmit)
-            .animation(SharpitMotion.selection, value: canSubmit)
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+            .disabled(isSaving)
+            Button(cta) { Task { await submit() } }
+                .buttonStyle(CliniqueButtonStyle(kind: .plain))
+                .foregroundStyle(SharpitColor.foreground)
+                .disabled(!canSubmit)
         }
         .animation(SharpitMotion.reveal, value: error)
-        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.horizontal, 24)
         .padding(.top, SharpitSpacing.sm)
         .padding(.bottom, SharpitSpacing.xs)
+        .background(SharpitColor.card)
     }
 
     // MARK: - Copy (the web's `consentWallCopy`)
-
-    private var title: String {
-        reason == .healthWithdrawn ? String(localized: "Consentement santé retiré") : String(localized: "Confidentialité & conditions")
-    }
 
     private var description: String {
         switch reason {
         case .healthWithdrawn:
             String(localized: "Tu as retiré ton consentement pour les données de santé. Résumé et les traitements physiologiques restent bloqués tant que tu ne le réactives pas.")
         case .documents:
-            String(localized: "Avant d'utiliser SharpIt, accepte les documents légaux et le traitement des données de santé.")
+            String(localized: "Tes données de santé restent à toi. Voici ce que tu acceptes, point par point.")
         }
     }
 
-    private var cta: String { reason == .healthWithdrawn ? String(localized: "Réactiver et continuer") : String(localized: "Continuer") }
-    private var ctaBusy: String { reason == .healthWithdrawn ? String(localized: "Réactivation…") : String(localized: "Enregistrement…") }
+    private var cta: String { reason == .healthWithdrawn ? String(localized: "Réactiver avec ma sélection") : String(localized: "Continuer avec ma sélection") }
 
     // MARK: - Save
 
@@ -215,6 +204,25 @@ enum PrivacyCopy {
         String(localized: "SharpIt est un outil d'aide à l'entraînement. Ce n'est pas un dispositif médical et ça ne remplace pas un avis médical. Les signaux (récupération, fatigue, risques) sont des estimations d'entraînement, pas un diagnostic.")
 }
 
+/// A consent's words: what it is, and under it what it covers.
+struct ConsentLabel: View {
+    let title: String
+    var detail: String? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
+            if let detail {
+                Text(detail)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+        }
+    }
+}
+
 /// A checkbox row: the whole row toggles, and a document it names opens with « Lire » without
 /// ticking anything.
 struct ConsentCheckRow<Content: View>: View {
@@ -224,16 +232,15 @@ struct ConsentCheckRow<Content: View>: View {
     @ViewBuilder let label: Content
 
     var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             Button {
                 SharpitMotion.run(SharpitMotion.selection) { isOn.toggle() }
             } label: {
-                HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+                HStack(alignment: .center, spacing: 14) {
                     Image(systemName: isOn ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 22, weight: .regular))
-                        .foregroundStyle(isOn ? SharpitColor.primary : SharpitColor.slate.opacity(0.6))
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(isOn ? SharpitColor.foreground : SharpitColor.outline)
                         .contentTransition(.symbolEffect(.replace))
-                        .frame(width: 28)
                     label
                         .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.foreground)
@@ -247,13 +254,13 @@ struct ConsentCheckRow<Content: View>: View {
             .accessibilityAddTraits(isOn ? [.isSelected] : [])
 
             if let document, let onRead {
-                Button("Lire", action: onRead)
-                    .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(SharpitColor.primary)
+                Button(action: onRead) { Text("Lire").underline() }
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.slate)
                     .accessibilityLabel("Lire \(document.title)")
             }
         }
-        .padding(.vertical, SharpitSpacing.sm)
+        .padding(.vertical, 12)
         .frame(minHeight: SharpitSpacing.minimumTouchTarget)
     }
 }

@@ -55,7 +55,6 @@ struct AccountView: View {
             Section(eyebrow: String(localized: "Connexion")) {
                 Button { isEditingAccount = true } label: {
                     SharpitSettingsLabel(
-                        symbol: "lock",
                         title: String(localized: "Photo et sécurité"),
                         detail: String(localized: "E-mail et mot de passe")
                     )
@@ -63,7 +62,6 @@ struct AccountView: View {
                 .buttonStyle(.plain)
                 NavigationLink(value: SettingsRoute.pro) {
                     SharpitSettingsLabel(
-                        symbol: "sparkle",
                         title: String(localized: "Abonnement"),
                         detail: isPro || pro?.pro?.subscription != nil
                             ? ProReadout.status(pro?.pro?.subscription, isPro: isPro)

@@ -1,9 +1,10 @@
 import StoreKit
 import SwiftUI
 
-/// SharpIt Pro's one paywall, from the onboarding's first week and from every teaser: the week
-/// as a picture, three lines, two plans and one button. Every price is the App Store's — the
-/// introductory offer only when StoreKit says this Apple Account can still take it.
+/// SharpIt Pro's one paywall, from the onboarding's first week and from every teaser, on its
+/// mock-up (`docs/adr/0035`): what Pro is in a title, four lines, two plans and one button. Every
+/// price is the App Store's — the introductory offer only when StoreKit says this Apple Account
+/// can still take it.
 struct SharpitProPaywallSheet: View {
     let store: ProStore
     /// The onboarding's preview week; nil draws the example week.
@@ -20,13 +21,16 @@ struct SharpitProPaywallSheet: View {
 
     private struct Perk: Identifiable {
         let id: String
-        let text: String
+        let pillar: CliniquePillar
+        let title: String
+        let detail: String
     }
 
     private let perks = [
-        Perk(id: "calendar", text: String(localized: "Ta semaine, écrite pour toi")),
-        Perk(id: "arrow.triangle.2.circlepath", text: String(localized: "Elle s'adapte à ta vie")),
-        Perk(id: "bubble.left.and.text.bubble.right", text: String(localized: "Un coach qui lit tes données")),
+        Perk(id: "bubble.left", pillar: .coach, title: String(localized: "Coach à la demande"), detail: String(localized: "Il répond avec ta nuit, ta charge et ton plan")),
+        Perk(id: "calendar", pillar: .recovery, title: String(localized: "Plan qui se répare seul"), detail: String(localized: "Séance manquée, voyage, mauvaise nuit : il s'ajuste")),
+        Perk(id: "flame", pillar: .nutrition, title: String(localized: "Lecture de ta nutrition"), detail: String(localized: "Ce qu'il te manque avant et après chaque séance")),
+        Perk(id: "heart", pillar: .sleep, title: String(localized: "Âge biologique et bilan hebdo"), detail: String(localized: "Ta santé lue comme un check-up")),
     ]
 
     private var monthly: Product? { store.storeProducts.first { $0.id == SharpitProProduct.monthly } }
@@ -40,41 +44,67 @@ struct SharpitProPaywallSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                ProWeekHero(sessions: sessions)
+            VStack(alignment: .leading, spacing: 0) {
+                CliniqueStatusPill("SharpIt Pro", status: .pro)
                     .revealed(hasAppeared, index: 0)
-
-                Text(sessions == nil ? String(localized: "Ton coach, ta semaine.") : String(localized: "Ta semaine est prête"))
-                    .font(SharpitTypography.screenTitle)
-                    .tracking(SharpitTypography.screenTitleTracking)
+                Text(sessions == nil ? String(localized: "Un coach qui lit tes données tous les matins") : String(localized: "Ta semaine est prête"))
+                    .font(SharpitTypography.system(size: 30, weight: .semibold, relativeTo: .largeTitle))
+                    .tracking(-0.6)
                     .foregroundStyle(SharpitColor.foreground)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+                    .revealed(hasAppeared, index: 1)
+                Text("Tes données restent à toi et gratuites. Pro ajoute la lecture et les décisions.")
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
                     .revealed(hasAppeared, index: 1)
 
-                VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                // The onboarding's own week, when there is one to show.
+                if sessions != nil {
+                    ProWeekHero(sessions: sessions)
+                        .padding(.top, 20)
+                        .revealed(hasAppeared, index: 2)
+                }
+
+                VStack(spacing: 0) {
                     ForEach(Array(perks.enumerated()), id: \.element.id) { index, perk in
-                        HStack(spacing: SharpitSpacing.sm) {
-                            SharpitIconTile(symbol: perk.id, size: 32)
-                            Text(perk.text)
-                                .font(SharpitTypography.bodyEmphasis)
-                                .foregroundStyle(SharpitColor.foreground)
+                        CliniqueDivider()
+                        HStack(spacing: 18) {
+                            Image(systemName: perk.id)
+                                .font(.system(size: 19, weight: .regular))
+                                .foregroundStyle(perk.pillar.color)
+                                .frame(width: 24)
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(perk.title)
+                                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                                    .foregroundStyle(SharpitColor.foreground)
+                                Text(perk.detail)
+                                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                                    .foregroundStyle(SharpitColor.slate)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: 0)
                         }
+                        .padding(.vertical, 13)
+                        .accessibilityElement(children: .combine)
                         .revealed(hasAppeared, index: 2 + index)
                     }
                 }
+                .padding(.top, 20)
 
                 plans
-                    .revealed(hasAppeared, index: 5)
-
-                ProPerkGroup(title: String(localized: "Tout ce qui est inclus"), perks: store.proPerks, highlighted: true)
+                    .padding(.top, 20)
                     .revealed(hasAppeared, index: 6)
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.top, SharpitSpacing.xl + SharpitSpacing.sm)
+            .padding(.horizontal, 24)
+            .padding(.top, 56)
             .padding(.bottom, SharpitSpacing.lg)
         }
         .scrollIndicators(.hidden)
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: .coach, height: 220)
         .overlay(alignment: .topTrailing) { closeButton }
         .safeAreaInset(edge: .bottom, spacing: 0) { actionDock }
         .sharpitSheet()
@@ -88,7 +118,7 @@ struct SharpitProPaywallSheet: View {
     @ViewBuilder
     private var plans: some View {
         if let monthly, let yearly {
-            VStack(spacing: SharpitSpacing.xs) {
+            VStack(spacing: 10) {
                 planCard(
                     yearly,
                     title: String(localized: "Annuel"),
@@ -132,36 +162,44 @@ struct SharpitProPaywallSheet: View {
 
     private func planCard(_ product: Product, title: String, price: String, detail: String, badge: Int?) -> some View {
         let isSelected = selectedProductId == product.id
+        let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
         return Button {
             withAnimation(SharpitMotion.selection) { selectedProductId = product.id }
         } label: {
-            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.outline)
+                    .contentTransition(.symbolEffect(.replace))
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        Text(title)
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.foreground)
-                        if let badge {
-                            SharpitPill(String(localized: "−\(badge) %"), style: .lime)
-                        }
-                    }
+                    Text(title)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
                     Text(detail)
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))
                         .foregroundStyle(SharpitColor.slate)
                 }
                 Spacer(minLength: SharpitSpacing.xs)
-                Text(price)
-                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline, digits: true))
-                    .foregroundStyle(SharpitColor.foreground)
-                    .multilineTextAlignment(.trailing)
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(price)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.trailing)
+                    if let badge {
+                        CliniqueStatusPill(String(localized: "− \(badge) %"), status: .good)
+                    }
+                }
             }
-            .padding(SharpitSpacing.md)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
-            .background(SharpitColor.card, in: RoundedRectangle(cornerRadius: SharpitRadius.row, style: .continuous))
+            .background(SharpitColor.card, in: shape)
+            .overlay(shape.strokeBorder(SharpitColor.divider, lineWidth: 1))
             .overlay {
                 // One ring that travels between the plans rather than two that blink.
                 if isSelected {
-                    RoundedRectangle(cornerRadius: SharpitRadius.row, style: .continuous)
+                    shape
                         .strokeBorder(SharpitColor.foreground, lineWidth: 2)
                         .matchedGeometryEffect(id: "ring", in: selectionRing)
                 }
@@ -178,13 +216,14 @@ struct SharpitProPaywallSheet: View {
             Image(systemName: "xmark")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(SharpitColor.foreground)
-                .frame(width: 32, height: 32)
-                .background(SharpitColor.tile, in: Circle())
+                .frame(width: 44, height: 44)
+                .background(SharpitColor.card, in: Circle())
+                .overlay(Circle().strokeBorder(SharpitColor.divider, lineWidth: 1))
         }
         .buttonStyle(.sharpitPressable)
         .frame(minWidth: SharpitSpacing.minimumTouchTarget, minHeight: SharpitSpacing.minimumTouchTarget)
-        .padding(.trailing, SharpitSpacing.xs)
-        .padding(.top, SharpitSpacing.xs)
+        .padding(.trailing, 22)
+        .padding(.top, 14)
         .accessibilityLabel(String(localized: "Fermer"))
     }
 
@@ -193,7 +232,7 @@ struct SharpitProPaywallSheet: View {
         if selectedProductId == SharpitProProduct.monthly, let introOffer {
             return String(localized: "Commencer à \(introOffer.displayPrice)")
         }
-        return String(localized: "S'abonner")
+        return String(localized: "Passer à Pro")
     }
 
     private var actionDock: some View {
@@ -208,9 +247,13 @@ struct SharpitProPaywallSheet: View {
                     .sharpitGlassCapsule()
                     .transition(.opacity)
             }
-            SharpitPrimaryButton(title: buttonTitle, isBusy: store.isPurchasing) {
-                Task { await purchase() }
+            Button { Task { await purchase() } } label: {
+                Group {
+                    if store.isPurchasing { ProgressView().tint(SharpitColor.primaryForeground) } else { Text(buttonTitle) }
+                }
+                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
             .contentTransition(.numericText())
             .animation(SharpitMotion.selection, value: buttonTitle)
             // Never a purchase without the account token: Apple's notifications would not name the athlete.
@@ -229,11 +272,11 @@ struct SharpitProPaywallSheet: View {
                 Button {
                     Task { await restore() }
                 } label: {
-                    if store.isRestoring { ProgressView().controlSize(.mini) } else { Text("Restaurer mes achats") }
+                    if store.isRestoring { ProgressView().controlSize(.mini) } else { Text("Restaurer un achat").underline() }
                 }
                 .disabled(store.isRestoring || store.isPurchasing)
-                Link("Conditions d'utilisation", destination: LegalDocument.terms.url)
-                Link("Confidentialité", destination: LegalDocument.privacy.url)
+                Link(destination: LegalDocument.terms.url) { Text("Conditions").underline() }
+                Link(destination: LegalDocument.privacy.url) { Text("Confidentialité").underline() }
             }
         }
         .font(SharpitTypography.meta)
