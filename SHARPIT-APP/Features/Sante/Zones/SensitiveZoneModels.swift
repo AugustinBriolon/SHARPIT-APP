@@ -257,6 +257,37 @@ nonisolated enum SensitiveZoneReadout {
         return zones.first { $0.followUpQuestion != nil }?.followUpQuestion
     }
 
+    /// « 2 ouvertes · 1 résolue », with only what there is.
+    static func count(open: Int, resolved: Int) -> String {
+        let parts = [
+            open > 0 ? plural(open, String(localized: "ouverte"), String(localized: "ouvertes")) : nil,
+            resolved > 0 ? plural(resolved, String(localized: "résolue"), String(localized: "résolues")) : nil,
+        ].compactMap(\.self)
+        return parts.isEmpty ? String(localized: "Aucune zone déclarée") : parts.joined(separator: " · ")
+    }
+
+    /// The last eight readings, oldest first, for the row's bars.
+    static func levels(_ readings: [V1ZoneTimelineEntry]) -> [Int] {
+        Array(readings.sorted { $0.date < $1.date }.compactMap(\.severity).suffix(8))
+    }
+
+    /// « gêne 2 / 10 · en baisse », the trend from the last two readings; the place without a reading.
+    static func standing(_ zone: V1SensitiveZone) -> String {
+        guard let severity = zone.severity else { return "\(zone.categoryLabel) · \(zone.place)" }
+        let level = String(localized: "gêne \(severity) / 10")
+        let levels = levels(zone.readings)
+        guard levels.count >= 2 else { return "\(level) · \(zone.place)" }
+        let last = levels[levels.count - 1], before = levels[levels.count - 2]
+        let trend = last < before ? String(localized: "en baisse") : last > before ? String(localized: "en hausse") : String(localized: "stable")
+        return "\(level) · \(trend)"
+    }
+
+    /// « résolue en juin ».
+    @MainActor static func resolved(_ date: Date?, locale: Locale = SharpitLocale.current) -> String {
+        guard let date else { return String(localized: "résolue") }
+        return String(localized: "résolue en \(date.formatted(.dateTime.month(.wide).locale(locale)))")
+    }
+
     static func severity(_ value: Int?) -> String {
         value.map { "\($0)/10" } ?? "—"
     }

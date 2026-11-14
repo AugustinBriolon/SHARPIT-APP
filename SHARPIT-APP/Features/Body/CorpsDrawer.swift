@@ -6,6 +6,15 @@ import SwiftUI
 /// (SHARPIT ADR-053).
 
 extension CorpsTone {
+    /// The tone as a status, for the note's pill.
+    var status: CliniqueStatus {
+        switch self {
+        case .neutral: .unknown
+        case .inRange: .good
+        case .belowRange: .watch
+        }
+    }
+
     var color: Color {
         switch self {
         case .neutral: SharpitColor.slate
@@ -57,46 +66,53 @@ struct CorpsMetricDrawer: View {
     @State private var redrawToken = 0
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    header
-                    if let reading {
-                        SanteReadingBlock(marker: reading)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                header
+                if let reading {
+                    SanteReadingBlock(marker: reading)
+                }
+                SharpitSegmentedControl(
+                    selection: $range,
+                    options: CorpsRange.allCases.map {
+                        SharpitSegmentedControl<CorpsRange>.Option(value: $0, label: $0.label)
                     }
-                    SharpitSegmentedControl(
-                        selection: $range,
-                        options: CorpsRange.allCases.map {
-                            SharpitSegmentedControl<CorpsRange>.Option(value: $0, label: $0.label)
-                        }
-                    )
-                    if points.count > 1 {
-                        chart
-                        stats
-                    } else if isLoading {
-                        RoundedRectangle(cornerRadius: SharpitRadius.panel)
-                            .fill(SharpitColor.slate.opacity(0.12))
-                            .frame(height: 220)
-                            .redacted(reason: .placeholder)
-                    } else {
-                        Text("Pas encore assez de mesures sur cette période pour tracer une évolution.")
-                            .font(SharpitTypography.body)
-                            .foregroundStyle(SharpitColor.slate)
-                    }
-                    Text(reading.map { SanteReadout.explanation($0.key) } ?? metric.key.explanation)
-                        .font(SharpitTypography.meta)
+                )
+                if points.count > 1 {
+                    chart
+                    stats
+                } else if isLoading {
+                    RoundedRectangle(cornerRadius: SharpitRadius.panel)
+                        .fill(SharpitColor.slate.opacity(0.12))
+                        .frame(height: 220)
+                        .redacted(reason: .placeholder)
+                } else {
+                    Text("Pas encore assez de mesures sur cette période pour tracer une évolution.")
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                         .foregroundStyle(SharpitColor.slate)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(SharpitSpacing.pageInset)
+                Text(reading.map { SanteReadout.explanation($0.key) } ?? metric.key.explanation)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .navigationTitle(metric.key.label)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("OK") { dismiss() }
-                }
+            .padding(.horizontal, 24)
+            .padding(.top, 30)
+            .padding(.bottom, SharpitSpacing.lg)
+        }
+        .background(SharpitColor.card)
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .frame(width: 44, height: 44)
+                    .background(SharpitColor.tile, in: Circle())
             }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityLabel("Fermer")
+            .padding(.trailing, 22)
+            .padding(.top, 22)
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
@@ -115,27 +131,35 @@ struct CorpsMetricDrawer: View {
         }
     }
 
+    /// The marker's name, when and from where it was read, its figure, and its note as a pill.
     private var header: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xs) {
-                Text(metric.formattedValue)
-                    .font(SharpitTypography.heroScore)
-                    .tracking(SharpitTypography.heroScoreTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                if let unit = metric.key.unit {
-                    Text(unit)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
+        VStack(alignment: .leading, spacing: 10) {
+            Text(metric.key.label)
+                .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.trailing, 56)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(CorpsFormat.caption(metric))
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(metric.formattedValue)
+                        .font(SharpitTypography.system(size: 52, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-1.5)
+                        .foregroundStyle(SharpitColor.foreground)
+                    if let unit = metric.key.unit {
+                        Text(unit)
+                            .font(SharpitTypography.system(size: 19, weight: .regular, relativeTo: .title3))
+                            .foregroundStyle(SharpitColor.slate)
+                    }
+                    Spacer(minLength: SharpitSpacing.xs)
+                    if let note = metric.note {
+                        CliniqueStatusPill(note, status: metric.tone.status)
+                    }
                 }
             }
-            if let note = metric.note {
-                Text(note)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(metric.tone.color)
-            }
-            Text(CorpsFormat.caption(metric))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
         }
     }
 
@@ -156,8 +180,6 @@ struct CorpsMetricDrawer: View {
             axisLabel: { CorpsReadout.format($0, for: metric.key) },
             readout: { CorpsReadout.format($0, for: metric.key) + (metric.key.unit.map { " \($0)" } ?? "") }
         )
-        .padding(SharpitSpacing.md)
-        .sharpitSurface(.panel)
         .accessibilityLabel("\(metric.key.label), \(range.label)")
     }
 
@@ -165,11 +187,30 @@ struct CorpsMetricDrawer: View {
     private var stats: some View {
         let values = points.map(\.value)
         if let low = values.min(), let high = values.max() {
-            HStack(spacing: SharpitSpacing.sm) {
-                SharpitStatTile(caption: String(localized: "Min"), value: CorpsReadout.format(low, for: metric.key), unit: metric.key.unit)
-                SharpitStatTile(caption: String(localized: "Max"), value: CorpsReadout.format(high, for: metric.key), unit: metric.key.unit)
-                SharpitStatTile(caption: String(localized: "Mesures"), value: "\(values.count)")
+            VStack(spacing: 0) {
+                stat(String(localized: "Min"), CorpsReadout.format(low, for: metric.key) + unitSuffix)
+                stat(String(localized: "Max"), CorpsReadout.format(high, for: metric.key) + unitSuffix)
+                stat(String(localized: "Mesures"), "\(values.count)")
             }
+        }
+    }
+
+    private var unitSuffix: String { metric.key.unit.map { " \($0)" } ?? "" }
+
+    private func stat(_ label: String, _ value: String) -> some View {
+        VStack(spacing: 0) {
+            CliniqueDivider()
+            HStack {
+                Text(label)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: SharpitSpacing.xs)
+                Text(value)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+            }
+            .padding(.vertical, 16)
+            .accessibilityElement(children: .combine)
         }
     }
 }

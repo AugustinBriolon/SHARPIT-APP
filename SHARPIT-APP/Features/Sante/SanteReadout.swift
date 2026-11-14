@@ -117,6 +117,25 @@ enum SanteReadout {
         return String(localized: "\(synthesis.inNorm) repères sur \(synthesis.normed) dans leur norme")
     }
 
+    /// « 6 biomarqueurs »: the latest blood test's table.
+    static func biomarkers(_ count: Int) -> String {
+        count == 1 ? String(localized: "1 biomarqueur") : String(localized: "\(count) biomarqueurs")
+    }
+
+    /// « 9 repères »: the measured markers' table.
+    static func markers(_ count: Int) -> String {
+        count == 1 ? String(localized: "1 repère") : String(localized: "\(count) repères")
+    }
+
+    /// What « Partager » sends: the check-up in plain lines, one marker each.
+    static func shareText(_ overview: V1HealthOverview) -> String {
+        let lines = overview.allMarkers.map { marker in
+            let value = value(marker)
+            return "\(title(marker.key)) : \([value.text, value.unit].compactMap { $0 }.joined(separator: " "))"
+        }
+        return ([synthesis(overview.synthesis)].compactMap { $0 } + lines).joined(separator: "\n")
+    }
+
     /// The Corps metric whose longer history the web keeps, for the sheet's ranges.
     static func corpsKey(_ key: V1HealthMarker.Key) -> CorpsMetricKey? {
         switch key {

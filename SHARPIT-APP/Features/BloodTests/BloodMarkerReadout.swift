@@ -23,6 +23,15 @@ nonisolated enum BloodMarkerReadout {
         }
     }
 
+    /// Under « Analyses de sang »: how many tests are kept, or what importing one keeps.
+    static func testsLine(_ count: Int?) -> String {
+        switch count {
+        case nil, 0?: String(localized: "Importe un compte rendu : seules les valeurs sont gardées, jamais le document.")
+        case 1?: String(localized: "1 analyse gardée")
+        case let count?: String(localized: "\(count) analyses gardées")
+        }
+    }
+
     static func isOutOfRange(_ status: BloodMarkerStatus) -> Bool {
         status == .low || status == .high
     }

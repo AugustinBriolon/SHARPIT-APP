@@ -63,15 +63,13 @@ struct SanteTodaySection: View {
     let state: SanteDayState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Aujourd'hui"))
-            HStack(spacing: SharpitSpacing.sm) {
-                ForEach(state.tiles, id: \.caption) { tile in
-                    SharpitStatTile(caption: tile.caption, value: tile.value, unit: tile.unit, note: tile.note)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            SanteSectionTitle(String(localized: "Aujourd'hui"))
+            ForEach(state.tiles, id: \.caption) { tile in
+                CliniqueDivider()
+                SanteFigureRow(title: tile.caption, subtitle: tile.note, value: tile.value, unit: tile.unit)
+                    .accessibilityElement(children: .combine)
             }
-            .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

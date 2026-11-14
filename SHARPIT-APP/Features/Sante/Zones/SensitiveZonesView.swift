@@ -55,28 +55,12 @@ struct SensitiveZonesCard: View {
         NavigationLink {
             SensitiveZonesView(store: store)
         } label: {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitCardHeader(title: String(localized: "Zones sensibles"), symbol: "figure.walk.motion")
-                if let zones = store.zones?.zones, let summary = SensitiveZoneReadout.summary(zones) {
-                    Text(summary)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                    if let prompt = SensitiveZoneReadout.prompt(zones) {
-                        Text(prompt)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalCaution)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                } else {
-                    Text("Une douleur, une blessure, une posture à corriger : déclare-la, le plan s'adapte.")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
+            SanteLinkRow(
+                title: String(localized: "Zones sensibles"),
+                detail: store.zones.flatMap { SensitiveZoneReadout.summary($0.zones) }
+                    ?? String(localized: "Une douleur, une blessure, une posture à corriger : déclare-la."),
+                status: store.zones.flatMap { SensitiveZoneReadout.prompt($0.zones) }.map { _ in String(localized: "Point à faire") }
+            )
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
@@ -86,10 +70,12 @@ struct SensitiveZonesCard: View {
 
 // MARK: - List
 
-/// Every declared zone: the open ones by what they do to the plan, then the resolved ones.
+/// Every declared zone, on its mock-up (`docs/adr/0035`): the question owed, what the open zones
+/// change to the plan, the open ones with their last readings, then the resolved ones.
 struct SensitiveZonesView: View {
     let store: SensitiveZonesStore
     @State private var isDeclaring = false
+    @State private var checkingIn: V1SensitiveZone?
 
     var body: some View {
         Group {
@@ -102,18 +88,18 @@ struct SensitiveZonesView: View {
                 content
             }
         }
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: (store.zones?.open.isEmpty ?? true) ? .neutral : .watch, height: 240)
         .navigationTitle("Zones sensibles")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) { Text("") }
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    isDeclaring = true
-                } label: {
-                    Label("Déclarer une zone", systemImage: "plus")
-                }
+                Button("Signaler une zone") { isDeclaring = true }
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
             }
         }
+        .cliniqueReturnButton(to: .body, symbol: "heart", label: String(localized: "Santé"))
         .sheet(isPresented: $isDeclaring) {
             SensitiveZoneFormSheet(
                 draft: SensitiveZoneDraft(),
@@ -124,6 +110,11 @@ struct SensitiveZonesView: View {
                 await store.declare(draft)
             }
         }
+        .sheet(item: $checkingIn) { zone in
+            ZoneCheckinSheet(zone: zone) { draft in
+                await store.checkin(zone, draft)
+            }
+        }
         .task { await store.load() }
     }
 
@@ -131,127 +122,199 @@ struct SensitiveZonesView: View {
     private var content: some View {
         let zones = store.zones ?? V1SensitiveZones()
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Zones sensibles")
+                        .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                        .tracking(-0.6)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(SensitiveZoneReadout.count(open: zones.open.count, resolved: zones.resolved.count))
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                }
                 if zones.zones.isEmpty {
                     emptyState
                 } else {
+                    question(zones.open)
+                    planEffects(zones.open)
+                    group(String(localized: "Ouvertes"), zones.open)
+                    group(String(localized: "Résolues"), zones.resolved)
                     if zones.open.contains(where: { SensitiveZoneBody.isOnMap($0.bodyPart) }) {
                         SensitiveZonesBodyOverview(zones: zones.open, figure: store.figure)
                     }
-                    group(String(localized: "En cours"), zones.open)
-                    group(String(localized: "Résolues"), zones.resolved)
                 }
                 Text("Indicateur Sharpit pour adapter tes séances, pas un avis médical.")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.vertical, SharpitSpacing.md)
+            .padding(.horizontal, 24)
+            .padding(.top, SharpitSpacing.xs)
+            .padding(.bottom, 96)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .refreshable { await store.load() }
+    }
+
+    /// The one question owed now, in a bordered card: the zone that asks, and the way to answer.
+    @ViewBuilder
+    private func question(_ open: [V1SensitiveZone]) -> some View {
+        if let zone = open.first(where: { $0.resolutionSuggested || $0.followUpQuestion != nil }) {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Question du jour")
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                        .foregroundStyle(SharpitColor.slate)
+                    Text(zone.resolutionSuggested ? String(localized: "« \(zone.title) » ne fait plus mal : c'est résolu ?") : zone.followUpQuestion ?? "")
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                HStack(spacing: 8) {
+                    if zone.resolutionSuggested {
+                        Button("Oui, résolu") { Task { await store.setStatus(zone, to: "RESOLVED") } }
+                            .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                    }
+                    Button(zone.resolutionSuggested ? String(localized: "Pas encore") : String(localized: "Faire le point")) { checkingIn = zone }
+                        .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                }
+            }
+            .cliniqueCard()
+        }
+    }
+
+    /// « Ce que ça change à ton plan »: each open zone's effect, behind a bar in its strategy's tone.
+    @ViewBuilder
+    private func planEffects(_ open: [V1SensitiveZone]) -> some View {
+        let acting = open.filter { $0.affectsTraining && !$0.strategyDetail.isEmpty }
+        if !acting.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                SanteSectionTitle(String(localized: "Ce que ça change à ton plan"))
+                ForEach(acting) { zone in
+                    Text(zone.strategyDetail)
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, 18)
+                        .overlay(alignment: .leading) {
+                            Capsule().fill(zone.strategy.status.mark).frame(width: 4).padding(.vertical, 2)
+                        }
+                }
+            }
+        }
     }
 
     @ViewBuilder
     private func group(_ title: String, _ zones: [V1SensitiveZone]) -> some View {
         if !zones.isEmpty {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow(title)
+            VStack(alignment: .leading, spacing: 4) {
+                SanteSectionTitle(title)
                 VStack(spacing: 0) {
                     ForEach(zones) { zone in
+                        if zone != zones.first { CliniqueDivider() }
                         NavigationLink {
                             SensitiveZoneDetailView(store: store, zoneId: zone.id)
                         } label: {
                             SensitiveZoneRow(zone: zone)
                         }
-                        .buttonStyle(.plain)
-                        if zone != zones.last {
-                            Rectangle().fill(SharpitColor.divider).frame(height: 1)
-                        }
+                        .buttonStyle(.sharpitPressable)
                     }
                 }
-                .padding(.horizontal, SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
             }
         }
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("Aucune zone déclarée")
-                .font(SharpitTypography.cardTitle)
-                .tracking(SharpitTypography.cardTitleTracking)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                 .foregroundStyle(SharpitColor.foreground)
             Text("Déclare une douleur ou une blessure : le plan évite de la charger. Une posture ou un manque de mobilité : le renfo la travaille.")
-                .font(SharpitTypography.meta)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
-            Button {
-                isDeclaring = true
-            } label: {
-                Text("Déclarer une zone")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .frame(maxWidth: .infinity)
-            }
-            .sharpitGlassButton(prominent: true)
-            .tint(SharpitColor.primary)
+            Button("Signaler une zone") { isDeclaring = true }
+                .buttonStyle(CliniqueButtonStyle(kind: .primary))
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        .cliniqueCard()
     }
 }
 
-/// One zone in the list: its name and place, what it does to the plan, today's reading.
+extension V1SensitiveZone.Strategy {
+    /// The status a strategy reads as on a pill.
+    var status: CliniqueStatus {
+        switch self {
+        case .protect: .protect
+        case .progressive: .watch
+        case .correct: .good
+        case .relapseWatch, .none: .unknown
+        }
+    }
+}
+
+/// One zone in the list: its name and what the plan does with it, then its last readings as
+/// bars and where the pain stands — or, resolved, a check and when.
 private struct SensitiveZoneRow: View {
     let zone: V1SensitiveZone
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 3) {
+        if zone.isResolved {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark.circle")
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundStyle(SharpitColor.pillarRecovery)
+                    .accessibilityHidden(true)
                 Text(zone.title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(2)
-                Text("\(zone.categoryLabel) · \(zone.place)")
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
                     .foregroundStyle(SharpitColor.slate)
-                    .lineLimit(1)
-                if zone.isResolved {
-                    Text(resolvedLine)
-                        .font(SharpitTypography.meta)
+                Spacer(minLength: SharpitSpacing.xs)
+                Text(SensitiveZoneReadout.resolved(zone.resolvedAt))
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+            .padding(.vertical, 14)
+            .contentShape(.rect)
+            .accessibilityElement(children: .combine)
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(zone.title)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    CliniqueStatusPill(zone.strategyLabel, status: zone.strategy.status)
+                }
+                HStack(alignment: .bottom, spacing: 12) {
+                    let levels = SensitiveZoneReadout.levels(zone.readings)
+                    if levels.count >= 2 {
+                        HStack(alignment: .bottom, spacing: 4) {
+                            ForEach(Array(levels.enumerated()), id: \.offset) { index, level in
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(SharpitColor.pillarNutrition.opacity(index == levels.count - 1 ? 1 : 0.3))
+                                    .frame(width: 18, height: 6 + CGFloat(level) * 2)
+                            }
+                        }
+                        .frame(height: 26, alignment: .bottom)
+                        .accessibilityHidden(true)
+                    }
+                    Text(SensitiveZoneReadout.standing(zone))
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
                         .foregroundStyle(SharpitColor.slate)
-                } else {
-                    Label(zone.strategyLabel, systemImage: zone.strategy.symbol)
-                        .font(SharpitTypography.meta.weight(.semibold))
-                        .foregroundStyle(zone.strategy.tint)
-                        .labelStyle(.titleAndIcon)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Spacer(minLength: 0)
                 }
                 if zone.resolutionSuggested {
                     Text("Plus de douleur depuis deux semaines")
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
                         .foregroundStyle(SharpitColor.foreground)
                 }
             }
-            Spacer(minLength: 0)
-            if !zone.isResolved {
-                Text(SensitiveZoneReadout.severity(zone.severity))
-                    .font(SharpitTypography.data)
-                    .tracking(SharpitTypography.dataTracking)
-                    .monospacedDigit()
-                    .foregroundStyle(ZoneSeverityTint.color(zone.severity))
-            }
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+            .padding(.vertical, 14)
+            .contentShape(.rect)
+            .accessibilityElement(children: .combine)
         }
-        .padding(.vertical, SharpitSpacing.sm)
-        .contentShape(.rect)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var resolvedLine: String {
-        guard let resolvedAt = zone.resolvedAt else { return String(localized: "Résolue") }
-        return String(localized: "Résolue le \(resolvedAt.formatted(.dateTime.day().month(.wide).locale(SharpitLocale.current)))")
     }
 }
 

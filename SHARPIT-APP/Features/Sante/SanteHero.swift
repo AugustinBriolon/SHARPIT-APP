@@ -1,16 +1,12 @@
 import SwiftUI
 
-/// Santé's headline, the tab's one ink card (ADR-085), as the verdict leads Résumé: one very large
-/// number, a pill that says what it means, and a ruler that places it. Younger than the civil age
-/// reads lime, older reads caution; nothing else carries a hue.
+/// Santé's opening, on the sheet: the scores as rings between two hairlines — the biological
+/// age, how many markers sit in their norm, the VO₂max. Only the middle ring is a share (N of M
+/// markers); the other two are closed, their reading said in a line under the figure.
 ///
-/// With a biological age, the number is that age and the ruler runs ten years either side of the
-/// civil age. Without one — below Pro, or before the data it needs — the number is how many markers
-/// sit in their norm and the ruler has one tick per marker, in its tone. The card's content is
-/// drawn in the dark appearance, so every token resolves to its light-on-ink value.
+/// Below Pro the age's column is a lock that opens the paywall: the web never computes the age
+/// there, so nothing the app holds could reveal it.
 struct SanteHero: View {
-    /// What the hero stands on. Below Pro the web never computes the age, so the locked hero shows
-    /// a fixed placeholder, blurred — nothing the app holds could reveal it.
     enum Mode: Equatable {
         case age(V1BiologicalAge)
         case locked
@@ -28,286 +24,118 @@ struct SanteHero: View {
         }
     }
 
-    /// Drawn under the blur. A constant, never derived from anything the athlete measured.
-    static let lockedPlaceholder = "00"
-
     let synthesis: V1HealthSynthesis
-    /// Every normed marker's tone, in page order, for the fallback ruler.
-    let tones: [V1HealthTone]
-    let watchCount: Int
+    var vo2max: V1HealthMarker? = nil
 
-    @State private var hasAppeared = false
     @State private var isShowingPaywall = false
     @Environment(ProStore.self) private var pro: ProStore?
 
     private var mode: Mode { Mode(synthesis) }
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.md) {
-            Text(caption)
-                .font(SharpitTypography.cardTitle)
-                .foregroundStyle(SharpitColor.slate)
-            figure
-            if mode == .locked {
-                unlock
-                if let line = SanteReadout.synthesis(synthesis) {
-                    Text(line)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-            } else if let pill {
-                Text(pill)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(tone == SharpitColor.foreground ? SharpitColor.foreground : tone)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, -SharpitSpacing.xs)
+        CliniqueScoreStrip {
+            ageColumn
+            if synthesis.normed > 0 {
+                CliniqueScoreColumn(
+                    pillar: .sleep,
+                    fraction: Double(synthesis.inNorm) / Double(synthesis.normed),
+                    symbol: "heart",
+                    title: String(localized: "Dans la norme"),
+                    value: "\(synthesis.inNorm)",
+                    scale: "\(synthesis.normed)",
+                    note: String(localized: "repères mesurés")
+                )
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(SanteReadout.synthesis(synthesis) ?? "")
             }
-            ruler
-                .frame(height: 56)
-                .padding(.top, SharpitSpacing.sm)
-            if !synthesis.highlights.isEmpty {
-                highlights
-            }
-            if mode != .norms {
-                Text(BiologicalAgeReadout.disclaimer)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.horizontal, SharpitSpacing.cardPadding)
-        .padding(.vertical, SharpitSpacing.xl)
-        .frame(maxWidth: .infinity)
-        .environment(\.colorScheme, .dark)
-        .sharpitContainerCorner(SharpitRadius.panel)
-        .background(SharpitColor.inkSurface, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
-        .sharpitShadow(.panel)
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.top, SharpitSpacing.xs)
-        .padding(.bottom, SharpitSpacing.lg)
-        .onAppear { hasAppeared = true }
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: - What it shows
-
-    private var caption: String {
-        mode == .norms ? String(localized: "Repères dans leur norme") : String(localized: "Âge biologique")
-    }
-
-    @ViewBuilder
-    private var figure: some View {
-        if mode == .locked {
-            Text(Self.lockedPlaceholder)
-                .font(SharpitTypography.showcaseScore)
-                .tracking(SharpitTypography.showcaseScoreTracking)
-                // Enough to read as two digits, never enough to read which.
-                .foregroundStyle(SharpitColor.foreground.opacity(0.8))
-                .blur(radius: 11)
-                .overlay {
-                    Image(systemName: "lock.fill")
-                        .font(.title2.weight(.semibold))
-                        .foregroundStyle(SharpitColor.foreground)
-                }
-                .accessibilityHidden(true)
-        } else if case .age(let age) = mode {
-            HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xxs) {
-                Text(BiologicalAgeReadout.years(hasAppeared ? age.years : (age.chronologicalYears ?? age.years)))
-                    .font(SharpitTypography.showcaseScore)
-                    .tracking(SharpitTypography.showcaseScoreTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .contentTransition(.numericText())
-                    .animation(SharpitMotion.reveal, value: hasAppeared)
-                Text("ans")
-                    .font(SharpitTypography.gaugeScore)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-            .minimumScaleFactor(0.6)
-            .lineLimit(1)
-        } else {
-            HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xxs) {
-                Text("\(synthesis.inNorm)")
-                    .font(SharpitTypography.showcaseScore)
-                    .tracking(SharpitTypography.showcaseScoreTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text("/ \(synthesis.normed)")
-                    .font(SharpitTypography.gaugeScore)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-            .lineLimit(1)
-        }
-    }
-
-    private var pill: String? {
-        if let age = synthesis.biologicalAge { return BiologicalAgeReadout.gap(age) }
-        guard synthesis.normed > 0 else { return nil }
-        switch watchCount {
-        case 0: return String(localized: "Rien à surveiller")
-        case 1: return String(localized: "1 point à surveiller")
-        default: return String(localized: "\(watchCount) points à surveiller")
-        }
-    }
-
-    /// The reading's tone: younger or older than the civil age, or whether anything is flagged.
-    private var tone: Color {
-        if let age = synthesis.biologicalAge {
-            switch BiologicalAgeReadout.isYounger(age) {
-            case true?: return SharpitColor.statusGoodMark
-            case false?: return SharpitColor.signalCaution
-            case nil: return SharpitColor.foreground
-            }
-        }
-        if mode == .locked { return SharpitColor.foreground }
-        return watchCount == 0 ? SharpitColor.statusGoodMark : SharpitColor.signalCaution
-    }
-
-    /// The way to Pro, where the pill would say the gap.
-    @ViewBuilder
-    private var unlock: some View {
-        let label = HStack(spacing: SharpitSpacing.xs) {
-            Image(systemName: "sparkle")
-            Text("Débloquer avec SharpIt Pro")
-        }
-        .font(SharpitTypography.bodyEmphasis)
-        .foregroundStyle(SharpitColor.primaryForeground)
-        .padding(.horizontal, SharpitSpacing.md)
-        .padding(.vertical, SharpitSpacing.xs + 2)
-        .background(SharpitColor.primary, in: Capsule())
-        if let pro {
-            Button { isShowingPaywall = true } label: { label }
-                .buttonStyle(.sharpitPressable)
-                .sheet(isPresented: $isShowingPaywall) { SharpitProPaywallSheet(store: pro) }
-                .accessibilityHint("Ton âge biologique, calculé par SharpIt à partir de ta VO₂max")
-        } else {
-            label
-        }
-    }
-
-    // MARK: - Ruler
-
-    @ViewBuilder
-    private var ruler: some View {
-        if mode == .locked {
-            SanteBlankRuler()
-        } else if let age = synthesis.biologicalAge, let civil = age.chronologicalYears {
-            SanteAgeRuler(civil: civil, biological: age.years, tone: tone, isRevealed: hasAppeared)
-        } else if !tones.isEmpty {
-            SanteToneRuler(tones: tones)
-        }
-    }
-
-    /// What moved this month, one line each: the marker, then its change with an arrow in the
-    /// change's tone — read down a column instead of across stacked chips.
-    private var highlights: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Ce qui a bougé ce mois-ci")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .padding(.bottom, SharpitSpacing.xs)
-            ForEach(Array(synthesis.highlights.enumerated()), id: \.element.key) { index, highlight in
-                if index > 0 { Divider() }
-                HStack(spacing: SharpitSpacing.sm) {
-                    Image(systemName: highlight.delta >= 0 ? "arrow.up.right" : "arrow.down.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(highlight.tone.markColor)
-                        .frame(width: 26, height: 26)
-                        .background(SharpitColor.foreground.opacity(0.08), in: Circle())
-                    Text(SanteReadout.title(highlight.key))
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Spacer(minLength: SharpitSpacing.xs)
-                    Text(SanteReadout.signedDelta(highlight.delta, for: highlight.key))
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .monospacedDigit()
-                }
-                .padding(.vertical, SharpitSpacing.xs)
+            if let vo2max {
+                CliniqueScoreColumn(
+                    pillar: .recovery,
+                    // A closed ring: a measure, not a share of anything. Its norm says how it reads.
+                    fraction: 1,
+                    symbol: "bolt",
+                    title: "VO₂max",
+                    value: SanteReadout.number(vo2max.value, digits: 0),
+                    unit: "ml/kg",
+                    note: vo2max.norm?.label
+                )
                 .accessibilityElement(children: .combine)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-}
-
-/// Ten years either side of the civil age, a tick a year and a longer one every five: the civil
-/// age marked and named, the biological age drawn in the reading's tone.
-private struct SanteAgeRuler: View {
-    let civil: Double
-    let biological: Double
-    let tone: Color
-    let isRevealed: Bool
-
-    private let span = 10
-
-    var body: some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width
-            let low = Int(civil.rounded()) - span
-            let step = width / CGFloat(span * 2)
-            let position = { (years: Double) in CGFloat(years - Double(low)) * step }
-            ZStack(alignment: .topLeading) {
-                Canvas { context, size in
-                    for index in 0...(span * 2) {
-                        let x = CGFloat(index) * step
-                        let isMajor = (low + index) % 5 == 0
-                        let height: CGFloat = isMajor ? 22 : 12
-                        let rect = CGRect(x: x - 0.5, y: 0, width: 1, height: height)
-                        context.fill(Path(rect), with: .color(SharpitColor.slate.opacity(isMajor ? 0.55 : 0.3)))
-                    }
-                    // The civil age: a thin full-height mark.
-                    let civilX = position(civil)
-                    context.fill(
-                        Path(CGRect(x: civilX - 0.75, y: 0, width: 1.5, height: 30)),
-                        with: .color(SharpitColor.foreground.opacity(0.6))
-                    )
-                    _ = size
-                }
-                Capsule()
-                    .fill(tone)
-                    .frame(width: 3, height: 36)
-                    .offset(x: position(isRevealed ? min(max(biological, Double(low)), Double(low + span * 2)) : civil) - 1.5, y: -3)
-                    .animation(SharpitMotion.reveal, value: isRevealed)
-                Text("âge civil")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize()
-                    .offset(x: position(civil) - 28, y: 36)
+    @ViewBuilder
+    private var ageColumn: some View {
+        switch mode {
+        case .age(let age):
+            CliniqueScoreColumn(
+                pillar: .nutrition,
+                // A closed ring too: the gap to the civil age is said in words under it.
+                fraction: 1,
+                symbol: "figure.stand",
+                title: String(localized: "Âge biologique"),
+                value: String(localized: "\(BiologicalAgeReadout.years(age.years)) ans"),
+                note: SanteHeroReadout.ageNote(age)
+            )
+            .accessibilityElement(children: .combine)
+        case .locked:
+            let column = CliniqueScoreColumn(
+                pillar: .nutrition, fraction: nil, symbol: "lock",
+                title: String(localized: "Âge biologique"), value: "Pro"
+            )
+            if let pro {
+                Button { isShowingPaywall = true } label: { column.contentShape(.rect) }
+                    .buttonStyle(.sharpitPressable)
+                    .sheet(isPresented: $isShowingPaywall) { SharpitProPaywallSheet(store: pro) }
+                    .accessibilityLabel("Débloquer avec SharpIt Pro")
+                    .accessibilityHint("Ton âge biologique, calculé par SharpIt à partir de ta VO₂max")
+            } else {
+                column
             }
+        case .norms:
+            EmptyView()
         }
     }
 }
 
-/// One tick per normed marker, in its tone: the check-up at a glance when there is no age.
-private struct SanteToneRuler: View {
-    let tones: [V1HealthTone]
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            ForEach(Array(tones.enumerated()), id: \.offset) { _, tone in
-                Capsule()
-                    .fill(tone == .neutral ? SharpitColor.slate.opacity(0.45) : tone.color)
-                    .frame(width: 3, height: tone == .watch ? 36 : 26)
-                    .frame(maxWidth: .infinity)
-            }
+/// How Santé's opening and its tables read a tone: the pill's status and word, the age's ring.
+enum SanteHeroReadout {
+    /// « Rien à surveiller », or how many points are; nil when nothing could be read against a norm.
+    static func headline(normed: Int, watchCount: Int) -> (text: String, status: CliniqueStatus)? {
+        guard normed > 0 || watchCount > 0 else { return nil }
+        switch watchCount {
+        case 0: return (String(localized: "Rien à surveiller"), .good)
+        case 1: return (String(localized: "1 point à surveiller"), .watch)
+        default: return (String(localized: "\(watchCount) points à surveiller"), .watch)
         }
-        .padding(.horizontal, SharpitSpacing.lg)
     }
-}
 
-/// The locked hero's ruler: the same ticks, nothing placed on them.
-private struct SanteBlankRuler: View {
-    var body: some View {
-        Canvas { context, size in
-            let count = 20
-            let step = size.width / CGFloat(count)
-            for index in 0...count {
-                let isMajor = index % 5 == 0
-                let rect = CGRect(x: CGFloat(index) * step - 0.5, y: 0, width: 1, height: isMajor ? 22 : 12)
-                context.fill(Path(rect), with: .color(SharpitColor.slate.opacity(isMajor ? 0.5 : 0.28)))
-            }
+    static func wash(watchCount: Int) -> CliniqueWash {
+        watchCount == 0 ? .good : .watch
+    }
+
+    /// A tone the web judged; a neutral one carries no pill.
+    static func status(_ tone: V1HealthTone) -> CliniqueStatus? {
+        switch tone {
+        case .good: .good
+        case .watch: .watch
+        case .neutral: nil
         }
-        .accessibilityHidden(true)
+    }
+
+    static func word(_ status: CliniqueStatus) -> String {
+        status == .good ? String(localized: "Bon") : String(localized: "À surveiller")
+    }
+
+    /// « 3 ans de moins », « comme ton âge civil »: the gap, short enough for a column.
+    static func ageNote(_ age: V1BiologicalAge) -> String? {
+        guard let civil = age.chronologicalYears else { return nil }
+        switch Int(civil.rounded()) - Int(age.years.rounded()) {
+        case 0: return String(localized: "comme ton âge civil")
+        case 1: return String(localized: "1 an de moins")
+        case -1: return String(localized: "1 an de plus")
+        case let years where years > 0: return String(localized: "\(years) ans de moins")
+        case let years: return String(localized: "\(-years) ans de plus")
+        }
     }
 }

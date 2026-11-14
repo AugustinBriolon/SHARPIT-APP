@@ -7,21 +7,14 @@ import VisionKit
 /// Santé's way in to blood tests: the history, from which a report is imported.
 struct BloodTestsCard: View {
     let tokenProvider: () async throws -> String
+    /// The tests already kept, when the caller has read them.
+    var count: Int? = nil
 
     var body: some View {
         NavigationLink {
             BloodTestsView(tokenProvider: tokenProvider)
         } label: {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitCardHeader(title: String(localized: "Analyses de sang"), symbol: "drop")
-                Text("Importe un compte rendu : seules les valeurs sont gardées, jamais le document.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(SharpitSpacing.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
+            SanteLinkRow(title: String(localized: "Analyses de sang"), detail: BloodMarkerReadout.testsLine(count))
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
