@@ -14,7 +14,7 @@ struct BrickEvaluationTile: View {
             case .unavailable(let message):
                 Text(message)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             case .ready where store.isEmpty:
                 Label("Évaluer l'enchaînement", systemImage: "plus.circle.fill")
                     .font(SharpitTypography.bodyEmphasis)
@@ -36,7 +36,7 @@ reading(String(localized: "Ressenti"), value: store.feeling?.rawValue, outOf: 5)
             ScaleReadout(value: value, outOf: outOf)
             Text(label)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 }

@@ -181,9 +181,9 @@ private struct ActivityFormContent: View {
             HStack(spacing: SharpitSpacing.xs) {
                 Image(sharpitSymbol: draft.sport.symbolName)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .foregroundStyle(SharpitColor.primaryForeground)
                     .frame(width: 40, height: 40)
-                    .background(SharpitColor.highlight, in: Circle())
+                    .background(SharpitColor.primary, in: Circle())
                     .contentTransition(.symbolEffect(.replace))
                 Text(draft.sport.label)
                     .font(SharpitTypography.cardTitle)
@@ -368,7 +368,7 @@ private struct ActivityFormContent: View {
                         SharpitMotion.run(SharpitMotion.selection) { draft.rpe = nil }
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     .buttonStyle(.sharpitPressable)
                     .accessibilityLabel("Effacer l’effort")
@@ -376,7 +376,7 @@ private struct ActivityFormContent: View {
                 } else {
                     Text("Non précisé")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             Slider(
@@ -392,7 +392,7 @@ private struct ActivityFormContent: View {
                 in: 1...10,
                 step: 1
             )
-            .tint(SharpitColor.highlight)
+            .tint(SharpitColor.primary)
             .opacity(draft.rpe == nil ? 0.5 : 1)
             .accessibilityLabel("Effort perçu")
             .accessibilityValue(draft.rpe.map { "\($0) sur 10" } ?? String(localized: "Non précisé"))
@@ -414,7 +414,7 @@ private struct ActivityFormContent: View {
                             .font(.system(size: 26))
                             .frame(maxWidth: .infinity, minHeight: 52)
                             .background(
-                                isSelected ? SharpitColor.highlight : SharpitColor.analysisSurfaceAlt,
+                                isSelected ? SharpitColor.primary : SharpitColor.tile,
                                 in: RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
                             )
                             .scaleEffect(isSelected ? 1.06 : 1)
@@ -427,7 +427,7 @@ private struct ActivityFormContent: View {
             if let feeling = draft.feeling {
                 Text("\(feeling.storedValue) — \(feeling.hint)")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .transition(.opacity)
             }
         }
@@ -461,7 +461,7 @@ private struct ActivityFormContent: View {
         } else if let requirement {
             Text(requirement)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 }

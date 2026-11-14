@@ -66,7 +66,7 @@ struct OnboardingChoiceChip: View {
                     Image(sharpitSymbol: symbol)
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
+                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.slate)
                         .frame(width: 22)
                 }
                 Text(title)
@@ -82,7 +82,7 @@ struct OnboardingChoiceChip: View {
             .frame(maxWidth: .infinity, minHeight: SharpitSpacing.minimumTouchTarget)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                    .fill(isSelected ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt)
+                    .fill(isSelected ? SharpitColor.primary : SharpitColor.tile)
             )
             .contentShape(.rect)
         }
@@ -142,24 +142,24 @@ struct MotivationRow: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: SharpitSpacing.xs)
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.45))
+                    .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate.opacity(0.45))
                     .symbolEffect(.bounce, value: isSelected)
                     .accessibilityHidden(true)
             }
             .padding(SharpitSpacing.md)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(isSelected ? SharpitColor.primary : SharpitColor.analysisGrid, lineWidth: isSelected ? 2 : 1)
+                    .strokeBorder(isSelected ? SharpitColor.primary : SharpitColor.divider, lineWidth: isSelected ? 2 : 1)
             )
             .contentShape(.rect)
         }
@@ -242,7 +242,7 @@ struct OnboardingWeekStep: View {
                             .contentTransition(.numericText(value: Double(store.sessionsPerWeek)))
                         Text(store.sessionsPerWeek == 1 ? String(localized: "séance par semaine") : String(localized: "séances par semaine"))
                             .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 .padding(SharpitSpacing.cardPadding)
@@ -275,7 +275,7 @@ struct OnboardingWeekStep: View {
             if showsFullHint {
                 Text("Retire un jour pour en choisir un autre.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .transition(.opacity)
             }
         }
@@ -288,7 +288,7 @@ struct OnboardingWeekStep: View {
         HStack(spacing: 4) {
             ForEach(0..<store.sessionsPerWeek, id: \.self) { index in
                 Capsule()
-                    .fill(index < picked.count ? SharpitColor.highlight : SharpitColor.analysisSurfaceAlt)
+                    .fill(index < picked.count ? SharpitColor.primary : SharpitColor.tile)
                     .frame(width: 14, height: 6)
             }
         }
@@ -312,16 +312,16 @@ struct OnboardingWeekStep: View {
                 Text(OnboardingWeekday.shortLabels[day].prefix(1))
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 ZStack {
                     Circle()
-                        .fill(order == nil ? Color.clear : SharpitColor.highlight)
+                        .fill(order == nil ? Color.clear : SharpitColor.primary)
                     Circle()
-                        .strokeBorder(SharpitColor.analysisGrid, lineWidth: order == nil ? 1.5 : 0)
+                        .strokeBorder(SharpitColor.divider, lineWidth: order == nil ? 1.5 : 0)
                     if let order {
                         Text("\(order)")
                             .font(SharpitTypography.instrument)
-                            .foregroundStyle(SharpitColor.highlightForeground)
+                            .foregroundStyle(SharpitColor.primaryForeground)
                             .transition(.scale(scale: 0.6).combined(with: .opacity))
                     }
                 }
@@ -400,7 +400,7 @@ struct OnboardingGoalStep: View {
                     DatePicker("Date", selection: $draft.raceDate, in: Date()..., displayedComponents: .date)
                         .font(SharpitTypography.bodyEmphasis)
                         .tint(SharpitColor.primary)
-                    Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                    Rectangle().fill(SharpitColor.divider).frame(height: 1)
                     HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                         Text("\(weeksLeft)")
                             .font(SharpitTypography.gaugeScore)
@@ -409,7 +409,7 @@ struct OnboardingGoalStep: View {
                             .contentTransition(.numericText(value: Double(weeksLeft)))
                         Text(weeksLeft == 1 ? String(localized: "semaine de préparation") : String(localized: "semaines de préparation"))
                             .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     .animation(SharpitMotion.selection, value: weeksLeft)
                 }
@@ -527,7 +527,7 @@ struct OnboardingInjuriesStep: View {
                 SensitiveZoneBodyMap(
                     face: face,
                     spots: SensitiveZoneBody.spots(on: face, offered: OnboardingInjuryDraft.bodyParts, figure: figure),
-                    tint: { spot in isDeclared(spot) ? SharpitColor.highlight : nil },
+                    tint: { spot in isDeclared(spot) ? SharpitColor.statusGoodMark : nil },
                     onTap: open,
                     height: 400,
                     figure: figure
@@ -570,7 +570,7 @@ struct OnboardingInjuriesStep: View {
                 ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
                     groundRow(entry)
                     if index < entries.count - 1 {
-                        Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1).padding(.leading, 56)
+                        Rectangle().fill(SharpitColor.divider).frame(height: 1).padding(.leading, 56)
                     }
                 }
             }
@@ -594,7 +594,7 @@ struct OnboardingInjuriesStep: View {
                     if let declared {
                         Text(declared.details ?? entry.stage(declared.stage)?.label ?? "")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                     }
                 }
@@ -602,12 +602,12 @@ struct OnboardingInjuriesStep: View {
                 if declared != nil {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(SharpitColor.highlightForeground, SharpitColor.highlight)
+                        .foregroundStyle(SharpitColor.primaryForeground, SharpitColor.primary)
                         .accessibilityHidden(true)
                 }
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
                     .accessibilityHidden(true)
             }
             .padding(.vertical, SharpitSpacing.sm)
@@ -713,7 +713,7 @@ private struct OnboardingInjuryRow: View {
 
                 Text(subtitle)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
             }
 
@@ -721,7 +721,7 @@ private struct OnboardingInjuryRow: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.35))
+                .foregroundStyle(SharpitColor.slate.opacity(0.35))
         }
         .padding(.horizontal, SharpitSpacing.md)
         .padding(.vertical, SharpitSpacing.sm + 2)
@@ -732,7 +732,7 @@ private struct OnboardingInjuryRow: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous)
-                .strokeBorder(SharpitColor.border.opacity(0.7), lineWidth: 1)
+                .strokeBorder(SharpitColor.divider.opacity(0.7), lineWidth: 1)
         )
         .contentShape(.rect)
         .onTapGesture {
@@ -864,7 +864,7 @@ struct OnboardingPrivacyStep: View {
                         Text("J'autorise le traitement par IA.")
                         Text("Le coach, les bilans rédigés et ta première semaine de séances en dépendent.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
             }
@@ -873,7 +873,7 @@ struct OnboardingPrivacyStep: View {
 
             Text(PrivacyCopy.healthDisclaimer)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .animation(SharpitMotion.selection, value: consents.requiredAccepted)
@@ -956,7 +956,7 @@ struct OnboardingFirstWeekStep: View {
         HStack(alignment: .top, spacing: SharpitSpacing.md) {
             Image(systemName: symbol)
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -964,7 +964,7 @@ struct OnboardingFirstWeekStep: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(detail)
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -1060,7 +1060,7 @@ struct OnboardingSourcesStep: View {
 
             Text("Tout est optionnel et se règle plus tard dans Paramètres › Sources.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .padding(.horizontal, SharpitSpacing.xxs)
                 .padding(.top, SharpitSpacing.xxs)
         }
@@ -1177,7 +1177,7 @@ private struct OnboardingSourceCard<Control: View>: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(detail)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: SharpitSpacing.xs)

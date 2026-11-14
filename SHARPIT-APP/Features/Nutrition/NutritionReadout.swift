@@ -94,7 +94,7 @@ enum NutritionReadout {
 
     /// The goal bar fills in lime, the brand's progress, until the day runs past the goal.
     static func goalBarTone(pct: Double?) -> Color {
-        guard let pct, pct > 110 else { return SharpitColor.highlight }
+        guard let pct, pct > 110 else { return SharpitColor.statusGoodMark }
         return SharpitColor.signalCaution
     }
 

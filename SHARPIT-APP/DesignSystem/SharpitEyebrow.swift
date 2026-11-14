@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// `text-label` used as a section marker — uppercase, tracked, muted.
+/// A section marker: caption size, slate, sentence case.
 ///
 /// An optional symbol sits with the words rather than on a line of its own: a section
 /// needs one title, not a label above a second heading that says the same thing.
@@ -22,10 +22,8 @@ struct SharpitEyebrow: View {
                     .accessibilityHidden(true)
             }
             Text(text)
-                .font(SharpitTypography.eyebrow)
-                .tracking(SharpitTypography.eyebrowTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 }

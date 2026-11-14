@@ -32,7 +32,7 @@ struct SharpitAuthDrawer: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                SharpitColor.background.ignoresSafeArea()
+                SharpitColor.card.ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: SharpitSpacing.md) {
@@ -90,7 +90,7 @@ struct SharpitAuthDrawer: View {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: "envelope")
                     .font(.system(size: 16))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
 
                 TextField("Adresse e-mail", text: $email)
                     .font(SharpitTypography.body)
@@ -106,7 +106,7 @@ struct SharpitAuthDrawer: View {
                     .fill(SharpitColor.card)
                     .overlay(
                         RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                            .strokeBorder(SharpitColor.border, lineWidth: 1)
+                            .strokeBorder(SharpitColor.divider, lineWidth: 1)
                     )
                     .sharpitShadow(.control)
             }
@@ -141,13 +141,13 @@ struct SharpitAuthDrawer: View {
             // 3. Elegant "ou" Separator
             HStack(spacing: SharpitSpacing.sm) {
                 Rectangle()
-                    .fill(SharpitColor.border)
+                    .fill(SharpitColor.divider)
                     .frame(height: 1)
                 Text("ou")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Rectangle()
-                    .fill(SharpitColor.border)
+                    .fill(SharpitColor.divider)
                     .frame(height: 1)
             }
             .padding(.vertical, SharpitSpacing.xxs)
@@ -164,10 +164,10 @@ struct SharpitAuthDrawer: View {
             HStack(spacing: SharpitSpacing.xxs + 2) {
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 11))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.8))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.8))
                 Text("Sécurisé par Clerk")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.8))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.8))
             }
             .padding(.top, SharpitSpacing.xs)
         }
@@ -185,7 +185,7 @@ struct SharpitAuthDrawer: View {
 
                 Text("Saisis le code reçu à l'adresse\n\(email)")
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.center)
             }
 
@@ -209,7 +209,7 @@ struct SharpitAuthDrawer: View {
                     .fill(SharpitColor.card)
                     .overlay(
                         RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                            .strokeBorder(SharpitColor.border, lineWidth: 1)
+                            .strokeBorder(SharpitColor.divider, lineWidth: 1)
                     )
             }
 
@@ -244,7 +244,7 @@ struct SharpitAuthDrawer: View {
                 .disabled(isLoading)
 
                 Text("•")
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.4))
 
                 Button {
                     step = .identifier
@@ -285,7 +285,7 @@ struct SharpitAuthDrawer: View {
 
                 Text("Saisis ton mot de passe pour \(email)")
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
 
             if let errorMessage {
@@ -337,7 +337,7 @@ struct SharpitAuthDrawer: View {
                 } label: {
                     Text("Modifier l'adresse e-mail")
                         .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             .padding(.top, SharpitSpacing.xxs)
@@ -366,7 +366,7 @@ struct SharpitAuthDrawer: View {
             } label: {
                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
                     .font(.system(size: 16))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .frame(width: 44, height: 44)
             }
             .accessibilityLabel(isPasswordVisible ? "Masquer le mot de passe" : "Afficher le mot de passe")
@@ -379,7 +379,7 @@ struct SharpitAuthDrawer: View {
                 .fill(SharpitColor.card)
                 .overlay(
                     RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
-                        .strokeBorder(SharpitColor.border, lineWidth: 1)
+                        .strokeBorder(SharpitColor.divider, lineWidth: 1)
                 )
         }
     }

@@ -17,7 +17,7 @@ struct SharpitSettingsLabel: View {
                 if let detail {
                     Text(detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                         .contentTransition(.opacity)
                 }

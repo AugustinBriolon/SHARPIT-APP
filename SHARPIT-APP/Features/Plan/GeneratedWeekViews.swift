@@ -163,7 +163,7 @@ struct GeneratedSessionRow: View {
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     if session.isKey { SharpitInlineTag(String(localized: "Clé")) }
                 }
                 Text(session.title)
@@ -173,7 +173,7 @@ struct GeneratedSessionRow: View {
                 if let note = rejection ?? warning {
                     Label(note, systemImage: rejection != nil ? "nosign" : "exclamationmark.triangle")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(rejection != nil ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                        .foregroundStyle(rejection != nil ? SharpitColor.signalRisk : SharpitColor.slate)
                         .lineLimit(3)
                 }
             }

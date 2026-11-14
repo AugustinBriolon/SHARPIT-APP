@@ -60,7 +60,7 @@ private struct WeatherDetail: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text(reading.condition)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Divider()
             mark
             Link(

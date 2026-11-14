@@ -123,7 +123,7 @@ private struct CoachHistoryRow: View {
                     .multilineTextAlignment(.leading)
                 Text(ActivityFormat.dayLabel(for: conversation.updatedAt))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
             if isCurrent {

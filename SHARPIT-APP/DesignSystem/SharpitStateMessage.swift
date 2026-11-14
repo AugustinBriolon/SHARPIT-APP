@@ -26,7 +26,7 @@ struct SharpitStateMessage: View {
             if let detail {
                 Text(detail)
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         } actions: {
             if let retry {

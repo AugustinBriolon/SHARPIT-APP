@@ -24,19 +24,19 @@ struct SharpitStatTile: View {
                 if let unit {
                     Text(unit)
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             Text(caption)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
                 .fixedSize(horizontal: false, vertical: true)
             if let note {
                 Text(note)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -68,7 +68,7 @@ struct SharpitHeroFigure: View {
             if let unit {
                 Text(unit)
                     .font(SharpitTypography.unit)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             if let delta {
                 SharpitPill(delta, style: deltaStyle)
@@ -98,7 +98,7 @@ struct SharpitInsightRow: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(detail)
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -120,13 +120,13 @@ struct SharpitConfidenceLine: View {
                         Capsule()
                             .fill(index < ConfidenceBars.filled(fromPct: rounded)
                                   ? SharpitColor.primary
-                                  : SharpitColor.track)
+                                  : SharpitColor.divider)
                             .frame(width: 10, height: 4)
                     }
                 }
                 Text("Confiance \(rounded) %")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .frame(maxWidth: .infinity, alignment: .center)
             .accessibilityElement(children: .ignore)
@@ -158,19 +158,19 @@ struct SharpitHeroScore: View {
             Text(figure)
                 .font(SharpitTypography.heroScore)
                 .tracking(SharpitTypography.heroScoreTracking)
-                .foregroundStyle(score == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                .foregroundStyle(score == nil ? SharpitColor.slate : SharpitColor.foreground)
                 .contentTransition(.numericText())
                 .animation(SharpitMotion.selection, value: score)
             Text("/\(scale)")
                 .font(SharpitTypography.unit)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Spacer(minLength: 0)
             Text(label)
                 .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.foreground)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(SharpitColor.chipSurface, in: Capsule())
+                .background(SharpitColor.tile, in: Capsule())
         }
         .accessibilityElement(children: .combine)
     }

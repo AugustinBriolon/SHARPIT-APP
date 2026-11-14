@@ -38,17 +38,17 @@ struct TodayTimelineStrip: View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
             Text(event.minuteOfDay == nil ? "" : clock(event.minuteOfDay))
                 .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .footnote, digits: true))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .frame(width: clockWidth, alignment: .leading)
                 .padding(.top, 2)
 
             VStack(spacing: 0) {
                 Circle()
-                    .fill(event.kind == "session" ? SharpitColor.highlight : SharpitColor.foreground)
+                    .fill(event.kind == "session" ? SharpitColor.statusGoodMark : SharpitColor.foreground)
                     .frame(width: 9, height: 9)
                     .padding(.top, 5)
                 Rectangle()
-                    .fill(isLast ? Color.clear : SharpitColor.track)
+                    .fill(isLast ? Color.clear : SharpitColor.divider)
                     .frame(width: 2)
                     .frame(maxHeight: .infinity)
                     .padding(.top, 4)
@@ -62,7 +62,7 @@ struct TodayTimelineStrip: View {
                 if let detail = event.detail, !detail.isEmpty {
                     Text(detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             .padding(.bottom, isLast ? 0 : SharpitSpacing.md)

@@ -66,7 +66,7 @@ struct SharpitMarkdownText: View {
         case .quote(let text):
             Text(SharpitMarkdown.inline(text))
                 .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.leading, SharpitSpacing.sm)
                 .overlay(alignment: .leading) {
@@ -82,11 +82,11 @@ struct SharpitMarkdownText: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(SharpitSpacing.sm)
-                .sharpitConcentricBackground(SharpitColor.analysisSurfaceAlt, minimum: SharpitRadius.small)
+                .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.small)
 
         case .rule:
             Rectangle()
-                .fill(SharpitColor.analysisBorder)
+                .fill(SharpitColor.divider)
                 .frame(height: 1)
         }
     }
@@ -160,11 +160,11 @@ private struct SharpitMarkdownTable: View {
                             .font(SharpitTypography.label)
                             .tracking(SharpitTypography.labelTracking)
                             .textCase(.uppercase)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                    Divider().overlay(SharpitColor.analysisGrid).gridCellUnsizedAxes(.horizontal)
+                    Divider().overlay(SharpitColor.divider).gridCellUnsizedAxes(.horizontal)
                     GridRow {
                         ForEach(0..<columns, id: \.self) { column in
                             Text(SharpitMarkdown.inline(cell(row, column)))

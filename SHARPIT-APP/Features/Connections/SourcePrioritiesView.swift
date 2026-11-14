@@ -96,7 +96,7 @@ struct SourcePrioritiesView: View {
                             if choosesPrimary {
                                 Text(isPrimary ? String(localized: "Principale") : String(localized: "Choisir comme principale"))
                                     .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
-                                    .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
+                                    .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.slate)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -106,7 +106,7 @@ struct SourcePrioritiesView: View {
                             // pushes the glyph and the title to opposite edges.
                             Image(systemName: isPrimary ? "checkmark.circle.fill" : "circle")
                                 .font(.body)
-                                .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.mutedForeground)
+                                .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.slate)
                                 .accessibilityHidden(true)
                         }
                     }
@@ -170,7 +170,7 @@ struct SourcePrioritiesView: View {
     private func writeCalendarLabel(_ title: String, value: String, isProblem: Bool) -> some View {
         LabeledContent {
             Text(value)
-                .foregroundStyle(isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                .foregroundStyle(isProblem ? SharpitColor.signalRisk : SharpitColor.slate)
         } label: {
             Text(title)
                 .foregroundStyle(SharpitColor.foreground)

@@ -78,7 +78,7 @@ struct PrivacyConsentWallView: View {
                 .accessibilityAddTraits(.isHeader)
             Text(description)
                 .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -106,7 +106,7 @@ struct PrivacyConsentWallView: View {
             Text("OPTIONNEL. TU POURRAS AUSSI LES ACTIVER PLUS TARD")
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             VStack(alignment: .leading, spacing: 0) {
                 ConsentCheckRow(isOn: $ai) {
                     Text("J'autorise le traitement par IA (coach, bilans rédigés). Les moteurs déterministes du Twin fonctionnent sans ce consentement.")
@@ -124,11 +124,11 @@ struct PrivacyConsentWallView: View {
     private var disclaimer: some View {
         Text(PrivacyCopy.healthDisclaimer)
             .font(SharpitTypography.meta)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
             .padding(.leading, SharpitSpacing.sm)
             .overlay(alignment: .leading) {
                 Rectangle()
-                    .fill(SharpitColor.border)
+                    .fill(SharpitColor.divider)
                     .frame(width: 2)
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -231,7 +231,7 @@ struct ConsentCheckRow<Content: View>: View {
                 HStack(alignment: .top, spacing: SharpitSpacing.sm) {
                     Image(systemName: isOn ? "checkmark.square.fill" : "square")
                         .font(.system(size: 22, weight: .regular))
-                        .foregroundStyle(isOn ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.6))
+                        .foregroundStyle(isOn ? SharpitColor.primary : SharpitColor.slate.opacity(0.6))
                         .contentTransition(.symbolEffect(.replace))
                         .frame(width: 28)
                     label

@@ -111,7 +111,7 @@ struct GuidedWorkoutAccessory: View {
                 }
                 Image(systemName: "chevron.up")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .padding(.horizontal, SharpitSpacing.md)
             .contentShape(.rect)

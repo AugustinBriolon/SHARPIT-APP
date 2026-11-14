@@ -46,14 +46,14 @@ struct SanteHero: View {
         VStack(spacing: SharpitSpacing.md) {
             Text(caption)
                 .font(SharpitTypography.cardTitle)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             figure
             if mode == .locked {
                 unlock
                 if let line = SanteReadout.synthesis(synthesis) {
                     Text(line)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             } else if let pill {
                 Text(pill)
@@ -71,7 +71,7 @@ struct SanteHero: View {
             if mode != .norms {
                 Text(BiologicalAgeReadout.disclaimer)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -121,7 +121,7 @@ struct SanteHero: View {
                     .animation(SharpitMotion.reveal, value: hasAppeared)
                 Text("ans")
                     .font(SharpitTypography.gaugeScore)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .minimumScaleFactor(0.6)
             .lineLimit(1)
@@ -133,7 +133,7 @@ struct SanteHero: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("/ \(synthesis.normed)")
                     .font(SharpitTypography.gaugeScore)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .lineLimit(1)
         }
@@ -153,13 +153,13 @@ struct SanteHero: View {
     private var tone: Color {
         if let age = synthesis.biologicalAge {
             switch BiologicalAgeReadout.isYounger(age) {
-            case true?: return SharpitColor.highlight
+            case true?: return SharpitColor.statusGoodMark
             case false?: return SharpitColor.signalCaution
             case nil: return SharpitColor.foreground
             }
         }
         if mode == .locked { return SharpitColor.foreground }
-        return watchCount == 0 ? SharpitColor.highlight : SharpitColor.signalCaution
+        return watchCount == 0 ? SharpitColor.statusGoodMark : SharpitColor.signalCaution
     }
 
     /// The way to Pro, where the pill would say the gap.
@@ -170,10 +170,10 @@ struct SanteHero: View {
             Text("Débloquer avec SharpIt Pro")
         }
         .font(SharpitTypography.bodyEmphasis)
-        .foregroundStyle(SharpitColor.highlightForeground)
+        .foregroundStyle(SharpitColor.primaryForeground)
         .padding(.horizontal, SharpitSpacing.md)
         .padding(.vertical, SharpitSpacing.xs + 2)
-        .background(SharpitColor.highlight, in: Capsule())
+        .background(SharpitColor.primary, in: Capsule())
         if let pro {
             Button { isShowingPaywall = true } label: { label }
                 .buttonStyle(.sharpitPressable)
@@ -203,7 +203,7 @@ struct SanteHero: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Ce qui a bougé ce mois-ci")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .padding(.bottom, SharpitSpacing.xs)
             ForEach(Array(synthesis.highlights.enumerated()), id: \.element.key) { index, highlight in
                 if index > 0 { Divider() }
@@ -254,7 +254,7 @@ private struct SanteAgeRuler: View {
                         let isMajor = (low + index) % 5 == 0
                         let height: CGFloat = isMajor ? 22 : 12
                         let rect = CGRect(x: x - 0.5, y: 0, width: 1, height: height)
-                        context.fill(Path(rect), with: .color(SharpitColor.mutedForeground.opacity(isMajor ? 0.55 : 0.3)))
+                        context.fill(Path(rect), with: .color(SharpitColor.slate.opacity(isMajor ? 0.55 : 0.3)))
                     }
                     // The civil age: a thin full-height mark.
                     let civilX = position(civil)
@@ -271,7 +271,7 @@ private struct SanteAgeRuler: View {
                     .animation(SharpitMotion.reveal, value: isRevealed)
                 Text("âge civil")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize()
                     .offset(x: position(civil) - 28, y: 36)
             }
@@ -287,7 +287,7 @@ private struct SanteToneRuler: View {
         HStack(alignment: .top, spacing: 0) {
             ForEach(Array(tones.enumerated()), id: \.offset) { _, tone in
                 Capsule()
-                    .fill(tone == .neutral ? SharpitColor.mutedForeground.opacity(0.45) : tone.color)
+                    .fill(tone == .neutral ? SharpitColor.slate.opacity(0.45) : tone.color)
                     .frame(width: 3, height: tone == .watch ? 36 : 26)
                     .frame(maxWidth: .infinity)
             }
@@ -305,7 +305,7 @@ private struct SanteBlankRuler: View {
             for index in 0...count {
                 let isMajor = index % 5 == 0
                 let rect = CGRect(x: CGFloat(index) * step - 0.5, y: 0, width: 1, height: isMajor ? 22 : 12)
-                context.fill(Path(rect), with: .color(SharpitColor.mutedForeground.opacity(isMajor ? 0.5 : 0.28)))
+                context.fill(Path(rect), with: .color(SharpitColor.slate.opacity(isMajor ? 0.5 : 0.28)))
             }
         }
         .accessibilityHidden(true)

@@ -104,7 +104,7 @@ struct EffortSections: View {
             )
             Text("Strain du jour · 0–21")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             if !effort.strain.subtitle.isEmpty {
                 Text(effort.strain.subtitle)
                     .font(SharpitTypography.body)
@@ -115,12 +115,12 @@ struct EffortSections: View {
             if let band = effort.targetBand {
                 Text(Self.targetBandLine(band))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             if let line = EffortReadout.actionLine(effort) {
                 Label(line, systemImage: "clock.arrow.circlepath")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             CoachDiscussButton(title: String(localized: "Discuter de ma charge")) {
                 router.discussWithCoach(about: CoachDiscuss.describe(.today))
@@ -259,14 +259,14 @@ private struct EffortStrainPerformanceSection: View {
                     HStack {
                         Text(day.date)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         Spacer()
                         Text(day.strain.map { EffortReadout.strain($0) } ?? "—")
                             .font(SharpitTypography.instrument)
                             .monospacedDigit()
                         Text(statusLabel(day.status))
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .frame(width: 72, alignment: .trailing)
                     }
                 }
@@ -329,20 +329,20 @@ private struct EffortCompositionSection: View {
                             HStack(spacing: SharpitSpacing.xs) {
                                 Text(contributor.label)
                                     .font(SharpitTypography.bodyEmphasis)
-                                    .foregroundStyle(contributor.available ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                                    .foregroundStyle(contributor.available ? SharpitColor.foreground : SharpitColor.slate)
                                 if contributor.key == composition.dominantKey {
                                     SharpitInlineTag(String(localized: "Dominant"))
                                 }
                             }
                             Text(contributor.description)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer(minLength: SharpitSpacing.xs)
                         Text(contributor.load.map { "\(Int($0.rounded()))" } ?? "—")
                             .font(SharpitTypography.instrument)
-                            .foregroundStyle(contributor.available ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                            .foregroundStyle(contributor.available ? SharpitColor.foreground : SharpitColor.slate)
                             .monospacedDigit()
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -369,7 +369,7 @@ private struct EffortDimensionsSection: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 Text("Fatigue par axe (0 = très faible, 100 = maximale). Un score bas est positif lorsque tu es frais.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
                 ForEach(dimensions) { dimension in
                     DayDetailDimensionRow(
@@ -385,7 +385,7 @@ private struct EffortDimensionsSection: View {
                 if missingCount > 0 {
                     Text("\(missingCount) dimension\(missingCount > 1 ? "s" : "") sans signal fiable (données d'entraînement ou subjectives absentes).")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -422,7 +422,7 @@ private struct EffortPmcSection: View {
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 Chart {
                     RuleMark(y: .value(String(localized: "Zéro"), 0.0))
-                        .foregroundStyle(SharpitColor.analysisGrid)
+                        .foregroundStyle(SharpitColor.divider)
                     ForEach(dated) { point in
                         LineMark(x: .value(String(localized: "Jour"), point.date, unit: .day), y: .value("CTL", point.ctl), series: .value(String(localized: "Série"), "CTL"))
                             .foregroundStyle(SharpitColor.primary)
@@ -432,7 +432,7 @@ private struct EffortPmcSection: View {
                             .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 3]))
                             .interpolationMethod(.monotone)
                         LineMark(x: .value(String(localized: "Jour"), point.date, unit: .day), y: .value("TSB", point.tsb), series: .value(String(localized: "Série"), "TSB"))
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                             .interpolationMethod(.monotone)
                     }
@@ -444,7 +444,7 @@ private struct EffortPmcSection: View {
                 }
                 .chartYAxis {
                     AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { _ in
-                        AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
+                        AxisGridLine().foregroundStyle(SharpitColor.divider)
                         AxisValueLabel()
                     }
                 }
@@ -455,7 +455,7 @@ private struct EffortPmcSection: View {
                 HStack(spacing: SharpitSpacing.md) {
                     legendItem(String(localized: "Forme chronique"), tone: SharpitColor.primary, dash: [])
                     legendItem(String(localized: "Fatigue aiguë"), tone: SharpitColor.signalVo2, dash: [3, 2])
-                    legendItem(String(localized: "Forme nette"), tone: SharpitColor.mutedForeground, dash: [2, 2])
+                    legendItem(String(localized: "Forme nette"), tone: SharpitColor.slate, dash: [2, 2])
                     Spacer(minLength: 0)
                 }
                 .accessibilityHidden(true)
@@ -472,7 +472,7 @@ private struct EffortPmcSection: View {
                 .frame(width: 14, height: 2)
             Text(label)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
@@ -495,12 +495,12 @@ private struct EffortWeeklyTssSection: View {
                 }
                 if average > 0 {
                     RuleMark(y: .value(String(localized: "Moyenne"), average))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                         .annotation(position: .top, alignment: .leading) {
                             Text("moy. \(Int(average.rounded()))")
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                 }
             }
@@ -512,7 +512,7 @@ private struct EffortWeeklyTssSection: View {
             }
             .chartYAxis {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { _ in
-                    AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
+                    AxisGridLine().foregroundStyle(SharpitColor.divider)
                     AxisValueLabel()
                 }
             }

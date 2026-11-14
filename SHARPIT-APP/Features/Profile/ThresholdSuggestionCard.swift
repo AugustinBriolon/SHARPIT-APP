@@ -15,7 +15,7 @@ struct ThresholdSuggestionCard: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(ThresholdSuggestionReadout.window(store.preview?.estimates.windowDays))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
 
             VStack(spacing: SharpitSpacing.xs) {
@@ -56,23 +56,23 @@ private struct ThresholdChangeRow: View {
                 HStack(spacing: 6) {
                     Text(change.label)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     Text(ThresholdSuggestionReadout.directionLabel(change.direction))
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
-                        .background(SharpitColor.analysisGrid.opacity(0.45), in: Capsule())
+                        .background(SharpitColor.divider.opacity(0.45), in: Capsule())
                 }
                 HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                     Text(change.from)
                         .font(SharpitTypography.instrument)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     Image(systemName: "arrow.right")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .accessibilityHidden(true)
                     Text(change.to)
                         .font(SharpitTypography.instrument.weight(.semibold))
@@ -85,7 +85,7 @@ private struct ThresholdChangeRow: View {
         }
         .padding(.horizontal, SharpitSpacing.sm)
         .padding(.vertical, SharpitSpacing.xs)
-        .sharpitConcentricBackground(SharpitColor.analysisGrid.opacity(0.18), minimum: SharpitRadius.small)
+        .sharpitConcentricBackground(SharpitColor.divider.opacity(0.18), minimum: SharpitRadius.small)
         .opacity(isAccepted ? 1 : 0.55)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(change.label), \(change.from) vers \(change.to)")

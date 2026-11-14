@@ -93,7 +93,7 @@ struct ActivityGoalPickerSheet: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(GoalFormat.raceLine(goal))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: SharpitSpacing.xs)
             if goal.id == currentGoalId {

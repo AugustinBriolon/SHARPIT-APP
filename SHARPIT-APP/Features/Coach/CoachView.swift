@@ -67,10 +67,8 @@ struct CoachView: View {
                 // chrome and keeps the tab bar below it instead of over it.
                 .safeAreaInset(edge: .bottom, spacing: 0) { composer }
                 .onDisappear { dictation.stop() }
-                // Clinique (`docs/adr/0034`): the thread reads on one sheet under the coach's wash;
-                // the cards a turn carries take a hairline until they are redrawn.
+                // The thread reads on one sheet under the coach's wash.
                 .cliniqueSheet(wash: .coach)
-                .cliniqueScreen()
                 #if DEBUG
                 .task { await askDemoQuestions() }
                 #endif

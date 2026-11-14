@@ -17,7 +17,7 @@ struct ProPerkGroup: View {
                         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
                             Image(systemName: highlighted ? "checkmark.seal.fill" : "circle.dashed")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(highlighted ? SharpitColor.primary : SharpitColor.mutedForeground)
+                                .foregroundStyle(highlighted ? SharpitColor.primary : SharpitColor.slate)
                                 .frame(width: 22)
                             VStack(alignment: .leading, spacing: 3) {
                                 HStack(spacing: SharpitSpacing.xs) {
@@ -30,7 +30,7 @@ struct ProPerkGroup: View {
                                 }
                                 Text(perk.description)
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -47,11 +47,11 @@ struct ProPerkGroup: View {
         Text(badge.uppercased())
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
-            .foregroundStyle(highlighted ? SharpitColor.highlightForeground : SharpitColor.mutedForeground)
+            .foregroundStyle(highlighted ? SharpitColor.primaryForeground : SharpitColor.slate)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(
-                highlighted ? SharpitColor.highlight : SharpitColor.analysisGrid.opacity(0.6),
+                highlighted ? SharpitColor.primary : SharpitColor.divider.opacity(0.6),
                 in: Capsule()
             )
     }

@@ -66,7 +66,7 @@ struct OnboardingPlaceField: View {
             SharpitFieldLabel(title)
             HStack(spacing: SharpitSpacing.xs) {
                 Image(systemName: "mappin.and.ellipse")
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 TextField("Cherche une ville", text: $text)
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
@@ -91,7 +91,7 @@ struct OnboardingPlaceField: View {
                                 if !place.subtitle.isEmpty {
                                     Text(place.subtitle)
                                         .font(SharpitTypography.meta)
-                                        .foregroundStyle(SharpitColor.mutedForeground)
+                                        .foregroundStyle(SharpitColor.slate)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)

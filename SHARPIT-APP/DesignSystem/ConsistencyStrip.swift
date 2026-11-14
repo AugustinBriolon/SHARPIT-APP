@@ -61,7 +61,7 @@ struct ConsistencyStrip: View {
             HStack(spacing: 6) {
                 Image(systemName: consistency.thisWeekSessionCount > 0 ? "flame.fill" : "moon.zzz")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(consistency.thisWeekSessionCount > 0 ? SharpitColor.primary : SharpitColor.mutedForeground)
+                    .foregroundStyle(consistency.thisWeekSessionCount > 0 ? SharpitColor.primary : SharpitColor.slate)
 
                 if consistency.thisWeekSessionCount > 0 {
                     Text("\(consistency.thisWeekSessionCount)")
@@ -75,12 +75,12 @@ struct ConsistencyStrip: View {
                         Text(noun)
                     }
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
                 } else {
                     Text("Aucune séance cette semaine")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
 
@@ -103,7 +103,7 @@ struct ConsistencyStrip: View {
         .padding(.horizontal, SharpitSpacing.sm)
         .padding(.vertical, SharpitSpacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitSpacing.chipRadius)
+        .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitSpacing.chipRadius)
     }
 
     private var streakText: String {
@@ -155,7 +155,7 @@ private struct ConsistencyDayMark: View {
     }
 
     private var weekdayColor: Color {
-        day.isToday ? SharpitColor.foreground : SharpitColor.mutedForeground
+        day.isToday ? SharpitColor.foreground : SharpitColor.slate
     }
 
     /// A trained day is a lime disc, today is ringed in ink, the rest sit on the chip tone.
@@ -163,11 +163,11 @@ private struct ConsistencyDayMark: View {
     private var dayCircle: some View {
         ZStack {
             if day.hasActivity {
-                Circle().fill(SharpitColor.highlight)
+                Circle().fill(SharpitColor.primary)
             } else if day.isFuture {
-                Circle().fill(SharpitColor.track.opacity(0.5))
+                Circle().fill(SharpitColor.divider.opacity(0.5))
             } else {
-                Circle().fill(SharpitColor.chipSurface)
+                Circle().fill(SharpitColor.tile)
             }
             if day.isToday {
                 Circle()
@@ -185,13 +185,13 @@ private struct ConsistencyDayMark: View {
 
     private var numberColor: Color {
         if day.hasActivity {
-            return SharpitColor.highlightForeground
+            return SharpitColor.primaryForeground
         }
         if day.isToday {
             return SharpitColor.foreground
         }
         if day.isFuture {
-            return SharpitColor.mutedForeground.opacity(0.4)
+            return SharpitColor.slate.opacity(0.4)
         }
         return SharpitColor.foreground.opacity(0.8)
     }
@@ -312,5 +312,5 @@ enum ActivityStreakCalculator {
         onOpenPlan: {}
     )
     .padding()
-    .background(SharpitColor.background)
+    .background(SharpitColor.card)
 }

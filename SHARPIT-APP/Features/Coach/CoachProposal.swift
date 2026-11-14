@@ -428,7 +428,7 @@ struct CoachProposalCard: View {
     private func answerButton(_ title: String, prominent: Bool, action: @escaping () -> Void) -> some View {
         let destructive = proposal.isDelete && confirmingDelete && prominent
         let fill = destructive ? SharpitColor.statusAlertForeground : (prominent ? SharpitColor.foreground : SharpitColor.tile)
-        let text = prominent ? SharpitColor.background : SharpitColor.foreground
+        let text = prominent ? SharpitColor.card : SharpitColor.foreground
         return Button(action: action) {
             Text(title)
                 .font(SharpitTypography.bodyEmphasis)

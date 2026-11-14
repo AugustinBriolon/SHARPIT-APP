@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// How Résumé's verdict reads in Clinique terms (`docs/adr/0034`).
+/// How Résumé's verdict reads in Clinique terms (`docs/adr/0035`).
 enum VerdictReadout {
     /// The verdict's status, from the tone its state code carries.
     static func status(for plate: InkPlateModel) -> CliniqueStatus {

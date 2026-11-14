@@ -38,7 +38,7 @@ struct SharpitSegmentedControl<Value: Hashable>: View {
                             .minimumScaleFactor(0.85)
                     }
                     .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
-                    .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
+                    .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.slate)
                     .frame(maxWidth: .infinity, minHeight: 38)
                     .background {
                         if isSelected {
@@ -55,7 +55,7 @@ struct SharpitSegmentedControl<Value: Hashable>: View {
         }
         .padding(4)
         .sharpitContainerCorner(SharpitRadius.control)
-        .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitRadius.control)
+        .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.control)
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.5 : 1)
     }

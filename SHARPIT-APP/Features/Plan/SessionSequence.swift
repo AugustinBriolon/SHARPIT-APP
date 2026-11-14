@@ -62,7 +62,7 @@ struct SessionSequenceBar: View {
                 HStack(spacing: 3) {
                     ForEach(sequence.parts) { part in
                         Capsule()
-                            .fill(part.kind == .session ? SharpitColor.foreground : SharpitColor.track)
+                            .fill(part.kind == .session ? SharpitColor.foreground : SharpitColor.divider)
                             .frame(width: width(of: part, in: proxy.size.width))
                     }
                 }
@@ -74,7 +74,7 @@ struct SessionSequenceBar: View {
                     Text("\(part.kind.label) \(part.minutes) min")
                         .font(SharpitTypography.meta)
                         .monospacedDigit()
-                        .foregroundStyle(part.kind == .session ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                        .foregroundStyle(part.kind == .session ? SharpitColor.foreground : SharpitColor.slate)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }

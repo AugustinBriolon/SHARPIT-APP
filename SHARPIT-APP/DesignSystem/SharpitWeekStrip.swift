@@ -77,21 +77,19 @@ struct SharpitStripDay<Mark: View>: View {
     let day: Date
     let emphasis: Emphasis
     @ViewBuilder let mark: Mark
-    /// On a Clinique screen the filled day is ink: no control takes a hue (`docs/adr/0034`).
-    @Environment(\.isCliniqueScreen) private var isClinique
 
     var body: some View {
         VStack(spacing: SharpitSpacing.xxs) {
             Text(day.sharpitFormatted(.dateTime.weekday(.narrow)))
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
 
             Text(day.sharpitFormatted(.dateTime.day()))
                 .font(SharpitTypography.instrument)
                 .foregroundStyle(figureColor)
                 .frame(width: 34, height: 34)
-                .background(emphasis == .filled ? (isClinique ? SharpitColor.primary : SharpitColor.highlight) : Color.clear, in: Circle())
+                .background(emphasis == .filled ? SharpitColor.primary : Color.clear, in: Circle())
                 .animation(SharpitMotion.selection, value: emphasis == .filled)
 
             mark
@@ -103,7 +101,7 @@ struct SharpitStripDay<Mark: View>: View {
 
     private var figureColor: Color {
         switch emphasis {
-        case .filled: isClinique ? SharpitColor.primaryForeground : SharpitColor.highlightForeground
+        case .filled: SharpitColor.primaryForeground
         case .accent: SharpitColor.primary
         case .plain, .unavailable: SharpitColor.foreground
         }
@@ -205,7 +203,7 @@ struct SharpitCalendarSheet: View {
                                     SharpitCalendarMarkSwatch(mark: entry.0)
                                     Text(entry.1)
                                         .font(SharpitTypography.meta)
-                                        .foregroundStyle(SharpitColor.mutedForeground)
+                                        .foregroundStyle(SharpitColor.slate)
                                 }
                             }
                         }
@@ -245,7 +243,7 @@ private struct SharpitCalendarMarkSwatch: View {
             switch mark {
             case .filled: Circle().fill(SharpitColor.primary)
             case .ring: Circle().strokeBorder(SharpitColor.primary, lineWidth: 1.25)
-            case .muted: Circle().fill(SharpitColor.mutedForeground)
+            case .muted: Circle().fill(SharpitColor.slate)
             }
         }
         .frame(width: 7, height: 7)
@@ -326,7 +324,7 @@ private struct SharpitCalendarView: UIViewRepresentable {
             case .muted:
                 // Shape as well as colour, as on the strip: a hollow ring reads as "nothing" next
                 // to a filled dot even at a glance, where two dots only differ by their grey.
-                return .image(Self.ring, color: UIColor(SharpitColor.mutedForeground), size: .small)
+                return .image(Self.ring, color: UIColor(SharpitColor.slate), size: .small)
             case nil:
                 return nil
             }
@@ -354,7 +352,7 @@ struct SharpitDataDayMark: View {
         case true?:
             Circle().fill(SharpitColor.primary)
         case false?:
-            Circle().strokeBorder(SharpitColor.mutedForeground.opacity(0.6), lineWidth: 1.25)
+            Circle().strokeBorder(SharpitColor.slate.opacity(0.6), lineWidth: 1.25)
         case nil:
             Color.clear
         }

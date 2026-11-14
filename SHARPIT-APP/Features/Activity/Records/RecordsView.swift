@@ -74,7 +74,7 @@ struct RecordsView: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             Text(RecordsReadout.summary(records))
                 .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
 
             SharpitSegmentedControl(
                 selection: $sport,
@@ -141,7 +141,7 @@ private struct RecordCategoryCard: View {
             } else {
                 Text("—")
                     .font(SharpitTypography.data)
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.5))
                     .accessibilityLabel("Aucun record")
             }
         }
@@ -174,13 +174,13 @@ private struct RecordHero: View {
                 SharpitHeroFigure(value: figure.value, unit: figure.unit)
                 Text(RecordsReadout.meta(entry))
                     .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body, digits: true))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: SharpitSpacing.xs)
             if entry.activityId != nil {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
                     .accessibilityHidden(true)
             }
         }
@@ -202,7 +202,7 @@ private struct RecordRow: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(RecordsReadout.meta(entry))
                     .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -265,7 +265,7 @@ private struct RunBestsCard: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(RecordsReadout.meta(entry))
                     .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.trailing)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -305,7 +305,7 @@ private struct PowerCurveCard: View {
             if let selected {
                 Text(scrubCaption(selected))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
             }
         }
@@ -332,7 +332,7 @@ private struct PowerCurveCard: View {
             }
             if let selected {
                 RuleMark(x: .value(String(localized: "Durée"), selected.label))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.5))
                     .lineStyle(StrokeStyle(lineWidth: 1))
                 PointMark(x: .value(String(localized: "Durée"), selected.label), y: .value(String(localized: "Puissance"), selected.watts))
                     .symbol { SharpitChartPoint() }
@@ -344,7 +344,7 @@ private struct PowerCurveCard: View {
         .chartXSelection(value: $selectedLabel)
         .chartYAxis {
             AxisMarks(position: .leading) { value in
-                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.analysisBorder)
+                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.divider)
                 AxisValueLabel {
                     if let watts = value.as(Double.self) {
                         Text(RecordsReadout.watts(watts))
@@ -354,7 +354,7 @@ private struct PowerCurveCard: View {
         }
         .chartXAxis {
             AxisMarks { _ in
-                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.analysisBorder)
+                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.divider)
                 AxisValueLabel()
             }
         }
@@ -377,17 +377,17 @@ private struct RecordsLoading: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             RoundedRectangle(cornerRadius: 8)
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
                 .frame(width: 240, height: 28)
             RoundedRectangle(cornerRadius: 8)
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
                 .frame(height: 18)
             Capsule()
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
                 .frame(height: 40)
             ForEach(0..<3, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
                     .frame(height: 150)
             }
         }

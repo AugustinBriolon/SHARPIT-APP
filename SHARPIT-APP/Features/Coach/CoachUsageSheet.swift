@@ -60,7 +60,7 @@ struct CoachUsageSheet: View {
     private func row(_ label: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(label)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Spacer(minLength: SharpitSpacing.xs)
             Text(value)
                 .fontWeight(.semibold)

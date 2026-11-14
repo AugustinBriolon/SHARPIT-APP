@@ -61,7 +61,7 @@ struct SharpitRowFigure: View {
             if let unit {
                 Text(unit)
                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .lineLimit(1)

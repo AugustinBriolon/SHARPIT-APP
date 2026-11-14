@@ -110,7 +110,7 @@ struct WeeklyReviewView: View {
                 ProgressView().controlSize(.small)
                 Text("Le coach relit ta semaine…")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         if let writeError = store.writeError {
@@ -136,7 +136,7 @@ struct WeeklyReviewView: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("Le coach relit ta semaine (volume, charge, sommeil, récupération) et prépare la suivante.")
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
                     Task { await store.write() }
@@ -227,7 +227,7 @@ private struct WeeklyReviewContent: View {
                     .foregroundStyle(SharpitColor.foreground)
                     .frame(maxWidth: .infinity)
                     .frame(height: SharpitTokens.controlHeight)
-                    .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitRadius.control)
+                    .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.control)
                 }
                 .buttonStyle(.sharpitPressable)
             }
@@ -248,9 +248,9 @@ private struct WeeklyReviewHero: View {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: "calendar")
                     .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .foregroundStyle(SharpitColor.primaryForeground)
                     .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                    .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
+                    .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitRadius.tile)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(weekLabel)
@@ -362,7 +362,7 @@ private struct ReviewHighlightRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(highlight.kind == .watch ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
+                    .foregroundStyle(highlight.kind == .watch ? SharpitColor.signalCaution : SharpitColor.slate)
                 Text(highlight.text)
                     .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)
@@ -390,9 +390,9 @@ private struct ReviewHighlightRow: View {
         case .win:
             Image(systemName: "checkmark")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(SharpitColor.highlightForeground)
+                .foregroundStyle(SharpitColor.primaryForeground)
                 .frame(width: 26, height: 26)
-                .sharpitConcentricBackground(SharpitColor.highlight, minimum: 8)
+                .sharpitConcentricBackground(SharpitColor.primary, minimum: 8)
         case .watch:
             Image(systemName: "exclamationmark")
                 .font(.system(size: 13, weight: .semibold))
@@ -402,9 +402,9 @@ private struct ReviewHighlightRow: View {
         case .note:
             Image(systemName: "circle.fill")
                 .font(.system(size: 6))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .frame(width: 26, height: 26)
-                .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: 8)
+                .sharpitConcentricBackground(SharpitColor.tile, minimum: 8)
         }
     }
 }
@@ -472,7 +472,7 @@ private struct ReviewMetricCard<Detail: View>: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             Text(name)
                 .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(value)
                     .font(SharpitTypography.gaugeScore)
@@ -483,7 +483,7 @@ private struct ReviewMetricCard<Detail: View>: View {
                 if let unit {
                     Text(unit)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
@@ -513,12 +513,12 @@ private struct ReviewDayBars: View {
         Chart {
             ForEach(Array(values.prefix(7).enumerated()), id: \.offset) { index, value in
                 BarMark(x: .value(String(localized: "Jour"), Self.days[index]), y: .value(String(localized: "Valeur"), value ?? 0), width: .ratio(0.55))
-                    .foregroundStyle(value == nil ? SharpitColor.track : value == peak ? SharpitColor.highlight : SharpitColor.foreground)
+                    .foregroundStyle(value == nil ? SharpitColor.divider : value == peak ? SharpitColor.statusGoodForeground : SharpitColor.foreground)
                     .cornerRadius(3)
             }
             if let average {
                 RuleMark(y: .value(String(localized: "Moyenne"), average))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }
         }
@@ -557,7 +557,7 @@ private struct ReviewSportShares: View {
                                     .foregroundStyle(SharpitColor.foreground)
                                 Text(share.count == 1 ? String(localized: "1 séance") : String(localized: "\(share.count) séances"))
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                                 Spacer(minLength: SharpitSpacing.xs)
                                 SharpitRowFigure(value: "\(Int(share.durationMin.rounded()))", unit: "min")
                             }

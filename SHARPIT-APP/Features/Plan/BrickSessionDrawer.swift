@@ -125,7 +125,7 @@ struct BrickSessionDrawer: View {
                 if let date = current.date {
                     Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)))
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             BrickChainGlyphs(sports: current.legs.map(\.sport))
@@ -136,7 +136,7 @@ struct BrickSessionDrawer: View {
             if let total = current.totalDurationMin {
                 Text("\(total) min enchaînées, sans pause entre les sports")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
     }
@@ -172,7 +172,7 @@ struct BrickChainGlyphs: View {
                 if index > 0 {
                     Image(systemName: "arrow.right")
                         .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 SharpitSportBadge(type: V1ActivityType(sportLabel: sport))
             }
@@ -219,7 +219,7 @@ private struct BrickLegPanel: View {
                     }
                     Image(systemName: "chevron.right")
                         .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 .contentShape(.rect)
             }
@@ -234,7 +234,7 @@ private struct BrickLegPanel: View {
                     ProgressView()
                     Text("Chargement du déroulé…")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
         }

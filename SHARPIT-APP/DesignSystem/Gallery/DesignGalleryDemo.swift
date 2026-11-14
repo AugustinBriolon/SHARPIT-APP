@@ -38,7 +38,7 @@ struct DesignGalleryHost: View {
             SharpitHeroFigure(value: "102,5", unit: "kg", delta: String(localized: "+5 kg"))
             Text("Ton précédent record était 97,5 kg")
                 .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             SharpitProgressBar(label: String(localized: "Prochain palier"), value: "102,5 / 110 kg", fraction: 0.9)
         }
     }
@@ -70,13 +70,13 @@ struct DesignGalleryHost: View {
                         .tracking(-2)
                     Text("sur 100")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     SharpitPill(String(localized: "↑ 8 vs moy."), style: .limeSoft)
                 }
                 .offset(y: 10)
             }
             .padding(.horizontal, SharpitSpacing.xl)
-            Divider().overlay(SharpitColor.border)
+            Divider().overlay(SharpitColor.divider)
             SharpitEyebrow(String(localized: "Ce qui l'a façonné"))
             VStack(spacing: SharpitSpacing.md) {
                 breakdown(String(localized: "Durée"), 94)
@@ -106,7 +106,7 @@ struct DesignGalleryHost: View {
                 Text("Repos").font(SharpitTypography.cardTitle)
                 Text("Développé couché · série 3 sur 4")
                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             ZStack {
                 SharpitScoreRing(fraction: 0.8, lineWidth: 18)
@@ -115,7 +115,7 @@ struct DesignGalleryHost: View {
                         .font(SharpitTypography.system(size: 56, weight: .semibold, relativeTo: .largeTitle, digits: true))
                     Text("avant la prochaine série")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             .frame(width: 210, height: 210)
@@ -135,7 +135,7 @@ struct DesignGalleryHost: View {
                     Text("Développé couché").font(SharpitTypography.cardTitle)
                     Text("Progression")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 Spacer()
                 SharpitSegmentedControl(
@@ -145,7 +145,7 @@ struct DesignGalleryHost: View {
                 .frame(width: 190)
             }
             SharpitHeroFigure(value: "102,5", unit: "kg")
-            Divider().overlay(SharpitColor.border)
+            Divider().overlay(SharpitColor.divider)
             HStack {
                 SharpitStatTile(caption: String(localized: "Meilleure série"), value: "102,5×6", isFlat: true)
                 SharpitStatTile(caption: String(localized: "Volume"), value: "3 590", unit: "kg", isFlat: true)
@@ -160,7 +160,7 @@ struct DesignGalleryHost: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Volume")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     SharpitRowFigure(value: "3 590", unit: "kg")
                 }
             }
@@ -187,7 +187,7 @@ struct DesignGalleryHost: View {
                 Text("Push day").font(SharpitTypography.cardTitle)
                 Text("Pectoraux · Épaules · Triceps")
                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             SharpitInsetGroup {
                 SharpitInsetRow(title: String(localized: "Développé couché")) {

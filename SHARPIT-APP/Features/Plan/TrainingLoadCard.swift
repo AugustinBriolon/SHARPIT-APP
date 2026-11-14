@@ -36,7 +36,7 @@ struct TrainingLoadCard: View {
             weeks
             Text("Forme nette habituelle entre −20 et +10. Six semaines de courbe, huit de charge.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -59,7 +59,7 @@ struct TrainingLoadCard: View {
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Text(value)
@@ -69,7 +69,7 @@ struct TrainingLoadCard: View {
                 .monospacedDigit()
             Text(caption)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -82,14 +82,14 @@ struct TrainingLoadCard: View {
                 yStart: .value(String(localized: "Bas"), TrainingLoadReadout.formBand.lowerBound),
                 yEnd: .value(String(localized: "Haut"), TrainingLoadReadout.formBand.upperBound)
             )
-            .foregroundStyle(SharpitColor.analysisSurfaceAlt)
+            .foregroundStyle(SharpitColor.tile)
             ForEach(load.days) { day in
                 LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("CTL", day.ctl), series: .value(String(localized: "Série"), "CTL"))
                     .foregroundStyle(SharpitColor.primary)
                 LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("ATL", day.atl), series: .value(String(localized: "Série"), "ATL"))
                     .foregroundStyle(SharpitColor.signalVo2)
                 LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("TSB", day.tsb), series: .value(String(localized: "Série"), "TSB"))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }
         }
@@ -118,7 +118,7 @@ struct TrainingLoadCard: View {
         HStack(spacing: SharpitSpacing.md) {
             legendItem("CTL", tone: SharpitColor.primary, dashed: false)
             legendItem("ATL", tone: SharpitColor.signalVo2, dashed: false)
-            legendItem("TSB", tone: SharpitColor.mutedForeground, dashed: true)
+            legendItem("TSB", tone: SharpitColor.slate, dashed: true)
             Spacer(minLength: 0)
         }
         .accessibilityHidden(true)
@@ -131,7 +131,7 @@ struct TrainingLoadCard: View {
                 .frame(width: 14, height: 2)
             Text(label)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 
@@ -146,7 +146,7 @@ struct TrainingLoadCard: View {
                 if let current = load.weeks.last {
                     Text("\(Int(current.tss.rounded())) cette semaine")
                         .font(SharpitTypography.meta.monospacedDigit())
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             HStack(alignment: .bottom, spacing: 6) {
@@ -158,7 +158,7 @@ struct TrainingLoadCard: View {
                             .frame(height: 44, alignment: .bottom)
                         Text("\(Int(week.tss.rounded()))")
                             .font(SharpitTypography.meta.monospacedDigit())
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }

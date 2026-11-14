@@ -39,12 +39,12 @@ struct CaffeineInputSheet: View {
                                 .animation(SharpitMotion.selection, value: currentMg)
                             Text("mg")
                                 .font(SharpitTypography.verdict)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
 
                         Text("Caféine consommée sur la journée")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     .padding(.top, SharpitSpacing.xs)
 
@@ -64,7 +64,7 @@ struct CaffeineInputSheet: View {
 
                         Text("± 20 mg")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .frame(minWidth: 70)
 
                         Button {
@@ -107,7 +107,7 @@ struct CaffeineInputSheet: View {
                                                 .foregroundStyle(SharpitColor.foreground)
                                             Text("+\(preset.delta) mg")
                                                 .font(SharpitTypography.meta)
-                                                .foregroundStyle(SharpitColor.mutedForeground)
+                                                .foregroundStyle(SharpitColor.slate)
                                         }
                                         Spacer(minLength: 0)
                                     }

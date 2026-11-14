@@ -41,7 +41,8 @@ struct RecoveryView: View {
             unavailableTitle: String(localized: "Récupération indisponible"),
             store: store,
             content: { recovery in RecoverySections(recovery: recovery) },
-            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload)
+            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload),
+            wash: .good
         )
     }
 }
@@ -71,7 +72,7 @@ struct RecoverySections: View {
                 SharpitConfidenceLine(pct: recovery.confidencePct)
                 Text("Données \(recovery.completenessLabel.lowercased())")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .frame(maxWidth: .infinity)
         }
@@ -87,7 +88,7 @@ struct RecoverySections: View {
                 Image(systemName: "figure.run")
                     .foregroundStyle(SharpitColor.primary)
                 Text("Intensité conseillée")
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Text(recovery.intensity)
                     .foregroundStyle(SharpitColor.foreground)
                     .fontWeight(.semibold)
@@ -97,7 +98,7 @@ struct RecoverySections: View {
             if recovery.isCalibrating {
                 Label("Calibration en cours. Ta norme se construit encore.", systemImage: "hourglass")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
 
             // The score is read first; the way to ask about it comes once it has been read.
@@ -147,7 +148,7 @@ private struct RecoveryLimitSection: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Facteur limitant")
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                             Text(limiter)
                                 .font(SharpitTypography.cardTitle)
                                 .foregroundStyle(SharpitColor.foreground)
@@ -164,7 +165,7 @@ private struct RecoveryLimitSection: View {
                 if let horizon = RecoveryReadout.recoveryHorizon(recovery.estimatedRecoveryDays) {
                     Label(horizon, systemImage: "clock.arrow.circlepath")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             .padding(SharpitSpacing.md)
@@ -200,7 +201,7 @@ private struct DimensionBar: View {
             HStack {
                 Text(RecoveryReadout.dimensionLabel(dimension.key))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer()
                 Text(dimension.score.map { "\(Int($0.rounded()))" } ?? "—")
                     .font(SharpitTypography.instrument)
@@ -208,7 +209,7 @@ private struct DimensionBar: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(SharpitColor.analysisGrid)
+                    Capsule().fill(SharpitColor.divider)
                     Capsule()
                         .fill(RecoveryReadout.scoreTone(dimension.score))
                         .frame(width: geo.size.width * fraction)
@@ -277,7 +278,7 @@ private struct PillarRow: View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             Text(RecoveryReadout.pillarCaption(pillar.key))
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Spacer(minLength: SharpitSpacing.sm)
             Text(pillar.label)
                 .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))

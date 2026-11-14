@@ -22,7 +22,7 @@ struct DrivingInputSheet: View {
                         .animation(SharpitMotion.selection, value: minutes)
                     Text("Temps passé à conduire aujourd'hui")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 .padding(.top, SharpitSpacing.xs)
 
@@ -31,7 +31,7 @@ struct DrivingInputSheet: View {
                         .disabled(minutes <= 0)
                     Text("± 15 min")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .frame(minWidth: 70)
                     stepButton("plus", delta: 15, label: String(localized: "Ajouter 15 minutes"))
                 }
@@ -56,7 +56,7 @@ struct DrivingInputSheet: View {
                 if minutes > 0 {
                     Button("Pas de conduite") { store.setDriving(0) }
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 Spacer(minLength: 0)
             }

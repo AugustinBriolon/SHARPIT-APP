@@ -12,7 +12,7 @@ struct SharpitFieldLabel: View {
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
             .textCase(.uppercase)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
     }
 }
 
@@ -27,7 +27,7 @@ private struct SharpitFieldWell: ViewModifier {
             .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
@@ -122,7 +122,7 @@ struct SharpitSegmentedChoice<Option: Hashable>: View {
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: typeSize.isAccessibilitySize ? 25 : 100, style: .continuous)
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
         )
     }
 }
@@ -159,16 +159,16 @@ struct SharpitRulerPicker: View {
                     Text(String(value ?? resting))
                         .font(SharpitTypography.heroScore)
                         .tracking(SharpitTypography.heroScoreTracking)
-                        .foregroundStyle(value == nil ? SharpitColor.mutedForeground.opacity(0.45) : SharpitColor.foreground)
+                        .foregroundStyle(value == nil ? SharpitColor.slate.opacity(0.45) : SharpitColor.foreground)
                         .contentTransition(.numericText(value: Double(value ?? resting)))
                         .animation(SharpitMotion.selection, value: value)
                     Text(unit)
                         .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 Text("Fais glisser la règle")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .opacity(value == nil ? 1 : 0)
             }
             .frame(maxWidth: .infinity)
@@ -239,7 +239,7 @@ struct SharpitRulerPicker: View {
         let isHalf = !isMajor && mark % (majorEvery / 2) == 0
         return VStack(spacing: 0) {
             Capsule()
-                .fill(isMajor ? SharpitColor.foreground.opacity(0.55) : SharpitColor.mutedForeground.opacity(isHalf ? 0.45 : 0.28))
+                .fill(isMajor ? SharpitColor.foreground.opacity(0.55) : SharpitColor.slate.opacity(isHalf ? 0.45 : 0.28))
                 .frame(width: isMajor ? 2 : 1.5, height: isMajor ? 30 : (isHalf ? 22 : 14))
             Spacer(minLength: 0)
         }
@@ -248,7 +248,7 @@ struct SharpitRulerPicker: View {
             if isMajor {
                 Text("\(mark)")
                     .font(SharpitTypography.meta.monospacedDigit())
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize()
             }
         }
@@ -276,11 +276,11 @@ struct SharpitSelectField<Value: Hashable>: View {
                 HStack {
                     Text(selectedLabel ?? placeholder)
                         .font(SharpitTypography.body)
-                        .foregroundStyle(selectedLabel == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                        .foregroundStyle(selectedLabel == nil ? SharpitColor.slate : SharpitColor.foreground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Image(systemName: "chevron.up.chevron.down")
                         .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 .contentShape(.rect)
                 .sharpitFieldWell()
@@ -316,16 +316,16 @@ struct SharpitDateField: View {
                 HStack {
                     Text(date.map { $0.sharpitFormatted(.dateTime.day().month(.wide).year()) } ?? String(localized: "Choisir"))
                         .font(SharpitTypography.body)
-                        .foregroundStyle(date == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                        .foregroundStyle(date == nil ? SharpitColor.slate : SharpitColor.foreground)
                     Spacer()
                     if let date, let caption = caption(date) {
                         Text(caption)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     Image(systemName: "chevron.up.chevron.down")
                         .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 .contentShape(.rect)
                 .sharpitFieldWell(isActive: isOpen)

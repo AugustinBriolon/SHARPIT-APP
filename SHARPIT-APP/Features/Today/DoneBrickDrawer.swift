@@ -176,7 +176,7 @@ struct DoneBrickDrawer: View {
             if let summary = brick.summary {
                 Text(summary)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
     }
@@ -233,18 +233,18 @@ private struct DoneBrickLegPanel: View {
                 Spacer(minLength: 0)
                 Text(DoneBrickFormat.legMeta(leg))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(leg.isDone ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                    .foregroundStyle(leg.isDone ? SharpitColor.foreground : SharpitColor.slate)
                 if opens {
                     Image(systemName: "chevron.right")
                         .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             if let feeling = leg.actual?.feeling?.trimmingCharacters(in: .whitespacesAndNewlines), !feeling.isEmpty {
                 Text("« \(feeling) »")
                     .font(SharpitTypography.meta)
                     .italic()
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.leading)
             }
         }

@@ -29,10 +29,10 @@ struct FeatureShowcase: View {
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
             .textCase(.uppercase)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, 2)
-            .background(SharpitColor.analysisSurfaceAlt, in: Capsule())
+            .background(SharpitColor.tile, in: Capsule())
             .frame(maxWidth: .infinity, alignment: .trailing)
     }
 

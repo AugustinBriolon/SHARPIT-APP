@@ -71,7 +71,7 @@ struct ActivityStrengthSection: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("Volume")
                             .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         volumeFigure(totalVolume)
                     }
                 }
@@ -107,7 +107,7 @@ struct ActivityStrengthSection: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Text(exercise.lines.joined(separator: " · "))
                     .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
                 // At the accessibility sizes the volume goes under the sets, with the rest of the row.
                 if dynamicTypeSize.isAccessibilitySize {

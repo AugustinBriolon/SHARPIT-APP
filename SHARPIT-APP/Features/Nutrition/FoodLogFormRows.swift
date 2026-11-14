@@ -25,7 +25,7 @@ struct FoodPortionPreview: View {
                     .contentTransition(.numericText(value: nutrients.kcal))
                 Text("kcal")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: SharpitSpacing.xs)
             macro(.protein, nutrients.protein)
@@ -67,7 +67,7 @@ struct FoodGramsRows: View {
                 .focused(isFocused)
                 .accessibilityLabel("Quantité en grammes")
             Text("g")
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         if !presets.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -82,7 +82,7 @@ struct FoodGramsRows: View {
                                 .padding(.horizontal, SharpitSpacing.sm)
                                 .frame(minHeight: 32)
                                 .background(
-                                    isSelected(preset) ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt,
+                                    isSelected(preset) ? SharpitColor.primary : SharpitColor.tile,
                                     in: Capsule()
                                 )
                                 .contentShape(Capsule())

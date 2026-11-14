@@ -83,7 +83,7 @@ struct GoogleCalendarPickerView: View {
                 if calendar.primary {
                     Text("Agenda principal Google")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

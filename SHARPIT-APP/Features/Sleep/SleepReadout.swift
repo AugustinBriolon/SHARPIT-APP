@@ -64,7 +64,7 @@ enum SleepReadout {
 
     static func tone(for insight: V1RecoveryTone) -> Color {
         switch insight {
-        case .good: SharpitColor.highlight
+        case .good: SharpitColor.statusGoodMark
         case .moderate: SharpitColor.signalCaution
         case .low: SharpitColor.signalRisk
         case .neutral: SharpitColor.signalNeutral
@@ -86,7 +86,7 @@ enum SleepReadout {
     }
 
     static func bankTone(debtMin: Double?) -> Color {
-        guard let debtMin else { return SharpitColor.mutedForeground }
+        guard let debtMin else { return SharpitColor.slate }
         return debtMin.rounded() <= 0 ? SharpitColor.signalRecovery : SharpitColor.signalCaution
     }
 

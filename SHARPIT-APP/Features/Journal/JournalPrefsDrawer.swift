@@ -76,7 +76,7 @@ struct JournalPrefsDrawer: View {
                 .font(SharpitTypography.meta)
                 .foregroundStyle(
                     store.prefs.canEnableAnother(isPro: false)
-                        ? SharpitColor.mutedForeground
+                        ? SharpitColor.slate
                         : SharpitColor.signalCaution
                 )
         }
@@ -115,7 +115,7 @@ struct JournalPrefsDrawer: View {
             } else {
                 Text("Les suivis personnalisés demandent un compte Pro.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .padding(SharpitSpacing.cardPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .sharpitSurface(.panel)
@@ -176,12 +176,12 @@ private struct JournalFilterChip: View {
         Button(action: onTap) {
             Text(label)
                 .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
+                .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .background {
                     Capsule()
-                        .fill(isSelected ? SharpitColor.primary.opacity(0.12) : SharpitColor.analysisGrid.opacity(0.5))
+                        .fill(isSelected ? SharpitColor.primary.opacity(0.12) : SharpitColor.divider.opacity(0.5))
                 }
                 .overlay {
                     if isSelected {

@@ -320,7 +320,7 @@ struct JournalSection<Content: View>: View {
             if let hint {
                 Text(hint)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if isGrouped {
@@ -345,7 +345,7 @@ struct JournalRowsCard<Content: View>: View {
                     row
                     if row.id != rows.last?.id {
                         Divider()
-                            .overlay(SharpitColor.border)
+                            .overlay(SharpitColor.divider)
                             .padding(.leading, JournalRowMetrics.textInset)
                     }
                 }
@@ -374,7 +374,7 @@ struct JournalRowIcon: View {
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(SharpitColor.foreground)
             .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
-            .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: 9)
+            .sharpitConcentricBackground(SharpitColor.tile, minimum: 9)
             .accessibilityHidden(true)
     }
 }
@@ -473,12 +473,12 @@ struct JournalMetricRow: View {
 
                 Text(value)
                     .font(SharpitTypography.system(size: 15, weight: isUnset ? .regular : .semibold, relativeTo: .subheadline, digits: true))
-                    .foregroundStyle(isUnset ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                    .foregroundStyle(isUnset ? SharpitColor.slate : SharpitColor.foreground)
                     .redacted(reason: isPending ? .placeholder : [])
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
                     .accessibilityHidden(true)
             }
             .frame(minHeight: JournalRowMetrics.minHeight)
@@ -504,9 +504,9 @@ private struct JournalChecklistRow: View {
         HStack(spacing: SharpitSpacing.sm) {
             Image(systemName: item.status.symbolName)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(item.status == .done ? SharpitColor.highlightForeground : SharpitColor.mutedForeground)
+                .foregroundStyle(item.status == .done ? SharpitColor.primaryForeground : SharpitColor.slate)
                 .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
-                .sharpitConcentricBackground(item.status == .done ? SharpitColor.highlight : SharpitColor.chipSurface, minimum: 9)
+                .sharpitConcentricBackground(item.status == .done ? SharpitColor.primary : SharpitColor.tile, minimum: 9)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
@@ -516,7 +516,7 @@ private struct JournalChecklistRow: View {
                 if let detail = item.detail, !detail.isEmpty {
                     Text(detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         // Italic for a line with nothing behind it, so a missing measure does
                         // not read as a measured zero.
                         .italic(item.status == .unavailable)
@@ -547,7 +547,7 @@ private extension JournalAutoStatus {
     var tone: Color {
         switch self {
         case .done: SharpitColor.primary
-        case .missed, .unavailable: SharpitColor.mutedForeground
+        case .missed, .unavailable: SharpitColor.slate
         }
     }
 }
@@ -627,7 +627,7 @@ private extension JournalFactorState {
         switch self {
         case .no: SharpitColor.primary
         case .unset: SharpitElevatedColor.control
-        case .yes: SharpitColor.highlight
+        case .yes: SharpitColor.primary
         }
     }
 
@@ -635,7 +635,7 @@ private extension JournalFactorState {
         switch self {
         case .no: SharpitColor.primaryForeground
         case .unset: SharpitColor.foreground
-        case .yes: SharpitColor.highlightForeground
+        case .yes: SharpitColor.primaryForeground
         }
     }
 }
@@ -671,7 +671,7 @@ private struct JournalAnswerToggle: View, Equatable {
     /// The track without its pill, for a row whose answer is not read yet.
     static var pendingTrack: some View {
         Capsule()
-            .fill(SharpitColor.chipSurface)
+            .fill(SharpitColor.tile)
             .frame(width: trackWidth, height: trackHeight)
             .frame(width: trackWidth, height: SharpitSpacing.minimumTouchTarget)
             .accessibilityLabel(String(localized: "Chargement"))
@@ -681,7 +681,7 @@ private struct JournalAnswerToggle: View, Equatable {
         ZStack(alignment: .leading) {
             // 1. Static track background (never moves, strictly centered vertically)
             Capsule()
-                .fill(SharpitColor.chipSurface)
+                .fill(SharpitColor.tile)
                 .frame(width: Self.trackWidth, height: Self.trackHeight)
 
             // 2. Sliding indicator pill (strictly horizontal offset, centered vertically)
@@ -711,7 +711,7 @@ private struct JournalAnswerToggle: View, Equatable {
         } label: {
             Image(systemName: value.symbolName)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(isSelected ? value.onTone : SharpitColor.mutedForeground)
+                .foregroundStyle(isSelected ? value.onTone : SharpitColor.slate)
                 .frame(width: Self.segmentWidth, height: Self.segmentHeight)
                 .animation(SharpitMotion.selection, value: isSelected)
         }
@@ -757,7 +757,7 @@ private struct JournalDatePicker: View {
                             .animation(SharpitMotion.selection, value: store.selectedDate)
                         Image(systemName: "chevron.down")
                             .font(SharpitTypography.label)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .accessibilityHidden(true)
                     }
                 }

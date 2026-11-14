@@ -105,26 +105,26 @@ struct SleepTargetsSheet: View {
                     showsChevron: false
                 )
             }
-            .tint(SharpitColor.highlight)
+            .tint(SharpitColor.primary)
 
             if hasBedtime {
                 HStack(spacing: SharpitSpacing.sm) {
                     VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                         Label("Coucher", systemImage: "moon.fill")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         DatePicker("Coucher", selection: $bedtime, displayedComponents: .hourAndMinute)
                             .labelsHidden()
                             .environment(\.locale, SharpitLocale.current)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(SharpitSpacing.sm)
-                    .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitRadius.row)
+                    .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.row)
 
                     VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                         Label("Réveil", systemImage: "alarm.fill")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         Text(SleepTargetFormat.clock(SleepTargetFormat.wake(bedtime: Self.minutes(from: bedtime), duration: minutes)))
                             .font(SharpitTypography.data)
                             .foregroundStyle(SharpitColor.foreground)
@@ -134,14 +134,14 @@ struct SleepTargetsSheet: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(SharpitSpacing.sm)
-                    .sharpitConcentricBackground(SharpitColor.chipSurface, minimum: SharpitRadius.row)
+                    .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.row)
                     .accessibilityElement(children: .combine)
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
 
                 Text("Réveil calculé avec ta durée visée.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -154,7 +154,7 @@ struct SleepTargetsSheet: View {
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(SharpitColor.foreground)
                 .frame(width: 52, height: 52)
-                .background(SharpitColor.chipSurface, in: Circle())
+                .background(SharpitColor.tile, in: Circle())
         }
         .buttonStyle(.sharpitPressable)
         .disabled(!Self.range.contains(minutes + delta))

@@ -106,12 +106,12 @@ struct SportChoiceTile: View {
                     item.image
                         .symbolVariant(isSelected ? .fill : .none)
                         .font(.system(size: 30, weight: .regular))
-                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
+                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate)
                         .frame(height: 36, alignment: .leading)
                     Spacer(minLength: 0)
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35))
+                        .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate.opacity(0.35))
                         .contentTransition(.symbolEffect(.replace))
                 }
                 VStack(alignment: .leading, spacing: 2) {
@@ -123,7 +123,7 @@ struct SportChoiceTile: View {
                         .minimumScaleFactor(0.8)
                     Text(item.subtitle)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(2, reservesSpace: true)
                         .multilineTextAlignment(.leading)
                 }
@@ -132,7 +132,7 @@ struct SportChoiceTile: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(isSelected ? SharpitColor.primary.opacity(0.18) : SharpitColor.analysisSurface)
+                    .fill(isSelected ? SharpitColor.primary.opacity(0.18) : SharpitColor.card)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
@@ -167,13 +167,13 @@ struct EquipmentBySport: View {
                     if items.isEmpty {
                         Text("Rien de particulier pour ce type de renforcement.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     } else {
                         VStack(spacing: 0) {
                             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                                 EquipmentChoiceRow(item: item, isOwned: owned.contains(item.id)) { onToggle(item.id) }
                                 if index < items.count - 1 {
-                                    Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                                    Rectangle().fill(SharpitColor.divider).frame(height: 1)
                                         .padding(.leading, (sport != .strength && !item.symbolName.isEmpty) ? 44 : 0)
                                 }
                             }
@@ -207,7 +207,7 @@ struct EquipmentBySport: View {
             }
             Text(venue.description)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .contentTransition(.opacity)
         }
     }
@@ -227,7 +227,7 @@ struct EquipmentChoiceRow: View {
                 if item.sport != .strength && !item.symbolName.isEmpty {
                     Image(systemName: item.symbolName)
                         .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground)
+                        .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.slate)
                         .frame(width: 32)
                 }
                 VStack(alignment: .leading, spacing: 2) {
@@ -236,14 +236,14 @@ struct EquipmentChoiceRow: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(item.impact)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: isOwned ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35))
+                    .foregroundStyle(isOwned ? SharpitColor.primary : SharpitColor.slate.opacity(0.35))
                     .contentTransition(.symbolEffect(.replace))
             }
             .padding(.vertical, SharpitSpacing.sm)
@@ -290,7 +290,7 @@ struct EquipmentView: View {
                 if practicedItems.isEmpty {
                     Text("Aucun sport pour l'instant. Ajoute-en un avec le +.")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 ForEach(practicedItems) { item in
                     NavigationLink {
@@ -412,7 +412,7 @@ struct SportRowLabel: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(detail)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
             }
         } icon: {
@@ -457,7 +457,7 @@ struct SportEquipmentView: View {
                     if !canRemove {
                         Text("C'est ton dernier sport d'endurance : ajoute-en un autre avant de le retirer.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
             }
@@ -509,7 +509,7 @@ struct SportAddSheet: View {
                                         SportRowLabel(item: item, detail: item.subtitle)
                                         Spacer(minLength: SharpitSpacing.xs)
                                         Image(systemName: "plus.circle")
-                                            .foregroundStyle(SharpitColor.mutedForeground)
+                                            .foregroundStyle(SharpitColor.slate)
                                             .accessibilityHidden(true)
                                     }
                                     .contentShape(.rect)

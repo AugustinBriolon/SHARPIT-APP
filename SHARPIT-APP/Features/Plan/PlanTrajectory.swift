@@ -106,19 +106,19 @@ private struct PlanTrajectoryTileView: View {
                     Text(tile.value)
                         .font(SharpitTypography.gaugeScore)
                         .tracking(SharpitTypography.gaugeScoreTracking)
-                        .foregroundStyle(tile.unit == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                        .foregroundStyle(tile.unit == nil ? SharpitColor.slate : SharpitColor.foreground)
                         .contentTransition(.numericText())
                     if let unit = tile.unit {
                         Text(unit)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 if let headline = tile.headline {
                     Text(headline)
                         .font(SharpitTypography.meta)
                         .fontWeight(.semibold)
-                        .foregroundStyle(tile.unit == nil ? SharpitColor.mutedForeground : tone)
+                        .foregroundStyle(tile.unit == nil ? SharpitColor.slate : tone)
                         .lineLimit(2)
                         .minimumScaleFactor(0.85)
                 }

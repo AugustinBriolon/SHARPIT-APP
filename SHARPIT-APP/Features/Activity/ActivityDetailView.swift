@@ -874,7 +874,7 @@ private struct ActivityDetailContent: View {
                 HStack {
                     Spacer()
                     Capsule()
-                        .fill(SharpitColor.mutedForeground.opacity(0.35))
+                        .fill(SharpitColor.slate.opacity(0.35))
                         .frame(width: 38, height: 5)
                     Spacer()
                 }
@@ -904,7 +904,7 @@ private struct ActivityDetailContent: View {
                     Spacer()
                     Text(dateLabel)
                         .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
 
                 Text(detail.title ?? detail.type.label)
@@ -927,7 +927,7 @@ private struct ActivityDetailContent: View {
                     if let weather = detail.weather, let weatherLabel = V1ActivityWeather(rawValue: weather).label {
                         Label(weatherLabel, systemImage: "cloud.sun")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                     }
                 }
@@ -1140,7 +1140,7 @@ private struct ActivityDetailContent: View {
             } else {
                 Text("SharpIt croise ta séance, ton ressenti et les données disponibles pour te donner une lecture claire et actionnable.")
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 SharpitPrimaryButton(
                     title: isGeneratingNarrative ? String(localized: "Analyse en cours…") : String(localized: "Générer l’analyse"),
                     trailingSymbol: isGeneratingNarrative ? nil : "arrow.up.right",
@@ -1167,7 +1167,7 @@ private struct ActivityDetailContent: View {
                 }
             }
             if let notes = detail.notes, !notes.isEmpty {
-                Text(notes).font(SharpitTypography.body).foregroundStyle(SharpitColor.mutedForeground)
+                Text(notes).font(SharpitTypography.body).foregroundStyle(SharpitColor.slate)
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -1351,7 +1351,7 @@ private struct ActivityRaceHeader: View {
             if let line = detailLine {
                 Text(line)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             if let result {
                 RaceTimeReadout(result: result)
@@ -1489,7 +1489,7 @@ struct ActivitySplitsSection: View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             Text(split.distanceLabel)
                 .font(SharpitTypography.meta.monospacedDigit())
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .frame(width: 52, alignment: .leading)
@@ -1500,12 +1500,12 @@ struct ActivitySplitsSection: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(String(format: "%+.0f %%", split.variation))
                         .font(SharpitTypography.meta.monospacedDigit())
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 .lineLimit(1)
                 SharpitBarTrack(
                     fraction: split.progress,
-                    tone: split.variation <= -5 ? SharpitColor.highlight : SharpitColor.foreground
+                    tone: split.variation <= -5 ? SharpitColor.statusGoodMark : SharpitColor.foreground
                 )
                 .frame(height: 6)
             }
@@ -1516,7 +1516,7 @@ struct ActivitySplitsSection: View {
                 Text("+\(Int(split.elevationGain.rounded())) m")
             }
             .font(SharpitTypography.meta.monospacedDigit())
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
             .lineLimit(1)
             .fixedSize()
         }
@@ -1594,11 +1594,11 @@ private struct DetailMetric: View {
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Text(value)
                 .font(SharpitTypography.data)
                 .lineLimit(1)
-            if let unit { Text(unit).font(.caption).foregroundStyle(SharpitColor.mutedForeground) }
+            if let unit { Text(unit).font(.caption).foregroundStyle(SharpitColor.slate) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SharpitSpacing.cardPadding)
@@ -1747,7 +1747,7 @@ private struct ActivityRouteHero: View {
             Map(position: $position, interactionModes: isExpanded ? .all : [], scope: mapScope) {
                 if replayProgress != nil {
                     MapPolyline(coordinates: coordinates)
-                        .stroke(SharpitColor.mutedForeground.opacity(0.35), lineWidth: 5)
+                        .stroke(SharpitColor.slate.opacity(0.35), lineWidth: 5)
                 }
                 if intensity != nil {
                     ForEach(Array(drawnSegments.enumerated()), id: \.offset) { _, segment in
@@ -1824,16 +1824,16 @@ private struct ActivityRouteHero: View {
     }
 
     private func courseColor(_ track: TriathlonLegTrack) -> Color {
-        track.segment.sport.map { SharpitSportTone.accent(for: $0) } ?? SharpitColor.mutedForeground
+        track.segment.sport.map { SharpitSportTone.accent(for: $0) } ?? SharpitColor.slate
     }
 }
 
 private struct ActivityRouteLoadingSurface: View {
     var body: some View {
         ZStack {
-            SharpitColor.analysisSurfaceAlt
+            SharpitColor.tile
             LinearGradient(
-                colors: [.clear, SharpitColor.analysisGrid],
+                colors: [.clear, SharpitColor.divider],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -1866,11 +1866,11 @@ private struct ActivityDetailLoading: View {
     var body: some View {
         ZStack(alignment: .top) {
             Rectangle()
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             LinearGradient(
-                colors: [.clear, SharpitColor.analysisGrid],
+                colors: [.clear, SharpitColor.divider],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -1895,34 +1895,34 @@ private struct ActivityDetailLoadingSheet: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             HStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
                     .frame(width: 124, height: 16)
                 Spacer()
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
                     .frame(width: 104, height: 16)
             }
 
             RoundedRectangle(cornerRadius: 10)
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
                 .frame(maxWidth: 300, minHeight: 40)
 
             HStack(spacing: SharpitSpacing.xxs) {
                 ForEach(0..<3, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                        .fill(SharpitColor.analysisSurfaceAlt)
+                        .fill(SharpitColor.tile)
                         .frame(height: 92)
                 }
             }
 
             RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
                 .frame(height: 156)
 
             HStack(spacing: SharpitSpacing.xxs) {
                 ForEach(0..<3, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                        .fill(SharpitColor.analysisSurfaceAlt)
+                        .fill(SharpitColor.tile)
                         .frame(height: 92)
                 }
             }
@@ -1963,7 +1963,7 @@ struct CollapsedActivityBottomBar: View {
     var body: some View {
         VStack(spacing: 8) {
             Capsule()
-                .fill(SharpitColor.mutedForeground.opacity(0.35))
+                .fill(SharpitColor.slate.opacity(0.35))
                 .frame(width: 38, height: 5)
                 .padding(.top, 10)
 
@@ -1982,7 +1982,7 @@ struct CollapsedActivityBottomBar: View {
 
                     Text(subtitleText)
                         .font(.caption)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
 
@@ -1994,7 +1994,7 @@ struct CollapsedActivityBottomBar: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Image(systemName: "chevron.up")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 7)

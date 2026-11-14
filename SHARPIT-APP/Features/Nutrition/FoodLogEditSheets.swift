@@ -41,7 +41,7 @@ struct FoodEntryEditSheet: View {
                         if let brand = entry.brand, !brand.isEmpty {
                             Text(brand)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                     }
                     FoodPortionPreview(nutrients: FoodPortion.nutrients(of: entry, grams: grams ?? entry.grams))
@@ -234,7 +234,7 @@ struct NutritionTargetsSheet: View {
                 SharpitFormField(String(localized: "Lipides (g)"), placeholder: "—", text: $fat, keyboard: .decimalPad)
                 Text("Optionnels. Un champ vide retire l'objectif.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             case .percent:
                 NutritionShareRow(title: String(localized: "Protéines"), grams: split.proteinG, text: $proteinPct)
                 NutritionShareRow(title: String(localized: "Glucides"), grams: split.carbsG, text: $carbsPct)
@@ -325,7 +325,7 @@ private struct NutritionShareRow: View {
                 Text(grams.map { "≈ \(FoodPortion.gramsLabel(Double($0)))" } ?? "— g")
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .contentTransition(.numericText(value: Double(grams ?? 0)))
             }
             HStack(spacing: SharpitSpacing.xxs) {
@@ -334,7 +334,7 @@ private struct NutritionShareRow: View {
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
                     .accessibilityLabel("\(title) en pourcentage")
-                Text("%").foregroundStyle(SharpitColor.mutedForeground)
+                Text("%").foregroundStyle(SharpitColor.slate)
             }
             .sharpitFieldWell()
         }

@@ -20,11 +20,11 @@ struct GuidedHeartRatePickerSheet: View {
                                         : String(localized: "Active Bluetooth, puis réessaie.")
                                 )
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                             }
                         } icon: {
                             Image(systemName: "antenna.radiowaves.left.and.right.slash")
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                     }
                     .sharpitListRows()
@@ -47,7 +47,7 @@ struct GuidedHeartRatePickerSheet: View {
                                 ProgressView()
                                 Text("Recherche de capteurs…")
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                             }
                             .padding(.vertical, SharpitSpacing.xs)
                         } else {
@@ -97,7 +97,7 @@ struct GuidedHeartRatePickerSheet: View {
                 if let bpm = monitor.bpm {
                     Text("\(bpm) bpm")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .monospacedDigit()
                 }
             }
@@ -114,7 +114,7 @@ struct GuidedHeartRatePickerSheet: View {
             && GuidedHeartRatePreference.lastPeripheralUUID == device.id
         return HStack(spacing: SharpitSpacing.sm) {
             Image(systemName: "heart")
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Text(device.name)
                 .font(SharpitTypography.bodyEmphasis)
                 .foregroundStyle(SharpitColor.foreground)

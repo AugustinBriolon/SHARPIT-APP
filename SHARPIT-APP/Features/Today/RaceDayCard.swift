@@ -63,7 +63,7 @@ struct RaceDayCard: View {
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                 Text(race.coachLine)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer(minLength: 0)
                 if opensSession { chevron }
             }
@@ -73,7 +73,7 @@ struct RaceDayCard: View {
     private var chevron: some View {
         Image(systemName: "chevron.right")
             .font(.footnote.weight(.semibold))
-            .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+            .foregroundStyle(SharpitColor.slate.opacity(0.5))
             .accessibilityHidden(true)
     }
 
@@ -83,7 +83,7 @@ struct RaceDayCard: View {
         if !lines.isEmpty {
             Text(lines.joined(separator: "  ·  "))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 }

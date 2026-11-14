@@ -85,7 +85,7 @@ struct MacroPlanSheet: View {
 
                 Text("Ensuite : « Remplir ma semaine » pose les séances, « Ajuster le planning » réarrange la charge.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .padding(.horizontal, SharpitSpacing.xxs)
 
                 Button(role: .destructive) {
@@ -117,7 +117,7 @@ struct MacroPlanSheet: View {
                     )
                     Text("Une course datée sert de jalon. Le plan macro calcule les phases et la charge de chaque semaine jusqu'à elle, sans poser les séances. Les courses B et C avant elle deviennent des étapes.")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -267,9 +267,9 @@ private struct MacroPlanHero: View {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                 Image(systemName: "calendar.badge.clock")
                     .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .foregroundStyle(SharpitColor.primaryForeground)
                     .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                    .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
+                    .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitRadius.tile)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(plan.weeks.count) semaines")
@@ -279,7 +279,7 @@ private struct MacroPlanHero: View {
                     if let range {
                         Text(range)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
             }
@@ -289,7 +289,7 @@ private struct MacroPlanHero: View {
             if let summary = plan.summary, !summary.isEmpty {
                 Text(summary)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -320,7 +320,7 @@ private struct MacroGoalChoiceRow: View {
                     if let date = goal.targetDate {
                         Text(date.sharpitFormatted(.dateTime.day().month(.abbreviated).year()))
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 Spacer(minLength: SharpitSpacing.xs)
@@ -329,7 +329,7 @@ private struct MacroGoalChoiceRow: View {
                 }
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground.opacity(0.4))
+                    .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.slate.opacity(0.4))
                     .contentTransition(.symbolEffect(.replace))
             }
             .padding(.horizontal, SharpitSpacing.rowPaddingX)
@@ -352,11 +352,11 @@ private struct MacroPhaseRailView: View {
             ForEach(runs, id: \.phase) { run in
                 VStack(alignment: .leading, spacing: 6) {
                     Capsule()
-                        .fill(run.isCurrent ? SharpitColor.highlight : SharpitColor.track)
+                        .fill(run.isCurrent ? SharpitColor.statusGoodMark : SharpitColor.divider)
                         .frame(height: 6)
                     Text(run.phase.shortLabel)
                         .font(SharpitTypography.system(size: 12, weight: run.isCurrent ? .semibold : .regular, relativeTo: .caption))
-                        .foregroundStyle(run.isCurrent ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                        .foregroundStyle(run.isCurrent ? SharpitColor.foreground : SharpitColor.slate)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
@@ -417,12 +417,12 @@ private struct MacroWeekRowView: View {
             if let quality = WeekQualityLabel.from(focus: week.focus, phase: week.phase, isDeload: week.isDeload) {
                 Text(quality)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
             }
             SharpitBarTrack(
                 fraction: week.targetLoad / maxLoad,
-                tone: isCurrent ? SharpitColor.highlight : SharpitColor.foreground
+                tone: isCurrent ? SharpitColor.statusGoodMark : SharpitColor.foreground
             )
             .frame(height: 4)
         }

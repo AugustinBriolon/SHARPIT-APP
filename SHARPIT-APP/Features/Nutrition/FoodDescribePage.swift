@@ -122,7 +122,7 @@ struct FoodDescribePage: View {
                     HStack(spacing: SharpitSpacing.sm) {
                         ProgressView()
                         Text("Estimation des aliments…")
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 .sharpitListRows()
@@ -155,12 +155,12 @@ struct FoodDescribePage: View {
                         if let caption = line.matchCaption {
                             Text(caption)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                         FoodNumberRow(title: String(localized: "Portion"), unit: "g", text: $line.gramsText)
                         Text(line.macrosCaption)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     .padding(.vertical, 2)
                 }

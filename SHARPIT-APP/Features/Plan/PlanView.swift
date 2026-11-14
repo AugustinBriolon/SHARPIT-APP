@@ -93,10 +93,8 @@ struct PlanView: View {
                     onOpenTrajectory: { openedTrajectory = $0 }
                 )
             }
-            // Clinique (`docs/adr/0034`): one sheet, a neutral wash under the week's header.
+            // Clinique (`docs/adr/0035`): one sheet, a neutral wash under the week's header.
             .cliniqueSheet(wash: .neutral)
-            // The load and trajectory cards are not redrawn yet: a hairline in place of their shadow.
-            .cliniqueScreen()
             .navigationTitle("Plan")
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())

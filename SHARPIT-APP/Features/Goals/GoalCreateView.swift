@@ -189,7 +189,7 @@ private struct GoalFormFields: View {
                                     .foregroundStyle(SharpitColor.foreground)
                                 Text(role.consequence)
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                             }
                             .tag(role.priority)
                         }

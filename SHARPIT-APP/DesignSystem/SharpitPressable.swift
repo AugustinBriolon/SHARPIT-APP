@@ -27,7 +27,7 @@ extension ButtonStyle where Self == SharpitPressableStyle {
 /// a countdown (ADR-085). Lime is the default tone.
 struct SharpitScoreRing: View {
     let fraction: Double
-    var tone: Color = SharpitColor.highlight
+    var tone: Color = SharpitColor.foreground
     var lineWidth: CGFloat = 4
 
     @State private var shown: Double = 0
@@ -35,7 +35,7 @@ struct SharpitScoreRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(SharpitColor.track, lineWidth: lineWidth)
+                .stroke(SharpitColor.divider, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: shown)
                 .stroke(tone, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))

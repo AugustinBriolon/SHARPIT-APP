@@ -33,10 +33,10 @@ struct PlannedStepsEstimatedTag: View {
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
             .textCase(.uppercase)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, 2)
-            .background(SharpitColor.analysisSurfaceAlt, in: Capsule())
+            .background(SharpitColor.tile, in: Capsule())
     }
 }
 
@@ -77,11 +77,11 @@ private struct RailRow<Content: View>: View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
             VStack(spacing: 0) {
                 Rectangle()
-                    .fill(isFirst ? Color.clear : SharpitColor.analysisBorder)
+                    .fill(isFirst ? Color.clear : SharpitColor.divider)
                     .frame(width: 1, height: isRepeat ? 3 : 6)
                 mark
                 Rectangle()
-                    .fill(isLast ? Color.clear : SharpitColor.analysisBorder)
+                    .fill(isLast ? Color.clear : SharpitColor.divider)
                     .frame(width: 1)
                     .frame(maxHeight: .infinity)
             }
@@ -122,14 +122,14 @@ private struct RepeatedSet: View {
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 ForEach(set.steps) { PlannedStepContent(step: $0) }
             }
             .padding(SharpitSpacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitConcentricBackground(SharpitColor.analysisSurfaceAlt, minimum: SharpitRadius.small)
+            .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.small)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(set.repeatCount) fois : " + set.steps.map(\.spokenLabel).joined(separator: String(localized: ", puis ")))
@@ -171,7 +171,7 @@ private struct PlannedStepContent: View {
             if let notes = step.notes, !notes.isEmpty {
                 Text(notes)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

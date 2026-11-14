@@ -53,12 +53,12 @@ struct PainReassessmentSection: View {
                                 .multilineTextAlignment(.leading)
                             Text(item.zone.place)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.right")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     .padding(SharpitSpacing.cardPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)

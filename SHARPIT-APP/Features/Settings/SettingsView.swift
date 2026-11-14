@@ -230,10 +230,10 @@ struct SettingsView: View {
             Text("SharpIt")
                 .font(SharpitTypography.eyebrow)
                 .tracking(SharpitTypography.eyebrowTracking * 2)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Text("Version \(AppVersion.display)")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.7))
+                .foregroundStyle(SharpitColor.slate.opacity(0.7))
         }
         .frame(maxWidth: .infinity)
         .padding(.top, SharpitSpacing.lg)
@@ -320,7 +320,7 @@ private struct AccountRow: View {
                 if let email = clerk.user?.primaryEmailAddress?.emailAddress {
                     Text(email)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
@@ -360,7 +360,7 @@ private struct ProRow: View {
                 }
                 Text(isPro ? String(localized: "Tout SharpIt est ouvert pour toi.") : String(localized: "Bilan hebdo, analyse de séance, lecture coach du journal."))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

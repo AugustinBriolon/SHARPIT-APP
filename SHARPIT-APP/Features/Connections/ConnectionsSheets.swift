@@ -22,12 +22,12 @@ struct SourceManageSheet: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(status.text)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(status.isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                        .foregroundStyle(status.isProblem ? SharpitColor.signalRisk : SharpitColor.slate)
                 }
             }
             Text(source.benefit)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
             if calendarPicker != nil {
                 Button { pickingCalendar = true } label: {
@@ -97,7 +97,7 @@ struct SourceAddSheet: View {
                                                 .foregroundStyle(SharpitColor.foreground)
                                             Text(source.purpose)
                                                 .font(SharpitTypography.meta)
-                                                .foregroundStyle(SharpitColor.mutedForeground)
+                                                .foregroundStyle(SharpitColor.slate)
                                         }
                                         Spacer(minLength: SharpitSpacing.xs)
                                         SharpitPill(String(localized: "Connecter"), style: .neutral)

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The ink squircle every card opens with: a lime glyph on ink (graphite on dark).
-/// A sport, a metric or a section is told by this glyph — never by a colour (ADR-085).
+/// The round neutral tile every card opens with: an ink glyph on the tile tone.
+/// A sport, a metric or a section is told by this glyph — never by a colour.
 struct SharpitIconTile: View {
     let symbol: String
     var size: CGFloat = SharpitTokens.tileSize
@@ -11,15 +11,10 @@ struct SharpitIconTile: View {
     var body: some View {
         let side = size * scale
         Image(systemName: symbol)
-            .font(.system(size: side * 0.42, weight: .semibold))
-            .foregroundStyle(SharpitColor.inkAccent)
+            .font(.system(size: side * 0.42, weight: .regular))
+            .foregroundStyle(SharpitColor.foreground)
             .frame(width: side, height: side)
-            // A fixed squircle: concentric, a tile in a list's first or last row took the card's
-            // corner and read as a circle beside the squares of the middle rows.
-            .background(
-                SharpitColor.inkSurface,
-                in: RoundedRectangle(cornerRadius: SharpitRadius.tile * side / SharpitTokens.tileSize, style: .continuous)
-            )
+            .background(SharpitColor.tile, in: Circle())
             .accessibilityHidden(true)
     }
 }
@@ -47,13 +42,13 @@ struct SharpitCheckBox: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-            .fill(isOn ? SharpitColor.highlight : SharpitColor.track)
+            .fill(isOn ? SharpitColor.primary : SharpitColor.tile)
             .frame(width: side, height: side)
             .overlay {
                 if isOn {
                     Image(systemName: "checkmark")
                         .font(.system(size: side * 0.48, weight: .semibold))
-                        .foregroundStyle(SharpitColor.highlightForeground)
+                        .foregroundStyle(SharpitColor.primaryForeground)
                 }
             }
             .accessibilityLabel(isOn ? String(localized: "Fait") : String(localized: "À faire"))
@@ -63,13 +58,13 @@ struct SharpitCheckBox: View {
 /// A short status word or delta in a capsule: « PR », « +5 kg », « ↑ 8 vs moy. ».
 struct SharpitPill: View {
     enum Style {
-        /// Lime fill, ink text — an achievement.
+        /// The good status set — an achievement.
         case lime
-        /// Neutral chip, ink text — a plain delta.
+        /// Neutral tile, ink text — a plain delta.
         case neutral
-        /// Soft lime wash, olive text — a positive comparison.
+        /// The good status set — a positive comparison.
         case limeSoft
-        /// Ink fill, lime text — a score, apart from the lime states beside it.
+        /// Ink fill — a score, apart from the states beside it.
         case ink
     }
 
@@ -88,25 +83,32 @@ struct SharpitPill: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(background, in: Capsule())
+            .overlay(Capsule().strokeBorder(border, lineWidth: 1))
             .lineLimit(1)
             .fixedSize()
     }
 
+    /// A good reading carries its border, as every status set does; the others have none.
+    private var border: Color {
+        switch style {
+        case .lime, .limeSoft: SharpitColor.statusGoodBorder
+        case .neutral, .ink: .clear
+        }
+    }
+
     private var foreground: Color {
         switch style {
-        case .lime: SharpitColor.highlightForeground
+        case .lime, .limeSoft: SharpitColor.statusGoodForeground
         case .neutral: SharpitColor.foreground
-        case .limeSoft: SharpitColor.accentForeground
-        case .ink: SharpitColor.inkAccent
+        case .ink: SharpitColor.primaryForeground
         }
     }
 
     private var background: Color {
         switch style {
-        case .lime: SharpitColor.highlight
-        case .neutral: SharpitColor.chipSurface
-        case .limeSoft: SharpitColor.accent
-        case .ink: SharpitColor.inkSurface
+        case .lime, .limeSoft: SharpitColor.statusGood
+        case .neutral: SharpitColor.tile
+        case .ink: SharpitColor.primary
         }
     }
 }

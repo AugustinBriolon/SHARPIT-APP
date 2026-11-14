@@ -4,13 +4,13 @@ import SwiftUI
 /// Swift Charts in the brand's dress (ADR-085): a lime line, hollow lime points, a lime wash
 /// fading to nothing under it, dashed grid lines, and an ink bubble for the reading.
 enum SharpitChartStyle {
-    static let line = SharpitColor.highlight
+    static let line = SharpitColor.foreground
     static let lineWidth: CGFloat = 3
 
     /// The wash under a line, lime to clear.
     static var area: LinearGradient {
         LinearGradient(
-            colors: [SharpitColor.highlight.opacity(0.3), SharpitColor.highlight.opacity(0)],
+            colors: [SharpitColor.foreground.opacity(0.14), SharpitColor.foreground.opacity(0)],
             startPoint: .top,
             endPoint: .bottom
         )
@@ -24,13 +24,13 @@ extension View {
     func sharpitChartAxes() -> some View {
         chartXAxis {
             AxisMarks { _ in
-                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.analysisBorder)
-                AxisValueLabel().font(SharpitTypography.meta).foregroundStyle(SharpitColor.mutedForeground)
+                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.divider)
+                AxisValueLabel().font(SharpitTypography.meta).foregroundStyle(SharpitColor.slate)
             }
         }
         .chartYAxis {
             AxisMarks(position: .leading) { _ in
-                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.analysisBorder)
+                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.divider)
             }
         }
     }
@@ -55,7 +55,7 @@ struct SharpitChartPoint: View {
     var body: some View {
         Circle()
             .fill(SharpitColor.card)
-            .overlay(Circle().strokeBorder(SharpitColor.highlight, lineWidth: 3))
+            .overlay(Circle().strokeBorder(SharpitColor.foreground, lineWidth: 3))
             .frame(width: 14, height: 14)
     }
 }

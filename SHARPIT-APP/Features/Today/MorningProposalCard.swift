@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The night's proposal for today's session, under the verdict: what changes in one line, why in
 /// one sentence, one tap to take it or keep the plan. The plan and the proposal side by side wait
-/// under « Voir le détail ». Drawn as a Clinique card (`docs/adr/0034`). It shows only while the server waits for an answer, after the night.
+/// under « Voir le détail ». Drawn as a Clinique card (`docs/adr/0035`). It shows only while the server waits for an answer, after the night.
 struct MorningProposalCard: View {
     let proposal: V1TodayMorningProposal
     /// Opens the morning check-in, which refines the proposal; nil where it cannot be opened.

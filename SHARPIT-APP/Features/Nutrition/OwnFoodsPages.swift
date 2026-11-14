@@ -22,7 +22,7 @@ struct OwnFoodsPage: View {
                 Section {
                     HStack(spacing: SharpitSpacing.xs) {
                         ProgressView().controlSize(.small)
-                        Text("Chargement…").foregroundStyle(SharpitColor.mutedForeground)
+                        Text("Chargement…").foregroundStyle(SharpitColor.slate)
                     }
                 }
                 .sharpitListRows()
@@ -99,7 +99,7 @@ struct OwnFoodsPage: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("Crée un aliment avec son étiquette : il apparaîtra ici et en tête de tes recherches.")
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.vertical, SharpitSpacing.xxs)

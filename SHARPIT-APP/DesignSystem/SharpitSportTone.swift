@@ -17,7 +17,7 @@ enum SharpitSportTone {
 
     /// Chip fill — the neutral chip.
     static func background(for type: V1ActivityType) -> Color {
-        SharpitColor.chipSurface
+        SharpitColor.tile
     }
 
     /// Chips carry no outline.
@@ -25,14 +25,14 @@ enum SharpitSportTone {
         .clear
     }
 
-    /// Icon tile fill — ink squircle on light, graphite on dark.
+    /// Icon tile fill — the neutral tile.
     static func tile(for type: V1ActivityType) -> Color {
-        SharpitColor.inkSurface
+        SharpitColor.tile
     }
 
-    /// Glyph on the icon tile — lime.
+    /// Glyph on the icon tile — ink.
     static func tileGlyph(for type: V1ActivityType) -> Color {
-        SharpitColor.inkAccent
+        SharpitColor.foreground
     }
 
     // MARK: - String-keyed entry point

@@ -32,7 +32,7 @@ struct ActivityView: View {
             }
             .modifier(ScrollUnderGlass())
             .refreshable { await load(force: true) }
-            .background(SharpitCanvasBackground())
+            .cliniqueSheet(wash: .neutral)
             .navigationTitle("Activité")
             .navigationBarTitleDisplayMode(.large)
             .modifier(LiquidNavChrome())
@@ -306,9 +306,9 @@ private struct ActivityWeekCard: View {
                     VStack(spacing: 6) {
                         Text(Self.days[index])
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(index == week.todayIndex ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                            .foregroundStyle(index == week.todayIndex ? SharpitColor.foreground : SharpitColor.slate)
                         Circle()
-                            .fill(week.activeDays[index] ? SharpitColor.highlight : SharpitColor.foreground.opacity(0.12))
+                            .fill(week.activeDays[index] ? SharpitColor.statusGoodMark : SharpitColor.foreground.opacity(0.12))
                             .frame(width: 12, height: 12)
                             .overlay {
                                 if index == week.todayIndex, !week.activeDays[index] {
@@ -337,7 +337,7 @@ private struct ActivityWeekCard: View {
             if let unit {
                 Text(unit)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .lineLimit(1)
@@ -359,7 +359,7 @@ private struct ActivityMonthSection: View {
                 Spacer(minLength: SharpitSpacing.xs)
                 Text(month.summary)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
             }
             .padding(.horizontal, SharpitSpacing.xxs)
@@ -398,7 +398,7 @@ private struct ActivityRow: View {
                     .monospacedDigit()
                 Text(activity.date.sharpitFormatted(.dateTime.weekday(.abbreviated)))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .textCase(.lowercase)
             }
             .frame(width: 36)
@@ -417,14 +417,14 @@ private struct ActivityRow: View {
                 ].compactMap { $0 }.joined(separator: " · "))
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
             }
 
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                .foregroundStyle(SharpitColor.slate.opacity(0.6))
         }
         .padding(.horizontal, SharpitSpacing.md)
         .padding(.vertical, SharpitSpacing.sm)
@@ -438,14 +438,14 @@ private struct ActivityListLoading: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             RoundedRectangle(cornerRadius: 8)
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
                 .frame(width: 210, height: 28)
             RoundedRectangle(cornerRadius: 8)
-                .fill(SharpitColor.analysisSurfaceAlt)
+                .fill(SharpitColor.tile)
                 .frame(width: 280, height: 18)
             ForEach(0..<5, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
                     .frame(height: 78)
             }
         }

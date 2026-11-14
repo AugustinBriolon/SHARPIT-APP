@@ -262,7 +262,7 @@ struct SharpitToastView: View {
                 .background(Capsule().fill(.ultraThinMaterial))
                 .overlay(
                     Capsule()
-                        .strokeBorder(SharpitColor.border.opacity(0.75), lineWidth: 1)
+                        .strokeBorder(SharpitColor.divider.opacity(0.75), lineWidth: 1)
                 )
                 .sharpitShadow(.control)
         }
@@ -319,7 +319,7 @@ struct SharpitToastView: View {
                 if !toast.message.isEmpty {
                     Text(toast.message)
                         .font(SharpitTypography.system(size: 12, weight: .regular))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
@@ -329,7 +329,7 @@ struct SharpitToastView: View {
             if toast.action != nil {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
                     .padding(.trailing, 2)
             }
         }
@@ -345,7 +345,7 @@ struct SharpitToastView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .strokeBorder(SharpitColor.border.opacity(0.75), lineWidth: 1)
+                        .strokeBorder(SharpitColor.divider.opacity(0.75), lineWidth: 1)
                 )
                 .sharpitShadow(.panel)
         }

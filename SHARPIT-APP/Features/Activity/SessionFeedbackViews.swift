@@ -15,7 +15,7 @@ struct ReadoutTile<Value: View>: View {
                 ReadoutTileCaption(caption) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .accessibilityHidden(true)
                 }
                 value
@@ -90,11 +90,11 @@ struct ScaleReadout: View {
             Text(value.map(String.init) ?? "—")
                 .font(SharpitTypography.gaugeScore)
                 .tracking(SharpitTypography.gaugeScoreTracking)
-                .foregroundStyle(value == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                .foregroundStyle(value == nil ? SharpitColor.slate : SharpitColor.foreground)
                 .contentTransition(.numericText())
             Text("/\(outOf)")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 }
@@ -120,7 +120,7 @@ struct ComplianceTile: View {
                         .minimumScaleFactor(0.7)
                     Text("%")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 if let verdict {
                     SharpitPill(verdict.label, style: verdict == .asPlanned ? .lime : .neutral)
@@ -138,14 +138,14 @@ struct CompliancePendingTile: View {
             ReadoutTileCaption(String(localized: "Conformité")) {
                 Image(systemName: "hourglass")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .symbolEffect(.pulse)
                     .accessibilityHidden(true)
             }
             HStack(alignment: .center, spacing: SharpitSpacing.xs) {
                 ProgressView()
                     .scaleEffect(0.8)
-                    .tint(SharpitColor.mutedForeground)
+                    .tint(SharpitColor.slate)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Calcul en cours…")
                         .font(.subheadline.weight(.regular))
@@ -153,7 +153,7 @@ struct CompliancePendingTile: View {
                         .lineLimit(1)
                     Text("Séance planifiée")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
@@ -235,17 +235,17 @@ struct SubjectiveScale<Grid: View>: View {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value.map(String.init) ?? "—")
                         .font(SharpitTypography.gaugeScore)
-                        .foregroundStyle(tone == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                        .foregroundStyle(tone == nil ? SharpitColor.slate : SharpitColor.foreground)
                         .contentTransition(.numericText())
                     Text("/\(outOf)")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             grid
             Text(caption)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .contentTransition(.opacity)
         }
         .animation(SharpitMotion.selection, value: value)
@@ -260,10 +260,10 @@ struct SaveStatusLine: View {
             switch status {
             case .idle:
                 Text("Chaque touche est enregistrée.")
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             case .saving:
                 Label("Enregistrement…", systemImage: "arrow.triangle.2.circlepath")
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             case .saved:
                 Label("Enregistré", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(SharpitColor.foreground)
@@ -369,7 +369,7 @@ struct ComplianceDetailSheet: View {
                     if let tags = analysis.scoreTags, !tags.isEmpty {
                         Text(tags.map(SessionAnalysisScoreTagLabel.fr).joined(separator: " · "))
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
 
                     if let remarks = analysis.remarks, !remarks.isEmpty {
@@ -425,7 +425,7 @@ struct ComplianceDetailSheet: View {
                         )
                         Text("Parle au coach pour Continuer, Alléger, Reporter ou Pause.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 .padding(SharpitSpacing.pageInset)
@@ -479,7 +479,7 @@ struct ComplianceDetailSheet: View {
                         .foregroundStyle(tone)
                     Text("%")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             .frame(width: 84, height: 84)

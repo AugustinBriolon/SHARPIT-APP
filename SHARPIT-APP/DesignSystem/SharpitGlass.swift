@@ -9,12 +9,12 @@ import SwiftUI
 extension View {
     /// A toolbar-level control — the only place content-adjacent glass is allowed.
     func sharpitGlassCapsule() -> some View {
-        modifier(SharpitGlassShapeModifier(shape: Capsule(), fallback: SharpitColor.chipSurface))
+        modifier(SharpitGlassShapeModifier(shape: Capsule(), fallback: SharpitColor.tile))
     }
 
     /// A circular toolbar-level control in liquid glass.
     func sharpitGlassCircle() -> some View {
-        modifier(SharpitGlassShapeModifier(shape: Circle(), fallback: SharpitColor.chipSurface))
+        modifier(SharpitGlassShapeModifier(shape: Circle(), fallback: SharpitColor.tile))
     }
 }
 
@@ -55,7 +55,7 @@ extension View {
             .font(SharpitTypography.meta.weight(.semibold))
             .padding(.horizontal, SharpitSpacing.sm)
             .frame(minHeight: 34)
-            .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.chipSurface)
+            .sharpitGlassControl(in: Capsule(), fallback: SharpitColor.tile)
             .padding(.vertical, (SharpitSpacing.minimumTouchTarget - 34) / 2)
             .contentShape(Rectangle())
     }

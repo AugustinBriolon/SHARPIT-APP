@@ -117,7 +117,7 @@ struct RouteIntensityLegend: View {
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             HStack(spacing: 2) {
                 ForEach(0..<RouteIntensity.levels, id: \.self) { level in
                     Capsule().fill(RouteIntensityTone.color(level: level)).frame(height: 5)
@@ -130,7 +130,7 @@ struct RouteIntensityLegend: View {
                 Text("Intense")
             }
             .font(SharpitTypography.meta)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
             .frame(width: 140)
         }
         .padding(SharpitSpacing.sm)

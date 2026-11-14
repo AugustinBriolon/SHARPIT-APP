@@ -11,11 +11,11 @@ struct GuidedExerciseMediaView: View {
         AnimatedRemoteGIF(url: url)
             .frame(maxWidth: .infinity)
             .frame(height: height)
-            .background(SharpitColor.chipSurface)
+            .background(SharpitColor.tile)
             .clipShape(RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(SharpitColor.analysisGrid.opacity(0.35), lineWidth: 1)
+                    .strokeBorder(SharpitColor.divider.opacity(0.35), lineWidth: 1)
             )
             .accessibilityLabel("Démonstration de l’exercice")
     }
@@ -36,9 +36,9 @@ struct GuidedExerciseThumbView: View {
             case .failure:
                 placeholder
             case .empty:
-                SharpitColor.chipSurface
+                SharpitColor.tile
             @unknown default:
-                SharpitColor.chipSurface
+                SharpitColor.tile
             }
         }
         .frame(width: size, height: size)
@@ -53,9 +53,9 @@ struct GuidedExerciseThumbView: View {
     private var placeholder: some View {
         Image(systemName: "figure.strengthtraining.traditional")
             .font(SharpitTypography.label)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(SharpitColor.chipSurface)
+            .background(SharpitColor.tile)
     }
 }
 

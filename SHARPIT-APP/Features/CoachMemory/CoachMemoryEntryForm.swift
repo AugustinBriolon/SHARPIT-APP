@@ -147,7 +147,7 @@ struct CoachMemoryEntryForm: View {
                             if !suggestion.subtitle.isEmpty {
                                 Text(suggestion.subtitle)
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -206,7 +206,7 @@ struct CoachMemoryEntryForm: View {
             }
             Text(draft.training.outcome)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -264,7 +264,7 @@ private struct TripSportGrid: View {
                         tile(sport, isOn: isOn)
                         Text(sport.label)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(isOn ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                            .foregroundStyle(isOn ? SharpitColor.foreground : SharpitColor.slate)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
@@ -285,9 +285,9 @@ private struct TripSportGrid: View {
             let side = SharpitTokens.tileSize
             Image(systemName: sport.symbol)
                 .font(.system(size: side * 0.42, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .frame(width: side, height: side)
-                .background(SharpitColor.analysisSurfaceAlt, in: RoundedRectangle(cornerRadius: SharpitRadius.tile, style: .continuous))
+                .background(SharpitColor.tile, in: RoundedRectangle(cornerRadius: SharpitRadius.tile, style: .continuous))
                 .accessibilityHidden(true)
         }
     }
@@ -310,7 +310,7 @@ struct CoachMemoryEntryRow: View {
                     ForEach(sports) { sport in
                         Image(systemName: sport.symbol)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 .padding(.leading, SharpitTokens.tileSize + SharpitSpacing.sm)

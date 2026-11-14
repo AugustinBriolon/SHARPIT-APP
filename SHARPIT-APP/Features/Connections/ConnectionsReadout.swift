@@ -44,7 +44,7 @@ enum ConnectionsReadout {
             var color: Color {
                 switch self {
                 case .positive: SharpitColor.signalRecovery
-                case .neutral: SharpitColor.mutedForeground
+                case .neutral: SharpitColor.slate
                 case .negative: SharpitColor.signalRisk
                 }
             }

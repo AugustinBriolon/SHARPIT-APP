@@ -49,7 +49,8 @@ struct SleepView: View {
             unavailableTitle: String(localized: "Sommeil indisponible"),
             store: store,
             content: { sleep in SleepSections(sleep: sleep, segments: segments) },
-            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload)
+            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload),
+            wash: .sleep
         )
         // The sleep targets, set where they are read — right of the title, beside « Aujourd'hui ».
         .toolbar {
@@ -116,12 +117,12 @@ private struct SleepHero: View {
 
             Text(sleep.adequacy.label)
                 .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
 
             if sleep.nightStatus == .present {
-                Divider().overlay(SharpitColor.border)
+                Divider().overlay(SharpitColor.divider)
                 HStack(alignment: .top, spacing: SharpitSpacing.md) {
                     SharpitStatTile(
                         caption: String(localized: "Au lit · \(SleepReadout.clock(sleep.bedtimeMin)) → \(SleepReadout.clock(sleep.wakeMin))"),
@@ -139,7 +140,7 @@ private struct SleepHero: View {
 
                 let parts = SleepReadout.components(sleep.breakdown)
                 if !parts.isEmpty {
-                    Divider().overlay(SharpitColor.border)
+                    Divider().overlay(SharpitColor.divider)
                     SharpitEyebrow(String(localized: "Ce qui l'a façonné"))
                     VStack(spacing: SharpitSpacing.md) {
                         ForEach(parts, id: \.label) { part in
@@ -152,7 +153,7 @@ private struct SleepHero: View {
                      ? String(localized: "La nuit n'est pas encore synchronisée.")
                      : String(localized: "Aucune nuit enregistrée pour ce jour."))
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -171,10 +172,10 @@ private struct SleepHero: View {
                 Text(sleep.score.map { "\(Int($0.rounded()))" } ?? "—")
                     .font(SharpitTypography.system(size: 64, weight: .semibold, relativeTo: .largeTitle, digits: true))
                     .tracking(SharpitTypography.heroScoreTracking)
-                    .foregroundStyle(sleep.score == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                    .foregroundStyle(sleep.score == nil ? SharpitColor.slate : SharpitColor.foreground)
                 Text("sur 100")
                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 if !dynamicTypeSize.isAccessibilitySize { averagePill }
             }
         }
@@ -230,7 +231,7 @@ private struct SleepCoachCard: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Ce soir, au lit vers")
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                             Text(SleepReadout.clock(bedtime))
                                 .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .title, digits: true))
                                 .tracking(SharpitTypography.gaugeScoreTracking)
@@ -239,7 +240,7 @@ private struct SleepCoachCard: View {
                             if let windDown = sleep.windDownStartMin {
                                 Text("Coupez les écrans vers \(SleepReadout.clock(windDown))")
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                             }
                         }
                         Spacer(minLength: 0)
@@ -248,7 +249,7 @@ private struct SleepCoachCard: View {
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text("Besoin cette nuit")
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                                 Text(SleepReadout.duration(duration))
                                     .font(SharpitTypography.instrument)
                                     .foregroundStyle(SharpitColor.foreground)
@@ -267,14 +268,14 @@ private struct SleepCoachCard: View {
                         if !bits.isEmpty {
                             Text(bits.joined(separator: " · "))
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                     }
                 }
 
                 if !sleep.insights.isEmpty {
                     if sleep.recommendedBedtimeMin != nil {
-                        Divider().overlay(SharpitColor.border)
+                        Divider().overlay(SharpitColor.divider)
                     }
                     ForEach(sleep.insights, id: \.self) { insight in
                         SharpitInsightRow(
@@ -288,7 +289,7 @@ private struct SleepCoachCard: View {
                 if let note = sleep.recoveryNote {
                     Text(note)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
 
                 CoachDiscussButton(title: String(localized: "Discuter de mon sommeil")) {
@@ -361,7 +362,7 @@ private struct SleepNightCard: View {
                         Circle().fill(level.tone).frame(width: 8, height: 8)
                         Text(level.label)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                     }
                     Text(SleepReadout.duration(level.minutes(in: sleep.stages)))
@@ -396,10 +397,10 @@ private struct SleepTimeline: View {
         .chartYAxis(.hidden)
         .chartXAxis {
             AxisMarks(values: .stride(by: .hour, count: 2)) { _ in
-                AxisGridLine().foregroundStyle(SharpitColor.track)
+                AxisGridLine().foregroundStyle(SharpitColor.divider)
                 AxisValueLabel(format: .dateTime.hour())
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .frame(height: 150)
@@ -421,7 +422,7 @@ private struct SleepBankSection: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Solde 7 jours")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         Text(SleepReadout.bankBalance(debtMin: sleep.debt7Min))
                             .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .title, digits: true))
                             .tracking(SharpitTypography.gaugeScoreTracking)
@@ -431,13 +432,13 @@ private struct SleepBankSection: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("Solde 14 jours")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         Text(SleepReadout.bankBalance(debtMin: sleep.debt14Min))
                             .font(SharpitTypography.instrument)
                             .foregroundStyle(SleepReadout.bankTone(debtMin: sleep.debt14Min))
                     }
                 }
-                Divider().overlay(SharpitColor.border)
+                Divider().overlay(SharpitColor.divider)
                 HStack {
                     bankFact(
                         caption: String(localized: "Moyenne 7 j"),
@@ -467,7 +468,7 @@ private struct SleepBankSection: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text(caption)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .accessibilityElement(children: .combine)
     }

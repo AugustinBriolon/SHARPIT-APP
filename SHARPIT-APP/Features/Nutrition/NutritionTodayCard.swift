@@ -51,7 +51,7 @@ struct NutritionTodayCard: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text(detail)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .multilineTextAlignment(.leading)
         }
     }
@@ -89,7 +89,7 @@ private struct NutritionDayGlance: View {
                 .minimumScaleFactor(0.7)
             Text(calories?.goal.map { String(localized: "sur \(NutritionReadout.kcal($0)) kcal") } ?? "kcal")
                 .font(.system(size: 11, weight: .regular, design: .rounded))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             if let calories, calories.goal != nil {
                 NutritionGoalBar(
                     fill: NutritionReadout.fill(pct: calories.pct),
@@ -136,7 +136,7 @@ struct NutritionMacroColumns: View {
                 .monospacedDigit()
                 .foregroundStyle(SharpitColor.foreground)
             ZStack(alignment: .bottom) {
-                Capsule().fill(SharpitColor.analysisGrid)
+                Capsule().fill(SharpitColor.divider)
                 Capsule()
                     .fill(macro.tone)
                     .frame(height: max(height * fill, fill > 0 ? 4 : 0))
@@ -144,7 +144,7 @@ struct NutritionMacroColumns: View {
             .frame(width: 10, height: height)
             Text(macro.short)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 }

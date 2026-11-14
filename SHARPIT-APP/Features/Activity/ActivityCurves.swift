@@ -179,7 +179,7 @@ struct ActivityChartsSection: View {
             if shownCurves.isEmpty {
                 Text("Pas assez de données pour afficher cette courbe.")
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .frame(maxWidth: .infinity, minHeight: 120, alignment: .center)
             } else {
                 VStack(spacing: SharpitSpacing.md) {
@@ -277,13 +277,13 @@ private struct ActivityCurveLane: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(curve.metric.unit)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             } else {
                 Text("\(curve.summary) \(curve.metric.unit)")
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
     }
@@ -309,7 +309,7 @@ private struct ActivityCurveLane: View {
             }
             if let scrubbedMinute {
                 RuleMark(x: .value(String(localized: "Temps"), scrubbedMinute))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.5))
                     .lineStyle(StrokeStyle(lineWidth: 1))
             }
             if let scrubbed {
@@ -325,27 +325,27 @@ private struct ActivityCurveLane: View {
         .chartXSelection(value: $scrubbedMinute)
         .chartYAxis {
             AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.analysisGrid)
+                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.divider)
                 AxisValueLabel {
                     if let number = value.as(Double.self) {
                         Text(curve.axisLabel(plotted: number))
                             .font(SharpitTypography.meta)
                             .monospacedDigit()
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
             }
         }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.analysisGrid)
+                AxisGridLine(stroke: SharpitChartStyle.gridStroke).foregroundStyle(SharpitColor.divider)
                 if showsTimeAxis {
                     AxisValueLabel {
                         if let minutes = value.as(Double.self), let whole = Int(exactly: minutes.rounded()) {
                             Text("\(whole)′")
                                 .font(SharpitTypography.meta)
                                 .monospacedDigit()
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                     }
                 }
@@ -365,7 +365,7 @@ private struct ActivityMetricToggleLabel: View {
             .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
             .padding(.horizontal, SharpitSpacing.sm)
             .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-            .background(isSelected ? SharpitColor.primary : SharpitColor.chipSurface, in: Capsule())
+            .background(isSelected ? SharpitColor.primary : SharpitColor.tile, in: Capsule())
             .contentShape(Capsule())
     }
 }

@@ -120,7 +120,7 @@ struct FeedbackView: View {
                         if store.message.isEmpty {
                             Text("Ce matin, la proposition d’allègement…")
                                 .font(SharpitTypography.body)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                                 .padding(.top, 8)
                                 .padding(.leading, 5)
                                 .allowsHitTesting(false)
@@ -147,7 +147,7 @@ struct FeedbackView: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("Je lis chaque avis. Ce qui revient souvent passe en priorité.")
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.center)
             }
             Button("Écrire autre chose") {

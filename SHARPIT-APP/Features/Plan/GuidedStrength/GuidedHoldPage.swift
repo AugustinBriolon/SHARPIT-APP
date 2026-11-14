@@ -120,7 +120,7 @@ struct GuidedHoldPage: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(Self.next(phase, clock: clock) ?? exerciseName)
                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             if clock.perSide { sequence(current: step) }
             ZStack {
@@ -129,7 +129,7 @@ struct GuidedHoldPage: View {
                     .font(SharpitTypography.heroScore)
                     .tracking(SharpitTypography.heroScoreTracking)
                     .foregroundStyle(step == .hold(side: 0) || step == .hold(side: 1) || step == .hold(side: nil)
-                        ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                        ? SharpitColor.foreground : SharpitColor.slate)
                     .contentTransition(.numericText())
             }
             .frame(width: 220, height: 220)
@@ -173,7 +173,7 @@ struct GuidedHoldPage: View {
                     Text(Self.sideName(index) + " · " + PlannedSessionFormat.durationSeconds(segment.seconds))
                 }
                 .font(SharpitTypography.system(size: 15, weight: isNow ? .semibold : .regular, relativeTo: .subheadline, digits: true))
-                .foregroundStyle(isNow ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .foregroundStyle(isNow ? SharpitColor.foreground : SharpitColor.slate)
             }
         }
         .accessibilityElement(children: .combine)

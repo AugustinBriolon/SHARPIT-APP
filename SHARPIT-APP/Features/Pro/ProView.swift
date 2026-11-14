@@ -72,7 +72,7 @@ struct ProView: View {
             VStack(spacing: SharpitSpacing.sm) {
                 Text("Impossible de préparer l'achat pour le moment.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.center)
                 Button("Réessayer") {
                     Task { await store.ensureAppAccountToken() }
@@ -98,7 +98,7 @@ struct ProView: View {
             if let message = store.message {
                 Text(message)
                     .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(SharpitColor.highlight)
+                    .foregroundStyle(SharpitColor.statusGoodForeground)
                     .transition(.opacity)
             }
         }
@@ -133,7 +133,7 @@ struct ProView: View {
             }
             Text("L'abonnement est géré par l'App Store et se renouvelle automatiquement, sauf résiliation au moins 24 h avant la fin de la période en cours.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: SharpitSpacing.md) {

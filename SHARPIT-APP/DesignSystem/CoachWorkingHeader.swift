@@ -39,12 +39,12 @@ struct CoachWorkingHeader: View {
                     .transition(reduceMotion ? .opacity : .push(from: .bottom).combined(with: .opacity))
                 Text(writingDetail ?? readingDetail)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .contentTransition(.numericText())
                 if let note {
                     Text(note)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
         }
@@ -96,7 +96,7 @@ struct SharpitPrimaryButton: View {
             }
             .foregroundStyle(foreground)
             .frame(maxWidth: .infinity, minHeight: SharpitSpacing.controlHeight)
-            .sharpitConcentricBackground(background, minimum: SharpitRadius.control)
+            .background(background, in: Capsule())
             .contentShape(.rect)
         }
         .buttonStyle(.sharpitPressable)
@@ -104,20 +104,20 @@ struct SharpitPrimaryButton: View {
     }
 
     private var foreground: Color {
-        guard isEnabled else { return SharpitColor.mutedForeground }
+        guard isEnabled else { return SharpitColor.slate }
         switch style {
         case .primary: return SharpitColor.primaryForeground
-        case .accent: return SharpitColor.highlightForeground
+        case .accent: return SharpitColor.primaryForeground
         case .secondary: return SharpitColor.foreground
         }
     }
 
     private var background: Color {
-        guard isEnabled else { return SharpitColor.chipSurface }
+        guard isEnabled else { return SharpitColor.tile }
         switch style {
         case .primary: return SharpitColor.primary
-        case .accent: return SharpitColor.highlight
-        case .secondary: return SharpitColor.chipSurface
+        case .accent: return SharpitColor.primary
+        case .secondary: return SharpitColor.tile
         }
     }
 }
@@ -132,11 +132,11 @@ struct SharpitDashedAddButton: View {
             Label(title, systemImage: "plus")
                 .labelStyle(.titleAndIcon)
                 .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight)
                 .overlay(
                     RoundedRectangle(cornerRadius: SharpitRadius.row, style: .continuous)
-                        .strokeBorder(SharpitColor.mutedForeground.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                        .strokeBorder(SharpitColor.slate.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
                 )
                 .contentShape(RoundedRectangle(cornerRadius: SharpitRadius.row, style: .continuous))
         }
@@ -155,7 +155,7 @@ struct SharpitActionDock<Content: View>: View {
             .padding(.vertical, SharpitSpacing.sm)
             .background(
                 LinearGradient(
-                    colors: [SharpitColor.background.opacity(0), SharpitColor.background.opacity(0.9), SharpitColor.background],
+                    colors: [SharpitColor.card.opacity(0), SharpitColor.card.opacity(0.9), SharpitColor.card],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -172,10 +172,10 @@ struct SharpitSportBadge: View {
 
     var body: some View {
         Image(sharpitSymbol: type.symbolName)
-            .font(.system(size: size * 0.42, weight: .semibold))
+            .font(.system(size: size * 0.42, weight: .regular))
             .foregroundStyle(SharpitSportTone.tileGlyph(for: type))
             .frame(width: size, height: size)
-            .sharpitConcentricBackground(SharpitSportTone.tile(for: type), minimum: SharpitRadius.tile * size / SharpitTokens.tileSize)
+            .background(SharpitSportTone.tile(for: type), in: Circle())
             .accessibilityHidden(true)
     }
 }
@@ -189,7 +189,7 @@ struct SharpitKeepToggle: View {
         Button(action: action) {
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground.opacity(0.4))
+                .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.slate.opacity(0.4))
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 44, height: 44)
                 .contentShape(.rect)

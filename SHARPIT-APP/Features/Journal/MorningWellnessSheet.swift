@@ -89,7 +89,7 @@ struct MorningWellnessSheet: View {
                     VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                         Text("Note pour le coach (optionnel)")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         TextField("Détail sur ta nuit, sensation particulière…", text: $store.notes, axis: .vertical)
                             .lineLimit(2...3)
                             .font(SharpitTypography.body)
@@ -113,7 +113,7 @@ struct MorningWellnessSheet: View {
                 .opacity(store.canSubmit ? 1 : 0.45)
                 .padding(.horizontal, SharpitSpacing.pageInset)
                 .padding(.vertical, SharpitSpacing.sm)
-                .background(SharpitColor.background)
+                .background(SharpitColor.card)
             }
         }
     }
@@ -168,7 +168,7 @@ private struct WellnessDimensionRow: View {
 
             Text(selected.map { dimension.label(for: $0) } ?? String(localized: "Choisir"))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(selected != nil ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .foregroundStyle(selected != nil ? SharpitColor.foreground : SharpitColor.slate)
                 .lineLimit(1)
         }
     }
@@ -190,7 +190,7 @@ private struct WellnessDimensionRow: View {
                         )
                         .overlay(
                             Circle()
-                                .strokeBorder(isSelected ? Color.white.opacity(0.2) : SharpitColor.analysisBorder.opacity(0.5), lineWidth: 0.5)
+                                .strokeBorder(isSelected ? Color.white.opacity(0.2) : SharpitColor.divider.opacity(0.5), lineWidth: 0.5)
                         )
                 }
                 .buttonStyle(.plain)
@@ -207,15 +207,15 @@ private struct WellnessLoadingSkeleton: View {
             ForEach(0..<4, id: \.self) { _ in
                 HStack(spacing: SharpitSpacing.sm) {
                     Circle()
-                        .fill(SharpitColor.analysisSurfaceAlt)
+                        .fill(SharpitColor.tile)
                         .frame(width: 32, height: 32)
 
                     VStack(alignment: .leading, spacing: 4) {
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(SharpitColor.analysisSurfaceAlt)
+                            .fill(SharpitColor.tile)
                             .frame(width: 60, height: 14)
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(SharpitColor.analysisSurfaceAlt)
+                            .fill(SharpitColor.tile)
                             .frame(width: 44, height: 10)
                     }
 
@@ -224,7 +224,7 @@ private struct WellnessLoadingSkeleton: View {
                     HStack(spacing: 6) {
                         ForEach(0..<5, id: \.self) { _ in
                             Circle()
-                                .fill(SharpitColor.analysisSurfaceAlt)
+                                .fill(SharpitColor.tile)
                                 .frame(width: 35, height: 35)
                         }
                     }

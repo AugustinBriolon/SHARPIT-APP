@@ -121,7 +121,7 @@ struct PlanGeneratorSheet: View {
                                 .font(.system(size: 11, weight: .semibold))
                         }
                         .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 .padding(SharpitSpacing.cardPadding)
@@ -160,7 +160,7 @@ struct PlanGeneratorSheet: View {
                     .disabled(selected.isEmpty || busy)
                     Button("Recommencer") { store.reset() }
                         .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .disabled(busy)
                 }
             }

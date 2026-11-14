@@ -73,7 +73,8 @@ private func hex(_ color: Color, style: UIUserInterfaceStyle = .light) -> String
             hex(SharpitSportTone.accent(for: type), style: .dark)
                 == hex(SharpitColor.foreground, style: .dark)
         )
-        #expect(hex(SharpitSportTone.tile(for: type)) == hex(SharpitColor.inkSurface))
+        #expect(hex(SharpitSportTone.tile(for: type)) == hex(SharpitColor.tile))
+        #expect(hex(SharpitSportTone.tileGlyph(for: type)) == hex(SharpitColor.foreground))
     }
 }
 
@@ -124,13 +125,13 @@ private func hex(_ color: Color, style: UIUserInterfaceStyle = .light) -> String
 }
 
 @Test func radiiNestFromCardToChip() {
-    // Card 28 > inset group 24 > row 18 > control 16 > tile 14 > chip 8: each nested
-    // corner is tighter than the one around it, as in the references.
+    // Card 20 > inset group 16 > row 14 > control 12 > tile 10 > chip 8: each nested
+    // corner is tighter than the one around it.
     let ladder = [
         SharpitRadius.panel, SharpitRadius.inset, SharpitRadius.row,
         SharpitRadius.control, SharpitRadius.tile, SharpitRadius.small,
     ]
-    #expect(ladder == [28, 24, 18, 16, 14, 8])
+    #expect(ladder == [20, 16, 14, 12, 10, 8])
     #expect(SharpitRadius.panelLarge == SharpitRadius.panel)
 }
 
@@ -186,7 +187,7 @@ private func luminance(_ color: Color, style: UIUserInterfaceStyle) -> CGFloat {
         luminance(SharpitElevatedColor.sheet, style: .dark)
             > luminance(SharpitColor.background, style: .dark)
     )
-    #expect(hex(SharpitElevatedColor.sheet) == hex(SharpitColor.background))
+    #expect(hex(SharpitElevatedColor.sheet) == hex(SharpitColor.card))
 }
 
 /// Panels inside a sheet must lift again, or they sink into the sheet's own tone.
@@ -198,11 +199,11 @@ private func luminance(_ color: Color, style: UIUserInterfaceStyle) -> CGFloat {
     #expect(hex(SharpitElevatedColor.panelOnSheet) == hex(SharpitColor.analysisSurface))
 }
 
-@Test func onlyCardsCastAShadow() {
-    #expect(SharpitSurfaceStyle.panel.shadow != nil)
-    #expect(SharpitSurfaceStyle.chip.shadow == nil)
-    #expect(SharpitSurfaceStyle.panelAlt.shadow == nil)
-    #expect(SharpitSurfaceStyle.row.shadow == nil)
+/// A card is the sheet's own colour inside a hairline (SHARPIT-WEBAPP ADR-131).
+@Test func aCardTakesTheSheetColourAndTheCliniqueCorner() {
+    #expect(hex(SharpitSurfaceStyle.panel.fill(at: .base)) == hex(SharpitColor.card))
+    #expect(SharpitSurfaceStyle.panel.radius == SharpitTokens.cardShapeRadius)
+    #expect(SharpitRadius.panel == 20)
 }
 
 @Test func aRowSitsWhiteInsideTheGreyGroup() {

@@ -55,7 +55,7 @@ struct BloodTestsView: View {
                 }
                 Text("Intervalles du laboratoire, pas un avis médical.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
@@ -69,7 +69,7 @@ struct BloodTestsView: View {
             SharpitCardHeader(title: String(localized: "Aucune analyse"), symbol: "drop", showsChevron: false)
             Text("Importe le PDF de ton laboratoire : seules les valeurs sont gardées, jamais le document.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
             SharpitPrimaryButton(title: String(localized: "Importer un compte rendu")) { isImporting = true }
         }
@@ -132,12 +132,12 @@ private struct BloodTestRow: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(summary)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(test.outOfRangeCount > 0 ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
+                    .foregroundStyle(test.outOfRangeCount > 0 ? SharpitColor.signalCaution : SharpitColor.slate)
             }
             Spacer(minLength: SharpitSpacing.xs)
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .padding(.vertical, SharpitSpacing.xs)
@@ -171,13 +171,13 @@ private struct BloodMarkerEvolutionRow: View {
                         Text(BloodMarkerReadout.delta(change))
                             .font(SharpitTypography.meta)
                             .monospacedDigit()
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
             }
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .padding(.vertical, SharpitSpacing.xs)
@@ -274,7 +274,7 @@ private struct BloodResultRow: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(BloodMarkerReadout.caption(status: result.status, low: result.refLow, high: result.refHigh))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(BloodMarkerReadout.isOutOfRange(result.status) ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
+                    .foregroundStyle(BloodMarkerReadout.isOutOfRange(result.status) ? SharpitColor.signalCaution : SharpitColor.slate)
             }
             Spacer(minLength: SharpitSpacing.xs)
             Text(BloodMarkerReadout.value(result.value, unit: result.unit))
@@ -304,7 +304,7 @@ struct BloodMarkerHistoryView: View {
                 values
                 Text("Une variation entre deux analyses peut venir du laboratoire, de l'heure ou de l'entraînement de la veille.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
@@ -322,7 +322,7 @@ struct BloodMarkerHistoryView: View {
                     yStart: .value("Bas", latest.refLow ?? domain.lowerBound),
                     yEnd: .value("Haut", latest.refHigh ?? domain.upperBound)
                 )
-                .foregroundStyle(SharpitColor.highlight.opacity(0.12))
+                .foregroundStyle(SharpitColor.statusGoodMark.opacity(0.12))
             }
             ForEach(history.points) { point in
                 LineMark(x: .value("Date", point.date), y: .value("Valeur", point.value))
@@ -358,7 +358,7 @@ struct BloodMarkerHistoryView: View {
                             .foregroundStyle(SharpitColor.foreground)
                         Text(BloodMarkerReadout.caption(status: point.status, low: point.refLow, high: point.refHigh))
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(BloodMarkerReadout.isOutOfRange(point.status) ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
+                            .foregroundStyle(BloodMarkerReadout.isOutOfRange(point.status) ? SharpitColor.signalCaution : SharpitColor.slate)
                     }
                     Spacer(minLength: SharpitSpacing.xs)
                     Text(BloodMarkerReadout.value(point.value, unit: history.marker?.unit ?? ""))

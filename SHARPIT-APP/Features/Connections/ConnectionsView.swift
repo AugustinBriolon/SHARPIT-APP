@@ -126,7 +126,7 @@ struct ConnectionsView: View {
                 .font(SharpitTypography.bodyEmphasis)
             Text("Relie Apple Santé, Strava ou une balance pour que le coach lise tes données.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Button("Ajouter une source") { showingAdd = true }
                 .font(SharpitTypography.bodyEmphasis)
                 .padding(.top, SharpitSpacing.xs)
@@ -143,7 +143,7 @@ struct ConnectionsView: View {
                     Text(source.name)
                     Text(line.text)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(line.isProblem ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                        .foregroundStyle(line.isProblem ? SharpitColor.signalRisk : SharpitColor.slate)
                         .lineLimit(1)
                 }
                 Spacer(minLength: SharpitSpacing.xs)

@@ -96,7 +96,7 @@ struct ThresholdsView: View {
             Image(systemName: store.profile.thresholdsSyncedAt != nil ? "arrow.triangle.2.circlepath" : "hand.point.up.left")
         }
         .font(SharpitTypography.meta)
-        .foregroundStyle(SharpitColor.mutedForeground)
+        .foregroundStyle(SharpitColor.slate)
         .padding(.horizontal, SharpitSpacing.xxs)
     }
 
@@ -300,11 +300,11 @@ struct ThresholdsView: View {
                 Spacer(minLength: SharpitSpacing.xs)
                 Text(snapshot.sourceLabel)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Text(formattedSnapshotValues(snapshot))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .padding(.horizontal, SharpitSpacing.rowPaddingX)
         .padding(.vertical, SharpitSpacing.sm)
@@ -409,7 +409,7 @@ private struct ThresholdRow: View {
                 if let line = error ?? hint {
                     Text(line)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(error != nil ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                        .foregroundStyle(error != nil ? SharpitColor.signalRisk : SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -425,7 +425,7 @@ private struct ThresholdRow: View {
                     .onChange(of: text) { _, _ in onChange() }
                 Text(unit)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .padding(.horizontal, SharpitSpacing.rowPaddingX)

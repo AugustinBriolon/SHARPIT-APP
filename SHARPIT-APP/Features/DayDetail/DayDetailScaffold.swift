@@ -16,6 +16,8 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     /// A stand-in payload drawn redacted while the day loads, so a screen opens in its own
     /// shape; without one, the shared causal-column skeleton.
     var loadingPlaceholder: Payload?
+    /// The tint at the top of the sheet: the screen's pillar, neutral without one.
+    var wash: CliniqueWash = .neutral
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,7 +42,7 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                     neighborPage(day)
                 }
         }
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: wash)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.load() }
@@ -149,7 +151,7 @@ private struct DayDetailSkeleton: View {
             }
             .fixedSize(horizontal: false, vertical: true)
         }
-        .foregroundStyle(SharpitColor.mutedForeground)
+        .foregroundStyle(SharpitColor.slate)
     }
 
     private var statTile: some View {
@@ -166,7 +168,7 @@ private struct DayDetailSkeleton: View {
 
     private func panel(height: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: SharpitRadius.panel)
-            .fill(SharpitColor.mutedForeground.opacity(0.12))
+            .fill(SharpitColor.slate.opacity(0.12))
             .frame(height: height)
     }
 }

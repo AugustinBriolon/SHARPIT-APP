@@ -30,7 +30,7 @@ struct FoodLogMealsSection: View {
                 if let day = store.dayHealth, day.score != nil {
                     Text("Note du jour")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     FoodHealthBadge(meal: day)
                 }
             }
@@ -41,7 +41,7 @@ struct FoodLogMealsSection: View {
                     row(section)
                     if index < sections.count - 1 {
                         Rectangle()
-                            .fill(SharpitColor.analysisGrid)
+                            .fill(SharpitColor.divider)
                             .frame(height: 1)
                             .padding(.leading, 56)
                     }
@@ -157,7 +157,7 @@ private struct FoodLogMealRow: View {
                     }
                 }
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
             }
             .layoutPriority(1)
@@ -168,7 +168,7 @@ private struct FoodLogMealRow: View {
             if opensPage {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.45))
                     .accessibilityHidden(true)
             }
         }
@@ -318,7 +318,7 @@ private struct FoodLogEntryRow: View {
                 Text(detail)
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 NutritionMacroSplitBar(entry: entry)
                     .frame(maxWidth: 120)
                 if let flag {

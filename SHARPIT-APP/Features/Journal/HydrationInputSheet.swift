@@ -39,12 +39,12 @@ struct HydrationInputSheet: View {
                                 .animation(SharpitMotion.selection, value: currentMl)
                             Text("ml")
                                 .font(SharpitTypography.verdict)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
 
                         Text("Eau et liquides consommés sur la journée")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     .padding(.top, SharpitSpacing.xs)
 
@@ -64,7 +64,7 @@ struct HydrationInputSheet: View {
 
                         Text("± 100 ml")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .frame(minWidth: 70)
 
                         Button {
@@ -107,7 +107,7 @@ struct HydrationInputSheet: View {
                                                 .foregroundStyle(SharpitColor.foreground)
                                             Text("+\(preset.delta) ml")
                                                 .font(SharpitTypography.meta)
-                                                .foregroundStyle(SharpitColor.mutedForeground)
+                                                .foregroundStyle(SharpitColor.slate)
                                         }
                                         Spacer(minLength: 0)
                                     }

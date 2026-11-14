@@ -254,7 +254,7 @@ struct GuidedStrengthWorkoutView: View {
         if heartRate.status == .connected {
             return SharpitColor.destructive
         }
-        return SharpitColor.mutedForeground
+        return SharpitColor.slate
     }
 
     private var heartRateAccessibilityLabel: String {
@@ -281,13 +281,13 @@ struct GuidedStrengthWorkoutView: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(overviewSubtitle)
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
 
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                     Text("Exercices")
                         .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     SharpitInsetGroup {
                         ForEach(Array(session.exerciseGroups.enumerated()), id: \.element.id) { offset, group in
                             overviewExerciseRow(group: group, order: offset + 1)
@@ -349,7 +349,7 @@ struct GuidedStrengthWorkoutView: View {
 
                 Text("\(done)/\(total) séries")
                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize()
                 if volume > 0 {
                     volumeFigure(volume)
@@ -395,7 +395,7 @@ struct GuidedStrengthWorkoutView: View {
                         GuidedExerciseMediaView(url: gifURL, height: 188)
                         Text(ExerciseMediaCatalog.attribution)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
 
                     HStack(alignment: .top, spacing: SharpitSpacing.sm) {
@@ -410,7 +410,7 @@ struct GuidedStrengthWorkoutView: View {
                                 .foregroundStyle(SharpitColor.foreground)
                             Text(group?.notes.flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Séries prescrites"))
                                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
 
                         Spacer(minLength: 0)
@@ -418,7 +418,7 @@ struct GuidedStrengthWorkoutView: View {
                         VStack(alignment: .trailing, spacing: 2) {
                             Text("Volume")
                                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                             volumeFigure(volume)
                         }
                     }
@@ -497,7 +497,7 @@ struct GuidedStrengthWorkoutView: View {
                     } label: {
                         Text(set.durationUsesMinutes ? "min" : "s")
                             .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .underline(pattern: .dot)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 2)
@@ -520,7 +520,7 @@ struct GuidedStrengthWorkoutView: View {
 
                     Text("×")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .padding(.leading, -SharpitSpacing.xs)
                         .padding(.trailing, SharpitSpacing.sm)
 
@@ -540,7 +540,7 @@ struct GuidedStrengthWorkoutView: View {
                     } label: {
                         Text("kg")
                             .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .underline(pattern: .dot)
                             .padding(.leading, -SharpitSpacing.xs)
                             .padding(.trailing, 4)
@@ -629,7 +629,7 @@ struct GuidedStrengthWorkoutView: View {
         if set.perSide {
             Text("par côté")
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
         }
     }
@@ -648,7 +648,7 @@ struct GuidedStrengthWorkoutView: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(restSubtitle(next: next))
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
 
                 TimelineView(.periodic(from: .now, by: 1)) { _ in
@@ -664,7 +664,7 @@ struct GuidedStrengthWorkoutView: View {
                                 .contentTransition(.numericText())
                             Text("jusqu’à la prochaine série")
                                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                     }
                     .frame(width: 220, height: 220)
@@ -709,7 +709,7 @@ struct GuidedStrengthWorkoutView: View {
         HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
             Text(label)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Text(value ?? "—")
                 .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
@@ -739,7 +739,7 @@ struct GuidedStrengthWorkoutView: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text("\(session.completedCount) série\(session.completedCount == 1 ? "" : "s") cochée\(session.completedCount == 1 ? "" : "s")")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
 
                 // Feedback first — the job of this screen — then the set list as context.
@@ -748,7 +748,7 @@ struct GuidedStrengthWorkoutView: View {
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                     Text("Exercices")
                         .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     SharpitInsetGroup {
                         ForEach(Array(session.exerciseGroups.enumerated()), id: \.element.id) { offset, group in
                             let volume = group.volumeKg(in: session.targets)
@@ -758,7 +758,7 @@ struct GuidedStrengthWorkoutView: View {
                             } trailing: {
                                 Text("\(done) série\(done == 1 ? "" : "s")")
                                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                                 if volume > 0 {
                                     volumeFigure(volume)
                                 }
@@ -811,7 +811,7 @@ struct GuidedStrengthWorkoutView: View {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text("Effort")
                     .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer()
                 Text("RPE \(rpe.map(String.init) ?? "—")")
                     .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body, digits: true))
@@ -841,7 +841,7 @@ struct GuidedStrengthWorkoutView: View {
                             .font(.system(size: 32))
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .padding(.vertical, SharpitSpacing.xs)
-                            .sharpitConcentricBackground(selected ? SharpitColor.chipSurface : Color.clear, minimum: SharpitRadius.small)
+                            .sharpitConcentricBackground(selected ? SharpitColor.tile : Color.clear, minimum: SharpitRadius.small)
                             .opacity(feeling == nil || selected ? 1 : 0.38)
                             .scaleEffect(selected ? 1.06 : 1)
                             .animation(SharpitMotion.selection, value: feeling)
@@ -854,7 +854,7 @@ struct GuidedStrengthWorkoutView: View {
             // Reserve height so selecting doesn't jump the layout (CLS).
             Text(feeling?.hint ?? " ")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityHidden(feeling == nil)
         }
@@ -1152,11 +1152,11 @@ private struct GuidedRPEScale: View {
             HStack {
                 Text("1")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer()
                 Text("10")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .onAppear {

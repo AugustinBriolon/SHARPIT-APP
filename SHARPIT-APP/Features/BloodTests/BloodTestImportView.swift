@@ -16,7 +16,7 @@ struct BloodTestsCard: View {
                 SharpitCardHeader(title: String(localized: "Analyses de sang"), symbol: "drop")
                 Text("Importe un compte rendu : seules les valeurs sont gardées, jamais le document.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(SharpitSpacing.cardPadding)
@@ -84,7 +84,7 @@ struct BloodTestImportView: View {
                 SharpitCardHeader(title: String(localized: "Importer un compte rendu"), symbol: "doc.text.viewfinder", showsChevron: false)
                 Text("Le document est lu sur ton iPhone. Ton nom, ton adresse et ton médecin ne sont ni lus ni envoyés : seules les valeurs que tu confirmes sont enregistrées.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
                 if let message = store.errorMessage {
                     Text(message)
@@ -199,10 +199,10 @@ private struct BloodTestReviewRow: View {
                 .accessibilityLabel(row.marker?.label ?? row.markerKey)
             Text(row.marker?.unit ?? "")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Button(action: remove) {
                 Image(systemName: "minus.circle")
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Retirer \(row.marker?.label ?? row.markerKey)")
@@ -220,7 +220,7 @@ private struct BloodTestReviewRow: View {
 
     private var captionTone: Color {
         guard row.isPlausible, let status = row.status else { return SharpitColor.signalRisk }
-        return BloodMarkerReadout.isOutOfRange(status) ? SharpitColor.signalCaution : SharpitColor.mutedForeground
+        return BloodMarkerReadout.isOutOfRange(status) ? SharpitColor.signalCaution : SharpitColor.slate
     }
 }
 

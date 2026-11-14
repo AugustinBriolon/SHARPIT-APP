@@ -89,7 +89,7 @@ struct AdaptationSections: View {
             if let trend = AdaptationReadout.trend(adaptation.trendLabel) {
                 Label(trend, systemImage: "chart.line.uptrend.xyaxis")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             CoachDiscussButton(title: String(localized: "Discuter de mon adaptation")) {
                 router.discussWithCoach(about: CoachDiscuss.describe(.today))
@@ -157,7 +157,7 @@ private struct AdaptationDimensionsSection: View {
                 if AdaptationReadout.isNeuromuscularMissing(adaptation) {
                     Text("Efficacité neuromusculaire indisponible. Moyenne de dérive FC sur 14 jours. Il faut au moins une sortie course/vélo ≥ 30 min avec stream FC + vitesse GPS (ou puissance) dans cette fenêtre.")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

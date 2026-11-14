@@ -82,7 +82,7 @@ struct PlanAdapterSheet: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             Text("Le coach relit ce que tu as fait ces derniers jours et propose de modifier tes séances des deux prochaines semaines, sans tout effacer.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
             SharpitFormField(
                 String(localized: "Ce qui a changé (optionnel)"),
@@ -159,7 +159,7 @@ struct PlanAdapterSheet: View {
                     .disabled(selected.isEmpty || busy)
                     Button("Recommencer") { store.reset() }
                         .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .disabled(busy)
                 }
             }
@@ -201,7 +201,7 @@ private struct AdjustmentRow: View {
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
-                    .foregroundStyle(change.action == .remove ? SharpitColor.signalRisk : SharpitColor.mutedForeground)
+                    .foregroundStyle(change.action == .remove ? SharpitColor.signalRisk : SharpitColor.slate)
                 Text(change.title ?? String(localized: "Séance prévue"))
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
@@ -210,7 +210,7 @@ private struct AdjustmentRow: View {
                 if !change.reason.isEmpty {
                     Text(change.reason)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(3)
                 }
             }

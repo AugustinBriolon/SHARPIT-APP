@@ -122,7 +122,7 @@ struct SensitiveZoneFormSheet: View {
                                 .padding(.horizontal, SharpitSpacing.sm)
                                 .frame(minHeight: 32)
                                 .background(
-                                    Capsule().fill(step == question ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt)
+                                    Capsule().fill(step == question ? SharpitColor.primary : SharpitColor.tile)
                                 )
                         }
                         .buttonStyle(.sharpitPressable)
@@ -198,7 +198,7 @@ struct SensitiveZoneFormSheet: View {
                     .sharpitFieldWell()
                 Text("Une zone hors liste reste suivie, mais le plan ne peut pas vérifier qu'il l'épargne.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
             nextButton(String(localized: "Suivant"), isEnabled: draft.region != nil, action: advance)
@@ -256,11 +256,11 @@ struct SensitiveZoneFormSheet: View {
                     .contentTransition(.numericText(value: Double(draft.severity ?? 0)))
                 Text("/10")
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer()
                 Text(draft.severity.map(ZoneSeverityTint.caption) ?? "")
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .contentTransition(.opacity)
             }
             .animation(SharpitMotion.selection, value: draft.severity)
@@ -279,7 +279,7 @@ struct SensitiveZoneFormSheet: View {
 
             Text(severityCaption(corrective: corrective))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
 
             nextButton(String(localized: "Suivant"), isEnabled: draft.severity != nil, action: advance)
@@ -322,13 +322,13 @@ struct SensitiveZoneFormSheet: View {
                     id: \.element
                 ) { index, step in
                     if index > 0 {
-                        Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                        Rectangle().fill(SharpitColor.divider).frame(height: 1)
                     }
                     Button { go(to: step) } label: {
                         HStack {
                             Text(step.shortTitle)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                             Spacer(minLength: SharpitSpacing.sm)
                             Text(step.answer(in: draft) ?? "—")
                                 .font(SharpitTypography.bodyEmphasis)
@@ -336,7 +336,7 @@ struct SensitiveZoneFormSheet: View {
                                 .multilineTextAlignment(.trailing)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                                .foregroundStyle(SharpitColor.slate.opacity(0.6))
                                 .accessibilityHidden(true)
                         }
                         .padding(.vertical, SharpitSpacing.sm)
@@ -367,7 +367,7 @@ struct SensitiveZoneFormSheet: View {
                         .font(SharpitTypography.bodyEmphasis)
                     Text("Le coach adapte les séances à cette zone.")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             .tint(SharpitColor.primary)
@@ -531,17 +531,17 @@ struct ZoneCheckinSheet: View {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(draft.severity.map(String.init) ?? "—")
                         .font(SharpitTypography.gaugeScore)
-                        .foregroundStyle(draft.severity.map(ZoneSeverityTint.color) ?? SharpitColor.mutedForeground)
+                        .foregroundStyle(draft.severity.map(ZoneSeverityTint.color) ?? SharpitColor.slate)
                         .contentTransition(.numericText())
                     Text("/10")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             ZoneSeverityScale(severity: $draft.severity)
             Text(draft.severity.map(ZoneSeverityTint.caption) ?? String(localized: "Touche une valeur"))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .contentTransition(.opacity)
         }
         .animation(SharpitMotion.selection, value: draft.severity)
@@ -584,7 +584,7 @@ struct ZoneCheckinSheet: View {
             .foregroundStyle(.white)
             .sharpitContainerCorner(SharpitRadius.panel)
             .background(
-                draft.isComplete ? SharpitColor.primary : SharpitColor.mutedForeground.opacity(0.35),
+                draft.isComplete ? SharpitColor.primary : SharpitColor.slate.opacity(0.35),
                 in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
             )
         }
@@ -611,7 +611,7 @@ struct ZoneSeverityScale: View {
                 Text("Insupportable")
             }
             .font(SharpitTypography.meta)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
         }
     }
 
@@ -665,7 +665,7 @@ struct ZoneImpactPicker: View {
                         Spacer(minLength: 0)
                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.mutedForeground)
+                            .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate)
                     }
                     .padding(.horizontal, SharpitSpacing.cardPadding)
                     .padding(.vertical, 14)

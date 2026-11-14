@@ -274,7 +274,7 @@ private struct FoodSearchPage: View {
                     if results.offUnavailable {
                         Text("Open Food Facts ne répond pas pour l'instant.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     ForEach(results.products) { productRow($0) }
                 } header: {
@@ -288,7 +288,7 @@ private struct FoodSearchPage: View {
                 Section {
                     Text("Aucun aliment pour « \(query) ». Saisis-le ou crée-le.")
                         .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 .sharpitListRows()
             }
@@ -296,7 +296,7 @@ private struct FoodSearchPage: View {
             Section {
                 HStack(spacing: SharpitSpacing.xs) {
                     ProgressView().controlSize(.small)
-                    Text("Recherche…").foregroundStyle(SharpitColor.mutedForeground)
+                    Text("Recherche…").foregroundStyle(SharpitColor.slate)
                 }
             }
             .sharpitListRows()
@@ -311,7 +311,7 @@ private struct FoodSearchPage: View {
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.45))
                     .accessibilityHidden(true)
             }
             .contentShape(Rectangle())
@@ -341,7 +341,7 @@ struct FoodProductRow: View {
                 name.lineLimit(2)
                 Text(detail)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
                 NutritionMacroSplitBar(product: product)
                     .frame(maxWidth: 120)
@@ -358,7 +358,7 @@ struct FoodProductRow: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("kcal/100 g")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .contentShape(Rectangle())
@@ -436,7 +436,7 @@ struct FoodPortionPage: View {
                     if let brand = product.brand, !brand.isEmpty {
                         Text(brand)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 FoodPortionPreview(nutrients: FoodPortion.nutrients(of: product, grams: grams ?? 0))
@@ -600,7 +600,7 @@ struct FoodNumberRow: View {
                     .multilineTextAlignment(.trailing)
                     .monospacedDigit()
                 Text(unit)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
     }

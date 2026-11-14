@@ -278,7 +278,7 @@ struct SensitiveZoneBodyMap: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             SensitiveZoneSilhouette(figure: figure)
-                .fill(SharpitColor.mutedForeground.opacity(0.14))
+                .fill(SharpitColor.slate.opacity(0.14))
                 .frame(width: width, height: height)
                 .contentShape(.rect)
                 // Anywhere on the figure, not only on a dot: the nearest part is the one meant.
@@ -304,7 +304,7 @@ struct SensitiveZoneBodyMap: View {
         let mark = Circle()
             .fill(fill ?? SharpitColor.card)
             .overlay(
-                Circle().strokeBorder(fill == nil ? SharpitColor.mutedForeground.opacity(0.7) : SharpitColor.foreground, lineWidth: fill == nil ? 1.5 : 2)
+                Circle().strokeBorder(fill == nil ? SharpitColor.slate.opacity(0.7) : SharpitColor.foreground, lineWidth: fill == nil ? 1.5 : 2)
             )
             .frame(width: fill == nil ? dot : dot * 1.35, height: fill == nil ? dot : dot * 1.35)
             .frame(width: target, height: target)
@@ -360,7 +360,7 @@ struct SensitiveZoneBodyPicker: View {
                 face: face,
                 spots: SensitiveZoneBody.spots(on: face, offered: offered, figure: figure),
                 tint: { spot in
-                    SensitiveZoneBody.isSelected(spot, part: part, side: side) ? SharpitColor.highlight : nil
+                    SensitiveZoneBody.isSelected(spot, part: part, side: side) ? SharpitColor.statusGoodMark : nil
                 },
                 onTap: { spot in
                     SharpitMotion.run(SharpitMotion.selection) {
@@ -380,7 +380,7 @@ struct SensitiveZoneBodyPicker: View {
                  ? SensitiveZoneBody.caption(part: part, side: side) ?? ""
                  : String(localized: "Touche la zone sur la silhouette."))
                 .font(SensitiveZoneBody.isOnMap(part) ? SharpitTypography.bodyEmphasis : SharpitTypography.meta)
-                .foregroundStyle(SensitiveZoneBody.isOnMap(part) ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .foregroundStyle(SensitiveZoneBody.isOnMap(part) ? SharpitColor.foreground : SharpitColor.slate)
                 .frame(maxWidth: .infinity)
                 .accessibilityAddTraits(.updatesFrequently)
         }
@@ -408,7 +408,7 @@ struct SensitiveZonesBodyOverview: View {
                     SensitiveZoneBodyMap(face: face, spots: spots(face), tint: tint, height: 220, figure: figure)
                     Text(face == .front ? String(localized: "Face") : String(localized: "Dos"))
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
         }

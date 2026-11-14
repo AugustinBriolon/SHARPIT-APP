@@ -15,7 +15,7 @@ struct SharpitUserProfileSheet: View {
             VStack(spacing: 0) {
                 sharpitHeader
                 Divider()
-                    .overlay(SharpitColor.border)
+                    .overlay(SharpitColor.divider)
                 // The Clerk profile — opaque component, we can't restyle its internals.
                 UserProfileView()
             }
@@ -34,7 +34,7 @@ struct SharpitUserProfileSheet: View {
                 .font(SharpitTypography.eyebrow)
                 .tracking(SharpitTypography.eyebrowTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Spacer(minLength: 0)
             Button {
                 dismiss()

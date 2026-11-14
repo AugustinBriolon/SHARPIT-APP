@@ -98,7 +98,7 @@ struct DisplayModeView: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(text)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
         } icon: {
@@ -159,7 +159,7 @@ private struct DisplayModePicker: View {
                             .foregroundStyle(SharpitColor.foreground)
                         Text(audience)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 0)
@@ -194,13 +194,13 @@ private struct DisplayModeSample: View {
                     .minimumScaleFactor(0.8)
                 Text(verbatim: "1 h 30 · \(ActivityFormat.trainingLoad(78, isExpertReading: isExpert))")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
                 // The technical layer, on its own line: the essential card keeps the space empty
                 // so both cards stand the same height.
                 Text(verbatim: "IF 0,81 · TSB −10")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
                     .opacity(isExpert ? 1 : 0)
             }

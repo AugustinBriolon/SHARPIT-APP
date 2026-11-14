@@ -116,7 +116,7 @@ struct RessentiDuJourSheet: View {
                     .accessibilityAddTraits(.isHeader)
                 Text("Ta réponse affine le verdict du jour.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
     }
@@ -135,12 +135,12 @@ struct RessentiDuJourSheet: View {
                             .foregroundStyle(SharpitColor.foreground)
                         Text("Énergie, corps, stress, un mot pour le coach")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.down")
                         .font(SharpitTypography.meta.weight(.semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .rotationEffect(.degrees(store.detailsExpanded ? 180 : 0))
                 }
                 .padding(SharpitSpacing.cardPadding)
@@ -260,10 +260,10 @@ struct RessentiStepPicker: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
-                    .foregroundStyle(isOn ? SharpitColor.highlightForeground : SharpitColor.foreground)
+                    .foregroundStyle(isOn ? SharpitColor.primaryForeground : SharpitColor.foreground)
                     .frame(maxWidth: .infinity, minHeight: 68)
                     .padding(.horizontal, 2)
-                    .sharpitConcentricBackground(isOn ? SharpitColor.highlight : SharpitColor.card, minimum: SharpitRadius.tile)
+                    .sharpitConcentricBackground(isOn ? SharpitColor.primary : SharpitColor.card, minimum: SharpitRadius.tile)
                     .sharpitShadow(.control)
                     .contentShape(.rect)
                 }

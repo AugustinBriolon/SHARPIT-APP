@@ -118,7 +118,7 @@ struct SharpitProPaywallSheet: View {
             VStack(spacing: SharpitSpacing.xs) {
                 Text("Impossible de charger les offres.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Button("Réessayer") { Task { await loadOffers() } }
                     .font(SharpitTypography.meta.weight(.semibold))
                     .foregroundStyle(SharpitColor.primary)
@@ -147,7 +147,7 @@ struct SharpitProPaywallSheet: View {
                     }
                     Text(detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 Spacer(minLength: SharpitSpacing.xs)
                 Text(price)
@@ -179,7 +179,7 @@ struct SharpitProPaywallSheet: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(SharpitColor.foreground)
                 .frame(width: 32, height: 32)
-                .background(SharpitColor.chipSurface, in: Circle())
+                .background(SharpitColor.tile, in: Circle())
         }
         .buttonStyle(.sharpitPressable)
         .frame(minWidth: SharpitSpacing.minimumTouchTarget, minHeight: SharpitSpacing.minimumTouchTarget)
@@ -237,7 +237,7 @@ struct SharpitProPaywallSheet: View {
             }
         }
         .font(SharpitTypography.meta)
-        .foregroundStyle(SharpitColor.mutedForeground)
+        .foregroundStyle(SharpitColor.slate)
         .frame(maxWidth: .infinity)
     }
 

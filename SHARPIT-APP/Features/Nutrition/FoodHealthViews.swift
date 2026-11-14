@@ -9,7 +9,7 @@ nonisolated enum FoodHealthPresentation {
         case .good: SharpitColor.foreground
         case .mediocre: SharpitColor.signalCaution
         case .poor: SharpitColor.signalRisk
-        case nil: SharpitColor.mutedForeground
+        case nil: SharpitColor.slate
         }
     }
 
@@ -24,7 +24,7 @@ nonisolated enum FoodHealthPresentation {
     static func dietTone(_ status: V1FoodHealth.DietFit.Status) -> Color {
         switch status {
         case .compatible: SharpitColor.signalRecovery
-        case .uncertain: SharpitColor.mutedForeground
+        case .uncertain: SharpitColor.slate
         case .incompatible: SharpitColor.signalRisk
         }
     }
@@ -126,7 +126,7 @@ struct FoodHealthBadge: View {
             if let score {
                 ZStack {
                     Circle()
-                        .stroke(SharpitColor.analysisGrid, lineWidth: 2.5)
+                        .stroke(SharpitColor.divider, lineWidth: 2.5)
                     Circle()
                         .trim(from: 0, to: min(max(Double(score) / 100, 0), 1))
                         .stroke(tone, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
@@ -288,7 +288,7 @@ struct FoodHealthScoreHeader: View {
                 if let sources = FoodHealthPresentation.sources(health) {
                     Text(sources)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             Spacer(minLength: 0)
@@ -322,7 +322,7 @@ struct FoodHighlightRow: View {
                 if let detail = highlight.detail, !isAmount {
                     Text(detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             Spacer(minLength: SharpitSpacing.xs)
@@ -330,7 +330,7 @@ struct FoodHighlightRow: View {
                 Text(detail)
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .accessibilityElement(children: .combine)
@@ -356,7 +356,7 @@ private struct FoodDietFitRow: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(fit.reason)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
         }
@@ -382,12 +382,12 @@ private struct FoodAdditivesRow: View {
         if let status = FoodHealthPresentation.additiveStatus(health, isCompleting: isCompleting) {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: "flask")
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .frame(width: 22)
                     .accessibilityHidden(true)
                 Text(status)
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer(minLength: 0)
                 if isCompleting { ProgressView().controlSize(.small) }
             }
@@ -413,7 +413,7 @@ private struct FoodAdditivesRow: View {
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.foreground)
             }
-            .tint(SharpitColor.mutedForeground)
+            .tint(SharpitColor.slate)
         }
     }
 
@@ -434,13 +434,13 @@ private struct FoodHealthMethodRow: View {
         DisclosureGroup {
             Text(isPartial ? FoodHealthPresentation.partialMethod : FoodHealthPresentation.method)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         } label: {
             Label("Comment est calculé le score ?", systemImage: "info.circle")
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.foreground)
         }
-        .tint(SharpitColor.mutedForeground)
+        .tint(SharpitColor.slate)
     }
 }

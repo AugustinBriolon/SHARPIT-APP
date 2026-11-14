@@ -179,7 +179,7 @@ struct GoalsView: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text("Ajoute une course ou une cible chiffrée : le plan s'organise autour.")
                 .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .multilineTextAlignment(.center)
             NavigationLink(value: GoalRoute.create) {
                 Label("Ajouter un objectif", systemImage: "plus")
@@ -288,7 +288,7 @@ private struct GoalCard: View {
                     .multilineTextAlignment(.leading)
                 Text(goal.kind == .race ? GoalFormat.raceCardLine(goal) : GoalFormat.metricLine(goal))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .monospacedDigit()
@@ -326,7 +326,7 @@ private struct GoalCard: View {
                     .monospacedDigit()
                 Text(days == 1 ? "jour" : "jours")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
     }
@@ -352,7 +352,7 @@ private struct GoalAchievementRow: View {
                     .multilineTextAlignment(.leading)
                 Text(GoalAchievementReadout.line(achievement))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .monospacedDigit()
@@ -361,7 +361,7 @@ private struct GoalAchievementRow: View {
             if opensSession {
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.5))
                     .accessibilityHidden(true)
             }
         }
@@ -427,7 +427,7 @@ struct GoalHero: View {
             if let performance = goal.targetPerformance, !performance.isEmpty {
                 Label("Objectif chrono · \(performance)", systemImage: "stopwatch")
                     .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(SharpitColor.highlight)
+                    .foregroundStyle(SharpitColor.statusGoodForeground)
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -445,18 +445,18 @@ struct GoalHero: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(GoalFormat.metricLine(goal))
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
                 if let date = goal.targetDate {
                     Text("Échéance · \(date.sharpitFormatted(.dateTime.day().month(.wide).year()))")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             Spacer(minLength: 0)
             if let progress = goal.progressFraction {
                 ZStack {
-                    SharpitScoreRing(fraction: progress, tone: goal.achieved ? SharpitColor.highlight : SharpitColor.primary, lineWidth: 6)
+                    SharpitScoreRing(fraction: progress, tone: goal.achieved ? SharpitColor.statusGoodMark : SharpitColor.primary, lineWidth: 6)
                     Text("\(Int((progress * 100).rounded()))%")
                         .font(SharpitTypography.data)
                         .monospacedDigit()
@@ -486,7 +486,7 @@ private struct GoalBadge: View {
 
     private var tone: Color {
         if goal.isReached { return SharpitColor.signalRecovery }
-        if goal.kind == .race, goal.role != .primary { return SharpitColor.mutedForeground }
+        if goal.kind == .race, goal.role != .primary { return SharpitColor.slate }
         return SharpitColor.primary
     }
 }
@@ -541,7 +541,7 @@ private struct SeasonTimelineView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(Self.day(step.goal))
                     .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
                 Text(step.goal.title)
                     .font(SharpitTypography.bodyEmphasis)
@@ -549,21 +549,21 @@ private struct SeasonTimelineView: View {
                     .multilineTextAlignment(.leading)
                 Text(Self.meta(step.goal))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Text(step.goal.role == .training ? GoalRole.training.label : "\(GoalRole.step.label) vers \(timeline.principal.title)")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.primary)
                     .multilineTextAlignment(.leading)
                 Text("puis \(GoalSeason.span(days: step.daysToNext))")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.8))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.8))
                     .padding(.top, SharpitSpacing.xs)
                     .padding(.bottom, SharpitSpacing.sm)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                .foregroundStyle(SharpitColor.slate.opacity(0.5))
                 .padding(.top, SharpitSpacing.sm)
         }
         .contentShape(Rectangle())
@@ -572,18 +572,18 @@ private struct SeasonTimelineView: View {
 
     private var principalRow: some View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            rail(node: Circle().fill(SharpitColor.highlight), continues: false)
+            rail(node: Circle().fill(SharpitColor.statusGoodMark), continues: false)
             VStack(alignment: .leading, spacing: 3) {
                 Text(Self.day(timeline.principal))
                     .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
                 Text(timeline.principal.title)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
                 Text([GoalRole.primary.label, Self.meta(timeline.principal)].joined(separator: " · "))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .accessibilityElement(children: .combine)
@@ -594,7 +594,7 @@ private struct SeasonTimelineView: View {
             node.frame(width: 11, height: 11).padding(.top, 3)
             if continues {
                 Rectangle()
-                    .fill(SharpitColor.mutedForeground.opacity(0.25))
+                    .fill(SharpitColor.slate.opacity(0.25))
                     .frame(width: 1.5)
                     .frame(maxHeight: .infinity)
             }
@@ -626,7 +626,7 @@ private struct SeasonConflictNotice: View {
             SharpitEyebrow(String(localized: "Deux objectifs principaux"), systemImage: "flag.2.crossed")
             Text("\(conflict.kept.title) et \(conflict.demoted.title) sont à moins de six mois l’une de l’autre : le plan ne s’affûte vraiment que pour une.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Button("Passer \(conflict.demoted.title) en course étape") {
                 store.setPriority(.b, of: conflict.demoted)
             }
@@ -729,7 +729,7 @@ struct RaceAwaitingResultNotice: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text("Lie la séance de ta course pour garder ton temps, ou valide l'objectif tel quel.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             HStack(spacing: SharpitSpacing.sm) {
                 Button("Lier ma séance", systemImage: "link") { isPicking = true }
                     .font(SharpitTypography.bodyEmphasis)
@@ -808,7 +808,7 @@ private struct RaceResultPickerSheet: View {
                 .compactMap { $0 }
                 .joined(separator: " · "))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)

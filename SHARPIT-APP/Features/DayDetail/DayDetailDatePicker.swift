@@ -42,7 +42,7 @@ struct DayDetailDatePicker: View {
                         .contentTransition(.identity)
                     Image(systemName: "chevron.down")
                         .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .accessibilityHidden(true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

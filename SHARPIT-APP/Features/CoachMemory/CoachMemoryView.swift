@@ -48,7 +48,7 @@ struct CoachMemoryView: View {
                 HStack {
                     Text("\(store.profileContextText.count) / 4 000")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .monospacedDigit()
                     Spacer()
                     if store.isContextDirty {

@@ -30,12 +30,12 @@ struct SharpitDumbbellTrack: View {
                 var line = Path()
                 line.move(to: CGPoint(x: x(pct), y: 0))
                 line.addLine(to: CGPoint(x: x(pct), y: size.height))
-                context.stroke(line, with: .color(SharpitColor.analysisGrid), lineWidth: SharpitStroke.hairline)
+                context.stroke(line, with: .color(SharpitColor.divider), lineWidth: SharpitStroke.hairline)
             }
 
             // Days without on the upper lane, days with on the lower one.
             for pct in withoutDaysPct {
-                context.fill(dot(at: CGPoint(x: x(pct), y: mid - 9), size: day), with: .color(SharpitColor.mutedForeground.opacity(0.35)))
+                context.fill(dot(at: CGPoint(x: x(pct), y: mid - 9), size: day), with: .color(SharpitColor.slate.opacity(0.35)))
             }
             for pct in withDaysPct {
                 context.fill(dot(at: CGPoint(x: x(pct), y: mid + 9), size: day), with: .color(tone.opacity(0.4)))
@@ -52,7 +52,7 @@ struct SharpitDumbbellTrack: View {
 
             let without = dot(at: CGPoint(x: x(withoutPct), y: mid), size: median)
             context.fill(without, with: .color(SharpitColor.card))
-            context.stroke(without, with: .color(SharpitColor.mutedForeground), lineWidth: 2)
+            context.stroke(without, with: .color(SharpitColor.slate), lineWidth: 2)
             context.fill(dot(at: CGPoint(x: x(withPct), y: mid), size: median), with: .color(tone))
         }
         .frame(height: height)

@@ -8,7 +8,7 @@ import SwiftUI
 extension CorpsTone {
     var color: Color {
         switch self {
-        case .neutral: SharpitColor.mutedForeground
+        case .neutral: SharpitColor.slate
         case .inRange: SharpitColor.signalRecovery
         case .belowRange: SharpitColor.signalCaution
         }
@@ -75,17 +75,17 @@ struct CorpsMetricDrawer: View {
                         stats
                     } else if isLoading {
                         RoundedRectangle(cornerRadius: SharpitRadius.panel)
-                            .fill(SharpitColor.mutedForeground.opacity(0.12))
+                            .fill(SharpitColor.slate.opacity(0.12))
                             .frame(height: 220)
                             .redacted(reason: .placeholder)
                     } else {
                         Text("Pas encore assez de mesures sur cette période pour tracer une évolution.")
                             .font(SharpitTypography.body)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     Text(reading.map { SanteReadout.explanation($0.key) } ?? metric.key.explanation)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(SharpitSpacing.pageInset)
@@ -125,7 +125,7 @@ struct CorpsMetricDrawer: View {
                 if let unit = metric.key.unit {
                     Text(unit)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             if let note = metric.note {
@@ -135,7 +135,7 @@ struct CorpsMetricDrawer: View {
             }
             Text(CorpsFormat.caption(metric))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 

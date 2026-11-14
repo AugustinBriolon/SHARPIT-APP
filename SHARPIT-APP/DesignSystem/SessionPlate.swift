@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A session as a Clinique row (`docs/adr/0034`): the sport's glyph in a round tile, the session
+/// A session as a Clinique row (`docs/adr/0035`): the sport's glyph in a round tile, the session
 /// as the title, sport and objective under it, its status as pills; then its figures on one line.
 /// No surface of its own: it reads straight on the sheet, split from its neighbours by a hairline.
 struct SessionPlate: View {

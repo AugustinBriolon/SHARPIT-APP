@@ -68,7 +68,7 @@ struct JournalAnalysesView: View {
                     .frame(maxWidth: 220)
                 Text(JournalAnalysesReadout.progress(analyses))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
             }
         }
@@ -134,7 +134,7 @@ enum JournalAnalysesKind {
         switch self {
         case .lift: SharpitColor.foreground
         case .drag: SharpitColor.signalCaution
-        case .lead: SharpitColor.mutedForeground
+        case .lead: SharpitColor.slate
         }
     }
 }
@@ -157,9 +157,9 @@ private struct JournalAnalysesPlate: View {
             HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: "lightbulb")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .foregroundStyle(SharpitColor.primaryForeground)
                     .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                    .sharpitConcentricBackground(SharpitColor.highlight, minimum: SharpitRadius.tile)
+                    .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitRadius.tile)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("À retenir")
@@ -184,7 +184,7 @@ private struct JournalAnalysesPlate: View {
                     ForEach(reading.strengths, id: \.self) { strength in
                         HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                             Circle()
-                                .fill(SharpitColor.highlight)
+                                .fill(SharpitColor.statusGoodMark)
                                 .frame(width: 6, height: 6)
                                 .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
                             Text(strength)
@@ -240,7 +240,7 @@ private struct JournalAnalysesRowView: View {
                     if let lag = row.lagLabel {
                         Text(lag)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 Spacer(minLength: SharpitSpacing.xs)
@@ -265,7 +265,7 @@ private struct JournalAnalysesRowView: View {
                 Spacer(minLength: SharpitSpacing.xs)
                 Text(JournalAnalysesReadout.sample(row))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
                     .multilineTextAlignment(.trailing)
             }

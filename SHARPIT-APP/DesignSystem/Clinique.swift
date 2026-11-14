@@ -1,6 +1,6 @@
 import SwiftUI
 
-// The Clinique primitives (SHARPIT-WEBAPP ADR-130, ADR-131; `docs/adr/0034`).
+// The Clinique primitives (SHARPIT-WEBAPP ADR-130, ADR-131; `docs/adr/0035`).
 //
 // They sit beside the Ink & Lime components and share none of their tokens, so a screen moves
 // to them whole. Ink runs the interface; a hue appears only on a ring, a glyph or a chart mark.

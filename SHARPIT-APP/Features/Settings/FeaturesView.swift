@@ -15,7 +15,7 @@ struct FeaturesView: View {
                     } label: {
                         LabeledContent {
                             Text(store.isOn(feature) ? String(localized: "Affiché") : String(localized: "Masqué"))
-                                .foregroundStyle(store.isOn(feature) ? SharpitColor.mutedForeground : SharpitColor.signalCaution)
+                                .foregroundStyle(store.isOn(feature) ? SharpitColor.slate : SharpitColor.signalCaution)
                         } label: {
                             Label {
                                 Text(feature.title).font(SharpitTypography.bodyEmphasis)
@@ -60,7 +60,7 @@ struct FeatureDetailView: View {
                             .foregroundStyle(SharpitColor.foreground)
                         Text(store.isOn(feature) ? String(localized: "Visible dans l'app et ses widgets.") : String(localized: "Masqué partout. Tes données sont gardées."))
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 .tint(SharpitColor.primary)
@@ -85,7 +85,7 @@ struct FeatureDetailView: View {
                     if feature == .nutrition || feature == .health || feature == .regularity {
                         Text("Un widget déjà posé sur l'écran d'accueil indique qu'il est masqué ; retire-le depuis l'écran d'accueil.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, SharpitSpacing.xxs)
                     }

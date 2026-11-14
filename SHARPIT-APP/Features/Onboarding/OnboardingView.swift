@@ -50,7 +50,7 @@ struct OnboardingView: View {
             .blur(radius: isShowingProPaywall ? 12 : 0)
             .animation(SharpitMotion.reveal, value: isShowingProPaywall)
         }
-        .background(SharpitColor.background.ignoresSafeArea())
+        .background(SharpitColor.card.ignoresSafeArea())
         .animation(SharpitMotion.reveal, value: store.phase)
         .task { await store.load() }
         .sheet(isPresented: $isShowingProPaywall) {
@@ -159,7 +159,7 @@ private struct OnboardingTitle: View {
                 .accessibilityAddTraits(.isHeader)
             Text(step.intro)
                 .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -205,7 +205,7 @@ private struct OnboardingHeader: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(SharpitColor.foreground)
                     .frame(width: 40, height: 40)
-                    .sharpitGlassControl(in: Circle(), fallback: SharpitColor.analysisSurfaceAlt)
+                    .sharpitGlassControl(in: Circle(), fallback: SharpitColor.tile)
             }
             .buttonStyle(.plain)
             .opacity(store.canGoBack ? 1 : 0)
@@ -225,7 +225,7 @@ private struct OnboardingHeader: View {
                 Text("\(store.position) / \(store.path.count)")
                     .font(SharpitTypography.label.monospacedDigit())
                     .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .contentTransition(.numericText(value: Double(store.position)))
                     .padding(.bottom, 8)
             }
@@ -236,7 +236,7 @@ private struct OnboardingHeader: View {
 
             Button("Passer") { [step = store.step] in Task { await store.skip(from: step) } }
                 .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .frame(width: Self.sideWidth, height: 40)
                 .opacity(store.step.allowsSkip ? 1 : 0)
                 .disabled(!store.step.allowsSkip || store.isBusy)
@@ -272,7 +272,7 @@ private struct OnboardingActionBar: View {
             } else if let hint {
                 Text(hint)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .padding(.horizontal, SharpitSpacing.sm)
                     .padding(.vertical, SharpitSpacing.xxs + 2)
                     .sharpitGlassCapsule()
@@ -294,7 +294,7 @@ private struct OnboardingActionBar: View {
             if showsFinishWithout {
                 Button(finishWithoutLabel) { Task { await store.finishWithoutFirstWeek() } }
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .frame(maxWidth: .infinity)
                     .disabled(store.isBusy)
             }
@@ -375,7 +375,7 @@ struct OnboardingBootstrapView: View {
         VStack(spacing: SharpitSpacing.lg) {
             ZStack {
                 Circle()
-                    .stroke(SharpitColor.analysisGrid, lineWidth: 3)
+                    .stroke(SharpitColor.divider, lineWidth: 3)
                 Circle()
                     .trim(from: 0, to: progress)
                     .stroke(SharpitColor.primary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
@@ -403,7 +403,7 @@ struct OnboardingBootstrapView: View {
 
             Text("Tout est finalisé. SharpIt assemble ta première lecture à partir de ce que tu viens de renseigner.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 280)
                 .revealed(hasAppeared, index: 2)

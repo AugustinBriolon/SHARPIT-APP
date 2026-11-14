@@ -13,13 +13,13 @@ extension ClerkTheme {
             colors: .init(
                 primary: SharpitColor.primary,
                 switchTint: SharpitColor.highlight,
-                background: SharpitColor.background,
+                background: SharpitColor.card,
                 input: SharpitColor.card,
                 danger: SharpitColor.destructive,
                 success: SharpitColor.signalRecovery,
                 warning: SharpitColor.signalCaution,
                 foreground: SharpitColor.foreground,
-                mutedForeground: SharpitColor.mutedForeground,
+                mutedForeground: SharpitColor.slate,
                 primaryForeground: SharpitColor.primaryForeground,
                 inputForeground: SharpitColor.foreground,
                 neutral: SharpitColor.muted,
@@ -28,7 +28,7 @@ extension ClerkTheme {
                 secondaryButtonBackground: SharpitColor.card,
                 secondaryButtonForeground: SharpitColor.foreground,
                 shadow: Color.black.opacity(0.06),
-                border: SharpitColor.border
+                border: SharpitColor.divider
             ),
             fonts: .init(
                 title: SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title),

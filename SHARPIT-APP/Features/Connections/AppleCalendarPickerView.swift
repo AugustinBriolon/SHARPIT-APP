@@ -62,7 +62,7 @@ struct AppleCalendarPickerView: View {
                                 if row.title == AppleCalendarSync.calendarTitle {
                                     Text("Calendrier SharpIt")
                                         .font(SharpitTypography.meta)
-                                        .foregroundStyle(SharpitColor.mutedForeground)
+                                        .foregroundStyle(SharpitColor.slate)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)

@@ -11,7 +11,7 @@ extension V1SensitiveZone.Strategy {
         case .progressive: SharpitColor.signalCaution
         case .correct: SharpitColor.primary
         case .relapseWatch: SharpitColor.signalNeutral
-        case .none: SharpitColor.mutedForeground
+        case .none: SharpitColor.slate
         }
     }
 
@@ -28,7 +28,7 @@ extension V1SensitiveZone.Strategy {
 
 enum ZoneSeverityTint {
     static func color(_ severity: Int?) -> Color {
-        guard let severity else { return SharpitColor.mutedForeground }
+        guard let severity else { return SharpitColor.slate }
         if severity == 0 { return SharpitColor.foreground }
         if severity >= 7 { return SharpitColor.signalRisk }
         return severity >= 4 ? SharpitColor.signalCaution : SharpitColor.foreground
@@ -70,7 +70,7 @@ struct SensitiveZonesCard: View {
                 } else {
                     Text("Une douleur, une blessure, une posture à corriger : déclare-la, le plan s'adapte.")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -143,7 +143,7 @@ struct SensitiveZonesView: View {
                 }
                 Text("Indicateur Sharpit pour adapter tes séances, pas un avis médical.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.vertical, SharpitSpacing.md)
@@ -165,7 +165,7 @@ struct SensitiveZonesView: View {
                         }
                         .buttonStyle(.plain)
                         if zone != zones.last {
-                            Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                            Rectangle().fill(SharpitColor.divider).frame(height: 1)
                         }
                     }
                 }
@@ -183,7 +183,7 @@ struct SensitiveZonesView: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text("Déclare une douleur ou une blessure : le plan évite de la charger. Une posture ou un manque de mobilité : le renfo la travaille.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
             Button {
                 isDeclaring = true
@@ -213,12 +213,12 @@ private struct SensitiveZoneRow: View {
                     .lineLimit(2)
                 Text("\(zone.categoryLabel) · \(zone.place)")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
                 if zone.isResolved {
                     Text(resolvedLine)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 } else {
                     Label(zone.strategyLabel, systemImage: zone.strategy.symbol)
                         .font(SharpitTypography.meta.weight(.semibold))
@@ -424,7 +424,7 @@ private struct ZoneHeader: View {
                     SharpitInlineTag(zone.categoryLabel)
                     Text(zone.statusLabel)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 Text(zone.title)
                     .font(SharpitTypography.cardTitle)
@@ -433,10 +433,10 @@ private struct ZoneHeader: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Text(zone.place)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Text(sinceLine)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 2) {
@@ -447,7 +447,7 @@ private struct ZoneHeader: View {
                     .foregroundStyle(ZoneSeverityTint.color(zone.isResolved ? nil : zone.severity))
                 Text(zone.functionalImpactLabel ?? "douleur")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.trailing)
             }
         }
@@ -493,7 +493,7 @@ private struct ZoneTrainingEffect: View {
                 .foregroundStyle(zone.strategy.tint)
             Text(zone.affectsTraining ? zone.strategyDetail : String(localized: "Tenue à l'écart de la génération des séances."))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
             if let upcoming = SensitiveZoneReadout.upcoming(zone.upcomingSessionsLoading) {
                 Text(upcoming)
@@ -531,7 +531,7 @@ private struct ZoneSeverityChart: View {
             .chartYScale(domain: 0...10)
             .chartYAxis {
                 AxisMarks(values: [0, 5, 10]) { _ in
-                    AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
+                    AxisGridLine().foregroundStyle(SharpitColor.divider)
                     AxisValueLabel()
                 }
             }
@@ -564,7 +564,7 @@ private struct ZoneTimeline: View {
                 ForEach(shown) { entry in
                     row(entry)
                     if entry != shown.last {
-                        Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                        Rectangle().fill(SharpitColor.divider).frame(height: 1)
                     }
                 }
             }
@@ -588,7 +588,7 @@ private struct ZoneTimeline: View {
             Text(entry.date.formatted(.dateTime.day().month(.abbreviated).locale(SharpitLocale.current)))
                 .font(SharpitTypography.meta)
                 .monospacedDigit()
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .frame(width: dateWidth, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.label)
@@ -597,12 +597,12 @@ private struct ZoneTimeline: View {
                 if let impact = entry.functionalImpact {
                     Text(SensitiveZoneOptions.label(impact, in: SensitiveZoneOptions.impacts))
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 if let comment = entry.comment, !comment.isEmpty {
                     Text(comment)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

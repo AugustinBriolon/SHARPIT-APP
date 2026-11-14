@@ -123,7 +123,7 @@ struct ActivityTechnicalSection: View {
             if let line = ActivityTechnicalReadout.thresholdsLine(analysis) {
                 Text(line)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -148,7 +148,7 @@ struct ActivityTechnicalGrid: View {
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                     Text(row.value)
                         .font(SharpitTypography.data)
@@ -158,7 +158,7 @@ struct ActivityTechnicalGrid: View {
                     if let note = row.note {
                         Text(note)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -201,12 +201,12 @@ private struct ZoneDistribution: View {
                             .frame(width: 28, alignment: .leading)
                         Text(zone.label)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                         Spacer(minLength: 4)
                         Text(ActivityFormat.duration(zone.seconds))
                             .font(SharpitTypography.meta.monospacedDigit())
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         Text("\(Int(zone.percent.rounded())) %")
                             .font(SharpitTypography.meta.monospacedDigit().weight(.semibold))
                             .foregroundStyle(SharpitColor.foreground)

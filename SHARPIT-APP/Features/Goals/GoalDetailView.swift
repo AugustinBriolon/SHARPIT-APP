@@ -145,7 +145,7 @@ struct GoalDetailView: View {
             HStack {
                 Text(title)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer()
                 Image(systemName: symbol)
                     .font(SharpitTypography.meta)
@@ -159,7 +159,7 @@ struct GoalDetailView: View {
 
             Text(caption)
                 .font(.system(size: 11))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
         }
         .padding(SharpitSpacing.cardPadding)
@@ -181,7 +181,7 @@ struct GoalDetailView: View {
                             .monospacedDigit()
                         Text(proj.rangeLabel)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .monospacedDigit()
                     }
                     Spacer()
@@ -192,7 +192,7 @@ struct GoalDetailView: View {
                 if let today = proj.todayLine {
                     Text(today)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .monospacedDigit()
                 }
                 if !proj.trajectory.isEmpty {
@@ -207,7 +207,7 @@ struct GoalDetailView: View {
                 if let confidence = proj.confidenceLine {
                     Text(confidence)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 if !proj.missing.isEmpty {
                     missingHints(proj.missing)
@@ -215,7 +215,7 @@ struct GoalDetailView: View {
             } else {
                 Text("Projection indisponible pour ce format")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -228,7 +228,7 @@ struct GoalDetailView: View {
             ForEach(hints, id: \.self) { hint in
                 Text("· \(hint)")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if store.thresholdsClient != nil {
@@ -272,7 +272,7 @@ struct GoalDetailView: View {
                     if let projected {
                         Text(projected.plannedVsActual(actualSeconds: actual))
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .monospacedDigit()
                     }
                 }
@@ -311,7 +311,7 @@ struct GoalDetailView: View {
 
                     Text("vs \(Self.formatNumber(target))\(unitStr)")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
 
                 Spacer()
@@ -341,7 +341,7 @@ struct GoalDetailView: View {
             SharpitCardHeader(title: String(localized: "Détail par segment"), symbol: "stopwatch", showsChevron: false) {
                 Text("Projection")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             RaceLegsBar(segments: legs.map(\.segment), compact: true)
             VStack(spacing: SharpitSpacing.xs) {
@@ -350,11 +350,11 @@ struct GoalDetailView: View {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(leg.segment.label)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(leg.segment.isTransition ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                                .foregroundStyle(leg.segment.isTransition ? SharpitColor.slate : SharpitColor.foreground)
                             if let source = leg.sourceLabel {
                                 Text(source)
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.8))
+                                    .foregroundStyle(SharpitColor.slate.opacity(0.8))
                             }
                         }
                         Spacer()
@@ -394,7 +394,7 @@ struct GoalDetailView: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule()
-                                .fill(SharpitColor.analysisGrid)
+                                .fill(SharpitColor.divider)
                                 .frame(height: 8)
                             Capsule()
                                 .fill(SharpitColor.primary)
@@ -409,7 +409,7 @@ struct GoalDetailView: View {
                     if let start = goal.startValue {
                         Text("Départ : \(Self.formatNumber(start))\(goal.unit.map { " " + $0 } ?? "")")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     Spacer()
                     Text("Actuel : \(Self.formatNumber(current)) / \(Self.formatNumber(target))\(goal.unit.map { " " + $0 } ?? "")")
@@ -448,7 +448,7 @@ struct GoalDetailView: View {
 
             Text(notes)
                 .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -518,13 +518,13 @@ private struct GoalLinkedActivityRow: View {
                     .multilineTextAlignment(.leading)
                 Text(meta)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .monospacedDigit()
             }
             Spacer(minLength: SharpitSpacing.xs)
             Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                .foregroundStyle(SharpitColor.slate.opacity(0.5))
                 .accessibilityHidden(true)
         }
         .padding(SharpitSpacing.cardPadding)
@@ -549,7 +549,7 @@ private struct RaceTrajectoryChart: View {
         Chart {
             if let targetSec {
                 RuleMark(y: .value(String(localized: "Objectif"), targetSec))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }
             ForEach(points, id: \.date) { point in
@@ -564,7 +564,7 @@ private struct RaceTrajectoryChart: View {
         .chartXAxis(.hidden)
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
+                AxisGridLine().foregroundStyle(SharpitColor.divider)
                 AxisValueLabel {
                     if let seconds = value.as(Double.self) {
                         Text(GoalAnalyticsEngine.formatDuration(seconds))

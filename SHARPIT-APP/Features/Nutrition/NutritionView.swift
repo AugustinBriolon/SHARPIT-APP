@@ -245,10 +245,10 @@ private struct NutritionEmptyDayPlate: View {
                     VStack(spacing: 4) {
                         Image(systemName: "fork.knife")
                             .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                         Text("0 kcal")
                             .font(.system(size: 11, weight: .regular, design: .rounded))
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
             .frame(width: 200, height: 200 / SharpitTickGaugeGeometry.aspectRatio)
@@ -263,7 +263,7 @@ private struct NutritionEmptyDayPlate: View {
                      ? String(localized: "Note ton premier repas : scanne un emballage ou cherche un aliment. Calories, macros et lecture du coach suivent.")
                      : String(localized: "Ajoute ce que tu as mangé ce jour-là, repas par repas."))
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -279,7 +279,7 @@ private struct NutritionEmptyDayPlate: View {
                 Button(action: onCopyPreviousDay) {
                     Label("Copier la veille", systemImage: "doc.on.doc")
                         .font(SharpitTypography.meta.weight(.semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .frame(minHeight: SharpitSpacing.minimumTouchTarget)
                 }
                 .buttonStyle(.sharpitPressable)
@@ -369,7 +369,7 @@ private struct NutritionEnergyPlate: View {
                         .contentTransition(.numericText())
                     Text("kcal consommées")
                         .font(.system(size: 11, weight: .regular, design: .rounded))
-                        .foregroundStyle(SharpitColor.mutedForeground.opacity(0.85))
+                        .foregroundStyle(SharpitColor.slate.opacity(0.85))
                 }
             }
         .frame(width: 230, height: 230 / SharpitTickGaugeGeometry.aspectRatio)
@@ -378,7 +378,7 @@ private struct NutritionEnergyPlate: View {
     }
 
     private var divider: some View {
-        Rectangle().fill(SharpitColor.analysisGrid).frame(width: 1, height: 32)
+        Rectangle().fill(SharpitColor.divider).frame(width: 1, height: 32)
     }
 
     private func figure(_ caption: String, _ value: String, tone: Color = SharpitColor.foreground) -> some View {
@@ -387,7 +387,7 @@ private struct NutritionEnergyPlate: View {
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
                 .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             Text(value)
                 .font(SharpitTypography.instrument)
                 .foregroundStyle(tone)
@@ -572,7 +572,7 @@ private struct MacroTile: View {
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
                     .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -583,19 +583,19 @@ private struct MacroTile: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("g")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             if let line, let goal = line.goal {
                 NutritionGoalBar(fill: NutritionReadout.fill(pct: line.pct), tone: macro.tone)
                     .frame(height: 4)
                 Text("sur \(Int(goal.rounded())) g")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             if let perKg {
                 Text(perKg)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
         }
@@ -629,7 +629,7 @@ private struct EnergySplitBar: View {
                         Circle().fill(part.macro.tone).frame(width: 6, height: 6)
                         Text("\(part.macro.label) \(Int((part.share * 100).rounded())) %")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
             }
@@ -662,7 +662,7 @@ private struct NutritionMealsSection: View {
                     .buttonStyle(.sharpitPressable)
                     if index < meals.count - 1 {
                         Rectangle()
-                            .fill(SharpitColor.analysisGrid)
+                            .fill(SharpitColor.divider)
                             .frame(height: 1)
                             .padding(.leading, 56)
                     }
@@ -699,7 +699,7 @@ private struct MealRow: View {
                     }
                 }
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 2) {
@@ -708,11 +708,11 @@ private struct MealRow: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("kcal")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Image(systemName: "chevron.right")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
+                .foregroundStyle(SharpitColor.slate.opacity(0.45))
                 .accessibilityHidden(true)
         }
         .padding(.horizontal, SharpitSpacing.md)
@@ -735,7 +735,7 @@ private struct NutritionDayHeader: View {
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.xs) {
             if diet.isEmpty {
-                chip(isComplete ? String(localized: "Journée close") : String(localized: "Journée en cours"), symbol: isComplete ? "checkmark.circle" : "clock", tone: SharpitColor.mutedForeground)
+                chip(isComplete ? String(localized: "Journée close") : String(localized: "Journée en cours"), symbol: isComplete ? "checkmark.circle" : "clock", tone: SharpitColor.slate)
             } else {
                 chip(diet.joined(separator: " · "), symbol: "leaf", tone: SharpitColor.primary)
                     .accessibilityLabel("Régime en cours : \(diet.joined(separator: ", "))")
@@ -786,7 +786,7 @@ private struct NutritionRegularitySection: View {
                         Spacer(minLength: 0)
                         Text("\(regularity.logged) notés sur \(regularity.days)")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 columns
@@ -828,7 +828,7 @@ private struct NutritionRegularitySection: View {
                 Color.clear.frame(height: height)
                 if day.adherence == .none {
                     Circle()
-                        .strokeBorder(SharpitColor.mutedForeground.opacity(0.5), lineWidth: 1.25)
+                        .strokeBorder(SharpitColor.slate.opacity(0.5), lineWidth: 1.25)
                         .frame(width: 8, height: 8)
                 } else {
                     Capsule()
@@ -839,7 +839,7 @@ private struct NutritionRegularitySection: View {
             }
             Text(weekday(day.date))
                 .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.slate)
                 .frame(height: 14)
         }
         .frame(maxWidth: .infinity)
@@ -859,7 +859,7 @@ private struct NutritionRegularitySection: View {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(text)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 
@@ -868,7 +868,7 @@ private struct NutritionRegularitySection: View {
         case .onTarget: SharpitColor.primary
         case .under: SharpitColor.signalTempo
         case .over: SharpitColor.signalCaution
-        case .none: SharpitColor.analysisGrid
+        case .none: SharpitColor.divider
         }
     }
 
@@ -891,7 +891,7 @@ struct NutritionGoalBar: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(SharpitColor.analysisGrid)
+                Capsule().fill(SharpitColor.divider)
                 Capsule()
                     .fill(tone)
                     .frame(width: max(geo.size.width * fill, fill > 0 ? 4 : 0))

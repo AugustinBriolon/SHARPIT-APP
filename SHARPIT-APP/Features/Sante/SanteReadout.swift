@@ -175,8 +175,8 @@ extension V1HealthTone {
     /// The arrow of a change: lime when it is good news, caution to watch, muted otherwise.
     var markColor: Color {
         switch self {
-        case .good: SharpitColor.highlight
-        case .neutral: SharpitColor.mutedForeground
+        case .good: SharpitColor.statusGoodMark
+        case .neutral: SharpitColor.slate
         case .watch: SharpitColor.signalCaution
         }
     }
@@ -185,7 +185,7 @@ extension V1HealthTone {
     var color: Color {
         switch self {
         case .good: SharpitColor.foreground
-        case .neutral: SharpitColor.mutedForeground
+        case .neutral: SharpitColor.slate
         case .watch: SharpitColor.signalCaution
         }
     }

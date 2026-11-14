@@ -141,7 +141,7 @@ private struct SessionExpiredSignIn: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(SharpitColor.background.ignoresSafeArea())
+        .background(SharpitColor.card.ignoresSafeArea())
     }
 }
 
@@ -311,7 +311,7 @@ private struct SignInAwardWinning: View {
         let short = verticalSizeClass == .compact
         ZStack {
             // 1 — Atmospheric canvas edge-to-edge (no opaque dock band that cuts the glow).
-            SharpitColor.background.ignoresSafeArea()
+            SharpitColor.card.ignoresSafeArea()
             ambientAtmosphere
             PrecisionParticleField()
                 .ignoresSafeArea()
@@ -500,7 +500,7 @@ private struct SignInAwardWinning: View {
                 Text("SOMMEIL")
                     .font(SharpitTypography.system(size: 9, weight: .regular, digits: true))
                     .tracking(0.8)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
 
                 Text("8h 24m · 94%")
                     .font(SharpitTypography.system(size: 13, weight: .regular, digits: true))
@@ -515,7 +515,7 @@ private struct SignInAwardWinning: View {
                 .fill(SharpitColor.card)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(SharpitColor.border, lineWidth: 1)
+                        .strokeBorder(SharpitColor.divider, lineWidth: 1)
                 )
                 .sharpitShadow(.panel)
         }
@@ -536,7 +536,7 @@ private struct SignInAwardWinning: View {
                 Text("RÉCUPÉRATION")
                     .font(SharpitTypography.system(size: 9, weight: .regular, digits: true))
                     .tracking(0.8)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
 
                 HStack(spacing: 4) {
                     Circle()
@@ -556,7 +556,7 @@ private struct SignInAwardWinning: View {
                 .fill(SharpitColor.card)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(SharpitColor.border, lineWidth: 1)
+                        .strokeBorder(SharpitColor.divider, lineWidth: 1)
                 )
                 .sharpitShadow(.panel)
         }
@@ -575,18 +575,18 @@ private struct SignInAwardWinning: View {
             // Punchy Tagline
             Text("L'intelligence de ton entraînement.")
                 .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .headline))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
 
             // Value Pillar Badges
             HStack(spacing: 8) {
                 pillarPill(title: String(localized: "Sommeil & VRC"))
                 Text("•")
                     .font(.caption2)
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.4))
                 pillarPill(title: String(localized: "Charge TSS"))
                 Text("•")
                     .font(.caption2)
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.4))
                 pillarPill(title: String(localized: "Planification"))
             }
             .padding(.top, 4)
@@ -596,7 +596,7 @@ private struct SignInAwardWinning: View {
     private func pillarPill(title: String) -> some View {
         Text(title)
             .font(SharpitTypography.system(size: 12, weight: .regular))
-            .foregroundStyle(SharpitColor.mutedForeground.opacity(0.9))
+            .foregroundStyle(SharpitColor.slate.opacity(0.9))
     }
 
     // MARK: – Action Deck
@@ -776,7 +776,7 @@ private struct ChronographDial: View {
                     let isMajorVernier = j % 12 == 0
                     context.stroke(
                         p,
-                        with: .color(isMajorVernier ? SharpitColor.primary.opacity(0.35) : SharpitColor.border.opacity(0.18)),
+                        with: .color(isMajorVernier ? SharpitColor.primary.opacity(0.35) : SharpitColor.divider.opacity(0.18)),
                         style: StrokeStyle(lineWidth: 1.0, lineCap: .round)
                     )
                 }
@@ -849,7 +849,7 @@ private struct ChronographDial: View {
                             strokeWidth = 1.6
                         } else {
                             // Muted standby ticks
-                            strokeColor = SharpitColor.border.opacity(0.32)
+                            strokeColor = SharpitColor.divider.opacity(0.32)
                             strokeWidth = isMajor ? 1.5 : 1.1
                         }
                     }

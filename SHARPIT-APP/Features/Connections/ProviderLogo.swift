@@ -70,7 +70,7 @@ struct ProviderLogo: View {
             } else {
                 Image(systemName: provider.fallbackSymbol)
                     .font(.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(SharpitColor.muted)
             }
@@ -80,7 +80,7 @@ struct ProviderLogo: View {
         .clipShape(RoundedRectangle(cornerRadius: size * 0.2237, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: size * 0.2237, style: .continuous)
-                .strokeBorder(SharpitColor.border, lineWidth: 0.5)
+                .strokeBorder(SharpitColor.divider, lineWidth: 0.5)
         }
         .accessibilityHidden(true)
     }

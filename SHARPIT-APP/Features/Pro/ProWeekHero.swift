@@ -102,10 +102,10 @@ struct ProWeekHero: View {
     private func tile(_ type: V1ActivityType) -> some View {
         Image(sharpitSymbol: type.symbolName)
             .font(.system(size: tileSize * 0.44, weight: .semibold))
-            .foregroundStyle(SharpitColor.highlightForeground)
+            .foregroundStyle(SharpitColor.primaryForeground)
             .frame(width: tileSize, height: tileSize)
             .background(
-                SharpitColor.highlight,
+                SharpitColor.primary,
                 in: RoundedRectangle(cornerRadius: SharpitRadius.tile * tileSize / SharpitTokens.tileSize, style: .continuous)
             )
     }

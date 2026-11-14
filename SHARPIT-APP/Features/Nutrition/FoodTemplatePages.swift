@@ -19,7 +19,7 @@ struct SavedMealsPage: View {
                 Section {
                     HStack(spacing: SharpitSpacing.xs) {
                         ProgressView().controlSize(.small)
-                        Text("Chargement…").foregroundStyle(SharpitColor.mutedForeground)
+                        Text("Chargement…").foregroundStyle(SharpitColor.slate)
                     }
                 }
                 .sharpitListRows()
@@ -91,7 +91,7 @@ private struct SavedMealRow: View {
                     .lineLimit(2)
                 Text(detail)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
                 NutritionMacroSplitBar(protein: saved.protein, carbohydrates: saved.carbs, fat: saved.fat, height: 4)
                     .frame(maxWidth: 120)
@@ -108,7 +108,7 @@ private struct SavedMealRow: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("kcal")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .contentShape(Rectangle())
@@ -168,7 +168,7 @@ struct FoodRecipePage: View {
                 if builder.lines.isEmpty {
                     Text("Cherche un ingrédient plus haut pour l'ajouter.")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 ForEach($builder.lines) { $line in
                     FoodNumberRow(title: line.ingredient.name, unit: "g", text: $line.gramsText)
@@ -220,7 +220,7 @@ struct FoodRecipePage: View {
                     if let message = failure ?? builder.problem, !builder.lines.isEmpty || failure != nil {
                         Text(message)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(failure == nil ? SharpitColor.mutedForeground : SharpitColor.signalRisk)
+                            .foregroundStyle(failure == nil ? SharpitColor.slate : SharpitColor.signalRisk)
                             .multilineTextAlignment(.center)
                     }
                     SharpitPrimaryButton(title: recipe == nil ? String(localized: "Créer la recette") : String(localized: "Enregistrer")) { save() }
@@ -241,7 +241,7 @@ struct FoodRecipePage: View {
                     .foregroundStyle(SharpitColor.signalCaution)
             } else if hits.isEmpty {
                 Text(search.isSearching ? String(localized: "Recherche…") : String(localized: "Aucun aliment pour « \(query) »."))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             ForEach(hits) { product in
                 Button {

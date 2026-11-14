@@ -12,7 +12,6 @@ extension View {
     func sharpitGroupedList() -> some View {
         listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
-            .sharpitShadow(.panel)
             .background(SharpitElevatedColor.groupedCanvas.ignoresSafeArea())
             .font(SharpitTypography.body)
             .foregroundStyle(SharpitColor.foreground)
@@ -55,9 +54,9 @@ extension Section where Parent == SharpitEyebrow, Content: View, Footer == Sharp
 /// A section footer in the brand's small face. The system footer would fall back to SF Pro.
 struct SharpitListFooter: View {
     let text: String
-    var tone: Color = SharpitColor.mutedForeground
+    var tone: Color = SharpitColor.slate
 
-    init(_ text: String, tone: Color = SharpitColor.mutedForeground) {
+    init(_ text: String, tone: Color = SharpitColor.slate) {
         self.text = text
         self.tone = tone
     }

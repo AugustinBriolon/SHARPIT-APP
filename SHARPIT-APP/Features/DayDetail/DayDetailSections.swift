@@ -38,7 +38,7 @@ struct DayDetailVerdictCard: View {
                     if let capacity {
                         Text(capacity)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -47,7 +47,7 @@ struct DayDetailVerdictCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Facteur limitant")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                     Text(limitingFactor)
                         .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.foreground)
@@ -134,7 +134,7 @@ struct DayDetailDimensionRow: View {
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                 Text(label)
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(available ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                    .foregroundStyle(available ? SharpitColor.foreground : SharpitColor.slate)
                 if let tag {
                     SharpitInlineTag(tag)
                 }
@@ -154,16 +154,16 @@ struct DayDetailDimensionRow: View {
                 } else {
                     Text("Signal manquant")
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             Text(description)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(SharpitColor.analysisGrid)
+                    Capsule().fill(SharpitColor.divider)
                     if available, score != nil {
                         Capsule()
                             .fill(tone)
@@ -187,7 +187,7 @@ struct DayDetailConfidenceFooter: View {
             SharpitConfidenceLine(pct: pct)
             Text(note)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .frame(maxWidth: .infinity)
     }

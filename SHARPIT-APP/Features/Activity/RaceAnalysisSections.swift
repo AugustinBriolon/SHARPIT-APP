@@ -89,17 +89,17 @@ struct RaceLegRowLink: View {
         HStack(spacing: SharpitSpacing.sm) {
             Image(systemName: row.segment.sport?.symbolName ?? "arrow.triangle.2.circlepath")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(row.segment.sport.map { SharpitSportTone.label(for: $0) } ?? SharpitColor.mutedForeground)
+                .foregroundStyle(row.segment.sport.map { SharpitSportTone.label(for: $0) } ?? SharpitColor.slate)
                 .frame(width: 22)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.segment.label)
                     .font(row.segment.isTransition ? SharpitTypography.body : SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(row.segment.isTransition ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                    .foregroundStyle(row.segment.isTransition ? SharpitColor.slate : SharpitColor.foreground)
                 if let detail = row.detail {
                     Text(detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .monospacedDigit()
                 }
             }
@@ -112,7 +112,7 @@ struct RaceLegRowLink: View {
             if opens {
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.5))
                     .accessibilityHidden(true)
             }
         }
@@ -140,7 +140,7 @@ struct RaceZonesBlock: View {
                             Text(average)
                                 .font(SharpitTypography.meta)
                                 .monospacedDigit()
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                         }
                     }
                     GeometryReader { proxy in
@@ -164,7 +164,7 @@ struct RaceZonesBlock: View {
                         Circle().fill(SharpitZoneTone.color(index)).frame(width: 6, height: 6)
                         Text("Z\(index + 1)")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
             }

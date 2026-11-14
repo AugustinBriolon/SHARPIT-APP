@@ -179,7 +179,7 @@ struct PlannedSessionFormContent: View {
                 Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? String(localized: "Non précisée"))
                     .font(SharpitTypography.body)
                     .monospacedDigit()
-                    .foregroundStyle(draft.durationMin == nil ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                    .foregroundStyle(draft.durationMin == nil ? SharpitColor.slate : SharpitColor.foreground)
                     .contentTransition(.numericText())
             }
             .sharpitFieldWell()
@@ -217,7 +217,7 @@ struct PlannedSessionFormContent: View {
             if let stepsNote {
                 Text(stepsNote)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -241,7 +241,7 @@ struct PlannedSessionFormContent: View {
         } else if let requirement {
             Text(requirement)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 
@@ -335,7 +335,7 @@ struct StrengthExercisesEditor: View {
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: 140)
                 Text("kg")
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .font(SharpitTypography.body)

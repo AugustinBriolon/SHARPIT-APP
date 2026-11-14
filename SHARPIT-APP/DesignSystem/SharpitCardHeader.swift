@@ -56,7 +56,7 @@ struct SharpitCardHeader<Accessory: View>: View {
             if let subtitle {
                 Text(subtitle)
                     .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -67,7 +67,7 @@ struct SharpitCardHeader<Accessory: View>: View {
         if showsChevron {
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                .foregroundStyle(SharpitColor.slate.opacity(0.6))
                 .accessibilityHidden(true)
         }
     }
@@ -103,11 +103,11 @@ struct SharpitTelemetryCapsule: View {
         HStack(spacing: 4) {
             Text(lead)
                 .font(.system(size: 13, weight: value == nil ? .regular : .regular))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             if let value {
                 Text("·")
                     .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.4))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.4))
                 Text(value)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(SharpitColor.foreground)
@@ -119,7 +119,7 @@ struct SharpitTelemetryCapsule: View {
         .frame(maxWidth: .infinity)
         .background(
             Capsule(style: .continuous)
-                .fill(SharpitColor.chipSurface)
+                .fill(SharpitColor.tile)
         )
         .accessibilityElement(children: .combine)
     }

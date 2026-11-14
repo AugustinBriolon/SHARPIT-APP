@@ -105,9 +105,9 @@ struct ActivityStatusDrawer: View {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                 Image(systemName: status.symbolName)
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(SharpitColor.highlightForeground)
+                    .foregroundStyle(SharpitColor.primaryForeground)
                     .frame(width: 44, height: 44)
-                    .background(SharpitColor.highlight, in: Circle())
+                    .background(SharpitColor.primary, in: Circle())
                     .contentTransition(.symbolEffect(.replace))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
@@ -203,7 +203,7 @@ struct ActivityStatusDrawer: View {
             } else {
                 Text("Le mode reste actif jusqu'à ce que tu le changes.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .padding(SharpitSpacing.cardPadding)
@@ -259,7 +259,7 @@ private struct ActivityStatusOptionRow: View {
                     // rewrites itself on selection reads as a different option.
                     Text(status.hint)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .multilineTextAlignment(.leading)
                 }
 

@@ -73,7 +73,7 @@ struct SharpitScrubChart: View {
         .modifier(ScrubYScale(kind: kind, values: domainValues))
         .chartYAxis {
             AxisMarks(position: .leading, values: yAxisValues) { value in
-                AxisGridLine().foregroundStyle(SharpitColor.analysisGrid)
+                AxisGridLine().foregroundStyle(SharpitColor.divider)
                 AxisValueLabel {
                     if let number = value.as(Double.self) { Text(axisLabel(number)) }
                 }
@@ -115,13 +115,13 @@ struct SharpitScrubChart: View {
     private var targetMark: some ChartContent {
         if let target, target > 0 {
             RuleMark(y: .value(String(localized: "Cible"), target))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 .annotation(position: .top, alignment: .trailing) {
                     if let targetLabel {
                         Text(targetLabel)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
         }
@@ -130,7 +130,7 @@ struct SharpitScrubChart: View {
     @ChartContentBuilder
     private func selectionMarks(_ point: SharpitScrubPoint) -> some ChartContent {
         RuleMark(x: .value(String(localized: "Jour"), point.date))
-            .foregroundStyle(SharpitColor.mutedForeground.opacity(0.5))
+            .foregroundStyle(SharpitColor.slate.opacity(0.5))
             .lineStyle(StrokeStyle(lineWidth: 1))
             .annotation(position: .top, spacing: 6, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                 bubble(point)
@@ -150,7 +150,7 @@ struct SharpitScrubChart: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text(point.date.sharpitFormatted(.dateTime.day().month(.abbreviated)))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)

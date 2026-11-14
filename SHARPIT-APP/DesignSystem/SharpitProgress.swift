@@ -38,7 +38,7 @@ struct SharpitProgressBar: View {
                     if let label {
                         Text(label)
                             .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     Spacer(minLength: SharpitSpacing.xs)
                     if let value {
@@ -49,7 +49,7 @@ struct SharpitProgressBar: View {
                 }
                 .lineLimit(1)
             }
-            SharpitBarTrack(fraction: fraction, tone: style == .lime ? SharpitColor.highlight : SharpitColor.foreground)
+            SharpitBarTrack(fraction: fraction, tone: SharpitColor.foreground)
                 .frame(height: thickness)
         }
         .accessibilityElement(children: .combine)
@@ -59,12 +59,12 @@ struct SharpitProgressBar: View {
 /// The bare bar: a capsule fill over a capsule track.
 struct SharpitBarTrack: View {
     let fraction: Double
-    var tone: Color = SharpitColor.highlight
+    var tone: Color = SharpitColor.foreground
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
-                Capsule().fill(SharpitColor.track)
+                Capsule().fill(SharpitColor.divider)
                 Capsule()
                     .fill(tone)
                     .frame(width: proxy.size.width * SharpitProgressMath.clamped(fraction))
@@ -93,8 +93,8 @@ struct SharpitGoalTrack: View {
             GeometryReader { proxy in
                 let position = proxy.size.width * SharpitProgressMath.clamped(fraction)
                 ZStack(alignment: .leading) {
-                    Capsule().fill(SharpitColor.track).frame(height: thickness)
-                    Capsule().fill(SharpitColor.highlight).frame(width: position, height: thickness)
+                    Capsule().fill(SharpitColor.divider).frame(height: thickness)
+                    Capsule().fill(SharpitColor.foreground).frame(width: position, height: thickness)
                     Circle()
                         .fill(SharpitColor.card)
                         .overlay(Circle().strokeBorder(SharpitColor.foreground, lineWidth: 2.5))
@@ -137,7 +137,7 @@ struct SharpitGoalTrack: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text(label)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 }

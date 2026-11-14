@@ -108,7 +108,7 @@ struct AccountView: View {
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                         Text("cm")
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 if let error = form.error(for: .heightCm) {
@@ -124,7 +124,7 @@ struct AccountView: View {
                             if let age = AccountAge.label(birthDate: form.birthDate) {
                                 Text(age)
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                                     .contentTransition(.numericText())
                             }
                         }
@@ -286,7 +286,7 @@ private struct AccountHeader: View {
                 if let email = clerk.user?.primaryEmailAddress?.emailAddress {
                     Text(email)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
@@ -464,7 +464,7 @@ struct NotificationPrefsView: View {
                             .font(SharpitTypography.bodyEmphasis)
                         Text("Sur l'écran verrouillé pendant que le coach répond.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 } icon: {
                     SharpitRowIcon.tile("lock.iphone")
@@ -481,7 +481,7 @@ struct NotificationPrefsView: View {
                             .font(SharpitTypography.bodyEmphasis)
                         Text("Séance et timer de repos sur l'écran verrouillé.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 } icon: {
                     SharpitRowIcon.tile("timer")
@@ -498,7 +498,7 @@ struct NotificationPrefsView: View {
                             .font(SharpitTypography.bodyEmphasis)
                         Text("Ou tape « FC » en haut pendant un suivi muscu pour choisir le capteur BLE.")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 } icon: {
                     SharpitRowIcon.tile("heart.fill")
@@ -532,7 +532,7 @@ struct NotificationPrefsView: View {
                         .font(SharpitTypography.bodyEmphasis)
                     Text(detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             } icon: {
                 SharpitRowIcon.tile(symbol)

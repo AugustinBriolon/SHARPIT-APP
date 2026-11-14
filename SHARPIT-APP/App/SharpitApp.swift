@@ -132,7 +132,7 @@ private struct PersistenceCannotStartView: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text("Le stockage local est indisponible. Relance l’app, ou libère de l’espace sur cet appareil.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .multilineTextAlignment(.center)
         }
         .padding(SharpitSpacing.pageInset)

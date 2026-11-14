@@ -66,7 +66,7 @@ struct BloodTestReadingCard: View {
             if reading.findings.isEmpty {
                 Text("Rien dans ces résultats que l'entraînement aide à lire.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             } else {
                 ForEach(reading.findings, id: \.key) { finding in
                     BloodTestFindingRow(finding: finding)
@@ -74,7 +74,7 @@ struct BloodTestReadingCard: View {
             }
             Text("Lecture d'entraînement, pas un diagnostic.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -89,7 +89,7 @@ private struct BloodTestFindingRow: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             HStack(spacing: SharpitSpacing.xs) {
                 Image(systemName: finding.tone == .doctor ? "stethoscope" : "figure.run")
-                    .foregroundStyle(finding.tone == .doctor ? SharpitColor.signalCaution : SharpitColor.mutedForeground)
+                    .foregroundStyle(finding.tone == .doctor ? SharpitColor.signalCaution : SharpitColor.slate)
                     .accessibilityHidden(true)
                 Text(markers)
                     .font(SharpitTypography.bodyEmphasis)
@@ -101,7 +101,7 @@ private struct BloodTestFindingRow: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text(finding.source)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, SharpitSpacing.xs)

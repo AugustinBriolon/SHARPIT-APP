@@ -1,27 +1,28 @@
 import SwiftUI
 
-/// Corner radii, exported from the web geometry tokens (ADR-085).
+/// Corner radii. The card comes from the Clinique shape tokens (SHARPIT-WEBAPP ADR-131); what
+/// nests inside steps down from it, each corner tighter than the one around it.
 enum SharpitRadius {
     /// Number chips and check boxes.
     static let small = SharpitTokens.chipRadius
-    /// Cards.
-    static let panel = SharpitTokens.cardRadius
+    /// Cards (`--shape-card`, SHARPIT-WEBAPP ADR-131).
+    static let panel = SharpitTokens.cardShapeRadius
     /// The ink band — same corner as a card.
-    static let panelLarge = SharpitTokens.cardRadius
+    static let panelLarge = SharpitTokens.cardShapeRadius
     /// The grey group that holds rows.
-    static let inset = SharpitTokens.insetRadius
+    static let inset: CGFloat = 16
     /// A row inside an inset group.
-    static let row = SharpitTokens.rowRadius
+    static let row: CGFloat = 14
     /// Icon tiles.
-    static let tile = SharpitTokens.tileRadius
+    static let tile: CGFloat = 10
     /// Buttons and segmented controls.
-    static let control = SharpitTokens.radius
+    static let control = SharpitTokens.pillShapeRadius
 }
 
-/// The surfaces of the Ink & Lime system (ADR-085).
+/// The surfaces of the Clinique system (SHARPIT-WEBAPP ADR-131, `docs/adr/0035`).
 ///
-/// A white card lifts off the cool canvas with one soft, wide shadow on light and by
-/// luminosity on dark — never with a border. Inside a card, rows sit in a grey inset group.
+/// A screen is one sheet. A card is part of it: the sheet's colour inside a hairline, never a
+/// shadow. Inside a card, rows read straight on it, split by lines.
 enum SharpitSurfaceStyle {
     /// `analysis-panel` — the default content surface.
     case panel
@@ -37,19 +38,12 @@ enum SharpitSurfaceStyle {
     func fill(at elevation: SharpitElevationLevel) -> Color {
         switch (self, elevation) {
         case (.panel, .sheet), (.chip, .sheet): SharpitElevatedColor.panelOnSheet
-        case (.panel, .base): SharpitColor.analysisSurface
-        case (.panelAlt, _): SharpitColor.insetGroup
-        case (.chip, .base): SharpitColor.chipSurface
+        case (.panel, .base): SharpitColor.card
+        case (.panelAlt, _): SharpitColor.tile
+        case (.chip, .base): SharpitColor.tile
         case (.ink, _): SharpitColor.inkSurface
         // Rows read straight on their card: no second box inside a card.
         case (.row, _): .clear
-        }
-    }
-
-    var shadow: SharpitShadowStyle? {
-        switch self {
-        case .panel, .ink: .panel
-        case .chip, .panelAlt, .row: nil
         }
     }
 
@@ -74,36 +68,23 @@ enum SharpitSurfaceStyle {
 private struct SharpitSurfaceModifier: ViewModifier {
     let style: SharpitSurfaceStyle
     @Environment(\.sharpitElevation) private var elevation
-    @Environment(\.isCliniqueScreen) private var isCliniqueScreen
 
-    @ViewBuilder
     func body(content: Content) -> some View {
-        if isCliniqueScreen, style == .panel {
-            content
-                .foregroundStyle(style.foreground)
-                .sharpitContainerCorner(SharpitTokens.cardShapeRadius)
-                // Filled with the sheet's own colour: a card floating over scrolled content stays opaque.
-                .background(SharpitColor.card, in: RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
-                        .strokeBorder(SharpitColor.divider, lineWidth: 1)
-                }
-        } else {
-            base(content)
-        }
-    }
-
-    private func base(_ content: Content) -> some View {
         // The corner is declared inside the fill so what sits within nests concentric to it,
         // while a nested surface's own fill follows the surface around it.
         content
             .foregroundStyle(style.foreground)
             .sharpitContainerCorner(style.radius)
             .background {
-                if let shadow = style.shadow {
+                if style == .panel {
+                    // A card is part of the sheet: its colour, and a hairline where a shadow was
+                    // (SHARPIT-WEBAPP ADR-131). Strokes keep a fixed shape.
                     RoundedRectangle(cornerRadius: style.radius, style: .continuous)
                         .fill(style.fill(at: elevation))
-                        .sharpitShadow(shadow)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: style.radius, style: .continuous)
+                                .strokeBorder(SharpitColor.divider, lineWidth: 1)
+                        )
                 } else {
                     Color.clear.sharpitConcentricBackground(style.fill(at: elevation), minimum: style.radius)
                 }
@@ -112,22 +93,8 @@ private struct SharpitSurfaceModifier: ViewModifier {
 }
 
 extension View {
-    /// Applies an instrument surface: tonal fill, soft shadow on light, no border.
+    /// Applies a surface: a bordered card for a panel, a tonal fill for the others.
     func sharpitSurface(_ style: SharpitSurfaceStyle) -> some View {
         modifier(SharpitSurfaceModifier(style: style))
     }
-
-    /// Marks a screen as swept to Clinique (`docs/adr/0034`) for the shared pieces it still borrows:
-    /// a card not yet redrawn takes the hairline instead of its shadow, and the week strip's
-    /// selected day turns ink.
-    /// shortcut: only a borrowed card's outline changes, its content keeps Ink & Lime parts; redraw
-    /// the card with the Clinique primitives when its own feature is swept.
-    func cliniqueScreen() -> some View {
-        environment(\.isCliniqueScreen, true)
-    }
 }
-
-extension EnvironmentValues {
-    @Entry var isCliniqueScreen = false
-}
-

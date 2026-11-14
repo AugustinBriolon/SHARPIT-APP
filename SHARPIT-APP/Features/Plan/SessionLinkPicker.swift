@@ -149,7 +149,7 @@ private struct SessionLinkCandidateRow: View {
                     .compactMap { $0 }
                     .joined(separator: " · "))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
 
             Spacer(minLength: 0)

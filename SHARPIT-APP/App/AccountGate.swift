@@ -224,7 +224,7 @@ struct AccountGate<Content: View>: View {
                         Task { try? await clerk.auth.signOut() }
                     }
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .padding(.bottom, SharpitSpacing.lg)
                 }
                 .transition(.opacity)

@@ -105,7 +105,7 @@ struct SessionRoutinePanel: View {
     private var chevron: some View {
         Image(systemName: "chevron.down")
             .font(SharpitTypography.label)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
             .rotationEffect(.degrees(isExpanded ? 180 : 0))
             .accessibilityHidden(true)
     }
@@ -138,7 +138,7 @@ struct SessionRoutinePanel: View {
         return line
             .font(SharpitTypography.meta)
             .monospacedDigit()
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
     }
 
     /// The name on its own line, the dose and the cue under it: a long French name no longer
@@ -162,6 +162,6 @@ struct SessionRoutinePanel: View {
     private func doseLine(_ move: V1RoutineMove) -> Text {
         let dose = Text(move.dose).foregroundStyle(SharpitColor.foreground)
         guard let cue = move.cue, !cue.isEmpty else { return dose }
-        return dose + Text(" · \(cue)").foregroundStyle(SharpitColor.mutedForeground)
+        return dose + Text(" · \(cue)").foregroundStyle(SharpitColor.slate)
     }
 }

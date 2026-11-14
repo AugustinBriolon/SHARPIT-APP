@@ -48,7 +48,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                         ProgressView()
                         Text("Chargement du déroulé…")
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                 }
                 if let routines {
@@ -80,7 +80,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                             .font(SharpitTypography.label)
                             .tracking(SharpitTypography.labelTracking)
                             .textCase(.uppercase)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                         if preview.isKey {
                             SharpitInlineTag(String(localized: "Clé"))
@@ -89,7 +89,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                     if let date = preview.date {
                         Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                     }
                 }
@@ -109,7 +109,7 @@ struct PlannedSessionSummary<Actions: View>: View {
             ForEach(Array(preview.metrics.enumerated()), id: \.element.label) { index, metric in
                 if index > 0 {
                     Rectangle()
-                        .fill(SharpitColor.analysisBorder)
+                        .fill(SharpitColor.divider)
                         .frame(width: 1)
                         .frame(maxHeight: .infinity)
                 }
@@ -118,7 +118,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
                         .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                     Text(metric.value)
                         .font(SharpitTypography.data)

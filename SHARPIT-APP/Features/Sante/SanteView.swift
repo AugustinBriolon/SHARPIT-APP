@@ -211,7 +211,7 @@ private struct BiologicalAgePendingCard: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(BiologicalAgeReadout.requirements)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -248,7 +248,7 @@ private struct SanteWatchCard: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(item.detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -292,7 +292,7 @@ struct SanteMarkerTile: View {
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .accessibilityHidden(true)
                 }
                 Spacer(minLength: SharpitSpacing.xs)
@@ -307,7 +307,7 @@ struct SanteMarkerTile: View {
                     if let unit = value.unit {
                         Text(unit)
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 0)
@@ -321,7 +321,7 @@ struct SanteMarkerTile: View {
                             .padding(.horizontal, SharpitSpacing.xs)
                             .padding(.vertical, 3)
                             .background(
-                                (trend.tone == .neutral ? SharpitColor.mutedForeground : trend.tone.color).opacity(0.22),
+                                (trend.tone == .neutral ? SharpitColor.slate : trend.tone.color).opacity(0.22),
                                 in: Capsule()
                             )
                     }
@@ -329,7 +329,7 @@ struct SanteMarkerTile: View {
                 HStack(alignment: .center, spacing: SharpitSpacing.xs) {
                     Text(marker.norm?.label ?? SanteReadout.basis(marker))
                         .font(SharpitTypography.meta.weight(.semibold))
-                        .foregroundStyle(marker.norm?.tone.color ?? SharpitColor.mutedForeground)
+                        .foregroundStyle(marker.norm?.tone.color ?? SharpitColor.slate)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
@@ -363,7 +363,7 @@ struct SanteReadingBlock: View {
                         .foregroundStyle(norm.tone.color)
                     Text(norm.reference)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -374,7 +374,7 @@ struct SanteReadingBlock: View {
                         .foregroundStyle(trend.stable ? SharpitColor.foreground : trend.tone.color)
                     Text(SanteReadout.comparison(marker, trend: trend))
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
         }
@@ -404,12 +404,12 @@ private struct SanteMarkerSheet: View {
                             if let unit = value.unit {
                                 Text(unit)
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.mutedForeground)
+                                    .foregroundStyle(SharpitColor.slate)
                             }
                         }
                         Text(SanteReadout.basis(marker))
                             .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                     }
                     SanteReadingBlock(marker: marker)
                     if marker.series.count > 1 {
@@ -420,7 +420,7 @@ private struct SanteMarkerSheet: View {
                     }
                     Text(SanteReadout.explanation(marker.key))
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(SharpitSpacing.pageInset)
@@ -444,7 +444,7 @@ private struct SanteSkeleton: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.section) {
             RoundedRectangle(cornerRadius: SharpitRadius.panel)
-                .fill(SharpitColor.mutedForeground.opacity(0.12))
+                .fill(SharpitColor.slate.opacity(0.12))
                 .frame(height: 150)
             ForEach(0..<2, id: \.self) { _ in
                 LazyVGrid(

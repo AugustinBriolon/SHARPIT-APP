@@ -21,7 +21,7 @@ struct NutritionMealView: View {
                             entryRow(entry)
                             if index < entries.count - 1 {
                                 Rectangle()
-                                    .fill(SharpitColor.analysisGrid)
+                                    .fill(SharpitColor.divider)
                                     .frame(height: 1)
                                     .padding(.leading, SharpitSpacing.md)
                             }
@@ -54,7 +54,7 @@ struct NutritionMealView: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text("kcal")
                     .font(.system(size: 11, weight: .regular, design: .rounded))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
             HStack(spacing: SharpitSpacing.md) {
@@ -75,7 +75,7 @@ struct NutritionMealView: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text(macro.short)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(macro.label) \(NutritionReadout.grams(grams))")
@@ -92,7 +92,7 @@ struct NutritionMealView: View {
                 Text("P \(Int(entry.protein.rounded())) · G \(Int(entry.carbs.rounded())) · L \(Int(entry.fat.rounded())) g")
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 if let flag {
                     Label(flag.label, systemImage: "exclamationmark.circle.fill")
                         .font(SharpitTypography.meta.weight(.semibold))

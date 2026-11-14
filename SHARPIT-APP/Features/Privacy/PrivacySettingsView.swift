@@ -343,7 +343,7 @@ struct PrivacySettingsView: View {
                 .foregroundStyle(SharpitColor.foreground)
             Text(detail)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

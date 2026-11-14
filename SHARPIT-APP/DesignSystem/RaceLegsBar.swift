@@ -15,7 +15,7 @@ struct RaceLegsBar: View {
     private static let gap: Double = 2
 
     private var primaryText: Color { SharpitColor.foreground }
-    private var secondaryText: Color { SharpitColor.mutedForeground }
+    private var secondaryText: Color { SharpitColor.slate }
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {

@@ -116,7 +116,7 @@ struct OnboardingZoneSheet: View {
                                 .padding(.horizontal, SharpitSpacing.sm)
                                 .frame(minHeight: 32)
                                 .background(
-                                    Capsule().fill(step == question ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt)
+                                    Capsule().fill(step == question ? SharpitColor.primary : SharpitColor.tile)
                                 )
                         }
                         .buttonStyle(.sharpitPressable)
@@ -194,7 +194,7 @@ struct OnboardingZoneSheet: View {
                     get: { draft.onset.flatMap { OnboardingInjuryDraft.Onset.allCases.firstIndex(of: $0) } },
                     set: { draft.onset = $0.map { OnboardingInjuryDraft.Onset.allCases[$0] } }
                 ),
-                tint: { _ in SharpitColor.highlight },
+                tint: { _ in SharpitColor.statusGoodMark },
                 stopLabels: OnboardingInjuryDraft.Onset.allCases.map(\.shortLabel),
                 accessibilityLabel: String(localized: "Depuis quand"),
                 valueLabel: { OnboardingInjuryDraft.Onset.allCases[$0].label },
@@ -202,7 +202,7 @@ struct OnboardingZoneSheet: View {
             )
             Text("Fais glisser ou touche une durée.")
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
         }
         .padding(.top, SharpitSpacing.sm)
     }
@@ -217,11 +217,11 @@ struct OnboardingZoneSheet: View {
                     .contentTransition(.numericText(value: Double(draft.pain ?? 0)))
                 Text("/10")
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer()
                 Text(draft.pain.map(ZoneSeverityTint.caption) ?? "")
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .contentTransition(.opacity)
             }
             .animation(SharpitMotion.selection, value: draft.pain)
@@ -238,7 +238,7 @@ struct OnboardingZoneSheet: View {
 
             Text(painCaption)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
                 .contentTransition(.opacity)
 
@@ -278,7 +278,7 @@ struct OnboardingZoneSheet: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(ZoneQuestion.path(for: draft).filter { $0 != .summary }.enumerated()), id: \.element) { index, step in
                     if index > 0 {
-                        Rectangle().fill(SharpitColor.analysisGrid).frame(height: 1)
+                        Rectangle().fill(SharpitColor.divider).frame(height: 1)
                     }
                     Button {
                         go(to: step)
@@ -286,7 +286,7 @@ struct OnboardingZoneSheet: View {
                         HStack {
                             Text(step.shortTitle)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.mutedForeground)
+                                .foregroundStyle(SharpitColor.slate)
                             Spacer(minLength: SharpitSpacing.sm)
                             Text(step.answer(in: draft) ?? "—")
                                 .font(SharpitTypography.bodyEmphasis)
@@ -294,7 +294,7 @@ struct OnboardingZoneSheet: View {
                                 .multilineTextAlignment(.trailing)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(SharpitColor.mutedForeground.opacity(0.6))
+                                .foregroundStyle(SharpitColor.slate.opacity(0.6))
                                 .accessibilityHidden(true)
                         }
                         .padding(.vertical, SharpitSpacing.sm)
@@ -430,11 +430,11 @@ struct ZoneChoiceTile: View {
                 Text(title)
                     .font(SharpitTypography.bodyEmphasis)
             }
-            .foregroundStyle(isSelected ? SharpitColor.highlightForeground : SharpitColor.foreground)
+            .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
             .frame(maxWidth: .infinity, minHeight: 112)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(isSelected ? SharpitColor.highlight : SharpitColor.analysisSurfaceAlt)
+                    .fill(isSelected ? SharpitColor.primary : SharpitColor.tile)
             )
             .contentShape(.rect)
         }
@@ -461,14 +461,14 @@ struct ZoneLadderRow: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Text(impact.detail)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 Spacer(minLength: SharpitSpacing.xs)
                 // The rung's weight: one to five bars, the limit read at a glance.
                 HStack(alignment: .bottom, spacing: 2) {
                     ForEach(0..<5, id: \.self) { bar in
                         Capsule()
-                            .fill(bar <= rung ? SharpitColor.foreground.opacity(0.75) : SharpitColor.analysisGrid)
+                            .fill(bar <= rung ? SharpitColor.foreground.opacity(0.75) : SharpitColor.divider)
                             .frame(width: 3, height: 6 + CGFloat(bar) * 3)
                     }
                 }
@@ -477,7 +477,7 @@ struct ZoneLadderRow: View {
             .padding(SharpitSpacing.sm)
             .background(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
@@ -518,7 +518,7 @@ struct NotchTrack: View {
                 let width = geo.size.width - knob
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(SharpitColor.analysisSurfaceAlt)
+                        .fill(SharpitColor.tile)
                         .frame(height: trackHeight)
                         .padding(.horizontal, knob / 2)
                     if let value {
@@ -529,7 +529,7 @@ struct NotchTrack: View {
                     }
                     ForEach(0..<stops, id: \.self) { stop in
                         Capsule()
-                            .fill(stop == marker ? SharpitColor.foreground.opacity(0.55) : SharpitColor.mutedForeground.opacity(0.35))
+                            .fill(stop == marker ? SharpitColor.foreground.opacity(0.55) : SharpitColor.slate.opacity(0.35))
                             .frame(width: 2, height: stop == marker ? 22 : 10)
                             .offset(x: knob / 2 + x(stop, width) - 1)
                     }
@@ -573,7 +573,7 @@ struct NotchTrack: View {
                         ForEach(Array(stopLabels.enumerated()), id: \.offset) { stop, label in
                             Text(label)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(stop == value ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                                .foregroundStyle(stop == value ? SharpitColor.foreground : SharpitColor.slate)
                                 .fixedSize()
                                 .frame(width: 120)
                                 .multilineTextAlignment(.center)
@@ -722,20 +722,20 @@ struct HealthGroundSheet: View {
                             // The segment down to the next node.
                             if index < entry.stages.count - 1 {
                                 Rectangle()
-                                    .fill(selectedIndex.map { index < $0 } ?? false ? SharpitColor.highlight : SharpitColor.analysisGrid)
+                                    .fill(selectedIndex.map { index < $0 } ?? false ? SharpitColor.primary : SharpitColor.divider)
                                     .frame(width: 3)
                                     .frame(maxHeight: .infinity)
                                     .offset(y: 28)
                             }
                             Circle()
-                                .fill(isReached ? SharpitColor.highlight : SharpitColor.card)
-                                .overlay(Circle().strokeBorder(isReached ? SharpitColor.highlight : SharpitColor.analysisGrid, lineWidth: 2))
+                                .fill(isReached ? SharpitColor.primary : SharpitColor.card)
+                                .overlay(Circle().strokeBorder(isReached ? SharpitColor.primary : SharpitColor.divider, lineWidth: 2))
                                 .frame(width: isChosen ? 26 : 20, height: isChosen ? 26 : 20)
                                 .overlay {
                                     if isChosen {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 12, weight: .bold))
-                                            .foregroundStyle(SharpitColor.highlightForeground)
+                                            .foregroundStyle(SharpitColor.primaryForeground)
                                     }
                                 }
                         }

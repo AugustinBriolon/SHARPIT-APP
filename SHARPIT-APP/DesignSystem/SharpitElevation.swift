@@ -19,28 +19,28 @@ extension EnvironmentValues {
 /// tone instead, and the panels on it lift once more by mixing in a little foreground.
 nonisolated enum SharpitElevatedColor {
     /// Sheet background: the canvas on light, the card tone on dark — never black.
-    static let sheet = adaptive(light: SharpitColor.background, dark: SharpitColor.card)
+    static let sheet = adaptive(light: SharpitColor.card, dark: SharpitColor.card)
 
     /// Behind an inset-grouped list: the brand canvas, as behind Résumé's cards — the neutral
     /// grey read as a system page dropped in. The canvas is too close to white (1.03:1) for a row
     /// to read alone, so `sharpitGroupedList` lifts the cards with the panel shadow. On dark the
     /// order flips — cells lift, the canvas stays deep.
-    static let groupedCanvas = SharpitColor.background
+    static let groupedCanvas = adaptive(light: SharpitColor.tile, dark: SharpitColor.background)
 
     /// A panel inside a sheet.
     static let panelOnSheet = adaptive(
-        light: SharpitColor.analysisSurface,
+        light: SharpitColor.card,
         dark: SharpitColor.card,
         darkLift: 0.06
     )
 
     /// A row inside an inset group: white on light, one step above the group on dark.
-    static let row = adaptive(light: SharpitColor.card, dark: SharpitColor.chipSurface)
+    static let row = adaptive(light: SharpitColor.card, dark: SharpitColor.tile)
 
     /// The resting pill of a segmented control: white on light, a lifted track on dark.
     static let control = adaptive(
-        light: SharpitColor.chipSurface,
-        dark: SharpitColor.analysisBorder
+        light: SharpitColor.tile,
+        dark: SharpitColor.divider
     )
 
     /// `darkLift` mixes that fraction of the foreground into the dark tone.
@@ -78,7 +78,8 @@ nonisolated enum SharpitElevatedColor {
 /// so dark separates layers through luminosity alone. Never tinted — a colored glow is
 /// forbidden on both platforms.
 enum SharpitShadowStyle {
-    /// Content panels and rows.
+    /// A layer floating over the sheet: a toast, a drawer's handle card. Never a content card,
+    /// which is a hairline (`sharpitSurface(.panel)`, SHARPIT-WEBAPP ADR-131).
     case panel
     /// A raised control inside a panel — the selected pill of a segmented answer.
     case control
