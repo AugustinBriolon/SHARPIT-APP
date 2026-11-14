@@ -192,6 +192,14 @@ final class OnboardingStore {
 
     /// Pre-fills the steps from the profile and reopens the step reached before a quit. A failed
     /// read still opens the wizard, empty: every step writes what it holds.
+    #if DEBUG
+    /// Opens the wizard on a step, for checking it by hand (`-SharpitOnboardingStep 4`).
+    func showForDemo(_ step: OnboardingStep) {
+        self.step = step
+        phase = .steps
+    }
+    #endif
+
     func load() async {
         guard phase == .loading else { return }
         defer { phase = .steps }

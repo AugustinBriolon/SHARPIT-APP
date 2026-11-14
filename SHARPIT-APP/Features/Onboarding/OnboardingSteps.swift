@@ -826,14 +826,10 @@ struct OnboardingPrivacyStep: View {
                 Button {
                     SharpitMotion.run(SharpitMotion.selection) { consents.acceptAll() }
                 } label: {
-                    Label("Tout accepter", systemImage: "checkmark.circle")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.primary)
-                        .padding(.horizontal, SharpitSpacing.md)
-                        .padding(.vertical, SharpitSpacing.xs)
-                        .background(SharpitColor.primary.opacity(0.10), in: Capsule())
+                    Text("Tout accepter")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                .fixedSize()
                 .transition(.opacity)
             }
 
@@ -841,19 +837,17 @@ struct OnboardingPrivacyStep: View {
                 ConsentCheckRow(isOn: $consents.terms, document: .terms, onRead: { openDocument = .terms }) {
                     Text("J'accepte les Conditions d'utilisation.")
                 }
-                Divider().padding(.leading, 44)
+                CliniqueDivider()
                 ConsentCheckRow(isOn: $consents.privacy, document: .privacy, onRead: { openDocument = .privacy }) {
                     Text("J'accepte la Politique de confidentialité.")
                 }
-                Divider().padding(.leading, 44)
+                CliniqueDivider()
                 ConsentCheckRow(isOn: $consents.health) {
                     Text("J'autorise le traitement de mes données de santé et physiologiques (récupération, fatigue, Twin).")
                 }
             }
-            .padding(.horizontal, SharpitSpacing.cardPadding)
-            .sharpitSurface(.panel)
 
-            SharpitEyebrow(String(localized: "Optionnel"))
+            SharpitFieldLabel(String(localized: "Optionnel"))
             VStack(alignment: .leading, spacing: 0) {
                 ConsentCheckRow(isOn: $consents.ai) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -864,8 +858,6 @@ struct OnboardingPrivacyStep: View {
                     }
                 }
             }
-            .padding(.horizontal, SharpitSpacing.cardPadding)
-            .sharpitSurface(.panelAlt)
 
             Text(PrivacyCopy.healthDisclaimer)
                 .font(SharpitTypography.meta)
@@ -990,7 +982,7 @@ struct OnboardingSourcesStep: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: 0) {
             OnboardingSourceCard(
                 provider: .appleHealth,
                 title: String(localized: "Apple Santé"),
@@ -1073,7 +1065,7 @@ struct OnboardingSourcesStep: View {
             ProgressView()
                 .frame(width: 44, height: 28)
         } else if isOAuthConnected(source) {
-            SharpitPill(String(localized: "Connecté"), style: .lime)
+            CliniqueStatusPill(String(localized: "Connecté"), status: .good)
         } else {
             Button {
                 if !hasAccount {
@@ -1082,9 +1074,10 @@ struct OnboardingSourcesStep: View {
                     Task { await connectOAuth(source) }
                 }
             } label: {
-                SharpitPill(String(localized: "Connecter"), style: .neutral)
+                Text("Connecter")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CliniqueButtonStyle(kind: .outline))
+            .fixedSize()
             .accessibilityLabel("Connecter \(source.name)")
         }
     }
@@ -1168,8 +1161,7 @@ private struct OnboardingSourceCard<Control: View>: View {
             ProviderLogo(provider: provider)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
                     .foregroundStyle(SharpitColor.foreground)
                 Text(detail)
                     .font(SharpitTypography.meta)
@@ -1179,8 +1171,9 @@ private struct OnboardingSourceCard<Control: View>: View {
             Spacer(minLength: SharpitSpacing.xs)
             control
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        // A line of the sheet, as Connexions draws its sources: no card, a hairline under it.
+        .padding(.vertical, 14)
+        .overlay(alignment: .bottom) { CliniqueDivider() }
         .accessibilityElement(children: .contain)
     }
 }

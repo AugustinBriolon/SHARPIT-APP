@@ -45,6 +45,11 @@ struct OnboardingDemoHost: View {
             ) {
                 finished = true
             }
+            .onAppear {
+                // `-SharpitOnboardingStep 4` opens on that step (the launch argument is a default).
+                let asked = UserDefaults.standard.object(forKey: "SharpitOnboardingStep") as? Int ?? Int(UserDefaults.standard.string(forKey: "SharpitOnboardingStep") ?? "")
+                if let step = asked.flatMap(OnboardingStep.init(rawValue:)) { store.showForDemo(step) }
+            }
         }
     }
 }
