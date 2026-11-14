@@ -8,7 +8,26 @@ struct SharpitLoadingInstrument: View {
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 0) {
-                VerdictHero(plate: .placeholder, placeholder: true)
+                // « Lecture de ta nuit »: the verdict's place, said as being read rather than greyed.
+                VStack(spacing: 14) {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Lecture de ta nuit")
+                            .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                            .foregroundStyle(SharpitColor.slate)
+                    }
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 28)
+                    .overlay(Capsule().strokeBorder(SharpitColor.divider, lineWidth: 1))
+                    ForEach([0.62, 0.78, 0.54], id: \.self) { share in
+                        Capsule().fill(SharpitColor.tile)
+                            .frame(height: share == 0.62 ? 22 : 14)
+                            .containerRelativeFrame(.horizontal) { width, _ in width * share }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, SharpitSpacing.lg)
+                .padding(.bottom, 24)
                 // Empty rings: track only, « Pas encore » — the arcs fill when the day arrives.
                 ResumeScoreRow(gauges: OvernightGaugeModel.placeholders, showsNutrition: showsNutrition)
                 SessionPlate(session: .placeholder, showPriorityTag: false)
@@ -24,22 +43,6 @@ struct SharpitLoadingInstrument: View {
         .cliniqueBackdropPage()
         .allowsHitTesting(false)
         .accessibilityLabel("Chargement du résumé")
-    }
-}
-
-private extension InkPlateModel {
-    static var placeholder: InkPlateModel {
-        InkPlateModel(
-            statusLabel: "FEU VERT",
-            headline: String(localized: "Séance prévue pour aujourd'hui"),
-            actionLine: String(localized: "Tenir le plan sans forcer"),
-            limitingCause: String(localized: "Sommeil court"),
-            confidencePct: 72,
-            confidenceLabel: "ESTIMATION PARTIELLE",
-            packTier: .full,
-            estimationGaps: [String(localized: "Baseline")],
-            posture: .steady
-        )
     }
 }
 

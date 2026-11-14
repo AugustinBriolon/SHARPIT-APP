@@ -121,24 +121,28 @@ struct DoneBrickDrawer: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
+                VStack(alignment: .leading, spacing: 22) {
                     header
                     VStack(spacing: 0) {
                         ForEach(Array(brick.legs.enumerated()), id: \.element.id) { index, leg in
+                            CliniqueDivider()
                             if index > 0 {
                                 DoneBrickTransitionRow(index: index, seconds: brick.transition(before: index))
+                                CliniqueDivider()
                             }
                             legPanel(index: index + 1, leg: leg)
                         }
+                        CliniqueDivider()
                     }
                     if let evaluation {
                         BrickEvaluationTile(store: evaluation) { isEvaluating = true }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SharpitSpacing.pageInset)
+                .padding(.horizontal, 24)
+                .padding(.vertical, SharpitSpacing.md)
             }
-            .background(SharpitCanvasBackground())
+            .cliniqueSheet(wash: brick.isComplete ? .good : .neutral, height: 220)
             .task { await loadEvaluation() }
             .sheet(isPresented: $isEvaluating) {
                 if let evaluation {
@@ -147,6 +151,7 @@ struct DoneBrickDrawer: View {
             }
             .navigationTitle("Enchaînement")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .principal) { Text("") } }
         }
         .presentationDetents([.large])
         .sharpitSheet()
@@ -165,18 +170,38 @@ struct DoneBrickDrawer: View {
         await store.load()
     }
 
+    /// How far the brick is as a pill, the chain as the title, its total, then the legs done as
+    /// one bar in the data hues.
     private var header: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Brick réalisé · \(brick.legs.count) étapes"))
-            BrickChainGlyphs(sports: brick.legs.map(\.sport))
+        let timed = brick.legs.compactMap { leg in leg.actual?.durationSec.map { (leg, Double($0)) } }
+        let total = timed.reduce(0) { $0 + $1.1 }
+        return VStack(alignment: .leading, spacing: 10) {
+            CliniqueStatusPill(
+                brick.isComplete ? String(localized: "Enchaînement réalisé") : String(localized: "Enchaînement en cours"),
+                status: brick.isComplete ? .good : .unknown
+            )
             Text(brick.chain)
-                .font(SharpitTypography.pageTitle)
-                .tracking(SharpitTypography.pageTitleTracking)
+                .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
                 .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
             if let summary = brick.summary {
                 Text(summary)
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
                     .foregroundStyle(SharpitColor.slate)
+            }
+            if total > 0, timed.count > 1 {
+                GeometryReader { geo in
+                    HStack(spacing: 3) {
+                        ForEach(timed, id: \.0.id) { leg, seconds in
+                            Capsule().fill(GoalsReadout.hue(V1ActivityType(sportLabel: leg.sport)))
+                                .frame(width: max(4, (geo.size.width - CGFloat(timed.count - 1) * 3) * seconds / total))
+                        }
+                    }
+                }
+                .frame(height: 10)
+                .padding(.top, 4)
+                .accessibilityHidden(true)
             }
         }
     }
@@ -201,56 +226,48 @@ struct DoneBrickDrawer: View {
     }
 }
 
-/// One leg: its place in the chain, its sport, what it was and how it felt.
+/// One leg as a line: its sport over what it was, how it went at the trailing edge, and what
+/// the athlete said of it under.
 private struct DoneBrickLegPanel: View {
     let index: Int
     let leg: DoneBrickPreview.Leg
     let opens: Bool
 
-    private var tone: Color { SharpitSportTone.label(for: leg.sport) }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(spacing: SharpitSpacing.sm) {
-                Text("\(index)")
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(tone)
-                    .frame(width: 30, height: 30)
-                    .background(tone.opacity(0.14), in: Circle())
-                VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(leg.sport)
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .foregroundStyle(tone)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                        .foregroundStyle(SharpitColor.slate)
                     Text(leg.title)
-                        .font(SharpitTypography.cardTitle)
-                        .tracking(SharpitTypography.cardTitleTracking)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                         .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 0)
                 Text(DoneBrickFormat.legMeta(leg))
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 16, weight: leg.isDone ? .semibold : .regular, relativeTo: .callout, digits: true))
                     .foregroundStyle(leg.isDone ? SharpitColor.foreground : SharpitColor.slate)
                 if opens {
-                    Image(systemName: "chevron.right")
-                        .font(SharpitTypography.label)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(SharpitColor.slate)
+                        .accessibilityHidden(true)
                 }
             }
             if let feeling = leg.actual?.feeling?.trimmingCharacters(in: .whitespacesAndNewlines), !feeling.isEmpty {
                 Text("« \(feeling) »")
-                    .font(SharpitTypography.meta)
-                    .italic()
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
                     .foregroundStyle(SharpitColor.slate)
                     .multilineTextAlignment(.leading)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
+        .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .contentShape(.rect)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -260,20 +277,16 @@ private struct DoneBrickTransitionRow: View {
     let seconds: Int?
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            Rectangle()
-                .fill(SharpitColor.primary.opacity(0.5))
-                .frame(width: 2, height: 36)
-                .padding(.leading, SharpitSpacing.cardPadding + 14)
-            Text("T\(index + 1) · " + (seconds.map(DoneBrickFormat.transition) ?? String(localized: "non mesurée")))
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .foregroundStyle(SharpitColor.primary)
-                .padding(.horizontal, SharpitSpacing.sm)
-                .padding(.vertical, SharpitSpacing.xxs + 1)
-                .background(SharpitColor.primary.opacity(0.10), in: Capsule())
-            Spacer(minLength: 0)
+        HStack {
+            Text("Transition \(index + 1)")
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                .foregroundStyle(SharpitColor.slate)
+            Spacer(minLength: SharpitSpacing.xs)
+            Text(seconds.map(DoneBrickFormat.transition) ?? String(localized: "non mesurée"))
+                .font(SharpitTypography.system(size: 16, weight: seconds == nil ? .regular : .semibold, relativeTo: .callout, digits: true))
+                .foregroundStyle(seconds == nil ? SharpitColor.slate : SharpitColor.foreground)
         }
+        .padding(.vertical, 12)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(seconds.map { String(localized: "Transition \(index + 1), \(DoneBrickFormat.transition($0))") } ?? String(localized: "Transition non mesurée"))
     }

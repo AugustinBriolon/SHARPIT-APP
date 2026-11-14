@@ -29,7 +29,6 @@ enum VerdictReadout {
 struct VerdictHero: View {
     let plate: InkPlateModel
     var revealed: Bool = true
-    var placeholder: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.isExpertReading) private var isExpertReading
@@ -102,7 +101,6 @@ struct VerdictHero: View {
             reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.40, dampingFraction: 1.0),
             value: revealed
         )
-        .redacted(reason: placeholder ? .placeholder : [])
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
     }

@@ -9,82 +9,49 @@ struct RaceDayCard: View {
     var opensSession = false
 
     var body: some View {
-        Group {
-            if let result = race.result {
-                review(result)
-            } else {
-                raceDay
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                CliniqueStatusPill(race.eyebrow, status: .pro)
+                Spacer(minLength: 0)
+                if opensSession {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(SharpitColor.slate)
+                        .accessibilityHidden(true)
+                }
             }
+            Text(race.title)
+                .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            if let result = race.result {
+                Text(result.summaryLine)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityLabel(result.spokenSummary)
+                if !result.segments.isEmpty {
+                    RaceLegsBar(segments: result.segments, compact: true)
+                }
+            } else {
+                let lines = [race.formatLine, race.targetLine].compactMap { $0 }
+                if !lines.isEmpty {
+                    Text(lines.joined(separator: " · "))
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                }
+            }
+            Text(race.coachLine)
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .foregroundStyle(race.result == nil ? SharpitColor.foreground : SharpitColor.slate)
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.leading)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+        .cliniqueCard(border: SharpitColor.pillarCoach.opacity(0.35))
         .accessibilityElement(children: .combine)
         .accessibilityHint(opensSession ? String(localized: "Revoir la course") : "")
-    }
-
-    private var raceDay: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack {
-                SharpitEyebrow(race.eyebrow, systemImage: "flag.checkered")
-                Spacer(minLength: 0)
-                if opensSession { chevron }
-            }
-            Text(race.title)
-                .font(SharpitTypography.verdict)
-                .tracking(SharpitTypography.verdictTracking)
-                .foregroundStyle(SharpitColor.foreground)
-                .lineLimit(2)
-            details
-            Text(race.coachLine)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.foreground.opacity(0.82))
-        }
-    }
-
-    /// Once run the card steps back: the result in one line, then the way into the session.
-    private func review(_ result: RaceResultModel) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(race.eyebrow, systemImage: "flag.checkered")
-            Text(race.title)
-                .font(SharpitTypography.cardTitle)
-                .tracking(SharpitTypography.cardTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
-                .lineLimit(2)
-            Text(result.summaryLine)
-                .font(SharpitTypography.bodyEmphasis)
-                .monospacedDigit()
-                .foregroundStyle(SharpitColor.foreground)
-                .accessibilityLabel(result.spokenSummary)
-            if !result.segments.isEmpty {
-                RaceLegsBar(segments: result.segments, compact: true)
-                    .padding(.vertical, SharpitSpacing.xxs)
-            }
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                Text(race.coachLine)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                Spacer(minLength: 0)
-                if opensSession { chevron }
-            }
-        }
-    }
-
-    private var chevron: some View {
-        Image(systemName: "chevron.right")
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(SharpitColor.slate.opacity(0.5))
-            .accessibilityHidden(true)
-    }
-
-    @ViewBuilder
-    private var details: some View {
-        let lines = [race.formatLine, race.targetLine].compactMap { $0 }
-        if !lines.isEmpty {
-            Text(lines.joined(separator: "  ·  "))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-        }
     }
 }
 

@@ -1087,21 +1087,69 @@ private struct TodayRaceLink: View {
     }
 }
 
+/// A day the server has nothing to read yet, on its mock-up: why, the scores as empty rings, and
+/// the way to fill the page — a source to connect.
 private struct TodayEmptyView: View {
     let empty: V1TodayEmpty
+    @Environment(ShellRouter.self) private var router: ShellRouter?
+    @Environment(\.features) private var features
 
     var body: some View {
-        ContentUnavailableView {
-            Label(empty.title, systemImage: "tray")
-        } description: {
-            if let message = empty.message {
-                Text(message)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(spacing: 10) {
+                    CliniqueStatusPill(String(localized: "En attente de données"), status: .unknown)
+                    Text(empty.title)
+                        .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
+                        .tracking(-0.5)
+                        .foregroundStyle(SharpitColor.foreground)
+                    if let message = empty.message {
+                        Text(message)
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.slate)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, SharpitSpacing.lg)
+                .padding(.top, SharpitSpacing.lg)
+                .padding(.bottom, 20)
+                ResumeScoreRow(gauges: OvernightGaugeModel.placeholders, showsNutrition: features.isOn(.nutrition))
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Pour remplir cet écran")
+                            .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                            .foregroundStyle(SharpitColor.slate)
+                        Text("Connecte ta montre")
+                            .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                            .foregroundStyle(SharpitColor.foreground)
+                        Text("Sommeil, récupération et séances arrivent seuls. Rien à saisir.")
+                            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                            .foregroundStyle(SharpitColor.slate)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack(spacing: SharpitSpacing.md) {
+                        if let router {
+                            Button("Connecter") { router.openSettings(on: .sources) }
+                                .buttonStyle(CliniqueButtonStyle(kind: .primary))
+                        }
+                        if let url = URL(string: empty.webURL) {
+                            Link("Continuer sur le web", destination: url)
+                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                                .foregroundStyle(SharpitColor.slate)
+                        }
+                    }
+                }
+                .cliniqueCard()
+                .padding(.horizontal, SharpitSpacing.lg)
+                .padding(.top, SharpitSpacing.lg)
             }
-        } actions: {
-            if let url = URL(string: empty.webURL) {
-                Link("Continuer sur le web", destination: url)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, SharpitSpacing.lg)
+            .cliniqueRisingSheet(wash: .neutral)
         }
+        .cliniqueBackdropPage()
     }
 }
 
