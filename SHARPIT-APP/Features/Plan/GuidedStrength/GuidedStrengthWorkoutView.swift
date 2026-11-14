@@ -387,6 +387,7 @@ struct GuidedStrengthWorkoutView: View {
             catalogId: group?.exerciseCatalogId,
             name: name
         )
+        let nextSet = session.nextSet(ofExercise: name)
         // List (not ScrollView) so trailing swipeActions can reveal trash.
         return List {
             Section {
@@ -431,7 +432,16 @@ struct GuidedStrengthWorkoutView: View {
 
             Section {
                 ForEach(sets) { set in
-                    setRow(id: set.id)
+                    Group {
+                        if set.id == nextSet?.id {
+                            currentSetCard(set)
+                                .padding(.vertical, SharpitSpacing.xs)
+                                .padding(.trailing, 8)
+                                .listRowSeparator(.hidden)
+                        } else {
+                            setRow(id: set.id)
+                        }
+                    }
                         .listRowInsets(EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                         .listRowSeparatorTint(SharpitColor.divider)
@@ -455,6 +465,19 @@ struct GuidedStrengthWorkoutView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            if let nextSet {
+                Button {
+                    focusedField = nil
+                    completeSet(id: nextSet.id)
+                } label: {
+                    Text("Série terminée").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                .padding(.horizontal, SharpitSpacing.md)
+                .padding(.bottom, SharpitSpacing.xs)
+            }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -462,6 +485,63 @@ struct GuidedStrengthWorkoutView: View {
             }
         }
     }
+
+    /// The set being done, as the mock-up's ink-lined card: its number, then the repetitions and
+    /// the load each stepped in place. « Durée » turns it into a hold, as the row's « kg » does.
+    private func currentSetCard(_ set: GuidedStrengthSetTarget) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Série \(set.setNumber)")
+                    .font(SharpitTypography.system(size: 18, weight: .semibold, relativeTo: .headline, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+                sideTag(set)
+                Spacer(minLength: SharpitSpacing.xs)
+                Button("Durée") {
+                    session.setUsesDuration(id: set.id, true)
+                    focusedField = nil
+                }
+                .buttonStyle(.plain)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
+                .underline(pattern: .dot)
+                .accessibilityLabel("Passer en durée")
+            }
+            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Répétitions")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                    JournalStepper(
+                        value: "\(set.loggedReps)",
+                        label: String(localized: "Répétitions"),
+                        onLess: { session.stepReps(id: set.id, by: -1) },
+                        onMore: { session.stepReps(id: set.id, by: 1) }
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Charge")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                    JournalStepper(
+                        value: set.loggedWeightKg.map(GuidedStrengthSetTarget.kilograms) ?? "—",
+                        label: String(localized: "Charge en kilogrammes"),
+                        onLess: { session.stepWeight(id: set.id, by: -Self.plateStepKg) },
+                        onMore: { session.stepWeight(id: set.id, by: Self.plateStepKg) }
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(SharpitSpacing.md)
+        .overlay(
+            RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
+                .strokeBorder(SharpitColor.foreground, lineWidth: 1.5)
+        )
+    }
+
+    /// The smallest pair of plates most bars take.
+    private static var plateStepKg: Double { 2.5 }
 
     @ViewBuilder
     private func setRow(id: UUID) -> some View {

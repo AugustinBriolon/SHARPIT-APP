@@ -215,6 +215,25 @@ struct GuidedStrengthSession: Equatable, Sendable {
         renumber(exercise: targets[index].exerciseName)
     }
 
+    /// The set an exercise's page asks for next: its first one neither done nor skipped, when it
+    /// is counted in reps (a hold has its own page).
+    func nextSet(ofExercise name: String) -> GuidedStrengthSetTarget? {
+        targets.first { $0.exerciseName == name && !$0.isDone && !$0.isSkipped }.flatMap { $0.isHold ? nil : $0 }
+    }
+
+    /// One repetition more or fewer, never below zero.
+    mutating func stepReps(id: UUID, by delta: Int) {
+        guard let index = targets.firstIndex(where: { $0.id == id }) else { return }
+        targets[index].loggedReps = min(max(targets[index].loggedReps + delta, 0), 500)
+    }
+
+    /// The load moved by a plate's step; stepped down to nothing it is unset, not « 0 kg ».
+    mutating func stepWeight(id: UUID, by deltaKg: Double) {
+        guard let index = targets.firstIndex(where: { $0.id == id }) else { return }
+        let next = (targets[index].loggedWeightKg ?? 0) + deltaKg
+        targets[index].loggedWeightKg = next > 0 ? next : nil
+    }
+
     mutating func uncompleteSet(id: UUID) {
         guard let index = targets.firstIndex(where: { $0.id == id }) else { return }
         targets[index].isDone = false

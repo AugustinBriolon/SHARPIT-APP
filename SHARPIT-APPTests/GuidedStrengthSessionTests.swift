@@ -273,3 +273,38 @@ import Testing
     #expect(GuidedStrengthSetTarget.volumeFigure(640).count < template.count)
     #expect(GuidedStrengthSetTarget.volumeFigure(3_200).count < template.count)
 }
+
+@Test func theSetInHandIsSteppedInPlaceAndGivesWayToTheNext() throws {
+    let prescription: JSONValue = .object([
+        "sets": .array([
+            .object([
+                "exercise": .string("Deadlift"),
+                "sets": .number(2),
+                "reps": .number(5),
+                "weightKg": .number(100),
+                "order": .number(0),
+            ]),
+        ]),
+    ])
+    var session = try #require(GuidedStrengthSession.make(title: "DL", plannedSessionId: nil, prescription: prescription))
+    let first = try #require(session.nextSet(ofExercise: "Deadlift"))
+    #expect(first.setNumber == 1)
+
+    session.stepReps(id: first.id, by: -1)
+    session.stepWeight(id: first.id, by: 2.5)
+    #expect(session.targets[0].loggedReps == 4)
+    #expect(session.targets[0].loggedWeightKg == 102.5)
+
+    // Stepped down to nothing, the load is unset rather than « 0 kg »; reps stop at zero.
+    session.stepWeight(id: first.id, by: -200)
+    session.stepReps(id: first.id, by: -50)
+    #expect(session.targets[0].loggedWeightKg == nil)
+    #expect(session.targets[0].loggedReps == 0)
+
+    session.completeSet(id: first.id)
+    #expect(session.nextSet(ofExercise: "Deadlift")?.setNumber == 2)
+    session.completeCurrent()
+    #expect(session.nextSet(ofExercise: "Deadlift") == nil)
+    // A hold has its own page, so it is never the set in hand.
+    #expect(session.nextSet(ofExercise: "Planche") == nil)
+}
