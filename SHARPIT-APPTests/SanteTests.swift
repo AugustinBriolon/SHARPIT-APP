@@ -137,8 +137,6 @@ private actor StubHealthClient: HealthOverviewServing {
     let synthesis = try JSONDecoder().decode(V1HealthSynthesis.self, from: Data(leaked.utf8))
     #expect(synthesis.biologicalAge == nil)
     #expect(SanteHero.Mode(synthesis) == .locked)
-    // What the blur covers is a constant, not the athlete's age.
-    #expect(SanteHero.lockedPlaceholder == "00")
 
     let age = V1BiologicalAge(years: 31, chronologicalYears: 35, method: nil, confidence: nil, computedAt: nil)
     #expect(SanteHero.Mode(V1HealthSynthesis(biologicalAge: age)) == .age(age))
@@ -150,4 +148,52 @@ private actor StubHealthClient: HealthOverviewServing {
     #expect(SanteReadout.steps(3_234) == "3,2 k")
     #expect(SanteReadout.steps(12_480) == "12 k")
     #expect(SanteReadout.signedDelta(3_234, for: .steps) == "+3,2 k pas")
+}
+
+@Test func theCheckUpOpensOnWhatThereIsToWatch() {
+    #expect(SanteHeroReadout.headline(normed: 0, watchCount: 0) == nil)
+    #expect(SanteHeroReadout.headline(normed: 4, watchCount: 0)?.text == "Rien à surveiller")
+    #expect(SanteHeroReadout.headline(normed: 4, watchCount: 0)?.status == .good)
+    #expect(SanteHeroReadout.headline(normed: 4, watchCount: 1)?.text == "1 point à surveiller")
+    #expect(SanteHeroReadout.headline(normed: 0, watchCount: 3)?.status == .watch)
+    #expect(SanteHeroReadout.wash(watchCount: 0) == .good)
+    #expect(SanteHeroReadout.wash(watchCount: 2) == .watch)
+}
+
+@Test func aNeutralToneCarriesNoPill() {
+    #expect(SanteHeroReadout.status(.good) == .good)
+    #expect(SanteHeroReadout.status(.watch) == .watch)
+    #expect(SanteHeroReadout.status(.neutral) == nil)
+    #expect(SanteHeroReadout.word(.good) == "Bon")
+    #expect(SanteHeroReadout.word(.watch) == "À surveiller")
+}
+
+@Test func theAgeIsReadAgainstTheCivilOneInWords() {
+    func age(_ years: Double, civil: Double?) -> V1BiologicalAge {
+        V1BiologicalAge(years: years, chronologicalYears: civil, method: nil, confidence: nil, computedAt: nil)
+    }
+    #expect(SanteHeroReadout.ageNote(age(25, civil: 25)) == "comme ton âge civil")
+    #expect(SanteHeroReadout.ageNote(age(31, civil: 34)) == "3 ans de moins")
+    #expect(SanteHeroReadout.ageNote(age(36, civil: 35)) == "1 an de plus")
+    #expect(SanteHeroReadout.ageNote(age(31, civil: nil)) == nil)
+}
+
+@Test func aTrendIsDrawnOnItsOwnSpan() {
+    let start = Date(timeIntervalSince1970: 0)
+    let points = [50.0, 47, 53].enumerated().map { CorpsPoint(date: start.addingTimeInterval(Double($0.offset) * 86_400), value: $0.element) }
+    #expect(SanteTrendReadout.normalised(points).map(\.value) == [0.5, 0, 1])
+    #expect(SanteTrendReadout.normalised([points[0], points[0]]).map(\.value) == [0.5, 0.5])
+    #expect(SanteTrendReadout.normalised([]).isEmpty)
+    let marker = V1HealthMarker(key: .hrv, value: 60, series: points)
+    #expect(SanteTrendReadout.drawable([marker, V1HealthMarker(key: .weight, value: 70)]) == [marker])
+}
+
+@Test func aTableRowSaysTheStatusAsAWord() {
+    let good = SanteTable.Row(V1HealthMarker(key: .restingHr, value: 47, norm: V1HealthNorm(band: "b", label: "Niveau athlète", tone: .good, reference: "")))
+    #expect(good.name == "FC de repos")
+    #expect(good.status?.word == "Bon")
+    #expect(good.value == "47 bpm")
+    #expect(SanteTable.Row(V1HealthMarker(key: .weight, value: 71.4)).status == nil)
+    #expect(SanteReadout.biomarkers(6) == "6 biomarqueurs")
+    #expect(SanteReadout.markers(1) == "1 repère")
 }

@@ -29,8 +29,13 @@ private func sample(_ t: Double, hr: Double? = nil, speed: Double? = nil, alt: D
     #expect(ActivityCurve(metric: .heartRate, samples: [sample(0, hr: 140), sample(1)]) == nil)
 }
 
-@Test func lanesOpenOnHeartRateEffortAndClimb() {
-    #expect(ActivityCurve.defaultSelection(from: [.heartRate, .pace, .power, .elevation, .cadence]) == [.heartRate, .power, .elevation])
+@Test func theCurvesOpenOnTheEffortAndTheHeartRate() {
+    #expect(ActivityCurve.defaultSelection(from: [.heartRate, .pace, .power, .elevation, .cadence]) == [.power, .heartRate])
+    #expect(ActivityCurve.defaultSelection(from: [.heartRate, .pace, .elevation]) == [.pace, .heartRate])
+    #expect(ActivityCurve.title(for: [.pace, .heartRate]) == "Allure et FC")
+    #expect(ActivityCurve.title(for: [.heartRate, .elevation]) == "FC et dénivelé")
+    #expect(ActivityCurve.title(for: [.power]) == "Puissance")
+    #expect(ActivityCurve.title(for: [.pace, .heartRate, .elevation]) == "Courbes")
     #expect(ActivityCurve.defaultSelection(from: [.pace, .cadence]) == [.pace])
     #expect(ActivityCurve.defaultSelection(from: [.cadence]) == [.cadence])
 }

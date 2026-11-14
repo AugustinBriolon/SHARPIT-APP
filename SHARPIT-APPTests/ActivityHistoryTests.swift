@@ -13,16 +13,34 @@ private let paris: Calendar = {
 
 private func day(_ iso: String) -> Date { TrainingDayId.date(iso)! }
 
-@Test func twoOctobersOfDifferentYearsStayApart() {
-    let months = ActivityHistory.months([
+@Test func theHistoryIsCutIntoWeeksNamedByTheirMonday() {
+    // Friday 16 October 2026: the week runs from Monday 12.
+    let weeks = ActivityHistory.weeks([
         V1ActivityListItem(id: "a", date: day("2026-10-13"), duration: 3600),
         V1ActivityListItem(id: "b", date: day("2025-10-13"), duration: 1800),
-        V1ActivityListItem(id: "c", date: day("2026-10-02"), duration: 1200),
+        V1ActivityListItem(id: "c", date: day("2026-10-12"), duration: 1200),
+        V1ActivityListItem(id: "d", date: day("2026-10-11"), duration: 600),
     ], now: day("2026-10-16"), calendar: paris)
 
-    #expect(months.map(\.id) == ["2026-10", "2025-10"])
-    #expect(months.map(\.title) == ["Octobre", "Octobre 2025"])
-    #expect(months[0].summary == "2 séances · 1 h 20")
+    #expect(weeks.map(\.id) == ["2026-10-12", "2026-10-05", "2025-10-13"])
+    #expect(weeks.map(\.title) == ["Cette semaine", "Semaine du 5 octobre", "Semaine du 13 octobre 2025"])
+    #expect(weeks[0].summary == "2 séances · 1 h 20")
+    #expect(weeks[1].summary == "1 séance · 10 min")
+}
+
+@Test func aSessionOffPlanReadsAsFree() {
+    let free = V1ActivityListItem(id: "a", date: day("2026-10-13"), duration: 3480, load: 72)
+    #expect(ActivityRowReadout.standing(free).word == "Libre")
+    #expect(ActivityRowReadout.standing(free).status == .unknown)
+    #expect(ActivitySheetReadout.status(.harder) == .watch)
+    #expect(ActivitySheetReadout.status(.asPlanned) == .good)
+    #expect(ActivitySheetReadout.title(sport: "Course", title: "Tempo 3 × 10 min") == "Course · Tempo 3 × 10 min")
+    #expect(ActivitySheetReadout.title(sport: "Course", title: "Course du matin") == "Course du matin")
+    #expect(ActivitySheetReadout.title(sport: "Course", title: nil) == "Course")
+    #expect(ActivitySheetReadout.variation(-6.4) == "−6 %")
+    #expect(ActivitySheetReadout.variation(0.2) == "=")
+    #expect(ActivitySheetReadout.feedback(rpe: 7, feeling: SessionFeeling(rawValue: 4)) == "7/10 · 4/5")
+    #expect(ActivitySheetReadout.feedback(rpe: nil, feeling: nil) == "Noter")
 }
 
 @Test func aNewPageJoinsTheListOnceAndInOrder() {
@@ -30,20 +48,6 @@ private func day(_ iso: String) -> Date { TrainingDayId.date(iso)! }
     let page = [V1ActivityListItem(id: "b", date: day("2026-09-01")), V1ActivityListItem(id: "c", date: day("2026-08-01"))]
 
     #expect(ActivityHistory.merge(loaded, with: page).map(\.id) == ["a", "b", "c"])
-}
-
-@Test func theWeekCountsMondayToSundayOnly() {
-    // Friday 16 October 2026: the week runs from Monday 12.
-    let week = ActivityHistory.week([
-        V1ActivityListItem(id: "a", date: day("2026-10-16"), duration: 2400),
-        V1ActivityListItem(id: "b", date: day("2026-10-13"), duration: 3480),
-        V1ActivityListItem(id: "c", date: day("2026-10-11"), duration: 9999),
-    ], now: day("2026-10-16"), calendar: paris)
-
-    #expect(week.count == 2)
-    #expect(week.activeDays == [false, true, false, false, true, false, false])
-    #expect(week.todayIndex == 4)
-    #expect(ActivityHistory.hours(week.durationSeconds) == "1 h 38")
 }
 
 private struct WindowStub: ActivityServing {

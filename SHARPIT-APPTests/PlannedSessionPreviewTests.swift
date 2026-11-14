@@ -356,3 +356,14 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
     #expect(sequence.parts.map(\.kind) == [.session, .after])
     #expect(sequence.totalMinutes == 43)
 }
+
+@Test func aPlannedSessionIsTitledBySportThenName() {
+    #expect(PlannedSessionReadout.title(sport: "Vélo", title: "Seuil 2 × 12 min") == "Vélo · Seuil 2 × 12 min")
+    #expect(PlannedSessionReadout.title(sport: "Natation", title: "Natation technique") == "Natation technique")
+    #expect(PlannedSessionReadout.title(sport: "Course", title: "Course") == "Course")
+}
+
+@Test func theAdapterCountsWhatItApplies() {
+    #expect(PlanAdapterReadout.apply(1) == "Appliquer le changement")
+    #expect(PlanAdapterReadout.apply(2) == "Appliquer les 2 changements")
+}

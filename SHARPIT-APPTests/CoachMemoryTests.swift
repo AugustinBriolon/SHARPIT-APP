@@ -390,3 +390,17 @@ private final class RefusingCoachMemoryClient: CoachMemoryServing, @unchecked Se
     }
     func deleteEntry(id: String, token: String) async throws {}
 }
+
+@MainActor @Test func theMemorySaysWhatItKeptAndWhen() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = .current
+    let day = calendar.date(from: DateComponents(year: 2026, month: 3, day: 18, hour: 12))!
+    let injury = CoachMemoryEntry(type: .injury, label: "Tendon d'Achille", startDate: day, endDate: day, note: "pas de côtes deux jours de suite")
+    let note = CoachMemoryEntry(type: .note, startDate: day, endDate: day, note: "Je m'entraîne le matin.")
+    let bare = CoachMemoryEntry(type: .preference, label: "Home trainer", startDate: day, endDate: day)
+    #expect(CoachMemoryReadout.text(injury) == "Tendon d'Achille : pas de côtes deux jours de suite")
+    #expect(CoachMemoryReadout.text(note) == "Je m'entraîne le matin.")
+    #expect(CoachMemoryReadout.text(bare) == "Home trainer")
+    #expect(CoachMemoryReadout.kept(injury, locale: Locale(identifier: "fr_FR")) == "Blessure · retenu le 18 mars")
+    #expect(CoachMemoryReadout.lead(14) == "14 choses retenues de vos échanges. Tu peux tout corriger ou effacer.")
+}

@@ -92,3 +92,19 @@ private struct StubRecovery: RecoveryServing {
     }
     #expect(recovery.limiter == "Qualité du sommeil")
 }
+
+@MainActor
+@Test func whatWeighsNamesTheWeakestDimensionAsTheLimit() throws {
+    let recovery = try decodedRecovery()
+    let weights = RecoveryReadout.weights(recovery)
+    #expect(weights.map(\.name) == ["Système nerveux", "Sommeil", "Charge"])
+    #expect(weights.map(\.tag) == [nil, "Limite", nil])
+    #expect(weights[0].detail == "58 ms · ta plage 55 – 70")
+    #expect(weights[1].detail == "53 sur 100")
+    #expect(weights[1].position == 0.525)
+    #expect(weights.map(\.status) == [.good, .watch, .good])
+    #expect(RecoveryReadout.summary(recovery) == "VFC dans ta norme")
+    #expect(RecoveryReadout.reliability(recovery) == "Lecture fiable à 68 % · données partielles")
+    #expect(RecoveryReadout.status(for: .risk) == .alert)
+    #expect(RecoveryReadout.status(score: nil) == .unknown)
+}

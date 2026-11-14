@@ -140,3 +140,16 @@ private struct StubEffort: EffortServing {
     #expect(EffortReadout.limitingFactor("fatigue.primaryLimitingFactor.unknown") == nil)
     #expect(EffortReadout.limitingFactor("  ") == nil)
 }
+
+@MainActor @Test func theDayIsReadAgainstItsAdvisedZone() {
+    #expect(EffortReadout.zoneWord("within") == "Dans ta zone")
+    #expect(EffortReadout.zoneWord("above") == "Au-dessus")
+    #expect(EffortReadout.zoneWord(nil) == nil)
+    #expect(EffortReadout.zoneStatus("within") == .good)
+    #expect(EffortReadout.zoneStatus("above") == .watch)
+    #expect(EffortReadout.zoneStatus("unknown") == nil)
+    #expect(EffortReadout.rampStatus(1.09) == .good)
+    #expect(EffortReadout.rampStatus(1.6) == .watch)
+    #expect(EffortReadout.weekdayInitial("2026-11-13", locale: Locale(identifier: "fr_FR")) == "V")
+    #expect(EffortReadout.weekdayInitial("nope") == "")
+}

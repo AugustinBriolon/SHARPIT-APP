@@ -946,3 +946,21 @@ func journalStatusesAreToldApart(status: Int, expected: SharpitAPIError?) {
         try JournalClient.check(status: 422, body: body)
     }
 }
+
+// MARK: - Readout
+
+@Test func theDayIsSaidAsSignalsNotedOutOfThoseAsked() {
+    #expect(JournalReadout.progress(noted: 3, of: 5) == "3 signaux sur 5 notés")
+    #expect(JournalReadout.progress(noted: 0, of: 1) == "0 signal sur 1 noté")
+    #expect(JournalReadout.progress(noted: 0, of: 0) == nil)
+}
+
+@Test func waterIsReadInLitresAndAnUnansweredSignalIsToNote() {
+    let french = Locale(identifier: "fr_FR")
+    #expect(JournalReadout.litres(1_200, locale: french) == "1,2 L")
+    #expect(JournalReadout.litres(2_000, locale: french) == "2 L")
+    #expect(JournalReadout.litres(0, locale: french) == nil)
+    #expect(JournalReadout.litres(nil, locale: french) == nil)
+    #expect(JournalReadout.answer(.unset) == "À noter")
+    #expect(JournalReadout.answer(.yes) == "Oui")
+}

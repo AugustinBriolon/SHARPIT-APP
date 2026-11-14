@@ -173,6 +173,19 @@ private nonisolated func decodedZones() throws -> V1SensitiveZones {
         #expect(SensitiveZoneReadout.prompt([zones[1]]) == nil)
     }
 
+    @MainActor @Test func theListSaysHowManyAreOpenAndWhereEachStands() throws {
+        let zones = try decodedZones().zones
+        #expect(SensitiveZoneReadout.count(open: 2, resolved: 1) == "2 ouvertes · 1 résolue")
+        #expect(SensitiveZoneReadout.count(open: 1, resolved: 0) == "1 ouverte")
+        #expect(SensitiveZoneReadout.count(open: 0, resolved: 0) == "Aucune zone déclarée")
+        #expect(SensitiveZoneReadout.levels(zones[0].readings) == [3, 0])
+        #expect(SensitiveZoneReadout.standing(zones[0]) == "gêne 0 / 10 · en baisse")
+        // One reading or none: no trend to claim, the place instead.
+        #expect(SensitiveZoneReadout.standing(zones[1]) == "gêne 5 / 10 · Épaule · Bilatéral")
+        #expect(SensitiveZoneReadout.resolved(zones[2].resolvedAt, locale: Locale(identifier: "fr_FR")) == "résolue en avril")
+        #expect(SensitiveZoneReadout.resolved(nil) == "résolue")
+    }
+
     @Test func wordsCounts() {
         #expect(SensitiveZoneReadout.upcoming(0) == nil)
         #expect(SensitiveZoneReadout.upcoming(2) == "2 séances à venir la sollicitent")
