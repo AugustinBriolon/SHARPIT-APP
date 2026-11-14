@@ -128,22 +128,16 @@ struct TodayView: View {
                     TodayEmptyView(empty: empty)
                         .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .failed(let message):
-                    ContentUnavailableView {
-                        Label("Résumé indisponible", systemImage: "wifi.slash")
-                    } description: {
-                        Text(message)
-                    } actions: {
-                        Button("Réessayer") {
-                            Task { await store.load(resetToLoading: true) }
-                        }
-                    }
+                    SharpitStateMessage(
+                        title: String(localized: "Pas de connexion"),
+                        symbol: "wifi.slash",
+                        detail: message,
+                        retry: { Task { await store.load(resetToLoading: true) } }
+                    )
+                    .clipShape(UnevenRoundedRectangle(topLeadingRadius: SharpitTokens.sheetShapeRadius, topTrailingRadius: SharpitTokens.sheetShapeRadius, style: .continuous))
                     .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .unauthorized:
-                    ContentUnavailableView {
-                        Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
-                    } description: {
-                        Text("Reconnecte-toi pour recharger le résumé.")
-                    }
+                    SharpitStateMessage.sessionExpired()
                 }
             }
             // Right for the day before, left for the day after, never past today. A swipe that
