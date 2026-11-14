@@ -22,7 +22,8 @@ struct ActivityDetailView: View {
     @State private var isMapExpanded = false
     @State private var mapCameraPosition: MapCameraPosition = .automatic
     @State private var mapStyleSelection: MapStyleOption = .standard
-    @State private var colorsRouteByIntensity = false
+    /// What colours the route: nothing until the athlete asks, on the expanded map's card.
+    @State private var routeColouring: RouteColouring = .plain
     /// The expanded map moved away from the route: only then is recentring worth a button.
     @State private var isMapOffRoute = false
     /// Built once per stream read, not on every render: the path and samples are hundreds long.
@@ -111,7 +112,7 @@ struct ActivityDetailView: View {
                 if reservesMapSpace {
                     ZStack(alignment: .top) {
                         Group {
-                            if colorsRouteByIntensity, let intensity = routeIntensity {
+                            if let intensity = routeIntensity {
                                 ActivityRouteHero(
                                     route: streamPayload?.route ?? route,
                                     tone: activityTone(detail.type),
@@ -158,7 +159,10 @@ struct ActivityDetailView: View {
                                 ActivityRouteLoadingSurface()
                             }
                         }
-                        .frame(height: proxy.size.height)
+                        // The stack ignores the safe area: expanded, the map runs to the screen's foot,
+                        // under its card. Collapsed it keeps the height its route is framed for.
+                        .frame(height: proxy.size.height
+                            + (isMapExpanded ? proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom : 0))
 
                         ScrollView {
                             VStack(spacing: 0) {
@@ -262,9 +266,8 @@ struct ActivityDetailView: View {
             if !expanded { routeReplay.stop() }
         }
         .onDisappear { routeReplay.stop() }
-        .onChange(of: streamPayload, initial: true) { _, payload in
-            routeIntensity = payload.flatMap { RouteIntensity.make(route: $0.route, samples: $0.samples) }
-        }
+        .onChange(of: streamPayload, initial: true) { _, _ in readRouteIntensity() }
+        .onChange(of: routeColouring) { _, _ in readRouteIntensity() }
         .overlay(alignment: .topLeading) {
             Button {
                 if isMapExpanded {
@@ -275,8 +278,9 @@ struct ActivityDetailView: View {
                     dismiss()
                 }
             } label: {
-                Image(systemName: "chevron.left")
+                Image(systemName: isMapExpanded ? "xmark" : "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
+                    .contentTransition(.symbolEffect(.replace))
                     .foregroundStyle(SharpitColor.foreground)
                     .frame(width: 48, height: 48)
                     .background(.ultraThinMaterial, in: Circle())
@@ -307,67 +311,20 @@ struct ActivityDetailView: View {
                         }
                         .accessibilityLabel("Discuter de cette séance")
                     }
-                    if !route.isEmpty {
-                        if isMapExpanded && isMapOffRoute {
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.35)) {
-                                    mapCameraPosition = .region(computeRouteRegion(for: route))
-                                }
-                            } label: {
-                                Image(systemName: "location.viewfinder")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .foregroundStyle(SharpitColor.foreground)
-                                    .frame(width: 44, height: 44)
-                                    .background(.ultraThinMaterial, in: Circle())
-                                    .sharpitShadow(.control)
-                            }
-                            .accessibilityLabel("Recentrer la carte")
-                            .transition(.asymmetric(
-                                insertion: .scale.combined(with: .opacity),
-                                removal: .scale.combined(with: .opacity)
-                            ))
-                        }
-
-                        if isMapExpanded {
-                            Menu {
-                                Picker("Style de carte", selection: $mapStyleSelection) {
-                                    ForEach(MapStyleOption.allCases) { option in
-                                        Text(option.rawValue).tag(option)
-                                    }
-                                }
-                                if routeIntensity != nil {
-                                    Divider()
-                                    Toggle("Heatmap", isOn: $colorsRouteByIntensity)
-                                }
-                            } label: {
-                                Image(systemName: "square.2.layers.3d")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(SharpitColor.foreground)
-                                    .frame(width: 44, height: 44)
-                                    .background(.ultraThinMaterial, in: Circle())
-                                    .sharpitShadow(.control)
-                            }
-                            .accessibilityLabel("Style de carte")
-                            .transition(.asymmetric(
-                                insertion: .scale.combined(with: .opacity),
-                                removal: .scale.combined(with: .opacity)
-                            ))
-                        }
-
+                    if !route.isEmpty, !isMapExpanded {
                         Button {
                             withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                isMapExpanded.toggle()
+                                isMapExpanded = true
                             }
                         } label: {
-                            Image(systemName: isMapExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(SharpitColor.foreground)
                                 .frame(width: 48, height: 48)
                                 .background(.ultraThinMaterial, in: Circle())
                                 .sharpitShadow(.control)
-                                .contentTransition(.symbolEffect(.replace))
                         }
-                        .accessibilityLabel(isMapExpanded ? String(localized: "Réduire la carte") : String(localized: "Agrandir la carte"))
+                        .accessibilityLabel("Agrandir la carte")
                     }
                     if !isMapExpanded, let mutator = client as? any ActivityMutating {
                         ActivityActionsMenu(
@@ -391,66 +348,82 @@ struct ActivityDetailView: View {
             // The 2D/3D button is always there, so it comes first: the compass, which comes and
             // goes with the heading, appears under it instead of pushing it down. MapKit's own
             // pitch toggle shows only once the map is tilted, so the button is the screen's.
-            if isMapExpanded {
+            if isMapExpanded, case .loaded(let detail) = phase {
                 let isPitched = (mapCamera?.pitch ?? 0) > 1
                 VStack(alignment: .trailing, spacing: 8) {
-                    Button {
-                        guard let camera = mapCamera else { return }
-                        withAnimation(.easeInOut(duration: 0.45)) {
-                            mapCameraPosition = .camera(MapCamera(
-                                centerCoordinate: camera.centerCoordinate,
-                                distance: camera.distance,
-                                heading: camera.heading,
-                                pitch: isPitched ? 0 : 60
-                            ))
+                    VStack(spacing: 0) {
+                        Menu {
+                            Picker("Style de carte", selection: $mapStyleSelection) {
+                                ForEach(MapStyleOption.allCases) { option in
+                                    Text(option.rawValue).tag(option)
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "square.2.layers.3d")
+                                .font(.system(size: 17, weight: .regular))
+                                .frame(width: 46, height: 46)
+                                .contentShape(.rect)
                         }
-                    } label: {
-                        Text(isPitched ? "2D" : "3D")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(SharpitColor.foreground)
-                            .frame(width: 44, height: 44)
-                            .background(.ultraThinMaterial, in: Circle())
-                            .sharpitShadow(.control)
-                            .contentTransition(.opacity)
+                        .accessibilityLabel("Style de carte")
+                        CliniqueDivider().frame(width: 46)
+                        Button {
+                            guard let camera = mapCamera else { return }
+                            withAnimation(.easeInOut(duration: 0.45)) {
+                                mapCameraPosition = .camera(MapCamera(
+                                    centerCoordinate: camera.centerCoordinate,
+                                    distance: camera.distance,
+                                    heading: camera.heading,
+                                    pitch: isPitched ? 0 : 60
+                                ))
+                            }
+                        } label: {
+                            Text(isPitched ? "2D" : "3D")
+                                .font(.system(size: 14, weight: .semibold))
+                                .frame(width: 46, height: 46)
+                                .contentShape(.rect)
+                                .contentTransition(.opacity)
+                        }
+                        .disabled(mapCamera == nil)
+                        .accessibilityLabel(isPitched ? String(localized: "Vue à plat") : String(localized: "Vue en relief"))
+                        if isMapOffRoute {
+                            CliniqueDivider().frame(width: 46)
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.35)) {
+                                    mapCameraPosition = .region(computeRouteRegion(for: mapRoute(for: detail)))
+                                }
+                            } label: {
+                                Image(systemName: "location.viewfinder")
+                                    .font(.system(size: 17, weight: .regular))
+                                    .frame(width: 46, height: 46)
+                                    .contentShape(.rect)
+                            }
+                            .accessibilityLabel("Recentrer la carte")
+                            .transition(.opacity)
+                        }
                     }
                     .buttonStyle(.plain)
-                    .disabled(mapCamera == nil)
-                    .accessibilityLabel(isPitched ? String(localized: "Vue à plat") : String(localized: "Vue en relief"))
-                    Button {
-                        routeReplay.toggle()
-                    } label: {
-                        Image(systemName: replaySymbol)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(SharpitColor.foreground)
-                            .frame(width: 44, height: 44)
-                            .background(.ultraThinMaterial, in: Circle())
-                            .sharpitShadow(.control)
-                            .contentTransition(.symbolEffect(.replace))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(replayLabel)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .sharpitGlassCapsule()
+                    .sharpitShadow(.control)
                     MapCompass(scope: mapScope)
                     MapScaleView(scope: mapScope)
                 }
-                .padding(.trailing, 18)
-                .padding(.top, 72)
+                .padding(.trailing, 16)
+                .padding(.top, 12)
                 .transition(.opacity)
-            }
-        }
-        .overlay(alignment: .topLeading) {
-            if isMapExpanded, colorsRouteByIntensity, let intensity = routeIntensity {
-                RouteIntensityLegend(metric: intensity.metric)
-                    .padding(.leading, 16)
-                    .padding(.top, 72)
-                    .transition(.opacity)
             }
         }
         .overlay(alignment: .bottom) {
             if isMapExpanded, case .loaded(let detail) = phase {
-                CollapsedActivityBottomBar(
+                ActivityMapCard(
                     detail: detail,
-                    tone: activityTone(detail.type),
-                    onExpand: {
+                    intensity: routeIntensity,
+                    colourings: RouteColouring.options(for: RouteIntensity.metrics(in: streamPayload?.samples ?? [])),
+                    colouring: $routeColouring,
+                    replaySymbol: replaySymbol,
+                    replayLabel: replayLabel,
+                    onReplay: { routeReplay.toggle() },
+                    onDetails: {
                         withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
                             isMapExpanded = false
                         }
@@ -539,6 +512,13 @@ struct ActivityDetailView: View {
     private static let mapVisibleShare = 0.62
 
     /// The recorded route; for a triathlon without one of its own, its legs' joined end to end.
+    /// Built once per stream read or choice, not on every render: the path and samples are hundreds long.
+    private func readRouteIntensity() {
+        routeIntensity = routeColouring.metric.flatMap { metric in
+            streamPayload.flatMap { RouteIntensity.make(route: $0.route, samples: $0.samples, metric: metric) }
+        }
+    }
+
     private func mapRoute(for detail: V1ActivityDetail) -> [V1ActivityCoordinate] {
         if let route = detail.stream?.route, !route.isEmpty { return route }
         if let route = streamPayload?.route, !route.isEmpty { return route }
@@ -1859,7 +1839,7 @@ private struct ActivityRouteHero: View {
                         MapPolyline(coordinates: segment.coordinates.map {
                             CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
                         })
-                        .stroke(RouteIntensityTone.color(level: segment.level), lineWidth: 5)
+                        .stroke(SharpitZoneTone.color(segment.level), lineWidth: 5)
                     }
                 } else if replayProgress == nil, !course.isEmpty {
                     ForEach(courseLayers) { track in
@@ -2046,91 +2026,108 @@ private struct ActivityDetailLoadingSheet: View {
     }
 }
 
-struct CollapsedActivityBottomBar: View {
+/// The expanded map's card, floating at its foot: the replay, the session and its figures, what
+/// the route's colours span, and what colours it. The session's name closes the map.
+struct ActivityMapCard: View {
     let detail: V1ActivityDetail
-    let tone: Color
-    let onExpand: () -> Void
+    let intensity: RouteIntensity?
+    let colourings: [RouteColouring]
+    @Binding var colouring: RouteColouring
+    let replaySymbol: String
+    let replayLabel: String
+    let onReplay: () -> Void
+    let onDetails: () -> Void
 
-    var subtitleText: String {
-        var parts: [String] = [detail.type.label]
-        if let dist = detail.distanceM, dist > 0 {
-            parts.append(dist >= 1000 ? String(format: String(localized: "%.1f km"), dist / 1000) : "\(Int(dist.rounded())) m")
+    private var usesPace: Bool { detail.type == .run }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Button(action: onReplay) {
+                    Image(systemName: replaySymbol)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(SharpitColor.primaryForeground)
+                        .frame(width: 48, height: 48)
+                        .background(SharpitColor.primary, in: Circle())
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityLabel(replayLabel)
+                Button(action: onDetails) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(detail.title ?? detail.type.label)
+                            .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .lineLimit(1)
+                        Text(ActivityMapReadout.figures(distanceM: detail.distanceM, duration: detail.duration, elevationM: detail.elevationM))
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Affiche les détails de la séance")
+            }
+            if let intensity {
+                VStack(spacing: 8) {
+                    HStack {
+                        Text(intensity.metric == .speed && usesPace ? String(localized: "Allure") : intensity.metric.label)
+                        Spacer(minLength: SharpitSpacing.xs)
+                        Text(intensity.rangeText(asPace: usesPace))
+                            .monospacedDigit()
+                    }
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
+                    HStack(spacing: 3) {
+                        ForEach(0..<RouteIntensity.levels, id: \.self) { level in
+                            Capsule().fill(SharpitZoneTone.color(level)).frame(height: 6)
+                        }
+                    }
+                    .accessibilityHidden(true)
+                }
+                .accessibilityElement(children: .combine)
+            }
+            if !colourings.isEmpty {
+                SharpitSegmentedControl(
+                    selection: $colouring,
+                    options: colourings.map { .init(value: $0, label: ActivityMapReadout.label($0, usesPace: usesPace)) }
+                )
+            }
         }
-        if let elev = detail.elevationM, elev > 0 {
-            parts.append("\(Int(elev.rounded())) m D+")
+        .padding(16)
+        .background(SharpitColor.card, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .sharpitShadow(.panel)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 4)
+    }
+}
+
+/// The words of the expanded map's card.
+enum ActivityMapReadout {
+    /// « 12,4 km · 58 min · 68 m de dénivelé », each part only when the session carries it.
+    static func figures(distanceM: Double?, duration: Double?, elevationM: Double?) -> String {
+        var parts: [String] = []
+        if let distanceM, distanceM > 0 {
+            parts.append(distanceM >= 1_000
+                ? String(format: "%.1f km", distanceM / 1_000).replacingOccurrences(of: ".", with: ",")
+                : "\(Int(distanceM.rounded())) m")
         }
-        if let dur = detail.duration, dur > 0 {
-            parts.append(ActivityFormat.duration(dur))
+        if let duration, duration > 0 {
+            parts.append(ActivityFormat.duration(duration))
+        }
+        if let elevationM, elevationM >= 1 {
+            parts.append(String(localized: "\(Int(elevationM.rounded())) m de dénivelé"))
         }
         return parts.joined(separator: " · ")
     }
 
-    var body: some View {
-        VStack(spacing: 8) {
-            Capsule()
-                .fill(SharpitColor.slate.opacity(0.35))
-                .frame(width: 38, height: 5)
-                .padding(.top, 10)
-
-            HStack(spacing: 12) {
-                Image(sharpitSymbol: detail.type.symbolName)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(tone)
-                    .frame(width: 38, height: 38)
-                    .background(tone.opacity(0.12), in: Circle())
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(detail.title ?? detail.type.label)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-
-                    Text(subtitleText)
-                        .font(.caption)
-                        .foregroundStyle(SharpitColor.slate)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 8)
-
-                HStack(spacing: 4) {
-                    Text("Détails")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(SharpitColor.slate)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(SharpitColor.secondary.opacity(0.7), in: Capsule())
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
-        }
-        .frame(maxWidth: .infinity)
-        .background(
-            SharpitElevatedColor.sheet
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 24, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 24, style: .continuous))
-                .sharpitShadow(.panel)
-                .ignoresSafeArea(edges: .bottom)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onExpand()
-        }
-        .gesture(
-            DragGesture(minimumDistance: 10)
-                .onEnded { value in
-                    if value.translation.height < -10 {
-                        onExpand()
-                    }
-                }
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Tiroir réduit. \(detail.title ?? detail.type.label). Appuyer pour afficher les détails.")
-        .accessibilityAction {
-            onExpand()
+    static func label(_ colouring: RouteColouring, usesPace: Bool) -> String {
+        switch colouring {
+        case .heartRate: String(localized: "Cardio")
+        case .speed: usesPace ? String(localized: "Allure") : String(localized: "Vitesse")
+        case .plain: String(localized: "Uni")
         }
     }
 }

@@ -41,32 +41,20 @@ import SwiftUI
         #expect(controller.gestureRecognizer(gesture1, shouldRecognizeSimultaneouslyWith: gesture2) == true)
     }
 
-    @Test func collapsedActivityBottomBarSubtitleFormatsCorrectly() throws {
-        let json = """
-        {
-            "id": "act-123",
-            "type": "RUN",
-            "date": "2026-09-22T08:00:00Z",
-            "title": "Sortie longue",
-            "duration": 3600,
-            "runMetrics": {
-                "distanceM": 12500,
-                "elevationM": 150
-            }
-        }
-        """
-        let detail = try JSONDecoder().decode(V1ActivityDetail.self, from: Data(json.utf8))
+    @Test func theMapCardSaysOnlyTheFiguresTheSessionCarries() {
+        let whole = ActivityMapReadout.figures(distanceM: 12_500, duration: 3_600, elevationM: 150)
+        #expect(whole.hasPrefix("12,5 km"))
+        #expect(whole.contains("1 h 0 min"))
+        #expect(whole.contains("150 m"))
+        #expect(whole.components(separatedBy: " · ").count == 3)
+        #expect(ActivityMapReadout.figures(distanceM: 800, duration: nil, elevationM: 0) == "800 m")
+        #expect(ActivityMapReadout.figures(distanceM: nil, duration: nil, elevationM: nil).isEmpty)
+    }
 
-        let bar = CollapsedActivityBottomBar(
-            detail: detail,
-            tone: .green,
-            onExpand: {}
-        )
-
-        #expect(bar.subtitleText.contains("Course"))
-        #expect(bar.subtitleText.contains("12.5 km"))
-        #expect(bar.subtitleText.contains("150 m D+"))
-        #expect(bar.subtitleText.contains("1 h 0 min"))
+    @Test func theMapCardNamesSpeedAsPaceForARun() {
+        #expect(ActivityMapReadout.label(.speed, usesPace: true) == "Allure")
+        #expect(ActivityMapReadout.label(.speed, usesPace: false) == "Vitesse")
+        #expect(ActivityMapReadout.label(.plain, usesPace: true) == "Uni")
     }
 
     @Test func compliancePendingTileInitializesCleanly() {

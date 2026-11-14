@@ -26,10 +26,28 @@ nonisolated struct RouteIntensity: Equatable, Sendable {
 
     let metric: Metric
     let segments: [Segment]
+    /// The session's own 10th and 90th percentiles, in the sample's unit (bpm, m/s): where the
+    /// easiest and the hardest colours start.
+    let low: Double
+    let high: Double
 
-    /// Nil when there is no route, or no signal that varies along it.
-    static func make(route: [V1ActivityCoordinate], samples: [V1ActivityStreamSample]) -> RouteIntensity? {
-        guard route.count >= 2, !samples.isEmpty, let metric = metric(for: samples) else { return nil }
+    /// The signals this recording can colour the route by, heart rate first.
+    static func metrics(in samples: [V1ActivityStreamSample]) -> [Metric] {
+        [Metric.heartRate, .speed].filter { metric in
+            samples.filter { value(of: $0, metric) != nil }.count * 2 >= max(samples.count, 1)
+        }
+    }
+
+    /// Nil when there is no route, or no signal that varies along it. Without a metric asked
+    /// for, the first the recording carries.
+    static func make(
+        route: [V1ActivityCoordinate],
+        samples: [V1ActivityStreamSample],
+        metric asked: Metric? = nil
+    ) -> RouteIntensity? {
+        let carried = metrics(in: samples)
+        guard route.count >= 2, !samples.isEmpty,
+              let metric = asked ?? carried.first, carried.contains(metric) else { return nil }
         let values = samples.map { value(of: $0, metric) }
         let known = values.compactMap { $0 }.sorted()
         let low = percentile(known, 0.10)
@@ -41,7 +59,7 @@ nonisolated struct RouteIntensity: Equatable, Sendable {
             let sample = Int((share * Double(samples.count - 1)).rounded())
             return values[sample].map { level(of: $0, low: low, high: high) }
         }
-        return RouteIntensity(metric: metric, segments: segments(route: route, levels: fillGaps(pointLevels)))
+        return RouteIntensity(metric: metric, segments: segments(route: route, levels: fillGaps(pointLevels)), low: low, high: high)
     }
 
     static func level(of value: Double, low: Double, high: Double) -> Int {
@@ -49,11 +67,18 @@ nonisolated struct RouteIntensity: Equatable, Sendable {
         return min(max(Int(share * Double(levels)), 0), levels - 1)
     }
 
-    private static func metric(for samples: [V1ActivityStreamSample]) -> Metric? {
-        let withHeartRate = samples.filter { ($0.hr ?? 0) > 0 }.count
-        if withHeartRate * 2 >= samples.count { return .heartRate }
-        let withSpeed = samples.filter { ($0.speed ?? 0) > 0 }.count
-        return withSpeed * 2 >= samples.count ? .speed : nil
+    /// « 128 – 171 bpm », « 4'11" – 5'02" /km » for a run, « 24,5 – 33,0 km/h » otherwise: what
+    /// the colours span, easiest first.
+    @MainActor func rangeText(asPace: Bool) -> String {
+        switch metric {
+        case .heartRate:
+            return "\(Int(low.rounded())) – \(Int(high.rounded())) bpm"
+        case .speed where asPace:
+            return "\(ActivityFormat.paceClock(1_000 / low)) – \(ActivityFormat.paceClock(1_000 / high)) /km"
+        case .speed:
+            let kmh = { (speed: Double) in String(format: "%.1f", speed * 3.6).replacingOccurrences(of: ".", with: ",") }
+            return "\(kmh(low)) – \(kmh(high)) km/h"
+        }
     }
 
     private static func value(of sample: V1ActivityStreamSample, _ metric: Metric) -> Double? {
@@ -94,47 +119,22 @@ nonisolated struct RouteIntensity: Equatable, Sendable {
     }
 }
 
-/// The intensity family the training zones already use, easiest to hardest.
-enum RouteIntensityTone {
-    static func color(level: Int) -> Color {
-        switch level {
-        case 0: SharpitColor.signalRecovery
-        case 1: SharpitColor.signalBase
-        case 2: SharpitColor.signalTempo
-        case 3: SharpitColor.signalThreshold
-        default: SharpitColor.signalVo2
+/// How the expanded map draws the route: by heart rate, by speed, or in the sport's one colour.
+enum RouteColouring: Hashable, Sendable {
+    case heartRate
+    case speed
+    case plain
+
+    var metric: RouteIntensity.Metric? {
+        switch self {
+        case .heartRate: .heartRate
+        case .speed: .speed
+        case .plain: nil
         }
     }
-}
 
-/// The key under the coloured route: what the colours measure, from easy to hard.
-struct RouteIntensityLegend: View {
-    let metric: RouteIntensity.Metric
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(metric.label)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .foregroundStyle(SharpitColor.slate)
-            HStack(spacing: 2) {
-                ForEach(0..<RouteIntensity.levels, id: \.self) { level in
-                    Capsule().fill(RouteIntensityTone.color(level: level)).frame(height: 5)
-                }
-            }
-            .frame(width: 140)
-            HStack {
-                Text("Facile")
-                Spacer()
-                Text("Intense")
-            }
-            .font(SharpitTypography.meta)
-            .foregroundStyle(SharpitColor.slate)
-            .frame(width: 140)
-        }
-        .padding(SharpitSpacing.sm)
-        .sharpitConcentricBackground(.ultraThinMaterial, minimum: SharpitRadius.small)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Tracé coloré selon \(metric.label.lowercased()), de facile à intense")
+    /// The choices a recording offers, « Uni » last; empty when it has nothing to colour by.
+    static func options(for metrics: [RouteIntensity.Metric]) -> [RouteColouring] {
+        metrics.isEmpty ? [] : metrics.map { $0 == .heartRate ? .heartRate : .speed } + [.plain]
     }
 }
