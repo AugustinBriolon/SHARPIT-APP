@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A session as a Clinique row (`docs/adr/0035`): the sport's glyph in a round tile, the session
-/// as the title, sport and objective under it, its status as pills; then its figures on one line.
+/// as the title, sport and figures on one line under it, and at the end its status or the way in.
 /// No surface of its own: it reads straight on the sheet, split from its neighbours by a hairline.
 struct SessionPlate: View {
     let session: SessionCardModel
@@ -12,27 +12,24 @@ struct SessionPlate: View {
     @State private var checkSettled = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .center, spacing: 14) {
             CliniqueSportTile(symbol: symbol)
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(headerTitle)
-                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
-                        .foregroundStyle(SharpitColor.foreground)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(headerTitle)
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                if let meta {
+                    Text(meta)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
                         .multilineTextAlignment(.leading)
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                            .multilineTextAlignment(.leading)
-                    }
-                }
-                statusPills
-                if !telemetryMetrics.isEmpty {
-                    figures
+                        .lineLimit(2)
                 }
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: SharpitSpacing.xs)
+            trailing
         }
         .padding(.vertical, SharpitSpacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -62,7 +59,12 @@ struct SessionPlate: View {
 
     // MARK: – Header
 
-    private var headerTitle: String { session.brickChain ?? session.title }
+    /// « Vélo · Seuil 3 × 12 min »: the sport, then the session's own name; a brick is its chain.
+    private var headerTitle: String {
+        if let chain = session.brickChain { return chain }
+        guard let sport = session.sport, !sport.isEmpty else { return session.title }
+        return ActivitySheetReadout.title(sport: sport, title: session.title)
+    }
 
     /// A brick shows its first leg's glyph; the chain itself is the title.
     private var symbol: String {
@@ -73,7 +75,8 @@ struct SessionPlate: View {
     }
 
     private var subtitle: String? {
-        let sport = session.brickLegs == nil ? session.sport : String(localized: "Brick")
+        // A single session's sport already heads its title.
+        let sport = session.brickLegs == nil ? nil : String(localized: "Brick")
         var parts: [String] = []
         for part in [sport, objectiveText].compactMap({ $0 }) where !part.isEmpty {
             // An objective that only repeats the sport adds nothing.
@@ -84,45 +87,36 @@ struct SessionPlate: View {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    @ViewBuilder
-    private var statusPills: some View {
-        HStack(spacing: SharpitSpacing.xxs + 2) {
-            if showPriorityTag {
-                CliniqueStatusPill(String(localized: "Prioritaire"), status: .protect)
-            }
-            // A session still to do that carries the week; once done, « Faite » says enough.
-            if session.isKey, session.kind != .done {
-                CliniqueStatusPill(String(localized: "Clé"), status: .pro)
-            }
-            if session.kind == .done {
-                CliniqueStatusPill(String(localized: "Faite"), status: .good)
-                    .scaleEffect(checkSettled ? 1.0 : 0.86)
-                    .opacity(checkSettled ? 1.0 : 0.4)
-                // How closely it followed the plan, once the analysis has run.
-                if let score = session.complianceScore {
-                    Text("\(score) / 100")
-                        .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .caption, digits: true))
-                        .foregroundStyle(SharpitColor.slate)
-                }
-            } else {
-                CliniqueStatusPill(String(localized: "Prévue"), status: .unknown)
-            }
+    /// « Vélo · 1 h 30 · charge 85 »: the sport and objective, then the figures, on one line.
+    private var meta: String? {
+        var parts: [String] = []
+        if showPriorityTag { parts.append(String(localized: "Prioritaire")) }
+        if session.isKey, session.kind != .done { parts.append(String(localized: "Séance clé")) }
+        if let subtitle { parts.append(subtitle) }
+        parts += telemetryMetrics.map { metric in
+            let unit = metric.unit.isEmpty ? "" : " \(metric.unit)"
+            return "\(metric.label.lowercased()) \(metric.value)\(unit)"
         }
-        .accessibilityHidden(true)
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    /// « Durée 40 min · Charge 50 TSS »: the figures on one line, the value in ink.
-    private var figures: some View {
-        telemetryMetrics.enumerated().reduce(Text("")) { line, item in
-            let metric = item.element
-            let unit = metric.unit.isEmpty ? "" : " \(metric.unit)"
-            return line
-                + Text(item.offset == 0 ? "" : " · ").foregroundStyle(SharpitColor.slate)
-                + Text("\(metric.label) ").foregroundStyle(SharpitColor.slate)
-                + Text("\(metric.value)\(unit)").foregroundStyle(SharpitColor.foreground)
+    /// Done: its status, with the execution score once the analysis has run. Ahead: the way in.
+    @ViewBuilder
+    private var trailing: some View {
+        if session.kind == .done {
+            CliniqueStatusPill(
+                session.complianceScore.map { "\($0) / 100" } ?? String(localized: "Faite"),
+                status: .good
+            )
+            .scaleEffect(checkSettled ? 1.0 : 0.86)
+            .opacity(checkSettled ? 1.0 : 0.4)
+            .accessibilityHidden(true)
+        } else {
+            Image(systemName: "arrow.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(SharpitColor.slate)
+                .accessibilityHidden(true)
         }
-        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
-        .multilineTextAlignment(.leading)
     }
 
     // MARK: – Data Partitioning

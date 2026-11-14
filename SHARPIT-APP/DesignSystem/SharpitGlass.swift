@@ -77,11 +77,15 @@ struct SharpitGlassGroup<Content: View>: View {
 }
 
 struct ScrollUnderGlass: ViewModifier {
+    /// No fade under the bar: for a page whose bar is only floating buttons.
+    var hidesTopEdge = false
+
     @ViewBuilder
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
             content
                 .scrollEdgeEffectStyle(.soft, for: .top)
+                .scrollEdgeEffectHidden(hidesTopEdge, for: .top)
                 .scrollBounceBehavior(.basedOnSize, axes: .vertical)
         } else {
             content
@@ -138,6 +142,41 @@ private struct SharpitGlassControlModifier<S: Shape>: ViewModifier {
             content.glassEffect(.regular.tint(tint).interactive(), in: shape)
         } else {
             content.background(tint ?? fallback, in: shape)
+        }
+    }
+}
+
+/// A screen's name written in the bar's own row, left of its buttons, as the mock-ups set it:
+/// plain text, never a glass pill.
+struct SharpitBarTitle: ToolbarContent {
+    let title: String
+
+    init(_ title: String) { self.title = title }
+
+    var body: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            ToolbarItem(placement: .topBarLeading) { label }
+                .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .topBarLeading) { label }
+        }
+    }
+
+    private var label: some View {
+        Text(title)
+            .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+            .tracking(-0.8)
+            .foregroundStyle(SharpitColor.foreground)
+            .fixedSize()
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// Splits two trailing bar buttons into separate glass circles; nothing before iOS 26.
+struct SharpitBarGap: ToolbarContent {
+    var body: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
         }
     }
 }

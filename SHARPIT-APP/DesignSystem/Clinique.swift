@@ -173,6 +173,82 @@ struct CliniqueRing: View {
     }
 }
 
+/// One score of a row of rings: the ring, its name, then the figure over its scale. Without a
+/// value it reads « Pas encore » under an empty ring.
+struct CliniqueScoreColumn: View {
+    let pillar: CliniquePillar
+    let fraction: Double?
+    var symbol: String? = nil
+    let title: String
+    let value: String?
+    var scale: String? = nil
+    /// Said after the figure, in slate: « 56 ml/kg ».
+    var unit: String? = nil
+    /// A line under the figure that says how to read it: « 3 ans de moins », « Excellent ».
+    var note: String? = nil
+    var isPulsing = false
+    var animated = true
+
+    var body: some View {
+        VStack(spacing: 6) {
+            CliniqueRing(pillar: pillar, fraction: fraction, symbol: symbol, animated: animated)
+                .padding(.bottom, 2)
+            Text(title)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            if let value {
+                (Text(value)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+                    + Text(scale.map { " / \($0)" } ?? unit.map { " \($0)" } ?? "").font(SharpitTypography.meta).foregroundStyle(SharpitColor.slate))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .opacity(isPulsing ? 0.55 : 1)
+            } else {
+                Text("Pas encore")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
+            }
+            if let note, value != nil {
+                Text(note)
+                    .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+            }
+        }
+        .padding(.horizontal, SharpitSpacing.xxs)
+        .frame(maxWidth: .infinity)
+    }
+}
+
+/// A row of scores between two hairlines, its columns split by a hairline too.
+struct CliniqueScoreStrip<Columns: View>: View {
+    @ViewBuilder var columns: Columns
+
+    var body: some View {
+        VStack(spacing: 0) {
+            CliniqueDivider()
+            HStack(alignment: .top, spacing: 0) {
+                Group(subviews: columns) { subviews in
+                    ForEach(Array(subviews.enumerated()), id: \.offset) { index, column in
+                        if index > 0 {
+                            Rectangle().fill(SharpitColor.divider).frame(width: 1).accessibilityHidden(true)
+                        }
+                        column
+                    }
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 18)
+            CliniqueDivider()
+        }
+    }
+}
+
 /// A sport's glyph in a round neutral tile: a session is told by its glyph, never by a colour.
 struct CliniqueSportTile: View {
     let symbol: String
@@ -256,6 +332,47 @@ nonisolated enum CliniqueWash: CaseIterable, Sendable {
     }
 }
 
+/// A tab's name and glyph, drawn in outline: the bar fills its symbols by default, and the
+/// Clinique tab bar keeps them as lines, the selected one told by its pill.
+struct SharpitTabLabel: View {
+    let title: String
+    let systemImage: String
+
+    init(_ title: String, systemImage: String) {
+        self.title = title
+        self.systemImage = systemImage
+    }
+
+    var body: some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(uiImage: Self.outline(systemImage))
+        }
+    }
+
+    /// The symbol drawn into a plain template image: the tab bar swaps a symbol for its filled
+    /// variant, whatever the environment says, and cannot do so with a bitmap.
+    private static func outline(_ name: String) -> UIImage {
+        let configuration = UIImage.SymbolConfiguration(pointSize: 19, weight: .regular)
+        guard let symbol = UIImage(systemName: name, withConfiguration: configuration) else { return UIImage() }
+        return UIGraphicsImageRenderer(size: symbol.size)
+            .image { _ in symbol.draw(at: .zero) }
+            .withRenderingMode(.alwaysTemplate)
+    }
+}
+
+/// What shows behind a sheet's rounded top: ink on light, the deep canvas on dark. Résumé's
+/// date sits on it, in the dark colour scheme.
+struct CliniqueBackdrop: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        // The mock-up's backdrop: ink with a breath of green, never a brand hue.
+        colorScheme == .dark ? SharpitColor.background : Color(red: 15 / 255, green: 31 / 255, blue: 28 / 255)
+    }
+}
+
 /// The 1 pt line between rows, and under a table header.
 struct CliniqueDivider: View {
     var body: some View {
@@ -275,6 +392,34 @@ extension View {
             .overlay(shape.strokeBorder(border, lineWidth: 1))
     }
 
+    /// A sheet that rises over a backdrop band: its top corners rounded, its wash under them.
+    func cliniqueRisingSheet(wash: CliniqueWash, height: CGFloat = 150) -> some View {
+        let shape = UnevenRoundedRectangle(
+            topLeadingRadius: SharpitTokens.sheetShapeRadius, topTrailingRadius: SharpitTokens.sheetShapeRadius,
+            style: .continuous
+        )
+        return background(alignment: .top) {
+            ZStack(alignment: .top) {
+                SharpitColor.card
+                LinearGradient(colors: [wash.color, SharpitColor.card], startPoint: .top, endPoint: .bottom)
+                    .frame(height: height)
+            }
+            .clipShape(shape)
+        }
+    }
+
+    /// The page behind a rising sheet: the backdrop at the top, where the date sits and where a
+    /// pull shows, and the sheet's own colour below it, so a short day never ends on the backdrop.
+    func cliniqueBackdropPage() -> some View {
+        background {
+            VStack(spacing: 0) {
+                CliniqueBackdrop().frame(height: 360)
+                SharpitColor.card
+            }
+            .ignoresSafeArea()
+        }
+    }
+
     /// The sheet surface with its one wash at the top; everything below is the card colour.
     func cliniqueSheet(wash: CliniqueWash, height: CGFloat = 150) -> some View {
         background(alignment: .top) {
@@ -285,5 +430,41 @@ extension View {
             }
             .ignoresSafeArea()
         }
+    }
+}
+
+/// A drill-down is read whole: the tab bar leaves, and the tab it came from is one tap away.
+struct CliniqueReturnButton: ViewModifier {
+    let tab: ShellTab
+    let symbol: String
+    let label: String
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ShellRouter.self) private var router: ShellRouter?
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar(.hidden, for: .tabBar)
+            .overlay(alignment: .bottomLeading) {
+                Button {
+                    dismiss()
+                    router?.select(tab)
+                } label: {
+                    Image(systemName: symbol)
+                        .font(.system(size: 19, weight: .regular))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .frame(width: 54, height: 54)
+                        .sharpitGlassCircle()
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityLabel(label)
+                .padding(.leading, 16)
+                .padding(.bottom, 4)
+            }
+    }
+}
+
+extension View {
+    func cliniqueReturnButton(to tab: ShellTab = .today, symbol: String = "house", label: String = String(localized: "Résumé")) -> some View {
+        modifier(CliniqueReturnButton(tab: tab, symbol: symbol, label: label))
     }
 }

@@ -21,7 +21,7 @@ enum SharpitFontWeight {
     }
 }
 
-/// The Ink & Lime type ramp (ADR-085): SF Pro Rounded throughout, heavy figures with tabular
+/// The Ink & Lime type ramp (ADR-085): SF Pro throughout, heavy figures with tabular
 /// digits, muted units. Every style scales with Dynamic Type through its text style.
 enum SharpitTypography {
     /// `text-verdict` — the plate headline.
@@ -89,7 +89,7 @@ enum SharpitTypography {
 
     // MARK: - Resolution
 
-    /// SF Pro Rounded at a fixed design size, scaled with Dynamic Type through `style`.
+    /// SF Pro at a fixed design size, scaled with Dynamic Type through `style`.
     /// `digits` switches to tabular figures so numbers do not jitter as they change.
     static func system(
         size: CGFloat,
@@ -97,9 +97,7 @@ enum SharpitTypography {
         relativeTo style: Font.TextStyle = .body,
         digits: Bool = false
     ) -> Font {
-        let system = UIFont.systemFont(ofSize: size, weight: weight.uiKit)
-        let base = system.fontDescriptor.withDesign(.rounded)
-            .map { UIFont(descriptor: $0, size: size) } ?? system
+        let base = UIFont.systemFont(ofSize: size, weight: weight.uiKit)
         let scaled = UIFontMetrics(forTextStyle: style.uiKit).scaledFont(for: base)
         let font = Font(scaled)
         return digits ? font.monospacedDigit() : font

@@ -2,12 +2,15 @@ import SwiftUI
 
 /// Résumé's shape while the day is read: the verdict, the scores and a session, greyed.
 struct SharpitLoadingInstrument: View {
+    /// Whether the day will carry a nutrition ring, so the row loads with the columns it keeps.
+    var showsNutrition = true
+
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 0) {
                 VerdictHero(plate: .placeholder, placeholder: true)
                 // Empty rings: track only, « Pas encore » — the arcs fill when the day arrives.
-                ResumeScoreRow(gauges: OvernightGaugeModel.placeholders)
+                ResumeScoreRow(gauges: OvernightGaugeModel.placeholders, showsNutrition: showsNutrition)
                 SessionPlate(session: .placeholder, showPriorityTag: false)
                     .redacted(reason: .placeholder)
                     .padding(.horizontal, SharpitSpacing.lg)
@@ -15,9 +18,10 @@ struct SharpitLoadingInstrument: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.bottom, SharpitSpacing.lg)
+            .cliniqueRisingSheet(wash: .neutral)
         }
         .modifier(ScrollUnderGlass())
-        .cliniqueSheet(wash: .neutral)
+        .cliniqueBackdropPage()
         .allowsHitTesting(false)
         .accessibilityLabel("Chargement du résumé")
     }
