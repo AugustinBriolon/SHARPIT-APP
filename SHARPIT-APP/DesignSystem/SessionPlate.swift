@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// A session as an Ink & Lime card (ADR-085): the sport's icon tile, the session as the title,
-/// sport and objective as the subtitle, its status as a pill; then its figures in a stat row.
+/// A session as a Clinique row (`docs/adr/0034`): the sport's glyph in a round tile, the session
+/// as the title, sport and objective under it, its status as pills; then its figures on one line.
+/// No surface of its own: it reads straight on the sheet, split from its neighbours by a hairline.
 struct SessionPlate: View {
     let session: SessionCardModel
     /// Show "Prioritaire" only when several sessions compete (caller decides).
@@ -11,35 +12,36 @@ struct SessionPlate: View {
     @State private var checkSettled = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            // The pills sit beside the title when it fits whole, else on their own line under it.
-            ViewThatFits(in: .horizontal) {
-                SharpitCardHeader(title: headerTitle, symbol: symbol, subtitle: subtitle) {
-                    statusPills
-                }
-                VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    SharpitCardHeader(title: headerTitle, symbol: symbol, subtitle: subtitle)
-                    statusPills
-                        .padding(.leading, SharpitTokens.tileSize + SharpitSpacing.sm)
-                }
-            }
-
-            if !telemetryMetrics.isEmpty {
-                Divider().overlay(SharpitColor.border)
-                HStack(alignment: .top, spacing: SharpitSpacing.md) {
-                    ForEach(telemetryMetrics, id: \.label) { metric in
-                        SharpitStatTile(
-                            caption: metric.label,
-                            value: metric.value,
-                            unit: metric.unit.isEmpty ? nil : metric.unit,
-                            isFlat: true
-                        )
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: symbol)
+                .font(.system(size: 18, weight: .regular))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
+                .background(SharpitColor.tile, in: Circle())
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(headerTitle)
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.leading)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.slate)
+                            .multilineTextAlignment(.leading)
                     }
                 }
+                statusPills
+                if !telemetryMetrics.isEmpty {
+                    figures
+                }
             }
+            Spacer(minLength: 0)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        .padding(.vertical, SharpitSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .onAppear {
@@ -91,25 +93,41 @@ struct SessionPlate: View {
     private var statusPills: some View {
         HStack(spacing: SharpitSpacing.xxs + 2) {
             if showPriorityTag {
-                SharpitPill(String(localized: "Prioritaire"), style: .limeSoft)
+                CliniqueStatusPill(String(localized: "Prioritaire"), status: .protect)
             }
             // A session still to do that carries the week; once done, « Faite » says enough.
             if session.isKey, session.kind != .done {
-                SharpitPill(String(localized: "Clé"), style: .lime)
+                CliniqueStatusPill(String(localized: "Clé"), status: .pro)
             }
             if session.kind == .done {
-                SharpitPill(String(localized: "Faite"), style: .lime)
+                CliniqueStatusPill(String(localized: "Faite"), status: .good)
                     .scaleEffect(checkSettled ? 1.0 : 0.86)
                     .opacity(checkSettled ? 1.0 : 0.4)
                 // How closely it followed the plan, once the analysis has run.
                 if let score = session.complianceScore {
-                    SharpitPill("\(score)", style: .ink)
+                    Text("\(score) / 100")
+                        .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
                 }
             } else {
-                SharpitPill(String(localized: "Prévue"), style: .neutral)
+                CliniqueStatusPill(String(localized: "Prévue"), status: .unknown)
             }
         }
         .accessibilityHidden(true)
+    }
+
+    /// « Durée 40 min · Charge 50 TSS »: the figures on one line, the value in ink.
+    private var figures: some View {
+        telemetryMetrics.enumerated().reduce(Text("")) { line, item in
+            let metric = item.element
+            let unit = metric.unit.isEmpty ? "" : " \(metric.unit)"
+            return line
+                + Text(item.offset == 0 ? "" : " · ").foregroundStyle(SharpitColor.slate)
+                + Text("\(metric.label) ").foregroundStyle(SharpitColor.slate)
+                + Text("\(metric.value)\(unit)").foregroundStyle(SharpitColor.foreground)
+        }
+        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+        .multilineTextAlignment(.leading)
     }
 
     // MARK: – Data Partitioning

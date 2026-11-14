@@ -134,9 +134,18 @@ struct CliniqueRing: View {
     var symbol: String? = nil
     var size: CGFloat = 52
 
-    @State private var shown: Double = 0
+    @State private var shown: Double
 
     private static let lineWidth: CGFloat = 3
+
+    /// `animated: false` draws the arc already filled, for a page shown again or beside a swipe.
+    init(pillar: CliniquePillar, fraction: Double?, symbol: String? = nil, size: CGFloat = 52, animated: Bool = true) {
+        self.pillar = pillar
+        self.fraction = fraction
+        self.symbol = symbol
+        self.size = size
+        _shown = State(initialValue: animated ? 0 : CliniqueRingMath.trim(for: fraction))
+    }
 
     var body: some View {
         ZStack {

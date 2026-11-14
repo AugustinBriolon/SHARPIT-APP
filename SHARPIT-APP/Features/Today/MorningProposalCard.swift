@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The night's proposal for today's session, under the verdict: what changes in one line, why in
 /// one sentence, one tap to take it or keep the plan. The plan and the proposal side by side wait
-/// under « Voir le détail ». It shows only while the server waits for an answer, after the night.
+/// under « Voir le détail ». Drawn as a Clinique card (`docs/adr/0034`). It shows only while the server waits for an answer, after the night.
 struct MorningProposalCard: View {
     let proposal: V1TodayMorningProposal
     /// Opens the morning check-in, which refines the proposal; nil where it cannot be opened.
@@ -16,18 +16,20 @@ struct MorningProposalCard: View {
     private var isEasing: Bool { proposal.direction == .down }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(
-                title: isEasing ? String(localized: "Ta nuit propose d'alléger") : String(localized: "Ta nuit permet d'en faire plus"),
-                symbol: isEasing ? "moon.zzz.fill" : "bolt.heart.fill",
-                subtitle: MorningProposalReadout.change(from: proposal.from, to: proposal.to),
-                showsChevron: false
-            )
-
-            Text(proposal.why)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
+                Text(isEasing ? String(localized: "Ta nuit propose d'alléger") : String(localized: "Ta nuit permet d'en faire plus"))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
+                Text(MorningProposalReadout.change(from: proposal.from, to: proposal.to))
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(proposal.why)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             if showsDetail {
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -54,17 +56,13 @@ struct MorningProposalCard: View {
             }
 
             HStack(spacing: SharpitSpacing.md) {
+                Button(isEasing ? String(localized: "Alléger") : String(localized: "Augmenter")) { onAnswer(true) }
+                    .buttonStyle(.cliniquePrimary)
                 Button("Garder le plan") { onAnswer(false) }
-                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline))
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .buttonStyle(.sharpitPressable)
-                    .fixedSize()
-                SharpitPrimaryButton(title: isEasing ? String(localized: "Alléger") : String(localized: "Augmenter")) { onAnswer(true) }
+                    .buttonStyle(.cliniquePlain)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+        .cliniqueCard()
     }
 
     /// Read from the night alone so far: the check-in adds how the athlete feels.
@@ -77,7 +75,7 @@ struct MorningProposalCard: View {
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground.opacity(0.45))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.45))
                     .accessibilityHidden(true)
             }
             .font(SharpitTypography.meta)
@@ -92,11 +90,11 @@ struct MorningProposalCard: View {
         VStack(alignment: .leading, spacing: 2) {
             Text("\(caption) · \(MorningProposalReadout.headline(side))")
                 .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(emphasized ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .foregroundStyle(emphasized ? SharpitColor.foreground : SharpitColor.slate)
             if let description = side.description, !description.isEmpty {
                 Text(description)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

@@ -74,8 +74,24 @@ enum SharpitSurfaceStyle {
 private struct SharpitSurfaceModifier: ViewModifier {
     let style: SharpitSurfaceStyle
     @Environment(\.sharpitElevation) private var elevation
+    @Environment(\.usesCliniqueSurfaces) private var usesCliniqueSurfaces
 
+    @ViewBuilder
     func body(content: Content) -> some View {
+        if usesCliniqueSurfaces, style == .panel {
+            content
+                .foregroundStyle(style.foreground)
+                .sharpitContainerCorner(SharpitTokens.cardShapeRadius)
+                .overlay {
+                    RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
+                        .strokeBorder(SharpitColor.divider, lineWidth: 1)
+                }
+        } else {
+            base(content)
+        }
+    }
+
+    private func base(_ content: Content) -> some View {
         // The corner is declared inside the fill so what sits within nests concentric to it,
         // while a nested surface's own fill follows the surface around it.
         content
@@ -98,5 +114,17 @@ extension View {
     func sharpitSurface(_ style: SharpitSurfaceStyle) -> some View {
         modifier(SharpitSurfaceModifier(style: style))
     }
+
+    /// Inside a swept screen, a card not yet redrawn takes the Clinique hairline instead of its
+    /// shadow, so it sits on the sheet (`docs/adr/0034`).
+    /// shortcut: only the panel's outline changes, its content keeps Ink & Lime parts; redraw the
+    /// card with the Clinique primitives when its own feature is swept.
+    func cliniqueSurfaces() -> some View {
+        environment(\.usesCliniqueSurfaces, true)
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var usesCliniqueSurfaces = false
 }
 

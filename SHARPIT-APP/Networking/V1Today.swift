@@ -307,7 +307,7 @@ nonisolated enum V1TodaySignalKey: String, Codable, Sendable {
         case .recovery: String(localized: "Récup")
         case .effort: String(localized: "Effort")
         case .adaptation: "Adapt."
-        case .stress: String(localized: "Stress") // ADR-079. Callers: OvernightGaugePair.
+        case .stress: String(localized: "Stress") // ADR-079. Callers: ResumeScoreRow.
         }
     }
 

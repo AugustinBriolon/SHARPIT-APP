@@ -1,23 +1,23 @@
 import SwiftUI
 
+/// Résumé's shape while the day is read: the verdict, the scores and a session, greyed.
 struct SharpitLoadingInstrument: View {
     var body: some View {
         ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                Group {
-                    InkVerdictPlate(plate: .placeholder, placeholder: true)
-                    SessionPlate(session: .placeholder, showPriorityTag: false)
-                }
-                .redacted(reason: .placeholder)
-
-                // Live empty gauges: tip at 0, score at 0 — fill animates on load.
-                OvernightGaugePair(gauges: OvernightGaugeModel.placeholders)
+            VStack(alignment: .leading, spacing: 0) {
+                VerdictHero(plate: .placeholder, placeholder: true)
+                // Empty rings: track only, « Pas encore » — the arcs fill when the day arrives.
+                ResumeScoreRow(gauges: OvernightGaugeModel.placeholders)
+                SessionPlate(session: .placeholder, showPriorityTag: false)
+                    .redacted(reason: .placeholder)
+                    .padding(.horizontal, SharpitSpacing.lg)
+                    .padding(.top, SharpitSpacing.md)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, SharpitSpacing.pageInset)
             .padding(.bottom, SharpitSpacing.lg)
         }
         .modifier(ScrollUnderGlass())
+        .cliniqueSheet(wash: .neutral)
         .allowsHitTesting(false)
         .accessibilityLabel("Chargement du résumé")
     }
@@ -58,10 +58,11 @@ extension SessionCardModel {
 }
 
 extension OvernightGaugeModel {
+    /// No score yet: each ring draws its track and « Pas encore ».
     static var placeholders: [OvernightGaugeModel] {
         [
-            OvernightGaugeModel(key: .sleep, score: "0", caption: String(localized: "Nuit dernière")),
-            OvernightGaugeModel(key: .recovery, score: "0", caption: String(localized: "Frein · sommeil")),
+            OvernightGaugeModel(key: .sleep, score: "—", caption: nil),
+            OvernightGaugeModel(key: .recovery, score: "—", caption: nil),
         ]
     }
 }

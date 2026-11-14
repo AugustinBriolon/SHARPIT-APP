@@ -88,7 +88,7 @@ func verdictPlateReadsStateDecisionWhyAndFacts(style: UIUserInterfaceStyle) asyn
     model.explanationEssential = "Ta forme ressentie est bonne, mais ton corps n’a pas encore récupéré et ta nuit a été trop courte."
     model.yesterdayLabel = "Hier : Prudence"
     try await assertSnapshot(
-        InkVerdictPlate(plate: model).padding(16).background(SharpitCanvasBackground()),
+        VerdictHero(plate: model).background(SharpitColor.card),
         named: "verdict-plate",
         style: style
     )
