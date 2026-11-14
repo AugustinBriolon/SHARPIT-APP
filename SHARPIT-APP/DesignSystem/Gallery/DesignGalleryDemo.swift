@@ -225,7 +225,7 @@ import ClerkKit
 import SwiftUI
 
 /// A screen on demo data, to check its look in the simulator without an account.
-/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|plan|activity|strength|sleep|records|session`.
+/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|plan|activity|strength|sleep|sante|records|session`.
 enum ScreenDemo {
     static var requested: String? {
         UserDefaults.standard.string(forKey: "SharpitScreenDemo")
@@ -233,6 +233,111 @@ enum ScreenDemo {
 }
 
 struct ScreenDemoHost: View {
+    private static var recovery: V1RecoveryResponse? {
+        let json = #"""
+        {
+          "apiVersion": 1, "trainingDayId": "2026-11-14", "empty": null,
+          "readinessScore": 71, "signal": { "label": "Récupération correcte", "tone": "good" },
+          "isCalibrating": false, "limiter": "Sommeil", "estimatedRecoveryDays": 1,
+          "intensity": "Modérée",
+          "rationale": ["Ton corps a encaissé hier, pas complètement. Le sommeil est ce qui te limite."],
+          "dimensions": [
+            { "key": "sleep", "score": 46, "status": "INSUFFICIENT" },
+            { "key": "autonomic", "score": 55, "status": "NORMAL" },
+            { "key": "subjective", "score": 74, "status": "NORMAL" },
+            { "key": "loadContext", "score": 82, "status": "OPTIMAL" }
+          ],
+          "pillars": [
+            { "key": "autonomic", "label": "Équilibre normal", "tone": "good" },
+            { "key": "load", "label": "Charge optimale", "tone": "strong" }
+          ],
+          "dissonanceDetected": false,
+          "today": { "hrv": 58, "restingHr": 49, "bodyBattery": 72, "hrvBaselineLow": 60, "hrvBaselineHigh": 68 },
+          "history": [
+            { "date": "2026-11-12", "hrv": 64, "restingHr": 47 },
+            { "date": "2026-11-13", "hrv": 61, "restingHr": 48 },
+            { "date": "2026-11-14", "hrv": 58, "restingHr": 49 }
+          ],
+          "alerts": [], "keyEvidence": ["Sommeil sous la cible deux nuits de suite"],
+          "confidencePct": 92, "completenessLabel": "Complètes"
+        }
+        """#
+        return try? JSONDecoder().decode(V1RecoveryResponse.self, from: Data(json.utf8))
+    }
+
+    /// A night's course, as the watch would record it.
+    private static var night: [HealthSleepSample] {
+        let start = Calendar.current.date(bySettingHour: 23, minute: 50, second: 0, of: .now.addingTimeInterval(-86_400)) ?? .now
+        let course: [(HealthSleepSample.Stage, Double)] = [
+            (.awake, 18), (.core, 55), (.deep, 44), (.core, 40), (.rem, 33), (.awake, 11),
+            (.core, 51), (.deep, 25), (.rem, 44), (.core, 33), (.awake, 11),
+        ]
+        var at = start
+        return course.map { stage, minutes in
+            defer { at = at.addingTimeInterval(minutes * 60) }
+            return HealthSleepSample(start: at, end: at.addingTimeInterval(minutes * 60), stage: stage)
+        }
+    }
+
+    private static var health: V1HealthOverview {
+        func marker(_ key: V1HealthMarker.Key, _ value: Double, _ label: String, _ tone: V1HealthTone, delta: Double? = nil) -> V1HealthMarker {
+            V1HealthMarker(
+                key: key, value: value, basis: .average7,
+                norm: V1HealthNorm(band: "b", label: label, tone: tone, reference: ""),
+                trend: delta.map { V1HealthTrend(recent: value, baseline: value - $0, delta: $0, stable: false, tone: tone) },
+                series: (0..<30).map { day in
+                    CorpsPoint(
+                        date: Calendar.current.date(byAdding: .day, value: day - 29, to: .now) ?? .now,
+                        value: value * (0.94 + 0.06 * Double(day) / 29) + sin(Double(day) / 2.5 + value) * value * 0.02
+                    )
+                }
+            )
+        }
+        return V1HealthOverview(
+            synthesis: V1HealthSynthesis(
+                biologicalAge: V1BiologicalAge(years: 31, chronologicalYears: 34, method: nil, confidence: nil, computedAt: nil),
+                normed: 7, inNorm: 6,
+                highlights: [
+                    V1HealthHighlight(key: .restingHr, delta: -3, tone: .good),
+                    V1HealthHighlight(key: .sleep, delta: -28, tone: .watch),
+                ]
+            ),
+            watch: [V1HealthWatch(key: "sleep", title: String(localized: "Nuits courtes"), detail: String(localized: "6 h 05 en moyenne sur 7 jours, sous ton besoin de 7 h 30."))],
+            vitals: [
+                marker(.restingHr, 47, String(localized: "Niveau athlète"), .good, delta: -3),
+                marker(.hrv, 61, String(localized: "Dans ta plage habituelle"), .good),
+                marker(.sleep, 365, String(localized: "Un peu court"), .watch, delta: -28),
+                marker(.vo2max, 56, String(localized: "Bien au-dessus de ton âge"), .good),
+            ],
+            body: [
+                marker(.weight, 71.4, String(localized: "Stable"), .neutral),
+                marker(.bodyFatPct, 12.8, String(localized: "Athlétique"), .good, delta: -0.4),
+            ]
+        )
+    }
+
+    /// A building day inside its advised zone, the week's bars behind it.
+    static let effort: V1EffortResponse? = try? JSONDecoder().decode(V1EffortResponse.self, from: Data(#"""
+    { "apiVersion": 1, "trainingDayId": "2026-11-13", "empty": null,
+      "strain": { "score": 14.2, "label": "Charge soutenue", "subtitle": "Une journée qui construit. Le dernier bloc de tempo t'a coûté plus que prévu.", "tone": "good" },
+      "verdict": { "key": "MAINTAIN", "label": "Maintenir", "tone": "good" },
+      "fatigueTypeLabel": null, "trainingCapacity": "FULL", "rationale": ["Charge aiguë proche de ta charge de fond."],
+      "keyEvidence": [], "consecutiveDays": 2, "estimatedDaysToFresh": 1,
+      "load": { "daily": 96, "weekly": 438, "acwr": 1.09, "chronicWeeklyAvg": 402, "tsb": -6, "avgWeeklyTss": 390 },
+      "dimensions": [], "dominantDimension": null, "limitingFactor": null, "overreaching": null,
+      "composition": { "available": false, "dominantKey": null, "contributors": [], "signals": { "steps": 9200, "stress": 28, "bodyBattery": 61 } },
+      "pmc": [], "weeklyTss": [], "confidencePct": 82, "completenessLabel": "Complètes",
+      "targetBand": { "algorithmVersion": "demo", "low": 11, "high": 15, "status": "within" },
+      "strainPerformance": { "withinCount": 3, "dayCount": 4, "withinPct": 75, "history": [
+        { "date": "2026-11-09", "strain": 6.1, "low": 5, "high": 9, "status": "within" },
+        { "date": "2026-11-10", "strain": 13.4, "low": 11, "high": 15, "status": "within" },
+        { "date": "2026-11-11", "strain": 0.8, "low": 0, "high": 4, "status": "within" },
+        { "date": "2026-11-12", "strain": 10.5, "low": 5, "high": 9, "status": "above" },
+        { "date": "2026-11-13", "strain": null, "low": 8, "high": 12, "status": null },
+        { "date": "2026-11-14", "strain": null, "low": 12, "high": 16, "status": null },
+        { "date": "2026-11-15", "strain": null, "low": 7, "high": 11, "status": null } ] } }
+    """#.utf8))
+
     let screen: String
     @State private var router = ShellRouter()
     @State private var toastCenter = SharpitToastCenter()
@@ -243,9 +348,12 @@ struct ScreenDemoHost: View {
             case "sleep":
                 if let sleep = Self.sleep {
                     NavigationStack {
-                        ScrollView { SleepSections(sleep: sleep) }
-                            .background(SharpitCanvasBackground())
-                            .navigationTitle("Sommeil")
+                        ScrollView { SleepSections(sleep: sleep, segments: Self.night).padding(.top, SharpitSpacing.md) }
+                            .cliniqueSheet(wash: .sleep, height: 240)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) { Button {} label: { Image(systemName: "chevron.left") } }
+                                ToolbarItem(placement: .topBarTrailing) { Button(SleepSheetReadout.nightLabel(.now)) {} .foregroundStyle(SharpitColor.foreground) }
+                            }
                     }
                 }
             case "records":
@@ -256,6 +364,110 @@ struct ScreenDemoHost: View {
                         tokenProvider: { "demo" }
                     )
                 }
+            case "nutrition":
+                NavigationStack {
+                    ScrollView { NutritionSections(nutrition: NutritionReadout.placeholderResponse).padding(.top, SharpitSpacing.md) }
+                        .cliniqueSheet(wash: .watch, height: 240)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) { Button {} label: { Image(systemName: "chevron.left") } }
+                            ToolbarItem(placement: .topBarTrailing) { Button(DayDetailDatePicker.shortDay(.now)) {} .foregroundStyle(SharpitColor.foreground) }
+                        }
+                }
+            case "recovery":
+                if let recovery = Self.recovery {
+                    NavigationStack {
+                        ScrollView { RecoverySections(recovery: recovery).padding(.top, SharpitSpacing.md) }
+                            .cliniqueSheet(wash: .good, height: 240)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) { Button {} label: { Image(systemName: "chevron.left") } }
+                                ToolbarItem(placement: .topBarTrailing) { Button(DayDetailDatePicker.shortDay(.now)) {} .foregroundStyle(SharpitColor.foreground) }
+                            }
+                    }
+                }
+            case "sante":
+                TabView {
+                    Tab { NavigationStack {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 0) {
+                                SanteHero(synthesis: Self.health.synthesis, vo2max: Self.health.marker(.vo2max))
+                                    .padding(.top, SharpitSpacing.xs)
+                                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                                    SanteTrends(markers: SanteTrendReadout.drawable(Self.health.allMarkers))
+                                    SanteTable(title: SanteReadout.markers(Self.health.allMarkers.count), rows: Self.health.allMarkers.map(SanteTable.Row.init))
+                                    SanteWatchSection(items: Self.health.watch)
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.top, 20)
+                            }
+                        }
+                        .cliniqueSheet(wash: .sleep, height: 240)
+                        .toolbar {
+                            SharpitBarTitle("Santé")
+                            ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "square.and.arrow.up") } }
+                            SharpitBarGap()
+                            ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "plus") } }
+                        }
+                    } } label: { SharpitTabLabel("Santé", systemImage: "heart") }
+                }
+            case "journal":
+                NavigationStack {
+                    JournalView(client: DemoJournal(), wellness: WellnessClient(), tokenProvider: { "demo" })
+                }
+            case "pro":
+                // Offers need the App Store: the simulator shows the page down to its plans' place.
+                Color.clear.sheet(isPresented: .constant(true)) {
+                    SharpitProPaywallSheet(store: ProStore(tokenProvider: { "demo" }))
+                }
+            case "goals":
+                NavigationStack {
+                    GoalsView(store: GoalStore(client: DemoGoals(), plannedSessionClient: nil, profileClient: nil, activityClient: nil, tokenProvider: { "demo" }))
+                }
+            case "thresholds":
+                NavigationStack {
+                    ThresholdsView(client: AthleteProfileClient(), tokenProvider: { "demo" })
+                }
+            case "consent":
+                PrivacyConsentWallView(reason: .documents, initial: nil, client: PrivacyConsentClient(), tokenProvider: { "demo" }) { _ in }
+            case "connections":
+                NavigationStack {
+                    ConnectionsView(
+                        appleHealth: AppleHealthSource(reader: HealthKitReader(), client: SharpitClient()),
+                        appleCalendar: AppleCalendarSource(client: SharpitClient()),
+                        syncClient: SharpitClient(),
+                        tokenProvider: { "demo" }
+                    )
+                }
+            case "ressenti":
+                Color.clear.sheet(isPresented: .constant(true)) {
+                    RessentiDuJourSheet(client: WellnessClient(), tokenProvider: { "demo" }, athleteId: "demo", onSaved: { _ in })
+                }
+            case "effort":
+                if let effort = Self.effort {
+                    NavigationStack {
+                        ScrollView { EffortSections(effort: effort).padding(.top, SharpitSpacing.md) }
+                            .cliniqueSheet(wash: .good, height: 240)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) { Button {} label: { Image(systemName: "chevron.left") } }
+                                ToolbarItem(placement: .topBarTrailing) { Button(DayDetailDatePicker.shortDay(.now)) {} .foregroundStyle(SharpitColor.foreground) }
+                            }
+                    }
+                }
+            case "zones":
+                NavigationStack {
+                    SensitiveZonesView(store: SensitiveZonesStore(client: DemoZones(), tokenProvider: { "demo" }))
+                }
+            case "settings":
+                // Live clients with a demo token: the rows show what they hold offline.
+                SettingsView(
+                    appleHealth: AppleHealthSource(reader: HealthKitReader(), client: SharpitClient()),
+                    appleCalendar: AppleCalendarSource(client: SharpitClient()),
+                    syncClient: SharpitClient(),
+                    profileClient: AthleteProfileClient(),
+                    displayMode: DisplayModeStore(client: AthleteProfileClient()),
+                    features: FeatureStore(client: AthleteProfileClient()),
+                    tokenProvider: { "demo" },
+                    modelContext: nil
+                )
             case "plan":
                 TabView {
                     Tab("Plan", systemImage: "calendar") {
@@ -302,6 +514,7 @@ struct ScreenDemoHost: View {
                             ),
                             consecutiveWeeks: 6
                         ) {}
+                        ResumeNutritionSection(phase: .loaded(NutritionReadout.placeholderDay)) {}
                         TodayTimelineStrip(events: [
                             V1DayTimelineEvent(kind: "wake", minuteOfDay: 422, title: String(localized: "Réveil"), detail: String(localized: "7 h 32 de sommeil")),
                             V1DayTimelineEvent(kind: "checkin", minuteOfDay: 450, title: String(localized: "Check-in du matin"), detail: nil),
@@ -324,7 +537,7 @@ struct ScreenDemoHost: View {
                 if let sleep = StressDemo.sleep {
                     NavigationStack {
                         ScrollView { SleepSections(sleep: sleep) }
-                            .background(SharpitCanvasBackground())
+                            .cliniqueSheet(wash: .sleep)
                             .navigationTitle("Sommeil")
                     }
                 }
@@ -380,7 +593,16 @@ struct ScreenDemoHost: View {
                 }
             default:
                 TabView {
-                    Tab("Résumé", systemImage: "sun.max") { TodayView() }
+                    Tab { TodayView() } label: { SharpitTabLabel("Résumé", systemImage: "house") }
+                    Tab {
+                        PlanView(
+                            client: DemoPlan(), linker: PlannedSessionClient(),
+                            activityClient: DemoActivities(), tokenProvider: { "demo" }
+                        )
+                    } label: { SharpitTabLabel("Plan", systemImage: "calendar") }
+                    Tab { Color.clear } label: { SharpitTabLabel("Coach", systemImage: "bubble.left") }
+                    Tab { Color.clear } label: { SharpitTabLabel("Activité", systemImage: "chart.line.uptrend.xyaxis") }
+                    Tab { Color.clear } label: { SharpitTabLabel("Santé", systemImage: "heart") }
                 }
             }
         }
@@ -597,6 +819,111 @@ private struct DemoActivities: ActivityServing {
     func updateSubjective(id: String, rpe: Double?, feeling: String?, token: String) async throws {}
 }
 
+/// A day half noted — a mood, two coffees, some water, one signal still open — and a reading.
+private actor DemoJournal: JournalServing, JournalAnalysesServing {
+    private var entry = V1DayJournalEntry(
+        trainingDayId: "", factors: ["alcohol": .no], moodLabel: String(localized: "Correct"), hydrationMl: 1_200, caffeineMg: 160
+    )
+    private let prefs = JournalPrefs(raw: [
+        "version": .number(2),
+        "enabled": .object([
+            "metric_mood": .bool(true), "metric_caffeine": .bool(true), "metric_hydration": .bool(true),
+            "metric_driving": .bool(true), "alcohol": .bool(true), "nap": .bool(true),
+        ]),
+    ])
+
+    func dayJournal(trainingDayId: String, token: String) async throws -> V1DayJournalEntry {
+        entry.trainingDayId = trainingDayId
+        return entry
+    }
+
+    func saveDayJournal(_ entry: V1DayJournalEntry, token: String) async throws -> V1DayJournalEntry {
+        self.entry = entry
+        return entry
+    }
+
+    func journalDaySignals(trainingDayId: String, token: String) async throws -> V1JournalDaySignals {
+        V1JournalDaySignals(trainingDayId: trainingDayId)
+    }
+
+    func journalPrefs(token: String) async throws -> (prefs: JournalPrefs, isPro: Bool) { (prefs, true) }
+
+    func saveJournalPrefs(_ prefs: JournalPrefs, token: String) async throws -> (prefs: JournalPrefs, isPro: Bool) { (prefs, true) }
+
+    func journalAnalyses(token: String) async throws -> V1JournalAnalyses {
+        V1JournalAnalyses(
+            minDays: 7, daysWithSignal: 11, daysInSpan: 30,
+            reading: V1JournalAnalysesReading(
+                headline: String(localized: "Caféine après 15 h"),
+                verdict: String(localized: "Score de sommeil 9 points plus bas, sur 11 nuits comparées."),
+                summary: "", actionHint: "", strengths: []
+            )
+        )
+    }
+}
+
+/// Two open zones — one with readings going down and a question owed — and a resolved one.
+private struct DemoZones: SensitiveZoneServing {
+    func sensitiveZonesData(token: String) async throws -> Data {
+        Data(#"""
+        { "apiVersion": 1, "bodyParts": ["Tendon d'Achille", "Bas du dos", "Genou"], "zones": [
+          { "id": "z1", "title": "Tendon d'Achille gauche", "category": "INJURY", "categoryLabel": "Blessure",
+            "bodyPart": "Tendon d'Achille", "side": "LEFT", "sideLabel": "Gauche", "status": "ACTIVE", "statusLabel": "Active",
+            "severity": 2, "affectsTraining": true, "startDate": "2026-03-18T00:00:00.000Z",
+            "strategy": "progressive", "strategyLabel": "En reprise",
+            "strategyDetail": "Pas de côtes deux jours de suite, course plafonnée à 35 km par semaine.",
+            "followUpQuestion": "Ton tendon d'Achille, ce matin ?",
+            "timeline": [
+              { "id": "r8", "date": "2026-11-13T00:00:00.000Z", "kind": "reading", "label": "2/10", "severity": 2 },
+              { "id": "r7", "date": "2026-11-06T00:00:00.000Z", "kind": "reading", "label": "3/10", "severity": 3 },
+              { "id": "r6", "date": "2026-10-30T00:00:00.000Z", "kind": "reading", "label": "4/10", "severity": 4 },
+              { "id": "r5", "date": "2026-10-23T00:00:00.000Z", "kind": "reading", "label": "5/10", "severity": 5 },
+              { "id": "r4", "date": "2026-10-16T00:00:00.000Z", "kind": "reading", "label": "6/10", "severity": 6 },
+              { "id": "r3", "date": "2026-10-09T00:00:00.000Z", "kind": "reading", "label": "6/10", "severity": 6 },
+              { "id": "r2", "date": "2026-10-02T00:00:00.000Z", "kind": "reading", "label": "7/10", "severity": 7 },
+              { "id": "r1", "date": "2026-09-25T00:00:00.000Z", "kind": "reading", "label": "8/10", "severity": 8 } ] },
+          { "id": "z2", "title": "Bas du dos", "category": "PAIN", "categoryLabel": "Raideur",
+            "bodyPart": "Bas du dos", "side": "NA", "status": "ACTIVE", "statusLabel": "Active", "affectsTraining": true,
+            "startDate": "2026-10-06T00:00:00.000Z", "strategy": "protect", "strategyLabel": "À protéger",
+            "strategyDetail": "10 min de mobilité du dos après chaque sortie vélo de plus de 2 h.", "timeline": [] },
+          { "id": "z3", "title": "Genou droit", "category": "INJURY", "categoryLabel": "Blessure", "bodyPart": "Genou",
+            "side": "RIGHT", "sideLabel": "Droit", "status": "RESOLVED", "statusLabel": "Résolue", "affectsTraining": true,
+            "startDate": "2026-04-01T00:00:00.000Z", "resolvedAt": "2026-06-12T00:00:00.000Z",
+            "strategy": "none", "strategyLabel": "", "strategyDetail": "", "timeline": [] } ] }
+        """#.utf8)
+    }
+
+    func updateNote(id: String, patch: PhysicalNotePatch, token: String) async throws {}
+    func addCheckin(noteId: String, input: PhysicalCheckinInput, token: String) async throws {}
+    func createNote(_ input: CreatePhysicalNoteInput, token: String) async throws {}
+}
+
+/// A race five weeks out with its projection, two figures in progress, one goal reached.
+private struct DemoGoals: GoalServing {
+    func goals(token: String) async throws -> [V1Goal] {
+        let day = Calendar.current.date(byAdding: .day, value: 37, to: .now) ?? .now
+        var race = V1Goal(title: "Triathlon M", kind: .race, targetDate: day)
+        race.targetPerformance = "2 h 30"
+        race.projection = V1RaceProjection(
+            finishSec: 8_880, lowSec: 8_700, highSec: 9_100, targetSec: 9_000, deltaSec: -120,
+            legs: [.init(kind: .swim, sec: 1_620), .init(kind: .t1, sec: 180), .init(kind: .bike, sec: 4_320), .init(kind: .t2, sec: 120), .init(kind: .run, sec: 2_640)],
+            confidence: .high
+        )
+        var ftp = V1Goal(title: String(localized: "Seuil vélo à 280 W"), kind: .metric, targetDate: Calendar.current.date(byAdding: .month, value: 3, to: .now))
+        ftp.startValue = 250; ftp.currentValue = 268; ftp.targetValue = 280; ftp.unit = "W"
+        var done = V1Goal(title: String(localized: "Semi-marathon sous 1 h 32"), kind: .metric)
+        done.achieved = true
+        return [race, ftp, done]
+    }
+
+    func createGoal(_ input: CreateGoalInput, token: String) async throws -> V1Goal { V1Goal(title: "", kind: .metric) }
+    func toggleAchieved(id: String, achieved: Bool, token: String) async throws -> V1Goal { V1Goal(title: "", kind: .metric) }
+    func deleteGoal(id: String, token: String) async throws {}
+    func updateGoal(id: String, fields: [String: JSONValue], token: String) async throws -> V1Goal { V1Goal(title: "", kind: .metric) }
+    func achievements(limit: Int, token: String) async throws -> [V1GoalAchievement] { [] }
+    func linkedActivities(goalId: String, token: String) async throws -> [V1GoalLinkedActivity] { [] }
+}
+
 /// Records as the server would send them, dated around now so « Nouveau record » shows.
 private struct DemoRecords: RecordsServing {
     func records(token: String) async throws -> V1Records {
@@ -714,7 +1041,7 @@ private struct GalleryWorkoutDockDemo: View {
 
     var body: some View {
         TabView {
-            Tab("Résumé", systemImage: "sun.max") {
+            Tab("Résumé", systemImage: "house") {
                 NavigationStack { Text("Résumé").navigationTitle("Résumé") }
             }
             Tab("Plan", systemImage: "calendar") {
