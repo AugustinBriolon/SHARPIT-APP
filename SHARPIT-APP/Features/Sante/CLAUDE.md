@@ -70,3 +70,7 @@ reading and not « mieux / pareil / pire »), « Ce que ça change à ton plan �
 detail behind a bar in its status tone), « Ouvertes » (the strategy as a pill, the last eight readings
 as bars, « gêne 2 / 10 · en baisse » — the trend from the last two readings, `standing`), « Résolues »
 (a check, « résolue en juin »), then the body overview. `SharpitScreenDemo zones` shows it.
+
+**Corps, Clinique.** `CorpsMetricDrawer` is a titled sheet with its cross: when and from where the
+marker was read, its figure with the note as a pill, the range, the curve on the sheet, then min, max
+and the count as lines.

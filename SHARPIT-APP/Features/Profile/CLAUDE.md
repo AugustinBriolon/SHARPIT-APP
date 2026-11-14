@@ -17,3 +17,9 @@ the profile and its threshold history back; `revision` then resets the form to t
 Thresholds a watch synced on the web say so in the line above the cards (« Importés de ta montre … »);
 the app imports none itself (`docs/adr/0013`). Each discipline is one white card of rows — name and
 meaning left, the figure typed in place right — never a coloured tile or a boxed field.
+
+**Seuils, Clinique.** `ThresholdsView` follows its mock-up (`docs/adr/0035`): the page's title with
+where the figures come from under it, « D'après tes records » in a bordered card (how many to review
+as a pill, each proposal a line with its direction and a check, « Appliquer (N) »), then each
+discipline as a name over its lines. The mock-up's power-zones bar is not drawn: the profile carries
+the thresholds, not the zones. Matériel keeps its layout: the app holds no wear per shoe or part.

@@ -37,3 +37,9 @@ below two points) with « −22 min en 8 semaines », « Régularité : 82 % des
 moyenne », the server's `missing` hints with « Compléter mes seuils » (`GoalRoute.thresholds`), and
 each projected leg with its source. No projection reads « Projection indisponible pour ce format ».
 A done race's « Prévu » is the frozen pre-race projection, « Prévu (recalculé) » when not frozen.
+
+**Clinique.** Objectifs follows its mock-up (`docs/adr/0035`): « Nouvel objectif » in the bar, the
+race ahead opening the page — « Prochaine course · dans 37 jours » (`GoalsReadout.lead`), its name and
+day, the server's projected finish against the aim, the legs as one bar in the data hues with their
+times, the projection's reliability as a pill — then « En cours » (a ring, the goal, its month),
+« Atteints » and « Réalisations récentes » as lines. No ink plate. `SharpitScreenDemo goals` shows it.

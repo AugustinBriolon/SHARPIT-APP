@@ -133,3 +133,18 @@ bubble; « … » keeps edit, link and delete. The mock-up's intensity blocks ar
 no zone. « Ajuster ton plan » (`PlanAdapterSheet`) is a titled sheet with its cross: each change a
 bordered card — day, what it does as a pill, the session and why, « Appliquer ce changement » — and
 « Appliquer les N changements » (`PlanAdapterReadout.apply`).
+
+**Bilan, générateur, renfo, semaine vide — Clinique.** `WeeklyReviewView` follows its mock-up
+(`docs/adr/0035`): how full the week was as a pill (`WeeklyReviewReadout.standing`), « Bilan du 3 au
+9 novembre », sessions / volume / load between hairlines (`strip`), the time by sport as a table (the
+payload has no planned time or reading per sport, so the columns are sessions and time), « À retenir »
+as lines behind a bar in their tone, the figures as rows, « La semaine qui vient » in a bordered card,
+« Préparer ma semaine » docked. The generator's proposal (`PlanGeneratorSheet`) opens on « Ta semaine
+est prête », « Semaine du … » and its total (`GeneratedWeekReadout`), each session a line — day,
+« Sport · Titre », length and load, « Clé », its check — and docks « Ajouter N séances » with
+« Refaire » in glass; the mock-up's « jours disponibles » chips are not built (the request does not
+take them). The guided strength session keeps its flow and takes the sheet: exercises and sets as
+lines, « Exercice 1 sur 4 », a check per set — the mock-up's current-set card with steppers, the rest
+on the same page and « Ça fait mal » are not built. A week read, not over and holding nothing shows
+« Ta semaine est vide » with « Remplir ma semaine » and « Ajouter une séance à la main » instead of
+empty rings. `SharpitScreenDemo generator` shows the proposal's lines.
