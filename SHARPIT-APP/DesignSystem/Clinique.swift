@@ -293,6 +293,9 @@ struct CliniqueButtonStyle: ButtonStyle {
             }
             .contentShape(Capsule())
             .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
+            // The press is felt, as `SharpitPressableStyle` gives every tile: a hair smaller, at once.
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(SharpitMotion.selection, value: configuration.isPressed)
     }
 
     private var foreground: Color {
