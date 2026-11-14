@@ -48,9 +48,12 @@ body, stress and a note for the coach wait under « Ajouter un détail », in th
 own words (`WellnessDimension.label`). The button says « Choisis ton ressenti » until there is an
 answer; « Plus tard » is the bar's cancel action.
 
-**Clinique pilot.** `CliniqueResumeView` draws the same `TodayFold` in the Clinique look
-(`docs/adr/0034`): verdict as a status pill and a sentence on the sheet's wash, the gauges and the
-week's active days as rings, the morning proposal, the sessions. It is reachable only through the
-Debug screen demo (`-SharpitScreenDemo today-clinique`); `TodayView` is unchanged and still owns the
-day switcher, the sheets and every other card. `CliniqueResumeReadout` holds the mapping (verdict
-tone → status and wash, score → ring fraction) and is tested.
+**Clinique.** Résumé is the first screen swept (`docs/adr/0034`). The fold reads top to bottom on
+one sheet, whose wash follows the verdict (`VerdictReadout`): `VerdictHero` (status pill, decision,
+facts), `ResumeScoreRow` (one ring per overnight gauge, then Régularité as the week's active days
+over seven — the strip of dots is gone from this screen; a column opens Sommeil, Récupération or
+Plan), the morning proposal as a bordered card, then « Séance du jour » as rows split by hairlines
+(`SessionPlate`, `RestDayPlate`). The cards not redrawn yet — race day, plan horizon, trip conflict,
+the day's timeline, nutrition — keep their Ink & Lime content inside a hairline outline
+(`cliniqueSurfaces()`), until their turn. `SharpitLoadingInstrument` is the same shape with empty
+rings.
