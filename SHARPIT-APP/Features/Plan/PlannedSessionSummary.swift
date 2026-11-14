@@ -18,18 +18,13 @@ struct PlannedSessionSummary<Actions: View>: View {
     var onRoutineStatus: ((V1RoutinePart, V1RoutineStatus?) -> Void)?
     @ViewBuilder var actions: Actions
 
-    @State private var isWhyExpanded = false
-
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            VStack(alignment: .leading, spacing: 20) {
                 header
                 if !preview.metrics.isEmpty {
                     figures
                 }
-            }
-            if let rationale = preview.rationale, !rationale.isEmpty {
-                coachWhy(rationale)
             }
             actions
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
@@ -42,6 +37,7 @@ struct PlannedSessionSummary<Actions: View>: View {
                 }
                 if !steps.isEmpty {
                     PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)
+                        .padding(.top, SharpitSpacing.xs)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 } else if isLoadingBreakdown {
                     HStack(spacing: SharpitSpacing.xs) {
@@ -55,81 +51,62 @@ struct PlannedSessionSummary<Actions: View>: View {
                     routinePanel(String(localized: "Étirements ciblés"), routines.cooldown, .cooldown)
                 }
             }
+            if let rationale = preview.rationale, !rationale.isEmpty {
+                words(String(localized: "Pourquoi cette séance"), rationale)
+            }
             if let notes = preview.notes, !notes.isEmpty {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    SharpitEyebrow(String(localized: "Consigne"))
-                    Text(notes)
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
+                words(String(localized: "Consigne"), notes)
             }
         }
     }
 
+    /// « Clé » when the coach marked it, the sport before the title, then the day.
     private var header: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(spacing: SharpitSpacing.sm) {
-                SharpitIconTile(symbol: preview.symbolName)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        Text(preview.sport)
-                            .font(SharpitTypography.label)
-                            .tracking(SharpitTypography.labelTracking)
-                            .foregroundStyle(SharpitColor.slate)
-                            .lineLimit(1)
-                        if preview.isKey {
-                            SharpitInlineTag(String(localized: "Clé"))
-                        }
-                    }
-                    if let date = preview.date {
-                        Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                            .lineLimit(1)
-                    }
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            if preview.isKey {
+                CliniqueStatusPill(String(localized: "Clé"), status: .pro)
             }
-            Text(preview.title)
-                .font(SharpitTypography.pageTitle)
-                .tracking(SharpitTypography.pageTitleTracking)
+            Text(PlannedSessionReadout.title(sport: preview.sport, title: preview.title))
+                .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2, digits: true))
+                .tracking(-0.4)
                 .foregroundStyle(SharpitColor.foreground)
                 .fixedSize(horizontal: false, vertical: true)
+            if let date = preview.date {
+                Text(date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+            }
         }
         .accessibilityElement(children: .combine)
     }
 
-    /// The figures on the canvas, each under its label, split by hairlines — a readout, not a card.
+    /// The figures between two hairlines, each centred under its label.
     private var figures: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.md) {
-            ForEach(Array(preview.metrics.enumerated()), id: \.element.label) { index, metric in
-                if index > 0 {
-                    Rectangle()
-                        .fill(SharpitColor.divider)
-                        .frame(width: 1)
-                        .frame(maxHeight: .infinity)
+        VStack(spacing: 0) {
+            CliniqueDivider()
+            HStack(spacing: 0) {
+                ForEach(Array(preview.metrics.enumerated()), id: \.element.label) { index, metric in
+                    if index > 0 {
+                        Rectangle().fill(SharpitColor.divider).frame(width: 1, height: 34)
+                    }
+                    VStack(spacing: 4) {
+                        Text(metric.label)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineLimit(1)
+                        Text(metric.value)
+                            .font(SharpitTypography.system(size: 19, weight: .semibold, relativeTo: .title3, digits: true))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .combine)
                 }
-                VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                    Text(metric.label)
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .foregroundStyle(SharpitColor.slate)
-                        .lineLimit(1)
-                    Text(metric.value)
-                        .font(SharpitTypography.data)
-                        .tracking(SharpitTypography.dataTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-                .accessibilityElement(children: .combine)
             }
-            Spacer(minLength: 0)
+            .padding(.vertical, 14)
+            CliniqueDivider()
         }
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     /// The coach's reason, on the canvas under the figures: it is what makes the session his
@@ -146,21 +123,28 @@ struct PlannedSessionSummary<Actions: View>: View {
         }
     }
 
-    private func coachWhy(_ text: String) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            SharpitEyebrow(String(localized: "Pourquoi cette séance"))
-            Text(text)
-                .font(SharpitTypography.body)
+    /// The coach's reason, or the instruction: a titled paragraph on the sheet, after the steps.
+    private func words(_ title: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
-                .lineLimit(isWhyExpanded ? nil : 3)
+                .accessibilityAddTraits(.isHeader)
+            Text(text)
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(.rect)
-        .onTapGesture {
-            withAnimation(SharpitMotion.reveal) { isWhyExpanded.toggle() }
-        }
-        .accessibilityElement(children: .combine)
+    }
+}
+
+/// How a planned session words itself.
+nonisolated enum PlannedSessionReadout {
+    /// « Vélo · Seuil 2 × 12 min »; the title alone when it already names the sport or is it.
+    static func title(sport: String, title: String) -> String {
+        title.localizedCaseInsensitiveContains(sport) ? title : "\(sport) · \(title)"
     }
 }
 
@@ -183,9 +167,10 @@ struct ProposedSessionPage: View {
         ScrollView {
             PlannedSessionSummary(preview: PlannedSessionPreview(generated: session, isExpertReading: isExpertReading))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SharpitSpacing.pageInset)
+                .padding(.horizontal, 24)
+                .padding(.vertical, SharpitSpacing.md)
         }
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: .neutral, height: 200)
         .navigationTitle("Séance proposée")
         .navigationBarTitleDisplayMode(.inline)
     }

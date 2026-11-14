@@ -37,6 +37,8 @@ struct PlanView: View {
     @State private var showingNewSession = false
     /// The coach's trips, for the week's « Déplacement » chip (the web's `TravelContextBanner`).
     @State private var travels: [CoachMemoryEntry] = []
+    /// The active plan, for the week's phase and the days left to the race.
+    @State private var activePlan: V1TrainingPlan?
     @State private var showingTravel = false
     @State private var extrasGate = LoadGate()
     /// Garmin linked: the drawer then offers to send an endurance session to the watch.
@@ -70,46 +72,38 @@ struct PlanView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Fixed above the pager: neither moves when the week does, so neither can
-                // fight the pages' own gestures.
-                VStack(spacing: SharpitSpacing.xs) {
-                    PlanWeekHeader(
-                        store: store,
-                        onOpenCalendar: { showingCalendar = true },
-                        travels: travels,
-                        onOpenTravel: { showingTravel = true }
-                    )
-                    .padding(.horizontal, SharpitSpacing.pageInset)
-                    PlanWeekStrip(store: store)
-                }
-
                 PlanWeekPager(
                     store: store,
                     activityClient: activityClient,
                     tokenProvider: tokenProvider,
                     trainingLoad: isExpertReading ? trainingLoad : nil,
                     trajectory: trajectory,
+                    chrome: PlanWeekChrome(
+                        travels: travels,
+                        plan: activePlan,
+                        onAdapt: openAdapter,
+                        onOpenCalendar: { showingCalendar = true },
+                        onOpenTravel: { showingTravel = true }
+                    ),
                     onSelect: { selection = $0 },
                     onOpenTrajectory: { openedTrajectory = $0 }
                 )
             }
-            // Clinique (`docs/adr/0035`): one sheet, a neutral wash under the week's header.
-            .cliniqueSheet(wash: .neutral)
+            // One wash for the screen, under the bar too: it follows the week on screen.
+            .cliniqueSheet(wash: shownWash, height: 260)
+            .animation(SharpitMotion.fade, value: shownWash)
             .navigationTitle("Plan")
             .navigationBarTitleDisplayMode(.inline)
-            .modifier(LiquidNavChrome())
+            // The bar is its buttons only: no fill, no fade — « Plan » scrolls away with the week.
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(item: $openedTrajectory) { destination in
                 trajectoryDetail(for: destination)
             }
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showingNewSession = true } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("Ajouter une séance")
-                }
+                ToolbarItem(placement: .principal) { Text("") }
                 ToolbarItem(placement: .topBarTrailing) {
                     PlanActionsMenu(
+                        onAddSession: { showingNewSession = true },
                         onOpenGoals: { router.isShowingGoals = true },
                         onOpenTrips: { showingTravel = true },
                         onOpenMacroPlan: { showingMacroPlan = true },
@@ -121,6 +115,20 @@ struct PlanView: View {
                             )
                         }
                     )
+                }
+                SharpitBarGap()
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: openAdapter) {
+                        // Spelled out: the bar would keep a label's glyph alone.
+                        HStack(spacing: 6) {
+                            Image(systemName: "slider.horizontal.3")
+                            Text("Adapter")
+                        }
+                        .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .padding(.horizontal, SharpitSpacing.xxs)
+                    }
+                    .accessibilityHint("Dis au coach ce qui a changé dans ta semaine")
                 }
             }
             .sheet(item: $selection) { selected in
@@ -281,6 +289,19 @@ extension PlanView {
         startAdapter(focus: catchUp.focus(), catchUp: catchUp)
     }
 
+    /// « Adapter »: the adapter opens empty, for the athlete to say what changed.
+    /// How the week on screen stands, as the sheet's wash; neutral until it is read.
+    private var shownWash: CliniqueWash {
+        guard case .loaded(let entries) = store.phase(forOffset: store.selectedOffset) else { return .neutral }
+        return PlanWeekReadout.wash(PlanWeekReadout.status(PlanWeekTotals(entries)).status)
+    }
+
+    fileprivate func openAdapter() {
+        adjustment.reset()
+        activeCatchUp = nil
+        showingAdapter = true
+    }
+
     /// The adapter opens with what changed already said, and starts at once.
     fileprivate func startAdapter(focus: String, catchUp: PlanCatchUp? = nil) {
         adjustment.reset()
@@ -310,11 +331,19 @@ extension PlanView {
     fileprivate func loadPlanExtras(force: Bool = false) async {
         await extrasGate.run(force: force) {
             await loadTravels()
+            await loadActivePlan()
             await loadGarminLink()
             await loadTrajectory()
             await loadTrainingLoad(force: true)
             return true
         }
+    }
+
+    /// The plan's phases are a quiet extra too: without them the week only loses a line.
+    fileprivate func loadActivePlan() async {
+        guard let token = try? await tokenProvider(),
+              let plan = try? await TrainingPlanClient().fetchActivePlan(token: token) else { return }
+        activePlan = plan
     }
 
     /// The trips are a quiet extra: a failed read leaves the week without its chip.
@@ -437,6 +466,7 @@ extension PlanView {
 /// Native sheets for the three key planning operations (macro plan, fill week, adapt plan)
 /// and direct bridge to discussion with the Coach.
 private struct PlanActionsMenu: View {
+    let onAddSession: () -> Void
     let onOpenGoals: () -> Void
     let onOpenTrips: () -> Void
     let onOpenMacroPlan: () -> Void
@@ -446,6 +476,10 @@ private struct PlanActionsMenu: View {
 
     var body: some View {
         Menu {
+            Button(action: onAddSession) {
+                Label("Ajouter une séance", systemImage: "plus")
+            }
+            Divider()
             Button(action: onOpenGoals) {
                 Label("Objectifs", systemImage: "flag.fill")
             }
@@ -486,6 +520,7 @@ private struct PlanWeekPager: View {
     let tokenProvider: () async throws -> String
     let trainingLoad: V1TrainingLoad?
     let trajectory: PlanTrajectory
+    let chrome: PlanWeekChrome
     let onSelect: (PlanSelection) -> Void
     let onOpenTrajectory: (PlanTrajectoryDestination) -> Void
 
@@ -502,6 +537,7 @@ private struct PlanWeekPager: View {
                         tokenProvider: tokenProvider,
                         trainingLoad: offset == 0 ? trainingLoad : nil,
                         trajectory: offset == 0 ? trajectory : nil,
+                        chrome: chrome,
                         onSelect: onSelect,
                         onOpenTrajectory: onOpenTrajectory
                     )
@@ -538,6 +574,7 @@ private struct PlanWeekPage: View {
     let trainingLoad: V1TrainingLoad?
     /// The current week's only: the readings are today's.
     let trajectory: PlanTrajectory?
+    let chrome: PlanWeekChrome
     let onSelect: (PlanSelection) -> Void
     let onOpenTrajectory: (PlanTrajectoryDestination) -> Void
 
@@ -554,6 +591,7 @@ private struct PlanWeekPage: View {
                 tokenProvider: tokenProvider,
                 trainingLoad: trainingLoad,
                 trajectory: trajectory,
+                chrome: chrome,
                 onSelect: onSelect,
                 onOpenTrajectory: onOpenTrajectory
             )
@@ -575,6 +613,65 @@ private struct PlanWeekPage: View {
     }
 }
 
+/// What a week's page needs from the screen around it: the trips to name, and the three ways out.
+struct PlanWeekChrome {
+    var travels: [CoachMemoryEntry] = []
+    var plan: V1TrainingPlan? = nil
+    var onAdapt: () -> Void = {}
+    var onOpenCalendar: () -> Void = {}
+    var onOpenTravel: () -> Void = {}
+}
+
+/// Where a week sits in the plan: its phase, and the days left to the race.
+enum PlanPhaseReadout {
+    /// « Spécifique · sem. 3 sur 6 »: the week's phase and its place in that phase's run of weeks.
+    static func line(_ plan: V1TrainingPlan?, weekStart: Date, calendar: Calendar = .current) -> String? {
+        guard let plan,
+              let index = plan.weeks.firstIndex(where: { calendar.isDate($0.weekStart, equalTo: weekStart, toGranularity: .weekOfYear) })
+        else { return nil }
+        let phase = plan.weeks[index].phase
+        var first = index
+        while first > 0, plan.weeks[first - 1].phase == phase { first -= 1 }
+        var last = index
+        while last < plan.weeks.count - 1, plan.weeks[last + 1].phase == phase { last += 1 }
+        return String(localized: "\(phase.label) · sem. \(index - first + 1) sur \(last - first + 1)")
+    }
+
+    /// « course dans 37 j », « course demain », « course aujourd'hui »; nil once it is behind.
+    static func countdown(_ plan: V1TrainingPlan?, now: Date = .now, calendar: Calendar = .current) -> String? {
+        guard let plan else { return nil }
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: now), to: calendar.startOfDay(for: plan.raceDate)).day ?? -1
+        switch days {
+        case ..<0: return nil
+        case 0: return String(localized: "course aujourd'hui")
+        case 1: return String(localized: "course demain")
+        default: return String(localized: "course dans \(days) j")
+        }
+    }
+}
+
+/// How a week stands, said in one status word.
+enum PlanWeekReadout {
+    static func status(_ totals: PlanWeekTotals) -> (label: String, status: CliniqueStatus) {
+        if totals.totalSessions == 0 { return (String(localized: "Semaine libre"), .unknown) }
+        if totals.missedSessions > 0 {
+            return (String(localized: "\(totals.missedSessions) à rattraper"), .watch)
+        }
+        if totals.doneSessions == totals.totalSessions { return (String(localized: "Semaine bouclée"), .good) }
+        return (String(localized: "Dans les clous"), .good)
+    }
+
+    static func wash(_ status: CliniqueStatus) -> CliniqueWash {
+        switch status {
+        case .good: .good
+        case .watch: .watch
+        default: .neutral
+        }
+    }
+}
+
+/// One week as a sheet: « Plan » and how the week stands, its three figures as rings, then the
+/// days down a rail.
 private struct PlanWeekContent: View {
     let store: PlanStore
     let offset: Int
@@ -583,196 +680,255 @@ private struct PlanWeekContent: View {
     let tokenProvider: () async throws -> String
     let trainingLoad: V1TrainingLoad?
     let trajectory: PlanTrajectory?
+    let chrome: PlanWeekChrome
     let onSelect: (PlanSelection) -> Void
     let onOpenTrajectory: (PlanTrajectoryDestination) -> Void
 
+    private var totals: PlanWeekTotals { PlanWeekTotals(entries) }
+    private var days: [Date] { store.weekDays(forOffset: offset) }
+
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+        let standing = PlanWeekReadout.status(totals)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                header(standing)
+                rings
+                weekHeading
+                PlanTimeline(
+                    days: days,
+                    entriesOn: { store.entries(on: $0, from: entries) },
+                    activityClient: activityClient,
+                    tokenProvider: tokenProvider,
+                    onSelect: onSelect
+                )
+                .padding(.horizontal, SharpitSpacing.lg)
+                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                     if let trainingLoad, !trainingLoad.days.isEmpty {
                         TrainingLoadCard(load: trainingLoad)
-                    }
-                    if let focus = store.focusSession(from: entries) {
-                        Button { onSelect(focus) } label: {
-                            PlanFocusSession(
-                                focus: focus,
-                                isToday: Calendar.current.isDateInToday(focus.date)
-                            )
-                        }
-                        .buttonStyle(.sharpitPressable)
-                    }
-                    VStack(spacing: 0) {
-                        ForEach(store.weekDays(forOffset: offset), id: \.self) { day in
-                            PlanDayRow(
-                                day: day,
-                                entries: store.entries(on: day, from: entries),
-                                activityClient: activityClient,
-                                tokenProvider: tokenProvider,
-                                onSelect: onSelect
-                            )
-                            .id(day)
-                        }
                     }
                     // After the week, as the IA orders My week: the plan, then the trajectory.
                     if let trajectory {
                         PlanTrajectoryCards(trajectory: trajectory, onOpen: onOpenTrajectory)
                     }
                 }
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.top, SharpitSpacing.md)
-                .padding(.bottom, SharpitSpacing.lg)
+                .padding(.horizontal, SharpitSpacing.lg)
+                .padding(.top, SharpitSpacing.lg)
             }
-            .modifier(ScrollUnderGlass())
-            // No pull-to-refresh: nested in the horizontal pager, a fast fling to the top
-            // fired it and the spinner shoved the week down. Plan reloads on each visit and edit.
-            // Only the visible page answers: the strip belongs to the selected week, and
-            // a neighbour scrolling in the dark would be wasted work.
-            .onChange(of: store.scrollTarget) { _, target in
-                guard offset == store.selectedOffset, let target else { return }
-                withAnimation(SharpitMotion.reveal) { proxy.scrollTo(target, anchor: .top) }
-                store.scrollTarget = nil
+            .padding(.bottom, SharpitSpacing.xl)
+        }
+        .modifier(ScrollUnderGlass(hidesTopEdge: true))
+        // No pull-to-refresh: nested in the horizontal pager, a fast fling to the top
+        // fired it and the spinner shoved the week down. Plan reloads on each visit and edit.
+    }
+
+    /// Under the bar's title: how the week stands, then its phase in the plan.
+    private func header(_ standing: (label: String, status: CliniqueStatus)) -> some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            Text("Plan")
+                .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .tracking(-0.8)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            statusLine(standing)
+        }
+        .padding(.horizontal, 20)
+        // Level with the bar's buttons, which float over the page.
+        .padding(.top, -38)
+        .padding(.bottom, SharpitSpacing.md)
+    }
+
+    private func statusLine(_ standing: (label: String, status: CliniqueStatus)) -> some View {
+        HStack(spacing: SharpitSpacing.sm) {
+            CliniqueStatusPill(standing.label, status: standing.status)
+            if let phase = PlanPhaseReadout.line(chrome.plan, weekStart: store.weekStart(forOffset: offset)) {
+                Text(phase)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .lineLimit(1)
             }
-        }
-    }
-}
-
-private struct PlanFocusSession: View {
-    let focus: PlanSelection
-    let isToday: Bool
-
-    private var title: String {
-        switch focus {
-        case .session(let session): session.title ?? session.displayType
-        case .brick(let brick): brick.chain
-        case .doneBrick(let brick): brick.chain
+            PlanTravelChip(
+                trips: PlanTravel.trips(chrome.travels, overlapping: days),
+                onOpen: chrome.onOpenTravel
+            )
+            Spacer(minLength: 0)
         }
     }
 
-    private var sport: String {
-        switch focus {
-        case .session(let session): session.displayType
-        case .brick, .doneBrick: String(localized: "Brick")
+    private var rings: some View {
+        CliniqueScoreStrip {
+            CliniqueScoreColumn(
+                pillar: .coach, fraction: totals.sessionsFraction,
+                title: String(localized: "Séances"),
+                value: totals.totalSessions > 0 ? "\(totals.doneSessions)" : nil,
+                scale: "\(totals.totalSessions)"
+            )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Séances, \(totals.doneSessions) sur \(totals.totalSessions)")
+            CliniqueScoreColumn(
+                pillar: .sleep, fraction: totals.volumeFraction, symbol: "clock",
+                title: String(localized: "Volume"),
+                value: totals.totalMinutes > 0 ? PlanWeekTotals.duration(minutes: totals.doneMinutes) : nil,
+                scale: PlanWeekTotals.duration(minutes: totals.totalMinutes)
+            )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Volume, \(PlanWeekTotals.duration(minutes: totals.doneMinutes)) sur \(PlanWeekTotals.duration(minutes: totals.totalMinutes))")
+            CliniqueScoreColumn(
+                pillar: .recovery, fraction: totals.loadFraction,
+                title: String(localized: "Charge"),
+                value: totals.totalLoad > 0 ? "\(Int(totals.doneLoad.rounded()))" : nil,
+                scale: "\(Int(totals.totalLoad.rounded()))"
+            )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Charge, \(Int(totals.doneLoad.rounded())) sur \(Int(totals.totalLoad.rounded()))")
         }
     }
 
-    private var durationMin: Int? {
-        switch focus {
-        case .session(let session): session.durationMin
-        case .brick(let brick): brick.totalDurationMin
-        case .doneBrick(let brick): brick.totalDurationMin
-        }
-    }
-
-    private var symbolNames: [String] {
-        switch focus {
-        case .session(let session): [session.symbolName]
-        case .brick(let brick): brick.legs.map(\.symbolName)
-        case .doneBrick(let brick): brick.symbolNames
-        }
-    }
-
-    var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                CliniqueStatusPill(
-                    isToday ? String(localized: "À faire aujourd'hui") : String(localized: "Prochaine séance"),
-                    status: .protect
-                )
-                Text(title)
+    /// The week's name, and the way to another one: it opens the calendar.
+    private var weekHeading: some View {
+        Button(action: chrome.onOpenCalendar) {
+            HStack(spacing: SharpitSpacing.xxs) {
+                Text("Semaine du \(store.weekStart(forOffset: offset).sharpitFormatted(.dateTime.day().month(.wide)))")
                     .font(SharpitTypography.sectionTitle)
                     .tracking(SharpitTypography.sectionTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
-                Text([sport, durationMin.map { "\($0) min" }].compactMap { $0 }.joined(separator: " · "))
-                    .font(SharpitTypography.meta)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(SharpitColor.slate)
-            }
-            Spacer(minLength: 0)
-            PlanSportChain(symbolNames: symbolNames, font: .title3)
-        }
-        // What comes next, as the sheet's one bordered card.
-        .cliniqueCard()
-        .contentShape(.rect)
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// A session's glyph, or a brick's glyphs joined by arrows: the chain is the brick's mark.
-private struct PlanSportChain: View {
-    let symbolNames: [String]
-    let font: Font
-
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(Array(symbolNames.enumerated()), id: \.offset) { index, symbol in
-                if index > 0 {
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 9, weight: .semibold))
+                    .accessibilityHidden(true)
+                Spacer(minLength: SharpitSpacing.xs)
+                if let countdown = PlanPhaseReadout.countdown(chrome.plan) {
+                    Text(countdown)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                         .foregroundStyle(SharpitColor.slate)
                 }
-                Image(sharpitSymbol: symbol)
-                    .font(font)
-                    .foregroundStyle(SharpitColor.foreground)
             }
+            .contentShape(.rect)
         }
-        .accessibilityHidden(true)
+        .buttonStyle(.plain)
+        .accessibilityHint("Ouvre le calendrier")
+        .padding(.horizontal, SharpitSpacing.lg)
+        .padding(.top, 20)
+        .padding(.bottom, SharpitSpacing.xxs)
     }
 }
 
-private struct PlanDayRow: View {
-    let day: Date
-    let entries: [PlanEntry]
+/// The week's days down a rail: a dot per line says where it stands — filled for done, amber
+/// for missed, a bold ring for today, a hollow one ahead, grey for rest.
+private struct PlanTimeline: View {
+    let days: [Date]
+    let entriesOn: (Date) -> [PlanEntry]
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let onSelect: (PlanSelection) -> Void
 
-    var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            VStack(spacing: SharpitSpacing.xxs) {
-                Text(day.sharpitFormatted(.dateTime.weekday(.abbreviated)))
-                    .font(SharpitTypography.eyebrow)
-                    .foregroundStyle(SharpitColor.slate)
-                let isToday = Calendar.current.isDateInToday(day)
-                Text(day.sharpitFormatted(.dateTime.day()))
-                    .font(SharpitTypography.data)
-                    .tracking(SharpitTypography.dataTracking)
-                    .foregroundStyle(isToday ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                    .padding(.horizontal, 6)
-                    .background(isToday ? SharpitColor.primary : .clear, in: Capsule())
-            }
-            .frame(width: 42)
-            Rectangle()
-                .fill(SharpitColor.divider)
-                .frame(width: 1)
+    private struct Line: Identifiable {
+        let id: String
+        let day: Date
+        let entry: PlanEntry?
+    }
 
-            if entries.isEmpty {
-                Text("Repos")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .padding(.top, SharpitSpacing.sm)
-            } else {
-                VStack(spacing: SharpitSpacing.xs) {
-                    ForEach(entries) { entry in
-                        PlanEntryRow(
-                            entry: entry,
-                            activityClient: activityClient,
-                            tokenProvider: tokenProvider,
-                            onSelect: onSelect
-                        )
+    private var lines: [Line] {
+        days.flatMap { day -> [Line] in
+            let entries = entriesOn(day)
+            if entries.isEmpty { return [Line(id: "rest-\(day.timeIntervalSince1970)", day: day, entry: nil)] }
+            return entries.map { Line(id: $0.id, day: day, entry: $0) }
+        }
+    }
+
+    var body: some View {
+        let lines = lines
+        VStack(spacing: 0) {
+            ForEach(Array(lines.enumerated()), id: \.element.id) { index, line in
+                HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+                    PlanRailMark(
+                        mark: PlanTimelineReadout.mark(for: line.entry, on: line.day),
+                        isFirst: index == 0,
+                        isLast: index == lines.count - 1
+                    )
+                    VStack(spacing: 0) {
+                        if let entry = line.entry {
+                            PlanEntryRow(
+                                entry: entry,
+                                day: line.day,
+                                activityClient: activityClient,
+                                tokenProvider: tokenProvider,
+                                onSelect: onSelect
+                            )
+                        } else {
+                            Text("\(PlanTimelineReadout.dayLabel(line.day)) · Repos")
+                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                                .foregroundStyle(SharpitColor.slate)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 14)
+                        }
+                        if index < lines.count - 1 { CliniqueDivider() }
                     }
                 }
+                .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, SharpitSpacing.sm)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(SharpitColor.divider)
-                .frame(height: 1)
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+enum PlanTimelineReadout {
+    enum Mark: Equatable {
+        case done
+        case missed
+        case today
+        case ahead
+        case rest
+    }
+
+    static func mark(for entry: PlanEntry?, on day: Date, calendar: Calendar = .current) -> Mark {
+        switch entry {
+        case nil: .rest
+        case .executed, .doneBrick: .done
+        case .missed: .missed
+        case .brick(let brick) where brick.isMissed: .missed
+        case .planned, .brick: calendar.isDateInToday(day) ? .today : .ahead
+        }
+    }
+
+    /// « Lun. 10 », or « Aujourd'hui » on the day itself.
+    static func dayLabel(_ day: Date, calendar: Calendar = .current) -> String {
+        if calendar.isDateInToday(day) { return String(localized: "Aujourd'hui") }
+        let weekday = day.sharpitFormatted(.dateTime.weekday(.abbreviated))
+        return "\(weekday.prefix(1).uppercased())\(weekday.dropFirst()) \(day.sharpitFormatted(.dateTime.day()))"
+    }
+}
+
+private struct PlanRailMark: View {
+    let mark: PlanTimelineReadout.Mark
+    let isFirst: Bool
+    let isLast: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            segment(hidden: isFirst).frame(height: 20)
+            dot.frame(width: 14, height: 14)
+            segment(hidden: isLast).frame(maxHeight: .infinity)
+        }
+        .frame(width: 14)
+        .accessibilityHidden(true)
+    }
+
+    private func segment(hidden: Bool) -> some View {
+        Rectangle()
+            .fill(hidden ? Color.clear : SharpitColor.outline)
+            .frame(width: 1)
+    }
+
+    @ViewBuilder
+    private var dot: some View {
+        switch mark {
+        case .done: Circle().fill(SharpitColor.statusGoodMark)
+        case .missed: Circle().fill(SharpitColor.statusWatchMark)
+        case .today:
+            Circle().strokeBorder(SharpitColor.foreground, lineWidth: 4)
+        case .ahead: Circle().strokeBorder(SharpitColor.slate, lineWidth: 1.5)
+        case .rest: Circle().strokeBorder(SharpitColor.outline, lineWidth: 1.5)
+        }
     }
 }
 
@@ -780,22 +936,26 @@ private struct PlanDayRow: View {
 /// nothing recorded to read yet.
 private struct PlanEntryRow: View {
     let entry: PlanEntry
+    let day: Date
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let onSelect: (PlanSelection) -> Void
     @Environment(\.planCatchUp) private var catchUpAction
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            card
+        VStack(alignment: .leading, spacing: 0) {
+            link
             if let catchUpAction, let catchUp = PlanCatchUp.offer(for: entry) {
                 PlanCatchUpButton(catchUp: catchUp, action: catchUpAction)
+                    .padding(.bottom, SharpitSpacing.xs)
             }
         }
     }
 
+    private var line: PlanTimelineLine { PlanTimelineLine(entry: entry, day: day) }
+
     @ViewBuilder
-    private var card: some View {
+    private var link: some View {
         switch entry {
         case .executed(let executed):
             NavigationLink {
@@ -806,260 +966,120 @@ private struct PlanEntryRow: View {
                     tokenProvider: tokenProvider
                 )
             } label: {
-                PlanExecutedCard(entry: executed)
+                line
             }
             .buttonStyle(.sharpitPressable)
-        case .planned(let session):
-            Button { onSelect(.session(session)) } label: {
-                PlanSessionCard(session: session, state: .planned)
-            }
-            .buttonStyle(.sharpitPressable)
-        case .missed(let session):
-            Button { onSelect(.session(session)) } label: {
-                PlanSessionCard(session: session, state: .missed)
-            }
-            .buttonStyle(.sharpitPressable)
+        case .planned(let session), .missed(let session):
+            Button { onSelect(.session(session)) } label: { line }
+                .buttonStyle(.sharpitPressable)
         case .brick(let brick):
-            Button { onSelect(.brick(brick)) } label: {
-                PlanBrickCard(brick: brick)
-            }
-            .buttonStyle(.sharpitPressable)
+            Button { onSelect(.brick(brick)) } label: { line }
+                .buttonStyle(.sharpitPressable)
         case .doneBrick(let brick):
-            Button { onSelect(.doneBrick(brick)) } label: {
-                PlanDoneBrickCard(brick: brick)
-            }
-            .buttonStyle(.sharpitPressable)
+            Button { onSelect(.doneBrick(brick)) } label: { line }
+                .buttonStyle(.sharpitPressable)
         }
     }
 }
 
-/// What was done. When it came from the plan, the execution score rides along — that is
-/// the whole reason the activity absorbs its prescription instead of sitting next to it.
-private struct PlanExecutedCard: View {
-    let entry: PlanExecutedEntry
+/// One line of the rail: the day and the sport above, the session as the title, and at the
+/// end what it stands for — a status once it is behind, its length while it is ahead.
+private struct PlanTimelineLine: View {
+    let entry: PlanEntry
+    let day: Date
 
-    private func summary(showsPlanned: Bool) -> some View {
-        HStack(spacing: SharpitSpacing.xs) {
-            Text(entry.activity.type.label)
-            if let duration = entry.activity.duration {
-                Text("\(Int((duration / 60).rounded())) min")
-            }
-            if showsPlanned, let plannedTitle = entry.plannedTitle {
-                Text("·")
-                Text("Prévu : \(plannedTitle)")
-            }
+    private var isToday: Bool { Calendar.current.isDateInToday(day) }
+
+    /// « Natation · Technique 2 400 m »: the sport, then the session's own name.
+    private var title: String {
+        switch entry {
+        case .executed(let executed):
+            ActivitySheetReadout.title(sport: executed.activity.type.label, title: executed.activity.title)
+        case .planned(let session), .missed(let session):
+            ActivitySheetReadout.title(sport: session.displayType, title: session.title)
+        case .brick(let brick): brick.chain
+        case .doneBrick(let brick): brick.chain
         }
-        .lineLimit(1)
+    }
+
+    /// « Lun. 10 », with the start time today and « séance clé » where they are known.
+    private var overline: String {
+        var parts = [PlanTimelineReadout.dayLabel(day)]
+        switch entry {
+        case .executed, .doneBrick:
+            break
+        case .planned(let session), .missed(let session):
+            if isToday, let time = session.startTime { parts.append(time) }
+            if session.isKey { parts.append(String(localized: "séance clé")) }
+        case .brick(let brick):
+            if brick.isKey { parts.append(String(localized: "séance clé")) }
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private var isMissed: Bool {
+        PlanTimelineReadout.mark(for: entry, on: day) == .missed
     }
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            CliniqueSportTile(symbol: entry.activity.type.symbolName, size: 36)
-
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                Text(entry.activity.title ?? entry.activity.type.label)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(overline)
+                    .font(SharpitTypography.system(size: 13, weight: isToday ? .semibold : .regular, relativeTo: .caption))
+                    .foregroundStyle(isToday ? SharpitColor.foreground : SharpitColor.slate)
+                    .lineLimit(1)
+                Text(title)
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
+                    .foregroundStyle(isMissed ? SharpitColor.slate : SharpitColor.foreground)
+                    .multilineTextAlignment(.leading)
                     .lineLimit(2)
-                // A narrow row (iPhone mini) drops the planned title rather than break the sport and duration.
-                ViewThatFits(in: .horizontal) {
-                    summary(showsPlanned: true)
-                    summary(showsPlanned: false)
-                }
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
             }
+            Spacer(minLength: SharpitSpacing.xs)
+            trailing
+        }
+        .padding(.vertical, 12)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+    }
 
-            Spacer(minLength: 0)
-
-            if let score = entry.complianceScore {
-                PlanComplianceMark(score: score)
-            } else if entry.wasPlanned {
-                CliniqueStatusPill(String(localized: "Liée"), status: .unknown)
+    @ViewBuilder
+    private var trailing: some View {
+        switch entry {
+        case .executed(let executed):
+            if let score = executed.complianceScore {
+                // Green from 85: the session followed its plan.
+                CliniqueStatusPill("\(Int(score.rounded())) / 100", status: score >= 85 ? .good : .watch)
             } else {
-                Image(systemName: "checkmark")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.primary)
+                CliniqueStatusPill(String(localized: "Fait"), status: .good)
+            }
+        case .doneBrick:
+            CliniqueStatusPill(String(localized: "Fait"), status: .good)
+        case .missed:
+            CliniqueStatusPill(String(localized: "Non réalisée"), status: .watch)
+        case .brick(let brick) where brick.isMissed:
+            CliniqueStatusPill(String(localized: "Non réalisé"), status: .watch)
+        case .planned(let session):
+            ahead(minutes: session.durationMin)
+        case .brick(let brick):
+            ahead(minutes: brick.totalDurationMin)
+        }
+    }
+
+    private func ahead(minutes: Int?) -> some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            if let minutes {
+                Text(PlanWeekTotals.duration(minutes: minutes))
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+            if isToday {
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.foreground)
                     .accessibilityHidden(true)
             }
         }
-        .padding(.vertical, SharpitSpacing.xxs)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityAddTraits(.isButton)
-    }
-
-    private var accessibilityLabel: String {
-        var parts = [String(localized: "Séance réalisée"), entry.activity.title ?? entry.activity.type.label]
-        if let score = entry.complianceScore {
-            parts.append(String(localized: "exécution \(Int(score.rounded())) sur 100"))
-        }
-        return parts.joined(separator: ", ")
-    }
-}
-
-/// The execution score, as a figure in a status pill rather than a ring — `design.md` keeps
-/// radial gauges out of list rows. Green from 85: the session followed its plan.
-private struct PlanComplianceMark: View {
-    let score: Double
-
-    var body: some View {
-        CliniqueStatusPill("\(Int(score.rounded())) / 100", status: score >= 85 ? .good : .unknown)
-            .accessibilityHidden(true)
-    }
-}
-
-private struct PlanSessionCard: View {
-    enum State {
-        case planned
-        case missed
-    }
-
-    let session: V1PlannedSessionItem
-    var state: State = .planned
-
-    private func meta(showsType: Bool) -> some View {
-        HStack(spacing: SharpitSpacing.xs) {
-            if session.isKey { CliniqueStatusPill(String(localized: "Clé"), status: .pro) }
-            if showsType { Text(session.displayType) }
-            if let durationMin = session.durationMin { Text("\(durationMin) min") }
-            if state == .missed { Text("Non réalisée") }
-        }
-        .lineLimit(1)
-    }
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            CliniqueSportTile(symbol: session.symbolName, size: 36, isDimmed: state == .missed)
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                Text(session.title ?? session.displayType)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(
-                        state == .missed ? SharpitColor.slate : SharpitColor.foreground
-                    )
-                    .lineLimit(2)
-                // A narrow row drops the sport, which the glyph already says, rather than break a word.
-                ViewThatFits(in: .horizontal) {
-                    meta(showsType: true)
-                    meta(showsType: false)
-                }
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.slate)
-                .accessibilityHidden(true)
-        }
-        .padding(.vertical, SharpitSpacing.xxs)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-    }
-}
-
-/// A brick in the day's list: one card for the chain, as it is one session to do — the
-/// legs named in order, their total under them.
-private struct PlanBrickCard: View {
-    let brick: PlanBrick
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            VStack(spacing: 2) {
-                ForEach(Array(brick.legs.enumerated()), id: \.offset) { index, leg in
-                    if index > 0 {
-                        Rectangle()
-                            .fill(brick.isMissed ? SharpitColor.slate.opacity(0.4) : SharpitColor.primary.opacity(0.5))
-                            .frame(width: 1.5, height: 6)
-                    }
-                    Image(sharpitSymbol: leg.symbolName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(brick.isMissed ? SharpitColor.slate : SharpitColor.primary)
-                }
-            }
-            .frame(width: 28)
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                Text(brick.chain)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(brick.isMissed ? SharpitColor.slate : SharpitColor.foreground)
-                    .lineLimit(2)
-                HStack(spacing: SharpitSpacing.xs) {
-                    CliniqueStatusPill(String(localized: "Brick"), status: .unknown)
-                    if brick.isKey { CliniqueStatusPill(String(localized: "Clé"), status: .pro) }
-                    Text(brick.legs.map { leg in leg.durationMin.map { "\($0)" } ?? "–" }.joined(separator: " + ") + " min")
-                    if brick.isMissed { Text("Non réalisé") }
-                }
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.slate)
-                .accessibilityHidden(true)
-        }
-        .padding(.vertical, SharpitSpacing.xxs)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "Brick, \(brick.chain)" + (brick.isKey ? String(localized: ", séance clé") : "")
-                + (brick.totalDurationMin.map { String(localized: ", \($0) minutes") } ?? "")
-        )
-        .accessibilityAddTraits(.isButton)
-    }
-}
-
-/// A brick done, in the day's list: one card for the chain it was, as it was one session —
-/// the legs as recorded, their total under them.
-private struct PlanDoneBrickCard: View {
-    let brick: PlanDoneBrick
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            VStack(spacing: 2) {
-                ForEach(Array(brick.symbolNames.enumerated()), id: \.offset) { index, symbol in
-                    if index > 0 {
-                        Rectangle()
-                            .fill(SharpitColor.primary.opacity(0.5))
-                            .frame(width: 1.5, height: 6)
-                    }
-                    Image(sharpitSymbol: symbol)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(SharpitColor.primary)
-                }
-            }
-            .frame(width: 28)
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                Text(brick.chain)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(2)
-                HStack(spacing: SharpitSpacing.xs) {
-                    CliniqueStatusPill(String(localized: "Brick réalisé"), status: .good)
-                    if let totalDurationMin = brick.totalDurationMin {
-                        Text("\(totalDurationMin) min")
-                    }
-                }
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "checkmark")
-                .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.primary)
-                .accessibilityHidden(true)
-            Image(systemName: "chevron.right")
-                .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.slate)
-                .accessibilityHidden(true)
-        }
-        .padding(.vertical, SharpitSpacing.xxs)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Brick réalisé, \(brick.chain)" + (brick.totalDurationMin.map { String(localized: ", \($0) minutes") } ?? ""))
-        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -1077,10 +1097,11 @@ private struct PlanLoadingView: View {
                 }
             }
             .redacted(reason: .placeholder)
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.top, SharpitSpacing.md)
+            .padding(.horizontal, SharpitSpacing.lg)
+            .padding(.top, 96)
         }
         .modifier(ScrollUnderGlass())
+        .cliniqueSheet(wash: .neutral, height: 220)
         .accessibilityLabel("Chargement du plan")
     }
 }

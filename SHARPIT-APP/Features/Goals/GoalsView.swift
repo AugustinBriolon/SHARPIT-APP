@@ -25,13 +25,19 @@ struct GoalsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            VStack(alignment: .leading, spacing: 26) {
                 if let next = store.nextRace {
                     NavigationLink(value: GoalRoute.detail(next)) {
                         NextRaceCard(goal: next)
                     }
                     .buttonStyle(.sharpitPressable)
                     .revealed(hasAppeared, index: 0)
+                } else if !(store.goals.isEmpty && store.isLoading) {
+                    Text("Objectifs")
+                        .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                        .tracking(-0.6)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
                 }
 
                 if let timeline = store.seasonTimeline, !timeline.steps.isEmpty {
@@ -77,23 +83,28 @@ struct GoalsView: View {
                         .revealed(hasAppeared, index: inProgress.count + store.completedGoals.count + 3)
                 }
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.horizontal, 24)
             .padding(.top, SharpitSpacing.xs)
-            .padding(.bottom, SharpitSpacing.xl)
+            .padding(.bottom, 96)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .animation(SharpitMotion.reveal, value: store.goals)
         }
         .scrollIndicators(.hidden)
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: .coach, height: 240)
         .navigationTitle("Objectifs")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        // The bar carries the way back and « Nouvel objectif »; the race ahead opens the page.
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .principal) { Text("") }
+            ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink(value: GoalRoute.create) {
-                    Image(systemName: "plus")
+                    Text("Nouvel objectif")
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.foreground)
                 }
-                .accessibilityLabel("Ajouter un objectif")
             }
         }
+        .cliniqueReturnButton(to: .plan, symbol: "calendar", label: String(localized: "Plan"))
         .navigationDestination(for: GoalRoute.self) { route in
             switch route {
             case .detail(let goal):
@@ -115,18 +126,30 @@ struct GoalsView: View {
         .onAppear { hasAppeared = true }
     }
 
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(SharpitTypography.sectionTitle)
+            .tracking(SharpitTypography.sectionTitleTracking)
+            .foregroundStyle(SharpitColor.foreground)
+            .accessibilityAddTraits(.isHeader)
+    }
+
     private func skeletonSection(_ title: String, goals: [V1Goal]) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("\(title) · \(goals.count)")
-            ForEach(goals) { GoalCard(goal: $0) }
+        VStack(alignment: .leading, spacing: 4) {
+            sectionTitle(title)
+            ForEach(goals) { goal in
+                CliniqueDivider()
+                GoalCard(goal: goal)
+            }
         }
     }
 
     private func goalList(title: String, goals: [V1Goal], startIndex: Int) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow("\(title) · \(goals.count)")
-            LazyVStack(spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: 4) {
+            sectionTitle(title)
+            LazyVStack(spacing: 0) {
                 ForEach(Array(goals.enumerated()), id: \.element.id) { index, goal in
+                    CliniqueDivider()
                     NavigationLink(value: GoalRoute.detail(goal)) {
                         GoalCard(goal: goal)
                     }
@@ -149,10 +172,11 @@ struct GoalsView: View {
     /// « Réalisations récentes »: each time a goal was reached, as the web lists them under its
     /// goals — the figure, the period, the day, and the session that did it when there is one.
     private var achievementList: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Réalisations récentes"))
-            LazyVStack(spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: 4) {
+            sectionTitle(String(localized: "Réalisations récentes"))
+            LazyVStack(spacing: 0) {
                 ForEach(store.recentAchievements) { achievement in
+                    if achievement.id != store.recentAchievements.first?.id { CliniqueDivider() }
                     if let activity = achievement.activity, store.sessionReader != nil {
                         NavigationLink(value: GoalRoute.activity(activity.id)) {
                             GoalAchievementRow(achievement: achievement, opensSession: true)
@@ -168,33 +192,18 @@ struct GoalsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: "flag.checkered")
-                .font(.system(size: 30, weight: .semibold))
-                .foregroundStyle(SharpitColor.primary)
-                .frame(width: 64, height: 64)
-                .background(SharpitColor.primary.opacity(0.12), in: Circle())
+        VStack(alignment: .leading, spacing: 14) {
             Text("Aucun objectif en cours")
-                .font(SharpitTypography.sectionTitle)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                 .foregroundStyle(SharpitColor.foreground)
             Text("Ajoute une course ou une cible chiffrée : le plan s'organise autour.")
-                .font(SharpitTypography.body)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.slate)
-                .multilineTextAlignment(.center)
-            NavigationLink(value: GoalRoute.create) {
-                Label("Ajouter un objectif", systemImage: "plus")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .padding(.horizontal, SharpitSpacing.md)
-                    .padding(.vertical, SharpitSpacing.sm)
-                    .foregroundStyle(SharpitColor.primaryForeground)
-                    .background(SharpitColor.primary, in: Capsule())
-            }
-            .buttonStyle(.sharpitPressable)
-            .padding(.top, SharpitSpacing.xs)
+                .fixedSize(horizontal: false, vertical: true)
+            NavigationLink(value: GoalRoute.create) { Text("Nouvel objectif") }
+                .buttonStyle(CliniqueButtonStyle(kind: .primary))
         }
-        .frame(maxWidth: .infinity)
-        .padding(SharpitSpacing.xl)
-        .sharpitSurface(.panelAlt)
+        .cliniqueCard()
     }
 }
 
@@ -230,105 +239,151 @@ enum GoalRoute: Hashable {
 
 // MARK: - Cards
 
-/// The race ahead, on the ink plate: days left, big, then what and where.
+/// The race ahead, opening the page: how far it is, what and when, the server's projected finish
+/// against the aim, the legs as one bar, and how far to trust it.
 private struct NextRaceCard: View {
     let goal: V1Goal
 
+    private var readout: RaceProjectionReadout? { goal.projection.map { RaceProjectionReadout($0) } }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack {
-                SharpitEyebrow(String(localized: "Prochain cap"), systemImage: "flag.checkered")
-                Spacer(minLength: 0)
-                if let role = goal.role {
-                    GoalRoleChip(role: role)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(GoalsReadout.lead(goal))
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                Text(GoalsReadout.title(goal))
+                    .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title, digits: true))
+                    .tracking(-0.5)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.leading)
+            }
+            if let readout {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(readout.finishLabel)
+                        .font(SharpitTypography.system(size: 46, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-1.2)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text([String(localized: "projeté"), goal.targetPerformance.flatMap { $0.isEmpty ? nil : String(localized: "objectif \($0)") }].compactMap(\.self).joined(separator: " · "))
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
                 }
+                let legs = readout.legs
+                if !legs.isEmpty {
+                    GeometryReader { geo in
+                        HStack(spacing: 3) {
+                            ForEach(legs) { leg in
+                                Capsule().fill(GoalsReadout.hue(leg.segment.sport))
+                                    .frame(width: max(4, (geo.size.width - CGFloat(legs.count - 1) * 3) * leg.segment.fraction))
+                            }
+                        }
+                    }
+                    .frame(height: 10)
+                    .accessibilityHidden(true)
+                    HStack(alignment: .top, spacing: SharpitSpacing.md) {
+                        ForEach(legs.filter { $0.segment.sport != nil }) { leg in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(leg.segment.label)
+                                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                                    .foregroundStyle(SharpitColor.slate)
+                                Text(GoalAnalyticsEngine.formatDuration(leg.segment.durationSec))
+                                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
+                                    .foregroundStyle(SharpitColor.foreground)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+                HStack(spacing: 10) {
+                    if let confidence = readout.confidenceLabel {
+                        CliniqueStatusPill(confidence.capitalizedFirst, status: goal.projection?.confidence == .low ? .watch : .good)
+                    }
+                    if let line = readout.trajectoryLine ?? readout.delta?.label {
+                        Text(line)
+                            .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                            .foregroundStyle(SharpitColor.slate)
+                    }
+                }
+            } else {
+                Text(GoalFormat.raceLine(goal))
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
             }
-            HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xs) {
-                Text(GoalFormat.daysValue(goal))
-                    .font(SharpitTypography.heroScore)
-                    .tracking(SharpitTypography.heroScoreTracking)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                    .contentTransition(.numericText())
-                Text(GoalFormat.daysUnit(goal))
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.5))
-            }
-            Text(goal.title)
-                .font(SharpitTypography.verdict)
-                .tracking(SharpitTypography.verdictTracking)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                .lineLimit(2)
-            Text(GoalFormat.raceLine(goal))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
     }
 }
 
-/// One goal: what it is, what it is for, and where it stands.
+/// How Objectifs words the race ahead.
+enum GoalsReadout {
+    /// « Prochaine course · dans 37 jours », « … · aujourd'hui ».
+    static func lead(_ goal: V1Goal) -> String {
+        let head = String(localized: "Prochaine course")
+        guard let days = goal.daysRemaining, days >= 0 else { return head }
+        switch days {
+        case 0: return String(localized: "\(head) · aujourd'hui")
+        case 1: return String(localized: "\(head) · demain")
+        default: return String(localized: "\(head) · dans \(days) jours")
+        }
+    }
+
+    /// « Triathlon M, 21 décembre »; the name alone without a day.
+    static func title(_ goal: V1Goal) -> String {
+        guard let day = goal.targetDate?.sharpitFormatted(.dateTime.day().month(.wide)) else { return goal.title }
+        return "\(goal.title), \(day)"
+    }
+
+    /// A leg's hue on the bar: a data mark, so the pillars' hues; a transition stays quiet.
+    static func hue(_ sport: V1ActivityType?) -> Color {
+        switch sport {
+        case .swim?: SharpitColor.pillarSleep
+        case .bike?: SharpitColor.pillarRecovery
+        case .run?: SharpitColor.pillarNutrition
+        default: SharpitColor.outline
+        }
+    }
+}
+
+/// One goal as a line: where it stands as a ring, what it is, and its day at the trailing edge.
 private struct GoalCard: View {
     let goal: V1Goal
 
     var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            GoalBadge(goal: goal)
+        HStack(alignment: .center, spacing: 16) {
+            if goal.isReached {
+                Image(systemName: "checkmark.circle")
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundStyle(SharpitColor.pillarRecovery)
+                    .frame(width: 44)
+                    .accessibilityHidden(true)
+            } else {
+                CliniqueRing(pillar: goal.kind == .race ? .coach : .recovery, fraction: goal.kind == .metric ? goal.progressFraction : nil, symbol: goal.kind == .race ? "flag" : "arrow.up.right", size: 44, animated: false)
+            }
             VStack(alignment: .leading, spacing: 3) {
                 Text(goal.title)
-                    .font(SharpitTypography.bodyEmphasis)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 Text(goal.kind == .race ? GoalFormat.raceCardLine(goal) : GoalFormat.metricLine(goal))
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
                     .foregroundStyle(SharpitColor.slate)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                    .monospacedDigit()
             }
             Spacer(minLength: SharpitSpacing.xs)
-            trailing
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-        .accessibilityElement(children: .combine)
-    }
-
-    @ViewBuilder
-    private var trailing: some View {
-        if goal.isReached {
-            Image(systemName: "checkmark.seal.fill")
-                .font(.title3)
-                .foregroundStyle(SharpitColor.foreground)
-        } else if goal.kind == .metric, let progress = goal.progressFraction {
-            ZStack {
-                SharpitScoreRing(fraction: progress, tone: SharpitColor.primary, lineWidth: 3.5)
-                Text("\(Int((progress * 100).rounded()))")
-                    .font(SharpitTypography.meta.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(SharpitColor.foreground)
-            }
-            .frame(width: 44, height: 44)
-        } else if let days = goal.daysRemaining, days >= 0 {
-            VStack(alignment: .trailing, spacing: 0) {
-                Text("\(days)")
-                    .font(SharpitTypography.data)
-                    .tracking(SharpitTypography.dataTracking)
-                    .foregroundStyle(days <= 7 ? SharpitColor.signalCaution : SharpitColor.foreground)
-                    .monospacedDigit()
-                Text(days == 1 ? "jour" : "jours")
-                    .font(SharpitTypography.meta)
+            if !goal.isReached, let date = goal.targetDate {
+                Text(date.sharpitFormatted(.dateTime.month(.wide)))
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
                     .foregroundStyle(SharpitColor.slate)
             }
         }
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -338,36 +393,34 @@ private struct GoalAchievementRow: View {
     let opensSession: Bool
 
     var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            Image(systemName: "trophy")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(SharpitColor.foreground)
-                .frame(width: 38, height: 38)
-                .sharpitConcentricBackground(SharpitColor.signalRecovery.opacity(0.13), minimum: 10)
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 22, weight: .regular))
+                .foregroundStyle(SharpitColor.pillarRecovery)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(achievement.goal.title)
-                    .font(SharpitTypography.bodyEmphasis)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 Text(GoalAchievementReadout.line(achievement))
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
                     .foregroundStyle(SharpitColor.slate)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                    .monospacedDigit()
             }
             Spacer(minLength: SharpitSpacing.xs)
             if opensSession {
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(SharpitColor.slate.opacity(0.5))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
                     .accessibilityHidden(true)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
+        .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
     }
 }

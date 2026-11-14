@@ -315,38 +315,21 @@ struct PlannedSessionDrawer: View {
                     isLoadingBreakdown: isLoadingBreakdown,
                     routines: preview.routines ?? loadedBreakdown?.routines,
                     onRoutineStatus: routineStatusRecorder
-                ) {
-                    // Without an id the coach cannot be told *which* session, and a tag
-                    // naming the wrong one is worse than no tag.
-                    if let sessionId = preview.sessionId {
-                        CoachDiscussButton(title: String(localized: "Discuter de cette séance")) {
-                            onDiscussWithCoach(
-                                CoachDiscuss.describe(
-                                    .plannedSession(sessionId: sessionId),
-                                    name: preview.title
-                                )
-                            )
-                            dismiss()
-                        }
-                    }
-                }
+                ) { EmptyView() }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(SharpitSpacing.pageInset)
+            .padding(.horizontal, 24)
+            .padding(.top, SharpitSpacing.xs)
+            .padding(.bottom, SharpitSpacing.lg)
         }
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: preview.isKey ? .coach : .neutral, height: 200)
         // The title moves to the bar once the header has scrolled away, as a large title does.
         .onScrollGeometryChange(for: Bool.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top > Self.headerHeight
         } action: { _, isPast in
             withAnimation(SharpitMotion.fade) { isTitleInBar = isPast }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if let dockAction {
-                SharpitActionDock { dockButton(dockAction) }
-                    .transition(.opacity)
-            }
-        }
+        .safeAreaInset(edge: .bottom, spacing: 0) { dock }
         .animation(SharpitMotion.reveal, value: steps.count)
         .animation(SharpitMotion.reveal, value: canFollowOnPhone)
         .task { await fetchBreakdownIfMissing() }
@@ -418,11 +401,61 @@ struct PlannedSessionDrawer: View {
         return watch == nil ? nil : .watch
     }
 
+    /// The session's actions in one glass bar: the one that readies it in ink, « Déplacer »
+    /// where the plan can be written, and the coach.
     @ViewBuilder
+    private var dock: some View {
+        let moving = editing
+        if dockAction != nil || moving != nil || preview.sessionId != nil {
+            HStack(spacing: 8) {
+                if let dockAction {
+                    dockButton(dockAction)
+                }
+                if let moving {
+                    Menu {
+                        ForEach(PlanMoveDays.days(for: moving.session), id: \.self) { day in
+                            Button(PlanMoveDays.label(day)) { moving.onSaved(moving.editor.move(moving.session, to: day)) }
+                        }
+                    } label: {
+                        Text("Déplacer")
+                            .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .padding(.horizontal, 18)
+                            .frame(maxWidth: dockAction == nil ? .infinity : nil, minHeight: 52)
+                            .background(SharpitColor.card, in: Capsule())
+                    }
+                }
+                // Without an id the coach cannot be told *which* session, and a tag naming the
+                // wrong one is worse than no tag.
+                if let sessionId = preview.sessionId {
+                    if dockAction == nil, moving == nil { Spacer(minLength: 0) }
+                    Button {
+                        onDiscussWithCoach(CoachDiscuss.describe(.plannedSession(sessionId: sessionId), name: preview.title))
+                        dismiss()
+                    } label: {
+                        Image(systemName: "bubble.left")
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .frame(width: 52, height: 52)
+                            .background(SharpitColor.card, in: Circle())
+                    }
+                    .buttonStyle(.sharpitPressable)
+                    .accessibilityLabel("Discuter de cette séance")
+                    .accessibilityHint("Ouvre le coach avec ce sujet")
+                }
+            }
+            .padding(6)
+            .sharpitGlassCapsule()
+            .padding(.horizontal, 16)
+            .padding(.bottom, 4)
+            .transition(.opacity)
+        }
+    }
+
     private func dockButton(_ action: DockAction) -> some View {
-        switch action {
-        case .guided:
-            SharpitPrimaryButton(title: String(localized: "Lancer la séance"), trailingSymbol: "play.circle.fill") {
+        Button {
+            switch action {
+            case .guided:
                 let guided = GuidedStrengthSession.make(
                     title: preview.title,
                     plannedSessionId: preview.sessionId,
@@ -435,19 +468,21 @@ struct PlannedSessionDrawer: View {
                 } else {
                     guidedSession = guided
                 }
-            }
-            .accessibilityHint("Ouvre le suivi guidé sur le téléphone")
-        case .watch:
-            // Once on the watch, a resend is the quieter offer.
-            SharpitPrimaryButton(
-                title: watchState.menuTitle,
-                style: watchState == .sent ? .secondary : .primary,
-                isBusy: isSendingToWatch
-            ) {
+            case .watch:
                 requestWatchSend()
             }
-            .disabled(isSendingToWatch)
+        } label: {
+            Group {
+                if isSendingToWatch {
+                    ProgressView().tint(SharpitColor.primaryForeground)
+                } else {
+                    Text(action == .guided ? String(localized: "Lancer la séance") : watchState.menuTitle)
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
+        .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+        .disabled(isSendingToWatch)
     }
 
     private var watchState: WatchPushState {

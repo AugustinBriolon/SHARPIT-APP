@@ -1,28 +1,27 @@
 import SwiftUI
 
-/// The session's breakdown — what to actually do, in order.
-///
-/// A rail of connected marks rather than a bulleted list: the steps happen one after the
-/// other, and the shape should say so before the words do. Targets are already resolved
-/// server-side, so nothing here computes a band.
+/// The session's breakdown — what to actually do, in order, as a table on the sheet: how long,
+/// what, at what. Targets are already resolved server-side, so nothing here computes a band.
 struct PlannedSessionBreakdownList: View {
     let steps: [V1PlannedSessionStep]
     let derived: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: SharpitSpacing.xs) {
-                SharpitEyebrow(String(localized: "Déroulé"))
+                Text("Déroulé")
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 0)
                 if derived {
                     PlannedStepsEstimatedTag()
                 }
             }
-            PlannedStepRail(steps: steps)
+            PlannedStepTable(steps: steps)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 }
 
@@ -39,141 +38,96 @@ struct PlannedStepsEstimatedTag: View {
     }
 }
 
-/// The steps on their rail, without a panel — the breakdown's own body, and a brick leg's.
+/// The steps as lines split by hairlines — the breakdown's own body, and a brick leg's.
 ///
-/// A repeated set is one mark on the rail, its steps held together in a well under the
-/// count: the block and its recovery are done five times, as a pair.
-struct PlannedStepRail: View {
+/// A repeated set is named once (« 5 fois ») over the lines it repeats, which a rule down their
+/// leading edge holds together: the block and its recovery are done five times, as a pair.
+struct PlannedStepTable: View {
     let steps: [V1PlannedSessionStep]
 
-    private var sets: [PlannedStepSet] { PlannedStepSet.sets(from: steps) }
-
     var body: some View {
-        let sets = sets
+        let sets = PlannedStepSet.sets(from: steps)
         VStack(spacing: 0) {
             ForEach(Array(sets.enumerated()), id: \.element.id) { index, set in
-                RailRow(isFirst: index == 0, isLast: index == sets.count - 1, isRepeat: set.isRepeated) {
-                    if set.isRepeated {
-                        RepeatedSet(set: set)
-                    } else {
-                        ForEach(set.steps) { PlannedStepContent(step: $0) }
-                    }
+                if index > 0 { CliniqueDivider() }
+                if set.isRepeated {
+                    RepeatedSet(set: set)
+                } else {
+                    ForEach(set.steps) { PlannedStepLine(step: $0) }
                 }
             }
         }
     }
 }
 
-/// A mark on a line. The line stops at the first and last marks so the rail reads as a
-/// sequence with a beginning and an end, not as a fragment of something longer.
-private struct RailRow<Content: View>: View {
-    let isFirst: Bool
-    let isLast: Bool
-    let isRepeat: Bool
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            VStack(spacing: 0) {
-                Rectangle()
-                    .fill(isFirst ? Color.clear : SharpitColor.divider)
-                    .frame(width: 1, height: isRepeat ? 3 : 6)
-                mark
-                Rectangle()
-                    .fill(isLast ? Color.clear : SharpitColor.divider)
-                    .frame(width: 1)
-                    .frame(maxHeight: .infinity)
-            }
-            .frame(width: 13)
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) { content }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, isLast ? 0 : SharpitSpacing.md)
-        }
-    }
-
-    @ViewBuilder
-    private var mark: some View {
-        if isRepeat {
-            Image(systemName: "repeat")
-                .font(.system(size: 7, weight: .semibold))
-                .foregroundStyle(SharpitColor.primaryForeground)
-                .frame(width: 13, height: 13)
-                .background(SharpitColor.primary, in: Circle())
-        } else {
-            Circle()
-                .fill(SharpitColor.primary)
-                .frame(width: 7, height: 7)
-        }
-    }
-}
-
-/// « 5 × » over the steps it repeats, held in one well so they read as a pair.
+/// « 5 fois » over the steps it repeats.
 private struct RepeatedSet: View {
     let set: PlannedStepSet
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                Text("\(set.repeatCount)")
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(SharpitColor.primary)
-                Text("fois")
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(SharpitColor.slate)
+        VStack(alignment: .leading, spacing: 0) {
+            Label("\(set.repeatCount) fois", systemImage: "repeat")
+                .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .footnote, digits: true))
+                .foregroundStyle(SharpitColor.slate)
+                .padding(.top, 14)
+            VStack(spacing: 0) {
+                ForEach(Array(set.steps.enumerated()), id: \.element.id) { index, step in
+                    if index > 0 { CliniqueDivider() }
+                    PlannedStepLine(step: step)
+                }
             }
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                ForEach(set.steps) { PlannedStepContent(step: $0) }
+            .padding(.leading, 12)
+            .overlay(alignment: .leading) {
+                Capsule().fill(SharpitColor.foreground).frame(width: 2).padding(.vertical, 14)
             }
-            .padding(SharpitSpacing.sm)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.small)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(set.repeatCount) fois : " + set.steps.map(\.spokenLabel).joined(separator: String(localized: ", puis ")))
     }
 }
 
-/// One step's words: what, how long, at what, and the note beside it.
+/// One step's line: how long, what (and the note under it), at what.
 ///
-/// Strength labels are often long French movement names; they must wrap beside the
-/// detail rather than widen the drawer past the screen (horizontal scroll).
-private struct PlannedStepContent: View {
+/// Strength labels are often long French movement names; they wrap between the two figures
+/// rather than widen the drawer past the screen.
+private struct PlannedStepLine: View {
     let step: V1PlannedSessionStep
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            HStack(alignment: .top, spacing: SharpitSpacing.xs) {
-                if let thumb = ExerciseMediaCatalog.thumbURL(name: step.label) {
-                    GuidedExerciseThumbView(url: thumb, size: 40)
-                }
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            if let detail = step.detail {
+                Text(detail)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize()
+                    .frame(minWidth: 58, alignment: .leading)
+            }
+            if let thumb = ExerciseMediaCatalog.thumbURL(name: step.label) {
+                GuidedExerciseThumbView(url: thumb, size: 40)
+            }
+            VStack(alignment: .leading, spacing: 2) {
                 Text(step.label)
-                    .font(SharpitTypography.bodyEmphasis)
+                    .font(SharpitTypography.system(size: 16, weight: step.target == nil ? .regular : .semibold, relativeTo: .callout))
                     .foregroundStyle(SharpitColor.foreground)
                     .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if let detail = step.detail {
-                    Text(detail)
-                        .font(SharpitTypography.instrument)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .layoutPriority(1)
-                        .fixedSize(horizontal: true, vertical: false)
+                if let notes = step.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             if let target = step.target {
                 Text(target)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if let notes = step.notes, !notes.isEmpty {
-                Text(notes)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 150, alignment: .trailing)
+                    .fixedSize(horizontal: true, vertical: false)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 16)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(step.spokenLabel)
     }

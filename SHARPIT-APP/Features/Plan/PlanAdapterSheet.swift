@@ -20,24 +20,55 @@ struct PlanAdapterSheet: View {
     ]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                content
-                    .padding(.horizontal, SharpitSpacing.pageInset)
-                    .padding(.vertical, SharpitSpacing.md)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom, spacing: 0) { actions }
-            .background(SharpitCanvasBackground())
-            .navigationTitle("Ajuster le planning")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { dismiss() }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Ajuster ton plan")
+                        .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
+                        .tracking(-0.4)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(lead)
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.trailing, 56)
+                content
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 34)
+            .padding(.bottom, SharpitSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) { actions }
+        .background(SharpitColor.card)
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .frame(width: 44, height: 44)
+                    .background(SharpitColor.tile, in: Circle())
+            }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityLabel("Fermer")
+            .padding(.trailing, 22)
+            .padding(.top, 22)
+        }
+        .presentationDragIndicator(.visible)
         .sharpitSheet()
+    }
+
+    /// The coach's summary once it has one; before, what the sheet does.
+    private var lead: String {
+        switch store.phase {
+        case .ready(let result, _), .applying(let result, _):
+            if !result.summary.isEmpty { return result.summary }
+        default: break
+        }
+        return String(localized: "Le coach relit ce que tu as fait ces derniers jours et propose de modifier tes séances des deux prochaines semaines, sans tout effacer.")
     }
 
     @ViewBuilder
@@ -80,10 +111,6 @@ struct PlanAdapterSheet: View {
 
     private func request(error: String?) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            Text("Le coach relit ce que tu as fait ces derniers jours et propose de modifier tes séances des deux prochaines semaines, sans tout effacer.")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .fixedSize(horizontal: false, vertical: true)
             SharpitFormField(
                 String(localized: "Ce qui a changé (optionnel)"),
                 placeholder: String(localized: "Fatigue, douleur, déplacement…"),
@@ -98,13 +125,7 @@ struct PlanAdapterSheet: View {
     }
 
     private func proposal(result: V1AdaptPlanResult, selected: Set<Int>) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            if !result.summary.isEmpty {
-                Text(result.summary)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(3)
-            }
+        VStack(alignment: .leading, spacing: 12) {
             if result.changes.isEmpty {
                 ContentUnavailableView(
                     String(localized: "Rien à changer"),
@@ -112,11 +133,14 @@ struct PlanAdapterSheet: View {
                     description: Text("Tes séances prévues tiennent compte de ce que tu as fait.")
                 )
             } else {
-                VStack(spacing: SharpitSpacing.xs) {
-                    ForEach(Array(result.changes.enumerated()), id: \.offset) { index, change in
-                        AdjustmentRow(change: change, isSelected: selected.contains(index)) {
-                            store.toggle(index)
-                        }
+                Text("Ce que je te propose")
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
+                ForEach(Array(result.changes.enumerated()), id: \.offset) { index, change in
+                    AdjustmentRow(change: change, isSelected: selected.contains(index)) {
+                        store.toggle(index)
                     }
                 }
             }
@@ -133,37 +157,45 @@ struct PlanAdapterSheet: View {
         switch store.phase {
         case .idle, .failed:
             if !store.needsPro {
-                SharpitActionDock {
-                    SharpitPrimaryButton(title: String(localized: "Proposer des ajustements")) {
-                        Task { await store.start() }
-                    }
+                dock {
+                    Button { Task { await store.start() } } label: { Text("Proposer des ajustements").frame(maxWidth: .infinity) }
+                        .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
                 }
             }
         case .analyzing:
             EmptyView()
         case .ready(let result, let selected), .applying(let result, let selected):
             let busy = if case .applying = store.phase { true } else { false }
-            SharpitActionDock {
+            dock {
                 if result.changes.isEmpty {
-                    SharpitPrimaryButton(title: String(localized: "Terminé")) {
+                    Button {
                         store.reset()
                         dismiss()
-                    }
+                    } label: { Text("Terminé").frame(maxWidth: .infinity) }
+                        .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
                 } else {
-                    SharpitPrimaryButton(
-                        title: busy ? String(localized: "Application…") : String(localized: "Appliquer \(selected.count) modification\(selected.count > 1 ? "s" : "")"),
-                        isBusy: busy
-                    ) {
-                        Task { await apply() }
+                    Button { Task { await apply() } } label: {
+                        Group {
+                            if busy { ProgressView().tint(SharpitColor.primaryForeground) } else { Text(PlanAdapterReadout.apply(selected.count)) }
+                        }
+                        .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
                     .disabled(selected.isEmpty || busy)
                     Button("Recommencer") { store.reset() }
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.slate)
+                        .buttonStyle(CliniqueButtonStyle(kind: .plain))
                         .disabled(busy)
                 }
             }
         }
+    }
+
+    private func dock<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(spacing: 4) { content() }
+            .padding(.horizontal, 24)
+            .padding(.top, SharpitSpacing.xs)
+            .padding(.bottom, SharpitSpacing.xs)
+            .background(SharpitColor.card)
     }
 
     private func apply() async {
@@ -181,51 +213,75 @@ struct PlanAdapterSheet: View {
     }
 }
 
-/// One change the coach proposes: what it does and to which day, the session, why — and whether
-/// it is kept. The same shape as a generated session's row.
+/// How the adapter words its counts.
+nonisolated enum PlanAdapterReadout {
+    /// « Appliquer le changement », « Appliquer les 2 changements ».
+    static func apply(_ count: Int) -> String {
+        count == 1 ? String(localized: "Appliquer le changement") : String(localized: "Appliquer les \(count) changements")
+    }
+}
+
+/// One change the coach proposes, in a bordered card: its day and what it does as a pill, the
+/// session and why, then whether it is applied.
 private struct AdjustmentRow: View {
     let change: V1AdaptChange
     var isSelected: Bool?
     var onToggle: () -> Void = {}
 
-    private var heading: String {
-        guard let date = change.date.flatMap(TrainingDayId.date) else { return change.action.verb }
-        return "\(change.action.verb) · \(date.sharpitFormatted(.dateTime.weekday(.wide).day()))"
+    private var day: String {
+        change.date.flatMap(TrainingDayId.date)?.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst ?? ""
+    }
+
+    private var detail: String {
+        let duration = change.durationMin.flatMap { $0 > 0 && change.action != .remove ? "\(Int($0)) min" : nil }
+        return [duration, change.reason.isEmpty ? nil : change.reason].compactMap(\.self).joined(separator: " · ")
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            SharpitSportBadge(type: change.type ?? .other)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(heading)
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(change.action == .remove ? SharpitColor.signalRisk : SharpitColor.slate)
-                Text(change.title ?? String(localized: "Séance prévue"))
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .strikethrough(change.action == .remove)
-                    .lineLimit(2)
-                if !change.reason.isEmpty {
-                    Text(change.reason)
-                        .font(SharpitTypography.meta)
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(day)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
                         .foregroundStyle(SharpitColor.slate)
-                        .lineLimit(3)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    CliniqueStatusPill(change.action.verb, status: change.action == .remove ? .alert : .watch)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(change.title ?? String(localized: "Séance prévue"))
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(change.action == .remove ? SharpitColor.slate : SharpitColor.foreground)
+                        .strikethrough(change.action == .remove)
+                    if !detail.isEmpty {
+                        Text(detail)
+                            .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                            .foregroundStyle(SharpitColor.slate)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
-            Spacer(minLength: 0)
-            if let duration = change.durationMin, duration > 0, change.action != .remove {
-                Text("\(Int(duration)) min")
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(SharpitColor.foreground)
-            }
+            .padding(.bottom, 14)
             if let isSelected {
-                SharpitKeepToggle(isSelected: isSelected, action: onToggle)
+                CliniqueDivider()
+                Button(action: onToggle) {
+                    HStack {
+                        Text("Appliquer ce changement")
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.foreground)
+                        Spacer(minLength: SharpitSpacing.xs)
+                        Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 24, weight: .regular))
+                            .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.outline)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .padding(.top, 14)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-        .padding(SharpitSpacing.sm + 2)
-        .sharpitSurface(.panel)
-        .opacity(isSelected == false ? 0.55 : 1)
+        .cliniqueCard()
         .accessibilityElement(children: .contain)
     }
 }

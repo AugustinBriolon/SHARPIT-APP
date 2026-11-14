@@ -226,7 +226,7 @@ private struct BrickLegPanel: View {
             .accessibilityLabel("Étape \(index), \(leg.sport), \(leg.title)")
 
             if !leg.steps.isEmpty {
-                PlannedStepRail(steps: leg.steps)
+                PlannedStepTable(steps: leg.steps)
                     .transition(.opacity)
             } else if isLoading {
                 HStack(spacing: SharpitSpacing.xs) {
