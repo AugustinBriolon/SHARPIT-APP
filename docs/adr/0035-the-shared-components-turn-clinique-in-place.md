@@ -27,12 +27,14 @@ We will restyle the shared components in place, as ADR 0012 did for Ink & Lime, 
 - **Ink runs the controls.** A selected day, a check box, a chosen step, a progress bar and the chart line are ink (`primary` with `primaryForeground`). `SharpitPrimaryButton` is a capsule and its accent style is ink.
 - **Tiles are neutral.** `SharpitIconTile` and `SharpitSportBadge` draw an ink glyph on a round `tile`.
 - **Lime becomes the good status.** `SharpitPill`'s lime styles take the good status set; a data mark that was lime takes `statusGoodMark`, and `statusGoodForeground` where it is text. `SharpitInlineTag` (« Clé », « Brick ») takes the Pro set, the coach's mark.
-- **Labels are sentence case.** `SharpitEyebrow` is a slate caption.
+- **Labels are sentence case.** `SharpitEyebrow` is a slate caption, and no label is set in capitals.
+- **Ink cards read the dark values.** `sharpitSurface(.ink)` puts its content in the dark colour scheme, so slate, tiles and status marks stay legible on ink in light mode.
+- **A dial takes its pillar's hue** on an app screen (`SharpitTickGauge(tone:)`); the widgets keep lime.
 - **Left as they are:**
   - the sign-in screen, the launch mark and the app icon — the brand;
   - switches, which stay lime: an ink switch put a white knob on a white track in dark mode;
   - ink surfaces (`sharpitSurface(.ink)`) and what is drawn on them;
-  - `SharpitTickGauge` and `SharpitTypography`, shared with the widget extension;
+  - `SharpitTypography`, shared with the widget extension;
   - the widgets themselves.
 
 ## Options considered
@@ -57,7 +59,6 @@ We will restyle the shared components in place, as ADR 0012 did for Ink & Lime, 
 
 ### Negative
 
-- Uppercase tracked labels written inline (not through `SharpitEyebrow`) remain.
 - Ink hero cards (Santé's age, the weekly review) are not part of the Clinique mock-ups and still stand.
 - Only Résumé, Plan and Coach have a layout drawn for Clinique. Sommeil, Récupération and Activité carry a wash; the other screens have the colours, not yet the structure.
 - The snapshot references were recorded again; each was looked at.
