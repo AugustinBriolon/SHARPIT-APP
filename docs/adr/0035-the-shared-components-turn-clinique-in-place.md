@@ -30,11 +30,15 @@ We will restyle the shared components in place, as ADR 0012 did for Ink & Lime, 
 - **Labels are sentence case.** `SharpitEyebrow` is a slate caption, and no label is set in capitals.
 - **Ink cards read the dark values.** `sharpitSurface(.ink)` puts its content in the dark colour scheme, so slate, tiles and status marks stay legible on ink in light mode.
 - **A dial takes its pillar's hue** on an app screen (`SharpitTickGauge(tone:)`); the widgets keep lime.
+- **Type is plain SF Pro.** The mock-ups are set in a neutral grotesque; `SharpitTypography` drops the rounded design, in the widgets too.
+- **Tab icons are outlines** (`SharpitTabLabel`): the selected tab is told by its pill.
+- **Résumé and Plan are rebuilt on their mock-ups**: a backdrop band with the date and a rising sheet, four rings, a rail of days with week totals counted on the device (`PlanWeekTotals`).
+- **Every screen with a mock-up is built from it, not adapted to it.** The mock-up is rendered to an image and laid beside a capture of the app; what differs is fixed in the app, and a part the data did not carry is added rather than dropped (Santé's « Tendances » and marker tables, Plan's phase and race countdown, Sommeil's course by stage and its fourteen nights, Activité's records and weeks). Where no datum exists the nearest true one stands in, never an invented figure: Santé's « Score santé » ring reads the markers in their norm.
+- **Chrome follows the mock-ups**: a tab's name in the bar's row (`SharpitBarTitle`), separate glass circles (`SharpitBarGap`); a day screen carries the day as a capsule in the bar, hides the tab bar and floats a home button.
 - **Left as they are:**
   - the sign-in screen, the launch mark and the app icon — the brand;
   - switches, which stay lime: an ink switch put a white knob on a white track in dark mode;
   - ink surfaces (`sharpitSurface(.ink)`) and what is drawn on them;
-  - `SharpitTypography`, shared with the widget extension;
   - the widgets themselves.
 
 ## Options considered
@@ -60,7 +64,10 @@ We will restyle the shared components in place, as ADR 0012 did for Ink & Lime, 
 ### Negative
 
 - Ink hero cards (Santé's age, the weekly review) are not part of the Clinique mock-ups and still stand.
-- Only Résumé, Plan and Coach have a layout drawn for Clinique. Sommeil, Récupération and Activité carry a wash; the other screens have the colours, not yet the structure.
+- Screens rebuilt on their mock-up so far: Résumé, Plan, Coach, Activité and a session, Santé, Sommeil, Récupération, Nutrition, Journal, Paramètres, Connexions, Séance prévue, the paywall, Zones sensibles, Effort, the morning check-in, the plan adapter, the food search, the consent wall and the coach's memory. Objectifs, the guided strength session, the generator, the weekly review, thresholds, equipment, the onboarding and the empty / error states have the colours, not yet the structure.
+- Where a mock-up shows what the data does not carry (a session's intensity blocks, « mieux / pareil / pire » on a zone, caffeine's last time, a water goal), the part is left out or said from the nearest true datum; each feature note names it.
+- Résumé no longer shows the day's timeline or the nutrition card; nutrition is a ring that opens the food log.
+- A week's planned volume and load count a done session for what was recorded, since its prescription is not in the entries: the rings read slightly high against the original plan.
 - The snapshot references were recorded again; each was looked at.
 
 ### Neutral

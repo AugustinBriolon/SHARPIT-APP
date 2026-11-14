@@ -54,3 +54,10 @@ multipart to `/api/v1/food-log/import/myfitnesspal`, `MultipartFormData`). A day
 on the web) keeps its meals read-only (`NutritionMealView`); the day's own log wins once it holds an
 entry. A day without a log draws its own empty plate (never the scaffold's generic empty screen),
 which invites to scan or search a first food.
+
+**Ajouter un aliment, Clinique.** The add sheet's search follows its mock-up (`docs/adr/0035`): the
+meal as the title with a cross, a capsule search field beside the scanner, chips (« Tous », « Récents »,
+« Mes repas », « Mes aliments », « Autre… » for describe, quick add, create a food or a recipe), then
+the foods as lines split by hairlines — name, « 100 g · 124 kcal » and what it is, the score at the
+trailing edge (`FoodProductRow`, everywhere it is listed). A food still pushes its portion page: the
+mock-up's portion stepper docked on the search is not built.

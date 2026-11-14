@@ -20,3 +20,10 @@ plans; every amount is the App Store's `Product` (`ProPriceReadout` only derives
 the −X %, rounded down). The monthly's intro offer shows only when `isEligibleForIntroOffer` says
 the Apple Account can still take it, and is then preselected; otherwise the yearly is. Buying
 waits for `appAccountToken`. No haptic on choosing a plan (root rule: notches only).
+
+**Clinique.** The paywall follows its mock-up (`docs/adr/0035`): « SharpIt Pro » as a pill, the
+promise as the title, that the data stays free, four lines (coach, self-repairing plan, nutrition
+reading, biological age and weekly review) with a glyph in a data hue, the two plans as bordered cards
+with a radio mark and the saving as a pill, « Passer à Pro ». The onboarding's week (`ProWeekHero`)
+shows only when the paywall is opened with one. `SharpitScreenDemo pro` shows it without offers: the
+simulator has no App Store.

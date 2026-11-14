@@ -19,10 +19,20 @@ included). The points are evenly spaced in time, so the line runs faster where t
 
 **History.** Activité reads the history a page at a time (`activityPage`, 60 sessions, the server's
 `before` cursor) and the next page when the list's foot comes into view; a refresh asks the newest
-page again and keeps the older ones read. It opens on « Cette semaine », the tab's one ink card
-(sessions, time, distance, the days lit), then one card per month (`ActivityHistory`:
-months keyed by year and month, each with its count and time), its sessions as rows split by
-hairlines. Months are laid out lazily.
+page again and keeps the older ones read. It follows its mock-up: « Activité » in the bar's row with
+search and « + »; the sports done as chips (`ActivityFilterChips`, the chosen one ink, period and
+duration behind the last chip); up to three records between hairlines (`RecordsReadout.highlights`,
+opens Records); then the weeks (`ActivityHistory.weeks`: « Cette semaine », « Semaine du 3
+novembre », each with its count and time), a session a line — glyph, title, day and figures, and
+how it went against the plan as a pill (`ActivityRowReadout.standing`, « Libre » off plan).
+
+**A session.** Its head is centred: the verdict against the plan as a pill (opens the compliance),
+« Sport · Title », the day and hour; the figures three to a row between hairlines
+(`ActivityMetricGrid`); « Ta séance » as lines (effort and feeling, compliance); splits as a table
+(`ActivitySplitsSection`); the coach's analysis as a section. The curves are one plot
+(`ActivityChartsSection`): each chosen measure a line in its hue on its own scale
+(`ActivityCurve.level`), opening on the effort and the heart rate; the legend toggles a measure
+and, under the finger, reads its value; a table under the plot gives each one's average and best. The sheet's wash follows the verdict.
 
 **History filters.** Activité filters what it has read in place (`ActivityFilter`): the search
 field on the title and sport, and the bar's filter menu — a sport the athlete did (the most

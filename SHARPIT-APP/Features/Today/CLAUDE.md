@@ -48,11 +48,20 @@ body, stress and a note for the coach wait under « Ajouter un détail », in th
 own words (`WellnessDimension.label`). The button says « Choisis ton ressenti » until there is an
 answer; « Plus tard » is the bar's cancel action.
 
-**Clinique.** Résumé is the first screen swept (`docs/adr/0035`). The fold reads top to bottom on
-one sheet, whose wash follows the verdict (`VerdictReadout`): `VerdictHero` (status pill, decision,
-facts), `ResumeScoreRow` (one ring per overnight gauge, then Régularité as the week's active days
-over seven — the strip of dots is gone from this screen; a column opens Sommeil, Récupération or
-Plan), the morning proposal as a bordered card, then « Séance du jour » as rows split by hairlines
-(`SessionPlate`, `RestDayPlate`). The other cards — race day, plan horizon, trip conflict, the day's timeline,
-nutrition — are the shared bordered cards (`docs/adr/0035`). `SharpitLoadingInstrument` is the same shape with empty
-rings.
+**Clinique.** Résumé follows its mock-up (`docs/adr/0035`). The date and its chips sit on the
+backdrop (`CliniqueBackdrop`, ink on light), in the dark colour scheme; the day rises over it as a
+sheet with rounded top corners (`cliniqueRisingSheet`), its wash following the verdict
+(`VerdictReadout`). Down the sheet: `VerdictHero` (status pill, decision, the facts as one line),
+`ResumeScoreRow` — one ring per overnight gauge, Nutrition (calories over the day's goal, from the
+food log) and Régularité (sessions done over the week's, counted as Plan does with
+`PlanWeekTotals`; the active days until that is read) — then « Séance du jour » as rows
+(`SessionPlate`: glyph, title, one line of sport and figures, a status or an arrow), the morning
+proposal, and the cards that ask for an answer (plan horizon, trip conflict). A ring opens Sommeil,
+Récupération, Nutrition or Plan. Under a hairline each: `ResumeNutritionSection` (the day's energy
+over its goal, three macro bars in the nutrition hue; opens the food log) and `TodayTimelineStrip`
+(« Fil de la journée » as a rail of moments), read straight on the sheet, never as cards.
+Régularité's column is always in the row, an empty ring until the week is read, and the loading
+shape draws the same columns (`SharpitLoadingInstrument(showsNutrition:)`): the row never grows a
+ring after it is drawn.
+The date and its chips stay pinned while the page scrolls (`visualEffect` cancels the scroll's
+offset) and the sheet, at least a viewport tall, passes over them. `SharpitLoadingInstrument` is the same shape with empty rings.

@@ -218,7 +218,7 @@ The source of truth is the web design system, not this repo:
 
 The look is **Clinique** (SHARPIT-WEBAPP ADR-130 / ADR-131, `docs/adr/0035`): a screen is one white
 sheet, cards are part of it (20 pt corner, a 1 pt hairline, no shadow), secondary text is slate, and
-SF Pro Rounded carries tabular figures. The rules:
+SF Pro carries tabular figures. The rules:
 
 - **Ink runs the interface.** Text, buttons, a selected day, a check, a progress bar are ink. No
   control takes a hue.
@@ -236,8 +236,7 @@ The shared components draw it (`sharpitSurface`, `SharpitCardHeader`, `SharpitPi
 `border`, `background` or `highlight`: those stay for the widgets and the web. Lime is the brand —
 the app icon, the sign-in screen, the switches — and, darkened, the good status and recovery.
 Two Debug galleries show the components: `-SharpitDesignGallery YES` (the reference cards) and
-`-SharpitCliniqueGallery YES` (the primitives). Résumé, Plan's week and the Coach thread are laid
-out for Clinique; the other screens have its colours inside their earlier structure. Apple chrome
+`-SharpitCliniqueGallery YES` (the primitives). Résumé, Plan, Coach, Activité, the session, Santé and the day screens (Sommeil, Récupération, Nutrition) are rebuilt on their mock-ups, checked side by side against them (`docs/adr/0035`); the screens without a mock-up followed have Clinique's colours inside their earlier structure. Apple chrome
 (tab bar, navigation, Liquid Glass) stays system.
 
 Liquid Glass is chrome only: the tab and navigation bars, toolbar controls — Plan's
@@ -316,8 +315,10 @@ What makes a surface feel finished, applied everywhere new work lands:
 Screen structure follows the web causal column: state → evidence → recommendation →
 projection → limit → confidence.
 
+A tab's name is written in the bar's own row, left of its buttons (`SharpitBarTitle`), and two bar buttons stay two glass circles (`SharpitBarGap`). A day screen has no title and no tab bar: the bar carries the way back and the day as a capsule (`DayDetailDatePicker`), a glass home button floats at the foot (`DayDetailScaffold`).
+
 One wash, at the top of the sheet, and none in content. An ink card is the exception, not a
-screen's opening: the weekly review's hero and Santé's age still stand as ink.
+screen's opening: only the weekly review's hero still stands as ink.
 
 Corners nest concentrically (HIG, iOS 26). A container declares its corner
 (`sharpitContainerCorner`, done by every `sharpitSurface`); what sits inside fills with

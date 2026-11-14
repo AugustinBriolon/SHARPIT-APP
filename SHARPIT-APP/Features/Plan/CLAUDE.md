@@ -105,10 +105,31 @@ step and its last 3 s, VoiceOver told, screen kept awake; ticked at the end. Set
 mobility, a one-rep stretch becomes a 30 s hold, `perSide` from the coach or the taxonomy).
 `SharpitScreenDemo strength` shows it in a two-tab shell, dock included.
 
-**Clinique.** Plan's week screen is swept (`docs/adr/0035`): one sheet under a neutral wash, the
-focus session as the one bordered card with its status pill, each session a row with
-`CliniqueSportTile`, « Clé », « Brick », « Liée » and the execution score as `CliniqueStatusPill`
-(green from 85). The strip's selected day is ink; « Forme » and the trajectory cards are the shared
-bordered cards. The drawers, the generator, the
-adapter, the weekly review and the trips list are not swept. `SharpitScreenDemo plan` shows the
-week on a fixed set of prescriptions around today.
+**Clinique.** Plan's week follows its mock-up (`docs/adr/0035`). Each week is a sheet: « Plan » as
+the page's title with « Adapter » (the adapter, opened empty) in glass beside it, how the week
+stands as a status pill (`PlanWeekReadout`: « Dans les clous », « 2 à rattraper », « Semaine
+bouclée », « Semaine libre ») whose wash the sheet takes, then three rings — Séances, Volume,
+Charge — each what was done over what the week holds (`PlanWeekTotals`, counted from the entries the
+list shows; a done session counts for what was recorded). « Semaine du … » opens the calendar; a
+swipe turns the week. The days run down a rail (`PlanTimeline`): a dot per line — filled for done,
+amber for missed, a bold ring for today, hollow ahead, grey for rest — the day and sport above the
+title, and at the end a status pill once behind, the length while ahead. The week strip and the
+focus card are gone. `SharpitScreenDemo plan` shows the week on fixed prescriptions around today.
+
+**Chrome, phase, countdown.** The bar is its buttons only — « … » (add a session first) and
+« Adapter » — with no fill and no fade; « Plan » heads the week's page level with them and scrolls
+away with it (the athlete's call, 2026-11-14). Under it, beside the status pill, the week's place in the plan (« Spécifique · sem. 3
+sur 6 », `PlanPhaseReadout.line`, from the active plan's weeks) and, right of the week's name, the
+days to the race (`PlanPhaseReadout.countdown`). A line reads « Lun. 10 » over « Natation · Technique
+2 400 m ». The screen has one wash, under the bar too, following the week shown.
+
+**Séance prévue, Clinique.** The drawer follows its mock-up (`docs/adr/0035`): « Clé » as a pill,
+« Sport · Titre » (`PlannedSessionReadout.title`), the day, the figures centred between two hairlines,
+then « Déroulé » as a table (`PlannedStepTable`: how long, what with its note, the target; a repeated
+set named once — « 5 fois » — over its lines, held by a rule), the coach's reason and the instruction
+after the steps. The actions sit in one glass bar: the one that readies the session in ink (watch or
+« Lancer la séance »), « Déplacer » (the next seven days) where the plan can be written, and the coach's
+bubble; « … » keeps edit, link and delete. The mock-up's intensity blocks are not drawn: a step carries
+no zone. « Ajuster ton plan » (`PlanAdapterSheet`) is a titled sheet with its cross: each change a
+bordered card — day, what it does as a pill, the session and why, « Appliquer ce changement » — and
+« Appliquer les N changements » (`PlanAdapterReadout.apply`).

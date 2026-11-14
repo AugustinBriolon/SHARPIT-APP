@@ -24,3 +24,8 @@ writes it to a temporary `sharpit-export-<day>.json` (`PrivacyExport`, named by 
 athlete) and hands it to the system share sheet (`SharpitShareSheet`, `UIActivityViewController`,
 `.sheet(item:)` — `ShareLink` needs its file before the tap). The row turns into its progress while
 the server builds the file.
+
+**Clinique.** The wall follows its mock-up (`docs/adr/0035`): « Avant de continuer », the consents
+as lines under « Nécessaires pour utiliser SharpIt » and « Facultatifs, modifiables à tout moment »
+(`ConsentLabel`: what it is, what it covers), « Tout accepter » (ticks all five and saves) over
+« Continuer avec ma sélection » (the required three ticked). `SharpitScreenDemo consent` shows it.

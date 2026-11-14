@@ -33,3 +33,16 @@ cardio and the minutes summed per activity all live in the web's `journal-auto-c
 and a second implementation would diverge the first time a threshold moved. Its lines are
 read-only, so they carry no toggle and no chevron, and the route is called only when the
 athlete enabled one.
+
+**Clinique.** The journal follows its mock-up (`docs/adr/0035`): « Choisir mes signaux » in the bar,
+« Journal » as the page's title, and under it the day (it opens the calendar; a swipe turns the day —
+the week strip is gone) with « 3 signaux sur 5 notés » (`JournalReadout.progress`). One table split by
+hairlines (`JournalLines`, `JournalLine`), in the order the day was lived, without section names: the
+mood first (a pill, read from the morning), caffeine stepped in place by 80 mg (`JournalStepper`; the
+words still open the sheet with its presets), water with « + 25 cl », driving, the automatic checklist
+(a check, read-only), the night's signals (« Cette nuit ») then the day's. A yes / no signal is one
+capsule a tap walks through — « À noter », « Oui », « Non » (`JournalFactorLine`, `JournalStore.cycle`).
+« Ce que ton journal montre » closes the page with the analyses' headline and opens them.
+`SharpitScreenDemo journal` shows it. « Ton ressenti ce matin » (`RessentiDuJourSheet`) is five bordered
+tiles, as many bars as the step (`RessentiStepPicker`), details on five dashes (`RessentiScaleRow`),
+« Enregistrer » and « Plus tard » under them; `SharpitScreenDemo ressenti`.

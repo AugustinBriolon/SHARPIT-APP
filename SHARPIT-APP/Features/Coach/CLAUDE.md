@@ -43,3 +43,15 @@ category, so a silent answer names its cause.
 text in slate, a failure or a spent budget in the watch status ink, a destructive answer in the
 alert one. The cards a turn carries (proposal, workout, food log, data cards) are the shared
 bordered cards. The history, the usage sheet and the memory are not swept.
+
+**Chrome.** « Coach » sits in the bar's row; the clock opens a menu (Conversations, Mémoire,
+Consommation) and the pencil starts a new conversation. Neither the athlete's bubble nor the
+coach's answer carries a name over it: the side and the bubble say who speaks. The composer is one glass field: « + » (the starting points), the question, the
+microphone while the field is empty, and the ink button — send, dimmed until there are words,
+stop while the coach answers.
+
+**Mémoire du coach, Clinique.** `CoachMemoryView` follows its mock-up (`docs/adr/0035`): how many
+things are kept under the title (`CoachMemoryReadout.lead`), kinds as chips with their count, each
+entry a line — the athlete's sentence, its kind and when it was kept, « Pèse sur le plan » when it
+constrains training — that opens to be corrected, with a cross that erases it; « Dire quelque chose au
+coach » floats at the bottom; the athlete's own profile text closes the page.

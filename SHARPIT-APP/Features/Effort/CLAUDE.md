@@ -24,3 +24,12 @@ the brake's score and the next block's load (`AdaptationReadout.loadMultiplier`:
 ±0,5 %, else « ×0,90 »), the dimensions with the brake first and tagged « Frein » (an unavailable
 neuromuscular efficiency is left out and explained, as the web does), the evidence and the days of
 history. The figures, tones and words are the server's; the readouts only say them.
+
+**Clinique.** Effort follows its mock-up (`docs/adr/0035`): « Effort du jour », the strain out of
+21 with where it sits against the advised zone as a pill (`EffortReadout.zoneWord`), the 0–21 track
+with the zone and the day's dot, the server's sentence; « Effort de la semaine » — the last seven
+days' strain as bars, green in the zone, orange above, dashed where not measured (from
+`strainPerformance`, which replaces its list); then figures as rows split by hairlines (`EffortRow`):
+the load, its acute / base ratio with its zone as a pill, the day in and out of training, the
+composition. The verdict, the dimensions and the expert curves keep their content. The mock-up's
+« Adaptation » card is not here: the payload does not carry it. `SharpitScreenDemo effort` shows it.

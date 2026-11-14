@@ -40,3 +40,14 @@ sheet; « Abonnement » to Pro, with its renewal or « Découvrir SharpIt Pro »
 first and last name through Clerk's `user.update`, sex, height and birth date through
 `AthleteProfilePatch`, the age read under the birth date (`AccountAge.label`), not on a row of its own. Signing out asks first (`AccountView.signOut`, the same local wipe
 as account delete) — the page's one confirmation, since it is the one thing that erases.
+
+**Clinique.** Paramètres follows its mock-up (`docs/adr/0035`): a row is its title and, at the
+trailing edge, what it holds (`SharpitSettingsLabel`, no glyph tile — on every settings page); the
+tier is a pill in the bar; the groups are the mock-up's — you (« Ton profil » with age and height,
+`SettingsReadout.profile`; « Seuils et repères »; « Matériel »; « Objectifs », which closes the sheet
+and opens them in Plan), the coach (« Mémoire du coach »), the app (« Connexions », pages, notifications,
+« Affichage » answered in place by a menu, density, language), then SharpIt Pro and help. The coach's
+usage stays in Coach: Paramètres does not hold its quota. `SharpitScreenDemo settings` shows it.
+Connexions (`ConnectionsView`) lists every source on one table: « Connecté » or « À vérifier » as a
+pill on a linked one (the line opens its sheet), « Connecter » on the others — no « + » sheet — and
+« Synchroniser » in the bar; `SharpitScreenDemo connections`.

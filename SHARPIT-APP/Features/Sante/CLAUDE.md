@@ -3,10 +3,17 @@
 Feature notes, loaded when working in this directory. Repo-wide rules live in the root `CLAUDE.md`.
 
 **Santé.** The athlete's health as a check-up (`SanteView`, SHARPIT ADR-053), ranked by what
-matters most. It opens on `SanteHero`, the tab's one ink card: the biological age in
-`SharpitTypography.showcaseScore` (lime when younger, caution when older), a pill with the gap to the civil age,
-and a ruler ten years either side of it — or, without the age (below Pro, missing data), how many
-markers sit in their norm with one tick per marker in its tone — then up to three markers that moved.
+matters most. It follows its mock-up (`docs/adr/0035`): « Santé » in the bar's row
+with « Partager » and « + » (a blood test, the weight target). `SanteHero` is three rings between
+hairlines — the biological age (a lock that opens the paywall below Pro), the markers in their
+norm, the VO₂max. Only the middle ring is a share (N of M markers); the age and the VO₂max are
+closed rings, since neither is a part of anything, and a line under each says how to read it
+(« 3 ans de moins », the norm's words) — a half-filled ring at an age equal to the civil one read
+as half done (the athlete's call, 2026-11-14). « Tendances » (`SanteTrends`) draws a marker's month as a line over its area, the last
+reading in a bubble; its subtitle picks the marker, « Comparer » lays a second one over it, each
+on its own span (`SanteTrendReadout.normalised`). Then the tables (`SanteTable`: Marqueur, Statut,
+Valeur): « N biomarqueurs », the latest blood test, and « N repères », the measured markers —
+« Bon » or « À surveiller » as a pill, none for a neutral tone or a result without an interval.
 Then: « À surveiller » (only when something deserves attention — resting HR up for days, HRV
 under the athlete's range, short nights, a fast weight change), then « Zones sensibles »
 (`SensitiveZonesCard`: what the open zones do to the plan, the question owed), which pushes their
@@ -28,7 +35,7 @@ the web's. Then
 visceral fat, muscle) and « Au quotidien » (steps, breathing during sleep). Everything comes from
 `/api/v1/health/overview` (`SanteStore`, kept whole in the response cache so the page paints
 offline): each marker read against a published norm, its source named, and against the athlete's
-own month — the app computes none of it; `SanteReadout` only words it. A marker opens
+own month — the app computes none of it; `SanteReadout` only words it. A row opens
 `CorpsMetricDrawer` with its reading (`SanteReadingBlock`) when the web keeps its longer history
 (`/api/v1/body/series`, through `CorpsStore`, which also still feeds the Poids widget), else its month
 (`SanteMarkerSheet`). The drawer's curve follows the finger (`chartXSelection`: the nearest measure
@@ -51,3 +58,15 @@ opens `BloodTestDetailView` (the clean table, delete from « … »), a marker `
 Under the table, `BloodTestReadingCard` (`BloodTestReadingStore`, `GET /api/v1/blood-tests/{id}/reading`,
 SHARPIT ADR-129) shows the sourced training reading — the server's findings, doctor-worthy ones
 first — or `SharpitProTeaser` below Pro; it says nothing when the read fails, under real values.
+
+**Suivi.** What is followed on its own page closes Santé as lines of one table (`SanteLinkRow`:
+a name over what it holds, a status word when one is owed, an arrow): « Zones sensibles »,
+« Analyses de sang », and the biological age's requirements when Pro cannot compute it yet. No card.
+
+**Zones sensibles, Clinique.** The list follows its mock-up (`docs/adr/0035`): « Signaler une zone »
+in the bar, the count under the title (`SensitiveZoneReadout.count`), « Question du jour » in a
+bordered card (the zone that asks; « Faire le point » opens its check-in, since the server takes a
+reading and not « mieux / pareil / pire »), « Ce que ça change à ton plan » (each open zone's strategy
+detail behind a bar in its status tone), « Ouvertes » (the strategy as a pill, the last eight readings
+as bars, « gêne 2 / 10 · en baisse » — the trend from the last two readings, `standing`), « Résolues »
+(a check, « résolue en juin »), then the body overview. `SharpitScreenDemo zones` shows it.
