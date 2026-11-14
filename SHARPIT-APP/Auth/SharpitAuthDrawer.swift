@@ -2,8 +2,8 @@ import AuthenticationServices
 import ClerkKit
 import SwiftUI
 
-/// An Apple Design Award-grade authentication drawer in pure French, adhering strictly
-/// to the SharpIt design system with zero extraneous clutter above the input field.
+/// The sign-in and sign-up drawer, in Clinique: a title, the e-mail in a hairline capsule, the ink
+/// capsule that continues, then Apple and Google in the same shape. No shadow anywhere.
 struct SharpitAuthDrawer: View {
     @Environment(Clerk.self) private var clerk
     @Environment(\.dismiss) private var dismiss
@@ -46,7 +46,7 @@ struct SharpitAuthDrawer: View {
                         }
                     }
                     .padding(.horizontal, SharpitSpacing.pageInset)
-                    .padding(.top, SharpitSpacing.lg)
+                    .padding(.top, SharpitSpacing.xxs)
                     .padding(.bottom, SharpitSpacing.xl)
                 }
             }
@@ -64,7 +64,7 @@ struct SharpitAuthDrawer: View {
             }
         }
         .sharpitSheet()
-        .presentationDetents([.fraction(0.68), .large])
+        .presentationDetents([.fraction(0.62), .large])
         .presentationDragIndicator(.visible)
     }
 
@@ -72,14 +72,14 @@ struct SharpitAuthDrawer: View {
 
     private var identifierView: some View {
         VStack(spacing: SharpitSpacing.md) {
-            if let headline {
-                Text(headline)
-                    .font(SharpitTypography.verdict)
-                    .tracking(SharpitTypography.verdictTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            // Always a title: the wizard's reason when it sent the athlete here, else the sheet's name.
+            Text(headline ?? String(localized: "Connexion"))
+                .font(SharpitTypography.system(size: headline == nil ? 28 : 22, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
 
             // Error banner if any
             if let errorMessage {
@@ -102,13 +102,12 @@ struct SharpitAuthDrawer: View {
             .padding(.horizontal, SharpitSpacing.md)
             .padding(.vertical, SharpitSpacing.md)
             .background {
-                RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+                Capsule()
                     .fill(SharpitColor.card)
                     .overlay(
-                        RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+                        Capsule()
                             .strokeBorder(SharpitColor.divider, lineWidth: 1)
                     )
-                    .sharpitShadow(.control)
             }
 
             // 2. Primary Action Button
@@ -131,8 +130,7 @@ struct SharpitAuthDrawer: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitTokens.radius)
-                .sharpitShadow(.panel)
+                .background(SharpitColor.primary, in: Capsule())
             }
             .buttonStyle(.sharpitPressable)
             .disabled(email.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
@@ -205,10 +203,10 @@ struct SharpitAuthDrawer: View {
             .padding(.horizontal, SharpitSpacing.md)
             .padding(.vertical, SharpitSpacing.md)
             .background {
-                RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+                Capsule()
                     .fill(SharpitColor.card)
                     .overlay(
-                        RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+                        Capsule()
                             .strokeBorder(SharpitColor.divider, lineWidth: 1)
                     )
             }
@@ -228,7 +226,7 @@ struct SharpitAuthDrawer: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitTokens.radius)
+                .background(SharpitColor.primary, in: Capsule())
             }
             .buttonStyle(.sharpitPressable)
             .disabled(verificationCode.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
@@ -311,7 +309,7 @@ struct SharpitAuthDrawer: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitTokens.radius)
+                .background(SharpitColor.primary, in: Capsule())
             }
             .buttonStyle(.sharpitPressable)
             .disabled(verificationCode.isEmpty || isLoading)
@@ -375,10 +373,10 @@ struct SharpitAuthDrawer: View {
         .padding(.trailing, SharpitSpacing.xs)
         .padding(.vertical, SharpitSpacing.xs)
         .background {
-            RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+            Capsule()
                 .fill(SharpitColor.card)
                 .overlay(
-                    RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+                    Capsule()
                         .strokeBorder(SharpitColor.divider, lineWidth: 1)
                 )
         }

@@ -28,7 +28,7 @@ private struct AppleIDButton: UIViewRepresentable {
 
     func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
         let button = ASAuthorizationAppleIDButton(type: .continue, style: style)
-        button.cornerRadius = SharpitTokens.radius
+        button.cornerRadius = SharpitSocialSignIn.buttonHeight / 2
         button.addTarget(context.coordinator, action: #selector(Coordinator.tap), for: .touchUpInside)
         return button
     }
@@ -72,9 +72,9 @@ struct SharpitGoogleSignInButton: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: SharpitSocialSignIn.buttonHeight)
-            .sharpitConcentricBackground(fill, minimum: SharpitTokens.radius)
+            .background(fill, in: Capsule())
             .overlay(
-                RoundedRectangle(cornerRadius: SharpitTokens.radius, style: .continuous)
+                Capsule()
                     .strokeBorder(stroke, lineWidth: 1)
             )
         }
