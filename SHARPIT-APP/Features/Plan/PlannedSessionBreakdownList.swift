@@ -32,7 +32,6 @@ struct PlannedStepsEstimatedTag: View {
         Text("Estimé")
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
-            .textCase(.uppercase)
             .foregroundStyle(SharpitColor.slate)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, 2)
@@ -121,7 +120,6 @@ private struct RepeatedSet: View {
                 Text("fois")
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.slate)
             }
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {

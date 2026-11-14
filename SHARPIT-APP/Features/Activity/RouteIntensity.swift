@@ -116,7 +116,6 @@ struct RouteIntensityLegend: View {
             Text(metric.label)
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
                 .foregroundStyle(SharpitColor.slate)
             HStack(spacing: 2) {
                 ForEach(0..<RouteIntensity.levels, id: \.self) { level in

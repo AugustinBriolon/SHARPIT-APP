@@ -144,7 +144,6 @@ struct DayDetailDimensionRow: View {
                         Text(intensity)
                             .font(SharpitTypography.label)
                             .tracking(SharpitTypography.labelTracking)
-                            .textCase(.uppercase)
                             .foregroundStyle(tone)
                     }
                     Text("\(Int(score.rounded()))")

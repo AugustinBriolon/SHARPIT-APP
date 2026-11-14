@@ -235,7 +235,7 @@ private struct WeeklyReviewContent: View {
     }
 }
 
-/// The week at a glance, the one ink card of the page: the lime tile, the week, then its three
+/// The week at a glance, the one ink card of the page: the tile, the week, then its three
 /// figures — sessions against the plan, load, sleep — big and white.
 private struct WeeklyReviewHero: View {
     let weekLabel: String
@@ -246,12 +246,7 @@ private struct WeeklyReviewHero: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
             HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primaryForeground)
-                    .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                    .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitRadius.tile)
-                    .accessibilityHidden(true)
+                SharpitIconTile(symbol: "calendar")
                 VStack(alignment: .leading, spacing: 2) {
                     Text(weekLabel)
                         .font(SharpitTypography.cardTitle)

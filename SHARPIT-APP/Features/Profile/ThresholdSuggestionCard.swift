@@ -60,7 +60,6 @@ private struct ThresholdChangeRow: View {
                     Text(ThresholdSuggestionReadout.directionLabel(change.direction))
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
                         .foregroundStyle(SharpitColor.slate)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)

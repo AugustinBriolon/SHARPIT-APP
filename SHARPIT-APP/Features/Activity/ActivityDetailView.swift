@@ -899,7 +899,6 @@ private struct ActivityDetailContent: View {
                     Label { Text(detail.type.label) } icon: { Image(sharpitSymbol: detail.type.symbolName) }
                         .font(SharpitTypography.eyebrow)
                         .tracking(SharpitTypography.eyebrowTracking)
-                        .textCase(.uppercase)
                         .foregroundStyle(tone)
                     Spacer()
                     Text(dateLabel)
@@ -1593,7 +1592,6 @@ private struct DetailMetric: View {
             Text(label)
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
                 .foregroundStyle(SharpitColor.slate)
             Text(value)
                 .font(SharpitTypography.data)

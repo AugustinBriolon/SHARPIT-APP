@@ -58,7 +58,6 @@ struct TrainingLoadCard: View {
             Text(label)
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
                 .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)

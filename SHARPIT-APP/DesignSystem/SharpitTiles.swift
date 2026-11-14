@@ -34,7 +34,7 @@ struct SharpitNumberChip: View {
     }
 }
 
-/// A done mark: an ink check on a lime square. Empty, it is a quiet track square.
+/// A done mark: a check on an ink square. Empty, it is an outlined tile.
 struct SharpitCheckBox: View {
     let isOn: Bool
 
@@ -44,6 +44,8 @@ struct SharpitCheckBox: View {
         RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
             .fill(isOn ? SharpitColor.primary : SharpitColor.tile)
             .frame(width: side, height: side)
+            // An empty box needs its edge: the tile tone alone is lost on the sheet.
+            .overlay(RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous).strokeBorder(isOn ? Color.clear : SharpitColor.outline, lineWidth: 1))
             .overlay {
                 if isOn {
                     Image(systemName: "checkmark")

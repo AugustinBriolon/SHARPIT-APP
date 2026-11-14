@@ -359,7 +359,7 @@ private struct NutritionEnergyPlate: View {
     }
 
     private var dial: some View {
-        SharpitTickGauge(score: calories?.pct.map { CGFloat(min(max($0, 0), 100)) })
+        SharpitTickGauge(score: calories?.pct.map { CGFloat(min(max($0, 0), 100)) }, tone: SharpitColor.pillarNutrition)
             .sharpitDialCentre {
                 VStack(spacing: 1) {
                     Text(NutritionReadout.kcal(day.calories))
@@ -386,7 +386,6 @@ private struct NutritionEnergyPlate: View {
             Text(caption)
                 .font(SharpitTypography.label)
                 .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
                 .foregroundStyle(SharpitColor.slate)
             Text(value)
                 .font(SharpitTypography.instrument)
@@ -409,7 +408,6 @@ private struct NutritionGoalSeal: View {
         Label("Objectif tenu", systemImage: "checkmark.seal.fill")
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
-            .textCase(.uppercase)
             .foregroundStyle(SharpitColor.primary)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, 4)
@@ -439,7 +437,6 @@ private struct NutritionCoachPlate: View {
                 Text("Lecture du coach")
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
                 Spacer(minLength: 0)
                 if case .ready(let ready) = reading, ready.isProvisional {
@@ -476,7 +473,6 @@ private struct NutritionCoachPlate: View {
                         Text(NutritionReadout.jobLabel(finding.job))
                             .font(SharpitTypography.label)
                             .tracking(SharpitTypography.labelTracking)
-                            .textCase(.uppercase)
                             .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.6))
                         Text(finding.text)
                             .font(SharpitTypography.body)
@@ -571,7 +567,6 @@ private struct MacroTile: View {
                 Text(macro.label)
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)

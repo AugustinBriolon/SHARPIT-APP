@@ -166,7 +166,7 @@ private struct SleepHero: View {
     }
 
     private var dial: some View {
-        SharpitTickGauge(score: sleep.score.map { CGFloat($0) }, showsScale: true)
+        SharpitTickGauge(score: sleep.score.map { CGFloat($0) }, showsScale: true, tone: SharpitColor.pillarSleep)
             .sharpitDialCentre {
             VStack(spacing: SharpitSpacing.xxs) {
                 Text(sleep.score.map { "\(Int($0.rounded()))" } ?? "—")

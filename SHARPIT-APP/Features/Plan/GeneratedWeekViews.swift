@@ -162,7 +162,6 @@ struct GeneratedSessionRow: View {
                     Text(day)
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
                         .foregroundStyle(SharpitColor.slate)
                     if session.isKey { SharpitInlineTag(String(localized: "Clé")) }
                 }

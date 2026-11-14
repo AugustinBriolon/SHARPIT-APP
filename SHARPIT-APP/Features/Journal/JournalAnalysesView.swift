@@ -155,12 +155,7 @@ private struct JournalAnalysesPlate: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "lightbulb")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primaryForeground)
-                    .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                    .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitRadius.tile)
-                    .accessibilityHidden(true)
+                SharpitIconTile(symbol: "lightbulb")
                 VStack(alignment: .leading, spacing: 2) {
                     Text("À retenir")
                         .font(SharpitTypography.cardTitle)

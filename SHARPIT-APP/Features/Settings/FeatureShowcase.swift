@@ -28,7 +28,6 @@ struct FeatureShowcase: View {
         Text("Exemple")
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
-            .textCase(.uppercase)
             .foregroundStyle(SharpitColor.slate)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, 2)

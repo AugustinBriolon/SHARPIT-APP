@@ -147,7 +147,6 @@ struct ActivityTechnicalGrid: View {
                     Text(row.label)
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
                         .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                     Text(row.value)

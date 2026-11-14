@@ -69,6 +69,8 @@ struct SharpitTickGauge: View, Animatable {
     var showsThumbAtStart = false
     /// Writes « 0 » and « 100 » under the open ends of the dial.
     var showsScale = false
+    /// The band and the knob at the reading: lime in the widgets, the pillar's hue on an app screen.
+    var tone: Color = SharpitColor.highlight
 
     var animatableData: CGFloat {
         get { score ?? 0 }
@@ -98,7 +100,7 @@ struct SharpitTickGauge: View, Animatable {
 
                 context.stroke(
                     path,
-                    with: .color(SharpitTickTone.stroke(at: index, score: score)),
+                    with: .color(SharpitTickTone.stroke(at: index, score: score, tone: tone)),
                     style: StrokeStyle(
                         lineWidth: SharpitTickGaugeGeometry.tickWidth * scale,
                         lineCap: .round
@@ -136,7 +138,7 @@ struct SharpitTickGauge: View, Animatable {
                 height: radius * 3
             ))
             context.fill(ring, with: .color(SharpitColor.card))
-            context.fill(dot, with: .color(SharpitColor.highlight))
+            context.fill(dot, with: .color(tone))
         }
         .aspectRatio(SharpitTickGaugeGeometry.aspectRatio, contentMode: .fit)
         .accessibilityHidden(true)
@@ -177,12 +179,12 @@ enum SharpitTickTone {
         return SharpitTickGaugeGeometry.tickScore(at: index) <= score
     }
 
-    static func stroke(at index: Int, score: CGFloat?) -> Color {
+    static func stroke(at index: Int, score: CGFloat?, tone: Color = SharpitColor.highlight) -> Color {
         guard let score else { return SharpitColor.track }
 
         let tickScore = SharpitTickGaugeGeometry.tickScore(at: index)
         if tickScore > score { return SharpitColor.track }
-        if tickScore >= score - highlightBand { return SharpitColor.highlight }
+        if tickScore >= score - highlightBand { return tone }
         return SharpitColor.foreground
     }
 }

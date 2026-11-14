@@ -265,12 +265,7 @@ private struct MacroPlanHero: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-                Image(systemName: "calendar.badge.clock")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primaryForeground)
-                    .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                    .sharpitConcentricBackground(SharpitColor.primary, minimum: SharpitRadius.tile)
-                    .accessibilityHidden(true)
+                SharpitIconTile(symbol: "calendar.badge.clock")
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(plan.weeks.count) semaines")
                         .font(SharpitTypography.sectionTitle)

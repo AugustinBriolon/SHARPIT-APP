@@ -265,7 +265,7 @@ struct FoodHealthScoreHeader: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.md) {
-            SharpitTickGauge(score: health.score.map { CGFloat($0) })
+            SharpitTickGauge(score: health.score.map { CGFloat($0) }, tone: SharpitColor.pillarNutrition)
                 .frame(width: dialWidth)
                 .sharpitDialCentre {
                     Text(health.score.map(String.init) ?? "—")

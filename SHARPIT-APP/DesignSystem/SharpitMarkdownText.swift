@@ -159,7 +159,6 @@ private struct SharpitMarkdownTable: View {
                         Text(cell(header, column))
                             .font(SharpitTypography.label)
                             .tracking(SharpitTypography.labelTracking)
-                            .textCase(.uppercase)
                             .foregroundStyle(SharpitColor.slate)
                     }
                 }

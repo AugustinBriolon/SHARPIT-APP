@@ -11,7 +11,6 @@ struct SharpitFieldLabel: View {
         Text(title)
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
-            .textCase(.uppercase)
             .foregroundStyle(SharpitColor.slate)
     }
 }

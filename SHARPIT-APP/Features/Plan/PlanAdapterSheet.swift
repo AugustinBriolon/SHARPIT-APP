@@ -200,7 +200,6 @@ private struct AdjustmentRow: View {
                 Text(heading)
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
                     .foregroundStyle(change.action == .remove ? SharpitColor.signalRisk : SharpitColor.slate)
                 Text(change.title ?? String(localized: "Séance prévue"))
                     .font(SharpitTypography.bodyEmphasis)

@@ -79,7 +79,6 @@ struct PlannedSessionSummary<Actions: View>: View {
                         Text(preview.sport)
                             .font(SharpitTypography.label)
                             .tracking(SharpitTypography.labelTracking)
-                            .textCase(.uppercase)
                             .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
                         if preview.isKey {
@@ -117,7 +116,6 @@ struct PlannedSessionSummary<Actions: View>: View {
                     Text(metric.label)
                         .font(SharpitTypography.label)
                         .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
                         .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                     Text(metric.value)

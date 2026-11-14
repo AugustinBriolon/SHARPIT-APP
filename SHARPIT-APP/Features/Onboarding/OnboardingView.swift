@@ -219,7 +219,7 @@ private struct OnboardingHeader: View {
             // The position sits inside the arc, and the dial's thumb shows from the first step —
             // at its start, the way still to go.
             ZStack(alignment: .bottom) {
-                SharpitTickGauge(score: CGFloat(store.progress * 100), showsThumbAtStart: true)
+                SharpitTickGauge(score: CGFloat(store.progress * 100), showsThumbAtStart: true, tone: SharpitColor.foreground)
                     .frame(width: 104, height: 104 / SharpitTickGaugeGeometry.aspectRatio)
                     .animation(SharpitMotion.gaugeFill, value: store.progress)
                 Text("\(store.position) / \(store.path.count)")

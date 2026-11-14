@@ -733,7 +733,6 @@ private struct PlanDayRow: View {
             VStack(spacing: SharpitSpacing.xxs) {
                 Text(day.sharpitFormatted(.dateTime.weekday(.abbreviated)))
                     .font(SharpitTypography.eyebrow)
-                    .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.slate)
                 let isToday = Calendar.current.isDateInToday(day)
                 Text(day.sharpitFormatted(.dateTime.day()))

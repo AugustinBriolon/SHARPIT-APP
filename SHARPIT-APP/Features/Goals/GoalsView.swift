@@ -499,7 +499,6 @@ private struct GoalRoleChip: View {
         Text(role.label)
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
-            .textCase(.uppercase)
             .foregroundStyle(role == .primary ? SharpitColor.highlightForeground : SharpitColor.inkSurfaceForeground)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, 3)

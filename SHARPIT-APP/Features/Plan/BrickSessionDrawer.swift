@@ -202,7 +202,6 @@ private struct BrickLegPanel: View {
                         Text(leg.sport)
                             .font(SharpitTypography.label)
                             .tracking(SharpitTypography.labelTracking)
-                            .textCase(.uppercase)
                             .foregroundStyle(tone)
                         Text(leg.title)
                             .font(SharpitTypography.cardTitle)
@@ -261,7 +260,6 @@ private struct BrickTransition: View {
                 Text("Transition · enchaîne sans pause")
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
             }
             .foregroundStyle(SharpitColor.primary)
             .padding(.horizontal, SharpitSpacing.sm)

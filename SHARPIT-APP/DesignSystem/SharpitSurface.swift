@@ -68,11 +68,15 @@ enum SharpitSurfaceStyle {
 private struct SharpitSurfaceModifier: ViewModifier {
     let style: SharpitSurfaceStyle
     @Environment(\.sharpitElevation) private var elevation
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         // The corner is declared inside the fill so what sits within nests concentric to it,
         // while a nested surface's own fill follows the surface around it.
         content
+            // What sits on ink reads the dark values of every token, so slate, tiles and status
+            // marks stay legible on it in light mode too.
+            .environment(\.colorScheme, style == .ink ? .dark : colorScheme)
             .foregroundStyle(style.foreground)
             .sharpitContainerCorner(style.radius)
             .background {

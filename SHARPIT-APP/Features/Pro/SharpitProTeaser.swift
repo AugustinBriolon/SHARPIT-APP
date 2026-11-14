@@ -28,7 +28,6 @@ struct SharpitProTeaser: View {
                 Text("Pro")
                     .font(SharpitTypography.label)
                     .tracking(SharpitTypography.labelTracking)
-                    .textCase(.uppercase)
                     .foregroundStyle(SharpitColor.primaryForeground)
                     .padding(.horizontal, SharpitSpacing.xs)
                     .padding(.vertical, 2)

@@ -63,7 +63,7 @@ struct DesignGalleryHost: View {
         GalleryCard {
             SharpitCardHeader(title: String(localized: "Score de sommeil"), symbol: "moon.fill", subtitle: String(localized: "Cette nuit · 7 h 32"), showsChevron: false)
             ZStack {
-                SharpitTickGauge(score: 86, showsScale: true)
+                SharpitTickGauge(score: 86, showsScale: true, tone: SharpitColor.pillarSleep)
                 VStack(spacing: SharpitSpacing.xxs) {
                     Text("86")
                         .font(SharpitTypography.system(size: 64, weight: .semibold, relativeTo: .largeTitle, digits: true))
@@ -225,7 +225,7 @@ import ClerkKit
 import SwiftUI
 
 /// A screen on demo data, to check its look in the simulator without an account.
-/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|plan|strength|sleep|records|session`.
+/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|plan|activity|strength|sleep|records|session`.
 enum ScreenDemo {
     static var requested: String? {
         UserDefaults.standard.string(forKey: "SharpitScreenDemo")
@@ -261,8 +261,14 @@ struct ScreenDemoHost: View {
                     Tab("Plan", systemImage: "calendar") {
                         PlanView(
                             client: DemoPlan(), linker: PlannedSessionClient(),
-                            activityClient: ActivityClient(), tokenProvider: { "demo" }
+                            activityClient: DemoActivities(), tokenProvider: { "demo" }
                         )
+                    }
+                }
+            case "activity":
+                TabView {
+                    Tab("Activité", systemImage: "chart.line.uptrend.xyaxis") {
+                        ActivityView(client: DemoActivities(), tokenProvider: { "demo" })
                     }
                 }
             case "today-extras":
@@ -544,7 +550,7 @@ private enum StressDemo {
 }
 
 /// A week of prescriptions around today — two missed, today's key session, a brick ahead — to
-/// check Plan's rows without an account. The week's activities fail to load and are left out.
+/// check Plan's rows without an account, beside the sessions `DemoActivities` records.
 private struct DemoPlan: PlannedSessionServing {
     func plannedSessions(from: Date, to: Date, token: String) async throws -> [V1PlannedSessionItem] {
         let calendar = Calendar.current
@@ -559,6 +565,36 @@ private struct DemoPlan: PlannedSessionServing {
             V1PlannedSessionItem(id: "p6", date: day(2), title: "Course · Sortie longue", type: "RUN", durationMin: 90),
         ].filter { $0.date >= from && $0.date <= to }
     }
+}
+
+/// Three weeks of done sessions around today, for Activité's list and Plan's done rows. A
+/// session's detail is not served: the list is what the demo is for.
+private struct DemoActivities: ActivityServing {
+    func activities(token: String) async throws -> [V1ActivityListItem] {
+        let formatter = ISO8601DateFormatter()
+        func date(_ daysAgo: Int) -> String {
+            formatter.string(from: Calendar.current.startOfDay(for: .now).addingTimeInterval(Double(-daysAgo) * 86_400 + 7 * 3_600))
+        }
+        let rows: [(String, String, Int, String, Int, Int)] = [
+            ("a1", "RUN", 1, "Tempo 3 × 10 min", 3_480, 72),
+            ("a2", "BIKE", 3, "Endurance 1 h 45", 6_300, 88),
+            ("a3", "SWIM", 4, "Technique 2 400 m", 3_300, 41),
+            ("a4", "STRENGTH", 6, "Gainage", 1_500, 18),
+            ("a5", "RUN", 8, "Sortie longue", 5_700, 96),
+            ("a6", "BIKE", 10, "Seuil 3 × 12 min", 5_400, 85),
+            ("a7", "RUN", 13, "Footing", 2_700, 38),
+            ("a8", "SWIM", 15, "Endurance 2 000 m", 2_900, 36),
+        ]
+        let json = "[" + rows.map { id, type, daysAgo, title, duration, load in
+            #"{"id":"\#(id)","type":"\#(type)","date":"\#(date(daysAgo))","title":"\#(title)","duration":\#(duration),"load":\#(load)}"#
+        }.joined(separator: ",") + "]"
+        return try JSONDecoder().decode([V1ActivityListItem].self, from: Data(json.utf8))
+    }
+
+    func activity(id: String, token: String) async throws -> V1ActivityDetail { throw SharpitAPIError.server }
+    func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload { throw SharpitAPIError.server }
+    func generateNarrative(id: String, token: String) async throws -> V1ActivityDetail { throw SharpitAPIError.server }
+    func updateSubjective(id: String, rpe: Double?, feeling: String?, token: String) async throws {}
 }
 
 /// Records as the server would send them, dated around now so « Nouveau record » shows.

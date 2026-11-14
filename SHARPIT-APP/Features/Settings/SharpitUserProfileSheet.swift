@@ -33,7 +33,6 @@ struct SharpitUserProfileSheet: View {
             Text("SharpIt")
                 .font(SharpitTypography.eyebrow)
                 .tracking(SharpitTypography.eyebrowTracking)
-                .textCase(.uppercase)
                 .foregroundStyle(SharpitColor.slate)
             Spacer(minLength: 0)
             Button {
