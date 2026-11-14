@@ -22,4 +22,13 @@ meaning left, the figure typed in place right — never a coloured tile or a box
 where the figures come from under it, « D'après tes records » in a bordered card (how many to review
 as a pill, each proposal a line with its direction and a check, « Appliquer (N) »), then each
 discipline as a name over its lines. The mock-up's power-zones bar is not drawn: the profile carries
-the thresholds, not the zones. Matériel keeps its layout: the app holds no wear per shoe or part.
+the thresholds, not the zones.
+
+**Matériel, Clinique.** `EquipmentView` (Paramètres › Matériel) is one page on its mock-up's shape:
+« Ajouter » in the bar adds a sport, « Mes sports » lists the sports practiced — glyph in the round
+tile, what is owned for it (`SportsReadout.equipmentSummary`), « … » to take it out of the plan,
+closed for the last sport a plan can stand on — then the kit by sport (`EquipmentBySport`, the
+onboarding's own): a section's name over lines split by hairlines, each what it is, what it changes
+for the coach, and « Oui » / « Non », flipped by a tap and saved as it changes (`docs/adr/0014`). The
+mock-up's wear — kilometres per shoe, chain and tyres — is not drawn: the app holds a capability
+inventory, no mileage per item. `SharpitScreenDemo equipment` shows it.

@@ -6,16 +6,22 @@ Feature notes, loaded when working in this directory. Repo-wide rules live in th
 (`ActivityStrengthSection`): each block of sets as « 4 × 8 · 60 kg » (« 3 × 45 s » when timed, no
 load when bodyweight) and the exercise's volume; `StrengthExerciseReadout` words it, tested.
 
-**Route intensity.** The expanded map's layers menu has « Heatmap »: it colours the route by heart rate (by speed
-without it), in the training zones' family (`RouteIntensity`, `RouteIntensityTone`): five levels
-between the session's own 10th and 90th percentiles, so one sprint does not flatten the rest. The
-path and the samples are both thinned evenly by the server from one recording, so a point takes the
-sample at the same share of the session — no server change. The recentre button shows only once
-the camera has left the route (`RouteFraming`: part of it out of view, or under 35 % of the map).
-Under the 2D/3D button (always shown: « 3D » on a flat map, « 2D » on a tilted one), a play button
-redraws the route from start to finish over a faint copy of it, a dot at its head (`RouteReplay`,
-twelve seconds, paused and resumed at will; `RouteReplayPath` cuts the line, heatmap stretches
-included). The points are evenly spaced in time, so the line runs faster where the athlete did.
+**The expanded map, Clinique.** It follows its mock-up (`docs/adr/0035`): a cross closes it; one glass
+capsule at the top right stacks the map's style, « 3D » / « 2D » and, only once the camera has left
+the route (`RouteFraming`: part of it out of view, or under 35 % of the map), the recentre; MapKit's
+compass and scale sit under it. A card floats at the foot (`ActivityMapCard`): the replay as an ink
+disc (`RouteReplay`, twelve seconds, paused and resumed at will; `RouteReplayPath` cuts the line over
+a faint copy of it, coloured stretches included), the session's name — it closes the map — over
+« 12,4 km · 58 min · 68 m de dénivelé » (`ActivityMapReadout.figures`), and « Cardio / Allure / Uni »
+(`RouteColouring`, only the signals the recording carries; « Vitesse » off a run). A coloured route
+(`RouteIntensity`) is cut in five levels between the session's own 10th and 90th percentiles, so one
+sprint does not flatten the rest, in the zones' scale (`SharpitZoneTone`, blue to red); the card then
+names the signal and what the colours span (« 134 – 170 bpm », `rangeText`). The path and the samples
+are both thinned evenly by the server from one recording, so a point takes the sample at the same
+share of the session. It opens plain: a triathlon's legs keep their own colours. Not built: the
+mock-up's tooltip under the finger (« km 6,2 · 4:11 /km · 162 bpm »). The map runs to the screen's
+foot only while expanded; collapsed it keeps the height its route is framed for.
+`SharpitScreenDemo map` shows it.
 
 **History.** Activité reads the history a page at a time (`activityPage`, 60 sessions, the server's
 `before` cursor) and the next page when the list's foot comes into view; a refresh asks the newest

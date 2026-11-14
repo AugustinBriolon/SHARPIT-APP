@@ -65,3 +65,13 @@ shape draws the same columns (`SharpitLoadingInstrument(showsNutrition:)`): the 
 ring after it is drawn.
 The date and its chips stay pinned while the page scrolls (`visualEffect` cancels the scroll's
 offset) and the sheet, at least a viewport tall, passes over them. `SharpitLoadingInstrument` is the same shape with empty rings.
+
+**States, Clinique.** While the day is read the verdict's place says so — « Lecture de ta nuit »
+with its spinner over three quiet bars (`SharpitLoadingInstrument`), never a greyed fake verdict. A
+day the server has nothing for (`TodayEmptyView`) rises as a sheet too: why, the scores as empty
+rings, and « Connecte ta montre » (Paramètres › Connexions) beside the way to the web. A failed read
+is the shared `SharpitStateMessage` on the sheet. The race card (`RaceDayCard`) is a bordered card:
+the moment as a pill, the race, its format and aim or its result with the legs, the coach's word — the
+mock-up's pace per leg and pre-start checklist are not in `/api/v1/today`. A done brick
+(`DoneBrickDrawer`) opens on how far it is as a pill, the chain, its total and the legs as one bar,
+then each leg and each transition as a line.

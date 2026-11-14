@@ -28,7 +28,7 @@ for « Séance dans la boîte » (a synced activity counted for the plan: its sh
 and the next session, `sessionDone`), `/plan/catch-up` for « Dommage pour hier » (yesterday's session
 missed, `missedSession`: `ShellRouter.pendingCatchUp` opens Plan's adapter with the miss said, as
 « Rattraper ma semaine » does), a tab), Sources de
-données, Sports & équipement (the onboarding's own `SportChoiceGroups` and `EquipmentBySport`, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: two cards side by side, as iOS shows Clair and Sombre, each
+données, Matériel (one page: the sports, then the onboarding's own `EquipmentBySport` lines, saved as they change; the sports wait while no endurance sport is picked), Densité de lecture (its own page: two cards side by side, as iOS shows Clair and Sombre, each
 drawing the same example session in its reading through `ActivityFormat.trainingLoad`, its audience
 in one line under it; then exactly what Expert adds, screen by screen), Donner un avis (`FeedbackView`: a note to the team, shown as sent on the tap and
 posted behind to `/api/v1/feedback` with the app's version — the external beta's voice,

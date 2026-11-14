@@ -67,3 +67,9 @@ inputs: `SharpitFormField` (the label above a soft well, a ring while focused �
 on each centimetre, firmer on the tens — `SharpitHaptics`, Core Haptics, prepared as the finger
 lands — nil until moved) and `SharpitDateField` (the age beside it, the wheel in a
 short sheet: opened in place it grew the page into a scroll).
+
+**Clinique.** The wizard takes the sheet (`docs/adr/0035`): the header is back, the way done as
+dashes — one per step, the current one in the coach's hue — and « 3 / 10 », or « Passer » where the
+step can be skipped (the tick dial is gone); the title is the page's, the action a full-width ink
+button. A sport is a bordered tile with its glyph in a data hue; chosen, it takes an ink border and a
+check, never a fill (`SportChoiceTile`, shared with Paramètres › Matériel).

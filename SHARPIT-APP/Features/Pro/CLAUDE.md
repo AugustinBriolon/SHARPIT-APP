@@ -27,3 +27,7 @@ reading, biological age and weekly review) with a glyph in a data hue, the two p
 with a radio mark and the saving as a pill, « Passer à Pro ». The onboarding's week (`ProWeekHero`)
 shows only when the paywall is opened with one. `SharpitScreenDemo pro` shows it without offers: the
 simulator has no App Store.
+
+**Hors Pro.** `SharpitProTeaser` is Clinique's « hors Pro » card everywhere it stands: the
+feature's name over the Pro pill, what it does in a sentence, « Essayer Pro » in ink, a border in the
+coach's tone. It states no price: only the paywall quotes the App Store's.
