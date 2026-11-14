@@ -173,6 +173,22 @@ struct CliniqueRing: View {
     }
 }
 
+/// A sport's glyph in a round neutral tile: a session is told by its glyph, never by a colour.
+struct CliniqueSportTile: View {
+    let symbol: String
+    var size: CGFloat = SharpitTokens.tileSize
+    var isDimmed = false
+
+    var body: some View {
+        Image(sharpitSymbol: symbol)
+            .font(.system(size: size * 0.42, weight: .regular))
+            .foregroundStyle(isDimmed ? SharpitColor.slate : SharpitColor.foreground)
+            .frame(width: size, height: size)
+            .background(SharpitColor.tile, in: Circle())
+            .accessibilityHidden(true)
+    }
+}
+
 /// Capsule buttons: ink for the one main action, an outline for a second one, plain text for a way out.
 struct CliniqueButtonStyle: ButtonStyle {
     enum Kind {

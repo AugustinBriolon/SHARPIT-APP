@@ -225,7 +225,7 @@ import ClerkKit
 import SwiftUI
 
 /// A screen on demo data, to check its look in the simulator without an account.
-/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|strength|sleep|records|session`.
+/// Debug builds only: `defaults write app.sharpit.ios SharpitScreenDemo today|plan|strength|sleep|records|session`.
 enum ScreenDemo {
     static var requested: String? {
         UserDefaults.standard.string(forKey: "SharpitScreenDemo")
@@ -255,6 +255,15 @@ struct ScreenDemoHost: View {
                         activityClient: ActivityClient(),
                         tokenProvider: { "demo" }
                     )
+                }
+            case "plan":
+                TabView {
+                    Tab("Plan", systemImage: "calendar") {
+                        PlanView(
+                            client: DemoPlan(), linker: PlannedSessionClient(),
+                            activityClient: ActivityClient(), tokenProvider: { "demo" }
+                        )
+                    }
                 }
             case "today-extras":
                 ScrollView {
@@ -531,6 +540,24 @@ private enum StressDemo {
                 ]),
             ])
         )
+    }
+}
+
+/// A week of prescriptions around today — two missed, today's key session, a brick ahead — to
+/// check Plan's rows without an account. The week's activities fail to load and are left out.
+private struct DemoPlan: PlannedSessionServing {
+    func plannedSessions(from: Date, to: Date, token: String) async throws -> [V1PlannedSessionItem] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: today) ?? today }
+        return [
+            V1PlannedSessionItem(id: "p1", date: day(-2), title: "Natation · Technique 2 400 m", type: "SWIM", durationMin: 55),
+            V1PlannedSessionItem(id: "p2", date: day(-1), title: "Course · Tempo 3 × 10 min", type: "RUN", durationMin: 58, isKey: true),
+            V1PlannedSessionItem(id: "p3", date: today, title: "Vélo · Seuil 2 × 12 min", type: "BIKE", durationMin: 75, isKey: true),
+            V1PlannedSessionItem(id: "p4", date: day(1), title: "Vélo", type: "BIKE", durationMin: 100, brickGroupId: "b1", brickOrder: 0),
+            V1PlannedSessionItem(id: "p5", date: day(1), title: "Course", type: "RUN", durationMin: 60, brickGroupId: "b1", brickOrder: 1),
+            V1PlannedSessionItem(id: "p6", date: day(2), title: "Course · Sortie longue", type: "RUN", durationMin: 90),
+        ].filter { $0.date >= from && $0.date <= to }
     }
 }
 

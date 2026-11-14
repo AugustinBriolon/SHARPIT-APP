@@ -77,6 +77,8 @@ struct SharpitStripDay<Mark: View>: View {
     let day: Date
     let emphasis: Emphasis
     @ViewBuilder let mark: Mark
+    /// On a Clinique screen the filled day is ink: no control takes a hue (`docs/adr/0034`).
+    @Environment(\.isCliniqueScreen) private var isClinique
 
     var body: some View {
         VStack(spacing: SharpitSpacing.xxs) {
@@ -89,7 +91,7 @@ struct SharpitStripDay<Mark: View>: View {
                 .font(SharpitTypography.instrument)
                 .foregroundStyle(figureColor)
                 .frame(width: 34, height: 34)
-                .background(emphasis == .filled ? SharpitColor.highlight : Color.clear, in: Circle())
+                .background(emphasis == .filled ? (isClinique ? SharpitColor.primary : SharpitColor.highlight) : Color.clear, in: Circle())
                 .animation(SharpitMotion.selection, value: emphasis == .filled)
 
             mark
@@ -101,7 +103,7 @@ struct SharpitStripDay<Mark: View>: View {
 
     private var figureColor: Color {
         switch emphasis {
-        case .filled: SharpitColor.highlightForeground
+        case .filled: isClinique ? SharpitColor.primaryForeground : SharpitColor.highlightForeground
         case .accent: SharpitColor.primary
         case .plain, .unavailable: SharpitColor.foreground
         }

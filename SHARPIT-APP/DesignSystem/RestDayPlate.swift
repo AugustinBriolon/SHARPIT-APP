@@ -4,12 +4,7 @@ import SwiftUI
 struct RestDayPlate: View {
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: "moon.zzz")
-                .font(.system(size: 18, weight: .regular))
-                .foregroundStyle(SharpitColor.foreground)
-                .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                .background(SharpitColor.tile, in: Circle())
-                .accessibilityHidden(true)
+            CliniqueSportTile(symbol: "moon.zzz")
             VStack(alignment: .leading, spacing: 3) {
                 Text("Repos")
                     .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))

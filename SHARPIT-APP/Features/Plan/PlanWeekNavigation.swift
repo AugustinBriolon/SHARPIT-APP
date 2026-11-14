@@ -19,7 +19,7 @@ struct PlanWeekHeader: View {
                         .foregroundStyle(SharpitColor.foreground)
                     Image(systemName: "chevron.down")
                         .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .accessibilityHidden(true)
                 }
             }
@@ -75,7 +75,7 @@ struct PlanWeekStrip: View {
         }
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(SharpitColor.analysisBorder)
+                .fill(SharpitColor.divider)
                 .frame(height: 1)
         }
     }
@@ -93,7 +93,7 @@ private struct PlanStatusDot: View {
         case .planned:
             Circle().strokeBorder(SharpitColor.primary, lineWidth: 1.25)
         case .missed:
-            Circle().fill(SharpitColor.mutedForeground)
+            Circle().fill(SharpitColor.slate)
         case nil:
             Color.clear
         }

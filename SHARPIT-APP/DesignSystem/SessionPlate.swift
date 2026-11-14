@@ -13,12 +13,7 @@ struct SessionPlate: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            Image(systemName: symbol)
-                .font(.system(size: 18, weight: .regular))
-                .foregroundStyle(SharpitColor.foreground)
-                .frame(width: SharpitTokens.tileSize, height: SharpitTokens.tileSize)
-                .background(SharpitColor.tile, in: Circle())
-                .accessibilityHidden(true)
+            CliniqueSportTile(symbol: symbol)
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(headerTitle)

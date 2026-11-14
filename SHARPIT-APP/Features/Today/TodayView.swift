@@ -634,7 +634,7 @@ private struct TodayFoldView: View {
             .padding(.bottom, SharpitSpacing.lg)
             .containerRelativeFrame(.horizontal, alignment: .leading)
             // The cards not yet redrawn take the sheet's hairline instead of their shadow.
-            .cliniqueSurfaces()
+            .cliniqueScreen()
         }
         .cliniqueSheet(wash: VerdictReadout.wash(for: VerdictReadout.status(for: fold.plate)))
         .scrollBounceBehavior(.basedOnSize, axes: .horizontal)

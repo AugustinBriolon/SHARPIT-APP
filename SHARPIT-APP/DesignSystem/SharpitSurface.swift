@@ -74,11 +74,11 @@ enum SharpitSurfaceStyle {
 private struct SharpitSurfaceModifier: ViewModifier {
     let style: SharpitSurfaceStyle
     @Environment(\.sharpitElevation) private var elevation
-    @Environment(\.usesCliniqueSurfaces) private var usesCliniqueSurfaces
+    @Environment(\.isCliniqueScreen) private var isCliniqueScreen
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        if usesCliniqueSurfaces, style == .panel {
+        if isCliniqueScreen, style == .panel {
             content
                 .foregroundStyle(style.foreground)
                 .sharpitContainerCorner(SharpitTokens.cardShapeRadius)
@@ -115,16 +115,17 @@ extension View {
         modifier(SharpitSurfaceModifier(style: style))
     }
 
-    /// Inside a swept screen, a card not yet redrawn takes the Clinique hairline instead of its
-    /// shadow, so it sits on the sheet (`docs/adr/0034`).
-    /// shortcut: only the panel's outline changes, its content keeps Ink & Lime parts; redraw the
-    /// card with the Clinique primitives when its own feature is swept.
-    func cliniqueSurfaces() -> some View {
-        environment(\.usesCliniqueSurfaces, true)
+    /// Marks a screen as swept to Clinique (`docs/adr/0034`) for the shared pieces it still borrows:
+    /// a card not yet redrawn takes the hairline instead of its shadow, and the week strip's
+    /// selected day turns ink.
+    /// shortcut: only a borrowed card's outline changes, its content keeps Ink & Lime parts; redraw
+    /// the card with the Clinique primitives when its own feature is swept.
+    func cliniqueScreen() -> some View {
+        environment(\.isCliniqueScreen, true)
     }
 }
 
 extension EnvironmentValues {
-    @Entry var usesCliniqueSurfaces = false
+    @Entry var isCliniqueScreen = false
 }
 

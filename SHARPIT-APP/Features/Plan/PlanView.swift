@@ -93,7 +93,10 @@ struct PlanView: View {
                     onOpenTrajectory: { openedTrajectory = $0 }
                 )
             }
-            .background(SharpitCanvasBackground())
+            // Clinique (`docs/adr/0034`): one sheet, a neutral wash under the week's header.
+            .cliniqueSheet(wash: .neutral)
+            // The load and trajectory cards are not redrawn yet: a hairline in place of their shadow.
+            .cliniqueScreen()
             .navigationTitle("Plan")
             .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
@@ -672,33 +675,28 @@ private struct PlanFocusSession: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(isToday ? String(localized: "À faire aujourd'hui") : String(localized: "Prochaine séance"))
-                    .font(SharpitTypography.eyebrow)
-                    .tracking(SharpitTypography.eyebrowTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                Spacer()
-                PlanSportChain(symbolNames: symbolNames, font: .title3.weight(.semibold))
+        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                CliniqueStatusPill(
+                    isToday ? String(localized: "À faire aujourd'hui") : String(localized: "Prochaine séance"),
+                    status: .protect
+                )
+                Text(title)
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                Text([sport, durationMin.map { "\($0) min" }].compactMap { $0 }.joined(separator: " · "))
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
             }
-            Text(title)
-                .font(SharpitTypography.sectionTitle)
-                .tracking(SharpitTypography.sectionTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
-                .lineLimit(2)
-            HStack(spacing: SharpitSpacing.md) {
-                PlanFocusMetric(label: String(localized: "Sport"), value: sport)
-                if let duration = durationMin {
-                    PlanFocusMetric(label: String(localized: "Durée"), value: "\(duration) min")
-                }
-            }
+            Spacer(minLength: 0)
+            PlanSportChain(symbolNames: symbolNames, font: .title3)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // Plan's one ink card: what comes next. Dark inside, so its tokens resolve light on ink.
-        .environment(\.colorScheme, .dark)
-        .sharpitSurface(.ink)
+        // What comes next, as the sheet's one bordered card.
+        .cliniqueCard()
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
     }
 }
@@ -714,32 +712,14 @@ private struct PlanSportChain: View {
                 if index > 0 {
                     Image(systemName: "arrow.right")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                 }
-                Image(systemName: symbol)
+                Image(sharpitSymbol: symbol)
                     .font(font)
-                    .foregroundStyle(SharpitColor.highlight)
+                    .foregroundStyle(SharpitColor.foreground)
             }
         }
         .accessibilityHidden(true)
-    }
-}
-
-private struct PlanFocusMetric: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(SharpitColor.mutedForeground)
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
-        }
     }
 }
 
@@ -756,24 +736,24 @@ private struct PlanDayRow: View {
                 Text(day.sharpitFormatted(.dateTime.weekday(.abbreviated)))
                     .font(SharpitTypography.eyebrow)
                     .textCase(.uppercase)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                 let isToday = Calendar.current.isDateInToday(day)
                 Text(day.sharpitFormatted(.dateTime.day()))
                     .font(SharpitTypography.data)
                     .tracking(SharpitTypography.dataTracking)
-                    .foregroundStyle(isToday ? SharpitColor.highlightForeground : SharpitColor.foreground)
+                    .foregroundStyle(isToday ? SharpitColor.primaryForeground : SharpitColor.foreground)
                     .padding(.horizontal, 6)
-                    .background(isToday ? SharpitColor.highlight : .clear, in: Capsule())
+                    .background(isToday ? SharpitColor.primary : .clear, in: Capsule())
             }
             .frame(width: 42)
             Rectangle()
-                .fill(SharpitColor.analysisBorder)
+                .fill(SharpitColor.divider)
                 .frame(width: 1)
 
             if entries.isEmpty {
                 Text("Repos")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .padding(.top, SharpitSpacing.sm)
             } else {
                 VStack(spacing: SharpitSpacing.xs) {
@@ -792,7 +772,7 @@ private struct PlanDayRow: View {
         .padding(.vertical, SharpitSpacing.sm)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(SharpitColor.analysisBorder)
+                .fill(SharpitColor.divider)
                 .frame(height: 1)
         }
         .accessibilityElement(children: .contain)
@@ -877,7 +857,7 @@ private struct PlanExecutedCard: View {
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            SharpitSportBadge(type: entry.activity.type, size: 34)
+            CliniqueSportTile(symbol: entry.activity.type.symbolName, size: 36)
 
             VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                 Text(entry.activity.title ?? entry.activity.type.label)
@@ -890,7 +870,7 @@ private struct PlanExecutedCard: View {
                     summary(showsPlanned: false)
                 }
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             }
 
             Spacer(minLength: 0)
@@ -898,16 +878,7 @@ private struct PlanExecutedCard: View {
             if let score = entry.complianceScore {
                 PlanComplianceMark(score: score)
             } else if entry.wasPlanned {
-                HStack(spacing: 3) {
-                    Image(systemName: "link")
-                        .font(.system(size: 10, weight: .semibold))
-                    Text("Liée")
-                        .font(SharpitTypography.meta)
-                }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(SharpitColor.primary.opacity(0.12), in: Capsule())
-                .foregroundStyle(SharpitColor.primary)
+                CliniqueStatusPill(String(localized: "Liée"), status: .unknown)
             } else {
                 Image(systemName: "checkmark")
                     .font(SharpitTypography.label)
@@ -931,19 +902,13 @@ private struct PlanExecutedCard: View {
     }
 }
 
-/// The execution score, as a number rather than a ring — `design.md` keeps radial gauges
-/// out of list rows.
+/// The execution score, as a figure in a status pill rather than a ring — `design.md` keeps
+/// radial gauges out of list rows. Green from 85: the session followed its plan.
 private struct PlanComplianceMark: View {
     let score: Double
 
     var body: some View {
-        let followed = score >= 85
-        Text("\(Int(score.rounded()))")
-            .font(SharpitTypography.instrument)
-            .foregroundStyle(followed ? SharpitColor.highlightForeground : SharpitColor.foreground)
-            .padding(.horizontal, SharpitSpacing.xs)
-            .padding(.vertical, SharpitSpacing.xxs)
-            .background(followed ? SharpitColor.highlight : SharpitColor.chipSurface, in: Capsule())
+        CliniqueStatusPill("\(Int(score.rounded())) / 100", status: score >= 85 ? .good : .unknown)
             .accessibilityHidden(true)
     }
 }
@@ -957,30 +922,38 @@ private struct PlanSessionCard: View {
     let session: V1PlannedSessionItem
     var state: State = .planned
 
+    private func meta(showsType: Bool) -> some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            if session.isKey { CliniqueStatusPill(String(localized: "Clé"), status: .pro) }
+            if showsType { Text(session.displayType) }
+            if let durationMin = session.durationMin { Text("\(durationMin) min") }
+            if state == .missed { Text("Non réalisée") }
+        }
+        .lineLimit(1)
+    }
+
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
-            SharpitSportBadge(type: session.activityType, size: 34)
-                .opacity(state == .missed ? 0.4 : 1)
+            CliniqueSportTile(symbol: session.symbolName, size: 36, isDimmed: state == .missed)
             VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                 Text(session.title ?? session.displayType)
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(
-                        state == .missed ? SharpitColor.mutedForeground : SharpitColor.foreground
+                        state == .missed ? SharpitColor.slate : SharpitColor.foreground
                     )
                     .lineLimit(2)
-                HStack(spacing: SharpitSpacing.xs) {
-                    if session.isKey { SharpitInlineTag(String(localized: "Clé")) }
-                    Text(session.displayType)
-                    if let durationMin = session.durationMin { Text("\(durationMin) min") }
-                    if state == .missed { Text("Non réalisée") }
+                // A narrow row drops the sport, which the glyph already says, rather than break a word.
+                ViewThatFits(in: .horizontal) {
+                    meta(showsType: true)
+                    meta(showsType: false)
                 }
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .accessibilityHidden(true)
         }
         .padding(.vertical, SharpitSpacing.xxs)
@@ -1001,33 +974,33 @@ private struct PlanBrickCard: View {
                 ForEach(Array(brick.legs.enumerated()), id: \.offset) { index, leg in
                     if index > 0 {
                         Rectangle()
-                            .fill(brick.isMissed ? SharpitColor.mutedForeground.opacity(0.4) : SharpitColor.primary.opacity(0.5))
+                            .fill(brick.isMissed ? SharpitColor.slate.opacity(0.4) : SharpitColor.primary.opacity(0.5))
                             .frame(width: 1.5, height: 6)
                     }
                     Image(sharpitSymbol: leg.symbolName)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(brick.isMissed ? SharpitColor.mutedForeground : SharpitColor.primary)
+                        .foregroundStyle(brick.isMissed ? SharpitColor.slate : SharpitColor.primary)
                 }
             }
             .frame(width: 28)
             VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                 Text(brick.chain)
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(brick.isMissed ? SharpitColor.mutedForeground : SharpitColor.foreground)
+                    .foregroundStyle(brick.isMissed ? SharpitColor.slate : SharpitColor.foreground)
                     .lineLimit(2)
                 HStack(spacing: SharpitSpacing.xs) {
-                    SharpitInlineTag(String(localized: "Brick"))
-                    if brick.isKey { SharpitInlineTag(String(localized: "Clé")) }
+                    CliniqueStatusPill(String(localized: "Brick"), status: .unknown)
+                    if brick.isKey { CliniqueStatusPill(String(localized: "Clé"), status: .pro) }
                     Text(brick.legs.map { leg in leg.durationMin.map { "\($0)" } ?? "–" }.joined(separator: " + ") + " min")
                     if brick.isMissed { Text("Non réalisé") }
                 }
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .accessibilityHidden(true)
         }
         .padding(.vertical, SharpitSpacing.xxs)
@@ -1067,20 +1040,13 @@ private struct PlanDoneBrickCard: View {
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(2)
                 HStack(spacing: SharpitSpacing.xs) {
-                    Text("Brick réalisé")
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .textCase(.uppercase)
-                        .foregroundStyle(SharpitColor.primary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 1)
-                        .background(SharpitColor.primary.opacity(0.12), in: Capsule())
+                    CliniqueStatusPill(String(localized: "Brick réalisé"), status: .good)
                     if let totalDurationMin = brick.totalDurationMin {
                         Text("\(totalDurationMin) min")
                     }
                 }
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)
             Image(systemName: "checkmark")
@@ -1089,7 +1055,7 @@ private struct PlanDoneBrickCard: View {
                 .accessibilityHidden(true)
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.label)
-                .foregroundStyle(SharpitColor.mutedForeground)
+                .foregroundStyle(SharpitColor.slate)
                 .accessibilityHidden(true)
         }
         .padding(.vertical, SharpitSpacing.xxs)
@@ -1105,11 +1071,11 @@ private struct PlanLoadingView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
                     .frame(height: 86)
                 ForEach(0..<7, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius)
-                        .fill(SharpitColor.analysisSurfaceAlt)
+                        .fill(SharpitColor.tile)
                         .frame(height: 56)
                 }
             }
