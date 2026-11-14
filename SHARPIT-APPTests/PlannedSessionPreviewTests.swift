@@ -367,3 +367,26 @@ private func plannedItems() throws -> [V1PlannedSessionItem] {
     #expect(PlanAdapterReadout.apply(1) == "Appliquer le changement")
     #expect(PlanAdapterReadout.apply(2) == "Appliquer les 2 changements")
 }
+
+@Test func aGeneratedWeekSaysItsTotalAndEachLine() {
+    let week = [
+        V1GeneratedSession(date: "2026-11-17", type: .run, intensity: "TEMPO", title: "Tempo", description: "", durationMin: 55, load: 68),
+        V1GeneratedSession(date: "2026-11-19", type: .strength, intensity: "ENDURANCE", title: "Gainage", description: "", durationMin: 35, load: 0),
+        V1GeneratedSession(date: "2026-11-20", type: .bike, intensity: "THRESHOLD", title: "Seuil", description: "", durationMin: 120, load: 85),
+    ]
+    #expect(GeneratedWeekReadout.total(week) == "3 séances · 3 h 30 · charge 153")
+    #expect(GeneratedWeekReadout.detail(week[0]) == "55 min · charge 68")
+    #expect(GeneratedWeekReadout.detail(week[1]) == "35 min")
+    #expect(GeneratedWeekReadout.duration(120) == "2 h")
+    #expect(GeneratedWeekReadout.add(1) == "Ajouter 1 séance")
+    #expect(GeneratedWeekReadout.add(4) == "Ajouter 4 séances")
+}
+
+@MainActor @Test func aGeneratedWeekIsNamedByItsFirstDay() {
+    let week = [
+        V1GeneratedSession(date: "2026-11-19", type: .run, intensity: "TEMPO", title: "Tempo", description: "", durationMin: 55, load: 68),
+        V1GeneratedSession(date: "2026-11-17", type: .run, intensity: "TEMPO", title: "Tempo", description: "", durationMin: 55, load: 68),
+    ]
+    #expect(GeneratedWeekReadout.title(week, locale: Locale(identifier: "fr_FR")) == "Semaine du 17 novembre")
+    #expect(GeneratedWeekReadout.title([]) == nil)
+}

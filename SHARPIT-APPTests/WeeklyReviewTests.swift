@@ -129,15 +129,27 @@ private extension StubReviewClient {
     #expect(WeeklyReviewTone.sleep(minutes: 380) == SharpitColor.signalCaution)
 }
 
-@Test func theHeroReadsSessionsLoadAndSleep() {
+@Test func theStripReadsSessionsVolumeAndLoadAndTheWeekIsNamedByItsDays() {
     var stats = V1WeeklyStats()
     stats.sessionsDone = 5
     stats.sessionsPlanned = 6
     stats.totalLoad = 411.6
-    stats.sleep = .init(avgDurationMin: 432, avgScore: nil)
-    #expect(ReviewHeroFigure.all(from: stats) == [
-        ReviewHeroFigure(caption: "Séances", value: "5", unit: "/6"),
+    stats.totalDurationMin = 550
+    #expect(WeeklyReviewReadout.strip(stats) == [
+        ReviewHeroFigure(caption: "Séances", value: "5", unit: "/ 6"),
+        ReviewHeroFigure(caption: "Volume", value: "9 h 10", unit: nil),
         ReviewHeroFigure(caption: "Charge", value: "412", unit: nil),
-        ReviewHeroFigure(caption: "Sommeil", value: "7 h", unit: "12"),
     ])
+    #expect(WeeklyReviewReadout.standing(stats)?.text == "Semaine presque pleine")
+    stats.sessionsDone = 6
+    #expect(WeeklyReviewReadout.standing(stats)?.status == .good)
+    stats.sessionsDone = 2
+    #expect(WeeklyReviewReadout.standing(stats)?.text == "Semaine légère")
+    #expect(WeeklyReviewReadout.standing(nil) == nil)
+}
+
+@MainActor @Test func theReviewIsTitledByItsWeek() {
+    let french = Locale(identifier: "fr_FR")
+    #expect(WeeklyReviewReadout.title(weekStart: "2026-11-02", locale: french) == "Bilan du 2 au 8 novembre")
+    #expect(WeeklyReviewReadout.title(weekStart: "2026-09-28", locale: french) == "Bilan du 28 septembre au 4 octobre")
 }
