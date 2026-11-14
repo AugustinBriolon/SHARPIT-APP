@@ -53,46 +53,35 @@ struct RessentiDuJourSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    header
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                header
 
-                    RessentiStepPicker(
-                        steps: SessionFeeling.allCases.map { ($0.rawValue, $0.storedValue) },
-                        selection: store.feeling?.rawValue
-                    ) { raw in
-                        store.feeling = SessionFeeling(rawValue: raw)
-                        store.persistDraft()
-                    }
-
-                    details
-
-                    if case .failed(let message) = store.phase {
-                        Text(message)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalCaution)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                RessentiStepPicker(
+                    steps: SessionFeeling.allCases.map { ($0.rawValue, $0.storedValue) },
+                    selection: store.feeling?.rawValue
+                ) { raw in
+                    store.feeling = SessionFeeling(rawValue: raw)
+                    store.persistDraft()
                 }
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.bottom, SharpitSpacing.lg)
-            }
-            .scrollBounceBehavior(.basedOnSize)
-            .background(SharpitCanvasBackground())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Plus tard") {
-                        store.dismissForLater()
-                        onDismissLater()
-                        dismiss()
-                    }
+
+                details
+
+                if case .failed(let message) = store.phase {
+                    Text(message)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.signalCaution)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                saveBar
-            }
+            .padding(.horizontal, 24)
+            .padding(.top, 36)
+            .padding(.bottom, SharpitSpacing.lg)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .background(SharpitColor.card)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            saveBar
         }
         .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
@@ -105,80 +94,72 @@ struct RessentiDuJourSheet: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.md) {
-            SharpitIconTile(symbol: "sun.horizon")
-            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                Text("Comment tu te sens ce matin ?")
-                    .font(SharpitTypography.sectionTitle)
-                    .tracking(SharpitTypography.sectionTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-                Text("Ta réponse affine le verdict du jour.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Ton ressenti ce matin")
+                .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            Text("Ta réponse ajuste la séance du jour.")
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .foregroundStyle(SharpitColor.slate)
         }
     }
 
     /// Energy, body and stress, then the note: one tap away, never in the way of the answer.
     private var details: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+        VStack(alignment: .leading, spacing: 0) {
+            CliniqueDivider()
             Button {
                 withAnimation(SharpitMotion.reveal) { store.detailsExpanded.toggle() }
                 store.persistDraft()
             } label: {
                 HStack(spacing: SharpitSpacing.sm) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Ajouter un détail")
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.foreground)
-                        Text("Énergie, corps, stress, un mot pour le coach")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                    }
+                    Text("Ajouter un détail")
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.down")
-                        .font(SharpitTypography.meta.weight(.semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(SharpitColor.slate)
                         .rotationEffect(.degrees(store.detailsExpanded ? 180 : 0))
                 }
-                .padding(SharpitSpacing.cardPadding)
+                .padding(.vertical, 18)
                 .contentShape(.rect)
-                .sharpitSurface(.panel)
             }
             .buttonStyle(.sharpitPressable)
             .accessibilityValue(store.detailsExpanded ? String(localized: "Ouvert") : String(localized: "Fermé"))
+            .accessibilityHint("Énergie, corps, stress, un mot pour le coach")
 
             if store.detailsExpanded {
                 ForEach([WellnessDimension.energy, .soreness, .stress], id: \.self) { dimension in
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                        Text(dimension.title)
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.foreground)
-                        RessentiStepPicker(
-                            steps: WellnessScore.allCases.map { ($0.rawValue, dimension.label(for: $0)) },
-                            selection: binding(for: dimension)?.rawValue
-                        ) { raw in
-                            if let score = WellnessScore(rawValue: raw) {
-                                set(score, for: dimension)
-                                store.persistDraft()
-                            }
+                    CliniqueDivider()
+                    RessentiScaleRow(
+                        title: dimension.title,
+                        word: binding(for: dimension).map { dimension.label(for: $0) },
+                        score: binding(for: dimension)?.rawValue
+                    ) { raw in
+                        if let score = WellnessScore(rawValue: raw) {
+                            set(score, for: dimension)
+                            store.persistDraft()
                         }
                     }
                 }
+                CliniqueDivider()
 
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Un mot pour le coach")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                        .foregroundStyle(SharpitColor.slate)
                     TextField("Ta nuit, une sensation particulière…", text: $store.notes, axis: .vertical)
                         .lineLimit(2...4)
-                        .font(SharpitTypography.body)
-                        .padding(SharpitSpacing.cardPadding)
-                        .sharpitSurface(.panel)
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                        .padding(16)
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(SharpitColor.divider, lineWidth: 1))
                         .onChange(of: store.notes) { _, _ in store.persistDraft() }
                 }
+                .padding(.top, 16)
             }
         }
     }
@@ -202,17 +183,30 @@ struct RessentiDuJourSheet: View {
     }
 
     private var saveBar: some View {
-        SharpitPrimaryButton(
-            title: store.canSubmit ? String(localized: "Enregistrer") : String(localized: "Choisis ton ressenti"),
-            isBusy: store.phase == .submitting
-        ) {
-            save()
+        VStack(spacing: 4) {
+            Button(action: save) {
+                Group {
+                    if store.phase == .submitting {
+                        ProgressView().tint(SharpitColor.primaryForeground)
+                    } else {
+                        Text(store.canSubmit ? String(localized: "Enregistrer") : String(localized: "Choisis ton ressenti"))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+            .disabled(!store.canSubmit)
+            .accessibilityHint(store.canSubmit ? String(localized: "Enregistre ton ressenti du matin") : String(localized: "Choisis d'abord comment tu te sens"))
+            Button("Plus tard") {
+                store.dismissForLater()
+                onDismissLater()
+                dismiss()
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .plain))
         }
-        .disabled(!store.canSubmit)
-        .opacity(store.canSubmit ? 1 : 0.4)
-        .accessibilityHint(store.canSubmit ? String(localized: "Enregistre ton ressenti du matin") : String(localized: "Choisis d'abord comment tu te sens"))
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.vertical, SharpitSpacing.sm)
+        .padding(.horizontal, 24)
+        .padding(.top, SharpitSpacing.xs)
+        .background(SharpitColor.card)
     }
 
     /// Closes at once; the write continues behind. Input stays in the protected draft file.
@@ -237,34 +231,39 @@ struct RessentiDuJourSheet: View {
     }
 }
 
-/// Five named steps in a row: the number, its word under it. The chosen one is lime; the others
-/// are white tiles. No hue per step — a feeling is not a warning (ADR-085).
+/// Five named steps in a row: as many bars as the step, its word under them. The chosen one is
+/// ink; the others are bordered tiles. No hue per step — a feeling is not a warning.
 struct RessentiStepPicker: View {
     let steps: [(value: Int, label: String)]
     let selection: Int?
     let onPick: (Int) -> Void
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.xs) {
+        HStack(spacing: 7) {
             ForEach(steps, id: \.value) { step in
                 let isOn = step.value == selection
+                let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
                 Button {
                     withAnimation(SharpitMotion.selection) { onPick(step.value) }
                 } label: {
-                    VStack(spacing: SharpitSpacing.xxs) {
-                        Text("\(step.value)")
-                            .font(SharpitTypography.data)
-                            .monospacedDigit()
+                    VStack(spacing: 8) {
+                        HStack(alignment: .bottom, spacing: 2.5) {
+                            ForEach(0..<step.value, id: \.self) { index in
+                                RoundedRectangle(cornerRadius: 1.5).frame(width: 3.5, height: 5 + CGFloat(index) * 4)
+                            }
+                        }
+                        .frame(height: 22, alignment: .bottom)
+                        .accessibilityHidden(true)
                         Text(step.label)
-                            .font(SharpitTypography.system(size: 11, weight: .semibold, relativeTo: .caption2))
+                            .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
                     .foregroundStyle(isOn ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                    .frame(maxWidth: .infinity, minHeight: 68)
+                    .frame(maxWidth: .infinity, minHeight: 76)
                     .padding(.horizontal, 2)
-                    .sharpitConcentricBackground(isOn ? SharpitColor.primary : SharpitColor.card, minimum: SharpitRadius.tile)
-                    .sharpitShadow(.control)
+                    .background(isOn ? SharpitColor.primary : .clear, in: shape)
+                    .overlay(shape.strokeBorder(SharpitColor.divider, lineWidth: isOn ? 0 : 1))
                     .contentShape(.rect)
                 }
                 .buttonStyle(.sharpitPressable)
@@ -272,5 +271,46 @@ struct RessentiStepPicker: View {
                 .accessibilityAddTraits(isOn ? [.isSelected] : [])
             }
         }
+    }
+}
+
+/// A detail on five dashes: its name, the word for where it stands, and the dashes to tap.
+struct RessentiScaleRow: View {
+    let title: String
+    let word: String?
+    let score: Int?
+    let onPick: (Int) -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .foregroundStyle(SharpitColor.foreground)
+            Spacer(minLength: SharpitSpacing.xs)
+            if let word {
+                Text(word)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.slate)
+                    .lineLimit(1)
+            }
+            HStack(spacing: 0) {
+                ForEach(1...5, id: \.self) { step in
+                    Button {
+                        withAnimation(SharpitMotion.selection) { onPick(step) }
+                    } label: {
+                        Capsule()
+                            .fill(step <= (score ?? 0) ? SharpitColor.foreground : SharpitColor.tile)
+                            .frame(width: 24, height: 7)
+                            .padding(.horizontal, 2.5)
+                            .frame(height: 44)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(title) \(step) sur 5")
+                    .accessibilityAddTraits(step == score ? [.isSelected] : [])
+                }
+            }
+        }
+        .padding(.vertical, 6)
     }
 }

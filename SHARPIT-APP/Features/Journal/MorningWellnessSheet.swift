@@ -181,7 +181,7 @@ private struct WellnessDimensionRow: View {
                     onPick(score)
                 } label: {
                     Text("\(score.rawValue)")
-                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular, design: .rounded))
+                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
                         .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
                         .frame(width: 35, height: 35)
                         .background(

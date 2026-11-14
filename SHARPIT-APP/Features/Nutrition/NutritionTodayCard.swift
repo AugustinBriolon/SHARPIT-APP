@@ -88,7 +88,7 @@ private struct NutritionDayGlance: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(calories?.goal.map { String(localized: "sur \(NutritionReadout.kcal($0)) kcal") } ?? "kcal")
-                .font(.system(size: 11, weight: .regular, design: .rounded))
+                .font(.system(size: 11, weight: .regular))
                 .foregroundStyle(SharpitColor.slate)
             if let calories, calories.goal != nil {
                 NutritionGoalBar(
@@ -132,7 +132,7 @@ struct NutritionMacroColumns: View {
         let fill = day.goals.flatMap { macro.line(in: $0).pct }.map { NutritionReadout.fill(pct: $0) } ?? 0
         return VStack(spacing: 4) {
             Text("\(Int(macro.consumed(in: day).rounded()))")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(SharpitColor.foreground)
             ZStack(alignment: .bottom) {

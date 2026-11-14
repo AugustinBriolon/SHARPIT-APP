@@ -53,7 +53,7 @@ struct NutritionMealView: View {
                     .tracking(SharpitTypography.gaugeScoreTracking)
                     .foregroundStyle(SharpitColor.foreground)
                 Text("kcal")
-                    .font(.system(size: 11, weight: .regular, design: .rounded))
+                    .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: 0)

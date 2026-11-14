@@ -23,68 +23,38 @@ struct FoodLogMealsSection: View {
     let onAdd: (FoodLogMeal) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(spacing: SharpitSpacing.xs) {
-                SharpitEyebrow(String(localized: "Repas"))
-                Spacer(minLength: 0)
-                if let day = store.dayHealth, day.score != nil {
-                    Text("Note du jour")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                    FoodHealthBadge(meal: day)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Repas")
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.bottom, 4)
+            let sections = store.sections
+            ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
+                if index > 0 { CliniqueDivider() }
+                row(section)
             }
-            .accessibilityElement(children: .combine)
-            VStack(spacing: 0) {
-                let sections = store.sections
-                ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
-                    row(section)
-                    if index < sections.count - 1 {
-                        Rectangle()
-                            .fill(SharpitColor.divider)
-                            .frame(height: 1)
-                            .padding(.leading, 56)
-                    }
-                }
-            }
-            .sharpitSurface(.panel)
         }
     }
 
     private func row(_ section: FoodLogStore.MealSection) -> some View {
-        HStack(spacing: 0) {
+        Group {
             if section.entries.isEmpty {
                 Button { onAdd(section.meal) } label: {
-                    FoodLogMealRow(
-                        section: section, health: nil, flagged: false, opensPage: false,
-                        skipped: store.isSkipped(section.meal)
-                    )
+                    FoodLogMealRow(section: section, flagged: false, skipped: store.isSkipped(section.meal))
                 }
                 .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Ajoute un aliment")
             } else {
                 NavigationLink {
                     FoodLogMealPage(store: store, meal: section.meal, flags: flags)
                 } label: {
-                    FoodLogMealRow(
-                        section: section, health: store.mealHealth(section.meal),
-                        flagged: isFlagged(section), opensPage: true
-                    )
+                    FoodLogMealRow(section: section, flagged: isFlagged(section))
                 }
                 .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Ouvre le repas")
             }
-            Button { onAdd(section.meal) } label: {
-                // A small mark, a full-size target: the circle is drawn at 28 pt, the tap is 44.
-                Image(systemName: "plus")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(SharpitNutritionTone.mealLabel(section.meal.storedName))
-                    .frame(width: 28, height: 28)
-                    .background(SharpitNutritionTone.meal(section.meal.storedName).opacity(0.12), in: Circle())
-                    .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.sharpitPressable)
-            .padding(.trailing, SharpitSpacing.sm)
-            .accessibilityLabel("Ajouter un aliment au \(section.meal.label.lowercased())")
         }
         .contextMenu {
             Button { Task { await store.copyFromPreviousDay(section.meal) } } label: {
@@ -118,74 +88,50 @@ struct FoodLogMealsSection: View {
     }
 }
 
+/// A meal on a line: its name over its foods, its energy at the end — or « Ajouter » while empty.
 private struct FoodLogMealRow: View {
     let section: FoodLogStore.MealSection
-    /// The meal's score (SHARPIT ADR-070), shown once the server scored these very entries.
-    let health: V1MealHealth?
     let flagged: Bool
-    let opensPage: Bool
     var skipped = false
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            ZStack {
-                Circle().fill(SharpitNutritionTone.meal(section.meal.storedName).opacity(0.14)).frame(width: 32, height: 32)
-                Image(systemName: NutritionReadout.mealSymbol(section.meal.storedName))
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SharpitNutritionTone.mealLabel(section.meal.storedName))
-            }
-            .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(section.meal.label)
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                // The energy rides with the count, so the title keeps the row's width whole.
-                HStack(spacing: 4) {
-                    Text(countLabel)
-                    if !section.entries.isEmpty {
-                        Text("· \(NutritionReadout.kcal(section.kcal)) kcal")
-                            .monospacedDigit()
-                            .contentTransition(.numericText(value: section.kcal))
-                    }
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(section.meal.label)
+                        .font(SharpitTypography.system(size: 15, weight: section.entries.isEmpty ? .regular : .semibold, relativeTo: .body))
+                        .foregroundStyle(section.entries.isEmpty ? SharpitColor.slate : SharpitColor.foreground)
                     if flagged {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundStyle(SharpitColor.signalCaution)
+                        CliniqueStatusPill(String(localized: "Signalé"), status: .watch)
                             .accessibilityLabel("Aliment signalé par le coach")
                     }
                 }
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .lineLimit(1)
+                if !section.entries.isEmpty {
+                    Text(NutritionReadout.mealLine(section.entries.map(\.name)))
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                        .foregroundStyle(SharpitColor.slate)
+                        .lineLimit(1)
+                } else if skipped {
+                    Text("Repas sauté")
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                        .foregroundStyle(SharpitColor.slate)
+                }
             }
-            .layoutPriority(1)
-            Spacer(minLength: 0)
-            if let health, health.score != nil {
-                FoodHealthBadge(meal: health)
-            }
-            if opensPage {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate.opacity(0.45))
-                    .accessibilityHidden(true)
+            Spacer(minLength: SharpitSpacing.sm)
+            if section.entries.isEmpty {
+                Text("Ajouter")
+                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body))
+                    .foregroundStyle(SharpitColor.foreground)
+            } else {
+                Text(NutritionReadout.kcal(section.kcal))
+                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .contentTransition(.numericText(value: section.kcal))
             }
         }
-        .padding(.leading, SharpitSpacing.md)
-        .padding(.trailing, SharpitSpacing.sm)
-        .padding(.vertical, SharpitSpacing.sm)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityHint(opensPage ? String(localized: "Ouvre le repas") : String(localized: "Ajoute un aliment"))
-    }
-
-    private var countLabel: String {
-        switch section.entries.count {
-        case 0: skipped ? String(localized: "Repas sauté") : String(localized: "Rien de noté")
-        case 1: String(localized: "1 aliment")
-        default: "\(section.entries.count) aliments"
-        }
     }
 }
 

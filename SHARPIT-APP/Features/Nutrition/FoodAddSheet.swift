@@ -40,6 +40,8 @@ struct FoodAddSheet: View {
     var body: some View {
         NavigationStack(path: $path) {
             FoodSearchPage(
+                title: request.meal.label,
+                onClose: { dismiss() },
                 store: store,
                 search: search,
                 query: $query,
@@ -53,12 +55,8 @@ struct FoodAddSheet: View {
                 onRecipe: { path.append(.recipe(nil)) }
             )
             .navigationTitle(request.meal.label)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { dismiss() }
-                }
-            }
+            // The page carries its own name and its way out; pushed pages keep the bar.
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: FoodAddRoute.self, destination: destination)
         }
         .presentationDragIndicator(.visible)
@@ -175,6 +173,10 @@ enum FoodAddRoute: Hashable {
 /// The search: recent foods while nothing is typed, then the athlete's own foods and Open Food
 /// Facts' products. Typing in or creating a food is always one row away.
 private struct FoodSearchPage: View {
+    private enum Filter { case all, recent }
+
+    let title: String
+    let onClose: () -> Void
     let store: FoodLogStore
     let search: FoodSearchStore
     @Binding var query: String
@@ -187,147 +189,197 @@ private struct FoodSearchPage: View {
     let onSavedMeals: () -> Void
     let onRecipe: () -> Void
 
+    @State private var filter = Filter.all
+
     private var isSearching: Bool { FoodSearchStore.isSearchable(query) }
 
     var body: some View {
-        List {
-            // Shortcuts leave the stage once the athlete is searching — results own the list.
-            if !isSearching {
-                Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text(title)
+                        .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
+                        .tracking(-0.4)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    circleButton("xmark", String(localized: "Fermer"), size: 13, action: onClose)
+                }
+                HStack(spacing: 10) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundStyle(SharpitColor.slate)
+                            .accessibilityHidden(true)
+                        TextField("Chercher un aliment", text: $query)
+                            .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
+                            .autocorrectionDisabled()
+                            .submitLabel(.search)
+                    }
+                    .padding(.horizontal, 18)
+                    .frame(height: 52)
+                    .background(SharpitColor.tile, in: Capsule())
                     if BarcodeScannerView.isAvailable {
-                        actionRow(String(localized: "Scanner un code-barres"), symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan, action: onScan)
+                        circleButton("barcode.viewfinder", String(localized: "Scanner un code-barres"), size: 18, action: onScan)
                     }
-                    actionRow(String(localized: "Décrire un repas"), symbol: "text.bubble", tone: SharpitNutritionTone.Action.describe, action: onDescribe)
-                    actionRow(String(localized: "Mes repas"), symbol: "bookmark", tone: SharpitNutritionTone.Action.savedMeals, action: onSavedMeals)
-                    actionRow(String(localized: "Mes aliments"), symbol: "person.crop.square", tone: SharpitNutritionTone.Action.ownFoods, action: onOwnFoods)
-                    actionRow(String(localized: "Saisie rapide"), symbol: "bolt", tone: SharpitNutritionTone.Action.quickAdd, action: onQuickAdd)
-                    actionRow(String(localized: "Créer un aliment"), symbol: "plus.square.on.square", tone: SharpitNutritionTone.Action.create, action: onCreate)
-                    actionRow(String(localized: "Créer une recette"), symbol: "frying.pan", tone: SharpitNutritionTone.Action.recipe, action: onRecipe)
                 }
-                .sharpitListRows()
-            }
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        chip(String(localized: "Tous"), isOn: filter == .all) { filter = .all }
+                        chip(String(localized: "Récents"), isOn: filter == .recent) { filter = .recent }
+                        chip(String(localized: "Mes repas"), isOn: false, action: onSavedMeals)
+                        chip(String(localized: "Mes aliments"), isOn: false, action: onOwnFoods)
+                        Menu {
+                            Button(String(localized: "Décrire un repas"), systemImage: "text.bubble", action: onDescribe)
+                            Button(String(localized: "Saisie rapide"), systemImage: "bolt", action: onQuickAdd)
+                            Button(String(localized: "Créer un aliment"), systemImage: "plus.square.on.square", action: onCreate)
+                            Button(String(localized: "Créer une recette"), systemImage: "frying.pan", action: onRecipe)
+                        } label: {
+                            chipLabel(String(localized: "Autre…"), isOn: false)
+                        }
+                    }
+                }
+                .scrollIndicators(.hidden)
+                .scrollClipDisabled()
 
-            if isSearching {
-                searchResults
-            } else if !store.recent.isEmpty {
-                Section {
-                    ForEach(store.recent, id: \.product.id) { recent in
-                        productRow(recent.product, grams: recent.lastGrams)
+                VStack(alignment: .leading, spacing: 0) {
+                    if isSearching {
+                        searchResults
+                    } else if !store.recent.isEmpty {
+                        group(String(localized: "Récents"), attribution: store.recent.map(\.product)) {
+                            ForEach(store.recent, id: \.product.id) { recent in
+                                productRow(recent.product, grams: recent.lastGrams)
+                            }
+                        }
+                    } else {
+                        note(String(localized: "Cherche un aliment, scanne un emballage ou décris ton repas."))
                     }
-                } header: {
-                    SharpitEyebrow(String(localized: "Récents"))
-                } footer: {
-                    FoodSourcesAttribution(products: store.recent.map(\.product))
                 }
-                .sharpitListRows()
             }
+            .padding(.horizontal, 22)
+            .padding(.top, 26)
+            .padding(.bottom, SharpitSpacing.lg)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .sharpitGroupedList()
-        .searchable(
-            text: $query,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: String(localized: "Chercher un aliment")
-        )
-        .autocorrectionDisabled()
+        .scrollDismissesKeyboard(.interactively)
+        .background(SharpitColor.card)
         .onChange(of: query) { _, text in search.setQuery(text) }
     }
 
     @ViewBuilder
     private var searchResults: some View {
         if let failure = search.failure {
-            Section {
-                Label(failure, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(SharpitColor.signalCaution)
-            }
-            .sharpitListRows()
+            Label(failure, systemImage: "exclamationmark.triangle")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.signalCaution)
+                .padding(.vertical, 14)
         } else if let results = search.results {
             if !results.eaten.isEmpty {
-                Section {
+                group(String(localized: "Déjà mangés"), attribution: results.eaten.map(\.product)) {
                     ForEach(results.eaten, id: \.product.id) { eaten in
                         productRow(eaten.product, grams: eaten.lastGrams, timesEaten: eaten.timesEaten)
                     }
-                } header: {
-                    SharpitEyebrow(String(localized: "Déjà mangés"))
-                } footer: {
-                    FoodSourcesAttribution(products: results.eaten.map(\.product))
                 }
-                .sharpitListRows()
             }
-            if !results.own.isEmpty {
-                Section(eyebrow: String(localized: "Mes aliments")) {
-                    ForEach(results.own) { productRow($0) }
-                }
-                .sharpitListRows()
-            }
-            if !results.generic.isEmpty {
-                Section {
-                    ForEach(results.generic) { productRow($0) }
-                } header: {
-                    SharpitEyebrow(String(localized: "Aliments de base"))
-                } footer: {
-                    FoodSourcesAttribution(products: results.generic)
-                }
-                .sharpitListRows()
-            }
-            if !results.products.isEmpty || results.offUnavailable {
-                Section {
-                    if results.offUnavailable {
-                        Text("Open Food Facts ne répond pas pour l'instant.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
+            if filter == .all {
+                if !results.own.isEmpty {
+                    group(String(localized: "Mes aliments"), attribution: []) {
+                        ForEach(results.own) { productRow($0) }
                     }
-                    ForEach(results.products) { productRow($0) }
-                } header: {
-                    SharpitEyebrow(String(localized: "Produits"))
-                } footer: {
-                    FoodSourcesAttribution(products: results.products)
                 }
-                .sharpitListRows()
+                if !results.generic.isEmpty {
+                    group(String(localized: "Aliments de base"), attribution: results.generic) {
+                        ForEach(results.generic) { productRow($0) }
+                    }
+                }
+                if !results.products.isEmpty || results.offUnavailable {
+                    group(String(localized: "Produits"), attribution: results.products) {
+                        if results.offUnavailable {
+                            note(String(localized: "Open Food Facts ne répond pas pour l'instant."))
+                        }
+                        ForEach(results.products) { productRow($0) }
+                    }
+                }
             }
             if results.isEmpty && !results.offUnavailable {
-                Section {
-                    Text("Aucun aliment pour « \(query) ». Saisis-le ou crée-le.")
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-                .sharpitListRows()
+                note(String(localized: "Aucun aliment pour « \(query) ». Saisis-le ou crée-le."))
+            } else if filter == .recent, results.eaten.isEmpty {
+                note(String(localized: "Rien de déjà mangé pour « \(query) »."))
             }
         } else if search.isSearching {
-            Section {
-                HStack(spacing: SharpitSpacing.xs) {
-                    ProgressView().controlSize(.small)
-                    Text("Recherche…").foregroundStyle(SharpitColor.slate)
-                }
+            HStack(spacing: SharpitSpacing.xs) {
+                ProgressView().controlSize(.small)
+                Text("Recherche…").foregroundStyle(SharpitColor.slate)
             }
-            .sharpitListRows()
+            .padding(.vertical, 14)
         }
     }
 
-    private func actionRow(_ title: String, symbol: String, tone: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: SharpitSpacing.sm) {
-                SharpitRowIcon(symbol: symbol, background: tone)
-                Text(title).foregroundStyle(SharpitColor.foreground)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(SharpitColor.slate.opacity(0.45))
-                    .accessibilityHidden(true)
+    /// A named run of foods, split by hairlines, with whose data it is under it.
+    private func group<Rows: View>(_ title: String, attribution: [V1FoodProduct], @ViewBuilder rows: () -> Rows) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                .foregroundStyle(SharpitColor.slate)
+                .padding(.top, 10)
+                .padding(.bottom, 2)
+            Group(subviews: rows()) { subviews in
+                ForEach(subviews) { row in
+                    if row.id != subviews.first?.id { CliniqueDivider() }
+                    row
+                }
             }
-            .contentShape(Rectangle())
+            FoodSourcesAttribution(products: attribution)
+                .padding(.top, 4)
         }
-        .buttonStyle(.plain)
+    }
+
+    private func note(_ text: String) -> some View {
+        Text(text)
+            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+            .foregroundStyle(SharpitColor.slate)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 14)
+    }
+
+    private func circleButton(_ symbol: String, _ label: String, size: CGFloat, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: size, weight: .semibold))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(width: 52, height: 52)
+                .background(SharpitColor.tile, in: Circle())
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel(label)
+    }
+
+    private func chipLabel(_ title: String, isOn: Bool) -> some View {
+        Text(title)
+            .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+            .foregroundStyle(isOn ? SharpitColor.primaryForeground : SharpitColor.foreground)
+            .padding(.horizontal, 16)
+            .frame(height: 40)
+            .background(isOn ? SharpitColor.primary : .clear, in: Capsule())
+            .overlay(Capsule().strokeBorder(SharpitColor.divider, lineWidth: isOn ? 0 : 1))
+    }
+
+    private func chip(_ title: String, isOn: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) { chipLabel(title, isOn: isOn) }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     private func productRow(_ product: V1FoodProduct, grams: Double? = nil, timesEaten: Int? = nil) -> some View {
         Button { onPick(product) } label: {
             FoodProductRow(product: product, lastGrams: grams, timesEaten: timesEaten)
+                .padding(.vertical, 12)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.sharpitPressable)
     }
 }
 
-/// A food in a list: its name and brand, and its energy per 100 g. A verified food carries the
+/// A food in a list: its name, its energy per 100 g and what it is, its score at the trailing edge. A verified food carries the
 /// seal after its name (SHARPIT ADR-069).
 struct FoodProductRow: View {
     let product: V1FoodProduct
@@ -336,30 +388,17 @@ struct FoodProductRow: View {
     var timesEaten: Int?
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 2) {
-                name.lineLimit(2)
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 3) {
+                name.lineLimit(2).multilineTextAlignment(.leading)
                 Text(detail)
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
                     .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
-                NutritionMacroSplitBar(product: product)
-                    .frame(maxWidth: 120)
-                    .padding(.top, 3)
                 FoodDietConflictLine(health: product.health)
-                    .padding(.top, 2)
             }
             Spacer(minLength: SharpitSpacing.xs)
-            VStack(alignment: .trailing, spacing: SharpitSpacing.xs) {
-                FoodHealthBadge(health: product.health)
-                Text(NutritionReadout.kcal(product.kcalPer100g))
-                    .font(SharpitTypography.instrument)
-                    .monospacedDigit()
-                    .foregroundStyle(SharpitColor.foreground)
-                Text("kcal/100 g")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
+            FoodHealthBadge(health: product.health)
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
@@ -367,7 +406,7 @@ struct FoodProductRow: View {
 
     private var name: Text {
         let title = Text(product.name)
-            .font(SharpitTypography.body)
+            .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
             .foregroundStyle(SharpitColor.foreground)
         guard product.isVerified else { return title }
         let seal = Text(Image(systemName: "checkmark.seal.fill"))
@@ -384,7 +423,9 @@ struct FoodProductRow: View {
         if let lastGrams { parts.append(String(localized: "Dernière fois \(FoodPortion.gramsLabel(lastGrams))")) }
         if product.source == "CUSTOM" { parts.append(String(localized: "Mon aliment")) }
         if product.isCiqual { parts.append(String(localized: "Aliment de base")) }
-        return parts.isEmpty ? String(localized: "Pour 100 g") : parts.joined(separator: " · ")
+        // Its energy opens the line, as the mock-up reads it: « 100 g · 124 kcal ».
+        parts.insert(String(localized: "100 g · \(NutritionReadout.kcal(product.kcalPer100g)) kcal"), at: 0)
+        return parts.joined(separator: " · ")
     }
 }
 

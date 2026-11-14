@@ -36,6 +36,15 @@ enum NutritionReadout {
         /// One hue per macro, from the signal family, so the columns and the split read together.
         var tone: Color { kind.tone }
 
+        /// The macro's bar on the Nutrition sheet, as its mock-up draws it: a chart mark, never text.
+        var sheetTone: Color {
+            switch self {
+            case .carbohydrates: SharpitColor.pillarSleep
+            case .protein: SharpitColor.pillarCoach
+            case .fat: SharpitColor.pillarRecovery
+            }
+        }
+
         /// Kilocalories per gram (Atwater).
         var kcalPerGram: Double {
             switch self {
@@ -181,5 +190,23 @@ enum NutritionReadout {
                 ]
             )
         )
+    }
+
+    /// Under the ring's figure: what is left of the goal, what went past it, or what was eaten
+    /// when no goal is set.
+    static func ringCaption(remaining: Double?) -> String {
+        guard let remaining else { return String(localized: "kcal mangées") }
+        return remaining < 0 ? String(localized: "kcal au-delà") : String(localized: "kcal restantes")
+    }
+
+    /// « Régime en cours : sans lactose », or whether the day is still open.
+    static func dayFrame(diet: [String], isComplete: Bool) -> String {
+        if !diet.isEmpty { return String(localized: "Régime en cours : \(diet.joined(separator: ", ").lowercased())") }
+        return isComplete ? String(localized: "Journée close") : String(localized: "Journée en cours")
+    }
+
+    /// A meal's foods on one line: « Flocons d'avoine, banane, boisson soja ».
+    static func mealLine(_ names: [String]) -> String {
+        names.enumerated().map { $0.offset == 0 ? $0.element : $0.element.lowercased() }.joined(separator: ", ")
     }
 }

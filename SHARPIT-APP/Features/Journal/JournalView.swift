@@ -48,37 +48,22 @@ struct JournalView: View {
     }
 
     var body: some View {
-        content
+        entries
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(SharpitCanvasBackground())
+            .cliniqueSheet(wash: .neutral, height: 240)
             .navigationTitle("Journal")
             .navigationBarTitleDisplayMode(.inline)
+            // The bar carries the way back and the signals' choice; the name opens the page.
             .toolbar {
-                if let analysesStore {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        NavigationLink {
-                            JournalAnalysesView(store: analysesStore)
-                        } label: {
-                            Image(systemName: "chart.line.uptrend.xyaxis")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(SharpitColor.foreground)
-                        }
-                        .accessibilityLabel("Analyses du journal")
-                    }
-                }
-
+                ToolbarItem(placement: .principal) { Text("") }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showsPrefs = true
-                    } label: {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(SharpitColor.foreground)
-                    }
-                    .disabled(store.phase == .loading)
-                    .accessibilityLabel("Personnaliser le journal")
+                    Button("Choisir mes signaux") { showsPrefs = true }
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .disabled(store.phase == .loading)
                 }
             }
+            .cliniqueReturnButton()
             .sheet(isPresented: $showsPrefs) {
                 JournalPrefsDrawer(store: store)
             }
@@ -103,6 +88,7 @@ struct JournalView: View {
             }
             .task { await store.load() }
             .task { await store.markAnsweredDays() }
+            .task { await analysesStore?.load() }
             .onDisappear {
                 Task { await store.flushPendingSave() }
             }
@@ -118,678 +104,257 @@ struct JournalView: View {
             }
     }
 
-    /// The date picker stays whatever the day's state: a day that failed to load is still one
-    /// swipe or one tap away from another.
-    private var content: some View { entries }
-
-    /// Picker pinned above the scroll — as the day screens do — so a day swipe moves the
-    /// journal's rows without fighting the scroll, and without sliding the week strip.
+    /// The header stays whatever the day's state: a day that failed to load is still one swipe
+    /// or one tap away from another.
     private var entries: some View {
-        VStack(spacing: 0) {
-            JournalDatePicker(store: store)
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.top, SharpitSpacing.pageInset)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    switch store.phase {
-                    case .loading:
-                        JournalLoadingRows()
-                    case .failed(let message):
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                JournalHeader(store: store, progress: store.phase == .ready && !store.isReadingDay ? progress : nil)
+                    .padding(.bottom, 14)
+                switch store.phase {
+                case .loading:
+                    JournalLoadingRows()
+                case .failed(let message):
+                    ContentUnavailableView {
+                        Label("Journal indisponible", systemImage: "wifi.slash")
+                    } description: {
+                        Text(message)
+                    } actions: {
+                        Button("Réessayer") { Task { await store.load() } }
+                    }
+                    .padding(.top, SharpitSpacing.xl)
+                case .ready:
+                    if store.hasNothingToShow {
                         ContentUnavailableView {
-                            Label("Journal indisponible", systemImage: "wifi.slash")
+                            Label("Rien à suivre", systemImage: "book.closed")
                         } description: {
-                            Text(message)
+                            Text("Choisis ce que tu veux noter chaque jour.")
                         } actions: {
-                            Button("Réessayer") { Task { await store.load() } }
+                            Button("Choisir mes signaux") { showsPrefs = true }
                         }
                         .padding(.top, SharpitSpacing.xl)
-                    case .ready:
-                        if store.hasNothingToShow {
-                            ContentUnavailableView {
-                                Label("Rien à suivre", systemImage: "book.closed")
-                            } description: {
-                                Text("Choisis ce que tu veux noter chaque jour.")
-                            } actions: {
-                                Button("Personnaliser") { showsPrefs = true }
-                            }
-                            .padding(.top, SharpitSpacing.xl)
-                        }
-                        daySections(pending: store.isReadingDay)
+                    }
+                    dayLines(pending: store.isReadingDay)
+                    insight
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, SharpitSpacing.xs)
+            .padding(.bottom, 96)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .scrollDisabled(store.phase == .loading)
+        .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } } neighbor: { _ in
+            // The day beside: once the preferences are known, its own lines with their values
+            // pending — only the very first read draws the whole skeleton.
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    JournalHeader(store: store, progress: nil).padding(.bottom, 14)
+                    if store.hasReadPrefs {
+                        dayLines(pending: true)
+                    } else {
+                        JournalLoadingRows()
                     }
                 }
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.top, SharpitSpacing.section)
-                .padding(.bottom, SharpitSpacing.section)
+                .padding(.horizontal, 24)
+                .padding(.top, SharpitSpacing.xs)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .scrollDisabled(store.phase == .loading)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .daySwipe(day: store.selectedDate) { day in Task { await store.selectDate(day) } } neighbor: { _ in
-                // The day beside: once the preferences are known, its own rows with their values
-                // pending — only the very first read draws the whole skeleton.
-                ScrollView {
-                    Group {
-                        if store.hasReadPrefs {
-                            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                                daySections(pending: true)
-                            }
-                        } else {
-                            JournalLoadingRows()
-                        }
-                    }
-                    .padding(.horizontal, SharpitSpacing.pageInset)
-                    .padding(.top, SharpitSpacing.section)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .scrollDisabled(true)
-            }
+            .scrollDisabled(true)
         }
     }
 
-    /// The web's order, top to bottom: the day's values, then the night that ended this
-    /// morning, then the day's own signals. Grouped by when a signal happened rather than by
-    /// what kind of thing it is — an athlete answers a journal in the order they lived it.
-    /// `pending`: the rows are known, the day's answers are not — values redacted, nothing
-    /// tappable, and none of the shown day's own lines (checklist, dates) carried over.
-    @ViewBuilder
-    private func daySections(pending: Bool) -> some View {
-        Group {
-            dayMetricsSection
-            if !pending { checklistSection }
-            priorNightSection(pending: pending)
-            daySignalsSection
+    /// The signals that take an answer, and how many carry one: « 3 signaux sur 5 notés ».
+    private var progress: String? {
+        let entry = store.entry
+        var noted = 0, total = 0
+        for trackable in store.visibleTrackables {
+            switch trackable.kind {
+            case .factor: total += 1; noted += entry.state(of: trackable.id) == .unset ? 0 : 1
+            case .caffeine: total += 1; noted += (entry.caffeineMg ?? 0) > 0 ? 1 : 0
+            case .hydration: total += 1; noted += (entry.hydrationMl ?? 0) > 0 ? 1 : 0
+            case .driving: total += 1; noted += (entry.drivingMinutes ?? 0) > 0 ? 1 : 0
+            case .mood: total += 1; noted += store.moodLabel == nil ? 0 : 1
+            case .auto, .diet: break
+            }
         }
-        .environment(\.journalValuesPending, pending)
+        for item in store.visibleCustomItems {
+            total += 1
+            noted += entry.state(of: item.id) == .unset ? 0 : 1
+        }
+        return JournalReadout.progress(noted: noted, of: total)
+    }
+
+    /// One table, in the order the day was lived: the day's values, what the devices reported,
+    /// the night that ended this morning, then the day's own signals.
+    /// `pending`: the lines are known, the day's answers are not — values redacted, nothing
+    /// tappable, and none of the shown day's own lines (the checklist) carried over.
+    private func dayLines(pending: Bool) -> some View {
+        JournalLines {
+            // The mood opens the table: it is read from the morning, before anything else was lived.
+            ForEach(store.visibleTrackables.filter { $0.kind == .mood } + store.visibleTrackables.filter { [.caffeine, .hydration, .driving].contains($0.kind) }) { trackable in
+                metricLine(trackable)
+            }
+            if !pending {
+                ForEach(store.checklist) { item in
+                    JournalChecklistLine(item: item)
+                }
+            }
+            ForEach(store.priorNightTrackables) { trackable in
+                factorLine(id: trackable.id, label: trackable.label, detail: String(localized: "Cette nuit"), pending: pending)
+            }
+            ForEach(store.dayTrackables) { trackable in
+                factorLine(id: trackable.id, label: trackable.label, detail: nil, pending: pending)
+            }
+            ForEach(store.visibleCustomItems) { item in
+                factorLine(id: item.id, label: item.label, detail: nil, pending: pending)
+            }
+        }
+        .redacted(reason: pending ? .placeholder : [])
         .allowsHitTesting(!pending)
     }
 
-    /// Caféine, Humeur, Hydratation — values the athlete sets, not answers they give.
-    @ViewBuilder
-    private var dayMetricsSection: some View {
-        let metrics = store.visibleTrackables.filter { [.caffeine, .mood, .hydration, .driving].contains($0.kind) }
-        if !metrics.isEmpty {
-            JournalSection(isGrouped: true, title: String(localized: "Journée")) {
-                ForEach(metrics) { trackable in
-                    JournalTrackableRow(
-                        trackable: trackable,
-                        store: store,
-                        onOpenWellness: { showsWellness = true },
-                        onOpenCaffeine: { showsCaffeine = true },
-                        onOpenHydration: { showsHydration = true },
-                        onOpenDriving: { showsDriving = true }
-                    )
-                }
-            }
-        }
-    }
-
-    /// What the devices reported, already decided server-side. Read-only: no toggle, no
-    /// chevron and no pressable tile, because nothing here opens or changes (ADR 0004).
-    @ViewBuilder
-    private var checklistSection: some View {
-        if !store.checklist.isEmpty {
-            JournalSection(
-                isGrouped: true,
-                title: String(localized: "Checklist auto"),
-                hint: String(localized: "Dérivée de tes données santé et activités. Lecture seule.")
-            ) {
-                ForEach(store.checklist) { item in
-                    JournalChecklistRow(item: item)
-                }
-            }
+    private func factorLine(id: String, label: String, detail: String?, pending: Bool) -> some View {
+        JournalFactorLine(label: label, detail: detail, state: pending ? .unset : store.entry.state(of: id)) {
+            store.cycle(factorId: id)
         }
     }
 
     @ViewBuilder
-    private func priorNightSection(pending: Bool) -> some View {
-        let trackables = store.priorNightTrackables
-        if !trackables.isEmpty {
-            JournalSection(isGrouped: true, title: String(localized: "Nuit"), hint: pending ? nil : priorNightHint) {
-                ForEach(trackables) { trackable in
-                    JournalTrackableRow(trackable: trackable, store: store)
-                }
-            }
-        }
-    }
-
-    private var priorNightHint: String {
-        let calendar = Calendar.current
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: store.selectedDate) ?? store.selectedDate
-        let start = yesterday.sharpitFormatted(.dateTime.day().month(.abbreviated))
-        let end = store.selectedDate.sharpitFormatted(.dateTime.day().month(.abbreviated))
-        return "\(start) → \(end)"
-    }
-
-    /// The day's own signals, with the athlete's own items after them — a trackable they
-    /// wrote themselves has no window, so it belongs to the day.
-    @ViewBuilder
-    private var daySignalsSection: some View {
-        let trackables = store.dayTrackables
-        let custom = store.visibleCustomItems
-        if !trackables.isEmpty || !custom.isEmpty {
-            JournalSection(isGrouped: true, title: String(localized: "Signaux du jour")) {
-                ForEach(trackables) { trackable in
-                    JournalTrackableRow(trackable: trackable, store: store)
-                }
-                ForEach(custom) { item in
-                    JournalCustomItemRow(item: item, store: store)
-                }
-            }
-        }
-    }
-}
-
-/// The journal's own rows, redacted, in the shape it is about to show: the day's values, then
-/// the answered signals. Drawn with the real row views so the skeleton cannot drift from them.
-private struct JournalLoadingRows: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            JournalSection(isGrouped: true, title: String(localized: "Journée")) {
-                JournalMetricRow(label: String(localized: "Humeur"), symbolName: "face.smiling", value: String(localized: "Non renseigné")) {}
-                JournalMetricRow(label: String(localized: "Caféine"), symbolName: "cup.and.saucer", value: String(localized: "— mg")) {}
-            }
-            JournalSection(isGrouped: true, title: String(localized: "Signaux du jour")) {
-                ForEach([String(localized: "Alcool"), String(localized: "Écrans tard"), String(localized: "Repas tardif"), String(localized: "Sieste")], id: \.self) { label in
-                    JournalFactorRow(label: label, symbolName: "circle", state: .unset) { _ in }
-                }
-            }
-        }
-        .redacted(reason: .placeholder)
-        .allowsHitTesting(false)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Chargement du journal")
-    }
-}
-
-extension EnvironmentValues {
-    /// The journal's rows are drawn before the day's answers arrive: values redacted.
-    @Entry var journalValuesPending = false
-}
-
-struct JournalSection<Content: View>: View {
-    /// The journal's own rows sit in one card (`JournalRowsCard`); the analyses' cards do not.
-    var isGrouped = false
-    let title: String
-    var hint: String?
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(title)
-            if let hint {
-                Text(hint)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if isGrouped {
-                JournalRowsCard { content }
-            } else {
-                content
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// The rows of a section as one white card, split by an inset hairline as an iOS list is —
-/// one surface per section, not a card per signal.
-struct JournalRowsCard<Content: View>: View {
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Group(subviews: content) { rows in
-                ForEach(rows) { row in
-                    row
-                    if row.id != rows.last?.id {
-                        Divider()
-                            .overlay(SharpitColor.divider)
-                            .padding(.leading, JournalRowMetrics.textInset)
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, SharpitSpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-    }
-}
-
-/// One measure for every journal row, so labels and hairlines line up across sections.
-enum JournalRowMetrics {
-    static let tile: CGFloat = 32
-    static let minHeight: CGFloat = 56
-    /// Where a row's label starts: the tile and its gap.
-    static var textInset: CGFloat { tile + SharpitSpacing.sm }
-}
-
-/// A row's glyph: ink on the chip tone, one size everywhere (ADR-085, no hue per category).
-struct JournalRowIcon: View {
-    let symbolName: String
-
-    var body: some View {
-        Image(systemName: symbolName)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(SharpitColor.foreground)
-            .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
-            .sharpitConcentricBackground(SharpitColor.tile, minimum: 9)
-            .accessibilityHidden(true)
-    }
-}
-
-private struct JournalTrackableRow: View {
-    let trackable: JournalTrackable
-    @Bindable var store: JournalStore
-    var onOpenWellness: () -> Void = {}
-    var onOpenCaffeine: () -> Void = {}
-    var onOpenHydration: () -> Void = {}
-    var onOpenDriving: () -> Void = {}
-    @Environment(\.journalValuesPending) private var isPending
-
-    var body: some View {
+    private func metricLine(_ trackable: JournalTrackable) -> some View {
         switch trackable.kind {
-        case .factor:
-            JournalFactorRow(
-                label: trackable.label,
-                symbolName: trackable.symbolName,
-                state: store.entry.state(of: trackable.id),
-                onChange: { newState in store.set(factorId: trackable.id, to: newState) },
-                isPending: isPending
-            )
-            .equatable()
-        case .caffeine:
-            JournalMetricRow(
-                label: trackable.label,
-                symbolName: trackable.symbolName,
-                value: store.entry.caffeineMg.map { "\($0) mg" } ?? String(localized: "— mg"),
-                onOpen: onOpenCaffeine
-            )
-        case .hydration:
-            JournalMetricRow(
-                label: trackable.label,
-                symbolName: trackable.symbolName,
-                value: store.entry.hydrationMl.map { "\($0) ml" } ?? String(localized: "— ml"),
-                onOpen: onOpenHydration
-            )
-        case .driving:
-            JournalMetricRow(
-                label: trackable.label,
-                symbolName: trackable.symbolName,
-                value: JournalDrivingFormat.minutes(store.entry.drivingMinutes),
-                onOpen: onOpenDriving
-            )
         case .mood:
-            JournalMetricRow(
-                label: trackable.label,
-                symbolName: trackable.symbolName,
-                value: store.moodLabel ?? String(localized: "Non renseigné"),
-                onOpen: onOpenWellness
-            )
-        case .auto, .diet:
-            // A derived line or a standing diet carries no answer, so it has no row here.
+            JournalLine(title: trackable.label, detail: String(localized: "Lu de ton ressenti du matin"), onOpen: { showsWellness = true }) {
+                if let mood = store.moodLabel {
+                    JournalValuePill(text: mood)
+                } else {
+                    JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
+                }
+            }
+        case .caffeine:
+            JournalLine(title: trackable.label, detail: String(localized: "Un café ≈ 80 mg"), onOpen: { showsCaffeine = true }) {
+                JournalStepper(
+                    value: store.entry.caffeineMg.map { "\($0) mg" } ?? "— mg",
+                    label: trackable.label,
+                    onLess: { store.adjustCaffeine(by: -80) },
+                    onMore: { store.adjustCaffeine(by: 80) }
+                )
+            }
+        case .hydration:
+            JournalLine(title: trackable.label, detail: JournalReadout.litres(store.entry.hydrationMl), onOpen: { showsHydration = true }) {
+                Button { store.adjustHydration(by: 250) } label: {
+                    JournalCapsule(text: "+ 25 cl", style: .outline)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityLabel("Ajouter 25 centilitres")
+            }
+        case .driving:
+            JournalLine(title: trackable.label, detail: String(localized: "Par quarts d'heure"), onOpen: { showsDriving = true }) {
+                if (store.entry.drivingMinutes ?? 0) == 0 {
+                    JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
+                } else {
+                    JournalValuePill(text: JournalDrivingFormat.minutes(store.entry.drivingMinutes))
+                }
+            }
+        case .factor, .auto, .diet:
+            // A derived line or a standing diet carries no value, so it has no line here.
             EmptyView()
         }
     }
-}
 
-private struct JournalCustomItemRow: View {
-    let item: JournalCustomItem
-    @Bindable var store: JournalStore
-    @Environment(\.journalValuesPending) private var isPending
-
-    var body: some View {
-        JournalFactorRow(
-            label: item.label,
-            symbolName: JournalCatalogue.customSymbolName,
-            state: store.entry.state(of: item.id),
-            onChange: { newState in store.set(factorId: item.id, to: newState) },
-            isPending: isPending
-        )
-        .equatable()
-    }
-}
-
-/// An interactive metric row (Caféine, Hydratation, Humeur) with formatted readout
-/// and a forward action indicator opening dedicated input sheets.
-struct JournalMetricRow: View {
-    let label: String
-    let symbolName: String
-    let value: String
-    let onOpen: () -> Void
-    @Environment(\.journalValuesPending) private var isPending
-
-    var body: some View {
-        Button(action: onOpen) {
-            HStack(spacing: SharpitSpacing.sm) {
-                JournalRowIcon(symbolName: symbolName)
-
-                Text(label)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-
-                Spacer(minLength: SharpitSpacing.xs)
-
-                Text(value)
-                    .font(SharpitTypography.system(size: 15, weight: isUnset ? .regular : .semibold, relativeTo: .subheadline, digits: true))
-                    .foregroundStyle(isUnset ? SharpitColor.slate : SharpitColor.foreground)
-                    .redacted(reason: isPending ? .placeholder : [])
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
+    /// « Ce que ton journal montre »: the analyses' one sentence, and the way to all of them.
+    @ViewBuilder
+    private var insight: some View {
+        if let analysesStore, let analyses = analysesStore.analyses {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Ce que ton journal montre")
+                        .font(SharpitTypography.sectionTitle)
+                        .tracking(SharpitTypography.sectionTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    Text("Tout voir")
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.foreground)
+                }
+                HStack(alignment: .center, spacing: 14) {
+                    HStack(alignment: .bottom, spacing: 6) {
+                        RoundedRectangle(cornerRadius: 4).fill(SharpitColor.pillarSleep.opacity(0.25)).frame(width: 15, height: 26)
+                        RoundedRectangle(cornerRadius: 4).fill(SharpitColor.pillarNutrition).frame(width: 15, height: 15)
+                    }
                     .accessibilityHidden(true)
-            }
-            .frame(minHeight: JournalRowMetrics.minHeight)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityValue(value)
-    }
-
-    private var isUnset: Bool {
-        value.hasPrefix("—") || value.contains("non renseigné") || value.contains(String(localized: "Non renseigné"))
-    }
-}
-
-/// One derived line: whether the day met a threshold, and by how much.
-private struct JournalChecklistRow: View {
-    let item: V1JournalAutoChecklistItem
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            Image(systemName: item.status.symbolName)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(item.status == .done ? SharpitColor.primaryForeground : SharpitColor.slate)
-                .frame(width: JournalRowMetrics.tile, height: JournalRowMetrics.tile)
-                .sharpitConcentricBackground(item.status == .done ? SharpitColor.primary : SharpitColor.tile, minimum: 9)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(item.label)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-                if let detail = item.detail, !detail.isEmpty {
-                    Text(detail)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                        // Italic for a line with nothing behind it, so a missing measure does
-                        // not read as a measured zero.
-                        .italic(item.status == .unavailable)
-                        .monospacedDigit()
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, SharpitSpacing.sm)
-        .frame(minHeight: JournalRowMetrics.minHeight)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private extension JournalAutoStatus {
-    var symbolName: String {
-        switch self {
-        case .done: "checkmark"
-        case .missed: "minus"
-        case .unavailable: "circle.dashed"
-        }
-    }
-
-    /// Only a met threshold takes the brand tone. A missed one stays quiet: the athlete did
-    /// not fail, they simply did not reach it, and the journal never scolds.
-    var tone: Color {
-        switch self {
-        case .done: SharpitColor.primary
-        case .missed, .unavailable: SharpitColor.slate
-        }
-    }
-}
-
-/// A yes / no / unanswered signal. Unanswered is its own answer — the analyses only
-/// weigh what the athlete actually said — so it stays a visible third choice.
-struct JournalFactorRow: View, Equatable {
-    let label: String
-    let symbolName: String
-    let state: JournalFactorState
-    let onChange: (JournalFactorState) -> Void
-    /// The answer is not read yet: passed in rather than read from the environment, so the
-    /// equatable row redraws when it arrives.
-    var isPending = false
-
-    static func == (lhs: JournalFactorRow, rhs: JournalFactorRow) -> Bool {
-        lhs.label == rhs.label &&
-        lhs.symbolName == rhs.symbolName &&
-        lhs.state == rhs.state &&
-        lhs.isPending == rhs.isPending
-    }
-
-    var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            JournalRowIcon(symbolName: symbolName)
-
-            Text(label)
-                .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.foreground)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-
-            Spacer(minLength: SharpitSpacing.xs)
-
-            if isPending {
-                // The answer is on its way: the toggle's track alone, no position to misread.
-                JournalAnswerToggle.pendingTrack
-            } else {
-                JournalAnswerToggle(state: state, onChange: onChange)
-                    .equatable()
-            }
-        }
-        .padding(.vertical, SharpitSpacing.xxs)
-        .frame(minHeight: JournalRowMetrics.minHeight)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private extension JournalFactorState {
-    var symbolName: String {
-        switch self {
-        case .no: "xmark"
-        case .unset: "minus"
-        case .yes: "checkmark"
-        }
-    }
-
-    var title: String {
-        switch self {
-        case .no: String(localized: "Non")
-        case .unset: "—"
-        case .yes: String(localized: "Oui")
-        }
-    }
-
-    var accessibilityTitle: String {
-        switch self {
-        case .no: String(localized: "Non")
-        case .unset: String(localized: "Non renseigné")
-        case .yes: String(localized: "Oui")
-        }
-    }
-
-    /// The selection pill follows the answer: « oui » takes the lime the day now carries, « non »
-    /// the ink — an answer, not an alarm — and an unanswered day stays a quiet white.
-    var tone: Color {
-        switch self {
-        case .no: SharpitColor.primary
-        case .unset: SharpitElevatedColor.control
-        case .yes: SharpitColor.primary
-        }
-    }
-
-    var onTone: Color {
-        switch self {
-        case .no: SharpitColor.primaryForeground
-        case .unset: SharpitColor.foreground
-        case .yes: SharpitColor.primaryForeground
-        }
-    }
-}
-
-/// Non, unanswered, Oui — in that order. Unanswered is a real third choice and not the
-/// absence of one: the analyses only weigh an explicit answer, so an athlete has to be
-/// able to go back to "not said".
-///
-/// Designed in accordance with Apple Human Interface Guidelines:
-/// - Rigid outer frame (136x44pt) with strictly locked layout geometry so vertical jumps/repositions never occur.
-/// - Full 44x44pt touch area per segment with zero horizontal overlap between adjacent options.
-/// - Purely horizontal pill slide animated exclusively along the X axis with `SharpitMotion.selection`.
-/// - Single synchronized animation state to eliminate animation conflicts during rapid option taps.
-private struct JournalAnswerToggle: View, Equatable {
-    let state: JournalFactorState
-    let onChange: (JournalFactorState) -> Void
-
-    static func == (lhs: JournalAnswerToggle, rhs: JournalAnswerToggle) -> Bool {
-        lhs.state == rhs.state
-    }
-
-    private static let order: [JournalFactorState] = [.no, .unset, .yes]
-    private static let segmentWidth: CGFloat = 44
-    private static let segmentHeight: CGFloat = 30
-    private static let inset: CGFloat = 2
-    private static let trackWidth: CGFloat = (segmentWidth * 3) + (inset * 2) // 136 pt
-    private static let trackHeight: CGFloat = segmentHeight + (inset * 2) // 34 pt
-
-    private var selectedIndex: Int {
-        Self.order.firstIndex(of: state) ?? 1
-    }
-
-    /// The track without its pill, for a row whose answer is not read yet.
-    static var pendingTrack: some View {
-        Capsule()
-            .fill(SharpitColor.tile)
-            .frame(width: trackWidth, height: trackHeight)
-            .frame(width: trackWidth, height: SharpitSpacing.minimumTouchTarget)
-            .accessibilityLabel(String(localized: "Chargement"))
-    }
-
-    var body: some View {
-        ZStack(alignment: .leading) {
-            // 1. Static track background (never moves, strictly centered vertically)
-            Capsule()
-                .fill(SharpitColor.tile)
-                .frame(width: Self.trackWidth, height: Self.trackHeight)
-
-            // 2. Sliding indicator pill (strictly horizontal offset, centered vertically)
-            Capsule()
-                .fill(state.tone)
-                .sharpitShadow(.control)
-                .frame(width: Self.segmentWidth, height: Self.segmentHeight)
-                .offset(x: Self.inset + CGFloat(selectedIndex) * Self.segmentWidth)
-                .animation(SharpitMotion.selection, value: state)
-
-            // 3. Touch buttons aligned over each segment (44x44pt touch area for HIG)
-            HStack(spacing: 0) {
-                ForEach(Self.order, id: \.self) { value in
-                    segmentButton(value)
-                }
-            }
-            .padding(.horizontal, Self.inset)
-        }
-        .frame(width: Self.trackWidth, height: SharpitSpacing.minimumTouchTarget)
-        .contentShape(Rectangle())
-    }
-
-    private func segmentButton(_ value: JournalFactorState) -> some View {
-        let isSelected = state == value
-        return Button {
-            onChange(value)
-        } label: {
-            Image(systemName: value.symbolName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(isSelected ? value.onTone : SharpitColor.slate)
-                .frame(width: Self.segmentWidth, height: Self.segmentHeight)
-                .animation(SharpitMotion.selection, value: isSelected)
-        }
-        .buttonStyle(.plain)
-        .frame(width: Self.segmentWidth, height: SharpitSpacing.minimumTouchTarget)
-        .contentShape(Rectangle())
-        .accessibilityLabel(value.accessibilityTitle)
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-    }
-}
-
-private struct JournalDatePicker: View {
-    @Bindable var store: JournalStore
-    private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
-    @State private var weekOffset: Int
-    @State private var showingCalendar = false
-    /// The day the title showed last, so a change knows which way it went.
-    @State private var shownDate: Date
-
-    init(store: JournalStore) {
-        self.store = store
-        _weekOffset = State(initialValue: weeks.offset(forWeekContaining: store.selectedDate))
-        _shownDate = State(initialValue: store.selectedDate)
-    }
-
-    private var isToday: Bool {
-        Calendar.current.isDateInToday(store.selectedDate)
-    }
-
-    var body: some View {
-        VStack(spacing: SharpitSpacing.xs) {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-                Button {
-                    showingCalendar = true
-                } label: {
-                    HStack(spacing: SharpitSpacing.xxs) {
-                        Text(store.selectedDate.sharpitFormatted(.dateTime.weekday(.wide).day().month(.abbreviated)).capitalizedFirst)
-                            .font(SharpitTypography.verdict)
-                            .tracking(SharpitTypography.verdictTracking)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(analyses.reading?.headline ?? String(localized: "Pas encore assez de jours notés"))
+                            .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
                             .foregroundStyle(SharpitColor.foreground)
-                            // The date rolls the way the day went, as the rows slide.
-                            .contentTransition(.numericText(countsDown: store.selectedDate < shownDate))
-                            .animation(SharpitMotion.selection, value: store.selectedDate)
-                        Image(systemName: "chevron.down")
-                            .font(SharpitTypography.label)
+                        Text(analyses.reading?.verdict ?? JournalAnalysesReadout.progress(analyses))
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))
                             .foregroundStyle(SharpitColor.slate)
-                            .accessibilityHidden(true)
                     }
+                    .multilineTextAlignment(.leading)
+                    Spacer(minLength: 0)
                 }
-                .buttonStyle(.sharpitPressable)
-                .accessibilityHint("Ouvre le calendrier")
-
-                Spacer(minLength: 0)
-
-                if !isToday {
-                    Button("Aujourd'hui") {
-                        pick(.now)
-                    }
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.primary)
-                }
+                .cliniqueCard()
             }
-
-            SharpitWeekStrip(weekOffset: $weekOffset, weeks: weeks) { day in
-                let isFuture = Calendar.current.startOfDay(for: day) > Calendar.current.startOfDay(for: .now)
-                let hasAnswer = isFuture ? nil : store.hasAnswer(on: day)
-                Button {
-                    pick(day)
-                } label: {
-                    SharpitStripDay(day: day, emphasis: emphasis(for: day, isFuture: isFuture)) {
-                        SharpitDataDayMark(hasData: hasAnswer)
-                    }
-                }
-                .buttonStyle(.plain)
-                .disabled(isFuture)
-                .accessibilityLabel(accessibilityLabel(for: day, isFuture: isFuture, hasAnswer: hasAnswer))
-                .accessibilityAddTraits(Calendar.current.isDate(day, inSameDayAs: store.selectedDate) ? [.isButton, .isSelected] : .isButton)
+            .padding(.top, 26)
+            .overlay {
+                NavigationLink { JournalAnalysesView(store: analysesStore) } label: { Color.clear.contentShape(.rect) }
+                    .accessibilityLabel("Analyses du journal")
             }
+        }
+    }
+}
+
+/// How the journal words what the server sends as numbers and states.
+nonisolated enum JournalReadout {
+    /// « 3 signaux sur 5 notés »; nil when nothing takes an answer.
+    static func progress(noted: Int, of total: Int) -> String? {
+        guard total > 0 else { return nil }
+        return total == 1
+            ? String(localized: "\(noted) signal sur 1 noté")
+            : String(localized: "\(noted) signaux sur \(total) notés")
+    }
+
+    /// « 1,2 L »; nil while nothing was drunk or noted.
+    static func litres(_ millilitres: Int?, locale: Locale = .current) -> String? {
+        guard let millilitres, millilitres > 0 else { return nil }
+        return (Double(millilitres) / 1_000).formatted(.number.precision(.fractionLength(0...1)).locale(locale)) + " L"
+    }
+
+    /// Unanswered is a real third answer, said « À noter ».
+    static func answer(_ state: JournalFactorState) -> String {
+        switch state {
+        case .unset: String(localized: "À noter")
+        case .yes: String(localized: "Oui")
+        case .no: String(localized: "Non")
+        }
+    }
+}
+
+/// « Journal », then the day it shows and how much of it is noted. The day opens the calendar.
+private struct JournalHeader: View {
+    @Bindable var store: JournalStore
+    let progress: String?
+    private let weeks = SharpitWeeks(offsets: SharpitWeeks.history)
+    @State private var showingCalendar = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Journal")
+                .font(SharpitTypography.system(size: 32, weight: .semibold, relativeTo: .largeTitle))
+                .tracking(-0.6)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            Button { showingCalendar = true } label: {
+                Text([store.selectedDate.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst, progress].compactMap(\.self).joined(separator: " · "))
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .multilineTextAlignment(.leading)
+                    .contentTransition(.numericText())
+                    .animation(SharpitMotion.selection, value: store.selectedDate)
+            }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityHint("Ouvre le calendrier")
         }
         .sheet(isPresented: $showingCalendar) {
             SharpitCalendarSheet(
@@ -799,24 +364,14 @@ private struct JournalDatePicker: View {
                 range: weeks.selectableDates.lowerBound...Date.now,
                 marks: calendarMarks,
                 legend: [(.filled, String(localized: "Journal rempli")), (.muted, String(localized: "Rien de noté"))],
-                onPick: pick,
-                onToday: { pick(.now) }
+                onPick: { day in Task { await store.selectDate(day) } },
+                onToday: { Task { await store.selectDate(.now) } }
             )
-        }
-        .onChange(of: weekOffset) { _, offset in
-            Task { await store.markAnsweredDays(around: weeks.weekStart(forOffset: offset)) }
-        }
-        .onChange(of: store.selectedDate) { _, newDate in
-            shownDate = newDate
-            let targetOffset = weeks.offset(forWeekContaining: newDate)
-            if weekOffset != targetOffset {
-                weekOffset = targetOffset
-            }
         }
     }
 
-    /// The strip's marks for every day the calendar shows: filled where something was noted,
-    /// muted where the day was read and holds nothing, nothing while unknown.
+    /// Every day the calendar shows: filled where something was noted, muted where the day was
+    /// read and holds nothing, nothing while unknown.
     private var calendarMarks: [Date: SharpitCalendarMark] {
         let calendar = weeks.calendar
         let today = calendar.startOfDay(for: .now)
@@ -833,29 +388,228 @@ private struct JournalDatePicker: View {
         }
         return marks
     }
+}
 
-    private func emphasis(for day: Date, isFuture: Bool) -> SharpitStripDay<SharpitDataDayMark>.Emphasis {
-        if isFuture { return .unavailable }
-        if Calendar.current.isDate(day, inSameDayAs: store.selectedDate) { return .filled }
-        if Calendar.current.isDateInToday(day) { return .accent }
-        return .plain
-    }
-
-    private func accessibilityLabel(for day: Date, isFuture: Bool, hasAnswer: Bool?) -> String {
-        let date = day.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide))
-        if isFuture { return String(localized: "\(date), non disponible") }
-        switch hasAnswer {
-        case true?: return String(localized: "\(date), journal rempli")
-        case false?: return String(localized: "\(date), rien de noté")
-        case nil: return date
+/// The journal's own lines, redacted, in the shape it is about to show.
+private struct JournalLoadingRows: View {
+    var body: some View {
+        JournalLines {
+            JournalLine(title: String(localized: "Humeur"), detail: String(localized: "Lu de ton ressenti du matin")) {
+                JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
+            }
+            ForEach([String(localized: "Caféine"), String(localized: "Alcool"), String(localized: "Écrans tard"), String(localized: "Sieste")], id: \.self) { label in
+                JournalFactorLine(label: label, detail: nil, state: .unset) {}
+            }
         }
+        .redacted(reason: .placeholder)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Chargement du journal")
     }
+}
 
-    private func pick(_ day: Date) {
-        weekOffset = weeks.offset(forWeekContaining: day)
-        Task {
-            await store.selectDate(day)
+/// A titled group of the analyses' cards.
+struct JournalSection<Content: View>: View {
+    let title: String
+    var hint: String?
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            SharpitEyebrow(title)
+            if let hint {
+                Text(hint)
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The journal's lines as one table on the sheet: a hairline above each, none after the last.
+struct JournalLines<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Group(subviews: content) { rows in
+                ForEach(rows) { row in
+                    CliniqueDivider()
+                    row
+                }
+            }
         }
     }
 }
 
+/// A row's glyph in the signals' drawer and the check-in: ink on the chip tone.
+struct JournalRowIcon: View {
+    static let tile: CGFloat = 32
+    let symbolName: String
+
+    var body: some View {
+        Image(systemName: symbolName)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(SharpitColor.foreground)
+            .frame(width: Self.tile, height: Self.tile)
+            .sharpitConcentricBackground(SharpitColor.tile, minimum: 9)
+            .accessibilityHidden(true)
+    }
+}
+
+/// A journal line: a name over what it holds, its control at the trailing edge. The words open
+/// the line's own sheet when it has one.
+struct JournalLine<Control: View>: View {
+    let title: String
+    var detail: String? = nil
+    var onOpen: (() -> Void)? = nil
+    @ViewBuilder let control: Control
+
+    var body: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            if let onOpen {
+                Button(action: onOpen) { words.contentShape(.rect) }
+                    .buttonStyle(.sharpitPressable)
+            } else {
+                words
+            }
+            control
+        }
+        .padding(.vertical, 14)
+        .frame(minHeight: 72)
+    }
+
+    private var words: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
+            if let detail {
+                Text(detail)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+        }
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// A line's answer as a capsule: an outline while it waits, ink for « oui », a quiet fill for « non ».
+struct JournalCapsule: View {
+    enum Style { case outline, ink, quiet }
+    let text: String
+    let style: Style
+
+    var body: some View {
+        Text(text)
+            .font(SharpitTypography.system(size: 16, weight: style == .outline ? .regular : .semibold, relativeTo: .callout, digits: true))
+            .foregroundStyle(style == .ink ? SharpitColor.primaryForeground : SharpitColor.foreground)
+            .padding(.horizontal, 18)
+            .frame(minWidth: 72, minHeight: 44)
+            .background(fill, in: Capsule())
+            .overlay(Capsule().strokeBorder(SharpitColor.divider, lineWidth: style == .outline ? 1 : 0))
+            .contentShape(Capsule())
+    }
+
+    private var fill: Color {
+        switch style {
+        case .outline: .clear
+        case .ink: SharpitColor.primary
+        case .quiet: SharpitColor.tile
+        }
+    }
+}
+
+/// A value read elsewhere, said in a small pill (« Moyen », « 45 min »).
+struct JournalValuePill: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote, digits: true))
+            .foregroundStyle(SharpitColor.foreground)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 3)
+            .background(SharpitColor.tile, in: Capsule())
+    }
+}
+
+/// « − 160 mg + »: a value stepped in place.
+struct JournalStepper: View {
+    let value: String
+    let label: String
+    let onLess: () -> Void
+    let onMore: () -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            step("minus", String(localized: "Moins"), onLess)
+            Text(value)
+                .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+                .contentTransition(.numericText())
+                .frame(minWidth: 62)
+            step("plus", String(localized: "Plus"), onMore)
+        }
+        .padding(.horizontal, 4)
+        .background(SharpitColor.tile, in: Capsule())
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(label)
+        .accessibilityValue(value)
+    }
+
+    private func step(_ symbol: String, _ name: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(width: 40, height: 44)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel(name)
+    }
+}
+
+/// One derived line: whether the day met a threshold, and by how much. Read-only.
+private struct JournalChecklistLine: View {
+    let item: V1JournalAutoChecklistItem
+
+    var body: some View {
+        JournalLine(title: item.label, detail: item.detail?.isEmpty == false ? item.detail : nil) {
+            Image(systemName: item.status == .done ? "checkmark.circle" : item.status == .missed ? "minus.circle" : "circle.dashed")
+                .font(.system(size: 22, weight: .regular))
+                // Only a met threshold takes a tone: a missed one stays quiet, the journal never scolds.
+                .foregroundStyle(item.status == .done ? SharpitColor.pillarRecovery : SharpitColor.slate.opacity(0.6))
+                .accessibilityLabel(item.status == .done ? String(localized: "Atteint") : item.status == .missed ? String(localized: "Pas atteint") : String(localized: "Pas de mesure"))
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A yes / no / unanswered signal. Unanswered is its own answer — the analyses only weigh what
+/// the athlete actually said — so a tap walks the three: à noter, oui, non, à noter.
+struct JournalFactorLine: View {
+    let label: String
+    let detail: String?
+    let state: JournalFactorState
+    let onCycle: () -> Void
+
+    var body: some View {
+        JournalLine(title: label, detail: detail) {
+            Button(action: onCycle) {
+                JournalCapsule(text: JournalReadout.answer(state), style: state == .unset ? .outline : state == .yes ? .ink : .quiet)
+                    .contentTransition(.numericText())
+                    .animation(SharpitMotion.selection, value: state)
+            }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityLabel(label)
+            .accessibilityValue(JournalReadout.answer(state))
+            .accessibilityHint("Change la réponse")
+        }
+    }
+}

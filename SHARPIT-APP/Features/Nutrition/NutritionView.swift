@@ -71,8 +71,24 @@ struct NutritionView: View {
                 await store.refresh()
                 await foodLog.load(trainingDayId: selectedDayId)
             },
-            loadingPlaceholder: NutritionReadout.placeholderResponse
+            loadingPlaceholder: NutritionReadout.placeholderResponse,
+            wash: .watch
         )
+        // One tap to log a food, wherever the page is scrolled.
+        .overlay(alignment: .bottomTrailing) {
+            Button { addRequest = FoodAddRequest(meal: suggestedMeal) } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(SharpitColor.primaryForeground)
+                    .frame(width: 58, height: 58)
+                    .background(SharpitColor.primary, in: Circle())
+                    .sharpitShadow(.control)
+            }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityLabel("Ajouter un aliment")
+            .padding(.trailing, 16)
+            .padding(.bottom, 2)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -139,23 +155,34 @@ struct NutritionSections: View {
     private var isToday: Bool { nutrition.trainingDayId == TrainingDayId.today(now: .now) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+        VStack(alignment: .leading, spacing: 0) {
             if let day = nutrition.day {
-                NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete, dayId: nutrition.trainingDayId)
+                NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete)
+                    .padding(.horizontal, 24)
                 NutritionEnergyPlate(day: day, dayId: nutrition.trainingDayId, keptGoal: keptGoal(day))
-                coachReading
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
                 NutritionMacrosSection(day: day)
-                meals(importedMeals: day.meals)
-            } else {
-                NutritionDayHeader(diet: nutrition.diet, isComplete: false, dayId: nutrition.trainingDayId)
-                if foodLog?.hasEntries != true {
-                    NutritionEmptyDayPlate(
-                        isToday: isToday,
-                        onAdd: { onAdd(FoodAddRequest(meal: suggestedMeal, start: $0)) },
-                        onCopyPreviousDay: copyPreviousDay
-                    )
+                    .padding(.top, 20)
+                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                    coachReading
+                    meals(importedMeals: day.meals)
                 }
-                meals(importedMeals: [])
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+            } else {
+                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                    NutritionDayHeader(diet: nutrition.diet, isComplete: false)
+                    if foodLog?.hasEntries != true {
+                        NutritionEmptyDayPlate(
+                            isToday: isToday,
+                            onAdd: { onAdd(FoodAddRequest(meal: suggestedMeal, start: $0)) },
+                            onCopyPreviousDay: copyPreviousDay
+                        )
+                    }
+                    meals(importedMeals: [])
+                }
+                .padding(.horizontal, 24)
             }
             if !nutrition.history.isEmpty {
                 NutritionRegularitySection(
@@ -163,10 +190,12 @@ struct NutritionSections: View {
                     regularity: nutrition.regularity,
                     selectedDayId: selectedDayId ?? nutrition.trainingDayId
                 )
+                .padding(.horizontal, 24)
+                .padding(.top, SharpitSpacing.section)
             }
         }
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.bottom, SharpitSpacing.xl)
+        // Clears the floating home and add buttons.
+        .padding(.bottom, SharpitSpacing.xl + 58)
     }
 
     private var suggestedMeal: FoodLogMeal { isToday ? FoodLogMeal.suggested(at: .now) : .lunch }
@@ -247,7 +276,7 @@ private struct NutritionEmptyDayPlate: View {
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundStyle(SharpitColor.slate)
                         Text("0 kcal")
-                            .font(.system(size: 11, weight: .regular, design: .rounded))
+                            .font(.system(size: 11, weight: .regular))
                             .foregroundStyle(SharpitColor.slate)
                     }
                 }
@@ -322,7 +351,8 @@ struct NutritionEntryFlag: Hashable {
 
 // MARK: - Energy
 
-/// The day's energy on the app's own dial, and the three numbers behind it.
+/// The day's energy as its mock-up reads it: what is left in a ring, beside the three numbers
+/// behind it — the goal, what exercise added, what was eaten.
 private struct NutritionEnergyPlate: View {
     let day: V1NutritionDay
     let dayId: String
@@ -331,69 +361,63 @@ private struct NutritionEnergyPlate: View {
     private var calories: V1NutritionMacro? { day.goals?.calories }
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.md) {
-            dial
-            if let goals = day.goals {
-                HStack(spacing: 0) {
-                    figure(String(localized: "Objectif"), NutritionReadout.kcal(goals.calories.goal))
-                    divider
-                    figure(String(localized: "Exercice"), "+\(NutritionReadout.kcal(goals.exerciseCalories))")
-                    divider
-                    figure(
-                        (goals.calories.remaining ?? 0) < 0 ? "Au-delà" : String(localized: "Restant"),
-                        NutritionReadout.kcal(goals.calories.remaining.map(abs)),
-                        tone: NutritionReadout.goalTone(pct: goals.calories.pct)
-                    )
+        HStack(spacing: 24) {
+            ring
+            VStack(spacing: 0) {
+                if let goals = day.goals {
+                    row(String(localized: "Objectif"), NutritionReadout.kcal(goals.calories.goal))
+                    CliniqueDivider()
+                    row(String(localized: "Exercice"), "+ \(NutritionReadout.kcal(goals.exerciseCalories))")
+                    CliniqueDivider()
                 }
+                row(String(localized: "Mangé"), NutritionReadout.kcal(day.calories))
             }
         }
-        .padding(SharpitSpacing.md)
-        .frame(maxWidth: .infinity)
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .topLeading) {
             if keptGoal {
                 NutritionGoalSeal(dayId: dayId)
-                    .padding(SharpitSpacing.sm)
             }
         }
-        .sharpitSurface(.panel)
     }
 
-    private var dial: some View {
-        SharpitTickGauge(score: calories?.pct.map { CGFloat(min(max($0, 0), 100)) }, tone: SharpitColor.pillarNutrition)
-            .sharpitDialCentre {
-                VStack(spacing: 1) {
-                    Text(NutritionReadout.kcal(day.calories))
-                        .font(SharpitTypography.gaugeScore)
-                        .tracking(SharpitTypography.gaugeScoreTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .contentTransition(.numericText())
-                    Text("kcal consommées")
-                        .font(.system(size: 11, weight: .regular, design: .rounded))
-                        .foregroundStyle(SharpitColor.slate.opacity(0.85))
-                }
+    private var ring: some View {
+        let remaining = calories?.remaining
+        return ZStack {
+            Circle().stroke(SharpitColor.divider, lineWidth: 6)
+            Circle()
+                .trim(from: 0, to: CliniqueRingMath.trim(for: calories?.pct.map { $0 / 100 }))
+                .stroke(SharpitColor.pillarNutrition, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            VStack(spacing: 2) {
+                Text(NutritionReadout.kcal(remaining.map(abs) ?? day.calories))
+                    .font(SharpitTypography.system(size: 30, weight: .semibold, relativeTo: .title, digits: true))
+                    .tracking(-0.8)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(NutritionReadout.ringCaption(remaining: remaining))
+                    .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2))
+                    .foregroundStyle(SharpitColor.slate)
             }
-        .frame(width: 230, height: 230 / SharpitTickGaugeGeometry.aspectRatio)
+            .padding(.horizontal, 12)
+        }
+        .frame(width: 120, height: 120)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(NutritionReadout.kcal(day.calories)) kilocalories consommées")
+        .accessibilityLabel("\(NutritionReadout.kcal(remaining.map(abs) ?? day.calories)) \(NutritionReadout.ringCaption(remaining: remaining))")
     }
 
-    private var divider: some View {
-        Rectangle().fill(SharpitColor.divider).frame(width: 1, height: 32)
-    }
-
-    private func figure(_ caption: String, _ value: String, tone: Color = SharpitColor.foreground) -> some View {
-        VStack(spacing: 2) {
+    private func row(_ caption: String, _ value: String) -> some View {
+        HStack {
             Text(caption)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
                 .foregroundStyle(SharpitColor.slate)
+            Spacer(minLength: SharpitSpacing.xs)
             Text(value)
-                .font(SharpitTypography.instrument)
-                .foregroundStyle(tone)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
         }
-        .frame(maxWidth: .infinity)
+        .padding(.vertical, 9)
         .accessibilityElement(children: .combine)
     }
 }
@@ -425,81 +449,61 @@ private struct NutritionGoalSeal: View {
 
 // MARK: - Coach reading
 
-/// The coach's reading on the ink plate, like the verdict on Résumé.
+/// The coach's reading in a bordered card: what it says, then what to do.
 private struct NutritionCoachPlate: View {
-    @Environment(ShellRouter.self) private var router
+    @Environment(ShellRouter.self) private var router: ShellRouter?
     let reading: V1NutritionCoachReading
     let dayId: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center) {
                 Text("Lecture du coach")
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer(minLength: 0)
                 if case .ready(let ready) = reading, ready.isProvisional {
                     Text("Journée en cours")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.6))
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                        .foregroundStyle(SharpitColor.slate)
                 }
+                Text("Pro")
+                    .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2))
+                    .foregroundStyle(CliniqueStatus.pro.foreground)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 1)
+                    .background(CliniqueStatus.pro.fill, in: Capsule())
+                    .overlay(Capsule().strokeBorder(CliniqueStatus.pro.border, lineWidth: 1))
             }
             content
         }
-        .padding(SharpitSpacing.md + 4)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(SharpitColor.divider, lineWidth: 1))
     }
 
     @ViewBuilder
     private var content: some View {
         switch reading {
         case .ready(let ready):
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-                Circle()
-                    .fill(NutritionReadout.tone(for: ready.verdict.tone))
-                    .frame(width: 10, height: 10)
-                    .accessibilityHidden(true)
-                Text(ready.verdict.headline)
-                    .font(SharpitTypography.verdict)
-                    .tracking(SharpitTypography.verdictTracking)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+            Text("\(ready.verdict.headline) \(ready.action.text)")
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                .lineSpacing(4)
+                .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(ready.findings, id: \.self) { finding in
+                (Text("\(NutritionReadout.jobLabel(finding.job)) · ").foregroundStyle(SharpitColor.slate) + Text(finding.text))
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                ForEach(ready.findings, id: \.self) { finding in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(NutritionReadout.jobLabel(finding.job))
-                            .font(SharpitTypography.label)
-                            .tracking(SharpitTypography.labelTracking)
-                            .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.6))
-                        Text(finding.text)
-                            .font(SharpitTypography.body)
-                            .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.9))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-                Image(systemName: "arrow.turn.down.right")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.inkAccent)
-                    .accessibilityHidden(true)
-                Text(ready.action.text)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(SharpitSpacing.sm)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitConcentricBackground(SharpitColor.inkSurfaceForeground.opacity(0.08), minimum: SharpitRadius.small)
             Button {
-                router.discussWithCoach(about: CoachDiscuss.describe(.nutrition(trainingDayId: dayId)))
+                router?.discussWithCoach(about: CoachDiscuss.describe(.nutrition(trainingDayId: dayId)))
             } label: {
-                Label("Discuter avec le coach", systemImage: "bubble.left.and.text.bubble.right")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.inkAccent)
+                Text("En parler au coach")
+                    .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .frame(minHeight: 32)
             }
             .buttonStyle(.sharpitPressable)
         case .pending:
@@ -513,126 +517,50 @@ private struct NutritionCoachPlate: View {
 
     private func status(_ text: String) -> some View {
         Text(text)
-            .font(SharpitTypography.body)
-            .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.75))
+            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+            .foregroundStyle(SharpitColor.slate)
     }
 }
 
 // MARK: - Macros
 
+/// The three macros between two hairlines: eaten over the goal, on a thin bar in its hue.
 private struct NutritionMacrosSection: View {
     let day: V1NutritionDay
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Macronutriments"))
-            HStack(spacing: SharpitSpacing.sm) {
-                ForEach(NutritionReadout.Macro.allCases, id: \.self) { macro in
-                    MacroTile(
-                        macro: macro,
-                        consumed: macro.consumed(in: day),
-                        line: day.goals.map(macro.line(in:)),
-                        perKg: perKg(macro)
-                    )
+        VStack(spacing: 0) {
+            CliniqueDivider()
+            HStack(alignment: .top, spacing: 14) {
+                ForEach([NutritionReadout.Macro.carbohydrates, .protein, .fat], id: \.self) { macro in
+                    column(macro, line: day.goals.map(macro.line(in:)))
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
-            let split = NutritionReadout.energySplit(day)
-            if !split.isEmpty {
-                EnergySplitBar(split: split)
-            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+            CliniqueDivider()
         }
     }
 
-    private func perKg(_ macro: NutritionReadout.Macro) -> String? {
-        guard let density = day.fuelDensity else { return nil }
-        switch macro {
-        case .protein: return NutritionReadout.perKg(density.proteinGPerKg)
-        case .carbohydrates: return NutritionReadout.perKg(density.carbohydratesGPerKg)
-        case .fat: return nil
+    private func column(_ macro: NutritionReadout.Macro, line: V1NutritionMacro?) -> some View {
+        VStack(spacing: 6) {
+            Text(macro.label)
+                .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                .foregroundStyle(SharpitColor.slate)
+                .lineLimit(1)
+            (Text("\(Int(macro.consumed(in: day).rounded()))")
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+                + Text(line?.goal.map { " / \(Int($0.rounded())) g" } ?? " g")
+                .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                .foregroundStyle(SharpitColor.slate))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+            SharpitBarTrack(fraction: NutritionReadout.fill(pct: line?.pct), tone: macro.sheetTone)
+                .frame(height: 3)
         }
-    }
-}
-
-private struct MacroTile: View {
-    let macro: NutritionReadout.Macro
-    let consumed: Double
-    let line: V1NutritionMacro?
-    let perKg: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            HStack(spacing: 6) {
-                Circle().fill(macro.tone).frame(width: 8, height: 8)
-                Text(macro.label)
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(SharpitColor.slate)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(Int(consumed.rounded()))")
-                    .font(SharpitTypography.data)
-                    .tracking(SharpitTypography.dataTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text("g")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-            if let line, let goal = line.goal {
-                NutritionGoalBar(fill: NutritionReadout.fill(pct: line.pct), tone: macro.tone)
-                    .frame(height: 4)
-                Text("sur \(Int(goal.rounded())) g")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-            if let perKg {
-                Text(perKg)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(SharpitSpacing.sm + 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .sharpitSurface(.panel)
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// Where the energy came from: one bar split by the macros' kilocalories.
-private struct EnergySplitBar: View {
-    let split: [(macro: NutritionReadout.Macro, share: Double)]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            GeometryReader { geo in
-                HStack(spacing: 2) {
-                    ForEach(split, id: \.macro) { part in
-                        Rectangle()
-                            .fill(part.macro.tone)
-                            .frame(width: max(geo.size.width * part.share - 2, 2))
-                    }
-                }
-            }
-            .frame(height: 8)
-            .clipShape(Capsule())
-            HStack(spacing: SharpitSpacing.md) {
-                ForEach(split, id: \.macro) { part in
-                    HStack(spacing: 4) {
-                        Circle().fill(part.macro.tone).frame(width: 6, height: 6)
-                        Text("\(part.macro.label) \(Int((part.share * 100).rounded())) %")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                    }
-                }
-            }
-        }
-        .padding(SharpitSpacing.md)
-        .sharpitSurface(.panel)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Répartition de l'énergie")
     }
 }
 
@@ -643,75 +571,56 @@ private struct NutritionMealsSection: View {
     let flags: [NutritionEntryFlag]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Repas"))
-            VStack(spacing: 0) {
-                ForEach(Array(meals.enumerated()), id: \.element) { index, meal in
-                    NavigationLink {
-                        NutritionMealView(meal: meal, flags: flags)
-                    } label: {
-                        MealRow(meal: meal, flagged: flags.contains { flag in
-                            meal.entries.contains { flag.matches(meal: meal, entry: $0.name) }
-                        })
-                    }
-                    .buttonStyle(.sharpitPressable)
-                    if index < meals.count - 1 {
-                        Rectangle()
-                            .fill(SharpitColor.divider)
-                            .frame(height: 1)
-                            .padding(.leading, 56)
-                    }
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Repas")
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.bottom, 4)
+            ForEach(Array(meals.enumerated()), id: \.element) { index, meal in
+                if index > 0 { CliniqueDivider() }
+                NavigationLink {
+                    NutritionMealView(meal: meal, flags: flags)
+                } label: {
+                    MealRow(meal: meal, flagged: flags.contains { flag in
+                        meal.entries.contains { flag.matches(meal: meal, entry: $0.name) }
+                    })
                 }
+                .buttonStyle(.sharpitPressable)
             }
-            .sharpitSurface(.panel)
         }
     }
 }
 
+/// An imported meal on a line: its name over its foods, its energy at the end.
 private struct MealRow: View {
     let meal: V1NutritionMeal
     let flagged: Bool
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            ZStack {
-                Circle().fill(SharpitNutritionTone.meal(meal.name).opacity(0.14)).frame(width: 32, height: 32)
-                Image(systemName: NutritionReadout.mealSymbol(meal.name))
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SharpitNutritionTone.mealLabel(meal.name))
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(meal.label)
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                HStack(spacing: 4) {
-                    Text(meal.entries.count == 1 ? String(localized: "1 aliment") : "\(meal.entries.count) aliments")
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(meal.label)
+                        .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
                     if flagged {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundStyle(SharpitColor.signalCaution)
+                        CliniqueStatusPill(String(localized: "Signalé"), status: .watch)
                             .accessibilityLabel("Aliment signalé par le coach")
                     }
                 }
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-            }
-            Spacer(minLength: 0)
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(NutritionReadout.kcal(meal.calories))
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text("kcal")
-                    .font(SharpitTypography.meta)
+                Text(NutritionReadout.mealLine(meal.entries.map(\.name)))
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
                     .foregroundStyle(SharpitColor.slate)
+                    .lineLimit(1)
             }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(SharpitColor.slate.opacity(0.45))
-                .accessibilityHidden(true)
+            Spacer(minLength: SharpitSpacing.sm)
+            Text(NutritionReadout.kcal(meal.calories))
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
         }
-        .padding(.horizontal, SharpitSpacing.md)
-        .padding(.vertical, SharpitSpacing.sm)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
@@ -719,37 +628,16 @@ private struct MealRow: View {
 
 // MARK: - Header
 
-/// What frames the day before any figure: the diet in force, whether the day is still open, and
-/// the coach one tap away — a pill placed with what it discusses, never at the bottom.
+/// What frames the day before any figure: the diet in force, or whether the day is still open.
 private struct NutritionDayHeader: View {
-    @Environment(ShellRouter.self) private var router
     let diet: [String]
     let isComplete: Bool
-    let dayId: String
 
     var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.xs) {
-            if diet.isEmpty {
-                chip(isComplete ? String(localized: "Journée close") : String(localized: "Journée en cours"), symbol: isComplete ? "checkmark.circle" : "clock", tone: SharpitColor.slate)
-            } else {
-                chip(diet.joined(separator: " · "), symbol: "leaf", tone: SharpitColor.primary)
-                    .accessibilityLabel("Régime en cours : \(diet.joined(separator: ", "))")
-            }
-            Spacer(minLength: 0)
-            CoachDiscussButton(title: String(localized: "Coach")) {
-                router.discussWithCoach(about: CoachDiscuss.describe(.nutrition(trainingDayId: dayId)))
-            }
-        }
-    }
-
-    private func chip(_ text: String, symbol: String, tone: Color) -> some View {
-        Label(text, systemImage: symbol)
-            .font(SharpitTypography.bodyEmphasis)
-            .foregroundStyle(tone)
-            .lineLimit(1)
-            .padding(.horizontal, SharpitSpacing.sm)
-            .padding(.vertical, SharpitSpacing.xs)
-            .background(tone.opacity(0.10), in: Capsule())
+        Text(NutritionReadout.dayFrame(diet: diet, isComplete: isComplete))
+            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+            .foregroundStyle(SharpitColor.slate)
+            .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 
