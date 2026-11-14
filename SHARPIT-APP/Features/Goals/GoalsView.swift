@@ -260,7 +260,7 @@ private struct NextRaceCard: View {
             }
             if let readout {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(readout.finishLabel)
+                    Text(GoalsReadout.spaced(readout.finishLabel))
                         .font(SharpitTypography.system(size: 46, weight: .semibold, relativeTo: .largeTitle, digits: true))
                         .tracking(-1.2)
                         .foregroundStyle(SharpitColor.foreground)
@@ -286,7 +286,7 @@ private struct NextRaceCard: View {
                                 Text(leg.segment.label)
                                     .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
                                     .foregroundStyle(SharpitColor.slate)
-                                Text(GoalAnalyticsEngine.formatDuration(leg.segment.durationSec))
+                                Text(GoalsReadout.spaced(GoalAnalyticsEngine.formatDuration(leg.segment.durationSec)))
                                     .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
                                     .foregroundStyle(SharpitColor.foreground)
                             }
@@ -318,6 +318,13 @@ private struct NextRaceCard: View {
 
 /// How Objectifs words the race ahead.
 enum GoalsReadout {
+    /// « 2h28 » → « 2 h 28 », « 27min » → « 27 min »: the server's compact times, set as the page reads them.
+    static func spaced(_ time: String) -> String {
+        time.replacing(/(\d)(h|min)(\d?)/) { match in
+            "\(match.1) \(match.2)\(match.3.isEmpty ? "" : " \(match.3)")"
+        }
+    }
+
     /// « Prochaine course · dans 37 jours », « … · aujourd'hui ».
     static func lead(_ goal: V1Goal) -> String {
         let head = String(localized: "Prochaine course")

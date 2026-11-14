@@ -124,3 +124,12 @@ private func race(_ title: String, inDays days: Int?, priority: GoalPriority? = 
 
     #expect(GoalOrdering.active(goals).map(\.title) == ["Proche", "Loin", "Sans date"])
 }
+
+@Test func compactTimesAreSetWithTheirSpaces() {
+    #expect(GoalsReadout.spaced("2h28") == "2 h 28")
+    #expect(GoalsReadout.spaced("27min") == "27 min")
+    #expect(GoalsReadout.spaced("1h12") == "1 h 12")
+    #expect(GoalsReadout.spaced("5h35 – 5h48") == "5 h 35 – 5 h 48")
+    #expect(GoalsReadout.spaced("2 h 28") == "2 h 28")
+    #expect(GoalsReadout.spaced("—") == "—")
+}
