@@ -41,7 +41,7 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: Binding(get: { router.selectedTab }, set: { router.tabBarSelected($0) })) {
-            Tab("Résumé", systemImage: "sun.max", value: ShellTab.today) {
+            Tab(value: ShellTab.today) {
                 TodayView(
                     client: SharpitClient(),
                     tokenProvider: liveToken,
@@ -55,12 +55,10 @@ struct RootView: View {
                     appleHealth: appleHealth
                 )
                 .sharpitRegularColumn()
+            } label: {
+                SharpitTabLabel("Résumé", systemImage: "house")
             }
-            Tab(
-                ShellDestination.plan.title,
-                systemImage: ShellDestination.plan.systemImage,
-                value: ShellTab.plan
-            ) {
+            Tab(value: ShellTab.plan) {
                 PlanView(
                     client: plannedSessionClient,
                     linker: plannedSessionClient,
@@ -68,12 +66,10 @@ struct RootView: View {
                     tokenProvider: liveToken
                 )
                 .sharpitRegularColumn()
+            } label: {
+                SharpitTabLabel(ShellDestination.plan.title, systemImage: ShellDestination.plan.systemImage)
             }
-            Tab(
-                ShellDestination.coach.title,
-                systemImage: ShellDestination.coach.systemImage,
-                value: ShellTab.coach
-            ) {
+            Tab(value: ShellTab.coach) {
                 CoachView(
                     client: CoachChatClient(),
                     conversations: CoachConversationClient(),
@@ -81,24 +77,20 @@ struct RootView: View {
                     tokenProvider: liveToken
                 )
                 .sharpitRegularColumn()
+            } label: {
+                SharpitTabLabel(ShellDestination.coach.title, systemImage: ShellDestination.coach.systemImage)
             }
-            Tab(
-                ShellDestination.activity.title,
-                systemImage: ShellDestination.activity.systemImage,
-                value: ShellTab.activity
-            ) {
+            Tab(value: ShellTab.activity) {
                 ActivityView(
                     client: ActivityClient(),
                     tokenProvider: liveToken
                 )
                 .sharpitRegularColumn()
+            } label: {
+                SharpitTabLabel(ShellDestination.activity.title, systemImage: ShellDestination.activity.systemImage)
             }
             if features.isOn(.health) {
-                Tab(
-                    ShellDestination.body.title,
-                    systemImage: ShellDestination.body.systemImage,
-                    value: ShellTab.body
-                ) {
+                Tab(value: ShellTab.body) {
                     SanteView(
                         profileClient: profileClient,
                         recoveryClient: sharpitClient,
@@ -106,6 +98,8 @@ struct RootView: View {
                         modelContext: modelContext
                     )
                     .sharpitRegularColumn()
+                } label: {
+                    SharpitTabLabel(ShellDestination.body.title, systemImage: ShellDestination.body.systemImage)
                 }
             }
         }

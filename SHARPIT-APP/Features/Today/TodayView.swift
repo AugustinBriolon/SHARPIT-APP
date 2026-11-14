@@ -93,11 +93,11 @@ struct TodayView: View {
             ZStack {
                 switch store.phase {
                 case .loading:
-                    SharpitLoadingInstrument()
+                    SharpitLoadingInstrument(showsNutrition: features.isOn(.nutrition))
                         .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .loaded(let fold) where fold.trainingDayId != store.dayId:
                     // The day asked for is not read yet: its loading shape, under its own date.
-                    SharpitLoadingInstrument()
+                    SharpitLoadingInstrument(showsNutrition: features.isOn(.nutrition))
                         .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .loaded(let fold):
                     TodayFoldView(
@@ -151,7 +151,7 @@ struct TodayView: View {
             .daySwipe(day: TrainingDayId.date(store.dayId) ?? .now) { openDay($0) } neighbor: { day in
                 neighborPage(day)
             }
-            .background(SharpitColor.card)
+            .cliniqueBackdropPage()
             // The date heads the page as a button (`dayTitle`): a toolbar large title takes no
             // touch on iOS 26. The bar keeps only the avatar; the name stays for VoiceOver.
             .navigationTitle(store.navigationTitle)
@@ -314,12 +314,12 @@ extension TodayView {
     fileprivate func dayTitleLabel(_ title: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
             Text(title)
-                .font(SharpitTypography.screenTitle)
-                .tracking(SharpitTypography.screenTitleTracking)
+                .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3))
+                .tracking(-0.3)
                 .foregroundStyle(SharpitColor.foreground)
                 .contentTransition(.numericText())
             Image(systemName: "chevron.down")
-                .font(SharpitTypography.sectionTitle)
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(SharpitColor.slate)
         }
     }
@@ -340,15 +340,18 @@ extension TodayView {
                 activityStatusStore: activityStatusStore
             )
         } else {
-            SharpitLoadingInstrument()
+            SharpitLoadingInstrument(showsNutrition: features.isOn(.nutrition))
                 .safeAreaInset(edge: .top) {
                     VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                         title
                         chips
                     }
+                        .environment(\.colorScheme, .dark)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, SharpitSpacing.pageInset)
-                        .padding(.vertical, SharpitSpacing.xs)
+                        .padding(.horizontal, SharpitSpacing.lg)
+                        .padding(.top, SharpitSpacing.xxs)
+                        .padding(.bottom, SharpitSpacing.md)
+                        .background(CliniqueBackdrop().ignoresSafeArea(edges: .top))
                 }
         }
     }
@@ -360,9 +363,12 @@ extension TodayView {
             dayTitle
             chips
         }
+        .environment(\.colorScheme, .dark)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.vertical, SharpitSpacing.xs)
+        .padding(.horizontal, SharpitSpacing.lg)
+        .padding(.top, SharpitSpacing.xxs)
+        .padding(.bottom, SharpitSpacing.md)
+        .background(CliniqueBackdrop().ignoresSafeArea(edges: .top))
     }
 
     fileprivate var chips: some View {
@@ -486,6 +492,10 @@ private struct TodayFoldView: View {
     @State private var openedSignal: V1TodaySignalKey?
     @State private var openedNutrition: NutritionDestination?
     @State private var sleepOverrideCaption: String? = nil
+    /// The scroll view's height: the sheet is at least that tall.
+    @State private var viewportHeight: CGFloat = 0
+    /// The week's sessions, done over planned, for Régularité's ring.
+    @State private var weekTotals: PlanWeekTotals?
 
     /// Arrival phase drives the staggered reveal of each section.
     @State private var phase: TodayArrivalPhase
@@ -532,109 +542,28 @@ private struct TodayFoldView: View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 0) {
                 if let controls {
-                    // Air under the date, then close to the verdict: the chips lead into the day.
+                    // The date and its chips sit on the backdrop, above the sheet.
                     controls
-                        .padding(.horizontal, SharpitSpacing.pageInset)
+                        .environment(\.colorScheme, .dark)
+                        .padding(.horizontal, SharpitSpacing.lg)
                         .padding(.top, SharpitSpacing.xxs)
-                }
-                if let race = fold.race {
-                    TodayRaceLink(race: race, tokenProvider: tokenProvider)
-                        .padding(.horizontal, SharpitSpacing.pageInset)
-                        .padding(.top, SharpitSpacing.md)
-                    .opacity(phase.showsPlate ? 1 : 0)
-                    .offset(y: phase.showsPlate ? 0 : 10)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80),
-                        value: phase.showsPlate
-                    )
-                }
-                VerdictHero(plate: fold.plate, revealed: phase.showsPlate)
-
-                if let store = activityStatusStore, store.current != .active, store.phase != .loading {
-                    ActivityStatusAlertLine(status: store.current)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, SharpitSpacing.pageInset)
                         .padding(.bottom, SharpitSpacing.md)
-                    .opacity(phase.showsPlate ? 1 : 0)
-                    .offset(y: phase.showsPlate ? 0 : 18)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.07),
-                        value: phase.showsPlate
-                    )
+                        // Held in place while the page scrolls, so the sheet rises over it and
+                        // hides it; a pull down still carries it with the page.
+                        .visualEffect { content, proxy in
+                            content.offset(y: max(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY))
+                        }
                 }
-
-                if !fold.gauges.isEmpty || fold.isPlateOnly || regularity != nil {
-                    ResumeScoreRow(
-                        gauges: fold.isPlateOnly ? OvernightGaugeModel.placeholders : fold.gauges,
-                        consistency: regularity,
-                        sleepOverrideCaption: sleepOverrideCaption,
-                        pulseScores: pulseScores,
-                        animated: !hasCompletedArrival,
-                        onSelect: signalClient == nil ? nil : { openedSignal = $0 },
-                        onOpenRegularity: { router.openPlan(on: foldDay) }
-                    )
-                    .opacity(phase.showsGauges ? 1 : 0)
-                    .offset(y: phase.showsGauges ? 0 : 18)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.08),
-                        value: phase.showsGauges
-                    )
-                }
-
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    if let proposal = fold.morningProposal {
-                        MorningProposalCard(proposal: proposal, onCheckIn: onCheckIn, onAnswer: onAnswerProposal)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-
-                    if let horizon = fold.planHorizon {
-                        PlanHorizonCard(horizon: horizon) { router.open(.planGenerator) }
-                    }
-
-                    if let conflict = fold.travelConflict {
-                        TravelConflictCard(conflict: conflict) { router.openTravelConflict(conflict) }
-                    }
-
-                    evidenceSection
-                    .opacity(phase.showsSession ? 1 : 0)
-                    .offset(y: phase.showsSession ? 0 : 18)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.06),
-                        value: phase.showsSession
-                    )
-
-                    // Callers: TodayFoldView. API: timeline. User: fix all — P2 day timeline.
-                    TodayTimelineStrip(events: fold.timeline)
-                    .opacity(phase.showsGauges ? 1 : 0)
-                    .offset(y: phase.showsGauges ? 0 : 18)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.1),
-                        value: phase.showsGauges
-                    )
-
-                    if features.isOn(.nutrition), let nutrition {
-                        NutritionTodayCard(phase: nutrition.phase) { openNutrition(nutrition.phase) }
-                    .opacity(phase.showsGauges ? 1 : 0)
-                    .offset(y: phase.showsGauges ? 0 : 18)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.16),
-                        value: phase.showsGauges
-                    )
-                    }
-                }
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.top, SharpitSpacing.lg)
+                sheet
+                    // At least a screen tall, so even a short day can rise over the header.
+                    .frame(minHeight: viewportHeight, alignment: .top)
+                    .cliniqueRisingSheet(wash: VerdictReadout.wash(for: VerdictReadout.status(for: fold.plate)))
+                    .zIndex(1)
             }
-            .padding(.bottom, SharpitSpacing.lg)
             .containerRelativeFrame(.horizontal, alignment: .leading)
         }
-        .cliniqueSheet(wash: VerdictReadout.wash(for: VerdictReadout.status(for: fold.plate)))
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+        .cliniqueBackdropPage()
         .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .modifier(ScrollUnderGlass())
         .navigationDestination(item: $openedSignal) { key in
@@ -706,7 +635,21 @@ private struct TodayFoldView: View {
         guard let tokenProvider else { return }
         guard let token = try? await tokenProvider() else { return }
 
-        // The night against its target, for the sleep ring's foot line.
+        // The week's sessions as Plan counts them, for Régularité's ring.
+        let weeks = SharpitWeeks(offsets: PlanStore.offsets)
+        let weekStart = weeks.weekStart(forOffset: weeks.offset(forWeekContaining: foldDay))
+        if let weekEnd = weeks.calendar.date(byAdding: .day, value: 6, to: weekStart),
+           let nextWeek = weeks.calendar.date(byAdding: .day, value: 7, to: weekStart),
+           let planned = try? await PlannedSessionClient().plannedSessions(from: weekStart, to: weekEnd, token: token) {
+            let recorded = (try? await ActivityClient().activities(from: weekStart, to: nextWeek, token: token)) ?? []
+            weekTotals = PlanWeekTotals(PlanEntryBuilder.entries(
+                planned: planned,
+                activities: recorded.filter { $0.date >= weekStart && $0.date < nextWeek },
+                calendar: weeks.calendar
+            ))
+        }
+
+        // The night against its target, said with the sleep ring.
         if let signalClient,
            let sleep = try? await signalClient.sleep(trainingDayId: fold.trainingDayId, token: token) {
             let delta = sleep.targetDeltaMin ?? (sleep.durationMin.map { $0 - sleep.targetMin })
@@ -913,6 +856,109 @@ private struct TodayFoldView: View {
                 onSessionLinked()
             }
         )
+    }
+
+    /// Everything under the date: the verdict on the wash, the scores, the day's sessions, then
+    /// what asks for an answer.
+    private var sheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let race = fold.race {
+                TodayRaceLink(race: race, tokenProvider: tokenProvider)
+                    .padding(.horizontal, SharpitSpacing.lg)
+                    .padding(.top, SharpitSpacing.lg)
+                    .opacity(phase.showsPlate ? 1 : 0)
+                    .offset(y: phase.showsPlate ? 0 : 10)
+                    .animation(
+                        reduceMotion ? .easeOut(duration: 0.01)
+                            : .spring(response: 0.40, dampingFraction: 0.80),
+                        value: phase.showsPlate
+                    )
+            }
+            VerdictHero(plate: fold.plate, revealed: phase.showsPlate)
+
+            if let store = activityStatusStore, store.current != .active, store.phase != .loading {
+                ActivityStatusAlertLine(status: store.current)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, SharpitSpacing.lg)
+                    .padding(.bottom, SharpitSpacing.md)
+                    .opacity(phase.showsPlate ? 1 : 0)
+                    .offset(y: phase.showsPlate ? 0 : 18)
+                    .animation(
+                        reduceMotion ? .easeOut(duration: 0.01)
+                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.07),
+                        value: phase.showsPlate
+                    )
+            }
+
+            ResumeScoreRow(
+                gauges: fold.isPlateOnly ? OvernightGaugeModel.placeholders : fold.gauges,
+                nutritionPercent: ResumeScoreReadout.nutritionPercent(nutritionDay),
+                showsNutrition: features.isOn(.nutrition) && nutrition != nil,
+                week: regularity == nil ? nil : weekTotals,
+                consistency: regularity,
+                sleepOverrideCaption: sleepOverrideCaption,
+                pulseScores: pulseScores,
+                animated: !hasCompletedArrival,
+                onSelect: signalClient == nil ? nil : { openedSignal = $0 },
+                onOpenNutrition: nutrition.map { store in { openNutrition(store.phase) } },
+                onOpenRegularity: { router.openPlan(on: foldDay) }
+            )
+            .opacity(phase.showsGauges ? 1 : 0)
+            .offset(y: phase.showsGauges ? 0 : 18)
+            .animation(
+                reduceMotion ? .easeOut(duration: 0.01)
+                    : .spring(response: 0.40, dampingFraction: 0.80).delay(0.08),
+                value: phase.showsGauges
+            )
+
+            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                evidenceSection
+                    .opacity(phase.showsSession ? 1 : 0)
+                    .offset(y: phase.showsSession ? 0 : 18)
+                    .animation(
+                        reduceMotion ? .easeOut(duration: 0.01)
+                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.06),
+                        value: phase.showsSession
+                    )
+
+                if let proposal = fold.morningProposal {
+                    MorningProposalCard(proposal: proposal, onCheckIn: onCheckIn, onAnswer: onAnswerProposal)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+
+                if let horizon = fold.planHorizon {
+                    PlanHorizonCard(horizon: horizon) { router.open(.planGenerator) }
+                }
+
+                if let conflict = fold.travelConflict {
+                    TravelConflictCard(conflict: conflict) { router.openTravelConflict(conflict) }
+                }
+
+                if features.isOn(.nutrition), let nutrition {
+                    CliniqueDivider().padding(.horizontal, -SharpitSpacing.lg)
+                    ResumeNutritionSection(phase: nutrition.phase) { openNutrition(nutrition.phase) }
+                        .padding(.top, SharpitSpacing.xxs)
+                        .opacity(phase.showsGauges ? 1 : 0)
+                }
+
+                if !fold.timeline.isEmpty {
+                    CliniqueDivider().padding(.horizontal, -SharpitSpacing.lg)
+                    TodayTimelineStrip(events: fold.timeline)
+                        .padding(.top, SharpitSpacing.xxs)
+                        .opacity(phase.showsGauges ? 1 : 0)
+                }
+            }
+            .padding(.horizontal, SharpitSpacing.lg)
+            .padding(.top, 20)
+            .padding(.bottom, SharpitSpacing.xl)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The day's food log, once read.
+    private var nutritionDay: V1NutritionDay? {
+        if case .loaded(let day) = nutrition?.phase { return day }
+        return nil
     }
 
     /// The week's regularity, when the athlete keeps that feature on.

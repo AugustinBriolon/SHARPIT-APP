@@ -5,22 +5,21 @@ import SwiftUI
 /// User: "fix all" — go-all P2 day timeline.
 struct TodayTimelineStrip: View {
     let events: [V1DayTimelineEvent]
-    /// Grows with the text: a fixed 42 pt broke « 23:59 » a character per line at the largest sizes.
-    @ScaledMetric(relativeTo: .footnote) private var clockWidth: CGFloat = 42
 
     var body: some View {
         if !events.isEmpty {
-            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                SharpitCardHeader(title: String(localized: "Fil de la journée"), symbol: "clock", showsChevron: false)
+            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+                Text("Fil de la journée")
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
+                    .foregroundStyle(SharpitColor.foreground)
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
-                        row(event, isLast: index == events.count - 1)
+                        row(event, isFirst: index == 0, isLast: index == events.count - 1)
                     }
                 }
             }
-            .padding(SharpitSpacing.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
         }
     }
 
@@ -32,41 +31,38 @@ struct TodayTimelineStrip: View {
         return String(format: "%02d:%02d", hour, minute)
     }
 
-    /// One beat of the day: its time, a dot on the rail, what happened. No icon per row — the
-    /// rail carries the order, the words carry the kind; a session's dot is lime.
-    private func row(_ event: V1DayTimelineEvent, isLast: Bool) -> some View {
+    /// One beat of the day down the rail, as Plan's week reads: a dot, the time above what
+    /// happened. A session's dot is the good status mark; the rest are hollow.
+    private func row(_ event: V1DayTimelineEvent, isFirst: Bool, isLast: Bool) -> some View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            Text(event.minuteOfDay == nil ? "" : clock(event.minuteOfDay))
-                .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .footnote, digits: true))
-                .foregroundStyle(SharpitColor.slate)
-                .frame(width: clockWidth, alignment: .leading)
-                .padding(.top, 2)
-
             VStack(spacing: 0) {
-                Circle()
-                    .fill(event.kind == "session" ? SharpitColor.statusGoodMark : SharpitColor.foreground)
-                    .frame(width: 9, height: 9)
-                    .padding(.top, 5)
-                Rectangle()
-                    .fill(isLast ? Color.clear : SharpitColor.divider)
-                    .frame(width: 2)
-                    .frame(maxHeight: .infinity)
-                    .padding(.top, 4)
-            }
-            .frame(width: 9)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(event.title)
-                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.foreground)
-                if let detail = event.detail, !detail.isEmpty {
-                    Text(detail)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
+                Rectangle().fill(isFirst ? Color.clear : SharpitColor.outline).frame(width: 1, height: 16)
+                Group {
+                    if event.kind == "session" {
+                        Circle().fill(SharpitColor.statusGoodMark)
+                    } else {
+                        Circle().strokeBorder(SharpitColor.slate, lineWidth: 1.5)
+                    }
                 }
+                .frame(width: 12, height: 12)
+                Rectangle().fill(isLast ? Color.clear : SharpitColor.outline).frame(width: 1).frame(maxHeight: .infinity)
             }
-            .padding(.bottom, isLast ? 0 : SharpitSpacing.md)
-            Spacer(minLength: 0)
+            .frame(width: 12)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text([event.minuteOfDay == nil ? nil : clock(event.minuteOfDay), event.detail].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                    Text(event.title)
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                }
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if !isLast { CliniqueDivider() }
+            }
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .combine)

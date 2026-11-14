@@ -24,8 +24,8 @@ enum ShellDestination: String, CaseIterable, Sendable {
     var systemImage: String {
         switch self {
         case .plan: "calendar"
-        case .coach: "bubble.left.and.bubble.right"
-        case .activity: "figure.run"
+        case .coach: "bubble.left"
+        case .activity: "chart.line.uptrend.xyaxis"
         case .body: "heart"
         }
     }

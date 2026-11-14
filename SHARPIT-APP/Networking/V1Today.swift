@@ -340,7 +340,9 @@ nonisolated enum TrainingDayId {
         }
         let formatter = DateFormatter()
         formatter.locale = AppLanguage.locale
-        formatter.setLocalizedDateFormatFromTemplate("dMMM")
-        return formatter.string(from: date)
+        // « Vendredi 14 novembre »: the day named in full, as the page's title.
+        formatter.setLocalizedDateFormatFromTemplate("EEEEdMMMM")
+        let name = formatter.string(from: date)
+        return name.prefix(1).uppercased() + name.dropFirst()
     }
 }

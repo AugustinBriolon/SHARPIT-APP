@@ -77,21 +77,23 @@ struct VerdictHero: View {
             if let explanation = explanationText {
                 secondary(explanation)
             }
-            if !reasons.isEmpty || plate.estimationNote != nil {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xxs + 2) {
-                    ForEach(reasons, id: \.self, content: reasonRow)
-                    if let note = plate.estimationNote {
-                        noteRow(note)
-                    }
-                }
-                .padding(.top, SharpitSpacing.xxs)
+            if !reasons.isEmpty {
+                // The facts the verdict was read from, as one line under it.
+                secondary(reasons.map(\.label).joined(separator: " · "))
+            }
+            if let note = plate.estimationNote {
+                Text(note)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .multilineTextAlignment(.center)
         .contentTransition(.opacity)
         .frame(maxWidth: .infinity)
         .padding(.horizontal, SharpitSpacing.lg)
-        .padding(.vertical, SharpitSpacing.lg)
+        .padding(.top, SharpitSpacing.lg)
+        .padding(.bottom, 20)
         // A new verdict (ressenti saved, refresh) cross-fades in place — never a dip or a jump.
         .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: plate)
         .opacity(revealed ? 1 : 0)
@@ -111,33 +113,6 @@ struct VerdictHero: View {
             .foregroundStyle(SharpitColor.slate)
             .lineSpacing(2)
             .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func reasonRow(_ reason: VerdictReason) -> some View {
-        Label {
-            Text(reason.label)
-                .foregroundStyle(reason.isSupport ? SharpitColor.slate : SharpitColor.foreground)
-        } icon: {
-            Image(systemName: reason.isSupport ? "checkmark" : "arrow.down.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(SharpitColor.slate)
-                .frame(width: 16)
-        }
-        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-        .multilineTextAlignment(.leading)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func noteRow(_ note: String) -> some View {
-        Label {
-            Text(note)
-        } icon: {
-            Image(systemName: "info.circle").frame(width: 16)
-        }
-        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
-        .foregroundStyle(SharpitColor.slate)
-        .multilineTextAlignment(.leading)
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var accessibilityLabel: String {
