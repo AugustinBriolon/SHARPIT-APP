@@ -93,20 +93,41 @@ enum EffortReadout {
         return String(localized: "Danger")
     }
 
-    static func rampTone(_ acwr: Double) -> Color {
-        guard acwr > 0 else { return SharpitColor.foreground }
-        if rampSweetSpot.contains(acwr) || acwr < 0.9 { return SharpitColor.foreground }
-        return acwr <= 1.5 ? SharpitColor.signalCaution : SharpitColor.signalRisk
+    /// The ramp's zone as a status: the sweet spot reads good, either side is to watch.
+    static func rampStatus(_ acwr: Double) -> CliniqueStatus {
+        rampSweetSpot.contains(acwr) ? .good : .watch
     }
+
+    /// Where the day sits against the advised zone, in words; nil without a zone.
+    static func zoneWord(_ status: String?) -> String? {
+        switch status {
+        case "below": String(localized: "Sous ta zone")
+        case "within": String(localized: "Dans ta zone")
+        case "above": String(localized: "Au-dessus")
+        default: nil
+        }
+    }
+
+    static func zoneStatus(_ status: String?) -> CliniqueStatus? {
+        switch status {
+        case "within": .good
+        case "below": .unknown
+        case "above": .watch
+        default: nil
+        }
+    }
+
+    /// « L », « M »… for a `yyyy-MM-dd` day; empty when it cannot be read.
+    @MainActor static func weekdayInitial(_ day: String, locale: Locale = SharpitLocale.current) -> String {
+        guard let date = TrainingDayId.date(day) else { return "" }
+        return String(date.formatted(.dateTime.weekday(.narrow).locale(locale)).prefix(1)).uppercased()
+    }
+
 
     static func form(_ tsb: Double?) -> String {
         tsb.map { TrainingLoadReadout.signed($0) } ?? "—"
     }
 
-    static func formTone(_ tsb: Double?) -> Color {
-        guard let tsb else { return SharpitColor.foreground }
-        return TrainingLoadReadout.isInFormBand(tsb) ? SharpitColor.foreground : SharpitColor.signalCaution
-    }
 
     /// « 8 400 » steps, the French way.
     static func steps(_ value: Double) -> String {

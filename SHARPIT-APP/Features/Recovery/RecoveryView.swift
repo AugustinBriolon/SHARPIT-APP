@@ -49,64 +49,95 @@ struct RecoveryView: View {
 
 /// The column itself, apart from its scroll view so it can be rendered on its own.
 struct RecoverySections: View {
-    @Environment(ShellRouter.self) private var router
+    @Environment(ShellRouter.self) private var router: ShellRouter?
     let recovery: V1RecoveryResponse
 
-    private var tone: Color { RecoveryReadout.tone(for: recovery.signal.tone) }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+        VStack(alignment: .leading, spacing: 0) {
             hero
-            if !recovery.alerts.isEmpty {
-                RecoveryAlerts(alerts: recovery.alerts)
-            }
             RecoveryLimitSection(recovery: recovery)
-            RecoveryMorningSection(recovery: recovery)
-            if recovery.history.contains(where: { $0.hrv != nil }) {
-                RecoveryHistorySection(history: recovery.history, today: recovery.today)
+            reading
+                .padding(.top, 14)
+            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                if !recovery.alerts.isEmpty {
+                    RecoveryAlerts(alerts: recovery.alerts)
+                }
+                RecoveryMorningSection(recovery: recovery)
+                if recovery.history.contains(where: { $0.hrv != nil }) {
+                    RecoveryHistorySection(history: recovery.history, today: recovery.today)
+                }
+                if !recovery.keyEvidence.isEmpty {
+                    RecoveryEvidenceSection(evidence: recovery.keyEvidence)
+                }
             }
-            if !recovery.keyEvidence.isEmpty {
-                RecoveryEvidenceSection(evidence: recovery.keyEvidence)
-            }
-            VStack(spacing: SharpitSpacing.xxs) {
-                SharpitConfidenceLine(pct: recovery.confidencePct)
-                Text("Données \(recovery.completenessLabel.lowercased())")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-            .frame(maxWidth: .infinity)
+            .padding(.top, SharpitSpacing.section)
         }
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.bottom, SharpitSpacing.xl)
+        .padding(.horizontal, 24)
+        .padding(.bottom, SharpitSpacing.xl + 54)
     }
 
+    /// The score in its ring, the state as the page's title, then why in a sentence.
     private var hero: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitHeroScore(score: recovery.readinessScore, label: recovery.signal.label, tone: tone)
-
-            HStack(spacing: SharpitSpacing.xs) {
-                Image(systemName: "figure.run")
-                    .foregroundStyle(SharpitColor.primary)
-                Text("Intensité conseillée")
-                    .foregroundStyle(SharpitColor.slate)
-                Text(recovery.intensity)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .fontWeight(.semibold)
+        VStack(spacing: 10) {
+            ZStack {
+                Circle().stroke(SharpitColor.divider, lineWidth: 6)
+                Circle()
+                    .trim(from: 0, to: CliniqueRingMath.trim(for: recovery.readinessScore.map { $0 / 100 }))
+                    .stroke(RecoveryReadout.status(for: recovery.signal.tone).mark, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 0) {
+                    Text(recovery.readinessScore.map { "\(Int($0.rounded()))" } ?? "—")
+                        .font(SharpitTypography.system(size: 44, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-1.5)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("sur 100")
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                        .foregroundStyle(SharpitColor.slate)
+                }
             }
-            .font(SharpitTypography.body)
-
-            if recovery.isCalibrating {
-                Label("Calibration en cours. Ta norme se construit encore.", systemImage: "hourglass")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-
-            // The score is read first; the way to ask about it comes once it has been read.
-            CoachDiscussButton(title: String(localized: "Discuter de ma récupération")) {
-                router.discussWithCoach(about: CoachDiscuss.describe(.today))
-            }
-            .padding(.top, SharpitSpacing.xxs)
+            .frame(width: 126, height: 126)
+            .padding(.bottom, 6)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(recovery.readinessScore.map { String(localized: "\(Int($0.rounded())) sur 100") } ?? String(localized: "Pas encore de score"))
+            Text(recovery.signal.label)
+                .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
+            Text(RecoveryReadout.summary(recovery))
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                .lineSpacing(3)
+                .foregroundStyle(SharpitColor.slate)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 20)
+    }
+
+    /// How far the reading can be trusted, and the way to ask the coach about it.
+    private var reading: some View {
+        HStack(spacing: 12) {
+            Text(RecoveryReadout.reliability(recovery))
+                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                .lineSpacing(2)
+                .foregroundStyle(SharpitColor.slate)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                router?.discussWithCoach(about: CoachDiscuss.describe(.today))
+            } label: {
+                Text("En parler au coach")
+                    .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.sharpitPressable)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(SharpitColor.divider, lineWidth: 1))
     }
 }
 
@@ -114,181 +145,151 @@ private struct RecoveryAlerts: View {
     let alerts: [V1RecoveryAlert]
 
     var body: some View {
-        VStack(spacing: SharpitSpacing.xs) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             ForEach(alerts) { alert in
-                let tone = RecoveryReadout.tone(for: alert.tone)
-                Label(alert.label, systemImage: "exclamationmark.triangle.fill")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(tone)
-                    .padding(SharpitSpacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .sharpitContainerCorner(SharpitRadius.panel)
-                    .background(
-                        tone.opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    )
+                CliniqueStatusPill(alert.label, status: RecoveryReadout.status(for: alert.tone))
             }
         }
     }
 }
 
-/// The limit step: what holds readiness back, how long until it lifts, and why.
+/// « Ce qui pèse »: each dimension of the readiness on a line — its name, a tag on the one that
+/// limits, what was measured — beside its place on a track.
 private struct RecoveryLimitSection: View {
     let recovery: V1RecoveryResponse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Ce qui pèse"))
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                if let limiter = recovery.limiter {
-                    HStack(spacing: SharpitSpacing.sm) {
-                        Image(systemName: "arrow.down.forward.circle.fill")
-                            .font(SharpitTypography.sectionTitle)
-                            .foregroundStyle(SharpitColor.signalCaution)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Facteur limitant")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.slate)
-                            Text(limiter)
-                                .font(SharpitTypography.cardTitle)
-                                .foregroundStyle(SharpitColor.foreground)
+        let rows = RecoveryReadout.weights(recovery)
+        if !rows.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                RecoverySectionTitle(String(localized: "Ce qui pèse"))
+                    .padding(.bottom, 4)
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    if index > 0 { CliniqueDivider() }
+                    HStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 8) {
+                                Text(row.name)
+                                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body))
+                                    .foregroundStyle(SharpitColor.foreground)
+                                if let tag = row.tag {
+                                    Text(tag)
+                                        .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2, digits: true))
+                                        .foregroundStyle(CliniqueStatus.watch.foreground)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 1)
+                                        .background(CliniqueStatus.watch.fill, in: Capsule())
+                                        .overlay(Capsule().strokeBorder(CliniqueStatus.watch.border, lineWidth: 1))
+                                }
+                            }
+                            if let detail = row.detail {
+                                Text(detail)
+                                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                                    .foregroundStyle(SharpitColor.slate)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        if let position = row.position {
+                            RecoveryTrack(position: position, status: row.status)
+                                .frame(width: 104, height: 16)
                         }
                     }
-                }
-                if !recovery.dimensions.isEmpty {
-                    VStack(spacing: SharpitSpacing.sm) {
-                        ForEach(recovery.dimensions) { dimension in
-                            DimensionBar(dimension: dimension)
-                        }
-                    }
-                }
-                if let horizon = RecoveryReadout.recoveryHorizon(recovery.estimatedRecoveryDays) {
-                    Label(horizon, systemImage: "clock.arrow.circlepath")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-            }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
-
-            if !recovery.rationale.isEmpty {
-                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                    ForEach(recovery.rationale, id: \.self) { line in
-                        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
-                            Image(systemName: "arrow.right")
-                                .font(SharpitTypography.label)
-                                .foregroundStyle(SharpitColor.primary)
-                            Text(line)
-                                .font(SharpitTypography.body)
-                                .foregroundStyle(SharpitColor.foreground)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
+                    .padding(.vertical, 14)
+                    .accessibilityElement(children: .combine)
                 }
             }
         }
     }
 }
 
-private struct DimensionBar: View {
-    let dimension: V1RecoveryDimension
-
-    private var fraction: Double { min(max((dimension.score ?? 0) / 100, 0), 1) }
+/// A track with the usual range marked on it and a dot where the reading sits.
+private struct RecoveryTrack: View {
+    let position: Double
+    let status: CliniqueStatus
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            HStack {
-                Text(RecoveryReadout.dimensionLabel(dimension.key))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                Spacer()
-                Text(dimension.score.map { "\(Int($0.rounded()))" } ?? "—")
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(RecoveryReadout.scoreTone(dimension.score))
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(SharpitColor.divider).frame(height: 4)
+                Capsule().fill(SharpitColor.outline)
+                    .frame(width: geo.size.width * 0.4, height: 4)
+                    .offset(x: geo.size.width * 0.4)
+                Circle()
+                    .fill(status.mark)
+                    .frame(width: 12, height: 12)
+                    .overlay(Circle().stroke(SharpitColor.card, lineWidth: 3).padding(-1.5))
+                    .offset(x: (geo.size.width - 12) * position)
             }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(SharpitColor.divider)
-                    Capsule()
-                        .fill(RecoveryReadout.scoreTone(dimension.score))
-                        .frame(width: geo.size.width * fraction)
-                }
-            }
-            .frame(height: 5)
+            .frame(maxHeight: .infinity)
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityHidden(true)
     }
 }
 
-/// The evidence step: what the body said this morning, against the athlete's own normal.
+/// A section's name on the sheet.
+private struct RecoverySectionTitle: View {
+    let title: String
+
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title)
+            .font(SharpitTypography.sectionTitle)
+            .tracking(SharpitTypography.sectionTitleTracking)
+            .foregroundStyle(SharpitColor.foreground)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The evidence step: the server's reading of each pillar this morning, and the intensity it
+/// advises.
 private struct RecoveryMorningSection: View {
     let recovery: V1RecoveryResponse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: String(localized: "Ce matin"), symbol: "sunrise", showsChevron: false)
-
-            HStack(alignment: .top, spacing: SharpitSpacing.md) {
-                SharpitStatTile(
-                    caption: "VFC",
-                    value: recovery.today.hrv.map { "\(Int($0.rounded()))" } ?? "—",
-                    unit: recovery.today.hrv == nil ? nil : "ms",
-                    note: RecoveryReadout.hrvNote(recovery.today),
-                    tone: RecoveryReadout.hrvTone(recovery.today),
-                    isFlat: true
-                )
-                SharpitStatTile(
-                    caption: String(localized: "FC repos"),
-                    value: recovery.today.restingHr.map { "\(Int($0.rounded()))" } ?? "—",
-                    unit: recovery.today.restingHr == nil ? nil : "bpm",
-                    isFlat: true
-                )
-                if let battery = recovery.today.bodyBattery {
-                    SharpitStatTile(caption: String(localized: "Batterie"), value: "\(Int(battery.rounded()))", unit: "%", isFlat: true)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            RecoverySectionTitle(String(localized: "Ce matin"))
+                .padding(.bottom, 4)
+            row(String(localized: "Intensité conseillée"), recovery.intensity, tone: SharpitColor.foreground)
+            ForEach(recovery.pillars) { pillar in
+                CliniqueDivider()
+                row(RecoveryReadout.pillarCaption(pillar.key), pillar.label, tone: SharpitColor.foreground)
             }
-
-            if !recovery.pillars.isEmpty {
-                SharpitInsetGroup {
-                    ForEach(recovery.pillars) { pillar in
-                        PillarRow(pillar: pillar)
-                    }
-                }
+            if let battery = recovery.today.bodyBattery {
+                CliniqueDivider()
+                row(String(localized: "Batterie"), "\(Int(battery.rounded())) %", tone: SharpitColor.foreground)
             }
-
+            if let horizon = RecoveryReadout.recoveryHorizon(recovery.estimatedRecoveryDays) {
+                CliniqueDivider()
+                Text(horizon)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                    .foregroundStyle(SharpitColor.slate)
+                    .padding(.vertical, 14)
+            }
+            if recovery.isCalibrating {
+                Text("Calibration en cours. Ta norme se construit encore.")
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                    .foregroundStyle(SharpitColor.slate)
+            }
             if recovery.dissonanceDetected {
-                Label("Tes données et ton ressenti ne disent pas la même chose.", systemImage: "arrow.left.arrow.right")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalCaution)
+                CliniqueStatusPill(String(localized: "Données et ressenti divergent"), status: .watch)
+                    .padding(.top, SharpitSpacing.xs)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
-}
 
-/// One pillar of the morning: what it is, then the server's reading of it, in ink — or in its
-/// hue when it is caution or risk.
-private struct PillarRow: View {
-    let pillar: V1RecoveryPillar
-
-    var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            Text(RecoveryReadout.pillarCaption(pillar.key))
-                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.slate)
+    private func row(_ name: String, _ value: String, tone: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+            Text(name)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
             Spacer(minLength: SharpitSpacing.sm)
-            Text(pillar.label)
-                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
-                .foregroundStyle(RecoveryReadout.tone(for: pillar.tone))
+            Text(value)
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(tone)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
-        .padding(.vertical, SharpitSpacing.sm)
-        .frame(minHeight: 48)
-        .sharpitSurface(.row)
+        .padding(.vertical, 14)
         .accessibilityElement(children: .combine)
     }
 }
@@ -313,7 +314,7 @@ private struct RecoveryHistorySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "VFC · \(history.count) derniers jours"))
+            RecoverySectionTitle(String(localized: "VFC · \(history.count) derniers jours"))
             SharpitScrubChart(
                 points: points.map { SharpitScrubPoint(date: $0.date, value: $0.hrv) },
                 band: baseline,
@@ -322,8 +323,6 @@ private struct RecoveryHistorySection: View {
                 axisLabel: { String(Int($0.rounded())) },
                 readout: { "\(Int($0.rounded())) ms" }
             )
-            .padding(SharpitSpacing.md)
-            .sharpitSurface(.panel)
         }
     }
 }
@@ -332,25 +331,17 @@ private struct RecoveryEvidenceSection: View {
     let evidence: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Ce qui l'explique"))
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                ForEach(evidence, id: \.self) { line in
-                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-                        Circle()
-                            .fill(SharpitColor.primary)
-                            .frame(width: 6, height: 6)
-                            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
-                        Text(line)
-                            .font(SharpitTypography.body)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            RecoverySectionTitle(String(localized: "Ce qui l'explique"))
+                .padding(.bottom, 4)
+            ForEach(Array(evidence.enumerated()), id: \.offset) { index, line in
+                if index > 0 { CliniqueDivider() }
+                Text(line)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, 12)
             }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
         }
     }
 }

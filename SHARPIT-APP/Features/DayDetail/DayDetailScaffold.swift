@@ -18,16 +18,14 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     var loadingPlaceholder: Payload?
     /// The tint at the top of the sheet: the screen's pillar, neutral without one.
     var wash: CliniqueWash = .neutral
+    /// How the bar's capsule names the day.
+    var dayLabel: @MainActor (Date) -> String = { DayDetailDatePicker.shortDay($0) }
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ShellRouter.self) private var router: ShellRouter?
 
     var body: some View {
         VStack(spacing: 0) {
-            DayDetailDatePicker(
-                selectedDay: store.selectedDay,
-                hasData: store.hasData(on:),
-                onShowWeek: { day in Task { await store.markDays(around: day) } }
-            ) { day in
-                Task { await store.select(day) }
-            }
             phaseView
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 // A day not read yet slides in in the shape of the one before, its figures
@@ -42,9 +40,24 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
                     neighborPage(day)
                 }
         }
-        .cliniqueSheet(wash: wash)
+        .cliniqueSheet(wash: wash, height: 240)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        // The bar carries the way back and the day; the screen's name is said, not shown.
+        .toolbar {
+            ToolbarItem(placement: .principal) { Text("") }
+            ToolbarItem(placement: .topBarTrailing) {
+                DayDetailDatePicker(
+                    selectedDay: store.selectedDay,
+                    hasData: store.hasData(on:),
+                    onShowWeek: { day in Task { await store.markDays(around: day) } },
+                    onSelect: { day in Task { await store.select(day) } },
+                    label: dayLabel
+                )
+            }
+        }
+        // A drill-down is read whole: the tab bar leaves, and home is one tap away.
+        .cliniqueReturnButton()
         .task { await store.load() }
     }
 

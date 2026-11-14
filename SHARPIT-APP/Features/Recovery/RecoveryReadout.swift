@@ -77,4 +77,75 @@ enum RecoveryReadout {
         if rounded <= 0 { return String(localized: "Récupération complète") }
         return String(localized: "Récupération complète d'ici \(rounded) jour\(rounded > 1 ? "s" : "")")
     }
+
+    // MARK: - The sheet
+
+    /// The signal as a status: its ring, its dots, its pills.
+    static func status(for signal: V1SignalTone) -> CliniqueStatus {
+        switch signal {
+        case .strong, .good, .elevated, .moderate: .good
+        case .caution: .watch
+        case .risk: .alert
+        case .neutral: .unknown
+        }
+    }
+
+    /// A dimension's status, with the web's `mapScoreToColorClass` bands.
+    static func status(score: Double?) -> CliniqueStatus {
+        guard let score else { return .unknown }
+        if score >= 60 { return .good }
+        return score >= 40 ? .watch : .alert
+    }
+
+    /// The sentence under the state: why, in the server's first words; else the advised intensity.
+    static func summary(_ recovery: V1RecoveryResponse) -> String {
+        recovery.rationale.first ?? String(localized: "Intensité conseillée : \(recovery.intensity)")
+    }
+
+    /// « Lecture fiable à 82 % · données complètes ».
+    static func reliability(_ recovery: V1RecoveryResponse) -> String {
+        let completeness = String(localized: "données \(recovery.completenessLabel.lowercased())")
+        guard let pct = recovery.confidencePct else { return completeness.capitalizedFirst }
+        return String(localized: "Lecture fiable à \(Int(pct.rounded())) % · \(completeness)")
+    }
+
+    /// A line of « Ce qui pèse ».
+    struct Weight: Equatable, Identifiable {
+        let id: String
+        let name: String
+        /// « Limite », on the dimension that holds the readiness back.
+        var tag: String?
+        var detail: String?
+        /// Where the reading sits on its track, 0 to 1; nil without a score.
+        var position: Double?
+        var status: CliniqueStatus
+    }
+
+    /// The dimensions of the readiness, the weakest tagged when the server names a limiter.
+    static func weights(_ recovery: V1RecoveryResponse) -> [Weight] {
+        let weakest = recovery.limiter == nil
+            ? nil
+            : recovery.dimensions.filter { $0.score != nil }.min { ($0.score ?? 0) < ($1.score ?? 0) }?.key
+        return recovery.dimensions.map { dimension in
+            Weight(
+                id: dimension.key,
+                name: dimensionLabel(dimension.key),
+                tag: dimension.key == weakest ? String(localized: "Limite") : nil,
+                detail: detail(dimension, today: recovery.today),
+                position: dimension.score.map { min(max($0 / 100, 0), 1) },
+                status: status(score: dimension.score)
+            )
+        }
+    }
+
+    /// What was measured behind a dimension: this morning's HRV against its range for the
+    /// nervous system, the score otherwise.
+    private static func detail(_ dimension: V1RecoveryDimension, today: V1RecoveryToday) -> String? {
+        if dimension.key == "autonomic", let hrv = today.hrv {
+            let reading = "\(Int(hrv.rounded())) ms"
+            guard let low = today.hrvBaselineLow, let high = today.hrvBaselineHigh else { return reading }
+            return String(localized: "\(reading) · ta plage \(Int(low.rounded())) – \(Int(high.rounded()))")
+        }
+        return dimension.score.map { String(localized: "\(Int($0.rounded())) sur 100") }
+    }
 }

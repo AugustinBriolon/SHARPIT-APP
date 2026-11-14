@@ -40,7 +40,8 @@ struct EffortView: View {
             unavailableTitle: String(localized: "Effort indisponible"),
             store: store,
             content: { effort in EffortSections(effort: effort) },
-            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload)
+            emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload),
+            wash: .good
         )
     }
 }
@@ -52,7 +53,7 @@ struct EffortSections: View {
     let effort: V1EffortResponse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+        VStack(alignment: .leading, spacing: 26) {
             hero
             if let overreaching = effort.overreaching {
                 DayDetailAlert(
@@ -60,15 +61,14 @@ struct EffortSections: View {
                     tone: RecoveryReadout.tone(for: overreaching.tone)
                 )
             }
-            EffortVerdictSection(effort: effort)
+            if let performance = effort.strainPerformance, performance.dayCount > 0 {
+                EffortWeekSection(performance: performance)
+            }
             EffortLoadSection(load: effort.load, cardioLoad: effort.cardioLoad, isExpert: isExpertReading)
-            EffortStrainSplitSection(active: effort.activeStrain, passive: effort.passiveStrain)
-            EffortDailySignalsSection(signals: effort.composition.signals)
+            EffortVerdictSection(effort: effort)
+            EffortDaySection(active: effort.activeStrain, passive: effort.passiveStrain, signals: effort.composition.signals)
             if effort.composition.available, !effort.composition.contributors.isEmpty {
                 EffortCompositionSection(composition: effort.composition)
-            }
-            if let performance = effort.strainPerformance, performance.dayCount > 0 {
-                EffortStrainPerformanceSection(performance: performance)
             }
             EffortDimensionsSection(dimensions: effort.dimensions, dominant: effort.dominantDimension)
             // The curves are the training-load vocabulary: shown to the athlete who asked for
@@ -84,58 +84,206 @@ struct EffortSections: View {
             if !effort.keyEvidence.isEmpty {
                 DayDetailEvidenceSection(evidence: effort.keyEvidence)
             }
+            CoachDiscussButton(title: String(localized: "Discuter de ma charge")) {
+                router.discussWithCoach(about: CoachDiscuss.describe(.today))
+            }
             DayDetailConfidenceFooter(
                 pct: effort.confidencePct,
                 note: String(localized: "Données \(effort.completenessLabel.lowercased())")
             )
         }
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.bottom, SharpitSpacing.xl)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 96)
     }
 
+    /// The day's strain out of 21, where it sits against the advised zone, and what it means.
     private var hero: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitHeroScore(
-                score: effort.strain.score,
-                label: effort.strain.label,
-                tone: RecoveryReadout.tone(for: effort.strain.tone),
-                scale: EffortReadout.strainScale,
-                fractionDigits: 1
-            )
-            Text("Strain du jour · 0–21")
-                .font(SharpitTypography.meta)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Effort du jour")
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.slate)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(EffortReadout.strain(effort.strain.score))
+                        .font(SharpitTypography.system(size: 52, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-1.5)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("sur \(EffortReadout.strainScale)")
+                        .font(SharpitTypography.system(size: 19, weight: .regular, relativeTo: .title3, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    CliniqueStatusPill(
+                        EffortReadout.zoneWord(effort.targetBand?.status) ?? effort.strain.label,
+                        status: EffortReadout.zoneStatus(effort.targetBand?.status) ?? RecoveryReadout.status(for: effort.strain.tone)
+                    )
+                }
+                .accessibilityElement(children: .combine)
+            }
+            VStack(spacing: 8) {
+                EffortTrack(score: effort.strain.score, band: effort.targetBand.map { $0.low...max($0.low, $0.high) })
+                    .frame(height: 16)
+                HStack {
+                    Text("0")
+                    Spacer()
+                    if let band = effort.targetBand {
+                        Text("Zone conseillée \(Int(band.low.rounded())) – \(Int(band.high.rounded()))")
+                        Spacer()
+                    }
+                    Text("\(EffortReadout.strainScale)")
+                }
+                .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption, digits: true))
                 .foregroundStyle(SharpitColor.slate)
+            }
             if !effort.strain.subtitle.isEmpty {
                 Text(effort.strain.subtitle)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
+                    .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
+                    .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            // ADR-079. Callers: EffortSections. API: targetBand. User: Bevel gaps plan.
-            if let band = effort.targetBand {
-                Text(Self.targetBandLine(band))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
             if let line = EffortReadout.actionLine(effort) {
-                Label(line, systemImage: "clock.arrow.circlepath")
-                    .font(SharpitTypography.meta)
+                Text(line)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
                     .foregroundStyle(SharpitColor.slate)
             }
-            CoachDiscussButton(title: String(localized: "Discuter de ma charge")) {
-                router.discussWithCoach(about: CoachDiscuss.describe(.today))
+        }
+    }
+}
+
+/// The 0–21 scale: the advised zone in the recovery hue, the day as an ink dot.
+private struct EffortTrack: View {
+    let score: Double?
+    let band: ClosedRange<Double>?
+
+    var body: some View {
+        GeometryReader { geo in
+            let scale = Double(EffortReadout.strainScale)
+            ZStack(alignment: .leading) {
+                Capsule().fill(SharpitColor.tile).frame(height: 6)
+                if let band {
+                    Capsule().fill(SharpitColor.pillarRecovery.opacity(0.55))
+                        .frame(width: geo.size.width * (band.upperBound - band.lowerBound) / scale, height: 6)
+                        .offset(x: geo.size.width * band.lowerBound / scale)
+                }
+                if let score {
+                    Circle().fill(SharpitColor.foreground)
+                        .frame(width: 16, height: 16)
+                        .offset(x: (geo.size.width - 16) * min(max(score / scale, 0), 1))
+                }
             }
-            .padding(.top, SharpitSpacing.xxs)
+            .frame(maxHeight: .infinity)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// A section's name on the sheet, with what it totals at the trailing edge.
+private struct EffortSectionTitle: View {
+    let title: String
+    var trailing: String? = nil
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: SharpitSpacing.xs)
+            if let trailing {
+                Text(trailing)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+        }
+    }
+}
+
+/// A figure's line: its name, a status word when one is owed, the figure.
+private struct EffortRow: View {
+    let label: String
+    let value: String
+    var note: String? = nil
+    var pill: (text: String, status: CliniqueStatus)? = nil
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                if let note {
+                    Text(note)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: SharpitSpacing.xs)
+            if let pill { CliniqueStatusPill(pill.text, status: pill.status) }
+            Text(value)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+        }
+        .padding(.vertical, 16)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Rows split by hairlines, one above the first.
+private struct EffortRows<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Group(subviews: content) { rows in
+                ForEach(rows) { row in
+                    CliniqueDivider()
+                    row
+                }
+            }
+        }
+    }
+}
+
+/// The last seven days' strain as bars: in the advised zone, above it, under it, or not measured.
+private struct EffortWeekSection: View {
+    let performance: V1StrainPerformance
+
+    var body: some View {
+        let days = Array(performance.history.suffix(7))
+        VStack(alignment: .leading, spacing: 14) {
+            EffortSectionTitle(
+                title: String(localized: "Effort de la semaine"),
+                trailing: String(localized: "\(Int(performance.withinCount)) j sur \(Int(performance.dayCount)) dans la zone")
+            )
+            HStack(alignment: .bottom, spacing: 12) {
+                ForEach(days) { day in
+                    VStack(spacing: 10) {
+                        bar(day)
+                        Text(EffortReadout.weekdayInitial(day.date))
+                            .font(SharpitTypography.system(size: 12, weight: day.id == days.last?.id ? .semibold : .regular, relativeTo: .caption))
+                            .foregroundStyle(day.id == days.last?.id ? SharpitColor.foreground : SharpitColor.slate)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 128, alignment: .bottom)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(Int(performance.withinCount)) jours sur \(Int(performance.dayCount)) dans la zone conseillée")
         }
     }
 
-    private static func targetBandLine(_ band: V1TodayTargetBand) -> String {
-        let range = String(localized: "Cible \(Int(band.low.rounded()))–\(Int(band.high.rounded()))")
-        switch band.status {
-        case "below": return String(localized: "\(range) · sous la cible")
-        case "within": return String(localized: "\(range) · dans la cible")
-        case "above": return String(localized: "\(range) · au-dessus")
-        default: return range
+    @ViewBuilder
+    private func bar(_ day: V1StrainPerformanceDay) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+        if let strain = day.strain {
+            shape
+                .fill(day.status == "within" ? SharpitColor.pillarRecovery : day.status == "above" ? SharpitColor.pillarNutrition : SharpitColor.outline)
+                .frame(height: max(6, 96 * min(strain / Double(EffortReadout.strainScale), 1)))
+        } else {
+            shape
+                .strokeBorder(SharpitColor.outline, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                .frame(height: 96 * min((day.low + day.high) / 2 / Double(EffortReadout.strainScale), 1))
         }
     }
 }
@@ -145,8 +293,8 @@ private struct EffortVerdictSection: View {
     let effort: V1EffortResponse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Ce que ça implique"))
+        VStack(alignment: .leading, spacing: 12) {
+            EffortSectionTitle(title: String(localized: "Ce que ça implique"))
             DayDetailVerdictCard(
                 label: effort.verdict.label,
                 tone: RecoveryReadout.tone(for: effort.verdict.tone),
@@ -161,155 +309,77 @@ private struct EffortVerdictSection: View {
     }
 }
 
-/// The evidence step: the day's load, the week's, the ramp and the form — the same figures in
-/// both readings, named for the reading they are shown in (ADR 0006).
-/// Callers: EffortSections. API: load + cardioLoad. User: fix all — cardio vs strain vocab.
+/// The evidence step: the week's load, the base behind it, their ratio and the form — the same
+/// figures in both readings, named for the reading they are shown in (ADR 0006).
 private struct EffortLoadSection: View {
     let load: V1EffortLoad
     let cardioLoad: V1EffortCardioLoad?
     let isExpert: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Charge"))
-            Grid(horizontalSpacing: SharpitSpacing.sm, verticalSpacing: SharpitSpacing.sm) {
-                GridRow {
-                    SharpitStatTile(
-                        caption: EffortReadout.dailyCaption(isExpert: isExpert),
-                        value: EffortReadout.load(load.daily)
-                    )
-                    SharpitStatTile(
-                        caption: EffortReadout.weeklyCaption(isExpert: isExpert),
-                        value: load.weekly > 0 ? EffortReadout.load(load.weekly) : "—"
-                    )
+        VStack(alignment: .leading, spacing: 6) {
+            EffortSectionTitle(title: String(localized: "Charge"))
+            EffortRows {
+                EffortRow(label: EffortReadout.dailyCaption(isExpert: isExpert), value: EffortReadout.load(load.daily))
+                EffortRow(
+                    label: isExpert ? "TSS 7 j" : String(localized: "Charge aiguë, 7 jours"),
+                    value: load.weekly > 0 ? EffortReadout.load(load.weekly) : "—"
+                )
+                if let chronic = load.chronicWeeklyAvg {
+                    EffortRow(label: String(localized: "Charge de fond, par semaine"), value: EffortReadout.load(chronic))
                 }
-                GridRow {
-                    SharpitStatTile(
-                        caption: EffortReadout.rampCaption(isExpert: isExpert),
-                        value: EffortReadout.ramp(load.acwr),
-                        note: EffortReadout.rampZone(load.acwr),
-                        tone: EffortReadout.rampTone(load.acwr)
-                    )
-                    SharpitStatTile(
-                        caption: EffortReadout.formCaption(isExpert: isExpert),
-                        value: EffortReadout.form(load.tsb),
-                        note: load.tsb == nil ? nil : String(localized: "habituelle entre −20 et +10"),
-                        tone: EffortReadout.formTone(load.tsb)
-                    )
-                }
+                EffortRow(
+                    label: isExpert ? "ACWR" : String(localized: "Rapport aiguë / fond"),
+                    value: EffortReadout.ramp(load.acwr),
+                    pill: EffortReadout.rampZone(load.acwr).map { ($0, EffortReadout.rampStatus(load.acwr)) }
+                )
+                EffortRow(
+                    label: EffortReadout.formCaption(isExpert: isExpert),
+                    value: EffortReadout.form(load.tsb),
+                    note: load.tsb == nil ? nil : String(localized: "habituelle entre −20 et +10")
+                )
                 if let cardioLoad {
-                    GridRow {
-                        SharpitStatTile(
-                            caption: isExpert ? String(localized: "Cardio Load (CTL)") : String(localized: "Forme cardio"),
-                            value: EffortReadout.load(cardioLoad.ctl),
-                            note: String(localized: "≠ Strain du jour")
-                        )
-                        SharpitStatTile(
-                            caption: isExpert ? "ATL" : String(localized: "Fatigue aiguë"),
-                            value: EffortReadout.load(cardioLoad.atl)
-                        )
-                    }
+                    EffortRow(
+                        label: isExpert ? String(localized: "Cardio Load (CTL)") : String(localized: "Forme cardio"),
+                        value: EffortReadout.load(cardioLoad.ctl),
+                        note: String(localized: "≠ Strain du jour")
+                    )
+                    EffortRow(label: isExpert ? "ATL" : String(localized: "Fatigue aiguë"), value: EffortReadout.load(cardioLoad.atl))
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
 
-/// Active (sessions + cardio) vs passive (movement / NEAT) strain split.
-private struct EffortStrainSplitSection: View {
+/// The day in and out of training: the active and passive strain, then steps, stress and Body
+/// Battery. No scale is drawn — none of the three has a personal norm yet, and a band invented
+/// for the layout would read as one.
+private struct EffortDaySection: View {
     let active: V1EffortStrainSplit?
     let passive: V1EffortStrainSplit?
-
-    var body: some View {
-        if active != nil || passive != nil {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow("Actif / passif")
-                HStack(spacing: SharpitSpacing.sm) {
-                    SharpitStatTile(
-                        caption: active?.label ?? String(localized: "Effort actif"),
-                        value: active?.score.map { EffortReadout.strain($0) } ?? "—"
-                    )
-                    SharpitStatTile(
-                        caption: passive?.label ?? String(localized: "Effort passif"),
-                        value: passive?.score.map { EffortReadout.strain($0) } ?? "—",
-                        note: String(localized: "Hors séance")
-                    )
-                }
-                .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-}
-
-/// Rolling Strain Performance vs target band.
-private struct EffortStrainPerformanceSection: View {
-    let performance: V1StrainPerformance
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Strain Performance"))
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                if let pct = performance.withinPct {
-                    Text("\(Int(pct.rounded())) % dans la cible · \(Int(performance.withinCount))/\(Int(performance.dayCount)) j")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                }
-                ForEach(performance.history.suffix(7)) { day in
-                    HStack {
-                        Text(day.date)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                        Spacer()
-                        Text(day.strain.map { EffortReadout.strain($0) } ?? "—")
-                            .font(SharpitTypography.instrument)
-                            .monospacedDigit()
-                        Text(statusLabel(day.status))
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                            .frame(width: 72, alignment: .trailing)
-                    }
-                }
-            }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
-        }
-    }
-
-    private func statusLabel(_ status: String?) -> String {
-        switch status {
-        case "below": return String(localized: "Sous")
-        case "within": return String(localized: "Cible")
-        case "above": return "Au-dessus"
-        default: return "—"
-        }
-    }
-}
-
-/// The day outside training: steps, stress, Body Battery. No scale is drawn — none of the
-/// three has a personal norm yet, and a band invented for the layout would read as one.
-private struct EffortDailySignalsSection: View {
     let signals: V1EffortDailySignals
 
     var body: some View {
-        if signals.steps != nil || signals.stress != nil || signals.bodyBattery != nil {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow(String(localized: "Ta journée"))
-                HStack(spacing: SharpitSpacing.sm) {
-                    SharpitStatTile(caption: String(localized: "Pas"), value: signals.steps.map { EffortReadout.steps($0) } ?? "—")
-                    SharpitStatTile(
-                        caption: String(localized: "Stress"),
-                        value: signals.stress.map { "\(Int($0.rounded()))" } ?? "—",
-                        unit: signals.stress == nil ? nil : "/100"
-                    )
-                    SharpitStatTile(
-                        caption: String(localized: "Batterie"),
-                        value: signals.bodyBattery.map { "\(Int($0.rounded()))" } ?? "—",
-                        unit: signals.bodyBattery == nil ? nil : "%"
-                    )
+        if active != nil || passive != nil || signals.steps != nil || signals.stress != nil || signals.bodyBattery != nil {
+            VStack(alignment: .leading, spacing: 6) {
+                EffortSectionTitle(title: String(localized: "Ta journée"))
+                EffortRows {
+                    if let active {
+                        EffortRow(label: active.label, value: active.score.map { EffortReadout.strain($0) } ?? "—")
+                    }
+                    if let passive {
+                        EffortRow(label: passive.label, value: passive.score.map { EffortReadout.strain($0) } ?? "—", note: String(localized: "Hors séance"))
+                    }
+                    if let steps = signals.steps {
+                        EffortRow(label: String(localized: "Pas"), value: EffortReadout.steps(steps))
+                    }
+                    if let stress = signals.stress {
+                        EffortRow(label: String(localized: "Stress"), value: "\(Int(stress.rounded())) / 100")
+                    }
+                    if let battery = signals.bodyBattery {
+                        EffortRow(label: String(localized: "Batterie"), value: "\(Int(battery.rounded())) %")
+                    }
                 }
-                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -320,38 +390,19 @@ private struct EffortCompositionSection: View {
     let composition: V1EffortComposition
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Composition de l'effort"))
-            VStack(spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: 6) {
+            EffortSectionTitle(title: String(localized: "Composition de l'effort"))
+            EffortRows {
                 ForEach(composition.contributors) { contributor in
-                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: SharpitSpacing.xs) {
-                                Text(contributor.label)
-                                    .font(SharpitTypography.bodyEmphasis)
-                                    .foregroundStyle(contributor.available ? SharpitColor.foreground : SharpitColor.slate)
-                                if contributor.key == composition.dominantKey {
-                                    SharpitInlineTag(String(localized: "Dominant"))
-                                }
-                            }
-                            Text(contributor.description)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.slate)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: SharpitSpacing.xs)
-                        Text(contributor.load.map { "\(Int($0.rounded()))" } ?? "—")
-                            .font(SharpitTypography.instrument)
-                            .foregroundStyle(contributor.available ? SharpitColor.foreground : SharpitColor.slate)
-                            .monospacedDigit()
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .combine)
+                    EffortRow(
+                        label: contributor.label,
+                        value: contributor.load.map { "\(Int($0.rounded()))" } ?? "—",
+                        note: contributor.description,
+                        pill: contributor.key == composition.dominantKey ? (String(localized: "Dominant"), .unknown) : nil
+                    )
+                    .opacity(contributor.available ? 1 : 0.55)
                 }
             }
-            .padding(SharpitSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
         }
     }
 }
@@ -365,7 +416,7 @@ private struct EffortDimensionsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Détail par dimension"))
+            EffortSectionTitle(title: String(localized: "Détail par dimension"))
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 Text("Fatigue par axe (0 = très faible, 100 = maximale). Un score bas est positif lorsque tu es frais.")
                     .font(SharpitTypography.meta)
@@ -389,9 +440,7 @@ private struct EffortDimensionsSection: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(SharpitSpacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
         }
     }
 }
@@ -418,7 +467,7 @@ private struct EffortPmcSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Cardio Load (CTL) vs forme · \(points.count) j"))
+            EffortSectionTitle(title: String(localized: "Cardio Load (CTL) vs forme"), trailing: String(localized: "\(points.count) j"))
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 Chart {
                     RuleMark(y: .value(String(localized: "Zéro"), 0.0))
@@ -460,8 +509,6 @@ private struct EffortPmcSection: View {
                 }
                 .accessibilityHidden(true)
             }
-            .padding(SharpitSpacing.md)
-            .sharpitSurface(.panel)
         }
     }
 
@@ -486,11 +533,11 @@ private struct EffortWeeklyTssSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Charge hebdomadaire · \(weeks.count) semaines"))
+            EffortSectionTitle(title: String(localized: "Charge hebdomadaire"), trailing: String(localized: "\(weeks.count) semaines"))
             Chart {
                 ForEach(Array(weeks.enumerated()), id: \.offset) { index, week in
                     BarMark(x: .value(String(localized: "Semaine"), week.label), y: .value("TSS", week.tss))
-                        .foregroundStyle(index == weeks.count - 1 ? SharpitColor.primary : SharpitColor.primary.opacity(0.35))
+                        .foregroundStyle(index == weeks.count - 1 ? SharpitColor.pillarRecovery : SharpitColor.pillarRecovery.opacity(0.35))
                         .cornerRadius(3)
                 }
                 if average > 0 {
@@ -517,8 +564,6 @@ private struct EffortWeeklyTssSection: View {
                 }
             }
             .frame(height: 140)
-            .padding(SharpitSpacing.md)
-            .sharpitSurface(.panel)
             .accessibilityLabel("Charge des \(weeks.count) dernières semaines")
         }
     }

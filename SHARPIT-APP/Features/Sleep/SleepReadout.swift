@@ -90,8 +90,7 @@ enum SleepReadout {
         return debtMin.rounded() <= 0 ? SharpitColor.signalRecovery : SharpitColor.signalCaution
     }
 
-    /// The sleep structure: the three stages of actual sleep, colored as the web's
-    /// `PHASE_COLORS`. Time awake is not sleep, so it is not a share of it.
+    /// The sleep structure: the three stages of actual sleep, in shades of the sleep hue. Time awake is not sleep, so it is not a share of it.
     enum Stage: CaseIterable, Identifiable {
         case deep, rem, light
 
@@ -107,9 +106,10 @@ enum SleepReadout {
 
         var tone: Color {
             switch self {
-            case .deep: SharpitColor.signalBase
-            case .rem: SharpitColor.signalRecovery
-            case .light: SharpitColor.signalTempo
+            // The mock-up's stage marks: chart hues, never text.
+            case .deep: SharpitColor.pillarCoach
+            case .rem: SharpitColor.pillarNutrition
+            case .light: SharpitColor.pillarSleep
             }
         }
 
@@ -128,7 +128,7 @@ enum SleepReadout {
 
         var id: Self { self }
 
-        static let rowOrder: [TimelineLevel] = [.awake, .light, .rem, .deep]
+        static let rowOrder: [TimelineLevel] = [.awake, .rem, .light, .deep]
         static let legendOrder: [TimelineLevel] = [.light, .rem, .deep, .awake]
 
         /// Nil for « in bed », which says nothing about the sleep itself.
@@ -153,7 +153,7 @@ enum SleepReadout {
 
         var tone: Color {
             switch self {
-            case .awake: SharpitColor.signalCaution
+            case .awake: SharpitColor.statusAlertMark
             case .light: Stage.light.tone
             case .rem: Stage.rem.tone
             case .deep: Stage.deep.tone
