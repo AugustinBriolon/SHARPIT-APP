@@ -74,3 +74,9 @@ as bars, « gêne 2 / 10 · en baisse » — the trend from the last two reading
 **Corps, Clinique.** `CorpsMetricDrawer` is a titled sheet with its cross: when and from where the
 marker was read, its figure with the note as a pill, the range, the curve on the sheet, then min, max
 and the count as lines.
+
+**Une analyse, Clinique.** `BloodTestDetailView` follows its mock-up (`docs/adr/0035`): how many
+values deserve a look as a pill, « Analyse sanguine, 16 sept. 2026 », how many sit in the lab's range,
+then the results in Santé's own table (`SanteTable`; a line opens the marker's history) and the
+coach's reading. The bar keeps the deletion. The mock-up's « depuis mars » and « prochaine » figures
+are not shown: the app holds neither a trend per test nor a next date.
