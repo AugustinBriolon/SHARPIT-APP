@@ -231,8 +231,8 @@ and read only the Clinique tokens (`slate`, `divider`, `outline`, `tile`, `pilla
 `status*`, `wash*`). A screen is swept whole, not component by component. On a swept screen the rules
 are: ink runs the interface and no control is coloured; a hue appears only on a ring, a glyph or a
 chart mark; a status is a pill with a word; one wash at the top of the sheet; hairlines, no card
-shadow. Swept so far: Résumé. The Ink & Lime rules below still hold for every screen not yet swept;
-a card of theirs shown on a swept screen takes `cliniqueSurfaces()`, a hairline in place of its shadow. Reference: the Debug
+shadow. Swept so far: Résumé, and Plan's week screen. The Ink & Lime rules below still hold for every screen not yet swept;
+a card of theirs shown on a swept screen takes `cliniqueScreen()`, a hairline in place of its shadow. Reference: the Debug
 gallery, `-SharpitCliniqueGallery YES`.
 
 Liquid Glass is chrome only: the tab and navigation bars, toolbar controls — Plan's

@@ -55,5 +55,5 @@ over seven — the strip of dots is gone from this screen; a column opens Sommei
 Plan), the morning proposal as a bordered card, then « Séance du jour » as rows split by hairlines
 (`SessionPlate`, `RestDayPlate`). The cards not redrawn yet — race day, plan horizon, trip conflict,
 the day's timeline, nutrition — keep their Ink & Lime content inside a hairline outline
-(`cliniqueSurfaces()`), until their turn. `SharpitLoadingInstrument` is the same shape with empty
+(`cliniqueScreen()`), until their turn. `SharpitLoadingInstrument` is the same shape with empty
 rings.

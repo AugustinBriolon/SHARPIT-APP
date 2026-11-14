@@ -104,3 +104,11 @@ step and its last 3 s, VoiceOver told, screen kept awake; ticked at the end. Set
 « par côté » and never show a 0 kg load; the server shapes the sets (SHARPIT ADR-121: no load on
 mobility, a one-rep stretch becomes a 30 s hold, `perSide` from the coach or the taxonomy).
 `SharpitScreenDemo strength` shows it in a two-tab shell, dock included.
+
+**Clinique.** Plan's week screen is swept (`docs/adr/0034`): one sheet under a neutral wash, the
+focus session as the one bordered card with its status pill, each session a row with
+`CliniqueSportTile`, « Clé », « Brick », « Liée » and the execution score as `CliniqueStatusPill`
+(green from 85). The strip's selected day is ink (`cliniqueScreen()`); « Forme » and the trajectory
+cards keep their content inside a hairline until their turn. The drawers, the generator, the
+adapter, the weekly review and the trips list are not swept. `SharpitScreenDemo plan` shows the
+week on a fixed set of prescriptions around today.
