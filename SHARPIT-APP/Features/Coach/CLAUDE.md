@@ -38,3 +38,9 @@ after each answer, as the web does. A turn opened from history keeps its stored 
 reports model and gateway failures *inside* a 200 stream (an `error` event); `CoachChatClient`
 turns it into `CoachChatError` and logs the chunk kinds of every answer under the `coach`
 category, so a silent answer names its cause.
+
+**Clinique.** The thread is swept (`docs/adr/0034`): one sheet under the coach's wash, secondary
+text in slate, a failure or a spent budget in the watch status ink, a destructive answer in the
+alert one. The cards a turn carries (proposal, workout, food log, data cards) take the Clinique
+neutrals and a hairline outline through `cliniqueScreen()`, but keep their Ink & Lime headers and
+pills until they are redrawn. The history, the usage sheet and the memory are not swept.
