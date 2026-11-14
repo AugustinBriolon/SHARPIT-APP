@@ -934,7 +934,8 @@ struct GuidedStrengthWorkoutView: View {
 
     private func completeSet(id: UUID) {
         guard session.targets.contains(where: { $0.id == id }) else { return }
-        session.completeSet(id: id)
+        // The card closes into its line and the next set opens into the card, rather than swapping.
+        SharpitMotion.run { session.completeSet(id: id) }
         SharpitHaptics.play(.notch(major: true))
         AudioServicesPlaySystemSound(1057)
     }

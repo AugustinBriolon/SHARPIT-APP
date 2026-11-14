@@ -267,7 +267,8 @@ struct ActivityDetailView: View {
         }
         .onDisappear { routeReplay.stop() }
         .onChange(of: streamPayload, initial: true) { _, _ in readRouteIntensity() }
-        .onChange(of: routeColouring) { _, _ in readRouteIntensity() }
+        // The card grows for its legend and gives the room back, instead of jumping.
+        .onChange(of: routeColouring) { _, _ in SharpitMotion.run { readRouteIntensity() } }
         .overlay(alignment: .topLeading) {
             Button {
                 if isMapExpanded {
@@ -2088,6 +2089,7 @@ struct ActivityMapCard: View {
                     .accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
+                .transition(.opacity)
             }
             if !colourings.isEmpty {
                 SharpitSegmentedControl(

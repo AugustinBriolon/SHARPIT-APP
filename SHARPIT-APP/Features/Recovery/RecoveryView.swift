@@ -76,13 +76,15 @@ struct RecoverySections: View {
         .padding(.bottom, SharpitSpacing.xl + 54)
     }
 
+    @State private var ringShown: Double = 0
+
     /// The score in its ring, the state as the page's title, then why in a sentence.
     private var hero: some View {
         VStack(spacing: 10) {
             ZStack {
                 Circle().stroke(SharpitColor.divider, lineWidth: 6)
                 Circle()
-                    .trim(from: 0, to: CliniqueRingMath.trim(for: recovery.readinessScore.map { $0 / 100 }))
+                    .trim(from: 0, to: ringShown)
                     .stroke(RecoveryReadout.status(for: recovery.signal.tone).mark, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 VStack(spacing: 0) {
@@ -97,6 +99,20 @@ struct RecoverySections: View {
             }
             .frame(width: 126, height: 126)
             .padding(.bottom, 6)
+            .onAppear {
+                let target = CliniqueRingMath.trim(for: recovery.readinessScore.map { $0 / 100 })
+                // Swept when the screen is opened, as Résumé's rings are; a day turned right after
+                // shows its ring drawn (the day's figures change in place, never replay).
+                if RecoveryRingSweep.isDue {
+                    RecoveryRingSweep.lastPlayed = .now
+                    SharpitMotion.run(SharpitMotion.gaugeFill) { ringShown = target }
+                } else {
+                    ringShown = target
+                }
+            }
+            .onChange(of: recovery.readinessScore) { _, score in
+                ringShown = CliniqueRingMath.trim(for: score.map { $0 / 100 })
+            }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(recovery.readinessScore.map { String(localized: "\(Int($0.rounded())) sur 100") } ?? String(localized: "Pas encore de score"))
             Text(recovery.signal.label)
@@ -344,4 +360,14 @@ private struct RecoveryEvidenceSection: View {
             }
         }
     }
+}
+
+/// When the recovery ring last swept, so turning the days does not replay it.
+@MainActor
+enum RecoveryRingSweep {
+    static var lastPlayed: Date?
+
+    // shortcut: a time window stands in for « the screen was just opened »; pass the scaffold's own
+    // first-page flag instead if the ring ever replays on a slow swipe.
+    static var isDue: Bool { lastPlayed.map { Date.now.timeIntervalSince($0) > 30 } ?? true }
 }
