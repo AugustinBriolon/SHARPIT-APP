@@ -12,30 +12,35 @@ struct SharpitStateMessage: View {
     var retry: (() -> Void)?
 
     var body: some View {
-        // The system's layout, the brand's voice: the ink tile, SharpIt's type and its button —
-        // shown before `RootView` too (the account gate), where no app tint reaches.
-        ContentUnavailableView {
-            VStack(spacing: SharpitSpacing.md) {
-                SharpitIconTile(symbol: symbol, size: 56)
-                Text(title)
-                    .font(SharpitTypography.sectionTitle)
-                    .tracking(SharpitTypography.sectionTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-            }
-        } description: {
+        // Clinique's empty and failed states (`docs/adr/0035`): a quiet glyph, what happened as a
+        // title, what to do in a sentence, and one outline button — shown before `RootView` too
+        // (the account gate), where no app tint reaches.
+        VStack(spacing: 14) {
+            Image(systemName: symbol)
+                .font(.system(size: 38, weight: .light))
+                .foregroundStyle(SharpitColor.slate)
+                .accessibilityHidden(true)
+            Text(title)
+                .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .multilineTextAlignment(.center)
             if let detail {
                 Text(detail)
-                    .font(SharpitTypography.body)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                     .foregroundStyle(SharpitColor.slate)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-        } actions: {
             if let retry {
-                SharpitPrimaryButton(title: String(localized: "Réessayer"), style: .secondary, action: retry)
-                    .frame(maxWidth: 220)
+                Button(String(localized: "Réessayer"), action: retry)
+                    .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                    .padding(.top, 6)
             }
         }
+        .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(SharpitCanvasBackground())
+        .background(SharpitColor.card)
     }
 }
 
