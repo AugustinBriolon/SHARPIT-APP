@@ -325,7 +325,9 @@ projection → limit → confidence.
 A tab's name is written in the bar's own row, left of its buttons (`SharpitBarTitle`), and two bar buttons stay two glass circles (`SharpitBarGap`). A day screen has no title and no tab bar: the bar carries the way back and the day as a capsule (`DayDetailDatePicker`), a glass home button floats at the foot (`DayDetailScaffold`).
 
 One wash, at the top of the sheet, and none in content. An ink card is the exception, not a
-screen's opening: only the weekly review's hero still stands as ink.
+screen's opening: only the weekly review's hero still stands as ink. No form, sheet or page opens on an
+ink plate: a duration, a target or a portion reads big on the sheet itself, its steppers
+(`SharpitStepButton`) and presets neutral tiles, the chosen one ink.
 
 Corners nest concentrically (HIG, iOS 26). A container declares its corner
 (`sharpitContainerCorner`, done by every `sharpitSurface`); what sits inside fills with

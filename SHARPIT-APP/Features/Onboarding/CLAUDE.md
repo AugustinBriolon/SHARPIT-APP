@@ -77,5 +77,8 @@ check, never a fill (`SportChoiceTile`, shared with Paramètres › Matériel).
 **Fields, Clinique.** The wizard's progress is ink (done and current dashes alike). Every input sits
 in the shared well (`sharpitFieldWell`): the sheet's white inside a hairline that turns ink while it
 is answered, under a quiet slate label (`SharpitFieldLabel`) — no grey fill, no uppercase. A motive
-(`MotivationRow`) is a white tile lined in ink once chosen, as the sports' tiles are. Only step 1 and
-the sports step are checked on screen; the other steps are checked in code.
+(`MotivationRow`) is a white tile lined in ink once chosen, as the sports' tiles are. Confidentialité
+and Sources are lines split by hairlines, as the consent wall and Connexions draw theirs: « Tout
+accepter » and « Connecter » are outline capsules, a linked source a status pill. Every step is
+checked on screen: `-SharpitOnboardingDemo YES -SharpitOnboardingStep 4` opens the demo on a step
+(`OnboardingStore.showForDemo`, Debug only).
