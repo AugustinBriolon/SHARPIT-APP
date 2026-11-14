@@ -19,8 +19,9 @@ struct GeneratedWeekView: View {
     @State private var opened: V1GeneratedSession?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sessions.enumerated()), id: \.offset) { index, session in
+                CliniqueDivider()
                 row(index: index, session: session)
                     .onTapGesture {
                         guard !isWriting else { return }
@@ -83,9 +84,10 @@ struct GeneratingWeekView: View {
                 note: note
             )
 
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+            VStack(alignment: .leading, spacing: 0) {
                 GeneratedWeekView(sessions: drafts, isWriting: true)
                 ForEach(0..<(drafts.isEmpty ? 3 : 1), id: \.self) { index in
+                    CliniqueDivider()
                     GeneratedSessionRow(session: .placeholder)
                         .redacted(reason: .placeholder)
                         .sharpitPlaceholderPulse(index: index)
@@ -138,8 +140,9 @@ private struct ProposedSessionPresenter: ViewModifier {
     }
 }
 
-/// One generated session: its day, sport, title and duration. With `isSelected`, a check says
-/// whether it goes into the plan — a button of its own, since the row itself opens the session.
+/// One generated session as a line: its day, « Sport · Titre » over its length and load, and at
+/// the trailing edge « Clé » or its length. With `isSelected`, a check says whether it goes into
+/// the plan — a button of its own, since the line itself opens the session.
 struct GeneratedSessionRow: View {
     let session: V1GeneratedSession
     var isSelected: Bool?
@@ -151,45 +154,89 @@ struct GeneratedSessionRow: View {
 
     private var day: String {
         guard let date = TrainingDayId.date(session.date) else { return session.date }
-        return date.sharpitFormatted(.dateTime.weekday(.wide).day()).capitalized
+        return date.sharpitFormatted(.dateTime.weekday(.abbreviated)).capitalizedFirst
     }
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            SharpitSportBadge(type: session.type)
+        HStack(alignment: .center, spacing: 12) {
+            Text(day)
+                .font(SharpitTypography.system(size: 14, weight: session.isKey ? .semibold : .regular, relativeTo: .footnote))
+                .foregroundStyle(session.isKey ? SharpitColor.foreground : SharpitColor.slate)
+                .frame(width: 44, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: SharpitSpacing.xs) {
-                    Text(day)
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
-                        .foregroundStyle(SharpitColor.slate)
-                    if session.isKey { SharpitInlineTag(String(localized: "Clé")) }
-                }
-                Text(session.title)
-                    .font(SharpitTypography.bodyEmphasis)
+                Text(PlannedSessionReadout.title(sport: session.type.label, title: session.title))
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Text(GeneratedWeekReadout.detail(session))
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
                 if let note = rejection ?? warning {
-                    Label(note, systemImage: rejection != nil ? "nosign" : "exclamationmark.triangle")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(rejection != nil ? SharpitColor.signalRisk : SharpitColor.slate)
+                    Text(note)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                        .foregroundStyle(rejection != nil ? SharpitColor.statusAlertMark : SharpitColor.slate)
                         .lineLimit(3)
                 }
             }
             Spacer(minLength: 0)
-            if session.durationMin > 0 {
-                Text("\(Int(session.durationMin)) min")
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(SharpitColor.foreground)
+            if session.isKey {
+                CliniqueStatusPill(String(localized: "Clé"), status: .pro)
             }
             if let isSelected {
-                SharpitKeepToggle(isSelected: isSelected, action: onToggle)
+                Button(action: onToggle) {
+                    Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.outline)
+                        .contentTransition(.symbolEffect(.replace))
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityLabel(isSelected ? String(localized: "Gardée") : String(localized: "Écartée"))
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-        .padding(SharpitSpacing.sm + 2)
-        .sharpitSurface(.panel)
+        .padding(.vertical, 12)
         .opacity(isSelected == false || rejection != nil ? 0.55 : 1)
         .contentShape(.rect)
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// How a generated week words its lines and its total.
+nonisolated enum GeneratedWeekReadout {
+    /// « 55 min · charge 68 »; the length alone without a load.
+    static func detail(_ session: V1GeneratedSession) -> String {
+        [session.durationMin > 0 ? duration(session.durationMin) : nil,
+         session.load > 0 ? String(localized: "charge \(Int(session.load.rounded()))") : nil]
+            .compactMap(\.self).joined(separator: " · ")
+    }
+
+    /// « 6 séances · 7 h 40 · charge 435 ».
+    static func total(_ sessions: [V1GeneratedSession]) -> String {
+        let count = sessions.count == 1 ? String(localized: "1 séance") : String(localized: "\(sessions.count) séances")
+        let minutes = sessions.reduce(0) { $0 + $1.durationMin }
+        let load = sessions.reduce(0) { $0 + $1.load }
+        return [count, minutes > 0 ? duration(minutes) : nil, load > 0 ? String(localized: "charge \(Int(load.rounded()))") : nil]
+            .compactMap(\.self).joined(separator: " · ")
+    }
+
+    /// « Ajouter à mon plan », or how many when some were set aside.
+    static func add(_ count: Int) -> String {
+        count == 1 ? String(localized: "Ajouter 1 séance") : String(localized: "Ajouter \(count) séances")
+    }
+
+    /// « 45 min », « 1 h 30 », « 2 h ».
+    static func duration(_ minutes: Double) -> String {
+        let whole = Int(minutes.rounded())
+        if whole < 60 { return "\(whole) min" }
+        return whole % 60 == 0 ? "\(whole / 60) h" : "\(whole / 60) h \(String(format: "%02d", whole % 60))"
+    }
+
+    /// « Semaine du 17 novembre », from the first session's day; nil when it cannot be read.
+    @MainActor static func title(_ sessions: [V1GeneratedSession], locale: Locale = SharpitLocale.current) -> String? {
+        guard let first = sessions.compactMap({ TrainingDayId.date($0.date) }).min() else { return nil }
+        return String(localized: "Semaine du \(first.formatted(.dateTime.day().month(.wide).locale(locale)))")
     }
 }

@@ -82,7 +82,7 @@ struct GuidedStrengthWorkoutView: View {
                 }
             }
             .animation(SharpitMotion.reveal, value: phase)
-            .background(SharpitCanvasBackground())
+            .cliniqueSheet(wash: .coach, height: 220)
             .navigationTitle(session.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
@@ -94,7 +94,7 @@ struct GuidedStrengthWorkoutView: View {
                     case let .hold(id): holdPage(id: id)
                     }
                 }
-                .background(SharpitCanvasBackground())
+                .cliniqueSheet(wash: .coach, height: 220)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .principal) { sessionStatus }
@@ -273,26 +273,25 @@ struct GuidedStrengthWorkoutView: View {
 
     private var overviewPage: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(session.title)
-                        .font(SharpitTypography.cardTitle)
-                        .tracking(SharpitTypography.cardTitleTracking)
+                        .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
+                        .tracking(-0.5)
                         .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
                     Text(overviewSubtitle)
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                         .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    Text("Exercices")
-                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
-                        .foregroundStyle(SharpitColor.slate)
-                    SharpitInsetGroup {
-                        ForEach(Array(session.exerciseGroups.enumerated()), id: \.element.id) { offset, group in
-                            overviewExerciseRow(group: group, order: offset + 1)
-                        }
+                VStack(spacing: 0) {
+                    ForEach(Array(session.exerciseGroups.enumerated()), id: \.element.id) { offset, group in
+                        CliniqueDivider()
+                        overviewExerciseRow(group: group, order: offset + 1)
                     }
+                    CliniqueDivider()
                 }
 
                 SharpitProgressBar(
@@ -301,16 +300,18 @@ struct GuidedStrengthWorkoutView: View {
                     fraction: session.targets.isEmpty ? 0 : Double(session.completedCount) / Double(session.targets.count)
                 )
 
-                SharpitPrimaryButton(title: session.completedCount == 0 ? String(localized: "Aucune série encore") : String(localized: "Terminer la séance")) {
+                Button {
                     stopTimers()
                     SharpitMotion.run { phase = .summary }
+                } label: {
+                    Text(session.completedCount == 0 ? String(localized: "Aucune série encore") : String(localized: "Terminer la séance"))
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
                 .disabled(session.completedCount == 0)
-                .opacity(session.completedCount == 0 ? 0.5 : 1)
             }
-            .padding(SharpitSpacing.cardPadding)
-            .sharpitSurface(.panel)
-            .padding(SharpitSpacing.pageInset)
+            .padding(.horizontal, 24)
+            .padding(.vertical, SharpitSpacing.md)
         }
     }
 
@@ -341,7 +342,7 @@ struct GuidedStrengthWorkoutView: View {
                         .foregroundStyle(SharpitColor.foreground)
                         .multilineTextAlignment(.leading)
                     if done == total, total > 0 {
-                        SharpitPill(String(localized: "Terminé"), style: .lime)
+                        CliniqueStatusPill(String(localized: "Terminé"), status: .good)
                     }
                 }
 
@@ -355,10 +356,9 @@ struct GuidedStrengthWorkoutView: View {
                     volumeFigure(volume)
                 }
             }
-            .padding(.horizontal, SharpitSpacing.rowPaddingX)
-            .padding(.vertical, SharpitSpacing.sm)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight, alignment: .leading)
-            .sharpitSurface(.row)
+            .contentShape(.rect)
         }
         .buttonStyle(.sharpitPressable)
     }
@@ -398,37 +398,33 @@ struct GuidedStrengthWorkoutView: View {
                             .foregroundStyle(SharpitColor.slate)
                     }
 
-                    HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                        if gifURL == nil {
-                            SharpitIconTile(symbol: "dumbbell.fill")
-                        }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(name)
-                                .font(SharpitTypography.cardTitle)
-                                .tracking(SharpitTypography.cardTitleTracking)
-                                .foregroundStyle(SharpitColor.foreground)
-                            Text(group?.notes.flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Séries prescrites"))
-                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    VStack(alignment: .leading, spacing: 6) {
+                        if let position = session.exerciseGroups.firstIndex(where: { $0.name == name }) {
+                            Text("Exercice \(position + 1) sur \(session.exerciseGroups.count)")
+                                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
                                 .foregroundStyle(SharpitColor.slate)
                         }
-
-                        Spacer(minLength: 0)
-
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("Volume")
-                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                                .foregroundStyle(SharpitColor.slate)
-                            volumeFigure(volume)
+                        Text(name)
+                            .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title))
+                            .tracking(-0.5)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                        Text(group?.notes.flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Séries prescrites"))
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.slate)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if volume > 0 {
+                            HStack(spacing: SharpitSpacing.xs) {
+                                Text("Volume")
+                                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                                    .foregroundStyle(SharpitColor.slate)
+                                volumeFigure(volume)
+                            }
                         }
                     }
                 }
-                .listRowInsets(EdgeInsets(
-                    top: SharpitSpacing.pageInset,
-                    leading: SharpitSpacing.pageInset,
-                    bottom: SharpitSpacing.sm,
-                    trailing: SharpitSpacing.pageInset
-                ))
+                .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: 24, bottom: SharpitSpacing.sm, trailing: 24))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
             }
@@ -436,14 +432,9 @@ struct GuidedStrengthWorkoutView: View {
             Section {
                 ForEach(sets) { set in
                     setRow(id: set.id)
-                        .listRowInsets(EdgeInsets(
-                            top: SharpitSpacing.xs,
-                            leading: SharpitSpacing.pageInset,
-                            bottom: SharpitSpacing.xs,
-                            trailing: SharpitSpacing.pageInset
-                        ))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
+                        .listRowSeparatorTint(SharpitColor.divider)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 if session.canRemoveSet(id: set.id) {
                                     SharpitSwipeDeleteButton {
@@ -456,12 +447,7 @@ struct GuidedStrengthWorkoutView: View {
                 SharpitDashedAddButton(title: String(localized: "Ajouter une série")) {
                     session.addSet(toExercise: name)
                 }
-                .listRowInsets(EdgeInsets(
-                    top: SharpitSpacing.xs,
-                    leading: SharpitSpacing.pageInset,
-                    bottom: SharpitSpacing.pageInset,
-                    trailing: SharpitSpacing.pageInset
-                ))
+                .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: 24, bottom: SharpitSpacing.pageInset, trailing: 24))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
             }
@@ -481,12 +467,16 @@ struct GuidedStrengthWorkoutView: View {
     private func setRow(id: UUID) -> some View {
         if let set = session.targets.first(where: { $0.id == id }) {
             HStack(spacing: SharpitSpacing.sm) {
-                SharpitNumberChip(number: set.setNumber)
+                Text("Série \(set.setNumber)")
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize()
+                    .frame(minWidth: 64, alignment: .leading)
 
                 if set.isHold {
                     TextField("0", text: durationText(for: set.id))
                         .keyboardType(.numberPad)
-                        .font(SharpitTypography.data)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
                         .focused($focusedField, equals: .duration(set.id))
                         .frame(minWidth: 44, maxWidth: 72, alignment: .leading)
@@ -511,7 +501,7 @@ struct GuidedStrengthWorkoutView: View {
                 } else {
                     TextField("0", text: repsText(for: set.id))
                         .keyboardType(.numberPad)
-                        .font(SharpitTypography.data)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
                         .multilineTextAlignment(.trailing)
                         .focused($focusedField, equals: .reps(set.id))
@@ -527,7 +517,7 @@ struct GuidedStrengthWorkoutView: View {
                     // No load prescribed: an empty field, not a « 0 » read as a weight.
                     TextField("—", text: weightText(for: set.id))
                         .keyboardType(.decimalPad)
-                        .font(SharpitTypography.data)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
                         .multilineTextAlignment(.trailing)
                         .focused($focusedField, equals: .weight(set.id))
@@ -581,17 +571,17 @@ struct GuidedStrengthWorkoutView: View {
                         completeSet(id: set.id)
                     }
                 } label: {
-                    SharpitCheckBox(isOn: set.isDone)
+                    Image(systemName: set.isDone ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(set.isDone ? SharpitColor.pillarRecovery : SharpitColor.outline)
+                        .contentTransition(.symbolEffect(.replace))
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(set.isDone ? String(localized: "Série faite") : String(localized: "Marquer la série"))
             }
-            .padding(.leading, SharpitSpacing.rowPaddingX)
-            .padding(.trailing, SharpitSpacing.xs)
-            .frame(minHeight: SharpitSpacing.rowHeight)
-            .sharpitSurface(.row)
+            .frame(minHeight: 58)
             .animation(SharpitMotion.reveal, value: set.isDone)
         }
     }

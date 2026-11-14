@@ -83,7 +83,9 @@ struct PlanView: View {
                         plan: activePlan,
                         onAdapt: openAdapter,
                         onOpenCalendar: { showingCalendar = true },
-                        onOpenTravel: { showingTravel = true }
+                        onOpenTravel: { showingTravel = true },
+                        onFillWeek: { router.isShowingPlanGenerator = true },
+                        onAddSession: { showingNewSession = true }
                     ),
                     onSelect: { selection = $0 },
                     onOpenTrajectory: { openedTrajectory = $0 }
@@ -620,6 +622,8 @@ struct PlanWeekChrome {
     var onAdapt: () -> Void = {}
     var onOpenCalendar: () -> Void = {}
     var onOpenTravel: () -> Void = {}
+    var onFillWeek: () -> Void = {}
+    var onAddSession: () -> Void = {}
 }
 
 /// Where a week sits in the plan: its phase, and the days left to the race.
@@ -692,8 +696,14 @@ private struct PlanWeekContent: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header(standing)
-                rings
-                weekHeading
+                if isEmptyWeekAhead {
+                    weekHeading
+                    emptyWeek
+                } else {
+                    rings
+                    weekHeading
+                }
+                if !isEmptyWeekAhead {
                 PlanTimeline(
                     days: days,
                     entriesOn: { store.entries(on: $0, from: entries) },
@@ -702,6 +712,7 @@ private struct PlanWeekContent: View {
                     onSelect: onSelect
                 )
                 .padding(.horizontal, SharpitSpacing.lg)
+                }
                 VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                     if let trainingLoad, !trainingLoad.days.isEmpty {
                         TrainingLoadCard(load: trainingLoad)
@@ -719,6 +730,38 @@ private struct PlanWeekContent: View {
         .modifier(ScrollUnderGlass(hidesTopEdge: true))
         // No pull-to-refresh: nested in the horizontal pager, a fast fling to the top
         // fired it and the spinner shoved the week down. Plan reloads on each visit and edit.
+    }
+
+    /// A week read, not yet over, with nothing in it: the page says so and offers to fill it,
+    /// instead of seven rest days under three empty rings.
+    private var isEmptyWeekAhead: Bool {
+        guard entries.isEmpty, case .loaded = store.phase(forOffset: offset), let last = days.last else { return false }
+        return Calendar.current.startOfDay(for: last) >= Calendar.current.startOfDay(for: .now)
+    }
+
+    private var emptyWeek: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.system(size: 40, weight: .light))
+                .foregroundStyle(SharpitColor.slate)
+                .padding(.top, 36)
+                .accessibilityHidden(true)
+            Text("Ta semaine est vide")
+                .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+            Text("Donne ta course ou ton objectif. Le plan se remplit autour de tes jours libres et se répare seul si tu rates une séance.")
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .foregroundStyle(SharpitColor.slate)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(action: chrome.onFillWeek) { Text("Remplir ma semaine").frame(maxWidth: .infinity) }
+                .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                .padding(.top, 10)
+            Button("Ajouter une séance à la main", action: chrome.onAddSession)
+                .buttonStyle(CliniqueButtonStyle(kind: .plain))
+        }
+        .padding(.horizontal, 24)
     }
 
     /// Under the bar's title: how the week stands, then its phase in the plan.

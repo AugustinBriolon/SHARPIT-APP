@@ -13,22 +13,47 @@ struct PlanGeneratorSheet: View {
         NavigationStack {
             ScrollView {
                 content
-                    .padding(.horizontal, SharpitSpacing.pageInset)
+                    .padding(.horizontal, 24)
                     .padding(.vertical, SharpitSpacing.md)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom, spacing: 0) { actions }
-            .background(SharpitCanvasBackground())
+            .cliniqueSheet(wash: isReady ? .good : .neutral, height: 200)
             .navigationTitle("Remplir ma semaine")
             .navigationBarTitleDisplayMode(.inline)
+            // The page names itself; the bar keeps the way out.
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { dismiss() }
+                ToolbarItem(placement: .principal) { Text("") }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel("Fermer")
                 }
             }
             .task { await store.loadGoals() }
         }
         .sharpitSheet()
+    }
+
+    private var isReady: Bool {
+        switch store.phase {
+        case .ready, .inserting: true
+        default: false
+        }
+    }
+
+    private func heading(_ title: String, _ detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title, digits: true))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            Text(detail)
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                .foregroundStyle(SharpitColor.slate)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     @ViewBuilder
@@ -56,11 +81,15 @@ struct PlanGeneratorSheet: View {
                 note: String(localized: "Environ une minute. Tu peux fermer : une notification te dira quand c'est prêt.")
             )
         case .ready(let plan, let selected), .inserting(let plan, let selected):
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 8) {
+                    CliniqueStatusPill(String(localized: "Ta semaine est prête"), status: .good)
+                    heading(GeneratedWeekReadout.title(plan.sessions) ?? String(localized: "Ta semaine"), GeneratedWeekReadout.total(plan.sessions))
+                }
                 if !plan.summary.isEmpty {
                     Text(plan.summary)
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.foreground)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(3)
                 }
                 GeneratedWeekView(
@@ -87,6 +116,7 @@ struct PlanGeneratorSheet: View {
 
     private func request(error: String?) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            heading(String(localized: "Remplir ma semaine"), String(localized: "Le coach écrit tes séances autour de tes jours libres, de ta forme et de ton objectif."))
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 SharpitFieldLabel(String(localized: "Durée"))
                 Picker("Durée", selection: $store.days) {
@@ -124,8 +154,7 @@ struct PlanGeneratorSheet: View {
                         .foregroundStyle(SharpitColor.slate)
                     }
                 }
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
+                .cliniqueCard()
             }
 
             SharpitFormField(String(localized: "Une demande (optionnel)"), placeholder: String(localized: "Deux sorties vélo, repos vendredi…"), text: $store.focus)
@@ -142,27 +171,42 @@ struct PlanGeneratorSheet: View {
     @ViewBuilder
     private var actions: some View {
         if !store.needsPro {
-            SharpitActionDock {
-                switch store.phase {
-                case .idle, .failed:
-                    SharpitPrimaryButton(title: String(localized: "Générer")) { store.start() }
-                case .generating:
-                    // Nothing to do but wait or close — « Fermer » is in the bar.
-                    EmptyView()
-                case .ready(_, let selected), .inserting(_, let selected):
-                    let busy = if case .inserting = store.phase { true } else { false }
-                    SharpitPrimaryButton(
-                        title: busy ? String(localized: "Ajout au plan…") : String(localized: "Ajouter \(selected.count) séance\(selected.count > 1 ? "s" : "")"),
-                        isBusy: busy
-                    ) {
-                        Task { await insert() }
+            switch store.phase {
+            case .idle, .failed:
+                Button { store.start() } label: { Text("Générer").frame(maxWidth: .infinity) }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, SharpitSpacing.xs)
+                    .background(SharpitColor.card)
+            case .generating:
+                // Nothing to do but wait or close — the cross is in the bar.
+                EmptyView()
+            case .ready(_, let selected), .inserting(_, let selected):
+                let busy = if case .inserting = store.phase { true } else { false }
+                HStack(spacing: 8) {
+                    Button { Task { await insert() } } label: {
+                        Group {
+                            if busy { ProgressView().tint(SharpitColor.primaryForeground) } else { Text(GeneratedWeekReadout.add(selected.count)) }
+                        }
+                        .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
                     .disabled(selected.isEmpty || busy)
-                    Button("Recommencer") { store.reset() }
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.slate)
-                        .disabled(busy)
+                    Button { store.reset() } label: {
+                        Text("Refaire")
+                            .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .padding(.horizontal, 20)
+                            .frame(minHeight: 52)
+                            .background(SharpitColor.card, in: Capsule())
+                    }
+                    .buttonStyle(.sharpitPressable)
+                    .disabled(busy)
                 }
+                .padding(6)
+                .sharpitGlassCapsule()
+                .padding(.horizontal, 16)
+                .padding(.bottom, 4)
             }
         }
     }

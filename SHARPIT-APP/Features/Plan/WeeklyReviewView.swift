@@ -72,18 +72,25 @@ struct WeeklyReviewView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 content
-                if case .loaded = store.phase, let onPrepareWeek {
-                    SharpitPrimaryButton(title: String(localized: "Préparer ma semaine"), trailingSymbol: "arrow.right", action: onPrepareWeek)
-                        .padding(.top, SharpitSpacing.sm)
-                }
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.horizontal, 24)
             .padding(.vertical, SharpitSpacing.md)
         }
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: .good, height: 220)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if case .loaded = store.phase, let onPrepareWeek {
+                Button(action: onPrepareWeek) { Text("Préparer ma semaine").frame(maxWidth: .infinity) }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, SharpitSpacing.xs)
+                    .background(SharpitColor.card)
+            }
+        }
         .navigationTitle("Bilan de la semaine")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            // The page names itself: « Bilan du … ».
+            ToolbarItem(placement: .principal) { Text("") }
             if case .loaded = store.phase {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -130,54 +137,84 @@ struct WeeklyReviewView: View {
         case .failed(let message):
             SharpitStateMessage.failed(message) { Task { await store.load() } }
         case .empty:
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 14) {
                 Text("Pas encore de bilan")
-                    .font(SharpitTypography.cardTitle)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)
                 Text("Le coach relit ta semaine (volume, charge, sommeil, récupération) et prépare la suivante.")
-                    .font(SharpitTypography.body)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                     .foregroundStyle(SharpitColor.slate)
                     .fixedSize(horizontal: false, vertical: true)
-                Button {
-                    Task { await store.write() }
-                } label: {
-                    Text("Écrire le bilan")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.primaryForeground)
-                        .frame(maxWidth: .infinity)
-                }
-                .sharpitGlassButton(prominent: true)
-                .tint(SharpitColor.primary)
-                .disabled(store.isWriting)
+                Button("Écrire le bilan") { Task { await store.write() } }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary))
+                    .disabled(store.isWriting)
             }
-            .padding(SharpitSpacing.cardPadding)
-            .sharpitSurface(.panel)
+            .cliniqueCard()
         case .loaded(let review):
             WeeklyReviewContent(review: review)
         }
     }
 }
 
+/// The review on its mock-up (`docs/adr/0035`): how the week stood as a pill, « Bilan du … », the
+/// week's three figures between hairlines, the time by sport as a table, what to keep, the figures
+/// behind it, the week ahead in a bordered card, then the full text on its own page.
 private struct WeeklyReviewContent: View {
     let review: V1WeeklyReview
 
-    private var weekLabel: String {
-        guard let date = TrainingDayId.date(review.weekStart) else { return "" }
-        return String(localized: "Semaine du ") + date.sharpitFormatted(.dateTime.day().month(.wide))
-    }
-
     var body: some View {
         let sections = WeeklyReviewSections(markdown: review.content)
-        VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            WeeklyReviewHero(weekLabel: weekLabel, stats: review.stats)
+        VStack(alignment: .leading, spacing: 26) {
+            VStack(spacing: 10) {
+                if let standing = WeeklyReviewReadout.standing(review.stats) {
+                    CliniqueStatusPill(standing.text, status: standing.status)
+                }
+                Text(WeeklyReviewReadout.title(weekStart: review.weekStart))
+                    .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title, digits: true))
+                    .tracking(-0.4)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.center)
+                    .accessibilityAddTraits(.isHeader)
+                Text("Relue par le coach")
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+            .frame(maxWidth: .infinity)
+
+            if let figures = review.stats.map(WeeklyReviewReadout.strip), !figures.isEmpty {
+                VStack(spacing: 0) {
+                    CliniqueDivider()
+                    HStack(spacing: 0) {
+                        ForEach(Array(figures.enumerated()), id: \.element.id) { index, figure in
+                            if index > 0 { Rectangle().fill(SharpitColor.divider).frame(width: 1, height: 34) }
+                            VStack(spacing: 4) {
+                                Text(figure.caption)
+                                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                                    .foregroundStyle(SharpitColor.slate)
+                                (Text(figure.value).font(SharpitTypography.system(size: 19, weight: .semibold, relativeTo: .title3, digits: true)).foregroundStyle(SharpitColor.foreground)
+                                    + Text(figure.unit.map { " \($0)" } ?? "").font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true)).foregroundStyle(SharpitColor.slate))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .accessibilityElement(children: .combine)
+                        }
+                    }
+                    .padding(.vertical, 14)
+                    CliniqueDivider()
+                }
+            }
+
+            if let shares = review.stats?.byType?.filter({ $0.durationMin > 0 }), !shares.isEmpty {
+                ReviewSportShares(shares: shares)
+            }
 
             let highlights = ReviewHighlight.all(from: sections)
             if !highlights.isEmpty {
-                ReviewCard(title: String(localized: "Faits marquants"), symbol: "list.star") {
-                    SharpitInsetGroup {
-                        ForEach(highlights) { highlight in
-                            ReviewHighlightRow(highlight: highlight)
-                        }
+                VStack(alignment: .leading, spacing: 12) {
+                    ReviewSectionTitle(String(localized: "À retenir"))
+                    ForEach(highlights) { highlight in
+                        ReviewHighlightRow(highlight: highlight)
                     }
                 }
             }
@@ -187,24 +224,18 @@ private struct WeeklyReviewContent: View {
             }
 
             if !sections.nextWeek.isEmpty {
-                ReviewCard(title: String(localized: "La semaine prochaine"), symbol: "arrow.forward") {
-                    SharpitInsetGroup {
-                        ForEach(Array(sections.nextWeek.enumerated()), id: \.offset) { index, item in
-                            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                                SharpitNumberChip(number: index + 1)
-                                Text(item)
-                                    .font(SharpitTypography.body)
-                                    .foregroundStyle(SharpitColor.foreground)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .padding(.top, 4)
-                                Spacer(minLength: 0)
-                            }
-                            .padding(.horizontal, SharpitSpacing.rowPaddingX)
-                            .padding(.vertical, SharpitSpacing.sm)
-                            .sharpitSurface(.row)
-                        }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("La semaine qui vient")
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                        .foregroundStyle(SharpitColor.slate)
+                    ForEach(Array(sections.nextWeek.enumerated()), id: \.offset) { _, item in
+                        Text(item)
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .cliniqueCard()
             }
 
             if !sections.narrative.isEmpty {
@@ -212,125 +243,81 @@ private struct WeeklyReviewContent: View {
                     ScrollView {
                         SharpitMarkdownText(markdown: review.content)
                             .textSelection(.enabled)
-                            .padding(SharpitSpacing.pageInset)
+                            .padding(24)
                     }
-                    .background(SharpitCanvasBackground())
-                    .navigationTitle(weekLabel)
+                    .background(SharpitColor.card)
+                    .navigationTitle(WeeklyReviewReadout.title(weekStart: review.weekStart))
                     .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        Text("Lire le bilan complet")
-                            .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 15, weight: .semibold))
-                    }
-                    .foregroundStyle(SharpitColor.foreground)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: SharpitTokens.controlHeight)
-                    .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.control)
+                    Text("Lire le bilan complet").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.sharpitPressable)
+                .buttonStyle(CliniqueButtonStyle(kind: .outline, isLarge: true))
             }
         }
     }
 }
 
-/// The week at a glance, the one ink card of the page: the tile, the week, then its three
-/// figures — sessions against the plan, load, sleep — big and white.
-private struct WeeklyReviewHero: View {
-    let weekLabel: String
-    let stats: V1WeeklyStats?
-
-    private var ink: Color { SharpitColor.inkSurfaceForeground }
+/// A section's name on the sheet.
+private struct ReviewSectionTitle: View {
+    let title: String
+    init(_ title: String) { self.title = title }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            HStack(spacing: SharpitSpacing.sm) {
-                SharpitIconTile(symbol: "calendar")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(weekLabel)
-                        .font(SharpitTypography.cardTitle)
-                        .foregroundStyle(ink)
-                    Text("Relue par le coach")
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(ink.opacity(0.6))
-                }
-                Spacer(minLength: 0)
-            }
-
-            if let figures = stats.map(ReviewHeroFigure.all), !figures.isEmpty {
-                HStack(alignment: .top, spacing: SharpitSpacing.md) {
-                    ForEach(figures) { figure in
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                                Text(figure.value)
-                                    .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title, digits: true))
-                                    .tracking(-0.6)
-                                    .foregroundStyle(ink)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.7)
-                                if let unit = figure.unit {
-                                    Text(unit)
-                                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                                        .foregroundStyle(ink.opacity(0.6))
-                                }
-                            }
-                            Text(figure.caption)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(ink.opacity(0.6))
-                                .lineLimit(1)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-            }
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        Text(title)
+            .font(SharpitTypography.sectionTitle)
+            .tracking(SharpitTypography.sectionTitleTracking)
+            .foregroundStyle(SharpitColor.foreground)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
-/// A figure of the hero: « 5 /6 Séances », « 412 Charge », « 7 h 12 Sommeil ».
-struct ReviewHeroFigure: Identifiable, Equatable {
-    let caption: String
-    let value: String
-    let unit: String?
-    var id: String { caption }
+/// How the review words the week's frame.
+nonisolated enum WeeklyReviewReadout {
+    /// « Bilan du 3 au 9 novembre », the week's seven days from its Monday.
+    @MainActor static func title(weekStart: String, locale: Locale = SharpitLocale.current) -> String {
+        guard let start = TrainingDayId.date(weekStart),
+              let end = Calendar.current.date(byAdding: .day, value: 6, to: start) else { return String(localized: "Bilan de la semaine") }
+        let sameMonth = Calendar.current.component(.month, from: start) == Calendar.current.component(.month, from: end)
+        let from = start.formatted((sameMonth ? Date.FormatStyle.dateTime.day() : .dateTime.day().month(.wide)).locale(locale))
+        let to = end.formatted(.dateTime.day().month(.wide).locale(locale))
+        return String(localized: "Bilan du \(from) au \(to)")
+    }
 
-    static func all(from stats: V1WeeklyStats) -> [ReviewHeroFigure] {
+    /// How full the week was against its plan; nil when the sessions are not counted.
+    static func standing(_ stats: V1WeeklyStats?) -> (text: String, status: CliniqueStatus)? {
+        guard let done = stats?.sessionsDone else { return nil }
+        let planned = max(stats?.sessionsPlanned ?? done, done)
+        guard planned > 0 else { return nil }
+        if done >= planned { return (String(localized: "Semaine pleine"), .good) }
+        return Double(done) / Double(planned) >= 0.5
+            ? (String(localized: "Semaine presque pleine"), .good)
+            : (String(localized: "Semaine légère"), .watch)
+    }
+
+    /// The strip under the title: sessions against the plan, the volume, the load.
+    static func strip(_ stats: V1WeeklyStats) -> [ReviewHeroFigure] {
         var figures: [ReviewHeroFigure] = []
         if let done = stats.sessionsDone {
             let planned = max(stats.sessionsPlanned ?? done, done)
-            figures.append(.init(caption: String(localized: "Séances"), value: "\(done)", unit: "/\(planned)"))
+            figures.append(.init(caption: String(localized: "Séances"), value: "\(done)", unit: "/ \(planned)"))
+        }
+        if let minutes = stats.totalDurationMin, minutes > 0 {
+            let whole = Int(minutes.rounded())
+            figures.append(.init(caption: String(localized: "Volume"), value: "\(whole / 60) h \(String(format: "%02d", whole % 60))", unit: nil))
         }
         if let load = stats.totalLoad {
             figures.append(.init(caption: String(localized: "Charge"), value: "\(Int(load.rounded()))", unit: nil))
-        }
-        if let sleep = stats.sleep?.avgDurationMin, sleep > 0 {
-            let minutes = Int(sleep.rounded())
-            figures.append(.init(caption: String(localized: "Sommeil"), value: "\(minutes / 60) h", unit: String(format: "%02d", minutes % 60)))
         }
         return figures
     }
 }
 
-/// A white card of the review: the shared header, then its body.
-private struct ReviewCard<Content: View>: View {
-    let title: String
-    let symbol: String
-    var subtitle: String? = nil
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(title: title, symbol: symbol, subtitle: subtitle, showsChevron: false)
-            content
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-    }
+/// A figure of the strip: « 5 / 6 Séances », « 9 h 10 Volume », « 412 Charge ».
+struct ReviewHeroFigure: Identifiable, Equatable {
+    let caption: String
+    let value: String
+    let unit: String?
+    var id: String { caption }
 }
 
 /// One fact of the week, its kind told by the mark: a lime check for what went well, a caution
@@ -352,23 +339,16 @@ private struct ReviewHighlightRow: View {
     let highlight: ReviewHighlight
 
     var body: some View {
-        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            mark
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(highlight.kind == .watch ? SharpitColor.signalCaution : SharpitColor.slate)
-                Text(highlight.text)
-                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
-                    .foregroundStyle(SharpitColor.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
+        Text(highlight.text)
+            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+            .foregroundStyle(SharpitColor.foreground)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.leading, 18)
+            .overlay(alignment: .leading) {
+                Capsule().fill(tone).frame(width: 4).padding(.vertical, 2)
             }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
-        .padding(.vertical, SharpitSpacing.sm)
-        .sharpitSurface(.row)
-        .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(label) : \(highlight.text)")
     }
 
     private var label: String {
@@ -379,75 +359,60 @@ private struct ReviewHighlightRow: View {
         }
     }
 
-    @ViewBuilder
-    private var mark: some View {
+    private var tone: Color {
         switch highlight.kind {
-        case .win:
-            Image(systemName: "checkmark")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(SharpitColor.primaryForeground)
-                .frame(width: 26, height: 26)
-                .sharpitConcentricBackground(SharpitColor.primary, minimum: 8)
-        case .watch:
-            Image(systemName: "exclamationmark")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 26, height: 26)
-                .sharpitConcentricBackground(SharpitColor.signalCaution, minimum: 8)
-        case .note:
-            Image(systemName: "circle.fill")
-                .font(.system(size: 6))
-                .foregroundStyle(SharpitColor.slate)
-                .frame(width: 26, height: 26)
-                .sharpitConcentricBackground(SharpitColor.tile, minimum: 8)
+        case .win: CliniqueStatus.good.mark
+        case .watch: CliniqueStatus.watch.mark
+        case .note: SharpitColor.outline
         }
     }
 }
 
-/// The week's figures as white cards in pairs — sessions, load, sleep, form — each with its
-/// days as ink bars and the average dashed across; then where the time went, by sport.
+/// The figures behind the week as lines — the load against the week before with its days as
+/// bars, the nights, the form.
 private struct WeeklyReviewMetrics: View {
     let stats: V1WeeklyStats
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            Text("En chiffres")
-                .font(SharpitTypography.sectionTitle)
-                .tracking(SharpitTypography.sectionTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: SharpitSpacing.sm), GridItem(.flexible())], spacing: SharpitSpacing.sm) {
-                if let done = stats.sessionsDone {
-                    let planned = max(stats.sessionsPlanned ?? done, done)
-                    let ratio = planned > 0 ? Double(done) / Double(planned) : 1
-                    ReviewMetricCard(name: "Séances", value: "\(done)", unit: "sur \(planned)", tone: WeeklyReviewTone.ratio(ratio)) {
-                        SharpitBarTrack(fraction: ratio).frame(height: 6)
-                    }
-                }
-                if let load = stats.totalLoad {
-                    ReviewMetricCard(name: "Charge", value: "\(Int(load.rounded()))", unit: loadChange.map { "\($0 >= 0 ? "+" : "−")\(abs($0)) %" }) {
-                        if let daily = stats.dailyLoad, daily.contains(where: { $0 != nil }) {
-                            ReviewDayBars(values: daily)
-                        }
-                    }
-                }
-                if let sleep = stats.sleep?.avgDurationMin, sleep > 0 {
-                    let minutes = Int(sleep.rounded())
-                    ReviewMetricCard(name: "Sommeil", value: "\(minutes / 60) h \(String(format: "%02d", minutes % 60))", unit: nil, tone: WeeklyReviewTone.sleep(minutes: sleep)) {
-                        if let daily = stats.dailySleepScore, daily.contains(where: { $0 != nil }) {
-                            ReviewDayBars(values: daily)
-                        }
-                    }
-                }
-                if let readiness = stats.recovery?.avgReadiness {
-                    ReviewMetricCard(name: "Forme", value: "\(Int(readiness.rounded()))", unit: "/100", tone: WeeklyReviewTone.score(readiness)) {
-                        SharpitBarTrack(fraction: readiness / 100, tone: SharpitColor.foreground).frame(height: 6)
-                    }
+        VStack(alignment: .leading, spacing: 4) {
+            ReviewSectionTitle(String(localized: "En chiffres"))
+            if let load = stats.totalLoad {
+                row(String(localized: "Charge"), "\(Int(load.rounded()))", note: loadChange.map { String(localized: "\($0 >= 0 ? "+" : "−")\(abs($0)) % sur la semaine d'avant") })
+                if let daily = stats.dailyLoad, daily.contains(where: { $0 != nil }) {
+                    ReviewDayBars(values: daily).padding(.bottom, 12)
                 }
             }
-            if let shares = stats.byType?.filter({ $0.durationMin > 0 }), !shares.isEmpty {
-                ReviewSportShares(shares: shares)
+            if let sleep = stats.sleep?.avgDurationMin, sleep > 0 {
+                let minutes = Int(sleep.rounded())
+                CliniqueDivider()
+                row(String(localized: "Sommeil moyen"), "\(minutes / 60) h \(String(format: "%02d", minutes % 60))", tone: WeeklyReviewTone.sleep(minutes: sleep))
+            }
+            if let readiness = stats.recovery?.avgReadiness {
+                CliniqueDivider()
+                row(String(localized: "Forme moyenne"), "\(Int(readiness.rounded())) / 100", tone: WeeklyReviewTone.score(readiness))
             }
         }
+    }
+
+    private func row(_ label: String, _ value: String, note: String? = nil, tone: Color = SharpitColor.foreground) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                if let note {
+                    Text(note)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                }
+            }
+            Spacer(minLength: SharpitSpacing.xs)
+            Text(value)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(tone)
+        }
+        .padding(.vertical, 14)
+        .accessibilityElement(children: .combine)
     }
 
     private var loadChange: Int? {
@@ -456,42 +421,7 @@ private struct WeeklyReviewMetrics: View {
     }
 }
 
-private struct ReviewMetricCard<Detail: View>: View {
-    let name: String
-    let value: String
-    let unit: String?
-    var tone: Color = SharpitColor.foreground
-    @ViewBuilder let detail: Detail
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            Text(name)
-                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.slate)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value)
-                    .font(SharpitTypography.gaugeScore)
-                    .tracking(SharpitTypography.gaugeScoreTracking)
-                    .foregroundStyle(tone)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                if let unit {
-                    Text(unit)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                        .lineLimit(1)
-                }
-            }
-            Spacer(minLength: 0)
-            detail
-        }
-        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
-        .padding(SharpitSpacing.md)
-        .sharpitSurface(.panel)
-    }
-}
-
-/// Monday to Sunday as ink bars, the strongest day lime, the average dashed across.
+/// Monday to Sunday as bars in the recovery hue, the strongest day full, the average dashed across.
 private struct ReviewDayBars: View {
     let values: [Double?]
 
@@ -508,7 +438,7 @@ private struct ReviewDayBars: View {
         Chart {
             ForEach(Array(values.prefix(7).enumerated()), id: \.offset) { index, value in
                 BarMark(x: .value(String(localized: "Jour"), Self.days[index]), y: .value(String(localized: "Valeur"), value ?? 0), width: .ratio(0.55))
-                    .foregroundStyle(value == nil ? SharpitColor.divider : value == peak ? SharpitColor.statusGoodForeground : SharpitColor.foreground)
+                    .foregroundStyle(value == nil ? SharpitColor.divider : value == peak ? SharpitColor.pillarRecovery : SharpitColor.pillarRecovery.opacity(0.35))
                     .cornerRadius(3)
             }
             if let average {
@@ -531,39 +461,39 @@ private struct ReviewDayBars: View {
     }
 }
 
-/// Where the time went: each sport as an inset row — its tile, its sessions, its minutes and
-/// its share as a bar.
+/// Where the time went, as a table: each sport, its sessions, its time.
 private struct ReviewSportShares: View {
     let shares: [V1WeeklyStats.SportShare]
 
     var body: some View {
-        let total = max(shares.reduce(0) { $0 + $1.durationMin }, 1)
-        ReviewCard(title: String(localized: "Temps par sport"), symbol: "stopwatch") {
-            SharpitInsetGroup {
-                ForEach(shares, id: \.type) { share in
-                    // The server names some sports by key, others in words; both get their glyph.
-                    let known = V1ActivityType(rawValue: share.type)
-                    HStack(spacing: SharpitSpacing.sm) {
-                        SharpitSportBadge(type: known ?? V1ActivityType(sportLabel: share.type), size: 32)
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(known?.label ?? share.type.capitalized)
-                                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
-                                    .foregroundStyle(SharpitColor.foreground)
-                                Text(share.count == 1 ? String(localized: "1 séance") : String(localized: "\(share.count) séances"))
-                                    .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.slate)
-                                Spacer(minLength: SharpitSpacing.xs)
-                                SharpitRowFigure(value: "\(Int(share.durationMin.rounded()))", unit: "min")
-                            }
-                            SharpitBarTrack(fraction: share.durationMin / total, tone: SharpitColor.foreground)
-                                .frame(height: 4)
-                        }
-                    }
-                    .padding(.horizontal, SharpitSpacing.rowPaddingX)
-                    .padding(.vertical, SharpitSpacing.sm)
-                    .sharpitSurface(.row)
+        VStack(spacing: 0) {
+            HStack {
+                Text("Sport").frame(maxWidth: .infinity, alignment: .leading)
+                Text("Séances").frame(width: 80, alignment: .leading)
+                Text("Temps").frame(width: 80, alignment: .trailing)
+            }
+            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+            .foregroundStyle(SharpitColor.slate)
+            .padding(.bottom, 8)
+            ForEach(shares, id: \.type) { share in
+                CliniqueDivider()
+                // The server names some sports by key, others in words.
+                let minutes = Int(share.durationMin.rounded())
+                HStack {
+                    Text(V1ActivityType(rawValue: share.type)?.label ?? share.type.capitalized)
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("\(share.count)")
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .frame(width: 80, alignment: .leading)
+                    Text(minutes >= 60 ? "\(minutes / 60) h \(String(format: "%02d", minutes % 60))" : "\(minutes) min")
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                        .frame(width: 80, alignment: .trailing)
                 }
+                .foregroundStyle(SharpitColor.foreground)
+                .padding(.vertical, 14)
+                .accessibilityElement(children: .combine)
             }
         }
     }
