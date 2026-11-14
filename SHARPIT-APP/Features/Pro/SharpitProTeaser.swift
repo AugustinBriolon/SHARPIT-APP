@@ -20,32 +20,31 @@ struct SharpitProTeaser: View {
         }
     }
 
+    /// Clinique's « hors Pro » state (`docs/adr/0035`): what the feature is over the Pro pill, what
+    /// it does in a sentence, and one ink button — in a card bordered in the coach's tone.
     private var content: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(spacing: SharpitSpacing.xs) {
-                SharpitEyebrow(title)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Text(title)
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.leading)
                 Spacer(minLength: 0)
-                Text("Pro")
-                    .font(SharpitTypography.label)
-                    .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(SharpitColor.primaryForeground)
-                    .padding(.horizontal, SharpitSpacing.xs)
-                    .padding(.vertical, 2)
-                    .background(SharpitColor.primary, in: Capsule())
-                Image(systemName: "chevron.right")
-                    .font(SharpitTypography.label)
-                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
-                    .accessibilityHidden(true)
+                CliniqueStatusPill("Pro", status: .pro)
             }
             Text(message)
-                .font(SharpitTypography.body)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.slate)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
+            Text("Essayer Pro")
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+                .foregroundStyle(SharpitColor.primaryForeground)
+                .padding(.horizontal, 22)
+                .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                .background(SharpitColor.primary, in: Capsule())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
+        .cliniqueCard(border: SharpitColor.pillarCoach.opacity(0.35))
         .accessibilityElement(children: .combine)
     }
 }
