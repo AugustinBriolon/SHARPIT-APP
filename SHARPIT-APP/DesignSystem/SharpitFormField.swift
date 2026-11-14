@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// The small uppercase label above a field or a row of choices.
+/// The quiet label above a field or a row of choices.
 struct SharpitFieldLabel: View {
     let title: String
 
@@ -9,14 +9,13 @@ struct SharpitFieldLabel: View {
 
     var body: some View {
         Text(title)
-            .font(SharpitTypography.label)
-            .tracking(SharpitTypography.labelTracking)
+            .font(SharpitTypography.meta)
             .foregroundStyle(SharpitColor.slate)
     }
 }
 
-/// The well every input sits in: a soft filled shape, no card, no shadow — the label stays
-/// outside, above. The ring appears only while the field is being answered.
+/// The well every input sits in, in Clinique: the sheet's own white inside a hairline, no fill
+/// and no shadow — the label stays outside, above. The line turns ink while the field is answered.
 private struct SharpitFieldWell: ViewModifier {
     var isActive: Bool
 
@@ -26,12 +25,11 @@ private struct SharpitFieldWell: ViewModifier {
             .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
-                    .fill(SharpitColor.tile)
+                    .fill(SharpitColor.card)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
-                    .strokeBorder(SharpitColor.primary, lineWidth: 1.5)
-                    .opacity(isActive ? 1 : 0)
+                    .strokeBorder(isActive ? SharpitColor.primary : SharpitColor.outline, lineWidth: isActive ? 1.5 : 1)
             )
             .animation(SharpitMotion.selection, value: isActive)
     }
