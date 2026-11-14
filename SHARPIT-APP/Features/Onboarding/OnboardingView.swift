@@ -215,7 +215,7 @@ private struct OnboardingHeader: View {
             HStack(spacing: 4) {
                 ForEach(1...max(store.path.count, 1), id: \.self) { index in
                     Capsule()
-                        .fill(index < store.position ? SharpitColor.foreground : index == store.position ? SharpitColor.pillarCoach : SharpitColor.divider)
+                        .fill(index <= store.position ? SharpitColor.foreground : SharpitColor.divider)
                         .frame(height: 4)
                 }
             }

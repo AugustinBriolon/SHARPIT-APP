@@ -149,17 +149,13 @@ struct MotivationRow: View {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate.opacity(0.45))
-                    .symbolEffect(.bounce, value: isSelected)
                     .accessibilityHidden(true)
             }
             .padding(SharpitSpacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .fill(SharpitColor.tile)
-            )
+            // The sports' tiles' own shape: the sheet's white, an ink line once chosen.
             .overlay(
-                RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                    .strokeBorder(isSelected ? SharpitColor.primary : SharpitColor.divider, lineWidth: isSelected ? 2 : 1)
+                RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
+                    .strokeBorder(isSelected ? SharpitColor.primary : SharpitColor.outline, lineWidth: isSelected ? 1.5 : 1)
             )
             .contentShape(.rect)
         }
