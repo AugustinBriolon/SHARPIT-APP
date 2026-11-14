@@ -4,7 +4,7 @@ Date: 2026-11-14
 
 ## Status
 
-Accepted. Client side of SHARPIT-WEBAPP ADR-130 and ADR-131. Amends ADR 0012 for swept screens only.
+Superseded by [ADR 0035](0035-the-shared-components-turn-clinique-in-place.md).
 
 ## Context
 

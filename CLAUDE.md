@@ -216,24 +216,29 @@ The source of truth is the web design system, not this repo:
   `../SHARPIT-WEBAPP/packages/ui/src/styles/globals.css` — colours **and geometry** (radii, paddings,
   sizes) reach `SharpitTokens` through `yarn tokens:ios`
 
-The brand is **Ink & Lime** (SHARPIT-WEBAPP ADR-085, `docs/adr/0012`): a cool off-white canvas, white
-cards (28 pt corner, soft wide shadow, no border), ink figures and icon tiles, lime as the only hue,
-SF Pro with heavy tabular figures. The look is the seven reference cards in
-`../SHARPIT-WEBAPP/docs/design/reference/ink-and-lime/`; the Debug gallery rebuilds them from the
-components (`defaults write app.sharpit.ios SharpitDesignGallery -bool YES` in the simulator) — new
-work should look like it. A sport is told by its glyph in the ink tile, never by a colour. Apple
-chrome (tab bar, navigation, Liquid Glass) stays system; brand meaning lives in the content.
+The look is **Clinique** (SHARPIT-WEBAPP ADR-130 / ADR-131, `docs/adr/0035`): a screen is one white
+sheet, cards are part of it (20 pt corner, a 1 pt hairline, no shadow), secondary text is slate, and
+SF Pro Rounded carries tabular figures. The rules:
 
-**Clinique** is replacing that look one screen at a time (SHARPIT-WEBAPP ADR-130 / ADR-131,
-`docs/adr/0034`). Its primitives live in `DesignSystem/Clinique.swift` (`CliniqueStatusPill`,
-`CliniqueRing`, `CliniqueButtonStyle`, `cliniqueSheet(wash:)`, `cliniqueCard()`, `CliniqueDivider`)
-and read only the Clinique tokens (`slate`, `divider`, `outline`, `tile`, `pillar*`, `zone*`,
-`status*`, `wash*`). A screen is swept whole, not component by component. On a swept screen the rules
-are: ink runs the interface and no control is coloured; a hue appears only on a ring, a glyph or a
-chart mark; a status is a pill with a word; one wash at the top of the sheet; hairlines, no card
-shadow. Swept so far: Résumé, Plan's week screen, and the Coach thread. The Ink & Lime rules below still hold for every screen not yet swept;
-a card of theirs shown on a swept screen takes `cliniqueScreen()`, a hairline in place of its shadow. Reference: the Debug
-gallery, `-SharpitCliniqueGallery YES`.
+- **Ink runs the interface.** Text, buttons, a selected day, a check, a progress bar are ink. No
+  control takes a hue.
+- **A hue names a pillar** — sleep blue, recovery lime-green, nutrition orange, coach purple — on a
+  ring, a glyph or a chart mark only, never as text.
+- **A status is a pill with a word** (`CliniqueStatusPill`: good, watch, alert, unknown, protect, pro).
+- **One wash per screen**, at the top of the sheet (`cliniqueSheet(wash:)`); everything below is white.
+- **A sport is told by its glyph** in a round neutral tile, never by a colour.
+
+The shared components draw it (`sharpitSurface`, `SharpitCardHeader`, `SharpitPill`,
+`SharpitPrimaryButton`, …) beside the Clinique primitives of `DesignSystem/Clinique.swift`
+(`CliniqueStatusPill`, `CliniqueRing`, `CliniqueSportTile`, `CliniqueButtonStyle`, `cliniqueCard()`,
+`CliniqueDivider`). App code reads the Clinique tokens (`slate`, `divider`, `outline`, `tile`,
+`card`, `pillar*`, `zone*`, `status*`, `wash*`), not `mutedForeground`, `chipSurface`, `track`,
+`border`, `background` or `highlight`: those stay for the widgets and the web. Lime is the brand —
+the app icon, the sign-in screen, the switches — and, darkened, the good status and recovery.
+Two Debug galleries show the components: `-SharpitDesignGallery YES` (the reference cards) and
+`-SharpitCliniqueGallery YES` (the primitives). Résumé, Plan's week and the Coach thread are laid
+out for Clinique; the other screens have its colours inside their earlier structure. Apple chrome
+(tab bar, navigation, Liquid Glass) stays system.
 
 Liquid Glass is chrome only: the tab and navigation bars, toolbar controls — Plan's
 `SharpitTodayButton` sits there, left of its title; the day screens put « Aujourd'hui » beside
@@ -244,12 +249,12 @@ docked actions of the onboarding and the consent wall; `sharpitGlassControl`,
 (`SharpitCalendarSheet`) so a day can carry a mark: filled for an activity or data, a ring for
 a session ahead, muted for one missed or a day read empty.
 
-Switches are lime on every page (`SharpitSwitchStyle`, set at the app's root): the app tint is
-`primary`, near-white in dark mode, which left a white knob on a white track.
+Switches are lime on every page (`SharpitSwitchStyle`, set at the app's root), the one control that
+keeps a hue: the app tint is `primary`, near-white in dark mode, which left a white knob on a white track.
 
-Elevation: surfaces have no hairline border; on light a card lifts with one soft, wide shadow
-(`sharpitShadow(.panel)`), on dark by luminosity only. Inside a card, rows sit white in a grey
-`SharpitInsetGroup`, separated by air. Every sheet uses `.sharpitSheet()` so none falls back to system black, and
+Elevation: a card is a hairline on the sheet, never a shadow (`sharpitSurface(.panel)`); only a
+raised control keeps one (`sharpitShadow(.control)`). Inside a card, rows read straight on it, split
+by lines. Every sheet uses `.sharpitSheet()` so none falls back to system black, and
 no screen uses `Color(uiColor: .systemBackground)`.
 
 Color and affordance (`docs/adr/0004`): figures and status words are ink; only caution and risk
@@ -311,8 +316,8 @@ What makes a surface feel finished, applied everywhere new work lands:
 Screen structure follows the web causal column: state → evidence → recommendation →
 projection → limit → confidence.
 
-No wash in content. Each tab leads with at most one ink card — Résumé's verdict, the weekly
-review's hero, Santé's age — the rest are white cards.
+One wash, at the top of the sheet, and none in content. An ink card is the exception, not a
+screen's opening: the weekly review's hero and Santé's age still stand as ink.
 
 Corners nest concentrically (HIG, iOS 26). A container declares its corner
 (`sharpitContainerCorner`, done by every `sharpitSurface`); what sits inside fills with

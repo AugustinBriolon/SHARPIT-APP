@@ -37,16 +37,13 @@ be enabled. Associated Domains is not entitled yet.
 
 ## Brand and type
 
-The app speaks Ink & Lime (`docs/adr/0012`) in SF Pro, the system face — no fonts to fetch or
-bundle. Colours and geometry come from the web repository through `yarn tokens:ios`. To see the
-reference cards rebuilt from the components without an account, run a Debug build with:
+The app speaks Clinique (`docs/adr/0035`) in SF Pro, the system face — no fonts to fetch or
+bundle. Colours and geometry come from the web repository through `yarn tokens:ios`. Two Debug
+galleries show the components without an account, the reference cards and the Clinique primitives:
 
 ```bash
-xcrun simctl spawn booted defaults write app.sharpit.ios SharpitDesignGallery -bool YES
+xcrun simctl launch booted app.sharpit.ios -SharpitDesignGallery YES
 ```
-
-The Clinique look is replacing it one screen at a time (`docs/adr/0034`). Its primitives have
-their own gallery:
 
 ```bash
 xcrun simctl launch booted app.sharpit.ios -SharpitCliniqueGallery YES

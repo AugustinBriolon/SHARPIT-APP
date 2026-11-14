@@ -48,12 +48,11 @@ body, stress and a note for the coach wait under « Ajouter un détail », in th
 own words (`WellnessDimension.label`). The button says « Choisis ton ressenti » until there is an
 answer; « Plus tard » is the bar's cancel action.
 
-**Clinique.** Résumé is the first screen swept (`docs/adr/0034`). The fold reads top to bottom on
+**Clinique.** Résumé is the first screen swept (`docs/adr/0035`). The fold reads top to bottom on
 one sheet, whose wash follows the verdict (`VerdictReadout`): `VerdictHero` (status pill, decision,
 facts), `ResumeScoreRow` (one ring per overnight gauge, then Régularité as the week's active days
 over seven — the strip of dots is gone from this screen; a column opens Sommeil, Récupération or
 Plan), the morning proposal as a bordered card, then « Séance du jour » as rows split by hairlines
-(`SessionPlate`, `RestDayPlate`). The cards not redrawn yet — race day, plan horizon, trip conflict,
-the day's timeline, nutrition — keep their Ink & Lime content inside a hairline outline
-(`cliniqueScreen()`), until their turn. `SharpitLoadingInstrument` is the same shape with empty
+(`SessionPlate`, `RestDayPlate`). The other cards — race day, plan horizon, trip conflict, the day's timeline,
+nutrition — are the shared bordered cards (`docs/adr/0035`). `SharpitLoadingInstrument` is the same shape with empty
 rings.
