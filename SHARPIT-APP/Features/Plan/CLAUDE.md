@@ -144,7 +144,10 @@ est prête », « Semaine du … » and its total (`GeneratedWeekReadout`), each
 « Sport · Titre », length and load, « Clé », its check — and docks « Ajouter N séances » with
 « Refaire » in glass; the mock-up's « jours disponibles » chips are not built (the request does not
 take them). The guided strength session keeps its flow and takes the sheet: exercises and sets as
-lines, « Exercice 1 sur 4 », a check per set — the mock-up's current-set card with steppers, the rest
-on the same page and « Ça fait mal » are not built. A week read, not over and holding nothing shows
+lines, « Exercice 1 sur 4 », a check per set. The set in hand (`GuidedStrengthSession.nextSet`: the
+exercise's first neither done nor skipped, a hold aside) is the mock-up's ink-lined card — its
+number, repetitions and load each stepped in place (`stepReps`, `stepWeight` by 2,5 kg, unset rather
+than « 0 kg ») — with « Série terminée » docked at the foot; the other sets stay lines typed in
+place. The rest keeps its own page and « Ça fait mal » is not built. A week read, not over and holding nothing shows
 « Ta semaine est vide » with « Remplir ma semaine » and « Ajouter une séance à la main » instead of
 empty rings. `SharpitScreenDemo generator` shows the proposal's lines.

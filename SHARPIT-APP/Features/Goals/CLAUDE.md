@@ -43,3 +43,6 @@ race ahead opening the page — « Prochaine course · dans 37 jours » (`GoalsR
 day, the server's projected finish against the aim, the legs as one bar in the data hues with their
 times, the projection's reliability as a pill — then « En cours » (a ring, the goal, its month),
 « Atteints » and « Réalisations récentes » as lines. No ink plate. `SharpitScreenDemo goals` shows it.
+
+The race header sets the server's compact times with their spaces (« 2 h 28 », « 27 min »,
+`GoalsReadout.spaced`); the goal's own page keeps the server's form.

@@ -73,3 +73,9 @@ dashes — one per step, the current one in the coach's hue — and « 3 / 10 »
 step can be skipped (the tick dial is gone); the title is the page's, the action a full-width ink
 button. A sport is a bordered tile with its glyph in a data hue; chosen, it takes an ink border and a
 check, never a fill (`SportChoiceTile`, shared with Paramètres › Matériel).
+
+**Fields, Clinique.** The wizard's progress is ink (done and current dashes alike). Every input sits
+in the shared well (`sharpitFieldWell`): the sheet's white inside a hairline that turns ink while it
+is answered, under a quiet slate label (`SharpitFieldLabel`) — no grey fill, no uppercase. A motive
+(`MotivationRow`) is a white tile lined in ink once chosen, as the sports' tiles are. Only step 1 and
+the sports step are checked on screen; the other steps are checked in code.

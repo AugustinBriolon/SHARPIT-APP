@@ -107,6 +107,13 @@ Clerk's `signInWithApple()` running the native authorization; Google sits under 
 both appearances (Google's light theme) with the official « G » (`SharpitGoogleSignInButton`),
 same shape and height.
 
+Signed out, the welcome (`SignInWelcome` in `AuthGate`) is Clinique like the rest (`docs/adr/0035`):
+the sheet under the brand's wash, the mark and the name, what SharpIt reads as four lines with a
+pillar's ring each, « Commencer » and « J'ai déjà un compte » docked. No dial, glow, particle or
+floating card. The drawer (`SharpitAuthDrawer`) opens on a title, takes the e-mail in a hairline
+capsule and continues with an ink capsule; Apple's and Google's buttons take the same capsule and
+keep their brands' own colours. Neither has a mock-up: they follow the system's rules.
+
 Feature-specific behaviour (screens, flows, the web routes they mirror) lives in a `CLAUDE.md`
 inside each feature directory (`SHARPIT-APP/Features/<Feature>/CLAUDE.md`, `SharpItWidgets/CLAUDE.md`),
 loaded when working there. This file keeps the rules that hold everywhere.
