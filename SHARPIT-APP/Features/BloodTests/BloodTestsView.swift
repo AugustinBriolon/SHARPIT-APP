@@ -194,34 +194,44 @@ struct BloodTestDetailView: View {
     let testId: String
     @State private var isConfirmingDelete = false
     @State private var reading: BloodTestReadingStore?
+    /// The marker whose history is pushed.
+    @State private var openedMarker: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Group {
             if let test = store.test(testId) {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                        table(test)
+                    VStack(alignment: .leading, spacing: 26) {
+                        header(test)
+                        SanteTable(
+                            title: SanteReadout.biomarkers(test.results.count),
+                            rows: test.results.map(SanteTable.Row.init),
+                            onOpen: { openedMarker = $0.id }
+                        )
                         if let reading {
                             BloodTestReadingCard(store: reading)
                         }
                     }
-                    .padding(.horizontal, SharpitSpacing.pageInset)
-                    .padding(.vertical, SharpitSpacing.md)
+                    .padding(.horizontal, 24)
+                    .padding(.top, SharpitSpacing.xs)
+                    .padding(.bottom, SharpitSpacing.xl)
                 }
+                .cliniqueSheet(wash: test.outOfRangeCount > 0 ? .watch : .good, height: 240)
                 .navigationTitle(test.sampledAt.formatted(date: .abbreviated, time: .omitted))
             }
         }
-        .background(SharpitCanvasBackground())
         .navigationBarTitleDisplayMode(.inline)
+        // The page names itself; the bar keeps the way back and the deletion.
         .toolbar {
+            ToolbarItem(placement: .principal) { Text("") }
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    SharpitDeleteMenuButton(title: String(localized: "Supprimer l'analyse")) { isConfirmingDelete = true }
-                } label: {
-                    Label("Plus", systemImage: "ellipsis")
-                }
+                Button { isConfirmingDelete = true } label: { Image(systemName: "trash") }
+                    .accessibilityLabel("Supprimer l'analyse")
             }
+        }
+        .navigationDestination(item: $openedMarker) { key in
+            BloodMarkerHistoryView(history: store.history(of: key))
         }
         .confirmationDialog("Supprimer cette analyse ?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
             Button("Supprimer", role: .destructive) {
@@ -238,54 +248,29 @@ struct BloodTestDetailView: View {
         }
     }
 
-    private func table(_ test: V1BloodTest) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(
-                title: String(localized: "\(test.results.count) marqueurs"),
-                symbol: "drop",
-                subtitle: test.outOfRangeCount > 0 ? String(localized: "\(test.outOfRangeCount) hors intervalle") : nil,
-                showsChevron: false
+    /// How many values deserve a look as a pill, the test and its day, how many sit in the lab's range.
+    private func header(_ test: V1BloodTest) -> some View {
+        VStack(spacing: 10) {
+            CliniqueStatusPill(
+                test.outOfRangeCount > 0 ? String(localized: "\(test.outOfRangeCount) à regarder") : String(localized: "Tout dans la plage"),
+                status: test.outOfRangeCount > 0 ? .watch : .good
             )
-            SharpitInsetGroup {
-                ForEach(test.results, id: \.markerKey) { result in
-                    NavigationLink {
-                        BloodMarkerHistoryView(history: store.history(of: result.markerKey))
-                    } label: {
-                        BloodResultRow(result: result)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-    }
-}
-
-private struct BloodResultRow: View {
-    let result: V1BloodTest.Result
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(result.marker?.label ?? result.markerKey)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text(BloodMarkerReadout.caption(status: result.status, low: result.refLow, high: result.refHigh))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(BloodMarkerReadout.isOutOfRange(result.status) ? SharpitColor.signalCaution : SharpitColor.slate)
-            }
-            Spacer(minLength: SharpitSpacing.xs)
-            Text(BloodMarkerReadout.value(result.value, unit: result.unit))
-                .font(SharpitTypography.bodyEmphasis)
-                .monospacedDigit()
+            Image(systemName: "doc.text")
+                .font(.system(size: 44, weight: .ultraLight))
+                .foregroundStyle(SharpitColor.slate)
+                .padding(.vertical, 6)
+                .accessibilityHidden(true)
+            Text("Analyse sanguine, \(test.sampledAt.sharpitFormatted(.dateTime.day().month(.abbreviated).year()))")
+                .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2, digits: true))
+                .tracking(-0.3)
                 .foregroundStyle(SharpitColor.foreground)
+                .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
+            Text("\(test.results.count - test.outOfRangeCount) sur \(test.results.count) dans la plage du laboratoire")
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                .foregroundStyle(SharpitColor.slate)
         }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
-        .padding(.vertical, SharpitSpacing.xs)
-        .frame(minHeight: SharpitSpacing.rowHeight)
-        .contentShape(Rectangle())
+        .frame(maxWidth: .infinity)
     }
 }
 
