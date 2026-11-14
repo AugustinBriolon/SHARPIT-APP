@@ -28,10 +28,6 @@ enum SharpitTypography {
     static var verdict: Font { heading(size: 20, weight: .semibold, relativeTo: .title2) }
     static var verdictTracking: CGFloat { tracking(em: -0.02, size: 20) }
 
-    /// `text-page-title` so the date reads as the screen's title, not a section's.
-    static var screenTitle: Font { heading(size: 32, weight: .semibold, relativeTo: .largeTitle) }
-    static var screenTitleTracking: CGFloat { tracking(em: -0.025, size: 32) }
-
     /// `text-page-title`
     static var pageTitle: Font { heading(size: 26, weight: .semibold, relativeTo: .title) }
     static var pageTitleTracking: CGFloat { tracking(em: -0.02, size: 26) }
@@ -76,11 +72,6 @@ enum SharpitTypography {
     /// The one number a drill-down screen is about — the night's score, the day's readiness.
     static var heroScore: Font { instrument(size: 64, weight: .semibold, relativeTo: .largeTitle) }
     static var heroScoreTracking: CGFloat { tracking(em: -0.04, size: 64) }
-
-    /// The one number a whole tab stands on — Santé's biological age. Twice a drill-down's hero,
-    /// alone on its halo, never inside a card.
-    static var showcaseScore: Font { instrument(size: 96, weight: .semibold, relativeTo: .largeTitle) }
-    static var showcaseScoreTracking: CGFloat { tracking(em: -0.05, size: 96) }
 
     /// CSS tracking is relative to the font size; SwiftUI's is absolute.
     static func tracking(em: CGFloat, size: CGFloat) -> CGFloat {

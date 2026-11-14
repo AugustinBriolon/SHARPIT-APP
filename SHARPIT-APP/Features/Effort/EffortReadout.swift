@@ -69,7 +69,6 @@ enum EffortReadout {
     /// The essential reading keeps the figures and drops the acronyms, as the web's
     /// `formatTrainingLoad` does; the expert one names them.
     static func dailyCaption(isExpert: Bool) -> String { isExpert ? String(localized: "TSS du jour") : String(localized: "Charge du jour") }
-    static func weeklyCaption(isExpert: Bool) -> String { isExpert ? "TSS 7 j" : String(localized: "Charge 7 j") }
     static func rampCaption(isExpert: Bool) -> String { isExpert ? "ACWR" : String(localized: "Montée") }
     static func formCaption(isExpert: Bool) -> String { isExpert ? "TSB" : String(localized: "Forme") }
 

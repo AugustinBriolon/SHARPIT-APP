@@ -47,15 +47,6 @@ struct DesignGalleryHost: View {
         GalleryCard {
             SharpitCardHeader(title: String(localized: "Cardio"), symbol: "bolt.fill", subtitle: String(localized: "5 km le plus rapide · cette semaine"), showsChevron: false)
             SharpitHeroFigure(value: "22:14", unit: "minutes")
-            SharpitGoalTrack(
-                fraction: SharpitProgressMath.fraction(start: 1382, current: 1334, goal: 1260),
-                nowLabel: "now",
-                nowValue: "22:14",
-                startValue: "23:02",
-                startLabel: String(localized: "Record précédent"),
-                goalValue: "21:00",
-                goalLabel: String(localized: "Prochain objectif")
-            )
         }
     }
 

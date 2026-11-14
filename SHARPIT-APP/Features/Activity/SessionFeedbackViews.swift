@@ -54,32 +54,6 @@ struct ReadoutTileCaption<Trailing: View>: View {
     }
 }
 
-/// Effort and feeling are one answer — "how did it go" — so they share one tile and one
-/// drawer. Unrated, the value becomes the invitation to rate.
-struct SessionFeedbackTile: View {
-    let rpe: Int?
-    let feeling: SessionFeeling?
-    let accent: Color
-    let action: () -> Void
-
-    var body: some View {
-        ReadoutTile(caption: String(localized: "Effort · Ressenti"), action: action) {
-            if rpe == nil && feeling == nil {
-                Label("Noter", systemImage: "plus.circle.fill")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(accent)
-                    .symbolEffect(.bounce, options: .nonRepeating)
-            } else {
-                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.md) {
-                    ScaleReadout(value: rpe, outOf: 10)
-                    ScaleReadout(value: feeling?.rawValue, outOf: 5)
-                }
-            }
-        }
-        .accessibilityHint("Ouvre l'évaluation de la séance")
-    }
-}
-
 /// A figure on its scale, in ink; the scale's ramp lives in the drawer's grid, not in the type.
 struct ScaleReadout: View {
     let value: Int?
@@ -95,37 +69,6 @@ struct ScaleReadout: View {
             Text("/\(outOf)")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
-        }
-    }
-}
-
-struct ComplianceTile: View {
-    let analysis: V1PlannedSessionAnalysis
-    let action: () -> Void
-
-    private var verdict: SessionVerdict? { analysis.verdict.flatMap(SessionVerdict.init(rawValue:)) }
-    private var tone: Color {
-        analysis.complianceScore.map(SessionFeedbackTone.compliance) ?? verdict?.tone ?? SharpitColor.signalNeutral
-    }
-
-    var body: some View {
-        ReadoutTile(caption: String(localized: "Conformité"), action: action) {
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
-                        .font(SharpitTypography.gaugeScore)
-                        .tracking(SharpitTypography.gaugeScoreTracking)
-                        .foregroundStyle(tone)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                    Text("%")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-                if let verdict {
-                    SharpitPill(verdict.label, style: verdict == .asPlanned ? .lime : .neutral)
-                }
-            }
         }
     }
 }

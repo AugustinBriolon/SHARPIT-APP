@@ -66,10 +66,6 @@ enum RecoveryReadout {
         }
     }
 
-    static func hrvTone(_ today: V1RecoveryToday) -> Color {
-        hrvPosition(today) == .below ? SharpitColor.signalCaution : SharpitColor.foreground
-    }
-
     /// "Récupération complète d'ici 1 jour", "… 3 jours". Nil when nothing is estimated.
     static func recoveryHorizon(_ days: Double?) -> String? {
         guard let days else { return nil }

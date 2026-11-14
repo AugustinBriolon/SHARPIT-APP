@@ -180,27 +180,6 @@ struct SharpitSportBadge: View {
     }
 }
 
-/// Keeps or leaves out a proposal: its own button, since the row around it may open something.
-struct SharpitKeepToggle: View {
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(isSelected ? SharpitColor.foreground : SharpitColor.slate.opacity(0.4))
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: 44, height: 44)
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, -SharpitSpacing.sm)
-        .accessibilityLabel(isSelected ? String(localized: "Retirer") : String(localized: "Garder"))
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
 extension View {
     /// A placeholder row breathing while the coach works, each a beat after the one above.
     /// Still under Reduce Motion.

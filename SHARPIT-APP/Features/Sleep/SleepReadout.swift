@@ -128,9 +128,6 @@ enum SleepReadout {
 
         var id: Self { self }
 
-        static let rowOrder: [TimelineLevel] = [.awake, .rem, .light, .deep]
-        static let legendOrder: [TimelineLevel] = [.light, .rem, .deep, .awake]
-
         /// Nil for « in bed », which says nothing about the sleep itself.
         init?(_ stage: HealthSleepSample.Stage) {
             switch stage {

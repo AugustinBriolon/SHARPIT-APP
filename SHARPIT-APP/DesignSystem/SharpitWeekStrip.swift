@@ -1,67 +1,6 @@
 import SwiftUI
 import UIKit
 
-/// Weeks, one page of seven days at a time.
-///
-/// Snapped, so a drag always lands on a whole week — never between two. It moves the week
-/// rather than merely indexing it, which is what a horizontal strip of dates promises.
-/// What each day shows and does belongs to the caller.
-struct SharpitWeekStrip<DayCell: View>: View {
-    @Binding var weekOffset: Int
-    let weeks: SharpitWeeks
-    @ViewBuilder let dayCell: (Date) -> DayCell
-
-    init(
-        weekOffset: Binding<Int>,
-        weeks: SharpitWeeks,
-        @ViewBuilder dayCell: @escaping (Date) -> DayCell
-    ) {
-        _weekOffset = weekOffset
-        self.weeks = weeks
-        self.dayCell = dayCell
-        _position = State(initialValue: weekOffset.wrappedValue)
-    }
-
-    /// Seeded at creation: set later, in `onAppear`, a lazy stack has not laid out its pages
-    /// yet and the strip opens on the neighbouring week.
-    @State private var position: Int?
-    /// A horizontal `ScrollView` has no intrinsic height and would otherwise swallow the
-    /// screen. Scaled so the row still follows Dynamic Type.
-    @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 64
-
-    var body: some View {
-        ScrollView(.horizontal) {
-            LazyHStack(spacing: 0) {
-                ForEach(weeks.offsets, id: \.self) { offset in
-                    HStack(spacing: 0) {
-                        ForEach(weeks.weekDays(forOffset: offset), id: \.self) { day in
-                            dayCell(day)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .containerRelativeFrame(.horizontal)
-                    .id(offset)
-                }
-            }
-            .scrollTargetLayout()
-        }
-        .scrollTargetBehavior(.paging)
-        .scrollIndicators(.hidden)
-        .scrollPosition(id: $position)
-        .frame(height: rowHeight)
-        .padding(.vertical, SharpitSpacing.sm)
-        // Each side follows the other; the equality checks stop the echo.
-        .onChange(of: position) { _, new in
-            guard let new, new != weekOffset else { return }
-            weekOffset = new
-        }
-        .onChange(of: weekOffset) { _, new in
-            guard new != position else { return }
-            withAnimation(SharpitMotion.reveal) { position = new }
-        }
-    }
-}
-
 /// One day of the strip: weekday letter, the date in a circle, and a slot for a mark.
 struct SharpitStripDay<Mark: View>: View {
     enum Emphasis {
@@ -341,20 +280,3 @@ private struct SharpitCalendarView: UIViewRepresentable {
     }
 }
 
-/// Under a day of a strip: a filled dot when the day holds data, a ring when it was read and
-/// holds none — shape as well as colour, as on the Plan strip. Nothing while the day is unknown.
-/// Shared by the day screens and the journal, so every picker marks its days the same way.
-struct SharpitDataDayMark: View {
-    let hasData: Bool?
-
-    var body: some View {
-        switch hasData {
-        case true?:
-            Circle().fill(SharpitColor.primary)
-        case false?:
-            Circle().strokeBorder(SharpitColor.slate.opacity(0.6), lineWidth: 1.25)
-        case nil:
-            Color.clear
-        }
-    }
-}

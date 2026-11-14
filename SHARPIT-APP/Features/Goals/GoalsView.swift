@@ -531,26 +531,6 @@ struct GoalHero: View {
     }
 }
 
-private struct GoalBadge: View {
-    let goal: V1Goal
-
-    var body: some View {
-        Group {
-            Image(systemName: goal.kind == .race ? "flag" : "gauge.with.dots.needle.67percent")
-                .font(.system(size: 14, weight: .semibold))
-        }
-        .foregroundStyle(tone)
-        .frame(width: 38, height: 38)
-        .sharpitConcentricBackground(tone.opacity(0.13), minimum: 10)
-    }
-
-    private var tone: Color {
-        if goal.isReached { return SharpitColor.signalRecovery }
-        if goal.kind == .race, goal.role != .primary { return SharpitColor.slate }
-        return SharpitColor.primary
-    }
-}
-
 /// The race's role on the ink plate: the principal in the highlight, the others quiet.
 private struct GoalRoleChip: View {
     let role: GoalRole

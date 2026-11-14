@@ -33,16 +33,10 @@ nonisolated enum ResponseCacheKey {
     static let bodyComposition = "body-composition"
     static let activities = "activities"
     static let syncStatus = "sync-status"
-    static let coachConversations = "coach-conversations"
     static let thresholdHistory = "threshold-history"
     static let healthOverview = "health-overview"
     static let sensitiveZones = "sensitive-zones"
 
-    /// A plan week, addressed by the Monday it starts on: the plan is read a week at a time.
-    static func planWeek(startingOn day: String) -> String { "plan-week:\(day)" }
-
-    static func sleepDay(_ trainingDayId: String) -> String { "sleep:\(trainingDayId)" }
-    static func recoveryDay(_ trainingDayId: String) -> String { "recovery:\(trainingDayId)" }
     /// The day's food log as Résumé's nutrition card shows it.
     static func nutritionDay(_ trainingDayId: String) -> String { "nutrition:\(trainingDayId)" }
 }

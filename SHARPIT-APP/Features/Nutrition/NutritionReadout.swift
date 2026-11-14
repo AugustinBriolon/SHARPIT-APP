@@ -95,12 +95,6 @@ enum NutritionReadout {
         (90...110).contains(pct)
     }
 
-    /// Below the goal is the day still going, not a warning: only past it turns caution.
-    static func goalTone(pct: Double?) -> Color {
-        guard let pct, pct > 110 else { return SharpitColor.foreground }
-        return SharpitColor.signalCaution
-    }
-
     /// The goal bar fills in lime, the brand's progress, until the day runs past the goal.
     static func goalBarTone(pct: Double?) -> Color {
         guard let pct, pct > 110 else { return SharpitColor.statusGoodMark }

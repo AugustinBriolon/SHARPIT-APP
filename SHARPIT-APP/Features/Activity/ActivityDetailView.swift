@@ -763,10 +763,6 @@ struct ActivityDetailView: View {
         )
     }
 
-    private func effectiveDistance(for detail: V1ActivityDetail) -> Double? {
-        detail.distanceM ?? streamPayload?.stats?.totalDistance
-    }
-
     @MainActor
     private func generateNarrative() async {
         guard !isGeneratingNarrative else { return }
@@ -1638,29 +1634,6 @@ enum ActivityChartMetric: String, CaseIterable, Identifiable {
         case .heartRate, .power, .elevation, .cadence:
             return "\(Int(value.rounded()))"
         }
-    }
-}
-
-private struct DetailMetric: View {
-    let label: String
-    let value: String
-    var unit: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
-                .foregroundStyle(SharpitColor.slate)
-            Text(value)
-                .font(SharpitTypography.data)
-                .lineLimit(1)
-            if let unit { Text(unit).font(.caption).foregroundStyle(SharpitColor.slate) }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitContainerCorner(SharpitSpacing.cardRadius)
-        .background(SharpitElevatedColor.panelOnSheet, in: RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius, style: .continuous))
     }
 }
 
