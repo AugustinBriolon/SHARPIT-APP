@@ -52401,6 +52401,70 @@
           }
         }
       }
+    },
+    "%lld à regarder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld to look at"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld à regarder"
+          }
+        }
+      }
+    },
+    "Tout dans la plage" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All in range"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout dans la plage"
+          }
+        }
+      }
+    },
+    "Analyse sanguine, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blood test, %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse sanguine, %@"
+          }
+        }
+      }
+    },
+    "%lld sur %lld dans la plage du laboratoire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld in the lab's range"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sur %lld dans la plage du laboratoire"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
