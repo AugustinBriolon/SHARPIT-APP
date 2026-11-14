@@ -113,6 +113,10 @@ pillar's ring each, « Commencer » and « J'ai déjà un compte » docked. No d
 floating card. The drawer (`SharpitAuthDrawer`) opens on a title, takes the e-mail in a hairline
 capsule and continues with an ink capsule; Apple's and Google's buttons take the same capsule and
 keep their brands' own colours. Neither has a mock-up: they follow the system's rules.
+The welcome is the one screen that spends on delight, being seen once: on the hand-over from the
+launch splash the mark, the name and each line arrive in turn (`.revealed`), each ring drawn as its
+line lands, then the mark breathes and the wash drifts (8 s, off under Reduce Motion). The drawer's
+steps slide in from the side and its error line drops in, instead of swapping in place.
 
 Feature-specific behaviour (screens, flows, the web routes they mirror) lives in a `CLAUDE.md`
 inside each feature directory (`SHARPIT-APP/Features/<Feature>/CLAUDE.md`, `SharpItWidgets/CLAUDE.md`),
@@ -272,6 +276,10 @@ the title of what it discusses — never at the bottom of a screen. Session feel
 Motion: `SharpitMotion.selection` for controls under the finger, `reveal` for content
 arriving; `staggerDelay(index:)` is capped, so use it instead of hard-coded delays.
 `.revealed(_:index:)` applies that reveal-and-stagger to a view arriving on screen.
+A Clinique button is felt under the finger (`CliniqueButtonStyle`: 0.97, `selection`), as a pressable
+tile is. A change that moves the layout rides `SharpitMotion.run` rather than jumping: the strength
+set in hand closing into its line, the map card growing for its legend. Recovery's ring sweeps when
+the screen is opened, never when a day is turned (`RecoveryRingSweep`).
 `SharpitTickGauge` is animatable: a score changed inside an animation sweeps the ticks.
 
 The brand mark is the app icon's (`SharpIt.icon`: six dots on a hexagon, `circle.hexagonpath.fill`
