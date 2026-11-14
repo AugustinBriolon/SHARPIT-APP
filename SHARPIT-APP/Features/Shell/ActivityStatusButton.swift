@@ -112,10 +112,10 @@ struct ActivityStatusDrawer: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     SharpitEyebrow(String(localized: "Mode actuel"))
-                        .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.6))
+                        .foregroundStyle(SharpitColor.slate)
                     Text(status.label)
                         .font(SharpitTypography.cardTitle)
-                        .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                        .foregroundStyle(SharpitColor.foreground)
                         .contentTransition(.opacity)
                 }
                 Spacer(minLength: 0)
@@ -127,12 +127,12 @@ struct ActivityStatusDrawer: View {
             if let until = untilLabel, typeSize.isAccessibilitySize {
                 Text(until)
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.inkAccent)
+                    .foregroundStyle(SharpitColor.foreground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(status.planningImpact)
                 .font(SharpitTypography.body)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.78))
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
             if status != .active {
                 Button {
@@ -142,14 +142,14 @@ struct ActivityStatusDrawer: View {
                     Label(String(localized: "En parler au coach"), systemImage: "arrow.up.right")
                         .labelStyle(.titleAndIcon)
                         .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.inkAccent)
+                        .foregroundStyle(SharpitColor.foreground)
                 }
                 .buttonStyle(.sharpitPressable)
             }
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        .sharpitSurface(.panel)
     }
 
     /// « 3 nov. » while a mode has an end, nothing when it holds until changed.

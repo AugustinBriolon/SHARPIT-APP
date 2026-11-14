@@ -292,7 +292,7 @@ private struct MacroPlanHero: View {
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.colorScheme, .dark)
-        .sharpitSurface(.ink)
+        .sharpitSurface(.panel)
     }
 }
 

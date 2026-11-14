@@ -456,12 +456,12 @@ struct GoalHero: View {
             Text(goal.title)
                 .font(SharpitTypography.pageTitle)
                 .tracking(SharpitTypography.pageTitleTracking)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                .foregroundStyle(SharpitColor.foreground)
             if goal.isReached, goal.result?.durationSec != nil {
                 Text(GoalFormat.doneLine(goal))
                     .font(SharpitTypography.verdict)
                     .tracking(SharpitTypography.verdictTracking)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                    .foregroundStyle(SharpitColor.foreground)
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -470,19 +470,19 @@ struct GoalHero: View {
                     Text(GoalFormat.daysValue(goal))
                         .font(SharpitTypography.heroScore)
                         .tracking(SharpitTypography.heroScoreTracking)
-                        .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                        .foregroundStyle(SharpitColor.foreground)
                     Text(GoalFormat.daysUnit(goal))
                         .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                        .foregroundStyle(SharpitColor.slate)
                 }
             }
             Text(GoalFormat.raceLine(goal))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                .foregroundStyle(SharpitColor.slate)
             if !goal.isReached, let consequence = goal.roleConsequence {
                 Text(consequence)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                    .foregroundStyle(SharpitColor.slate)
             }
             if let performance = goal.targetPerformance, !performance.isEmpty {
                 Label("Objectif chrono · \(performance)", systemImage: "stopwatch")
@@ -492,7 +492,7 @@ struct GoalHero: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        .sharpitSurface(.panel)
     }
 
     private var metric: some View {
@@ -559,11 +559,11 @@ private struct GoalRoleChip: View {
         Text(role.label)
             .font(SharpitTypography.label)
             .tracking(SharpitTypography.labelTracking)
-            .foregroundStyle(role == .primary ? SharpitColor.highlightForeground : SharpitColor.inkSurfaceForeground)
+            .foregroundStyle(role == .primary ? SharpitColor.primaryForeground : SharpitColor.foreground)
             .padding(.horizontal, SharpitSpacing.xs)
             .padding(.vertical, 3)
             .background(
-                role == .primary ? SharpitColor.highlight : SharpitColor.inkSurfaceForeground.opacity(0.16),
+                role == .primary ? SharpitColor.primary : SharpitColor.foreground.opacity(0.16),
                 in: Capsule()
             )
     }

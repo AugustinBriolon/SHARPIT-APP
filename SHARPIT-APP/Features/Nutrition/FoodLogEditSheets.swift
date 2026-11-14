@@ -179,7 +179,7 @@ struct NutritionTargetsSheet: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             Text("Énergie par jour")
                 .font(SharpitTypography.cardTitle)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                .foregroundStyle(SharpitColor.foreground)
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                 SharpitStepButton(symbol: "minus", label: String(localized: "Moins 50 kcal")) { stepKcal(-50) }
                 VStack(spacing: 2) {
@@ -188,25 +188,25 @@ struct NutritionTargetsSheet: View {
                         .multilineTextAlignment(.center)
                         .font(SharpitTypography.heroScore)
                         .tracking(SharpitTypography.heroScoreTracking)
-                        .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                        .foregroundStyle(SharpitColor.foreground)
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
                         .accessibilityLabel("Calories")
                     Text("kcal")
                         .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.inkAccent)
+                        .foregroundStyle(SharpitColor.foreground)
                 }
                 .frame(maxWidth: .infinity)
                 SharpitStepButton(symbol: "plus", label: String(localized: "Plus 50 kcal")) { stepKcal(50) }
             }
             Text(energyFooter)
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.7))
+                .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        .sharpitSurface(.panel)
     }
 
     private func stepKcal(_ delta: Int) {

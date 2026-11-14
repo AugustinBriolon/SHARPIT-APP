@@ -375,9 +375,9 @@ struct SharpitStepButton: View {
         } label: {
             Image(systemName: symbol)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                .foregroundStyle(SharpitColor.foreground)
                 .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
-                .background(SharpitColor.inkSurfaceForeground.opacity(0.12), in: Circle())
+                .background(SharpitColor.tile, in: Circle())
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityLabel(label)

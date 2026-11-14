@@ -58,7 +58,7 @@ struct ProWeekHero: View {
                 ForEach(0..<7, id: \.self) { day in
                     Text(letter(day))
                         .font(SharpitTypography.label)
-                        .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.55))
+                        .foregroundStyle(SharpitColor.slate)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -67,7 +67,7 @@ struct ProWeekHero: View {
                 ZStack(alignment: .topLeading) {
                     ForEach(0..<7, id: \.self) { day in
                         RoundedRectangle(cornerRadius: SharpitRadius.small, style: .continuous)
-                            .fill(SharpitColor.inkSurfaceForeground.opacity(0.06))
+                            .fill(SharpitColor.foreground.opacity(0.06))
                             .frame(width: column - 6, height: proxy.size.height)
                             .offset(x: column * CGFloat(day) + 3)
                     }
@@ -87,7 +87,7 @@ struct ProWeekHero: View {
         }
         .padding(SharpitSpacing.md)
         .frame(maxWidth: .infinity)
-        .sharpitSurface(.ink)
+        .sharpitSurface(.panel)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(String(localized: "\(slots.count) séances dans la semaine"))
         .onAppear { hasAppeared = true }

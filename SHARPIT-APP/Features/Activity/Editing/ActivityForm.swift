@@ -135,13 +135,11 @@ private struct ActivityFormContent: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            VStack(alignment: .leading, spacing: 28) {
                 plate
                 whenCard
                 if draft.isStrength {
                     StrengthExercisesEditor(exercises: $draft.exercises)
-                        .padding(SharpitSpacing.cardPadding)
-                        .sharpitSurface(.panel)
                 } else if draft.measuresDistance || draft.measuresElevation {
                     measuresCard
                 }
@@ -149,11 +147,12 @@ private struct ActivityFormContent: View {
                 detailsCard
                 messages
             }
-            .padding(SharpitSpacing.pageInset)
+            .padding(.horizontal, 24)
+            .padding(.vertical, SharpitSpacing.md)
             .animation(SharpitMotion.reveal, value: draft.sport)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(SharpitCanvasBackground())
+        .background(SharpitColor.card)
     }
 
     // MARK: - Plate
@@ -165,9 +164,7 @@ private struct ActivityFormContent: View {
             durationReadout
             durationPresetRow
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
     }
 
     private var sportMenu: some View {
@@ -181,16 +178,16 @@ private struct ActivityFormContent: View {
             HStack(spacing: SharpitSpacing.xs) {
                 Image(sharpitSymbol: draft.sport.symbolName)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primaryForeground)
+                    .foregroundStyle(SharpitColor.foreground)
                     .frame(width: 40, height: 40)
-                    .background(SharpitColor.primary, in: Circle())
+                    .background(SharpitColor.tile, in: Circle())
                     .contentTransition(.symbolEffect(.replace))
                 Text(draft.sport.label)
                     .font(SharpitTypography.cardTitle)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                    .foregroundStyle(SharpitColor.foreground)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.6))
+                    .foregroundStyle(SharpitColor.slate)
                 Spacer(minLength: 0)
             }
             .contentShape(Rectangle())
@@ -219,7 +216,7 @@ private struct ActivityFormContent: View {
                 Text(draft.durationMin.map(PlannedSessionFormat.duration) ?? "—")
                     .font(SharpitTypography.heroScore)
                     .tracking(SharpitTypography.heroScoreTracking)
-                    .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                    .foregroundStyle(SharpitColor.foreground)
                     .contentTransition(.numericText())
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -237,7 +234,7 @@ private struct ActivityFormContent: View {
             Text(parts.joined(separator: " · "))
                 .font(SharpitTypography.bodyEmphasis)
                 .monospacedDigit()
-                .foregroundStyle(SharpitColor.inkAccent)
+                .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -261,11 +258,11 @@ private struct ActivityFormContent: View {
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
-                        .foregroundStyle(isSelected ? SharpitColor.highlightForeground : SharpitColor.inkSurfaceForeground)
+                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
                         .padding(.horizontal, 4)
                         .frame(maxWidth: .infinity, minHeight: 36)
                         .background(
-                            isSelected ? SharpitColor.highlight : SharpitColor.inkSurfaceForeground.opacity(0.12),
+                            isSelected ? SharpitColor.primary : SharpitColor.tile,
                             in: Capsule()
                         )
                 }
@@ -294,8 +291,6 @@ private struct ActivityFormContent: View {
         }
         .tint(SharpitColor.primary)
         .environment(\.locale, AppLanguage.locale)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
     /// 0, 1 or 2 when the session sits on today, yesterday or the day before; nil elsewhere.
@@ -333,9 +328,7 @@ private struct ActivityFormContent: View {
                 SharpitFormField(String(localized: "FC moyenne (bpm)"), placeholder: "145", text: $draft.avgHrText, keyboard: .numberPad)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .transition(.opacity)
     }
 
@@ -344,9 +337,7 @@ private struct ActivityFormContent: View {
             rpeSlider
             feelingRow
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private var rpeSlider: some View {
@@ -446,9 +437,7 @@ private struct ActivityFormContent: View {
                     .sharpitFieldWell()
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     @ViewBuilder

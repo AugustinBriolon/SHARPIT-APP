@@ -90,11 +90,11 @@ struct ProView: View {
             Text(store.isPro ? String(localized: "SharpIt Pro") : String(localized: "Gratuit"))
                 .font(SharpitTypography.pageTitle)
                 .tracking(SharpitTypography.pageTitleTracking)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground)
+                .foregroundStyle(SharpitColor.foreground)
                 .contentTransition(.opacity)
             Text(ProReadout.status(store.pro?.subscription, isPro: store.isPro))
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.inkSurfaceForeground.opacity(0.75))
+                .foregroundStyle(SharpitColor.slate)
             if let message = store.message {
                 Text(message)
                     .font(SharpitTypography.meta.weight(.semibold))
@@ -104,7 +104,7 @@ struct ProView: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        .sharpitSurface(.panel)
         .redacted(reason: store.phase == .loading ? .placeholder : [])
         .animation(SharpitMotion.reveal, value: store.message)
     }

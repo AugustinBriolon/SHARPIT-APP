@@ -145,7 +145,7 @@ enum JournalAnalysesKind {
 private struct JournalAnalysesPlate: View {
     let reading: V1JournalAnalysesReading
 
-    private var ink: Color { SharpitColor.inkSurfaceForeground }
+    private var ink: Color { SharpitColor.foreground }
 
     /// The verdict and the hint often say the same thing; the hint is the one to act on.
     private var sentence: String {
@@ -193,7 +193,7 @@ private struct JournalAnalysesPlate: View {
         }
         .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.ink)
+        .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
     }
 }
