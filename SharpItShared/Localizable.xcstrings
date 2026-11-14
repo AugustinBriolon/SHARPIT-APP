@@ -52689,6 +52689,134 @@
           }
         }
       }
+    },
+    "Allégée après une nuit courte, tenue quand tu es prêt." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eased after a short night, kept when you are ready."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allégée après une nuit courte, tenue quand tu es prêt."
+          }
+        }
+      }
+    },
+    "Ce qu'il te manque avant et après chaque séance." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What you are missing before and after each session."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce qu'il te manque avant et après chaque séance."
+          }
+        }
+      }
+    },
+    "Ce que tu manges compte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What you eat counts"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce que tu manges compte"
+          }
+        }
+      }
+    },
+    "Il répond avec ta nuit, ta charge et ton plan." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It answers with your night, your load and your plan."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il répond avec ta nuit, ta charge et ton plan."
+          }
+        }
+      }
+    },
+    "Sommeil, VFC et fréquence cardiaque, depuis ta montre." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep, HRV and heart rate, from your watch."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sommeil, VFC et fréquence cardiaque, depuis ta montre."
+          }
+        }
+      }
+    },
+    "Tes nuits, lues chaque matin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your nights, read every morning"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes nuits, lues chaque matin"
+          }
+        }
+      }
+    },
+    "Un coach qui te connaît" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A coach who knows you"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un coach qui te connaît"
+          }
+        }
+      }
+    },
+    "Une séance à ta mesure" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A session that fits you"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une séance à ta mesure"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
