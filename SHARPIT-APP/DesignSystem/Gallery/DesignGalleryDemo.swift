@@ -256,6 +256,16 @@ struct ScreenDemoHost: View {
                         tokenProvider: { "demo" }
                     )
                 }
+            case "today-clinique":
+                TabView {
+                    Tab("Résumé", systemImage: "house") {
+                        CliniqueResumeView(fold: CliniqueGalleryDemo.resumeFold, dayTitle: "Vendredi 14 novembre")
+                    }
+                    Tab("Plan", systemImage: "calendar") { Color.clear }
+                    Tab("Coach", systemImage: "bubble.left") { Color.clear }
+                    Tab("Activité", systemImage: "chart.line.uptrend.xyaxis") { Color.clear }
+                    Tab("Santé", systemImage: "heart") { Color.clear }
+                }
             case "today-extras":
                 ScrollView {
                     VStack(spacing: SharpitSpacing.md) {

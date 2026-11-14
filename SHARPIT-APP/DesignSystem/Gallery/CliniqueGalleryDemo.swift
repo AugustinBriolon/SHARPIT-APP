@@ -7,6 +7,57 @@ enum CliniqueGalleryDemo {
     static var isRequested: Bool {
         UserDefaults.standard.bool(forKey: "SharpitCliniqueGallery")
     }
+
+    /// The day the design canvas tells, for `SharpitScreenDemo today-clinique`.
+    static var resumeFold: TodayFold {
+        TodayFold(
+            trainingDayId: "2026-11-14",
+            plate: InkPlateModel(
+                statusLabel: "À ajuster",
+                headline: "Journée jouable, séance à alléger",
+                estimationGaps: [],
+                posture: .protect,
+                explanationEssential: "Nuit courte, VFC 8 % sous ta moyenne. Garde le seuil, enlève une répétition.",
+                stateCode: .caution
+            ),
+            sessions: [
+                SessionCardModel(
+                    id: "s1", kind: .planned, title: "Vélo · Seuil 3 × 12 min",
+                    subtitle: "1 h 30 · charge 85 · home trainer", metrics: [], sport: "Vélo", priority: true
+                ),
+                SessionCardModel(
+                    id: "s2", kind: .done, title: "Renfo · Gainage",
+                    subtitle: "25 min · ce matin", metrics: [], sport: "Renforcement", priority: false
+                ),
+            ],
+            gauges: [
+                OvernightGaugeModel(key: .sleep, score: "64", caption: nil),
+                OvernightGaugeModel(key: .recovery, score: "71", caption: nil),
+            ],
+            consistency: V1TodayConsistency(
+                days: (0..<7).map { index in
+                    V1TodayConsistencyDay(
+                        date: "2026-11-\(10 + index)",
+                        weekdayLabel: ["L", "M", "M", "J", "V", "S", "D"][index],
+                        dayOfMonth: 10 + index,
+                        hasActivity: [true, true, false, true, true, false, false][index],
+                        isToday: index == 4,
+                        isFuture: index > 4
+                    )
+                },
+                thisWeekSessionCount: 4
+            ),
+            weather: nil,
+            morningProposal: V1TodayMorningProposal(
+                checkInDone: true,
+                decisionId: "d", sessionId: "s1", direction: .down,
+                changeSummary: "2 × 12 min au lieu de 3",
+                why: "Même intensité, 12 minutes de moins au seuil. Lu avec ta nuit et ton ressenti.",
+                from: .init(intensityLabel: "Seuil", durationMin: 90, description: nil),
+                to: .init(intensityLabel: "Seuil", durationMin: 75, description: nil)
+            )
+        )
+    }
 }
 
 struct CliniqueGalleryHost: View {
