@@ -338,6 +338,14 @@ struct ScreenDemoHost: View {
         { "date": "2026-11-15", "strain": null, "low": 7, "high": 11, "status": null } ] } }
     """#.utf8))
 
+    static let week: [V1GeneratedSession] = [
+        V1GeneratedSession(date: "2026-11-16", type: .swim, intensity: "ENDURANCE", title: "Technique", description: "", durationMin: 60, load: 41),
+        V1GeneratedSession(date: "2026-11-17", type: .run, intensity: "TEMPO", title: "Tempo 3 × 10 min", description: "", durationMin: 55, load: 68),
+        V1GeneratedSession(date: "2026-11-19", type: .strength, intensity: "ENDURANCE", title: "Gainage", description: "", durationMin: 35, load: 0),
+        V1GeneratedSession(date: "2026-11-20", type: .bike, intensity: "THRESHOLD", title: "Seuil 3 × 12 min", description: "", durationMin: 90, load: 85, isKey: true),
+        V1GeneratedSession(date: "2026-11-22", type: .run, intensity: "ENDURANCE", title: "Sortie longue", description: "", durationMin: 100, load: 96),
+    ]
+
     let screen: String
     @State private var router = ShellRouter()
     @State private var toastCenter = SharpitToastCenter()
@@ -418,6 +426,19 @@ struct ScreenDemoHost: View {
                 Color.clear.sheet(isPresented: .constant(true)) {
                     SharpitProPaywallSheet(store: ProStore(tokenProvider: { "demo" }))
                 }
+            case "generator":
+                // The proposal's lines on a fixed week: the sheet itself needs a finished job.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        CliniqueStatusPill(String(localized: "Ta semaine est prête"), status: .good)
+                        Text(GeneratedWeekReadout.title(Self.week) ?? "")
+                            .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title, digits: true))
+                        Text(GeneratedWeekReadout.total(Self.week)).foregroundStyle(SharpitColor.slate)
+                        GeneratedWeekView(sessions: Self.week, selection: [0, 1, 2, 3], onToggle: { _ in })
+                    }
+                    .padding(24)
+                }
+                .cliniqueSheet(wash: .good, height: 200)
             case "goals":
                 NavigationStack {
                     GoalsView(store: GoalStore(client: DemoGoals(), plannedSessionClient: nil, profileClient: nil, activityClient: nil, tokenProvider: { "demo" }))
