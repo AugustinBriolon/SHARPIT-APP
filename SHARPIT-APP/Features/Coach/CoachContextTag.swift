@@ -27,9 +27,9 @@ struct CoachContextTag: View {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .frame(width: 24, height: 24)
-                        .background(SharpitColor.track, in: Circle())
+                        .background(SharpitColor.divider, in: Circle())
                         .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
                         .contentShape(Rectangle())
                 }
@@ -41,7 +41,7 @@ struct CoachContextTag: View {
         .padding(.leading, SharpitSpacing.xs)
         .padding(.trailing, onDismiss == nil ? SharpitSpacing.sm : SharpitSpacing.xxs)
         .padding(.vertical, SharpitSpacing.xxs)
-        .background(Capsule().fill(SharpitColor.chipSurface).sharpitShadow(.control))
+        .background(Capsule().fill(SharpitColor.tile).sharpitShadow(.control))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Contexte joint : \(context.label)")
     }
@@ -59,7 +59,7 @@ struct CoachContextPreview: View {
                 CoachContextTag(context: context)
                 Text("La conversation s'ouvrira avec ce sujet joint.")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(SharpitSpacing.cardPadding)

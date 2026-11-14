@@ -212,11 +212,11 @@ struct CoachFoodLogCard: View {
             case .proposed:
                 card
             case .sending, .drafting:
-                receipt(status: String(localized: "Envoi…"), symbol: "fork.knife", tone: SharpitColor.mutedForeground, inProgress: true)
+                receipt(status: String(localized: "Envoi…"), symbol: "fork.knife", tone: SharpitColor.slate, inProgress: true)
             case .applied:
                 appliedReceipt
             case .refused:
-                receipt(status: String(localized: "Refusé"), symbol: "xmark.circle", tone: SharpitColor.mutedForeground, struck: true)
+                receipt(status: String(localized: "Refusé"), symbol: "xmark.circle", tone: SharpitColor.slate, struck: true)
             case .failed(let hint):
                 failedReceipt(hint)
             }
@@ -265,7 +265,7 @@ struct CoachFoodLogCard: View {
                 if let date = proposal.date {
                     Text(date)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
@@ -281,7 +281,7 @@ struct CoachFoodLogCard: View {
             if let disabledReason {
                 Text(disabledReason)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
 
             HStack(spacing: SharpitSpacing.sm) {
@@ -342,7 +342,7 @@ struct CoachFoodLogCard: View {
                                     .background(
                                         isPresetSelected(preset, text: line.wrappedValue.gramsText)
                                             ? SharpitColor.primary
-                                            : SharpitColor.analysisSurfaceAlt,
+                                            : SharpitColor.tile,
                                         in: Capsule()
                                     )
                                     .contentShape(Capsule())
@@ -368,19 +368,19 @@ struct CoachFoodLogCard: View {
                     .accessibilityLabel("Grammes, \(line.wrappedValue.name)")
                 Text("g")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .padding(.horizontal, SharpitSpacing.sm)
             .frame(maxWidth: .infinity, minHeight: SharpitSpacing.minimumTouchTarget, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
-                    .fill(SharpitColor.analysisSurfaceAlt)
+                    .fill(SharpitColor.tile)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: SharpitSpacing.chipRadius, style: .continuous)
                     .strokeBorder(
                         gramsValid ? (focusedLineId == line.wrappedValue.id ? SharpitColor.primary : Color.clear)
-                            : SharpitColor.signalRisk,
+                            : SharpitColor.statusAlertForeground,
                         lineWidth: gramsValid ? 1.5 : 1.5
                     )
             )
@@ -416,7 +416,7 @@ struct CoachFoodLogCard: View {
                 .foregroundStyle(
                     enabled
                         ? (prominent ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                        : SharpitColor.mutedForeground
+                        : SharpitColor.slate
                 )
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
@@ -424,8 +424,8 @@ struct CoachFoodLogCard: View {
                 .frame(minHeight: SharpitSpacing.minimumTouchTarget)
                 .background(
                     enabled
-                        ? (prominent ? SharpitColor.primary : SharpitColor.analysisSurfaceAlt)
-                        : SharpitColor.analysisSurfaceAlt,
+                        ? (prominent ? SharpitColor.primary : SharpitColor.tile)
+                        : SharpitColor.tile,
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
                 .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -453,7 +453,7 @@ struct CoachFoodLogCard: View {
 
     private func failedReceipt(_ hint: String) -> some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            receipt(status: hint, symbol: "exclamationmark.triangle.fill", tone: SharpitColor.signalRisk)
+            receipt(status: hint, symbol: "exclamationmark.triangle.fill", tone: SharpitColor.statusAlertForeground)
             if let onRetry {
                 Button {
                     let items = readyItems ?? proposal.items
@@ -496,7 +496,7 @@ struct CoachFoodLogCard: View {
                     .strikethrough(struck)
                 Text(proposal.meal.label)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .strikethrough(struck)
             }
             Spacer(minLength: 0)

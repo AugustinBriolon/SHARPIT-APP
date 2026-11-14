@@ -82,6 +82,8 @@ private struct SharpitSurfaceModifier: ViewModifier {
             content
                 .foregroundStyle(style.foreground)
                 .sharpitContainerCorner(SharpitTokens.cardShapeRadius)
+                // Filled with the sheet's own colour: a card floating over scrolled content stays opaque.
+                .background(SharpitColor.card, in: RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
                         .strokeBorder(SharpitColor.divider, lineWidth: 1)

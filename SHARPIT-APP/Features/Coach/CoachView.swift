@@ -67,7 +67,10 @@ struct CoachView: View {
                 // chrome and keeps the tab bar below it instead of over it.
                 .safeAreaInset(edge: .bottom, spacing: 0) { composer }
                 .onDisappear { dictation.stop() }
-                .background(SharpitCanvasBackground())
+                // Clinique (`docs/adr/0034`): the thread reads on one sheet under the coach's wash;
+                // the cards a turn carries take a hairline until they are redrawn.
+                .cliniqueSheet(wash: .coach)
+                .cliniqueScreen()
                 #if DEBUG
                 .task { await askDemoQuestions() }
                 #endif
@@ -205,7 +208,7 @@ struct CoachView: View {
                         if let failure = store.failure {
                             Text(failure)
                                 .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.signalCaution)
+                                .foregroundStyle(SharpitColor.statusWatchForeground)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
@@ -335,7 +338,7 @@ struct CoachView: View {
     /// keystroke, since the budget matters again the moment a question is being written.
     private func quotaGauge(_ quota: V1CoachQuota, line: String) -> some View {
         let spent = quota.retryAfterSeconds != nil
-        let tone = spent ? SharpitColor.signalCaution : SharpitColor.foreground
+        let tone = spent ? SharpitColor.statusWatchForeground : SharpitColor.foreground
         return HStack(alignment: .top, spacing: SharpitSpacing.sm) {
             Image(systemName: spent ? "hourglass" : "gauge.with.dots.needle.33percent")
                 .font(.system(size: 15, weight: .semibold))
@@ -349,7 +352,7 @@ struct CoachView: View {
                     .foregroundStyle(tone)
                     .fixedSize(horizontal: false, vertical: true)
                 ProgressView(value: 1 - quota.usedRatio)
-                    .tint(spent ? SharpitColor.signalCaution : SharpitColor.foreground)
+                    .tint(spent ? SharpitColor.statusWatchMark : SharpitColor.foreground)
                     .accessibilityHidden(true)
                 if CoachQuotaReadout.offersPro(quota) {
                     Button("Passer Pro") { router.openSettings(on: .pro) }
@@ -363,9 +366,9 @@ struct CoachView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
                     .frame(width: 28, height: 28)
-                    .background(SharpitColor.chipSurface, in: Circle())
+                    .background(SharpitColor.tile, in: Circle())
                     .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
                     .contentShape(Rectangle())
             }
@@ -403,7 +406,7 @@ struct CoachView: View {
             if let failure = dictation.failure {
                 Text(failure)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalCaution)
+                    .foregroundStyle(SharpitColor.statusWatchForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             if !isQuotaNoticeHidden, let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
@@ -450,7 +453,7 @@ struct CoachView: View {
                             .frame(minHeight: Self.controlHeight)
                             .sharpitGlassControl(
                                 in: RoundedRectangle(cornerRadius: Self.controlHeight / 2, style: .continuous),
-                                fallback: SharpitColor.analysisSurfaceAlt
+                                fallback: SharpitColor.tile
                             )
                             .animation(SharpitMotion.selection, value: store.draft.count / 40)
                             .submitLabel(.send)
@@ -479,13 +482,13 @@ struct CoachView: View {
         } label: {
             Image(systemName: "plus")
                 .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(showsQuickActions ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
+                .foregroundStyle(showsQuickActions ? SharpitColor.primaryForeground : SharpitColor.slate)
                 .rotationEffect(.degrees(showsQuickActions ? 45 : 0))
                 .frame(width: Self.controlHeight, height: Self.controlHeight)
                 .sharpitGlassControl(
                     in: Circle(),
                     tint: showsQuickActions ? SharpitColor.primary : nil,
-                    fallback: SharpitColor.radialTrack
+                    fallback: SharpitColor.divider
                 )
         }
         .buttonStyle(.plain)
@@ -520,7 +523,7 @@ struct CoachView: View {
                         .frame(minHeight: SharpitSpacing.minimumTouchTarget)
                         // Opaque: glass let the thread's text show through the choices.
                         .background(
-                            SharpitColor.chipSurface,
+                            SharpitColor.tile,
                             in: RoundedRectangle(cornerRadius: SharpitSpacing.minimumTouchTarget / 2, style: .continuous)
                         )
                         .sharpitShadow(.control)
@@ -562,7 +565,7 @@ struct CoachView: View {
             .frame(maxWidth: .infinity, minHeight: Self.controlHeight, alignment: .leading)
             .sharpitGlassControl(
                 in: RoundedRectangle(cornerRadius: Self.controlHeight / 2, style: .continuous),
-                fallback: SharpitColor.analysisSurfaceAlt
+                fallback: SharpitColor.tile
             )
 
             composerButton
@@ -619,14 +622,14 @@ struct CoachView: View {
             Image(systemName: action.symbol)
                 .font(SharpitTypography.bodyEmphasis)
                 // Untinted glass is light: the symbol goes muted there, not white.
-                .foregroundStyle(action.isProminent ? SharpitColor.primaryForeground : SharpitColor.mutedForeground)
+                .foregroundStyle(action.isProminent ? SharpitColor.primaryForeground : SharpitColor.slate)
                 .symbolEffect(.variableColor.iterative, isActive: action == .stopDictation)
                 .frame(width: Self.controlHeight, height: Self.controlHeight)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
                 .sharpitGlassControl(
                     in: Circle(),
                     tint: action.isProminent ? SharpitColor.primary : nil,
-                    fallback: SharpitColor.radialTrack
+                    fallback: SharpitColor.divider
                 )
         }
         .buttonStyle(.plain)
@@ -768,7 +771,7 @@ private struct CoachCopyButton: View {
         } label: {
             Image(systemName: copied ? "checkmark" : "doc.on.doc")
                 .font(.system(size: 14, weight: .regular))
-                .foregroundStyle(copied ? SharpitColor.foreground : SharpitColor.mutedForeground)
+                .foregroundStyle(copied ? SharpitColor.foreground : SharpitColor.slate)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget, alignment: .leading)
                 .contentShape(Rectangle())
@@ -939,7 +942,7 @@ private struct CoachEmptyState: View {
                 """)
             )
             .font(SharpitTypography.body)
-            .foregroundStyle(SharpitColor.mutedForeground)
+            .foregroundStyle(SharpitColor.slate)
             .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

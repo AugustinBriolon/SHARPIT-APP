@@ -28,7 +28,7 @@ struct CoachWorkoutCard: View {
                     .foregroundStyle(SharpitColor.foreground)
                 Text(workout.purpose)
                     .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
             .fixedSize(horizontal: false, vertical: true)
 
@@ -55,7 +55,7 @@ struct CoachWorkoutCard: View {
             ForEach(Array(workout.warnings.enumerated()), id: \.offset) { _, warning in
                 Label(warning, systemImage: "exclamationmark.triangle")
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalCaution)
+                    .foregroundStyle(SharpitColor.statusWatchForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -116,7 +116,7 @@ private struct CoachWorkoutLine: View {
             if let notes, !notes.isEmpty {
                 Text(notes)
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
+                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -144,12 +144,12 @@ struct CoachFollowUpsView: View {
                             .fixedSize(horizontal: false, vertical: true)
                         Image(systemName: "arrow.up.right")
                             .font(SharpitTypography.label)
-                            .foregroundStyle(SharpitColor.mutedForeground)
+                            .foregroundStyle(SharpitColor.slate)
                             .accessibilityHidden(true)
                     }
                     .padding(.horizontal, SharpitSpacing.sm)
                     .padding(.vertical, 6)
-                    .background(SharpitColor.chipSurface, in: Capsule())
+                    .background(SharpitColor.tile, in: Capsule())
                     // The chip draws small; the tap keeps a full target around it.
                     .padding(.vertical, SharpitSpacing.xxs)
                     .frame(minHeight: SharpitSpacing.minimumTouchTarget)

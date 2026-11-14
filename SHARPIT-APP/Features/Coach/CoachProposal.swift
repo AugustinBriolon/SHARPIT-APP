@@ -290,15 +290,15 @@ struct CoachProposalCard: View {
             case .awaiting:
                 card
             case .drafting:
-                receipt(status: proposal.proposal + "…", symbol: proposal.symbolName, tone: SharpitColor.mutedForeground, inProgress: true)
+                receipt(status: proposal.proposal + "…", symbol: proposal.symbolName, tone: SharpitColor.slate, inProgress: true)
             case .accepted:
                 receipt(status: String(localized: "Validé, en cours d'application"), symbol: "checkmark", tone: SharpitColor.primary, inProgress: true)
             case .applied:
                 receipt(status: proposal.doneLabel, symbol: "checkmark.circle.fill", tone: SharpitColor.foreground)
             case .refused:
-                receipt(status: String(localized: "Refusé"), symbol: "xmark.circle", tone: SharpitColor.mutedForeground, struck: true)
+                receipt(status: String(localized: "Refusé"), symbol: "xmark.circle", tone: SharpitColor.slate, struck: true)
             case .failed(let hint):
-                receipt(status: hint, symbol: "exclamationmark.triangle.fill", tone: SharpitColor.signalRisk)
+                receipt(status: hint, symbol: "exclamationmark.triangle.fill", tone: SharpitColor.statusAlertForeground)
             }
         }
         .animation(SharpitMotion.reveal, value: proposal.status)
@@ -307,7 +307,7 @@ struct CoachProposalCard: View {
     // MARK: Awaiting
 
     private var tone: Color {
-        proposal.isDelete ? SharpitColor.signalRisk : SharpitColor.primary
+        proposal.isDelete ? SharpitColor.statusAlertForeground : SharpitColor.primary
     }
 
     private var card: some View {
@@ -321,7 +321,7 @@ struct CoachProposalCard: View {
                 if let date = proposal.date {
                     Text(date)
                         .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.mutedForeground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
@@ -347,7 +347,7 @@ struct CoachProposalCard: View {
                     systemImage: "exclamationmark.triangle"
                 )
                 .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.signalRisk)
+                .foregroundStyle(SharpitColor.statusAlertForeground)
                 .transition(.opacity)
             }
 
@@ -389,7 +389,7 @@ struct CoachProposalCard: View {
                     .padding(.horizontal, SharpitSpacing.xs)
                     .padding(.vertical, 4)
                     .background(
-                        (index == 0 ? tone.opacity(0.10) : SharpitColor.analysisSurfaceAlt),
+                        (index == 0 ? tone.opacity(0.10) : SharpitColor.tile),
                         in: Capsule()
                     )
             }
@@ -409,7 +409,7 @@ struct CoachProposalCard: View {
                             .background(tone.opacity(0.12), in: Circle())
                         if index < proposal.steps.count - 1 {
                             Rectangle()
-                                .fill(SharpitColor.analysisGrid)
+                                .fill(SharpitColor.divider)
                                 .frame(width: 1.5)
                                 .frame(minHeight: 10)
                         }
@@ -427,7 +427,7 @@ struct CoachProposalCard: View {
 
     private func answerButton(_ title: String, prominent: Bool, action: @escaping () -> Void) -> some View {
         let destructive = proposal.isDelete && confirmingDelete && prominent
-        let fill = destructive ? SharpitColor.signalRisk : (prominent ? SharpitColor.foreground : SharpitColor.analysisSurfaceAlt)
+        let fill = destructive ? SharpitColor.statusAlertForeground : (prominent ? SharpitColor.foreground : SharpitColor.tile)
         let text = prominent ? SharpitColor.background : SharpitColor.foreground
         return Button(action: action) {
             Text(title)
@@ -465,8 +465,8 @@ struct CoachProposalCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(proposal.headline)
                     .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(struck ? SharpitColor.mutedForeground : SharpitColor.foreground)
-                    .strikethrough(struck, color: SharpitColor.mutedForeground)
+                    .foregroundStyle(struck ? SharpitColor.slate : SharpitColor.foreground)
+                    .strikethrough(struck, color: SharpitColor.slate)
                     .lineLimit(2)
                 Text([status, proposal.date].compactMap { $0 }.joined(separator: " · "))
                     .font(SharpitTypography.meta)
