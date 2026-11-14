@@ -31,7 +31,6 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            SharpitCanvasBackground()
             Group {
                 switch store.phase {
                 case .loading:
@@ -50,7 +49,7 @@ struct OnboardingView: View {
             .blur(radius: isShowingProPaywall ? 12 : 0)
             .animation(SharpitMotion.reveal, value: isShowingProPaywall)
         }
-        .background(SharpitColor.card.ignoresSafeArea())
+        .cliniqueSheet(wash: .sleep, height: 220)
         .animation(SharpitMotion.reveal, value: store.phase)
         .task { await store.load() }
         .sheet(isPresented: $isShowingProPaywall) {
@@ -151,20 +150,21 @@ private struct OnboardingTitle: View {
     let step: OnboardingStep
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(step.title)
-                .font(SharpitTypography.screenTitle)
-                .tracking(SharpitTypography.screenTitleTracking)
+                .font(SharpitTypography.system(size: 30, weight: .semibold, relativeTo: .largeTitle))
+                .tracking(-0.6)
                 .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             Text(step.intro)
-                .font(SharpitTypography.body)
+                .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.top, SharpitSpacing.sm)
+        .padding(.horizontal, 24)
+        .padding(.top, SharpitSpacing.md)
         .padding(.bottom, SharpitSpacing.md)
     }
 }
@@ -179,7 +179,7 @@ private struct OnboardingPage<Content: View>: View {
             ScrollView {
                 content
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, SharpitSpacing.pageInset)
+                    .padding(.horizontal, 24)
                     .padding(.bottom, SharpitSpacing.xl)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -193,56 +193,52 @@ private struct OnboardingPage<Content: View>: View {
 
 // MARK: - Header
 
-/// Back, the dial that fills as the coach is built, and Passer where a step can be skipped.
+/// Back, the way done as dashes — one per step, the current one in the coach's hue — and the
+/// position, or « Passer » where a step can be skipped.
 private struct OnboardingHeader: View {
     let store: OnboardingStore
-    private static let sideWidth: CGFloat = 64
 
     var body: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+        HStack(alignment: .center, spacing: 14) {
             Button(action: store.goBack) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(SharpitColor.foreground)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                     .sharpitGlassControl(in: Circle(), fallback: SharpitColor.tile)
             }
             .buttonStyle(.plain)
-            .opacity(store.canGoBack ? 1 : 0)
+            .opacity(store.canGoBack ? 1 : 0.35)
             .disabled(!store.canGoBack || store.isBusy)
             .accessibilityLabel(String(localized: "Retour"))
-            // As wide as « Passer » opposite, so the dial sits on the screen's centre.
-            .frame(width: Self.sideWidth, alignment: .leading)
 
-            Spacer(minLength: 0)
-
-            // The position sits inside the arc, and the dial's thumb shows from the first step —
-            // at its start, the way still to go.
-            ZStack(alignment: .bottom) {
-                SharpitTickGauge(score: CGFloat(store.progress * 100), showsThumbAtStart: true, tone: SharpitColor.foreground)
-                    .frame(width: 104, height: 104 / SharpitTickGaugeGeometry.aspectRatio)
-                    .animation(SharpitMotion.gaugeFill, value: store.progress)
-                Text("\(store.position) / \(store.path.count)")
-                    .font(SharpitTypography.label.monospacedDigit())
-                    .tracking(SharpitTypography.labelTracking)
-                    .foregroundStyle(SharpitColor.slate)
-                    .contentTransition(.numericText(value: Double(store.position)))
-                    .padding(.bottom, 8)
+            HStack(spacing: 4) {
+                ForEach(1...max(store.path.count, 1), id: \.self) { index in
+                    Capsule()
+                        .fill(index < store.position ? SharpitColor.foreground : index == store.position ? SharpitColor.pillarCoach : SharpitColor.divider)
+                        .frame(height: 4)
+                }
             }
+            .animation(SharpitMotion.gaugeFill, value: store.position)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Étape \(store.position) sur \(store.path.count), \(store.step.label)")
 
-            Spacer(minLength: 0)
-
-            Button("Passer") { [step = store.step] in Task { await store.skip(from: step) } }
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.slate)
-                .frame(width: Self.sideWidth, height: 40)
-                .opacity(store.step.allowsSkip ? 1 : 0)
-                .disabled(!store.step.allowsSkip || store.isBusy)
-                .accessibilityLabel("Passer cette étape")
+            if store.step.allowsSkip {
+                Button("Passer") { [step = store.step] in Task { await store.skip(from: step) } }
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.slate)
+                    .frame(minHeight: 44)
+                    .disabled(store.isBusy)
+                    .accessibilityLabel("Passer cette étape")
+            } else {
+                Text("\(store.position) / \(store.path.count)")
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .contentTransition(.numericText(value: Double(store.position)))
+                    .accessibilityHidden(true)
+            }
         }
-        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.horizontal, 20)
         .padding(.top, SharpitSpacing.xs)
         .padding(.bottom, SharpitSpacing.xxs)
         .animation(SharpitMotion.selection, value: store.step)
@@ -279,22 +275,31 @@ private struct OnboardingActionBar: View {
                     .transition(.opacity)
             }
 
-            SharpitPrimaryButton(
-                title: primaryLabel,
-                isBusy: store.isBusy || store.firstWeek == .generating && store.step == .firstWeek
-            ) { [step = store.step] in
+            Button { [step = store.step] in
                 if step == .firstWeek, case .ready = store.firstWeek, pro?.isPro != true {
                     onOpenProModal?()
                 } else {
                     Task { await store.advance(from: step) }
                 }
+            } label: {
+                Group {
+                    if store.isBusy || store.firstWeek == .generating && store.step == .firstWeek {
+                        HStack(spacing: 8) {
+                            ProgressView().tint(SharpitColor.primaryForeground)
+                            Text(primaryLabel)
+                        }
+                    } else {
+                        Text(primaryLabel)
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
             .disabled(!store.canAdvance || store.isBusy)
 
             if showsFinishWithout {
                 Button(finishWithoutLabel) { Task { await store.finishWithoutFirstWeek() } }
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.slate)
+                    .buttonStyle(CliniqueButtonStyle(kind: .plain))
                     .frame(maxWidth: .infinity)
                     .disabled(store.isBusy)
             }
