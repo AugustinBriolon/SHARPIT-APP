@@ -1,15 +1,16 @@
 import Foundation
 
-/// One month of the history: its sessions, newest first, and what they add up to.
-nonisolated struct ActivityMonth: Identifiable, Equatable, Sendable {
-    /// « 2026-10 » — a month of one year, so two Octobers never merge.
+/// One week of the history: its sessions, newest first, and what they add up to.
+nonisolated struct ActivityWeek: Identifiable, Equatable, Sendable {
+    /// The week's Monday, « 2026-11-09 ».
     let id: String
+    /// « Cette semaine », « Semaine du 3 novembre ».
     let title: String
     let activities: [V1ActivityListItem]
 
     var durationSeconds: Double { activities.compactMap(\.duration).reduce(0, +) }
 
-    /// « 12 séances · 14 h 20 ».
+    /// « 4 séances · 6 h 40 ».
     var summary: String {
         let count = activities.count == 1 ? String(localized: "1 séance") : String(localized: "\(activities.count) séances")
         guard durationSeconds > 0 else { return count }
@@ -17,18 +18,7 @@ nonisolated struct ActivityMonth: Identifiable, Equatable, Sendable {
     }
 }
 
-/// The current week at a glance: how much, and on which days.
-nonisolated struct ActivityWeekSummary: Equatable, Sendable {
-    let count: Int
-    let durationSeconds: Double
-    let distanceM: Double
-    /// Monday to Sunday: whether a session was done that day.
-    let activeDays: [Bool]
-    /// Monday to Sunday: whether the day is today.
-    let todayIndex: Int
-}
-
-/// The history as Activité reads it, page by page: merged, cut into months, summed for the week.
+/// The history as Activité reads it, page by page: merged, then cut into weeks.
 nonisolated enum ActivityHistory {
     /// The sessions read so far and a newly read page, once each, newest first.
     static func merge(_ loaded: [V1ActivityListItem], with page: [V1ActivityListItem]) -> [V1ActivityListItem] {
@@ -38,49 +28,36 @@ nonisolated enum ActivityHistory {
             .sorted { $0.date > $1.date }
     }
 
-    static func months(
-        _ activities: [V1ActivityListItem],
-        now: Date = .now,
-        calendar: Calendar = .current
-    ) -> [ActivityMonth] {
-        var order: [String] = []
-        var byMonth: [String: [V1ActivityListItem]] = [:]
-        for activity in activities.sorted(by: { $0.date > $1.date }) {
-            let parts = calendar.dateComponents([.year, .month], from: activity.date)
-            let key = String(format: "%04d-%02d", parts.year ?? 0, parts.month ?? 0)
-            if byMonth[key] == nil { order.append(key) }
-            byMonth[key, default: []].append(activity)
-        }
-        let currentYear = calendar.component(.year, from: now)
-        return order.map { key in
-            let items = byMonth[key] ?? []
-            return ActivityMonth(id: key, title: monthTitle(items[0].date, currentYear: currentYear, calendar: calendar), activities: items)
-        }
-    }
-
-    static func week(
+    /// The sessions cut into weeks, Monday to Sunday, the newest first.
+    static func weeks(
         _ activities: [V1ActivityListItem],
         now: Date = .now,
         calendar base: Calendar = .current
-    ) -> ActivityWeekSummary {
+    ) -> [ActivityWeek] {
         var calendar = base
         calendar.firstWeekday = 2
-        let start = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? calendar.startOfDay(for: now)
-        let end = calendar.date(byAdding: .day, value: 7, to: start) ?? now
-        let thisWeek = activities.filter { $0.date >= start && $0.date < end }
-        var activeDays = Array(repeating: false, count: 7)
-        for activity in thisWeek {
-            let index = calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: activity.date)).day ?? 0
-            if (0..<7).contains(index) { activeDays[index] = true }
+        func monday(_ date: Date) -> Date {
+            calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
         }
-        let todayIndex = calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: now)).day ?? 0
-        return ActivityWeekSummary(
-            count: thisWeek.count,
-            durationSeconds: thisWeek.compactMap(\.duration).reduce(0, +),
-            distanceM: thisWeek.compactMap(\.distanceM).reduce(0, +),
-            activeDays: activeDays,
-            todayIndex: todayIndex
-        )
+        var order: [Date] = []
+        var byWeek: [Date: [V1ActivityListItem]] = [:]
+        for activity in activities.sorted(by: { $0.date > $1.date }) {
+            let start = monday(activity.date)
+            if byWeek[start] == nil { order.append(start) }
+            byWeek[start, default: []].append(activity)
+        }
+        let thisWeek = monday(now)
+        let currentYear = calendar.component(.year, from: now)
+        return order.map { start in
+            let parts = calendar.dateComponents([.year, .month, .day], from: start)
+            return ActivityWeek(
+                id: String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0),
+                title: start == thisWeek
+                    ? String(localized: "Cette semaine")
+                    : String(localized: "Semaine du \(weekDay(start, currentYear: currentYear, calendar: calendar))"),
+                activities: byWeek[start] ?? []
+            )
+        }
     }
 
     /// 51 600 s → « 14 h 20 », 2 400 s → « 40 min ».
@@ -90,13 +67,13 @@ nonisolated enum ActivityHistory {
         return minutes % 60 == 0 ? "\(minutes / 60) h" : "\(minutes / 60) h \(String(format: "%02d", minutes % 60))"
     }
 
-    /// « Octobre » this year, « Octobre 2025 » before.
-    private static func monthTitle(_ date: Date, currentYear: Int, calendar: Calendar) -> String {
+    /// « 3 novembre » this year, « 3 novembre 2025 » before.
+    private static func weekDay(_ date: Date, currentYear: Int, calendar: Calendar) -> String {
         let formatter = DateFormatter()
         formatter.locale = AppLanguage.locale
         formatter.calendar = calendar
         formatter.timeZone = calendar.timeZone
-        formatter.setLocalizedDateFormatFromTemplate(calendar.component(.year, from: date) == currentYear ? "MMMM" : "MMMM yyyy")
-        return formatter.string(from: date).capitalized(with: AppLanguage.locale)
+        formatter.setLocalizedDateFormatFromTemplate(calendar.component(.year, from: date) == currentYear ? "d MMMM" : "d MMMM yyyy")
+        return formatter.string(from: date)
     }
 }

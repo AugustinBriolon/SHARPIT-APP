@@ -13,6 +13,7 @@ struct ActivityView: View {
     /// Created on the first open and kept, so Records shows at once when reopened.
     @State private var records: RecordsStore?
     @State private var isShowingRecords = false
+    @State private var isSearching = false
     @State private var loadGate = LoadGate()
     /// More of the history waits on the server; the list reads it when its end comes into view.
     @State private var hasMore = false
@@ -32,23 +33,20 @@ struct ActivityView: View {
             }
             .modifier(ScrollUnderGlass())
             .refreshable { await load(force: true) }
-            .cliniqueSheet(wash: .neutral)
+            .cliniqueSheet(wash: .neutral, height: 240)
             .navigationTitle("Activité")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .modifier(LiquidNavChrome())
-            .searchable(text: $filter.query, placement: .navigationBarDrawer, prompt: String(localized: "Rechercher une séance"))
+            .modifier(ActivitySearch(query: $filter.query, isPresented: $isSearching))
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Records", systemImage: "trophy") { openRecords() }
-                        .accessibilityHint("Ouvrir les records")
-                }
-                if case .loaded(let activities) = phase {
-                    ToolbarItem(placement: .primaryAction) {
-                        ActivityFilterMenu(filter: $filter, sports: ActivityFilter.sports(in: activities))
-                    }
+                ToolbarItem(placement: .principal) { Text("") }
+                SharpitBarTitle(String(localized: "Activité"))
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Rechercher", systemImage: "magnifyingglass") { isSearching = true }
                 }
                 if client is any ActivityMutating {
-                    ToolbarItem(placement: .primaryAction) {
+                    SharpitBarGap()
+                    ToolbarItem(placement: .topBarTrailing) {
                         Button("Saisir une séance", systemImage: "plus") { isLogging = true }
                     }
                 }
@@ -81,7 +79,10 @@ struct ActivityView: View {
                 }
             }
             .task {
-                await load()
+                if records == nil { records = RecordsStore(tokenProvider: tokenProvider) }
+                async let history: Void = load()
+                async let bests: Void? = records?.load()
+                _ = await (history, bests)
             }
             .onChange(of: router?.pendingActivityId, initial: true) { _, id in
                 guard let id else { return }
@@ -102,6 +103,8 @@ struct ActivityView: View {
             ActivityListLoading()
         case .loaded(let activities):
             let shown = filter.apply(to: activities)
+            ActivityFilterChips(filter: $filter, sports: ActivityFilter.sports(in: activities))
+                .padding(.horizontal, -SharpitSpacing.pageInset)
             if shown.isEmpty {
                 ContentUnavailableView {
                     Label("Aucune séance", systemImage: "line.3.horizontal.decrease.circle")
@@ -115,11 +118,12 @@ struct ActivityView: View {
                         SharpitMotion.run(SharpitMotion.selection) { filter = ActivityFilter() }
                     }
                 }
-                .containerRelativeFrame(.vertical)
+                .padding(.top, 80)
             } else {
                 ActivityListContent(
                     activities: shown,
-                    week: filter.isActive ? nil : ActivityHistory.week(activities),
+                    records: filter.isActive ? [] : RecordsReadout.highlights(records?.records),
+                    onOpenRecords: openRecords,
                     hasMore: hasMore,
                     selectedActivity: $selectedActivity,
                     loadMore: { _ = Task { await loadMore() } }
@@ -240,6 +244,24 @@ struct ActivityView: View {
     }
 }
 
+/// The search field, only once asked for: the bar's glass button opens it, as on the mock-up.
+private struct ActivitySearch: ViewModifier {
+    @Binding var query: String
+    @Binding var isPresented: Bool
+
+    func body(content: Content) -> some View {
+        if isPresented || !query.isEmpty {
+            content.searchable(
+                text: $query, isPresented: $isPresented,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: String(localized: "Rechercher une séance")
+            )
+        } else {
+            content
+        }
+    }
+}
+
 private enum ActivityPhase {
     case loading
     case loaded([V1ActivityListItem])
@@ -248,23 +270,29 @@ private enum ActivityPhase {
     case unauthorized
 }
 
-/// The history, month by month: the week at a glance first, then each month as one card of rows
-/// with what it adds up to. Months are laid out lazily, so years of history cost a screen's worth.
+/// The history, week by week: the athlete's records first, then each week's sessions as rows
+/// under what it adds up to. Weeks are laid out lazily, so years of history cost a screen's worth.
 private struct ActivityListContent: View {
     let activities: [V1ActivityListItem]
-    let week: ActivityWeekSummary?
+    let records: [RecordsReadout.Highlight]
+    let onOpenRecords: () -> Void
     let hasMore: Bool
     @Binding var selectedActivity: V1ActivityListItem?
     let loadMore: () -> Void
 
     var body: some View {
-        LazyVStack(alignment: .leading, spacing: SharpitSpacing.section) {
-            if let week {
-                ActivityWeekCard(week: week)
+        LazyVStack(alignment: .leading, spacing: 20) {
+            if !records.isEmpty {
+                Button(action: onOpenRecords) {
+                    ActivityRecordsStrip(records: records).contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Ouvrir les records")
+                .padding(.horizontal, -SharpitSpacing.pageInset)
             }
 
-            ForEach(ActivityHistory.months(activities)) { month in
-                ActivityMonthSection(month: month, selectedActivity: $selectedActivity)
+            ForEach(ActivityHistory.weeks(activities)) { week in
+                ActivityWeekSection(week: week, selectedActivity: $selectedActivity)
             }
 
             if hasMore {
@@ -276,161 +304,171 @@ private struct ActivityListContent: View {
                     .accessibilityLabel("Chargement de séances plus anciennes")
             }
         }
-        .padding(.top, SharpitSpacing.xs)
+        .padding(.top, 14)
     }
 }
 
-/// Activité's one ink card: the week so far — sessions, time, distance, and its days lit.
-private struct ActivityWeekCard: View {
-    let week: ActivityWeekSummary
-
-    private static let days = ["L", "M", "M", "J", "V", "S", "D"]
+/// The sports the athlete did, as chips: « Tout » or one sport, the chosen one in ink. The
+/// period and the duration wait behind the last chip.
+private struct ActivityFilterChips: View {
+    @Binding var filter: ActivityFilter
+    let sports: [V1ActivityType]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            Text("Cette semaine")
-                .font(SharpitTypography.cardTitle)
-                .tracking(SharpitTypography.cardTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
-
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.lg) {
-                figure("\(week.count)", unit: week.count == 1 ? String(localized: "séance") : String(localized: "séances"))
-                figure(week.durationSeconds > 0 ? ActivityHistory.hours(week.durationSeconds) : String(localized: "0 min"), unit: nil)
-                if week.distanceM >= 1_000 {
-                    figure(String(format: "%.0f", week.distanceM / 1_000), unit: "km")
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                chip(String(localized: "Tout"), isOn: filter.sport == nil) { filter.sport = nil }
+                ForEach(sports, id: \.self) { sport in
+                    chip(sport.label, isOn: filter.sport == sport) { filter.sport = sport }
                 }
+                ActivityFilterMenu(filter: $filter)
             }
-
-            HStack(spacing: 0) {
-                ForEach(0..<7, id: \.self) { index in
-                    VStack(spacing: 6) {
-                        Text(Self.days[index])
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(index == week.todayIndex ? SharpitColor.foreground : SharpitColor.slate)
-                        Circle()
-                            .fill(week.activeDays[index] ? SharpitColor.statusGoodMark : SharpitColor.foreground.opacity(0.12))
-                            .frame(width: 12, height: 12)
-                            .overlay {
-                                if index == week.todayIndex, !week.activeDays[index] {
-                                    Circle().strokeBorder(SharpitColor.foreground.opacity(0.6), lineWidth: 1.5)
-                                }
-                            }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(week.activeDays.filter { $0 }.count) jours actifs cette semaine")
+            .padding(.horizontal, SharpitSpacing.pageInset)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .environment(\.colorScheme, .dark)
-        .sharpitSurface(.ink)
+        .padding(.top, SharpitSpacing.xs)
     }
 
-    private func figure(_ value: String, unit: String?) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(value)
-                .font(SharpitTypography.gaugeScore)
-                .foregroundStyle(SharpitColor.foreground)
-                .monospacedDigit()
-            if let unit {
-                Text(unit)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
+    private func chip(_ title: String, isOn: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            SharpitMotion.run(SharpitMotion.selection, action)
+        } label: {
+            Text(title)
+                .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .subheadline))
+                .foregroundStyle(isOn ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(isOn ? SharpitColor.primary : .clear, in: Capsule())
+                .overlay(Capsule().strokeBorder(isOn ? .clear : SharpitColor.outline, lineWidth: 1))
         }
-        .lineLimit(1)
+        .buttonStyle(.sharpitPressable)
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
     }
 }
 
-/// A month: its name and what it adds up to, then its sessions as rows on one card.
-private struct ActivityMonthSection: View {
-    let month: ActivityMonth
+/// Up to three records between two hairlines: what it is, the mark, since when.
+private struct ActivityRecordsStrip: View {
+    let records: [RecordsReadout.Highlight]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            CliniqueDivider()
+            HStack(alignment: .top, spacing: 0) {
+                ForEach(Array(records.enumerated()), id: \.element.id) { index, record in
+                    if index > 0 {
+                        Rectangle().fill(SharpitColor.divider).frame(width: 1).accessibilityHidden(true)
+                    }
+                    VStack(spacing: 4) {
+                        Text(record.caption)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Text(record.value)
+                            .font(SharpitTypography.system(size: 18, weight: .semibold, relativeTo: .body, digits: true))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        Text(record.note)
+                            .font(SharpitTypography.system(size: 13, weight: record.isRecent ? .semibold : .regular, relativeTo: .caption))
+                            .foregroundStyle(record.isRecent ? SharpitColor.statusGoodForeground : SharpitColor.slate)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .padding(.horizontal, SharpitSpacing.xs)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 16)
+            CliniqueDivider()
+        }
+    }
+}
+
+/// A week: its name and what it adds up to, then its sessions as rows split by hairlines.
+private struct ActivityWeekSection: View {
+    let week: ActivityWeek
     @Binding var selectedActivity: V1ActivityListItem?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
-                Text(month.title)
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
+                Text(week.title)
+                    .font(SharpitTypography.sectionTitle)
+                    .tracking(SharpitTypography.sectionTitleTracking)
                     .foregroundStyle(SharpitColor.foreground)
                 Spacer(minLength: SharpitSpacing.xs)
-                Text(month.summary)
-                    .font(SharpitTypography.meta)
+                Text(week.summary)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                     .foregroundStyle(SharpitColor.slate)
-                    .monospacedDigit()
             }
-            .padding(.horizontal, SharpitSpacing.xxs)
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
 
-            VStack(spacing: 0) {
-                ForEach(Array(month.activities.enumerated()), id: \.element.id) { index, activity in
-                    if index > 0 {
-                        Divider().padding(.leading, 104)
-                    }
-                    Button {
-                        selectedActivity = activity
-                    } label: {
-                        ActivityRow(activity: activity)
-                    }
-                    .buttonStyle(.sharpitPressable)
+            ForEach(Array(week.activities.enumerated()), id: \.element.id) { index, activity in
+                if index > 0 { CliniqueDivider() }
+                Button {
+                    selectedActivity = activity
+                } label: {
+                    ActivityRow(activity: activity)
                 }
+                .buttonStyle(.sharpitPressable)
             }
-            .padding(.vertical, SharpitSpacing.xxs)
-            .sharpitSurface(.panel)
         }
     }
 }
 
-/// One session in its month: the day, the sport's tile, the title and what it measured.
+/// One session in its week: the sport's tile, the title over the day and what it measured, and
+/// how it went against the plan as a pill.
 private struct ActivityRow: View {
     let activity: V1ActivityListItem
+    @Environment(\.isExpertReading) private var isExpertReading
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            VStack(spacing: 0) {
-                Text(activity.date.sharpitFormatted(.dateTime.day()))
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .monospacedDigit()
-                Text(activity.date.sharpitFormatted(.dateTime.weekday(.abbreviated)))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .textCase(.lowercase)
-            }
-            .frame(width: 36)
-
-            SharpitSportBadge(type: activity.type, size: 36)
-
-            VStack(alignment: .leading, spacing: 2) {
+        let standing = ActivityRowReadout.standing(activity)
+        HStack(spacing: 12) {
+            CliniqueSportTile(symbol: activity.type.symbolName, size: 44)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(activity.title ?? activity.type.label)
-                    .font(SharpitTypography.bodyEmphasis)
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)
                     .lineLimit(1)
-                Text([
-                    activity.type.label,
-                    activity.duration.map(ActivityFormat.duration),
-                    ActivityFormat.primaryMetric(activity),
-                ].compactMap { $0 }.joined(separator: " · "))
-                    .font(SharpitTypography.meta)
-                    .monospacedDigit()
+                Text(ActivityRowReadout.line(activity, isExpertReading: isExpertReading))
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                     .foregroundStyle(SharpitColor.slate)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
             }
-
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(SharpitColor.slate.opacity(0.6))
+            Spacer(minLength: SharpitSpacing.xs)
+            CliniqueStatusPill(standing.word, status: standing.status)
         }
-        .padding(.horizontal, SharpitSpacing.md)
-        .padding(.vertical, SharpitSpacing.sm)
+        .padding(.vertical, 12)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Ouvrir le détail")
+    }
+}
+
+/// How a session reads on its row.
+enum ActivityRowReadout {
+    /// « Jeu. 13 · 12,4 km · 58 min · charge 72 ».
+    static func line(_ activity: V1ActivityListItem, isExpertReading: Bool) -> String {
+        [
+            activity.date.sharpitFormatted(.dateTime.weekday(.abbreviated).day()).capitalizedFirst,
+            ActivityFormat.primaryMetric(activity),
+            activity.duration.map(ActivityFormat.duration),
+            activity.load.flatMap { $0 > 0 ? ActivityFormat.trainingLoad($0, isExpertReading: isExpertReading) : nil },
+        ].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// Against the plan: the server's verdict, « À lire » until it lands, « Libre » off plan.
+    static func standing(_ activity: V1ActivityListItem) -> (word: String, status: CliniqueStatus) {
+        guard let planned = activity.plannedSession else { return (String(localized: "Libre"), .unknown) }
+        guard let verdict = planned.analysis?.verdict.flatMap(SessionVerdict.init(rawValue:)) else {
+            return (String(localized: "Prévue"), .unknown)
+        }
+        return (verdict.label, ActivitySheetReadout.status(verdict))
     }
 }
 
@@ -506,87 +544,45 @@ enum ActivityFormat {
     }
 }
 
-/// The history's filters, in the bar: a sport the athlete did, a period. The glyph fills while
-/// one narrows the list, so a shortened history is never mistaken for the whole one.
+/// The history's other filters, behind the last chip: a period, a duration. The chip fills
+/// while one narrows the list, so a shortened history is never mistaken for the whole one.
 private struct ActivityFilterMenu: View {
     @Binding var filter: ActivityFilter
-    let sports: [V1ActivityType]
+
+    private var narrows: Bool { filter.period != .all || filter.effortTime != .any }
 
     var body: some View {
-        Menu {
-            menuItems
-                .tint(SharpitColor.foreground)
-                .foregroundStyle(SharpitColor.foreground)
-        } label: {
-            Label(
-                String(localized: "Filtrer"),
-                systemImage: filter.narrows
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease.circle"
-            )
-            .foregroundStyle(SharpitColor.foreground)
-        }
-        // The toolbar tints its buttons with the app's accent; a label colour alone lost to it.
-        .tint(SharpitColor.foreground)
-        .accessibilityValue(filter.narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
-    }
-
-    /// One submenu per filter, named with its current value. Each holds an inline picker: a
-    /// submenu's own rows draw in ink, a `.menu` picker's do not (UIKit's grey rows).
-    @ViewBuilder private var menuItems: some View {
-        Menu {
-            Picker("Sport", selection: $filter.sport.animation(SharpitMotion.selection)) {
-                Text("Tous les sports").tag(V1ActivityType?.none)
-                ForEach(sports, id: \.self) { sport in
-                    Label { Text(sport.label) } icon: {
-                        Image(sharpitSymbol: sport.symbolName)
-                            .renderingMode(.template)
-                            .foregroundStyle(SharpitColor.foreground)
-                    }
-                    .tag(V1ActivityType?.some(sport))
-                }
-            }
-            .pickerStyle(.inline)
-        } label: {
-            submenuLabel("Sport", value: filter.sport?.label ?? String(localized: "Tous les sports"))
-        }
         Menu {
             Picker("Période", selection: $filter.period.animation(SharpitMotion.selection)) {
                 ForEach(ActivityFilter.Period.allCases) { period in
                     Text(period.label).tag(period)
                 }
             }
-            .pickerStyle(.inline)
-        } label: {
-            submenuLabel("Période", value: filter.period.label)
-        }
-        Menu {
             Picker("Durée", selection: $filter.effortTime.animation(SharpitMotion.selection)) {
                 ForEach(ActivityFilter.EffortTime.allCases) { effortTime in
                     Text(effortTime.label).tag(effortTime)
                 }
             }
-            .pickerStyle(.inline)
-        } label: {
-            submenuLabel("Durée", value: filter.effortTime.label)
-        }
-        if filter.narrows {
-            Divider()
-            Button("Réinitialiser les filtres", systemImage: "arrow.counterclockwise") {
-                SharpitMotion.run(SharpitMotion.selection) {
-                    filter.sport = nil
-                    filter.period = .all
-                    filter.effortTime = .any
+            if narrows {
+                Divider()
+                Button("Réinitialiser les filtres", systemImage: "arrow.counterclockwise") {
+                    SharpitMotion.run(SharpitMotion.selection) {
+                        filter.period = .all
+                        filter.effortTime = .any
+                    }
                 }
             }
+        } label: {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(narrows ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(narrows ? SharpitColor.primary : .clear, in: Capsule())
+                .overlay(Capsule().strokeBorder(narrows ? .clear : SharpitColor.outline, lineWidth: 1))
         }
-    }
-
-    /// « Période » over « 30 derniers jours »: the menu row shows what the filter is set to.
-    private func submenuLabel(_ title: LocalizedStringKey, value: String) -> some View {
-        VStack {
-            Text(title)
-            Text(value)
-        }
+        .tint(SharpitColor.foreground)
+        .accessibilityLabel("Période et durée")
+        .accessibilityValue(narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
     }
 }

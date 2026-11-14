@@ -114,4 +114,32 @@ nonisolated enum RecordsReadout {
     static func dayCount(from date: Date, to now: Date, calendar: Calendar) -> Int {
         calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0
     }
+
+    /// A record shown on Activité's strip.
+    struct Highlight: Equatable, Identifiable {
+        let id: String
+        let caption: String
+        let value: String
+        /// « il y a 3 mois », « record de la saison ».
+        let note: String
+        /// Set in the last two weeks: its note reads in the good status' ink.
+        let isRecent: Bool
+    }
+
+    /// The best mark of each sport's first kind of record, run, bike then swim: three at most.
+    static func highlights(_ records: V1Records?, now: Date = .now, calendar: Calendar = .current) -> [Highlight] {
+        guard let records else { return [] }
+        return RecordSport.allCases.compactMap { sport in
+            guard let category = records.categories(for: sport).first(where: { !$0.entries.isEmpty }),
+                  let best = category.entries.first
+            else { return nil }
+            return Highlight(
+                id: "\(sport.rawValue)-\(category.key)",
+                caption: category.label,
+                value: best.displayValue,
+                note: narrative(best.date, now: now, calendar: calendar),
+                isRecent: isRecent(best.date, now: now, calendar: calendar)
+            )
+        }
+    }
 }

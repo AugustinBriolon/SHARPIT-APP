@@ -85,6 +85,19 @@ struct ActivityDetailView: View {
         _appeared = State(initialValue: initialActivity != nil)
     }
 
+    /// The sheet's wash says how the session went against its plan; neutral off plan.
+    private var sheetWash: CliniqueWash {
+        guard case .loaded(let detail) = phase,
+              let verdict = detail.plannedSession?.analysis?.verdict.flatMap(SessionVerdict.init(rawValue:))
+        else { return .neutral }
+        switch ActivitySheetReadout.status(verdict) {
+        case .good: return .good
+        case .watch: return .watch
+        case .alert: return .alert
+        default: return .neutral
+        }
+    }
+
     var body: some View {
         GeometryReader { proxy in
             switch phase {
@@ -241,7 +254,7 @@ struct ActivityDetailView: View {
                 }
             }
         }
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: sheetWash, height: 240)
         .modifier(ScrollUnderGlass())
         .toolbar(.hidden, for: .navigationBar)
         .enableInteractivePopGesture()
@@ -278,6 +291,22 @@ struct ActivityDetailView: View {
             if case .loaded(let detail) = phase {
                 let route = mapRoute(for: detail)
                 HStack(spacing: 8) {
+                    // The session being read is what the athlete would ask about.
+                    if !isMapExpanded {
+                        Button {
+                            router?.discussWithCoach(
+                                about: CoachDiscuss.describe(.activity(activityId: detail.id), name: detail.title ?? detail.type.label)
+                            )
+                        } label: {
+                            Image(systemName: "bubble.left")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(SharpitColor.foreground)
+                                .frame(width: 44, height: 44)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .sharpitShadow(.control)
+                        }
+                        .accessibilityLabel("Discuter de cette séance")
+                    }
                     if !route.isEmpty {
                         if isMapExpanded && isMapOffRoute {
                             Button {
@@ -377,7 +406,7 @@ struct ActivityDetailView: View {
                         }
                     } label: {
                         Text(isPitched ? "2D" : "3D")
-                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(SharpitColor.foreground)
                             .frame(width: 44, height: 44)
                             .background(.ultraThinMaterial, in: Circle())
@@ -894,44 +923,28 @@ private struct ActivityDetailContent: View {
                 )
             }
 
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                HStack {
-                    Label { Text(detail.type.label) } icon: { Image(sharpitSymbol: detail.type.symbolName) }
-                        .font(SharpitTypography.eyebrow)
-                        .tracking(SharpitTypography.eyebrowTracking)
-                        .foregroundStyle(tone)
-                    Spacer()
-                    Text(dateLabel)
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.slate)
+            // The session's head, centred: how it went against the plan, what it was, when.
+            VStack(spacing: 8) {
+                if let verdict = detail.plannedSession?.analysis?.verdict.flatMap(SessionVerdict.init(rawValue:)) {
+                    Button(action: onShowCompliance) {
+                        CliniqueStatusPill(verdict.label, status: ActivitySheetReadout.status(verdict))
+                    }
+                    .buttonStyle(.sharpitPressable)
+                    .accessibilityHint("Ouvre la conformité au plan")
                 }
-
-                Text(detail.title ?? detail.type.label)
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
-                    .tracking(-0.8)
+                Text(ActivitySheetReadout.title(sport: detail.type.label, title: detail.title))
+                    .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
+                    .tracking(-0.4)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .multilineTextAlignment(.center)
                     .lineLimit(3)
-
-                // The session the athlete is reading is exactly what they would ask about,
-                // so the way to ask sits with its title rather than below the analysis.
-                HStack(spacing: SharpitSpacing.sm) {
-                    CoachDiscussButton(title: String(localized: "Discuter de cette séance")) {
-                        router.discussWithCoach(
-                            about: CoachDiscuss.describe(
-                                .activity(activityId: detail.id),
-                                name: detail.title ?? detail.type.label
-                            )
-                        )
-                    }
-                    Spacer(minLength: 0)
-                    if let weather = detail.weather, let weatherLabel = V1ActivityWeather(rawValue: weather).label {
-                        Label(weatherLabel, systemImage: "cloud.sun")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                            .lineLimit(1)
-                    }
-                }
-                .padding(.top, SharpitSpacing.xxs)
+                    .accessibilityAddTraits(.isHeader)
+                Text(ActivitySheetReadout.moment(detail.date, weather: detail.weather.flatMap { V1ActivityWeather(rawValue: $0).label }))
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .onTapGesture {
                 if isMapExpanded {
@@ -996,12 +1009,13 @@ private struct ActivityDetailContent: View {
                     .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 1)), value: appeared)
             }
 
-            contextSection
+            metricGrid
+                .padding(.horizontal, -SharpitSpacing.pageInset)
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 1)), value: appeared)
 
-            metricGrid
+            contextSection
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 2)), value: appeared)
@@ -1089,34 +1103,61 @@ private struct ActivityDetailContent: View {
     /// What the athlete said about the session and how it matched the plan, side by side:
     /// two short readouts share one row instead of each leaving half a line empty.
     private var contextSection: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Ta séance"))
-            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                SessionFeedbackTile(
-                    rpe: detail.rpe.map { Int($0.rounded()) },
-                    feeling: SessionFeeling(stored: detail.feeling),
-                    accent: tone,
-                    action: onShowSubjective
-                )
-                if let analysis = detail.plannedSession?.analysis {
-                    ComplianceTile(analysis: analysis, action: onShowCompliance)
-                } else if detail.plannedSession != nil {
-                    CompliancePendingTile()
+        VStack(alignment: .leading, spacing: 0) {
+            ActivitySectionTitle(String(localized: "Ta séance"))
+                .padding(.bottom, 4)
+            contextRow(
+                String(localized: "Effort · Ressenti"),
+                value: ActivitySheetReadout.feedback(rpe: detail.rpe, feeling: SessionFeeling(stored: detail.feeling)),
+                action: onShowSubjective
+            )
+            .accessibilityHint("Ouvre l'évaluation de la séance")
+            if let planned = detail.plannedSession {
+                CliniqueDivider()
+                if let analysis = planned.analysis {
+                    contextRow(
+                        String(localized: "Conformité au plan"),
+                        value: analysis.complianceScore.map { "\(Int($0.rounded())) %" } ?? "—",
+                        action: onShowCompliance
+                    )
+                } else {
+                    contextRow(String(localized: "Conformité au plan"), value: String(localized: "Calcul en cours…"), action: nil)
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// A line of « Ta séance »: what it is, its reading, and the way in when it opens something.
+    @ViewBuilder
+    private func contextRow(_ title: String, value: String, action: (() -> Void)?) -> some View {
+        let line = HStack(spacing: SharpitSpacing.sm) {
+            Text(title)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
+            Spacer(minLength: SharpitSpacing.xs)
+            Text(value)
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+            if action != nil {
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.vertical, 13)
+        .contentShape(.rect)
+        if let action {
+            Button(action: action) { line }.buttonStyle(.sharpitPressable)
+        } else {
+            line.accessibilityElement(children: .combine)
+        }
+    }
+
     private var coachAnalysis: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(
-                title: String(localized: "Analyse du coach"),
-                symbol: "sparkles",
-                subtitle: detail.narrativeAnalysis == nil ? String(localized: "Prête à être générée") : nil,
-                showsChevron: false
-            )
+            ActivitySectionTitle(String(localized: "Analyse du coach"))
             if let narrative = detail.narrativeAnalysis {
                 // The headline opens the body, whole: too long for a card title, and cut there.
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
@@ -1126,7 +1167,7 @@ private struct ActivityDetailContent: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Text(narrative.narrative)
                         .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.foreground)
+                        .foregroundStyle(SharpitColor.slate)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -1149,29 +1190,23 @@ private struct ActivityDetailContent: View {
                 .disabled(isGeneratingNarrative)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private var sessionSummary: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(title: String(localized: "Lecture de séance"), symbol: "list.bullet.rectangle", showsChevron: false)
             let signals = summarySignals
             if !signals.isEmpty {
-                HStack(alignment: .top, spacing: SharpitSpacing.md) {
-                    ForEach(signals, id: \.caption) { signal in
-                        SharpitStatTile(caption: signal.caption, value: signal.value, unit: signal.unit, isFlat: true)
-                    }
-                }
+                ActivityMetricGrid(
+                    title: String(localized: "Lecture de séance"),
+                    metrics: signals.map { ActivityHeroMetricData(label: $0.caption, value: $0.value, unit: $0.unit) }
+                )
             }
             if let notes = detail.notes, !notes.isEmpty {
                 Text(notes).font(SharpitTypography.body).foregroundStyle(SharpitColor.slate)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     /// The session's figures beyond the hero grid, per sport.
@@ -1459,67 +1494,110 @@ struct ActivitySplit: Identifiable, Equatable {
     }
 }
 
+/// The splits as a table: where each ends, its pace or speed, its heart rate, and how it sits
+/// against the session's average — a pill when it was notably faster.
 struct ActivitySplitsSection: View {
     let splits: [ActivitySplit]
     let tone: Color
     let segmentDistance: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(
-                title: segmentDistance == 5_000 ? String(localized: "Splits tous les 5 km") : String(localized: "Splits au kilomètre"),
-                symbol: "flag.pattern.checkered",
-                showsChevron: false
-            )
-            VStack(spacing: SharpitSpacing.sm) {
-                ForEach(splits) { split in
-                    row(split)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            ActivitySectionTitle(splits.count == 1 ? String(localized: "1 split") : String(localized: "\(splits.count) splits"))
+                .padding(.bottom, 10)
+            HStack(spacing: 0) {
+                Text("Split").frame(width: 64, alignment: .leading)
+                Text(segmentDistance >= 5_000 ? String(localized: "Vitesse") : String(localized: "Allure")).frame(width: 96, alignment: .leading)
+                Text("FC")
+                Spacer(minLength: 0)
+                Text("Écart")
+            }
+            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+            .foregroundStyle(SharpitColor.slate)
+            .padding(.vertical, 6)
+            .accessibilityHidden(true)
+            ForEach(splits) { split in
+                CliniqueDivider()
+                row(split)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
-    /// Distance, figure and its gap to the session's average, the bar, then heart rate and climb.
-    /// The fastest splits (5 % above the average) fill lime, the rest ink.
     private func row(_ split: ActivitySplit) -> some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+        HStack(spacing: 0) {
             Text(split.distanceLabel)
-                .font(SharpitTypography.meta.monospacedDigit())
-                .foregroundStyle(SharpitColor.slate)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(width: 52, alignment: .leading)
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(split.figure(segmentDistance: segmentDistance))
-                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body, digits: true))
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text(String(format: "%+.0f %%", split.variation))
-                        .font(SharpitTypography.meta.monospacedDigit())
-                        .foregroundStyle(SharpitColor.slate)
-                }
-                .lineLimit(1)
-                SharpitBarTrack(
-                    fraction: split.progress,
-                    tone: split.variation <= -5 ? SharpitColor.statusGoodMark : SharpitColor.foreground
-                )
-                .frame(height: 6)
+                .frame(width: 64, alignment: .leading)
+            Text(split.figure(segmentDistance: segmentDistance))
+                .frame(width: 96, alignment: .leading)
+            Text(split.heartRate.map { "\(Int($0.rounded()))" } ?? "—")
+            Spacer(minLength: SharpitSpacing.xs)
+            if split.variation <= -5 {
+                CliniqueStatusPill(ActivitySheetReadout.variation(split.variation), status: .good)
+            } else {
+                Text(ActivitySheetReadout.variation(split.variation))
+                    .foregroundStyle(SharpitColor.slate)
             }
-            VStack(alignment: .trailing, spacing: 2) {
-                if let heartRate = split.heartRate {
-                    Text("\(Int(heartRate.rounded())) bpm")
-                }
-                Text("+\(Int(split.elevationGain.rounded())) m")
-            }
-            .font(SharpitTypography.meta.monospacedDigit())
-            .foregroundStyle(SharpitColor.slate)
-            .lineLimit(1)
-            .fixedSize()
         }
+        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body, digits: true))
+        .foregroundStyle(SharpitColor.foreground)
+        .lineLimit(1)
+        .padding(.vertical, 12)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// How the session's sheet words its head and its tables.
+enum ActivitySheetReadout {
+    static func status(_ verdict: SessionVerdict) -> CliniqueStatus {
+        switch verdict {
+        case .asPlanned: .good
+        case .harder, .longer: .watch
+        case .easier, .shorter: .unknown
+        case .different: .alert
+        }
+    }
+
+    /// « Course · Tempo 3 × 10 min »; the sport alone when the session has no name of its own.
+    static func title(sport: String, title: String?) -> String {
+        guard let title, !title.isEmpty, title.localizedCaseInsensitiveCompare(sport) != .orderedSame else { return sport }
+        return title.localizedCaseInsensitiveContains(sport) ? title : "\(sport) · \(title)"
+    }
+
+    /// « Jeudi 13 novembre · 18 h 05 », the weather after it when it was noted.
+    static func moment(_ date: Date, weather: String? = nil, calendar: Calendar = .current) -> String {
+        let day = date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst
+        let parts = calendar.dateComponents([.hour, .minute], from: date)
+        let clock = "\(parts.hour ?? 0) h \(String(format: "%02d", parts.minute ?? 0))"
+        return ([day, clock] + [weather].compactMap { $0 }).joined(separator: " · ")
+    }
+
+    /// « 7/10 · 4/5 », the effort then the feeling; « Noter » while neither is said.
+    static func feedback(rpe: Double?, feeling: SessionFeeling?) -> String {
+        let parts = [rpe.map { "\(Int($0.rounded()))/10" }, feeling.map { "\($0.rawValue)/5" }].compactMap { $0 }
+        return parts.isEmpty ? String(localized: "Noter") : parts.joined(separator: " · ")
+    }
+
+    /// « −6 % », « +3 % », « = »: a split against the session's average.
+    static func variation(_ percent: Double) -> String {
+        let rounded = Int(percent.rounded())
+        if rounded == 0 { return "=" }
+        return rounded < 0 ? "−\(-rounded) %" : "+\(rounded) %"
+    }
+}
+
+/// A section's name on the session's sheet.
+struct ActivitySectionTitle: View {
+    let title: String
+
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title)
+            .font(SharpitTypography.sectionTitle)
+            .tracking(SharpitTypography.sectionTitleTracking)
+            .foregroundStyle(SharpitColor.foreground)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -1644,27 +1722,56 @@ extension ActivityHeroMetricData {
     }
 }
 
+/// A session's figures between two hairlines, three to a row: the name over the value and its
+/// unit. Given a title, it reads as a section of its own.
 struct ActivityMetricGrid: View {
-    var title = String(localized: "Résumé de séance")
-    var symbol = "chart.bar"
+    var title: String? = nil
     let metrics: [ActivityHeroMetricData]
 
+    private var rows: [[ActivityHeroMetricData]] {
+        stride(from: 0, to: metrics.count, by: 3).map { Array(metrics[$0..<min($0 + 3, metrics.count)]) }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SharpitCardHeader(title: title, symbol: symbol, showsChevron: false)
-            LazyVGrid(
-                columns: [GridItem(.flexible(minimum: 0), alignment: .topLeading), GridItem(.flexible(minimum: 0), alignment: .topLeading)],
-                alignment: .leading,
-                spacing: SharpitSpacing.lg
-            ) {
-                ForEach(metrics) { metric in
-                    SharpitStatTile(caption: metric.label, value: metric.value, unit: metric.unit, isFlat: true)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            if let title {
+                ActivitySectionTitle(title).padding(.bottom, 10)
             }
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                CliniqueDivider()
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(Array(row.enumerated()), id: \.element.id) { index, metric in
+                        if index > 0 {
+                            Rectangle().fill(SharpitColor.divider).frame(width: 1).accessibilityHidden(true)
+                        }
+                        figure(metric)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 16)
+            }
+            CliniqueDivider()
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+    }
+
+    private func figure(_ metric: ActivityHeroMetricData) -> some View {
+        VStack(spacing: 4) {
+            Text(metric.label)
+                .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                .foregroundStyle(SharpitColor.slate)
+                .lineLimit(1)
+            (Text(metric.value)
+                .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+                + Text(metric.unit.map { " \($0)" } ?? "")
+                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                .foregroundStyle(SharpitColor.slate))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, SharpitSpacing.xxs)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -1974,7 +2081,7 @@ struct CollapsedActivityBottomBar: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(detail.title ?? detail.type.label)
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(SharpitColor.foreground)
                         .lineLimit(1)
 
