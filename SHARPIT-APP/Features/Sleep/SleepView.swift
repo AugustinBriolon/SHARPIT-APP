@@ -7,7 +7,9 @@ import SwiftUI
 struct SleepView: View {
     @State private var store: DayResourceStore<V1SleepResponse>
     @State private var showsTargets = false
-    @State private var segments: [HealthSleepSample] = []
+    /// The night's course from Apple Health, with the day it belongs to: a night is never
+    /// drawn with another one's course.
+    @State private var course: (dayId: String, segments: [HealthSleepSample]) = ("", [])
     private let day: Date
     private let tokenProvider: () async throws -> String
     private let profileClient: any AthleteProfileServing
@@ -48,7 +50,7 @@ struct SleepView: View {
             emptySymbol: "moon.zzz",
             unavailableTitle: String(localized: "Sommeil indisponible"),
             store: store,
-            content: { sleep in SleepSections(sleep: sleep, segments: segments) },
+            content: { sleep in SleepSections(sleep: sleep, segments: sleep.trainingDayId == course.dayId ? course.segments : []) },
             emptyAction: (title: String(localized: "Synchroniser maintenant"), run: syncAndReload),
             wash: .sleep,
             dayLabel: SleepSheetReadout.nightLabel
@@ -62,9 +64,13 @@ struct SleepView: View {
                 }
             }
         }
-        .task(id: day) {
+        // Read for the day on screen, not only the one the page opened on.
+        .task(id: store.selectedDay) {
+            let selected = store.selectedDay
             let reader = HealthKitReader()
-            if reader.isAvailable { segments = await reader.sleepSegments(nightEndingOn: day) }
+            guard reader.isAvailable else { return }
+            let segments = await reader.sleepSegments(nightEndingOn: selected)
+            course = (TrainingDayId.today(now: selected), segments)
         }
         .sheet(isPresented: $showsTargets, onDismiss: { Task { await store.load() } }) {
             SleepTargetsSheet(profileClient: profileClient, tokenProvider: tokenProvider)
@@ -156,21 +162,22 @@ private struct SleepHero: View {
         }
     }
 
+    /// The night without its course (a watch that kept only the totals): the same four lanes as
+    /// the timeline — awake on top, deep at the foot — each stage one block as long as its share
+    /// of the night. It says how much of each, never when: every block starts at the left.
     @ViewBuilder
     private var shareBar: some View {
-        if let shares = SleepReadout.stageShares(sleep.stages) {
+        let lanes = SleepSheetReadout.lanes(sleep.stages)
+        if !lanes.isEmpty {
             GeometryReader { geo in
-                HStack(spacing: 3) {
-                    ForEach(shares, id: \.stage) { item in
-                        if item.share > 0 {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(item.stage.tone)
-                                .frame(width: max(geo.size.width * item.share - 3, 3))
-                        }
-                    }
+                ForEach(lanes, id: \.level) { lane in
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(lane.level.tone)
+                        .frame(width: max(geo.size.width * lane.share, 6), height: 20)
+                        .offset(y: SleepSheetReadout.laneOffset(lane.level))
                 }
             }
-            .frame(height: 20)
+            .frame(height: 96)
             .accessibilityHidden(true)
         }
     }
@@ -287,6 +294,26 @@ private struct SleepSectionTitle: View {
 
 /// How the night reads at the head of its sheet.
 enum SleepSheetReadout {
+    /// Where a stage's lane sits, awake on top and deep sleep at the foot.
+    static func laneOffset(_ level: SleepReadout.TimelineLevel) -> CGFloat {
+        switch level {
+        case .awake: 0
+        case .rem: 25
+        case .light: 50
+        case .deep: 76
+        }
+    }
+
+    /// Each stage's share of the time in bed, longest lane full width; empty when no stage was kept.
+    static func lanes(_ stages: V1SleepStages) -> [(level: SleepReadout.TimelineLevel, share: Double)] {
+        let minutes: [(SleepReadout.TimelineLevel, Double)] = [
+            (.awake, stages.awakeMin ?? 0), (.rem, stages.remMin ?? 0),
+            (.light, stages.lightMin ?? 0), (.deep, stages.deepMin ?? 0),
+        ]
+        guard let longest = minutes.map(\.1).max(), longest > 0 else { return [] }
+        return minutes.filter { $0.1 > 0 }.map { (level: $0.0, share: $0.1 / longest) }
+    }
+
     static func status(_ key: V1SleepAdequacy.Key) -> CliniqueStatus {
         switch key {
         case .excellent, .adequate: .good
@@ -476,7 +503,6 @@ private struct SleepLine: View {
 private struct SleepTimeline: View {
     let segments: [HealthSleepSample]
 
-    private static let lanes: [SleepReadout.TimelineLevel: CGFloat] = [.awake: 0, .rem: 25, .light: 50, .deep: 76]
 
     var body: some View {
         let blocks = segments.compactMap { segment in
@@ -502,7 +528,7 @@ private struct SleepTimeline: View {
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .fill(block.level.tone)
                             .frame(width: max(geo.size.width * block.end.timeIntervalSince(block.start) / span, 4), height: 20)
-                            .offset(x: geo.size.width * block.start.timeIntervalSince(start) / span, y: Self.lanes[block.level] ?? 0)
+                            .offset(x: geo.size.width * block.start.timeIntervalSince(start) / span, y: SleepSheetReadout.laneOffset(block.level))
                     }
                 }
                 .frame(height: 96)
