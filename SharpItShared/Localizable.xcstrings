@@ -525,6 +525,7 @@
       }
     },
     "/ %lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3734,6 +3735,7 @@
       }
     },
     "%lld sur %lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4703,6 +4705,7 @@
       }
     },
     "1 ratées · 5 fluides" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4863,6 +4866,7 @@
       }
     },
     "1 très facile · 10 maximal" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4879,6 +4883,7 @@
       }
     },
     "1 très mal · 5 très bien" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5843,6 +5848,7 @@
       }
     },
     "Actions de la séance prévue" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11704,6 +11710,23 @@
         }
       }
     },
+    "Ce lien ne mène plus nulle part." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This link no longer leads anywhere."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce lien ne mène plus nulle part."
+          }
+        }
+      }
+    },
     "Ce matin" : {
       "localizations" : {
         "en" : {
@@ -12167,6 +12190,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ce qui a changé (optionnel)"
+          }
+        }
+      }
+    },
+    "Ce qui est tenu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What held"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce qui est tenu"
           }
         }
       }
@@ -16781,6 +16820,22 @@
         }
       }
     },
+    "Critère par critère" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Criterion by criterion"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Critère par critère"
+          }
+        }
+      }
+    },
     "CSS · allure seuil en continu" : {
       "localizations" : {
         "en" : {
@@ -19465,6 +19520,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Duathlon"
+          }
+        }
+      }
+    },
+    "Dur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hard"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dur"
           }
         }
       }
@@ -23301,6 +23372,22 @@
         }
       }
     },
+    "Fluides" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smooth"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fluides"
+          }
+        }
+      }
+    },
     "Focus haut du corps sans battements." : {
       "localizations" : {
         "en" : {
@@ -23399,6 +23486,7 @@
       }
     },
     "Forces" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -28580,6 +28668,7 @@
       }
     },
     "Le brick entier, transitions comprises, pas chaque sport." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -33690,6 +33779,7 @@
       }
     },
     "Non sélectionné" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -36107,6 +36197,23 @@
         }
       }
     },
+    "Page introuvable" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page not found"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page introuvable"
+          }
+        }
+      }
+    },
     "Pages et widgets" : {
       "localizations" : {
         "en" : {
@@ -36284,6 +36391,7 @@
       }
     },
     "Parle au coach pour Continuer, Alléger, Reporter ou Pause." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -39705,7 +39813,24 @@
         }
       }
     },
+    "Quatre réponses, d'un glissement du doigt. Elles ajustent la séance du jour." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Four answers, each a slide of the finger. They adjust today's session."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quatre réponses, d'un glissement du doigt. Elles ajustent la séance du jour."
+          }
+        }
+      }
+    },
     "Quatre réponses, de 1 à 5. Elles ajustent la séance du jour." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -39991,6 +40116,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rapport aiguë / fond"
+          }
+        }
+      }
+    },
+    "Ratées" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ratées"
           }
         }
       }
@@ -45146,6 +45287,7 @@
       }
     },
     "Sélectionné" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -51758,6 +51900,22 @@
         }
       }
     },
+    "Très dur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very hard"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Très dur"
+          }
+        }
+      }
+    },
     "Très dur. Signes de surmenage ou inconfort." : {
       "localizations" : {
         "en" : {
@@ -54700,146 +54858,290 @@
         }
       }
     },
-    "Ce qui est tenu" : {
+    "Au lit" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What held"
+            "value" : "In bed"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ce qui est tenu"
+            "value" : "Au lit"
           }
         }
       }
     },
-    "Critère par critère" : {
+    "Aucune course à venir" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Criterion by criterion"
+            "value" : "No race ahead"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Critère par critère"
+            "value" : "Aucune course à venir"
           }
         }
       }
     },
-    "Dur" : {
+    "Besoin" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hard"
+            "value" : "Need"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dur"
+            "value" : "Besoin"
           }
         }
       }
     },
-    "Très dur" : {
+    "Couché" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Very hard"
+            "value" : "Bedtime"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Très dur"
+            "value" : "Couché"
           }
         }
       }
     },
-    "Fluides" : {
+    "La course pour laquelle cette séance a été courue." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Smooth"
+            "value" : "The race this session was run for."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fluides"
+            "value" : "La course pour laquelle cette séance a été courue."
           }
         }
       }
     },
-    "Ratées" : {
+    "Le déroulé phase par phase n'a pas été transmis pour cette nuit." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Missed"
+            "value" : "The stage-by-stage course was not sent for this night."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ratées"
+            "value" : "Le déroulé phase par phase n'a pas été transmis pour cette nuit."
           }
         }
       }
     },
-    "Quatre réponses, d'un glissement du doigt. Elles ajustent la séance du jour." : {
+    "Levé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Four answers, each a slide of the finger. They adjust today's session."
+            "value" : "Up"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quatre réponses, d'un glissement du doigt. Elles ajustent la séance du jour."
+            "value" : "Levé"
           }
         }
       }
     },
-    "Ce lien ne mène plus nulle part." : {
+    "Prépare l'objectif" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This link no longer leads anywhere."
+            "value" : "Prepares the goal"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ce lien ne mène plus nulle part."
+            "value" : "Prépare l'objectif"
           }
         }
       }
     },
-    "Page introuvable" : {
+    "Solde 14 j" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Page not found"
+            "value" : "14-d balance"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Page introuvable"
+            "value" : "Solde 14 j"
+          }
+        }
+      }
+    },
+    "Solde 7 j" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7-d balance"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solde 7 j"
+          }
+        }
+      }
+    },
+    "Tes objectifs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your goals"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes objectifs"
+          }
+        }
+      }
+    },
+    "dette" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "debt"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dette"
+          }
+        }
+      }
+    },
+    "efficacité" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "efficiency"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "efficacité"
+          }
+        }
+      }
+    },
+    "effort" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "effort"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "effort"
+          }
+        }
+      }
+    },
+    "habituel %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "usual %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "habituel %@"
+          }
+        }
+      }
+    },
+    "Écart au besoin sur les %lld dernières nuits" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gap to the need over the last %lld nights"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écart au besoin sur les %lld dernières nuits"
+          }
+        }
+      }
+    },
+    "Écrans coupés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screens off"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écrans coupés"
+          }
+        }
+      }
+    },
+    "De nouveau disponible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available again"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De nouveau disponible"
           }
         }
       }
