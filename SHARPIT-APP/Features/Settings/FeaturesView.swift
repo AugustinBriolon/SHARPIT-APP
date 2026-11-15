@@ -64,8 +64,6 @@ struct FeatureDetailView: View {
                     }
                 }
                 .tint(SharpitColor.primary)
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
 
                 VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                     SharpitEyebrow(String(localized: "Pourquoi le suivre"))

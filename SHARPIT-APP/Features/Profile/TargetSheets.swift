@@ -91,8 +91,6 @@ struct SleepTargetsSheet: View {
                 }
             )
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
     /// A fixed bedtime, and the wake time it gives with the duration above — the night as a span.
@@ -144,8 +142,6 @@ struct SleepTargetsSheet: View {
                     .foregroundStyle(SharpitColor.slate)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
     private func stepButton(_ symbol: String, label: String, delta: Int) -> some View {
@@ -314,9 +310,7 @@ struct WeightTargetSheet: View {
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private func step(_ delta: Double) {

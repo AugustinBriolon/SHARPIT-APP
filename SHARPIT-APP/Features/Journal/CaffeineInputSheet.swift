@@ -111,9 +111,7 @@ struct CaffeineInputSheet: View {
                                         }
                                         Spacer(minLength: 0)
                                     }
-                                    .padding(SharpitSpacing.cardPadding)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .sharpitSurface(.panel)
                                 }
                                 .buttonStyle(.sharpitPressable)
                             }

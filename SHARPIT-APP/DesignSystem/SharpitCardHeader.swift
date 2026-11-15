@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The header every card shares: the ink icon tile, a title and a muted subtitle, then an
-/// optional accessory (a pill, a figure) and the disclosure chevron. One component, so a tile,
-/// a weight or a gap can never drift a point between cards.
+/// The title a section opens on, in Clinique (`docs/adr/0035`): the section's name, a quiet line
+/// under it, then an optional accessory (a pill, a figure) and the disclosure chevron. No icon
+/// tile: `symbol` is kept for the callers and no longer drawn.
 struct SharpitCardHeader<Accessory: View>: View {
     let title: String
     let symbol: String
@@ -30,8 +30,7 @@ struct SharpitCardHeader<Accessory: View>: View {
                     accessory()
                 }
             } else {
-                HStack(alignment: .center, spacing: isCompact ? SharpitSpacing.xxs + 2 : SharpitSpacing.sm) {
-                    SharpitIconTile(symbol: symbol, size: isCompact ? 30 : SharpitTokens.tileSize)
+                HStack(alignment: .firstTextBaseline, spacing: isCompact ? SharpitSpacing.xxs + 2 : SharpitSpacing.sm) {
                     titles
                     Spacer(minLength: isCompact ? 2 : SharpitSpacing.xs)
                     accessory()
@@ -46,8 +45,7 @@ struct SharpitCardHeader<Accessory: View>: View {
     private var titles: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(isCompact ? SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline) : SharpitTypography.cardTitle)
-                .tracking(SharpitTypography.cardTitleTracking)
+                .font(isCompact ? SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline) : SharpitTypography.sectionTitle)
                 .foregroundStyle(SharpitColor.foreground)
                 // A second line before any truncation: a 375 pt screen beside a pill cannot hold « Plus longue sortie ».
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
@@ -55,7 +53,7 @@ struct SharpitCardHeader<Accessory: View>: View {
                 .fixedSize(horizontal: false, vertical: true)
             if let subtitle {
                 Text(subtitle)
-                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                     .fixedSize(horizontal: false, vertical: true)

@@ -76,9 +76,7 @@ private struct TriathlonTransitionCard: View {
                 ActivityTechnicalGrid(rows: rows)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 

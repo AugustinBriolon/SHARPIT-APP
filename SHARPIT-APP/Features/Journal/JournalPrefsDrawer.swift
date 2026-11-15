@@ -110,15 +110,11 @@ struct JournalPrefsDrawer: View {
                         .font(SharpitTypography.meta)
                         .disabled(newCustomLabel.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
             } else {
                 Text("Les suivis personnalisés demandent un compte Pro.")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
-                    .padding(SharpitSpacing.cardPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .sharpitSurface(.panel)
             }
 
             ForEach(store.prefs.customItems) { item in
@@ -233,9 +229,7 @@ private struct JournalPrefsToggleRow: View {
         .tint(SharpitColor.primary)
         .disabled(isBlocked)
         .opacity(isBlocked ? 0.5 : 1)
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .onChange(of: isOn) { _, newValue in
             toggleValue = newValue
         }

@@ -83,9 +83,7 @@ struct ActivityStrengthSection: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     /// The ordinal beside the exercise; above it at the accessibility sizes, where beside it the

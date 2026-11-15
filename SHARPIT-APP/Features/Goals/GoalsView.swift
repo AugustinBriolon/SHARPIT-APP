@@ -490,9 +490,7 @@ struct GoalHero: View {
                     .foregroundStyle(SharpitColor.statusGoodForeground)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private var metric: some View {
@@ -525,9 +523,7 @@ struct GoalHero: View {
                 .frame(width: 88, height: 88)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 
@@ -568,9 +564,7 @@ private struct SeasonTimelineView: View {
                 }
                 principalRow
             }
-            .padding(SharpitSpacing.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
         }
     }
 
@@ -674,9 +668,7 @@ private struct SeasonConflictNotice: View {
             .buttonStyle(.sharpitPressable)
             .padding(.top, SharpitSpacing.xxs)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 
@@ -791,9 +783,7 @@ struct RaceAwaitingResultNotice: View {
             .buttonStyle(.sharpitPressable)
             .disabled(isWorking)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .sheet(isPresented: $isPicking) {
             RaceResultPickerSheet(goal: goal, candidates: store.raceDayActivities(for: goal)) { activity in
                 isPicking = false

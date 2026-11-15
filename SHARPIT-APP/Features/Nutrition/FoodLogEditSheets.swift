@@ -204,9 +204,7 @@ struct NutritionTargetsSheet: View {
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private func stepKcal(_ delta: Int) {
@@ -242,9 +240,7 @@ struct NutritionTargetsSheet: View {
                 totalRow
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private var totalRow: some View {

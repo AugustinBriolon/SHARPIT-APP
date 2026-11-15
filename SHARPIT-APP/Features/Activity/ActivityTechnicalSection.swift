@@ -126,9 +126,7 @@ struct ActivityTechnicalSection: View {
                     .foregroundStyle(SharpitColor.slate)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 

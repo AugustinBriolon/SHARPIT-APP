@@ -64,9 +64,7 @@ private struct RaceObjectiveBlock: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 
@@ -170,9 +168,7 @@ struct RaceZonesBlock: View {
             }
             .accessibilityHidden(true)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 
@@ -185,8 +181,6 @@ private struct RaceFiguresBlock: View {
             SharpitEyebrow(title)
             ActivityTechnicalGrid(rows: rows)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }

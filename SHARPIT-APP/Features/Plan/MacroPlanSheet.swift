@@ -79,8 +79,6 @@ struct MacroPlanSheet: View {
                             }
                         }
                     }
-                    .padding(SharpitSpacing.cardPadding)
-                    .sharpitSurface(.panel)
                 }
 
                 Text("Ensuite : « Remplir ma semaine » pose les séances, « Ajuster le planning » réarrange la charge.")
@@ -121,8 +119,6 @@ struct MacroPlanSheet: View {
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(SharpitSpacing.cardPadding)
-                .sharpitSurface(.panel)
 
                 if datedGoals.isEmpty {
                     SharpitStateMessage(
@@ -148,8 +144,6 @@ struct MacroPlanSheet: View {
                                 .foregroundStyle(SharpitColor.destructive)
                         }
                     }
-                    .padding(SharpitSpacing.cardPadding)
-                    .sharpitSurface(.panel)
                 }
             }
             .padding(.horizontal, SharpitSpacing.pageInset)

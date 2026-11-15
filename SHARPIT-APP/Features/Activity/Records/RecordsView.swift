@@ -145,9 +145,7 @@ private struct RecordCategoryCard: View {
                     .accessibilityLabel("Aucun record")
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     /// A record with its session opens it; one without (an import) only reads.
@@ -244,9 +242,7 @@ private struct RunBestsCard: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private func row(_ best: V1RunBest, _ entry: V1RecordEntry) -> some View {
@@ -309,9 +305,7 @@ private struct PowerCurveCard: View {
                     .lineLimit(1)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .onChange(of: selectedLabel) { _, label in
             if label != nil { SharpitHaptics.play(.notch(major: false)) }
         }

@@ -237,9 +237,7 @@ private struct BrickLegPanel: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 

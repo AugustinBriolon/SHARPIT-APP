@@ -147,9 +147,7 @@ struct ActivityStatusDrawer: View {
                 .buttonStyle(.sharpitPressable)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     /// « 3 nov. » while a mode has an end, nothing when it holds until changed.
@@ -173,9 +171,7 @@ struct ActivityStatusDrawer: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private var deadlineSection: some View {
@@ -206,9 +202,7 @@ struct ActivityStatusDrawer: View {
                     .foregroundStyle(SharpitColor.slate)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private func syncFromStore() {

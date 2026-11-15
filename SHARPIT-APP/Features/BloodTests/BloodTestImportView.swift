@@ -86,9 +86,7 @@ struct BloodTestImportView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(SharpitSpacing.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
 
             SharpitPrimaryButton(title: String(localized: "Choisir le PDF du laboratoire")) { isPickingFile = true }
             if VNDocumentCameraViewController.isSupported {
@@ -162,9 +160,7 @@ struct BloodTestReviewView: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 

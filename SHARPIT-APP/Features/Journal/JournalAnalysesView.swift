@@ -191,9 +191,7 @@ private struct JournalAnalysesPlate: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
     }
 }
@@ -215,9 +213,7 @@ private struct JournalAnalysesDomainCard: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 }
 

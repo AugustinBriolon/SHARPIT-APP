@@ -218,8 +218,6 @@ struct GoalDetailView: View {
                     .foregroundStyle(SharpitColor.slate)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
     /// What would sharpen the projection, as the server words it, and the way to fill it in.
@@ -282,8 +280,6 @@ struct GoalDetailView: View {
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
     private func metricPositionCard(current: Double, target: Double) -> some View {
@@ -329,8 +325,6 @@ struct GoalDetailView: View {
                 .foregroundStyle(isAhead ? SharpitColor.primary : SharpitColor.signalCaution)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
     // MARK: - Projected Split
@@ -527,9 +521,7 @@ private struct GoalLinkedActivityRow: View {
                 .foregroundStyle(SharpitColor.slate.opacity(0.5))
                 .accessibilityHidden(true)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
     }
 

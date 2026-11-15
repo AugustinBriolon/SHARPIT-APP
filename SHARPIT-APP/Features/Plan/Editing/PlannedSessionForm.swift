@@ -339,8 +339,6 @@ struct StrengthExercisesEditor: View {
             }
         }
         .font(SharpitTypography.body)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 }
 

@@ -154,9 +154,7 @@ private struct SessionLinkCandidateRow: View {
 
             Spacer(minLength: 0)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }

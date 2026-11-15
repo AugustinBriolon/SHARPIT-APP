@@ -73,9 +73,7 @@ struct BloodTestsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             SharpitPrimaryButton(title: String(localized: "Importer un compte rendu")) { isImporting = true }
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private var tests: some View {
@@ -320,8 +318,6 @@ struct BloodMarkerHistoryView: View {
         .chartYScale(domain: domain)
         .sharpitChartAxes()
         .frame(height: 200)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
         .accessibilityLabel("Courbe de \(history.marker?.label ?? history.markerKey)")
     }
 
