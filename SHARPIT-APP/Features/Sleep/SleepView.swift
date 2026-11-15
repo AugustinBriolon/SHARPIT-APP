@@ -129,7 +129,7 @@ private struct SleepHero: View {
 
             if sleep.nightStatus == .present {
                 night
-                stages.padding(.top, 14)
+                stages.padding(.top, segments.isEmpty ? 4 : 14)
             } else {
                 Text(sleep.nightStatus == .pending
                      ? String(localized: "La nuit n'est pas encore synchronisée.")
@@ -141,44 +141,25 @@ private struct SleepHero: View {
         }
     }
 
-    /// The night from bedtime to waking: its course by stage when the watch recorded it, the
-    /// stages' shares otherwise, under the clocks of its two ends.
-    private var night: some View {
-        VStack(spacing: 8) {
-            if segments.isEmpty {
-                HStack {
-                    Text(SleepReadout.clock(sleep.bedtimeMin))
-                    Spacer()
-                    Text(SleepReadout.clock(sleep.wakeMin))
-                }
-                .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption, digits: true))
-                .foregroundStyle(SharpitColor.slate)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Couché à \(SleepReadout.clock(sleep.bedtimeMin)), levé à \(SleepReadout.clock(sleep.wakeMin))")
-                shareBar
-            } else {
-                SleepTimeline(segments: segments)
-            }
-        }
-    }
-
-    /// The night without its course (a watch that kept only the totals): the same four lanes as
-    /// the timeline — awake on top, deep at the foot — each stage one block as long as its share
-    /// of the night. It says how much of each, never when: every block starts at the left.
+    /// The night's course by stage when Apple Health holds it. A source that kept only the
+    /// totals has no course to draw: the night's two ends and the time in bed are said as
+    /// figures, and the stages below carry the rest — never a chart made up from totals.
     @ViewBuilder
-    private var shareBar: some View {
-        let lanes = SleepSheetReadout.lanes(sleep.stages)
-        if !lanes.isEmpty {
-            GeometryReader { geo in
-                ForEach(lanes, id: \.level) { lane in
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(lane.level.tone)
-                        .frame(width: max(geo.size.width * lane.share, 6), height: 20)
-                        .offset(y: SleepSheetReadout.laneOffset(lane.level))
-                }
+    private var night: some View {
+        if segments.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                SleepFigures(figures: [
+                    (String(localized: "Couché"), SleepReadout.clock(sleep.bedtimeMin)),
+                    (String(localized: "Levé"), SleepReadout.clock(sleep.wakeMin)),
+                    (String(localized: "Au lit"), SleepReadout.duration(SleepReadout.timeInBed(bedtime: sleep.bedtimeMin, wake: sleep.wakeMin))),
+                ])
+                Text("Le déroulé phase par phase n'a pas été transmis pour cette nuit.")
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(height: 96)
-            .accessibilityHidden(true)
+        } else {
+            SleepTimeline(segments: segments)
         }
     }
 
@@ -304,14 +285,45 @@ enum SleepSheetReadout {
         }
     }
 
-    /// Each stage's share of the time in bed, longest lane full width; empty when no stage was kept.
-    static func lanes(_ stages: V1SleepStages) -> [(level: SleepReadout.TimelineLevel, share: Double)] {
-        let minutes: [(SleepReadout.TimelineLevel, Double)] = [
-            (.awake, stages.awakeMin ?? 0), (.rem, stages.remMin ?? 0),
-            (.light, stages.lightMin ?? 0), (.deep, stages.deepMin ?? 0),
-        ]
-        guard let longest = minutes.map(\.1).max(), longest > 0 else { return [] }
-        return minutes.filter { $0.1 > 0 }.map { (level: $0.0, share: $0.1 / longest) }
+    /// A share of tonight's need: the usual need or what one cause adds to it.
+    struct NeedPart: Identifiable, Equatable {
+        let label: String
+        let minutes: Double
+        let opacity: Double
+        var id: String { label }
+    }
+
+    /// Tonight's need cut by what makes it up; the usual need alone when nothing adds to it.
+    static func needParts(need: Double, contributors: V1SleepNeededContributors?) -> [NeedPart] {
+        let boosts: [(String, Double, Double)] = [
+            (String(localized: "dette"), contributors?.debtBoostMin ?? 0, 0.6),
+            (String(localized: "effort"), contributors?.strainBoostMin ?? 0, 0.4),
+            (String(localized: "efficacité"), contributors?.efficiencyBoostMin ?? 0, 0.25),
+        ].filter { $0.1 > 0 }
+        let base = max(need - boosts.map(\.1).reduce(0, +), 0)
+        return [NeedPart(label: String(localized: "habituel \(SleepReadout.duration(base))"), minutes: base, opacity: 1)]
+            + boosts.map { NeedPart(label: "\($0.0) +\(Int($0.1.rounded())) min", minutes: $0.1, opacity: $0.2) }
+    }
+
+    /// A night against the need, in minutes, with its day's initial.
+    struct Gap: Identifiable, Equatable {
+        let id: String
+        let day: String
+        let minutes: Double
+    }
+
+    /// The last seven nights that were recorded, each against the need.
+    static func gaps(_ history: [V1SleepNight], targetMin: Double) -> [Gap] {
+        history.suffix(7).compactMap { night in
+            guard let minutes = night.minutes else { return nil }
+            return Gap(id: night.date, day: dayInitial(night.date), minutes: minutes - targetMin)
+        }
+    }
+
+    /// « L », « M »… from a `yyyy-MM-dd` day; empty when it does not read as one.
+    static func dayInitial(_ day: String) -> String {
+        guard let date = TrainingDayId.date(day) else { return "" }
+        return String(date.sharpitFormatted(.dateTime.weekday(.narrow)).prefix(1)).uppercased()
     }
 
     static func status(_ key: V1SleepAdequacy.Key) -> CliniqueStatus {
@@ -388,8 +400,8 @@ enum SleepSheetReadout {
     }
 }
 
-/// Tonight, as lines: when to go to bed, when to put the screens down, what the night owes —
-/// then what the coach reads in the recent nights, and the way to talk about it.
+/// Tonight: when to put the screens down, when to go to bed and what the night owes as three
+/// figures, the need drawn by what makes it up — then what the coach reads in the recent nights.
 private struct SleepCoachCard: View {
     @Environment(ShellRouter.self) private var router
     let sleep: V1SleepResponse
@@ -397,18 +409,19 @@ private struct SleepCoachCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             SleepSectionTitle(String(localized: "Ce soir"))
-                .padding(.bottom, 4)
+                .padding(.bottom, 12)
             if let bedtime = sleep.recommendedBedtimeMin {
-                SleepLine(String(localized: "Au lit vers"), value: SleepReadout.clock(bedtime))
-                CliniqueDivider()
-                if let windDown = sleep.windDownStartMin {
-                    SleepLine(String(localized: "Écrans coupés vers"), value: SleepReadout.clock(windDown))
-                    CliniqueDivider()
-                }
-                // ADR-079: the need grows with the debt, the day's effort and a poor efficiency.
-                if let duration = sleep.sleepNeededMin ?? sleep.recommendedDurationMin {
-                    SleepLine(String(localized: "Besoin cette nuit"), detail: needDetail, value: SleepReadout.duration(duration))
-                    CliniqueDivider()
+                SleepFigures(figures: [
+                    sleep.windDownStartMin.map { (String(localized: "Écrans coupés"), SleepReadout.clock($0)) },
+                    (String(localized: "Au lit"), SleepReadout.clock(bedtime)),
+                    // ADR-079: the need grows with the debt, the day's effort and a poor efficiency.
+                    (sleep.sleepNeededMin ?? sleep.recommendedDurationMin).map { (String(localized: "Besoin"), SleepReadout.duration($0)) },
+                ].compactMap { $0 })
+                // Drawn only when something adds to the usual need: one full bar says nothing.
+                if let need = sleep.sleepNeededMin ?? sleep.recommendedDurationMin,
+                   case let parts = SleepSheetReadout.needParts(need: need, contributors: sleep.sleepNeededContributors), parts.count > 1 {
+                    SleepNeedBar(parts: parts)
+                        .padding(.top, 14)
                 }
             }
             ForEach(sleep.insights, id: \.self) { insight in
@@ -450,15 +463,74 @@ private struct SleepCoachCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
 
-    private var needDetail: String? {
-        guard let contributors = sleep.sleepNeededContributors else { return nil }
-        let bits = [
-            contributors.debtBoostMin > 0 ? String(localized: "dette +\(Int(contributors.debtBoostMin)) min") : nil,
-            contributors.strainBoostMin > 0 ? String(localized: "effort +\(Int(contributors.strainBoostMin)) min") : nil,
-            contributors.efficiencyBoostMin > 0 ? String(localized: "efficacité +\(Int(contributors.efficiencyBoostMin)) min") : nil,
-        ].compactMap { $0 }
-        return bits.isEmpty ? nil : bits.joined(separator: " · ")
+/// Figures side by side between two hairlines, each under its name — the session sheet's row.
+private struct SleepFigures: View {
+    let figures: [(label: String, value: String)]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            CliniqueDivider()
+            HStack(spacing: 0) {
+                ForEach(Array(figures.enumerated()), id: \.offset) { index, figure in
+                    if index > 0 {
+                        Rectangle().fill(SharpitColor.divider).frame(width: 1, height: 34)
+                    }
+                    VStack(spacing: 4) {
+                        Text(figure.label)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineLimit(1)
+                        Text(figure.value)
+                            .font(SharpitTypography.system(size: 19, weight: .semibold, relativeTo: .title3, digits: true))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(.vertical, 14)
+            CliniqueDivider()
+        }
+    }
+}
+
+/// Tonight's need as one bar: the usual need, then what the debt, the day's effort and a poor
+/// efficiency add to it, each named under with its minutes.
+private struct SleepNeedBar: View {
+    let parts: [SleepSheetReadout.NeedPart]
+
+    var body: some View {
+        let total = max(parts.map(\.minutes).reduce(0, +), 1)
+        VStack(alignment: .leading, spacing: 8) {
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    ForEach(parts) { part in
+                        Capsule()
+                            .fill(SharpitColor.pillarSleep.opacity(part.opacity))
+                            .frame(width: max((geo.size.width - CGFloat(parts.count - 1) * 2) * part.minutes / total, 4))
+                    }
+                }
+            }
+            .frame(height: 8)
+            .accessibilityHidden(true)
+            HStack(spacing: 14) {
+                ForEach(parts) { part in
+                    HStack(spacing: 5) {
+                        Circle().fill(SharpitColor.pillarSleep.opacity(part.opacity)).frame(width: 6, height: 6)
+                            .accessibilityHidden(true)
+                        Text(part.label)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .minimumScaleFactor(0.8)
+        }
     }
 }
 
@@ -541,11 +613,13 @@ private struct SleepTimeline: View {
 
 // MARK: - Sleep bank
 
-/// What the recent nights owe the athlete, and how steady they were — a line each.
+/// What the recent nights owe the athlete: each of the last seven against the need — over it
+/// in the sleep hue, under it in the watch one — then the balances and how steady the nights were.
 private struct SleepBankSection: View {
     let sleep: V1SleepResponse
 
     var body: some View {
+        let gaps = SleepSheetReadout.gaps(sleep.history, targetMin: sleep.targetMin)
         VStack(alignment: .leading, spacing: 0) {
             SleepSectionTitle(
                 String(localized: "Banque de sommeil"),
@@ -553,21 +627,59 @@ private struct SleepBankSection: View {
                     ? (String(localized: "À l'équilibre"), CliniqueStatus.good)
                     : (String(localized: "En dette"), CliniqueStatus.watch) }
             )
-            .padding(.bottom, 4)
-            SleepLine(String(localized: "Solde 7 jours"), value: SleepReadout.bankBalance(debtMin: sleep.debt7Min))
-            CliniqueDivider()
-            SleepLine(String(localized: "Solde 14 jours"), value: SleepReadout.bankBalance(debtMin: sleep.debt14Min))
-            CliniqueDivider()
+            .padding(.bottom, 14)
+            if !gaps.isEmpty {
+                SleepGapChart(gaps: gaps)
+                    .padding(.bottom, 14)
+            }
+            SleepFigures(figures: [
+                (String(localized: "Solde 7 j"), SleepReadout.bankBalance(debtMin: sleep.debt7Min)),
+                (String(localized: "Solde 14 j"), SleepReadout.bankBalance(debtMin: sleep.debt14Min)),
+                (String(localized: "Régularité"), sleep.regularityMin.map { String(localized: "± \(Int($0.rounded())) min") } ?? "—"),
+            ])
             SleepLine(String(localized: "Moyenne 7 jours"), value: SleepReadout.duration(sleep.averages.durationMin))
-            CliniqueDivider()
-            SleepLine(
-                String(localized: "Régularité"),
-                value: sleep.regularityMin.map { String(localized: "± \(Int($0.rounded())) min") } ?? "—"
-            )
             CliniqueDivider()
             SleepLine(String(localized: "Score moyen"), value: sleep.averages.score.map { "\(Int($0.rounded()))" } ?? "—")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The last nights around the need: a bar up for a night over it, down for one under it.
+private struct SleepGapChart: View {
+    let gaps: [SleepSheetReadout.Gap]
+
+    var body: some View {
+        let reach = max(gaps.map { abs($0.minutes) }.max() ?? 0, 30)
+        VStack(spacing: 6) {
+            HStack(alignment: .center, spacing: 8) {
+                ForEach(gaps) { gap in
+                    let height = max(34 * abs(gap.minutes) / reach, 3)
+                    VStack(spacing: 0) {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(SharpitColor.pillarSleep)
+                            .frame(height: gap.minutes >= 0 ? height : 0)
+                            .frame(height: 34, alignment: .bottom)
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(SharpitColor.statusWatchMark)
+                            .frame(height: gap.minutes < 0 ? height : 0)
+                            .frame(height: 34, alignment: .top)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .background { Rectangle().fill(SharpitColor.outline).frame(height: 1) }
+            HStack(spacing: 8) {
+                ForEach(gaps) { gap in
+                    Text(gap.day)
+                        .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2))
+                        .foregroundStyle(SharpitColor.slate)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Écart au besoin sur les \(gaps.count) dernières nuits")
     }
 }
 
