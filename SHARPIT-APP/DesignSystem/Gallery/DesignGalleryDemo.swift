@@ -459,6 +459,30 @@ struct ScreenDemoHost: View {
                 NavigationStack {
                     FoodPortionPage(product: DemoFoodLog.pasta, lastGrams: 200, meal: .dinner) { _, _ in }
                 }
+            case "compliance":
+                if let analysis = try? JSONDecoder().decode(V1PlannedSessionAnalysis.self, from: Data("""
+                {"complianceScore":72,"verdict":"too_hard","summary":"Les trois blocs sont faits, mais plus vite que prévu : tu es sorti de la zone tempo sur le dernier.",
+                 "strengths":["Les trois blocs sont tenus","Durée respectée : 58 min pour 55 prévues"],
+                 "improvements":["Allure 4:11 /km pour 4:20 – 4:30 prévus","Zone 4 au lieu de 3 sur le dernier bloc"],
+                 "remarks":["Fréquence cardiaque moyenne 162 bpm"],
+                 "recommendation":"Garde l'allure du premier bloc sur les trois : c'est là que le tempo travaille."}
+                """.utf8)) {
+                    ComplianceDetailSheet(title: "Tempo 3 × 10 min", analysis: analysis, onUnlink: {}, onReanalyze: {})
+                }
+            case "notifications":
+                NavigationStack { NotificationPrefsView(profileClient: DemoEquipment(), tokenProvider: { "demo" }) }
+            case "account":
+                NavigationStack { AccountView(profileClient: DemoEquipment(), tokenProvider: { "demo" }, modelContext: nil) }
+            case "targets":
+                DemoTargetsSheet()
+            case "ownfood":
+                NavigationStack {
+                    FoodCustomPage(purpose: .edit(DemoFoodLog.pasta), save: { _ in DemoFoodLog.pasta }, onSaved: { _ in })
+                }
+            case "recipe":
+                NavigationStack {
+                    FoodRecipePage(recipe: nil, client: DemoFoodLog(), tokenProvider: { "demo" }, onSave: { _ in DemoFoodLog.pasta }, onSaved: { _ in })
+                }
             case "thresholds":
                 NavigationStack {
                     ThresholdsView(client: AthleteProfileClient(), tokenProvider: { "demo" })
@@ -1184,4 +1208,19 @@ private struct DemoFoodLog: FoodLogServing {
     func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry] { [] }
     func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct { throw SharpitAPIError.server }
     func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] { [] }
+}
+
+private struct DemoTargetsSheet: View {
+    @State private var store = FoodLogStore(client: DemoFoodLog(), tokenProvider: { "demo" })
+    @State private var isLoaded = false
+
+    var body: some View {
+        Group {
+            if isLoaded { NutritionTargetsSheet(store: store) }
+        }
+        .task {
+            await store.load(trainingDayId: TrainingDayId.today(now: .now))
+            isLoaded = true
+        }
+    }
 }
