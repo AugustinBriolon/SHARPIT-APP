@@ -453,6 +453,12 @@ struct ScreenDemoHost: View {
                 NavigationStack {
                     ActivityDetailView(activity: "demo-map", client: DemoActivities(), tokenProvider: { "demo" })
                 }
+            case "meal":
+                NavigationStack { DemoMealPage() }
+            case "portion":
+                NavigationStack {
+                    FoodPortionPage(product: DemoFoodLog.pasta, lastGrams: 200, meal: .dinner) { _, _ in }
+                }
             case "thresholds":
                 NavigationStack {
                     ThresholdsView(client: AthleteProfileClient(), tokenProvider: { "demo" })
@@ -1129,4 +1135,53 @@ private struct DemoEquipment: AthleteProfileServing {
     }
 
     func thresholdHistory(token: String) async throws -> [V1ThresholdSnapshot] { [] }
+}
+
+/// A lunch of four foods, read from an in-memory log.
+private struct DemoMealPage: View {
+    @State private var store = FoodLogStore(client: DemoFoodLog(), tokenProvider: { "demo" })
+
+    var body: some View {
+        FoodLogMealPage(store: store, meal: .lunch, flags: [])
+            .task { await store.load(trainingDayId: TrainingDayId.today(now: .now)) }
+    }
+}
+
+/// One day's log and nothing else: every write is refused, the demo is for reading the pages.
+private struct DemoFoodLog: FoodLogServing {
+    static let pasta = V1FoodProduct(
+        id: "demo-pasta", source: "CIQUAL", name: String(localized: "Pâtes complètes, cuites"),
+        kcalPer100g: 124, proteinPer100g: 4.8, carbsPer100g: 25, fatPer100g: 0.9, fiberPer100g: 3.6
+    )
+
+    func day(trainingDayId: String, token: String) async throws -> V1FoodLogDay {
+        try JSONDecoder().decode(V1FoodLogDay.self, from: Data("""
+        {"trainingDayId":"\(trainingDayId)","recent":[],"targets":{"mode":"GRAMS","kcal":2850,"proteinG":150,"carbsG":380,"fatG":90},
+         "entries":[
+          {"id":"1","meal":"LUNCH","name":"Riz basmati, cuit","grams":220,"kcal":286,"protein":6,"carbs":62,"fat":1},
+          {"id":"2","meal":"LUNCH","name":"Blanc de poulet grillé","grams":150,"kcal":248,"protein":46,"carbs":0,"fat":5},
+          {"id":"3","meal":"LUNCH","name":"Courgettes sautées","grams":180,"kcal":61,"protein":3,"carbs":6,"fat":3},
+          {"id":"4","meal":"LUNCH","name":"Huile d'olive","grams":14,"kcal":126,"protein":0,"carbs":0,"fat":14}]}
+        """.utf8))
+    }
+
+    func add(_ draft: FoodLogDraft, token: String) async throws -> V1FoodLogEntry { throw SharpitAPIError.server }
+    func add(_ drafts: [FoodLogDraft], token: String) async throws -> [V1FoodLogEntry] { throw SharpitAPIError.server }
+    func update(entryId: String, _ change: FoodLogEntryChange, token: String) async throws -> V1FoodLogEntry { throw SharpitAPIError.server }
+    func delete(entryId: String, token: String) async throws { throw SharpitAPIError.server }
+    func search(_ query: String, token: String) async throws -> V1FoodSearchResults { throw SharpitAPIError.server }
+    func product(barcode: String, token: String) async throws -> V1FoodProduct? { nil }
+    func createCustomFood(_ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct { throw SharpitAPIError.server }
+    func ownFoods(token: String) async throws -> [V1FoodProduct] { [Self.pasta] }
+    func updateCustomFood(id: String, _ draft: FoodCustomDraft, token: String) async throws -> V1FoodProduct { throw SharpitAPIError.server }
+    func deleteCustomFood(id: String, token: String) async throws { throw SharpitAPIError.server }
+    func setTargets(_ targets: V1NutritionTargets, trainingDayId: String, token: String) async throws -> V1NutritionTargets { targets }
+    func setSkipped(_ meal: FoodLogMeal, skipped: Bool, trainingDayId: String, token: String) async throws -> [FoodLogMeal] { [] }
+    func copy(from fromDayId: String, meal: FoodLogMeal?, to toDayId: String, token: String) async throws -> [V1FoodLogEntry] { [] }
+    func savedMeals(token: String) async throws -> [V1SavedMeal] { [] }
+    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> V1SavedMeal { throw SharpitAPIError.server }
+    func deleteSavedMeal(id: String, token: String) async throws { throw SharpitAPIError.server }
+    func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry] { [] }
+    func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct { throw SharpitAPIError.server }
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] { [] }
 }
