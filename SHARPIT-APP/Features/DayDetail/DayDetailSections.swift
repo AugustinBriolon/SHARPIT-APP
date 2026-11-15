@@ -55,7 +55,7 @@ struct DayDetailVerdictCard: View {
                 }
                 .padding(SharpitSpacing.sm)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .sharpitSurface(.panelAlt)
+                .sharpitSurface(.panel)
             }
         }
         .padding(SharpitSpacing.cardPadding)

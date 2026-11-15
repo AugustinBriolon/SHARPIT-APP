@@ -36,11 +36,12 @@ struct JournalPrefsDrawer: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SharpitSpacing.pageInset)
+                .padding(.horizontal, 24)
+                .padding(.vertical, SharpitSpacing.md)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(SharpitCanvasBackground())
-            .navigationTitle("Personnaliser")
+            .navigationTitle("Mes signaux")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -170,21 +171,14 @@ private struct JournalFilterChip: View {
 
     var body: some View {
         Button(action: onTap) {
+            // The app's chip: ink once chosen, a hairline otherwise.
             Text(label)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate)
+                .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background {
-                    Capsule()
-                        .fill(isSelected ? SharpitColor.primary.opacity(0.12) : SharpitColor.divider.opacity(0.5))
-                }
-                .overlay {
-                    if isSelected {
-                        Capsule()
-                            .strokeBorder(SharpitColor.primary.opacity(0.35), lineWidth: 1)
-                    }
-                }
+                .frame(minHeight: 34)
+                .background(isSelected ? SharpitColor.primary : .clear, in: Capsule())
+                .overlay(Capsule().strokeBorder(isSelected ? .clear : SharpitColor.outline, lineWidth: 1))
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)

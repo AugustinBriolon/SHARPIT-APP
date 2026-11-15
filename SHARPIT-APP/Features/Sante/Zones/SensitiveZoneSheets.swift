@@ -531,7 +531,7 @@ struct ZoneCheckinSheet: View {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(draft.severity.map(String.init) ?? "—")
                         .font(SharpitTypography.gaugeScore)
-                        .foregroundStyle(draft.severity.map(ZoneSeverityTint.color) ?? SharpitColor.slate)
+                        .foregroundStyle(draft.severity == nil ? SharpitColor.slate : SharpitColor.foreground)
                         .contentTransition(.numericText())
                     Text("/10")
                         .font(SharpitTypography.meta)
@@ -565,34 +565,25 @@ struct ZoneCheckinSheet: View {
     }
 
     private var saveBar: some View {
-        Button {
-            guard !isSaving else { return }
-            isSaving = true
-            Task {
-                let saved = await onSave(draft)
-                isSaving = false
-                if saved { dismiss() } else { failed = true }
+        SharpitActionDock {
+            Button {
+                guard !isSaving else { return }
+                isSaving = true
+                Task {
+                    let saved = await onSave(draft)
+                    isSaving = false
+                    if saved { dismiss() } else { failed = true }
+                }
+            } label: {
+                HStack {
+                    if isSaving { ProgressView().tint(SharpitColor.primaryForeground) }
+                    Text(isSaving ? String(localized: "Enregistrement…") : String(localized: "Enregistrer"))
+                }
+                .frame(maxWidth: .infinity)
             }
-        } label: {
-            HStack {
-                if isSaving { ProgressView().tint(.white) }
-                Text(isSaving ? String(localized: "Enregistrement…") : String(localized: "Enregistrer"))
-            }
-            .font(SharpitTypography.bodyEmphasis)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .foregroundStyle(.white)
-            .sharpitContainerCorner(SharpitRadius.panel)
-            .background(
-                draft.isComplete ? SharpitColor.primary : SharpitColor.slate.opacity(0.35),
-                in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-            )
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+            .disabled(!draft.isComplete || isSaving)
         }
-        .buttonStyle(.sharpitPressable)
-        .disabled(!draft.isComplete || isSaving)
-        .padding(.horizontal, SharpitSpacing.pageInset)
-        .padding(.vertical, SharpitSpacing.sm)
-        .background(.ultraThinMaterial)
     }
 }
 
@@ -625,15 +616,19 @@ struct ZoneSeverityScale: View {
                     Text("\(value)")
                         .font(SharpitTypography.data)
                         .monospacedDigit()
-                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                        .foregroundStyle(SharpitColor.foreground)
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
-                        .background(
-                            RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                                .fill(isSelected ? ZoneSeverityTint.color(value) : SharpitElevatedColor.panelOnSheet)
-                                .sharpitShadow(.control)
+                        // A hairline tile, lined in ink once chosen; the level's hue stays a mark under the figure.
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.outline, lineWidth: isSelected ? 2 : 1)
                         )
-                        .scaleEffect(isSelected ? 1.04 : 1)
+                        .overlay(alignment: .bottom) {
+                            if isSelected {
+                                Capsule().fill(ZoneSeverityTint.color(value)).frame(width: 16, height: 3).padding(.bottom, 6)
+                            }
+                        }
                         .contentShape(.rect)
                 }
                 .buttonStyle(.sharpitPressable)
@@ -670,13 +665,9 @@ struct ZoneImpactPicker: View {
                     .padding(.horizontal, SharpitSpacing.cardPadding)
                     .padding(.vertical, 14)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                            .fill(isSelected ? SharpitColor.primary.opacity(0.10) : SharpitElevatedColor.panelOnSheet)
-                    )
                     .overlay {
-                        RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                            .strokeBorder(isSelected ? SharpitColor.primary.opacity(0.35) : .clear, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
+                            .strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.outline, lineWidth: isSelected ? 1.5 : 1)
                     }
                 }
                 .buttonStyle(.sharpitPressable)
