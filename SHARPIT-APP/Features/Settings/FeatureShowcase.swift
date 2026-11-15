@@ -44,8 +44,8 @@ struct FeatureShowcase: View {
                 .padding(.bottom, SharpitSpacing.xs)
             JournalLines {
                 JournalLine(title: String(localized: "Humeur")) { JournalValuePill(text: String(localized: "Bien")) }
-                JournalFactorLine(label: String(localized: "Alcool"), detail: nil, state: .no) {}
-                JournalFactorLine(label: String(localized: "Écrans tard"), detail: nil, state: .yes) {}
+                JournalFactorLine(label: String(localized: "Alcool"), state: .no) { _ in }
+                JournalFactorLine(label: String(localized: "Écrans tard"), state: .yes) { _ in }
             }
         }
     }

@@ -167,7 +167,7 @@ struct SettingsView: View {
                         .accessibilityLabel("Fermer")
                 }
                 // The tier, said once where the page opens.
-                ToolbarItem(placement: .topBarTrailing) {
+                SharpitBarBadge {
                     CliniqueStatusPill(isPro ? String(localized: "Pro") : String(localized: "Gratuit"), status: isPro ? .pro : .unknown)
                 }
             }

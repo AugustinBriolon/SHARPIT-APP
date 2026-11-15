@@ -57,3 +57,8 @@ Densité and Retour are large-titled sheets of lines (`sharpitGroupedList`), a s
 its title; switches are the brand's lime, darkened as the mock-ups draw it (`SharpitSwitchStyle`).
 `SharpitScreenDemo notifications` / `account` show two of them. Rows keep their glyph tiles, which
 the mock-ups do not draw.
+
+**Second pass (2026-11-15).** The tier in the bar is a status, not a button (`SharpitBarBadge`: no
+glass capsule on iOS 26). Priorités gives each source one control, its switch; which one leads is
+its own line (« Source principale », a menu) shown once two are on, the leading source tagged
+« Principale ».

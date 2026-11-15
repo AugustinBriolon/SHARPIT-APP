@@ -47,10 +47,12 @@ struct SourcePrioritiesView: View {
         List {
             ForEach(store.classes) { sourceClass in
                 Section {
-                    ForEach(sourceClass.providers.filter { store.isConnected($0.id) }) { provider in
+                    let connected = sourceClass.providers.filter { store.isConnected($0.id) }
+                    ForEach(connected) { provider in
                         row(provider, in: sourceClass)
                         writeCalendarRow(provider, in: sourceClass)
                     }
+                    primaryRow(among: connected, in: sourceClass)
                 } header: {
                     SharpitEyebrow(sourceClass.label)
                 } footer: {
@@ -67,7 +69,7 @@ struct SourcePrioritiesView: View {
     private func footer(for sourceClass: V1SourceClass) -> String {
         let base = sourceClass.description
         if store.canChoosePrimary(in: sourceClass.id) {
-            return String(localized: "\(base) Touche le nom pour choisir la source principale ; le commutateur active ou coupe la source.")
+            return String(localized: "\(base) La source principale fait foi ; les autres complètent ce qui lui manque.")
         }
         if store.connectedCount(in: sourceClass.id) > 1 {
             return String(localized: "\(base) Active au moins deux sources pour en choisir une principale.")
@@ -75,55 +77,21 @@ struct SourcePrioritiesView: View {
         return base
     }
 
+    /// A source: its switch says whether it feeds the class — nothing else to tap on the line.
     private func row(_ provider: V1SourceClass.Provider, in sourceClass: V1SourceClass) -> some View {
         let isEnabled = store.isEnabled(provider.id, in: sourceClass.id)
-        let isPrimary = store.isPrimary(provider.id, in: sourceClass.id)
-        let choosesPrimary = store.canChoosePrimary(in: sourceClass.id) && isEnabled
+        let isPrimary = store.canChoosePrimary(in: sourceClass.id) && isEnabled && store.isPrimary(provider.id, in: sourceClass.id)
         return HStack(spacing: SharpitSpacing.sm) {
             if let logo = ProviderLogo.Provider(integrationId: provider.id) {
                 ProviderLogo(provider: logo)
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Button {
-                    guard choosesPrimary else { return }
-                    Task { await store.setPrimary(provider.id, in: sourceClass.id) }
-                } label: {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(provider.name)
-                                .font(SharpitTypography.bodyEmphasis)
-                                .foregroundStyle(SharpitColor.foreground)
-                            if choosesPrimary {
-                                Text(isPrimary ? String(localized: "Principale") : String(localized: "Choisir comme principale"))
-                                    .font(SharpitTypography.meta.weight(isPrimary ? .semibold : .regular))
-                                    .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.slate)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                        if choosesPrimary {
-                            // Keep the mark beside the copy — a `Label` in a stretched row
-                            // pushes the glyph and the title to opposite edges.
-                            Image(systemName: isPrimary ? "checkmark.circle.fill" : "circle")
-                                .font(.body)
-                                .foregroundStyle(isPrimary ? SharpitColor.primary : SharpitColor.slate)
-                                .accessibilityHidden(true)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(!choosesPrimary)
-                .accessibilityAddTraits(isPrimary ? [.isSelected] : [])
-                .accessibilityHint(choosesPrimary && !isPrimary ? String(localized: "En fait la source principale") : "")
-                .accessibilityLabel(
-                    choosesPrimary
-                        ? "\(provider.name), \(isPrimary ? "principale" : "pas principale")"
-                        : provider.name
-                )
+            Text(provider.name)
+                .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                .foregroundStyle(SharpitColor.foreground)
+            if isPrimary {
+                CliniqueStatusPill(String(localized: "Principale"), status: .good)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
+            Spacer(minLength: SharpitSpacing.xs)
             Toggle(
                 String(localized: "Utiliser \(provider.name)"),
                 isOn: Binding(
@@ -136,9 +104,40 @@ struct SourcePrioritiesView: View {
                 )
             )
             .labelsHidden()
-            .tint(SharpitColor.primary)
         }
         .padding(.vertical, SharpitSpacing.xxs)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Which of the sources switched on leads: one line, one menu — only when two or more are on.
+    @ViewBuilder
+    private func primaryRow(among providers: [V1SourceClass.Provider], in sourceClass: V1SourceClass) -> some View {
+        let enabled = providers.filter { store.isEnabled($0.id, in: sourceClass.id) }
+        if store.canChoosePrimary(in: sourceClass.id), enabled.count > 1 {
+            let current = enabled.first { store.isPrimary($0.id, in: sourceClass.id) }
+            HStack(spacing: SharpitSpacing.sm) {
+                Text("Source principale")
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: SharpitSpacing.xs)
+                Menu {
+                    Picker("Source principale", selection: Binding(
+                        get: { current?.id ?? "" },
+                        set: { id in Task { await store.setPrimary(id, in: sourceClass.id) } }
+                    )) {
+                        ForEach(enabled) { provider in Text(provider.name).tag(provider.id) }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(current?.name ?? String(localized: "Choisir"))
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.slate)
+                }
+            }
+        }
     }
 
     /// Its own row: inside the provider row, beside its button and switch, the link was a hard target.
