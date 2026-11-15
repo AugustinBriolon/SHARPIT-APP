@@ -158,7 +158,7 @@ struct SettingsView: View {
                 }
                 .sharpitListRows()
             }
-            .sharpitGroupedList()
+            .sharpitGroupedList(cards: true)
             .navigationTitle("Paramètres")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {

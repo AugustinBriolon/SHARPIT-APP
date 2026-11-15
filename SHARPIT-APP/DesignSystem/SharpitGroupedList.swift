@@ -10,10 +10,17 @@ extension View {
     /// `Label`, a `Toggle`, a `LabeledContent` — reads in the brand body face and text colour
     /// without each one asking; left alone they fall back to SF Pro in system black.
     /// `wash` puts the screen's one wash at the top of the sheet, for a page read on its own.
+    /// `cards` keeps the groups as white cards on the tinted canvas, as the Paramètres mock-up
+    /// draws its menu — the one list that is a menu of destinations, not a page of content.
     @ViewBuilder
-    func sharpitGroupedList(wash: CliniqueWash? = nil) -> some View {
+    func sharpitGroupedList(wash: CliniqueWash? = nil, cards: Bool = false) -> some View {
         let list = listStyle(.insetGrouped).scrollContentBackground(.hidden)
-        if let wash {
+        if cards {
+            list.background(SharpitElevatedColor.groupedCanvas.ignoresSafeArea())
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .environment(\.sharpitListCards, true)
+        } else if let wash {
             list.cliniqueSheet(wash: wash, height: 240).modifier(SharpitListDress())
         } else {
             list.background(SharpitCanvasBackground()).modifier(SharpitListDress())
@@ -36,17 +43,34 @@ extension View {
     /// Apply to a `Section`: its rows sit on the sheet, edge to edge of its margins, split by
     /// the app's hairline.
     func sharpitListRows() -> some View {
-        listRowBackground(Color.clear)
-            // Two points inside the cell, which clips a glyph's overhang at its very edge.
-            .listRowInsets(EdgeInsets(top: 10, leading: 2, bottom: 10, trailing: 2))
-            .listRowSeparatorTint(SharpitColor.divider)
-            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+        modifier(SharpitListRowSurface())
+    }
+}
+
+private struct SharpitListRowSurface: ViewModifier {
+    @Environment(\.sharpitListCards) private var isCards
+
+    func body(content: Content) -> some View {
+        if isCards {
+            content
+                .listRowBackground(SharpitColor.card)
+                .listRowSeparatorTint(SharpitColor.divider)
+        } else {
+            content
+                .listRowBackground(Color.clear)
+                // Two points inside the cell, which clips a glyph's overhang at its very edge.
+                .listRowInsets(EdgeInsets(top: 10, leading: 2, bottom: 10, trailing: 2))
+                .listRowSeparatorTint(SharpitColor.divider)
+                .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+        }
     }
 }
 
 extension EnvironmentValues {
     /// Inside a Clinique list a section marker is the section's title, not a caption.
     @Entry var sharpitSectionTitles = false
+    /// A list whose groups are cards (`sharpitGroupedList(cards:)`).
+    @Entry var sharpitListCards = false
 }
 
 /// A section title in the app's eyebrow voice, so a grouped list reads like the screens
