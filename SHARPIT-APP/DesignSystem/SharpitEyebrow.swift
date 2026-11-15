@@ -44,3 +44,10 @@ struct SharpitEyebrow: View {
         }
     }
 }
+
+extension SharpitEyebrow {
+    /// The marker as a section's title, for a page that is not a list.
+    static func title(_ text: String) -> some View {
+        SharpitEyebrow(text).environment(\.sharpitSectionTitles, true)
+    }
+}

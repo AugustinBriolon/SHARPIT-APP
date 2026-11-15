@@ -72,6 +72,7 @@ struct SharpitApp: App {
         } else if let screen = ScreenDemo.requested {
             ScreenDemoHost(screen: screen)
                 .sharpitAppearance()
+                .toggleStyle(.sharpitSwitch)
         } else if CliniqueGalleryDemo.isRequested {
             CliniqueGalleryHost()
                 .sharpitAppearance()

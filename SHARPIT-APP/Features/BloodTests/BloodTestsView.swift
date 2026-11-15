@@ -78,7 +78,7 @@ struct BloodTestsView: View {
 
     private var tests: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Analyses"))
+            SharpitEyebrow.title(String(localized: "Analyses"))
             SharpitInsetGroup {
                 ForEach(store.tests) { test in
                     NavigationLink {
@@ -100,7 +100,7 @@ struct BloodTestsView: View {
         let markers = store.followedMarkers
         if !markers.isEmpty {
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow(String(localized: "Évolution"))
+                SharpitEyebrow.title(String(localized: "Évolution"))
                 SharpitInsetGroup {
                     ForEach(markers, id: \.markerKey) { history in
                         NavigationLink {

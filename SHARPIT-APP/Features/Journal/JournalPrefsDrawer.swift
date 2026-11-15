@@ -156,7 +156,7 @@ private struct JournalPrefsSection<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(title)
+            SharpitEyebrow.title(title)
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)

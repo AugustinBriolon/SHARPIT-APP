@@ -253,7 +253,7 @@ struct FoodRecipePage: View {
                 .buttonStyle(.plain)
             }
         } header: {
-            SharpitEyebrow(String(localized: "Résultats"))
+            SharpitEyebrow.title(String(localized: "Résultats"))
         } footer: {
             FoodSourcesAttribution(products: hits)
         }

@@ -8,11 +8,6 @@ enum SharpitNutritionTone {
         SharpitColor.primary
     }
 
-    /// A meal's glyph or « + » drawn in its hue, lifted on dark so it stays legible on the canvas.
-    static func mealLabel(_ storedName: String) -> Color {
-        SharpitElevatedColor.adaptive(light: meal(storedName), dark: meal(storedName), darkLift: 0.35)
-    }
-
     /// The add sheet's ways in, each on its own tile.
     enum Action {
         static let scan = SharpitColor.primary

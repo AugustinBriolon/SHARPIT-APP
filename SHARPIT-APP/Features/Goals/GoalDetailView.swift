@@ -422,7 +422,7 @@ struct GoalDetailView: View {
     /// The sessions raced for this goal, each pushing its page in the Objectifs stack.
     private var linkedActivitiesSection: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Activités liées"))
+            SharpitEyebrow.title(String(localized: "Activités liées"))
             ForEach(linkedActivities) { activity in
                 NavigationLink(value: GoalRoute.activity(activity.id)) {
                     GoalLinkedActivityRow(activity: activity)
