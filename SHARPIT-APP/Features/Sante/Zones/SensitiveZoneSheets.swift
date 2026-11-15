@@ -478,94 +478,104 @@ struct ZoneCheckinSheet: View {
     private var isCorrective: Bool { SensitiveZoneOptions.isCorrective(zone.category) }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    header
-                    severityBlock
-                    impactBlock
-                    commentBlock
-                    if failed {
-                        Text("L'enregistrement a échoué. Réessaie.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalRisk)
-                    }
-                }
-                .padding(.horizontal, SharpitSpacing.pageInset)
-                .padding(.top, SharpitSpacing.md)
-                .padding(.bottom, SharpitSpacing.xl)
-            }
-            .safeAreaInset(edge: .bottom) {
-                saveBar
-            }
-            .navigationTitle(zone.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                    .padding(.bottom, 24)
+                CliniqueScale(
+                    title: isCorrective ? String(localized: "Gêne") : String(localized: "Douleur"),
+                    values: Array(0...10),
+                    selection: draft.severity,
+                    word: ZoneSeverityTint.caption,
+                    ends: (String(localized: "Aucune"), String(localized: "Insupportable"))
+                ) { draft.severity = $0 }
+                CliniqueDivider().padding(.vertical, 18)
+                impactBlock
+                CliniqueDivider().padding(.vertical, 18)
+                commentBlock
+                if failed {
+                    Text("L'enregistrement a échoué. Réessaie.")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.statusAlertForeground)
+                        .padding(.top, 12)
                 }
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 30)
+            .padding(.bottom, SharpitSpacing.lg)
         }
-        .presentationDetents([.medium, .large])
+        .scrollDismissesKeyboard(.interactively)
+        .background(SharpitColor.card)
+        .cliniqueSheetCross { dismiss() }
+        .safeAreaInset(edge: .bottom, spacing: 0) { saveBar }
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
 
+    /// The question first — what the sheet is for — then which zone it is about.
     private var header: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-            SharpitEyebrow(zone.place)
-            Text(prompt ?? (isCorrective ? String(localized: "Comment ça va aujourd'hui ?") : String(localized: "Comment va la douleur ?")))
-                .font(SharpitTypography.sectionTitle)
-                .tracking(SharpitTypography.sectionTitleTracking)
-                .foregroundStyle(SharpitColor.foreground)
+        VStack(alignment: .leading, spacing: 6) {
+            CliniqueSheetTitle(prompt ?? (isCorrective ? String(localized: "Comment ça va aujourd'hui ?") : String(localized: "Comment va la douleur ?")))
                 .fixedSize(horizontal: false, vertical: true)
+            Text(prompt == nil ? "\(zone.title) · \(zone.place)" : zone.place)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                .foregroundStyle(SharpitColor.slate)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var severityBlock: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .lastTextBaseline) {
-                SharpitEyebrow(isCorrective ? String(localized: "Gêne") : String(localized: "Douleur"))
-                Spacer()
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(draft.severity.map(String.init) ?? "—")
-                        .font(SharpitTypography.gaugeScore)
-                        .foregroundStyle(draft.severity == nil ? SharpitColor.slate : SharpitColor.foreground)
-                        .contentTransition(.numericText())
-                    Text("/10")
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-            }
-            ZoneSeverityScale(severity: $draft.severity)
-            Text(draft.severity.map(ZoneSeverityTint.caption) ?? String(localized: "Touche une valeur"))
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .contentTransition(.opacity)
-        }
-        .animation(SharpitMotion.selection, value: draft.severity)
-    }
-
+    /// What the athlete could do, one answer of a short list: lines, the chosen one checked.
     private var impactBlock: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Ce que tu as pu faire"))
-            ZoneImpactPicker(selection: $draft.functionalImpact)
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Ce que tu as pu faire")
+                .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(Array(SensitiveZoneOptions.impacts.enumerated()), id: \.element.id) { index, option in
+                let isSelected = draft.functionalImpact == option.value
+                if index > 0 { CliniqueDivider() }
+                Button {
+                    SharpitMotion.run(SharpitMotion.selection) {
+                        draft.functionalImpact = isSelected ? nil : option.value
+                    }
+                } label: {
+                    HStack(spacing: SharpitSpacing.sm) {
+                        Text(option.label)
+                            .font(SharpitTypography.system(size: 16, weight: isSelected ? .semibold : .regular, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .opacity(isSelected ? 1 : 0)
+                            .accessibilityHidden(true)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            }
         }
     }
 
     private var commentBlock: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(String(localized: "Un mot (facultatif)"))
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Un mot pour le coach")
+                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                .foregroundStyle(SharpitColor.slate)
             TextField("Après la séance, au réveil…", text: $draft.comment, axis: .vertical)
-                .font(SharpitTypography.body)
                 .lineLimit(2...4)
-                .sharpitFieldWell()
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .padding(16)
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(SharpitColor.divider, lineWidth: 1))
         }
     }
 
     private var saveBar: some View {
-        SharpitActionDock {
+        Group {
             Button {
                 guard !isSaving else { return }
                 isSaving = true
@@ -584,6 +594,9 @@ struct ZoneCheckinSheet: View {
             .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
             .disabled(!draft.isComplete || isSaving)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, SharpitSpacing.xs)
+        .background(SharpitColor.card)
     }
 }
 
@@ -633,44 +646,6 @@ struct ZoneSeverityScale: View {
                 }
                 .buttonStyle(.sharpitPressable)
                 .accessibilityLabel("\(value) sur 10")
-                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-            }
-        }
-    }
-}
-
-/// Also the onboarding's « what you can still do ».
-struct ZoneImpactPicker: View {
-    @Binding var selection: String?
-
-    var body: some View {
-        VStack(spacing: SharpitSpacing.xs) {
-            ForEach(SensitiveZoneOptions.impacts) { option in
-                let isSelected = selection == option.value
-                Button {
-                    SharpitMotion.run(SharpitMotion.selection) {
-                        selection = isSelected ? nil : option.value
-                    }
-                } label: {
-                    HStack {
-                        Text(option.label)
-                            .font(SharpitTypography.bodyEmphasis)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .multilineTextAlignment(.leading)
-                        Spacer(minLength: 0)
-                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(isSelected ? SharpitColor.primary : SharpitColor.slate)
-                    }
-                    .padding(.horizontal, SharpitSpacing.cardPadding)
-                    .padding(.vertical, 14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
-                            .strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.outline, lineWidth: isSelected ? 1.5 : 1)
-                    }
-                }
-                .buttonStyle(.sharpitPressable)
                 .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             }
         }

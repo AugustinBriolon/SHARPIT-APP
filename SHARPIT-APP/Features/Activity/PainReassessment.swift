@@ -10,6 +10,11 @@ nonisolated struct PainReassessment: Identifiable, Equatable, Sendable {
 
     var question: String { String(localized: "Comment va « \(zone.title) » après cette séance ?") }
 
+    /// « gêne 2 / 10 avant la séance », or where the zone is when it was never rated.
+    var standing: String {
+        zone.severity.map { String(localized: "gêne \($0) / 10 avant la séance") } ?? zone.place
+    }
+
     static let followedCategories: Set<String> = ["PAIN", "INJURY"]
     static let followedStatuses: Set<String> = ["ACTIVE", "MONITORING"]
     static let freshness: TimeInterval = 7 * 86_400
@@ -29,44 +34,42 @@ nonisolated struct PainReassessment: Identifiable, Equatable, Sendable {
     }
 }
 
-/// « Réévaluer une douleur », under the session's figures: one row per zone owed a word, each
-/// opening the check-in the zone's own page uses. Answered, the row leaves.
+/// « Zones à réévaluer », under the session's figures, as its mock-up reads it: a line per zone
+/// owed a word — its name over where it stood before the session — and « Faire le point », which
+/// opens the check-in the zone's own page uses. Answered, the line leaves.
 struct PainReassessmentSection: View {
     let items: [PainReassessment]
     let onAnswer: (PainReassessment) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow.title(String(localized: "Réévaluer une douleur"))
-            ForEach(items) { item in
-                Button { onAnswer(item) } label: {
-                    HStack(spacing: SharpitSpacing.sm) {
-                        Image(systemName: "heart.text.square")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(SharpitColor.signalCaution)
-                            .frame(width: 36, height: 36)
-                            .sharpitConcentricBackground(SharpitColor.signalCaution.opacity(0.14), minimum: 10)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.question)
-                                .font(SharpitTypography.bodyEmphasis)
-                                .foregroundStyle(SharpitColor.foreground)
-                                .multilineTextAlignment(.leading)
-                            Text(item.zone.place)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.slate)
-                        }
-                        Spacer(minLength: 0)
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Zones à réévaluer")
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.bottom, 4)
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                if index > 0 { CliniqueDivider() }
+                HStack(spacing: SharpitSpacing.sm) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.zone.title)
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                            .foregroundStyle(SharpitColor.foreground)
+                            .multilineTextAlignment(.leading)
+                        Text(item.standing)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                             .foregroundStyle(SharpitColor.slate)
                     }
-                    .padding(SharpitSpacing.cardPadding)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .sharpitSurface(.panel)
+                    .accessibilityElement(children: .combine)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    Button("Faire le point") { onAnswer(item) }
+                        .buttonStyle(CliniqueButtonStyle(kind: .outline))
                 }
-                .buttonStyle(.sharpitPressable)
+                .padding(.vertical, 12)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
