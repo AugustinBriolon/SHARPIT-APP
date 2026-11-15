@@ -299,7 +299,7 @@ struct PlannedSessionDrawer: View {
                         Text("Elle disparaît de ton plan.")
                     }
             }
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
             .sharpitSheet()
             .presentationDragIndicator(.visible)
         }

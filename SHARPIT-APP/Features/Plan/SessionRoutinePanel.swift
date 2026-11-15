@@ -4,8 +4,8 @@ import SwiftUI
 ///
 /// Folded to one line by default: the steps are the session, the routine its margin. A plain
 /// list once opened, not the step rail — the moves are run through in any order, not a
-/// sequence with targets. Once the session's day has come, the athlete says under the moves
-/// whether they did it, which the coach reads beside the session's first block.
+/// sequence with targets. Once the session's day has come, the athlete says right under the
+/// line whether they did it, which the coach reads beside the session's first block.
 struct SessionRoutinePanel: View {
     let title: String
     let routine: V1SessionRoutine
@@ -32,40 +32,58 @@ struct SessionRoutinePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            CliniqueDivider()
             Button {
                 withAnimation(SharpitMotion.reveal) { isExpanded.toggle() }
             } label: {
                 header
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.sharpitPressable)
             .accessibilityValue(isExpanded ? String(localized: "Ouvert") : String(localized: "Fermé"))
             .accessibilityHint(isExpanded ? String(localized: "Replie les mouvements") : String(localized: "Montre les mouvements"))
 
-            if isExpanded {
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    moves
-                    if onStatus != nil {
-                        // A group carrying the question, so each button keeps its own word.
-                        SharpitSegmentedChoice(
-                            options: V1RoutineStatus.allCases,
-                            label: \.label,
-                            selection: $status,
-                            allowsDeselection: true
-                        )
-                        .accessibilityElement(children: .contain)
-                        .accessibilityLabel(String(localized: "Ce que tu en as fait"))
-                    }
-                }
-                .padding(.top, SharpitSpacing.md)
-                .transition(.opacity)
+            // Said at the line, not behind it: where the session can be answered, so can this.
+            if onStatus != nil {
+                statusChoice
+                    .padding(.bottom, SharpitSpacing.sm)
             }
+
+            if isExpanded {
+                moves
+                    .padding(.bottom, SharpitSpacing.sm)
+                    .transition(.opacity)
+            }
+            CliniqueDivider()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
         .onChange(of: status) { _, newValue in
             onStatus?(newValue)
         }
+    }
+
+    /// « Fait · Raccourci · Sauté », each a chip of its own; a second tap takes the answer back.
+    private var statusChoice: some View {
+        HStack(spacing: 8) {
+            ForEach(V1RoutineStatus.allCases, id: \.self) { option in
+                let isChosen = status == option
+                Button {
+                    SharpitMotion.run(SharpitMotion.selection) { status = isChosen ? nil : option }
+                } label: {
+                    Text(option.label)
+                        .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                        .foregroundStyle(isChosen ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 36)
+                        .background(isChosen ? SharpitColor.primary : .clear, in: Capsule())
+                        .overlay(Capsule().strokeBorder(isChosen ? .clear : SharpitColor.outline, lineWidth: 1))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityAddTraits(isChosen ? [.isButton, .isSelected] : .isButton)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "Ce que tu en as fait"))
     }
 
     /// Title and figures beside the chevron; at the accessibility sizes the chevron keeps to the
@@ -98,7 +116,7 @@ struct SessionRoutinePanel: View {
 
     private var titleText: some View {
         Text(title)
-            .font(SharpitTypography.bodyEmphasis)
+            .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
             .foregroundStyle(SharpitColor.foreground)
     }
 
@@ -141,22 +159,26 @@ struct SessionRoutinePanel: View {
             .foregroundStyle(SharpitColor.slate)
     }
 
-    /// The name on its own line, the dose and the cue under it: a long French name no longer
-    /// wraps beside a dose pinned to the right.
+    /// The name on its own line, the dose and the cue under it, each move a line split by a
+    /// hairline: a long French name no longer wraps beside a dose pinned to the right.
     private var moves: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            ForEach(routine.moves, id: \.name) { move in
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(routine.moves.enumerated()), id: \.offset) { index, move in
+                if index > 0 { CliniqueDivider() }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(move.name)
-                        .font(SharpitTypography.body)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
                         .foregroundStyle(SharpitColor.foreground)
                     doseLine(move)
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))
                 }
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityElement(children: .combine)
             }
         }
+        .padding(.leading, 12)
     }
 
     private func doseLine(_ move: V1RoutineMove) -> Text {

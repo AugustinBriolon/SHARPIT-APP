@@ -179,3 +179,10 @@ asks questions (« Où vas-tu ? », « Quand ? », « Tu t'entraînes ? ») and 
 
 **Bar, two glyphs (2026-11-15).** Plan's bar holds « Remplir ma semaine » and « Adapter » as icons,
 each its own glass button; the « ⋯ » is gone. « Ajouter une séance » opens « Autour du plan ».
+
+**Déroulé, routines (2026-11-15).** A session opens at full height wherever it is tapped. The
+déroulé keeps one width for the dose column and a slot for the exercise's picture on every line
+(a glyph where none exists), so names and doses line up. « Consigne » is gone: the déroulé says
+what to do. A routine is a hairline block with « Fait / Raccourci / Sauté » on the line itself
+(where the session's day has come); a done session answers the same questions from its activity
+(`ActivityRoutinesSection`, read from the linked plan session), so a forgotten mobility can still be said.

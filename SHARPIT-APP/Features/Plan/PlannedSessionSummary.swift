@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What a session holds, top to bottom: who and when, its figures and why the coach wrote it,
-/// then the session in time — mobility, steps, stretches — and the instruction. Shared by the
+/// then the session in time — mobility, steps, stretches. Shared by the
 /// planned session's drawer and the proposal's page, so both read the same; each screen adds
 /// its own actions under the why.
 ///
@@ -54,9 +54,7 @@ struct PlannedSessionSummary<Actions: View>: View {
             if let rationale = preview.rationale, !rationale.isEmpty {
                 words(String(localized: "Pourquoi cette séance"), rationale)
             }
-            if let notes = preview.notes, !notes.isEmpty {
-                words(String(localized: "Consigne"), notes)
-            }
+            // No « Consigne »: the déroulé already says what to do, step by step.
         }
     }
 
@@ -123,7 +121,7 @@ struct PlannedSessionSummary<Actions: View>: View {
         }
     }
 
-    /// The coach's reason, or the instruction: a titled paragraph on the sheet, after the steps.
+    /// The coach's reason: a titled paragraph on the sheet, after the steps.
     private func words(_ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)

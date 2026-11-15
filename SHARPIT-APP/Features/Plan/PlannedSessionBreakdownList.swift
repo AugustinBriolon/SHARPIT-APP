@@ -45,15 +45,22 @@ struct PlannedStepsEstimatedTag: View {
 struct PlannedStepTable: View {
     let steps: [V1PlannedSessionStep]
 
+    /// A table with illustrated exercises gives every line its slot — a quiet glyph where an
+    /// exercise has no picture — so the names and doses line up down the page.
+    private var hasPictures: Bool {
+        steps.contains { ExerciseMediaCatalog.thumbURL(name: $0.label) != nil }
+    }
+
     var body: some View {
         let sets = PlannedStepSet.sets(from: steps)
+        let hasPictures = hasPictures
         VStack(spacing: 0) {
             ForEach(Array(sets.enumerated()), id: \.element.id) { index, set in
                 if index > 0 { CliniqueDivider() }
                 if set.isRepeated {
-                    RepeatedSet(set: set)
+                    RepeatedSet(set: set, hasPictures: hasPictures)
                 } else {
-                    ForEach(set.steps) { PlannedStepLine(step: $0) }
+                    ForEach(set.steps) { PlannedStepLine(step: $0, hasPictures: hasPictures) }
                 }
             }
         }
@@ -63,6 +70,7 @@ struct PlannedStepTable: View {
 /// « 5 fois » over the steps it repeats.
 private struct RepeatedSet: View {
     let set: PlannedStepSet
+    let hasPictures: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -73,7 +81,7 @@ private struct RepeatedSet: View {
             VStack(spacing: 0) {
                 ForEach(Array(set.steps.enumerated()), id: \.element.id) { index, step in
                     if index > 0 { CliniqueDivider() }
-                    PlannedStepLine(step: step)
+                    PlannedStepLine(step: step, hasPictures: hasPictures)
                 }
             }
             .padding(.leading, 12)
@@ -92,19 +100,23 @@ private struct RepeatedSet: View {
 /// rather than widen the drawer past the screen.
 private struct PlannedStepLine: View {
     let step: V1PlannedSessionStep
+    let hasPictures: Bool
+
+    /// One width for the dose or duration column down the whole table: « 15 min », « 4 × 8 ».
+    @ScaledMetric(relativeTo: .callout) private var doseWidth: CGFloat = 64
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             if let detail = step.detail {
                 Text(detail)
                     .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
                     .foregroundStyle(SharpitColor.slate)
-                    .fixedSize()
-                    .frame(minWidth: 58, alignment: .leading)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .multilineTextAlignment(.leading)
+                    .frame(width: doseWidth, alignment: .leading)
             }
-            if let thumb = ExerciseMediaCatalog.thumbURL(name: step.label) {
-                GuidedExerciseThumbView(url: thumb, size: 40)
-            }
+            if hasPictures { picture }
             VStack(alignment: .leading, spacing: 2) {
                 Text(step.label)
                     .font(SharpitTypography.system(size: 16, weight: step.target == nil ? .regular : .semibold, relativeTo: .callout))
@@ -127,9 +139,24 @@ private struct PlannedStepLine: View {
                     .fixedSize(horizontal: true, vertical: false)
             }
         }
-        .padding(.vertical, 16)
+        .padding(.vertical, 14)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(step.spokenLabel)
+    }
+
+    /// The exercise's picture, or the same slot with a quiet glyph.
+    @ViewBuilder
+    private var picture: some View {
+        if let thumb = ExerciseMediaCatalog.thumbURL(name: step.label) {
+            GuidedExerciseThumbView(url: thumb, size: 40)
+        } else {
+            Image(systemName: "figure.strengthtraining.traditional")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(SharpitColor.slate.opacity(0.6))
+                .frame(width: 40, height: 40)
+                .background(SharpitColor.tile, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .accessibilityHidden(true)
+        }
     }
 }
 
