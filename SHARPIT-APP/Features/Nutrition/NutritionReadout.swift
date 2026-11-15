@@ -202,9 +202,9 @@ enum NutritionReadout {
 
     /// Under the ring's figure: what is left of the goal, what went past it, or what was eaten
     /// when no goal is set.
-    static func ringCaption(remaining: Double?) -> String {
-        guard let remaining else { return String(localized: "kcal mangées") }
-        return remaining < 0 ? String(localized: "kcal au-delà") : String(localized: "kcal restantes")
+    /// « Restant », or « Au-delà » once the goal is passed.
+    static func remainingCaption(_ remaining: Double) -> String {
+        remaining < 0 ? String(localized: "Au-delà") : String(localized: "Restant")
     }
 
     /// « Régime en cours : sans lactose », or whether the day is still open.

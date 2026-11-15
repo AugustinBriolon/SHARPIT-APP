@@ -305,9 +305,8 @@ private struct CountingNutritionClient: NutritionServing {
 }
 
 @Test func theNutritionSheetWordsItsRingItsFrameAndItsMeals() {
-    #expect(NutritionReadout.ringCaption(remaining: 1_640) == "kcal restantes")
-    #expect(NutritionReadout.ringCaption(remaining: -120) == "kcal au-delà")
-    #expect(NutritionReadout.ringCaption(remaining: nil) == "kcal mangées")
+    #expect(NutritionReadout.remainingCaption(1_640) == "Restant")
+    #expect(NutritionReadout.remainingCaption(-120) == "Au-delà")
     #expect(NutritionReadout.dayFrame(diet: ["Sans lactose"], isComplete: false) == "Régime en cours : sans lactose")
     #expect(NutritionReadout.dayFrame(diet: [], isComplete: true) == "Journée close")
     #expect(NutritionReadout.mealLine(["Flocons d'avoine", "Banane", "Boisson soja"]) == "Flocons d'avoine, banane, boisson soja")

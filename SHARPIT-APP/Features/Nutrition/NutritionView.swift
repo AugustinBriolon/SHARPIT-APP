@@ -269,8 +269,8 @@ struct NutritionEntryFlag: Hashable {
 
 // MARK: - Energy
 
-/// The day's energy as its mock-up reads it: what is left in a ring, beside the three numbers
-/// behind it — the goal, what exercise added, what was eaten.
+/// The day's energy: what was eaten in a ring, beside the numbers around it — the goal, what
+/// exercise added, what is left (the athlete's call, 2026-11-15: eaten inside, remaining beside).
 private struct NutritionEnergyPlate: View {
     let day: V1NutritionDay
     let dayId: String
@@ -290,7 +290,9 @@ private struct NutritionEnergyPlate: View {
                         CliniqueDivider()
                     }
                 }
-                row(String(localized: "Mangé"), NutritionReadout.kcal(day.calories))
+                if let remaining = calories?.remaining {
+                    row(NutritionReadout.remainingCaption(remaining), NutritionReadout.kcal(abs(remaining)))
+                }
             }
         }
         .overlay(alignment: .topLeading) {
@@ -301,22 +303,21 @@ private struct NutritionEnergyPlate: View {
     }
 
     private var ring: some View {
-        let remaining = calories?.remaining
-        return ZStack {
+        ZStack {
             Circle().stroke(SharpitColor.divider, lineWidth: 6)
             Circle()
                 .trim(from: 0, to: CliniqueRingMath.trim(for: calories?.pct.map { $0 / 100 }))
                 .stroke(SharpitColor.pillarNutrition, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             VStack(spacing: 2) {
-                Text(NutritionReadout.kcal(remaining.map(abs) ?? day.calories))
+                Text(NutritionReadout.kcal(day.calories))
                     .font(SharpitTypography.system(size: 30, weight: .semibold, relativeTo: .title, digits: true))
                     .tracking(-0.8)
                     .foregroundStyle(SharpitColor.foreground)
                     .contentTransition(.numericText())
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Text(NutritionReadout.ringCaption(remaining: remaining))
+                Text("kcal mangées")
                     .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2))
                     .foregroundStyle(SharpitColor.slate)
             }
@@ -324,7 +325,7 @@ private struct NutritionEnergyPlate: View {
         }
         .frame(width: 120, height: 120)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(NutritionReadout.kcal(remaining.map(abs) ?? day.calories)) \(NutritionReadout.ringCaption(remaining: remaining))")
+        .accessibilityLabel("\(NutritionReadout.kcal(day.calories)) kcal mangées")
     }
 
     private func row(_ caption: String, _ value: String) -> some View {
