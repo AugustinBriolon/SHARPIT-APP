@@ -159,3 +159,9 @@ load, this week in bold) and « Archiver ce plan macro » as an outline button. 
 ink hero. Déplacements is a large-titled list with « Ajouter » in the bar. The mock-up's « Générer à
 nouveau » dock and « Ce que ça change cette semaine » card are not built: the plan is archived then
 generated again, and the trips carry no reading of their effect.
+
+**Forme, Clinique.** The expert reading's « Forme » (`TrainingLoadCard`) is a section of Plan, not a
+card: net form read big with « Dans ta zone » / « Hors zone » as a pill, chronic form and acute
+fatigue as two figures, the six-week curves in blue and orange with net form dashed, « Charge par
+semaine » as bars, the current week in ink. `SharpitScreenDemo forme` shows it. The mock-up's
+acute / chronic ratio is not shown here: Effort already carries it.

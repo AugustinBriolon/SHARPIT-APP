@@ -46,3 +46,7 @@ capsule a tap walks through — « À noter », « Oui », « Non » (`JournalFa
 `SharpitScreenDemo journal` shows it. « Ton ressenti ce matin » (`RessentiDuJourSheet`) is five bordered
 tiles, as many bars as the step (`RessentiStepPicker`), details on five dashes (`RessentiScaleRow`),
 « Enregistrer » and « Plus tard » under them; `SharpitScreenDemo ressenti`.
+
+**Analyses, Clinique.** `JournalAnalysesView` takes the sleep wash and the large title; « À retenir »
+is a bordered card — the sentence to act on, what it rests on, what already holds — and each
+outcome's habits stay dumbbells under their titles. `SharpitScreenDemo analyses` shows it.

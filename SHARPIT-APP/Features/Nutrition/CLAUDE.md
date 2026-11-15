@@ -74,3 +74,9 @@ dîner » (`FoodLogMeal.addTitle`). Macros keep one hue everywhere — carbs blu
 green (`NutritionReadout.Macro.tone`) — and one order. `SharpitScreenDemo meal` / `portion` show them.
 The mock-ups' recipe, saved meals, own food, food quality, targets and import pages take the shared
 list's shape; their own heroes are not built yet.
+
+**Qualité, mes repas, Clinique.** A food's quality (`FoodHealthScoreHeader`) is its score in a ring
+in the grade's status hue, the grade as a pill (`FoodHealthPresentation.status`), the verdict and its
+sources; each reason is a line marked by a bar in its status hue (`FoodHighlightRow`), never
+coloured words or a tick dial. A saved meal is a line — its name, its first foods and their count,
+its energy. `SharpitScreenDemo quality` / `savedmeals` / `ownfood` / `recipe` show them.

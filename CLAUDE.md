@@ -246,7 +246,12 @@ The shared components draw it (`sharpitSurface`, `SharpitCardHeader`, `SharpitPi
 `card`, `pillar*`, `zone*`, `status*`, `wash*`), not `mutedForeground`, `chipSurface`, `track`,
 `border`, `background` or `highlight`: those stay for the widgets and the web. Lime is the brand —
 the app icon, the sign-in screen, the switches — and, darkened, the good status and recovery.
-Two Debug galleries show the components: `-SharpitDesignGallery YES` (the reference cards) and
+A Debug dataset feeds the screens that read a server (`DesignSystem/Gallery/DemoDataset.swift`):
+one athlete's sample answers — the payloads the unit tests decode, extended where a page needs more
+rows — behind in-memory clients (`DemoFoodLog`, `DemoBloodTests`, `DemoJournalAnalyses`,
+`DemoSourcePrefs`, `DemoCoachMemory`, `DemoPrivacyConsents`), so `-SharpitScreenDemo <name>` opens a
+page without an account. It is for looking at a screen, never shipped (Debug only) and never a
+source of figures for the app. Two Debug galleries show the components: `-SharpitDesignGallery YES` (the reference cards) and
 `-SharpitCliniqueGallery YES` (the primitives). Résumé, Plan, Coach, Activité, the session, Santé and the day screens (Sommeil, Récupération, Nutrition) are rebuilt on their mock-ups, checked side by side against them (`docs/adr/0035`); the screens without a mock-up followed have Clinique's colours inside their earlier structure. Apple chrome
 (tab bar, navigation, Liquid Glass) stays system.
 
