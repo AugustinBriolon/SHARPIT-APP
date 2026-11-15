@@ -151,3 +151,11 @@ than « 0 kg ») — with « Série terminée » docked at the foot; the other s
 place. The rest keeps its own page and « Ça fait mal » is not built. A week read, not over and holding nothing shows
 « Ta semaine est vide » with « Remplir ma semaine » and « Ajouter une séance à la main » instead of
 empty rings. `SharpitScreenDemo generator` shows the proposal's lines.
+
+**Plan macro, déplacements, Clinique.** The macro plan (`MacroPlanSheet`) follows its mock-up: how
+long and when, the phases as a rail — each as wide as its weeks, in its hue (`MacroPlanReadout.hue`),
+the current one ringed in ink — then « Les semaines » as one table (Monday, what the week works, its
+load, this week in bold) and « Archiver ce plan macro » as an outline button. No card per phase, no
+ink hero. Déplacements is a large-titled list with « Ajouter » in the bar. The mock-up's « Générer à
+nouveau » dock and « Ce que ça change cette semaine » card are not built: the plan is archived then
+generated again, and the trips carry no reading of their effect.

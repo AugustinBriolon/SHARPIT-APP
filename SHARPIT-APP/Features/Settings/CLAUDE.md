@@ -51,3 +51,9 @@ usage stays in Coach: Paramètres does not hold its quota. `SharpitScreenDemo se
 Connexions (`ConnectionsView`) lists every source on one table: « Connecté » or « À vérifier » as a
 pill on a linked one (the line opens its sheet), « Connecter » on the others — no « + » sheet — and
 « Synchroniser » in the bar; `SharpitScreenDemo connections`.
+
+**Sous-pages, Clinique.** Notifications, Pages et widgets, Confidentialité, Priorités, Langue,
+Densité and Retour are large-titled sheets of lines (`sharpitGroupedList`), a section opening on
+its title; switches are the brand's lime, darkened as the mock-ups draw it (`SharpitSwitchStyle`).
+`SharpitScreenDemo notifications` / `account` show two of them. Rows keep their glyph tiles, which
+the mock-ups do not draw.

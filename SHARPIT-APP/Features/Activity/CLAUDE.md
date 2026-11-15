@@ -87,3 +87,11 @@ available (a recorded session's samples do not change), a detail for 12 h
 generated narrative rewrites the detail, a subjective rating drops it. A planned session's breakdown, which Today's
 payload does not carry, is kept there too: the drawer opens on the last one read and asks the
 plan again behind it, since a plan is edited where a recorded session is not.
+
+**Conformité, Clinique.** `ComplianceDetailSheet` opens on the session it was read against, the score
+big (« 72 / 100 ») beside the verdict as a pill, the summary, then « Forces », « À travailler » and
+« Ce que montrent les données » as titled sections of plain lines, and « Pour la suite » in a
+bordered card. The mock-up's « Critère par critère » table (duration, intensity, structure, heart
+rate, each with a status) is not built: the analysis carries sentences, not a score per criterion.
+`SharpitScreenDemo compliance` shows it. Records, the technical analysis and the race analysis open
+their sections on titles, without cards.
