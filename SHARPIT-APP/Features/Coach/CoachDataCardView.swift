@@ -9,20 +9,10 @@ struct CoachDataCardView: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             switch card {
             case .dayScores(let scores):
-                SharpitCardHeader(
-                    title: String(localized: "Scores du jour"),
-                    symbol: "bolt",
-                    subtitle: CoachDataCardFormat.day(scores.trainingDayId),
-                    showsChevron: false
-                ) { EmptyView() }
+                CoachCardCaption(title: String(localized: "Scores du jour"), subtitle: CoachDataCardFormat.day(scores.trainingDayId)) { EmptyView() }
                 dayScoreRows(scores)
             case .targetBand(let day, let band, let readiness):
-                SharpitCardHeader(
-                    title: String(localized: "Cible d'effort"),
-                    symbol: "scope",
-                    subtitle: CoachDataCardFormat.day(day),
-                    showsChevron: false
-                ) {
+                CoachCardCaption(title: String(localized: "Cible d'effort"), subtitle: CoachDataCardFormat.day(day)) {
                     if let status = CoachDataCardFormat.status(band.status) { SharpitPill(status) }
                 }
                 SharpitInsetGroup {
@@ -36,12 +26,7 @@ struct CoachDataCardView: View {
                     }
                 }
             case .sleepVsReadiness(let windowDays, let points):
-                SharpitCardHeader(
-                    title: String(localized: "Sommeil et forme"),
-                    symbol: "moon",
-                    subtitle: String(localized: "\(windowDays) jours"),
-                    showsChevron: false
-                ) { EmptyView() }
+                CoachCardCaption(title: String(localized: "Sommeil et forme"), subtitle: String(localized: "\(windowDays) jours")) { EmptyView() }
                 SharpitInsetGroup {
                     ForEach(points, id: \.trainingDayId) { point in
                         SharpitInsetRow(title: CoachDataCardFormat.day(point.trainingDayId)) {
@@ -89,5 +74,27 @@ struct CoachDataCardView: View {
         } trailing: {
             SharpitRowFigure(value: CoachDataCardFormat.score(value), unit: "/100")
         }
+    }
+}
+
+/// A data card's head, as the mock-up draws it: what the card reads and for which day, quietly,
+/// with an optional pill at the trailing edge.
+private struct CoachCardCaption<Accessory: View>: View {
+    let title: String
+    let subtitle: String
+    @ViewBuilder var accessory: () -> Accessory
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+            Text("\(title) · \(subtitle)")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Spacer(minLength: SharpitSpacing.xs)
+            accessory()
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
     }
 }
