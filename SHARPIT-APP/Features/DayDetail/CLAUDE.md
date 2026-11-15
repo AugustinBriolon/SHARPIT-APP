@@ -44,3 +44,12 @@ reading can be trusted, with « En parler au coach ».
 Mangé; the three macros between hairlines, each on a thin bar in its hue; the coach's reading in a
 bordered card; « Repas » as lines (name over foods, energy, « Ajouter » on an empty meal); an ink
 « + » floats at the foot.
+
+**Bar, second pass (the athlete's call, 2026-11-15).** Every day screen carries the same bar: the
+way back, the day in its middle (`DayDetailDatePicker`, a chevron beside it, opens the month) and
+the screen's own « ⋯ » at the right (Sommeil: its targets; Nutrition: add, scan, targets). No two
+buttons share a glass capsule. Sommeil's foot is lines: « Ce soir » (bedtime, screens off, the
+night's need and what raised it), the coach's insights, a bordered line to the coach, then « Banque
+de sommeil » under « En dette » / « À l'équilibre » as a pill. A day with nothing eaten is the same
+Nutrition page at zero (`NutritionReadout.emptyDay`, from the food log's targets), « Copier la
+veille » under the meals — never a different screen.

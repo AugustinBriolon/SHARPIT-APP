@@ -101,3 +101,8 @@ their sections on titles, without cards.
 with the brick's evaluation) — no shadow, no coloured tick under a figure. The technical analysis
 reads its figures plainly and each zone as a line: its name, its range over a gauge filled to its
 share in the zone's hue, its time. `SharpitScreenDemo feeling` shows the sheet.
+
+**Conformité, visible (2026-11-15).** The verdict pill in a session's head is no longer the way
+in: under the figures a bordered card reads « Conformité au plan · 72 / 100 · Voir le détail » and
+opens the compliance sheet. « Statut d'activité » is a titled sheet with its cross: the mode held,
+until when as a pill, the modes as lines (a check on the one held), « Durée ».
