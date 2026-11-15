@@ -395,6 +395,18 @@ struct ScreenDemoHost: View {
                         ) { _ in weight.series }
                     }
                 }
+            case "offline":
+                SharpitStateMessage.failed(SharpitErrorGuidance.offline) {}
+            case "notfound":
+                SharpitStateMessage.notFound(
+                    String(localized: "Page introuvable"),
+                    detail: String(localized: "Ce lien ne mène plus nulle part.")
+                )
+            case "sleep-lanes":
+                if let sleep = Self.sleep {
+                    ScrollView { SleepSections(sleep: sleep).padding(.top, SharpitSpacing.md) }
+                        .cliniqueSheet(wash: .sleep, height: 240)
+                }
             case "share":
                 Color.clear.sheet(isPresented: .constant(true)) { SanteShareSheet(overview: Self.health) }
             case "recovery":
@@ -492,7 +504,7 @@ struct ScreenDemoHost: View {
                  "remarks":["Fréquence cardiaque moyenne 162 bpm"],
                  "recommendation":"Garde l'allure du premier bloc sur les trois : c'est là que le tempo travaille."}
                 """.utf8)) {
-                    ComplianceDetailSheet(title: "Tempo 3 × 10 min", analysis: analysis, onUnlink: {}, onReanalyze: {})
+                    ComplianceDetailSheet(title: "Tempo 3 × 10 min", analysis: analysis, onUnlink: {}, onReanalyze: {}, onDiscuss: {})
                 }
             case "notifications":
                 NavigationStack { NotificationPrefsView(profileClient: DemoEquipment(), tokenProvider: { "demo" }) }
