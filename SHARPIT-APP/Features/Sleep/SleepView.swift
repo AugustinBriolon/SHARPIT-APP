@@ -56,12 +56,9 @@ struct SleepView: View {
         // The sleep targets, set where they are read — right of the title, beside « Aujourd'hui ».
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button { showsTargets = true } label: {
-                        Label("Objectifs de sommeil", systemImage: "target")
-                    }
-                } label: {
-                    Label("Actions", systemImage: "ellipsis")
+                // One action: the button itself, not a menu holding it.
+                Button { showsTargets = true } label: {
+                    Label("Objectifs de sommeil", systemImage: "target")
                 }
             }
         }

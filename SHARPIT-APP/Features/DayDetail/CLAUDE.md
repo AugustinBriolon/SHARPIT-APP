@@ -53,3 +53,5 @@ night's need and what raised it), the coach's insights, a bordered line to the c
 de sommeil » under « En dette » / « À l'équilibre » as a pill. A day with nothing eaten is the same
 Nutrition page at zero (`NutritionReadout.emptyDay`, from the food log's targets), « Copier la
 veille » under the meals — never a different screen.
+
+Sommeil's one action, its targets, is a button in the bar — a menu only where a screen has several.
