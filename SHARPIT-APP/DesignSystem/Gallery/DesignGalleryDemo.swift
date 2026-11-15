@@ -676,6 +676,32 @@ struct ScreenDemoHost: View {
             case "strength", "strength-dock":
                 // The session run by the app: « Réduire » slides it away, the bar brings it back.
                 GalleryWorkoutDockDemo(session: Self.strengthSession)
+            case "strength-log":
+                // A session logged by hand: the same sets view, empty, with its exercise search.
+                GuidedStrengthWorkoutView(
+                    session: .logging(title: String(localized: "Séance libre"), exercises: [
+                        StrengthExerciseDraft(name: "Développé couché", sets: 3, reps: 8, weightKg: 60),
+                    ]),
+                    finish: nil,
+                    logging: GuidedStrengthLogging(tokenProvider: { "demo" }) { _ in }
+                )
+            case "exercise-picker":
+                Color.clear.sheet(isPresented: .constant(true)) {
+                    ExercisePickerSheet(library: [
+                        V1StrengthExercise(
+                            name: "Développé couché", sessions: 6,
+                            last: .init(date: "2026-11-10", sets: 4, reps: 8, weightKg: 60, durationSec: nil),
+                            best: .init(weightKg: 70, reps: 5)
+                        ),
+                        V1StrengthExercise(
+                            name: "Gainage planche", note: "Zone travaillée : Tronc",
+                            last: .init(date: "2026-11-08", sets: 3, reps: 1, weightKg: nil, durationSec: 45),
+                            best: .init(durationSec: 90)
+                        ),
+                    ]) { _ in }
+                }
+            case "checkin":
+                CheckinDemo()
             case "stress":
                 NavigationStack {
                     ScrollView { StressDemo.cards }
@@ -1048,6 +1074,22 @@ private actor DemoJournal: JournalServing, JournalAnalysesServing {
                 summary: "", actionHint: "", strengths: []
             )
         )
+    }
+}
+
+/// The check-in asked after a session, on the demo's first open zone.
+private struct CheckinDemo: View {
+    @State private var zone: V1SensitiveZone?
+
+    var body: some View {
+        Color.clear
+            .task {
+                let data = try? await DemoZones().sensitiveZonesData(token: "demo")
+                zone = data.flatMap { try? JSONDecoder().decode(V1SensitiveZones.self, from: $0) }?.zones.first
+            }
+            .sheet(item: $zone) { zone in
+                ZoneCheckinSheet(zone: zone, prompt: PainReassessment(zone: zone).question) { _ in true }
+            }
     }
 }
 
