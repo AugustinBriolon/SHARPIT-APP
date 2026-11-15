@@ -25,7 +25,21 @@ struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
             attachGestureRecognizer()
+            // A back swipe let go half-way brings the page back: its touches with it.
+            parent?.view.isUserInteractionEnabled = true
         }
+
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+            guard isMovingFromParent || navigationController == nil else { return }
+            lastNavigation?.interactivePopGestureRecognizer?.removeTarget(self, action: #selector(backSwipeMoved(_:)))
+            if #available(iOS 26.0, *) {
+                lastNavigation?.interactiveContentPopGestureRecognizer?.removeTarget(self, action: #selector(backSwipeMoved(_:)))
+            }
+        }
+
+        /// Kept to take the targets back once popped, when `navigationController` is already nil.
+        private weak var lastNavigation: UINavigationController?
 
         override func viewWillDisappear(_ animated: Bool) {
             super.viewWillDisappear(animated)
@@ -37,8 +51,22 @@ struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
 
         private func attachGestureRecognizer() {
             guard let nav = navigationController else { return }
+            lastNavigation = nav
             nav.interactivePopGestureRecognizer?.isEnabled = true
             nav.interactivePopGestureRecognizer?.delegate = self
+            // Idempotent: adding the same target and action twice keeps one.
+            nav.interactivePopGestureRecognizer?.addTarget(self, action: #selector(backSwipeMoved(_:)))
+            if #available(iOS 26.0, *) {
+                nav.interactiveContentPopGestureRecognizer?.addTarget(self, action: #selector(backSwipeMoved(_:)))
+            }
+        }
+
+        /// The page follows the finger back, so the finger lifts over the very control it
+        /// landed on and that control would fire on the page returned to. Turning the page's
+        /// touches off for the swipe cancels the press; they come back when it ends.
+        @objc private func backSwipeMoved(_ recognizer: UIGestureRecognizer) {
+            guard let page = parent?.view ?? navigationController?.topViewController?.view else { return }
+            page.isUserInteractionEnabled = BackSwipeTouches.allowed(during: recognizer.state)
         }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
@@ -53,6 +81,16 @@ struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
         ) -> Bool {
             // Allows the edge gesture to begin alongside scroll views
             true
+        }
+    }
+}
+
+nonisolated enum BackSwipeTouches {
+    /// A page takes no touch while a back swipe is under way.
+    static func allowed(during state: UIGestureRecognizer.State) -> Bool {
+        switch state {
+        case .began, .changed: false
+        default: true
         }
     }
 }

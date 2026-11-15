@@ -106,3 +106,7 @@ share in the zone's hue, its time. `SharpitScreenDemo feeling` shows the sheet.
 in: under the figures a bordered card reads « Conformité au plan · 72 / 100 · Voir le détail » and
 opens the compliance sheet. « Statut d'activité » is a titled sheet with its cross: the mode held,
 until when as a pill, the modes as lines (a check on the one held), « Durée ».
+
+**Back swipe.** The page follows the finger back, so a control the swipe started on used to fire
+on the page returned to. `InteractivePopGestureEnabler` turns the page's touches off while either
+pop gesture runs (`BackSwipeTouches`), which cancels the press; a swipe let go half-way gives them back.
