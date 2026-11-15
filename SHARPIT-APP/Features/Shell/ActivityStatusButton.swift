@@ -19,6 +19,9 @@ struct ActivityStatusButton: View {
     /// In Résumé's chip row the mode is named; a toolbar slot is a fixed circle under Liquid
     /// Glass, which clips a label, so there the symbol and colour travel alone.
     var showsLabel = false
+    /// The scheme the drawer opens in, where the chip itself sits on a forced-dark backdrop.
+    var drawerScheme: ColorScheme?
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isPresented = false
 
     var body: some View {
@@ -45,6 +48,7 @@ struct ActivityStatusButton: View {
         .accessibilityHint("Changer ton statut d'activité")
         .sheet(isPresented: $isPresented) {
             ActivityStatusDrawer(store: store)
+                .environment(\.colorScheme, drawerScheme ?? colorScheme)
         }
         .task { await store.loadIfNeeded() }
     }
@@ -59,8 +63,6 @@ struct ActivityStatusDrawer: View {
     /// the athlete commits it.
     @State private var untilDate = ActivityStatusDate.defaultUntil()
     @State private var usesDeadline = false
-    @Environment(\.dynamicTypeSize) private var typeSize
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -70,13 +72,19 @@ struct ActivityStatusDrawer: View {
                     .foregroundStyle(SharpitColor.foreground)
                     .accessibilityAddTraits(.isHeader)
                     .padding(.trailing, 56)
+                impact
+                    .padding(.top, -14)
                 if case .failed(let message) = store.phase {
                     CliniqueStatusPill(message, status: .watch)
                 }
-                statusPlate
                 modesCard
                 if store.store.status != .active {
                     deadlineSection
+                    Button("En parler au coach") {
+                        router.discussWithCoach(about: CoachDiscuss.describe(.planning(horizonDays: 7)))
+                        dismiss()
+                    }
+                    .buttonStyle(CliniqueButtonStyle(kind: .outline))
                 }
             }
             .animation(SharpitMotion.reveal, value: store.store.status)
@@ -93,53 +101,19 @@ struct ActivityStatusDrawer: View {
         .onAppear(perform: syncFromStore)
     }
 
-    /// The mode now: its name, until when as a pill, what it changes for the plan and the coach.
-    private var statusPlate: some View {
-        let status = store.store.status
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: status.symbolName)
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundStyle(SharpitColor.foreground)
-                    .frame(width: 44, height: 44)
-                    .overlay(Circle().strokeBorder(SharpitColor.outline, lineWidth: 1))
-                    .contentTransition(.symbolEffect(.replace))
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Mode actuel")
-                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
-                        .foregroundStyle(SharpitColor.slate)
-                    Text(status.label)
-                        .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .contentTransition(.opacity)
-                }
-                Spacer(minLength: 0)
-                if let until = untilLabel, !typeSize.isAccessibilitySize {
-                    CliniqueStatusPill(until, status: .unknown)
-                }
-            }
-            // A pill never shrinks: beside the title at the largest sizes it pushed the plate off screen.
-            if let until = untilLabel, typeSize.isAccessibilitySize {
-                Text(until)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Text(status.planningImpact)
+    /// Under the title: what the mode held changes for the plan, and until when.
+    private var impact: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(store.store.status.planningImpact)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                 .lineSpacing(2)
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
-            if status != .active {
-                Button("En parler au coach") {
-                    router.discussWithCoach(about: CoachDiscuss.describe(.planning(horizonDays: 7)))
-                    dismiss()
-                }
-                .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                .contentTransition(.opacity)
+            if let until = untilLabel {
+                CliniqueStatusPill(until, status: .unknown)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// « 3 nov. » while a mode has an end, nothing when it holds until changed.
@@ -150,13 +124,13 @@ struct ActivityStatusDrawer: View {
     }
 
     private var modesCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            sectionTitle(String(localized: "Changer de mode"))
-            ForEach(Array(ActivityStatusId.allCases.enumerated()), id: \.element) { index, status in
-                if index > 0 { CliniqueDivider() }
+        VStack(alignment: .leading, spacing: 0) {
+            CliniqueDivider()
+            ForEach(ActivityStatusId.allCases, id: \.self) { status in
                 ActivityStatusOptionRow(status: status, isSelected: store.store.status == status) {
                     Task { await pick(status) }
                 }
+                CliniqueDivider()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -244,9 +218,10 @@ private struct ActivityStatusOptionRow: View {
                 if !typeSize.isAccessibilitySize {
                     Image(systemName: status.symbolName)
                         .font(.system(size: 16, weight: .regular))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .frame(width: 36, height: 36)
-                        .background(SharpitColor.tile, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                        .frame(width: 40, height: 40)
+                        .background(isSelected ? SharpitColor.primary : .clear, in: Circle())
+                        .overlay(Circle().strokeBorder(SharpitColor.outline, lineWidth: isSelected ? 0 : 1))
                         .accessibilityHidden(true)
                 }
 

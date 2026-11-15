@@ -8,6 +8,8 @@ struct TodayView: View {
     @State private var sync: ProviderSyncStore?
     private let appleHealth: AppleHealthSource?
     @Environment(\.scenePhase) private var scenePhase
+    /// The app's real scheme, read above the dark chips so their drawers are not dark too.
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(ShellRouter.self) private var router
     @Environment(\.features) private var features
     @Environment(LaunchCurtain.self) private var launchCurtain: LaunchCurtain?
@@ -369,7 +371,7 @@ extension TodayView {
         SharpitGlassGroup {
             HStack(spacing: SharpitSpacing.xs) {
                 if let activityStatusStore {
-                    ActivityStatusButton(store: activityStatusStore, showsLabel: true)
+                    ActivityStatusButton(store: activityStatusStore, showsLabel: true, drawerScheme: colorScheme)
                 }
                 if features.isOn(.journal), let journalClient, let wellnessClient, let tokenProvider {
                     NavigationLink(value: TodayNav.journal) {
