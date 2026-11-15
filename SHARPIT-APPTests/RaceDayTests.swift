@@ -164,7 +164,7 @@ private func todayJSON(race: String?) throws -> V1TodayResponse {
         V1Goal(id: "far", title: "Far", kind: .race, targetDate: day.addingTimeInterval(90 * 86_400)),
         V1Goal(id: "metric", title: "Poids", kind: .metric),
         V1Goal(id: "undated", title: "Undated", kind: .race),
-        V1Goal(id: "near", title: "Near", kind: .race, targetDate: day.addingTimeInterval(-86_400)),
+        V1Goal(id: "near", title: "Near", kind: .race, targetDate: day.addingTimeInterval(86_400)),
     ]
     #expect(ActivityGoalCandidates.ordered(goals, around: day).map(\.id) == ["near", "far", "undated"])
 }

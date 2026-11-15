@@ -1109,6 +1109,11 @@ private struct ActivityDetailContent: View {
                 action: onShowSubjective
             )
             .accessibilityHint("Ouvre l'évaluation de la séance")
+            // A session done from a goal's plan belongs to that goal already: said, not asked.
+            if detail.goal == nil, let prepared = detail.plannedSession?.goal {
+                CliniqueDivider()
+                contextRow(String(localized: "Prépare l'objectif"), value: prepared.title, action: nil)
+            }
             if detail.plannedSession != nil, detail.plannedSession?.analysis == nil {
                 CliniqueDivider()
                 contextRow(String(localized: "Conformité au plan"), value: String(localized: "Calcul en cours…"), action: nil)
