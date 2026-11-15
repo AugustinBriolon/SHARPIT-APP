@@ -102,6 +102,67 @@ nonisolated enum DemoDataset {
         "note": "45 min par jour au plus", "trainingConstraint": "REDUCED", "isActive": true } ] }
     """#
 
+    static let coachDayScores = #"""
+{
+  "type": "tool-explainDayScores",
+  "state": "output-available",
+  "input": {},
+  "output": {
+    "ok": true,
+    "markdown": "## Scores du 2026-10-27",
+    "schemaVersion": 1,
+    "card": {
+      "kind": "dayScores",
+      "trainingDayId": "2026-10-27",
+      "energyBank": { "value": 71, "typicalBaseline": 64 },
+      "stress": 38,
+      "targetBand": { "low": 8, "high": 12, "status": "within" },
+      "readiness": 66
+    }
+  }
+}
+"""#
+
+    static let coachTargetBand = #"""
+{
+  "type": "tool-explainTargetBand",
+  "state": "output-available",
+  "input": {},
+  "output": {
+    "ok": true,
+    "markdown": "## Cible d'effort · 2026-10-27",
+    "schemaVersion": 1,
+    "card": {
+      "kind": "targetBand",
+      "trainingDayId": "2026-10-27",
+      "band": { "low": 8, "high": 12, "status": "below" },
+      "readiness": null
+    }
+  }
+}
+"""#
+
+    static let coachSleepVsReadiness = #"""
+{
+  "type": "tool-compareSleepVsReadiness",
+  "state": "output-available",
+  "input": { "windowDays": 7 },
+  "output": {
+    "ok": true,
+    "markdown": "## Sommeil vs forme (7 j)",
+    "schemaVersion": 1,
+    "card": {
+      "kind": "sleepVsReadiness",
+      "windowDays": 7,
+      "points": [
+        { "trainingDayId": "2026-10-26", "sleepMinutes": 410, "readiness": 62 },
+        { "trainingDayId": "2026-10-27", "sleepMinutes": null, "readiness": 55 }
+      ]
+    }
+  }
+}
+"""#
+
     static let savedMeals = #"""
     [ { "id": "s1", "name": "Petit-déjeuner de semaine", "kcal": 520, "protein": 22, "carbs": 78, "fat": 12, "items": [
           { "name": "Flocons d'avoine", "grams": 80, "kcal": 298, "protein": 11, "carbs": 48, "fat": 6 },

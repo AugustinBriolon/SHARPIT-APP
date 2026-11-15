@@ -513,6 +513,27 @@ struct ScreenDemoHost: View {
                     .sharpitGroupedList()
                     .navigationTitle("Pâtes à la bolognaise")
                 }
+            case "coachcards":
+                ScrollView {
+                    VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                        ForEach([DemoDataset.coachDayScores, DemoDataset.coachTargetBand, DemoDataset.coachSleepVsReadiness], id: \.self) { json in
+                            if let part = DemoDataset.decode(JSONValue.self, json), let card = CoachDataCard(part: part) {
+                                CoachDataCardView(card: card)
+                            }
+                        }
+                    }
+                    .padding(24)
+                }
+            case "feeling":
+                Color.clear.sheet(isPresented: .constant(true)) {
+                    SubjectiveEditorSheet(store: ActivitySubjectiveStore(
+                        activityId: "demo", rpe: 7, feeling: nil, client: DemoActivities(), tokenProvider: { "demo" }
+                    ))
+                    .presentationDetents([.large])
+                    .sharpitSheet()
+                }
+            case "goal":
+                NavigationStack { DemoGoalPage() }
             case "thresholds":
                 NavigationStack {
                     ThresholdsView(client: AthleteProfileClient(), tokenProvider: { "demo" })
@@ -1245,13 +1266,13 @@ private struct DemoTargetsSheet: View {
     @State private var isLoaded = false
 
     var body: some View {
-        Group {
-            if isLoaded { NutritionTargetsSheet(store: store) }
-        }
-        .task {
-            await store.load(trainingDayId: TrainingDayId.today(now: .now))
-            isLoaded = true
-        }
+        // The sheet reads the targets once, at its creation: shown only when the day is read.
+        Color.clear
+            .sheet(isPresented: $isLoaded) { NutritionTargetsSheet(store: store) }
+            .task {
+                await store.load(trainingDayId: TrainingDayId.today(now: .now))
+                isLoaded = true
+            }
     }
 }
 
@@ -1268,5 +1289,20 @@ private struct DemoSavedMealsPage: View {
 
     var body: some View {
         SavedMealsPage(store: store, meal: .lunch) { _ in }.task { await store.load() }
+    }
+}
+
+private struct DemoGoalPage: View {
+    @State private var store = GoalStore(client: DemoGoals(), plannedSessionClient: nil, profileClient: nil, activityClient: nil, tokenProvider: { "demo" })
+
+    var body: some View {
+        Group {
+            if let race = store.goals.first {
+                GoalDetailView(goalId: race.id, fallback: race, store: store)
+            } else {
+                ProgressView()
+            }
+        }
+        .task { await store.load() }
     }
 }
