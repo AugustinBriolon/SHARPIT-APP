@@ -5,7 +5,6 @@ enum SanteShareCard: Hashable, Identifiable {
     case summary
     case age
     case vo2max
-    case markers
 
     var id: Self { self }
 
@@ -14,7 +13,6 @@ enum SanteShareCard: Hashable, Identifiable {
         case .summary: String(localized: "Bilan")
         case .age: String(localized: "Âge biologique")
         case .vo2max: "VO₂max"
-        case .markers: String(localized: "Repères")
         }
     }
 
@@ -24,7 +22,6 @@ enum SanteShareCard: Hashable, Identifiable {
         if overview.synthesis.normed > 0 { cards.append(.summary) }
         if case .age = SanteHero.Mode(overview.synthesis) { cards.append(.age) }
         if overview.marker(.vo2max) != nil { cards.append(.vo2max) }
-        if !overview.allMarkers.isEmpty { cards.append(.markers) }
         return cards
     }
 }
@@ -64,6 +61,9 @@ struct SanteShareSheet: View {
                             .frame(width: SanteShareCardView.width)
                             .id(card)
                             .accessibilityElement(children: .combine)
+                            // The card not chosen steps back, so the one that leaves is plain.
+                            .opacity(card == selection ? 1 : 0.5)
+                            .animation(SharpitMotion.selection, value: selection)
                     }
                 }
                 .scrollTargetLayout()
@@ -117,138 +117,158 @@ struct SanteShareSheet: View {
         let renderer = ImageRenderer(
             content: SanteShareCardView(card: selection, overview: overview)
                 .frame(width: SanteShareCardView.width)
-                .environment(\.colorScheme, .light)
         )
         renderer.scale = displayScale
         rendered = renderer.uiImage.map(Image.init(uiImage:))
     }
 }
 
-/// One card: the brand and the day on top, the reading in the middle, on the sheet's white under
-/// its wash.
+/// One card, made to leave the app: ink like the brand's mark, one ring, one figure, the words
+/// that give it its meaning — a poster, not a screenshot. Colours are fixed (ink, white, the
+/// pillar's hue) so the image reads the same whatever the phone's appearance.
 struct SanteShareCardView: View {
     static let width: CGFloat = 300
 
     let card: SanteShareCard
     let overview: V1HealthOverview
 
+    private static let ink = Color(red: 0.055, green: 0.055, blue: 0.055)
+    private static let quiet = Color.white.opacity(0.62)
+    private static let rule = Color.white.opacity(0.14)
+
     var body: some View {
+        let reading = SanteShareReadout.reading(card, overview)
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "circle.hexagonpath.fill")
-                    .font(.system(size: 16))
+                    .font(.system(size: 15))
                     .foregroundStyle(SharpitColor.brandMarkGradient)
                 Text(verbatim: "SharpIt")
-                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.foreground)
+                    .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                    .foregroundStyle(.white)
                 Spacer(minLength: 0)
                 Text(Date.now.sharpitFormatted(.dateTime.day().month(.abbreviated).year()))
-                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
-                    .foregroundStyle(SharpitColor.slate)
+                    .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption, digits: true))
+                    .foregroundStyle(Self.quiet)
             }
-            Spacer(minLength: 20)
-            content
-            Spacer(minLength: 0)
+
+            ZStack {
+                Circle().stroke(Self.rule, lineWidth: 9)
+                Circle()
+                    .trim(from: 0, to: CliniqueRingMath.trim(for: reading.fraction))
+                    .stroke(hue, style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 0) {
+                    Text(reading.value)
+                        .font(SharpitTypography.system(size: 54, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-2)
+                        .foregroundStyle(.white)
+                    Text(reading.unit)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(Self.quiet)
+                }
+            }
+            .frame(width: 150, height: 150)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 26)
+
+            Spacer(minLength: 18)
+
+            Text(reading.title)
+                .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
+                .foregroundStyle(.white)
+            if let note = reading.note {
+                Text(note)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                    .foregroundStyle(Self.quiet)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 3)
+            }
+            if !reading.facts.isEmpty {
+                Rectangle().fill(Self.rule).frame(height: 1).padding(.top, 14)
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(Array(reading.facts.enumerated()), id: \.offset) { _, fact in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(fact.value)
+                                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            Text(fact.name)
+                                .font(SharpitTypography.system(size: 11, weight: .regular, relativeTo: .caption2))
+                                .foregroundStyle(Self.quiet)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.top, 12)
+            }
         }
         .padding(22)
-        .frame(height: 330, alignment: .topLeading)
-        .background {
-            ZStack(alignment: .top) {
-                SharpitColor.card
-                LinearGradient(colors: [wash.color, SharpitColor.card], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 180)
-            }
-        }
+        .frame(height: 390, alignment: .topLeading)
+        .background(Self.ink)
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(SharpitColor.divider, lineWidth: 1))
     }
 
-    private var wash: CliniqueWash {
+    private var hue: Color {
         switch card {
-        case .summary, .markers: .sleep
-        case .age: .watch
-        case .vo2max: .good
+        case .summary: SharpitColor.pillarSleep
+        case .age: SharpitColor.pillarNutrition
+        case .vo2max: SharpitColor.pillarRecovery
         }
     }
+}
 
-    @ViewBuilder
-    private var content: some View {
+/// What a card says, from what the overview holds — nothing else.
+enum SanteShareReadout {
+    struct Reading {
+        let value: String
+        let unit: String
+        /// The ring's share; a closed ring for a measure that is no part of anything.
+        let fraction: Double
+        let title: String
+        let note: String?
+        var facts: [(name: String, value: String)] = []
+    }
+
+    static func reading(_ card: SanteShareCard, _ overview: V1HealthOverview) -> Reading {
         switch card {
         case .summary:
-            figure(
-                eyebrow: String(localized: "Dans la norme"),
-                value: "\(overview.synthesis.inNorm)", scale: "/ \(overview.synthesis.normed)",
-                note: nil
+            let synthesis = overview.synthesis
+            return Reading(
+                value: "\(synthesis.inNorm)", unit: String(localized: "sur \(synthesis.normed)"),
+                fraction: synthesis.normed > 0 ? Double(synthesis.inNorm) / Double(synthesis.normed) : 0,
+                title: String(localized: "Repères dans la norme"),
+                note: nil,
+                facts: facts(overview)
             )
-            if let line = SanteReadout.synthesis(overview.synthesis) {
-                Text(line)
-                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 14)
-            }
         case .age:
-            if let age = overview.synthesis.biologicalAge {
-                figure(
-                    eyebrow: String(localized: "Âge biologique"),
-                    value: BiologicalAgeReadout.years(age.years), scale: String(localized: "ans"),
-                    note: SanteHeroReadout.ageNote(age)
-                )
-            }
+            let age = overview.synthesis.biologicalAge
+            return Reading(
+                value: age.map { BiologicalAgeReadout.years($0.years) } ?? "—", unit: String(localized: "ans"),
+                fraction: 1,
+                title: String(localized: "Âge biologique"),
+                note: age.flatMap(SanteHeroReadout.ageNote)
+            )
         case .vo2max:
-            if let marker = overview.marker(.vo2max) {
-                figure(
-                    eyebrow: "VO₂max",
-                    value: SanteReadout.number(marker.value, digits: 0), scale: "ml/kg/min",
-                    note: marker.norm?.label
-                )
-            }
-        case .markers:
-            Text("Mes repères")
-                .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3))
-                .foregroundStyle(SharpitColor.foreground)
-                .padding(.bottom, 6)
-            ForEach(overview.allMarkers.prefix(6)) { marker in
-                let value = SanteReadout.value(marker)
-                CliniqueDivider()
-                HStack(spacing: 8) {
-                    Image(systemName: SanteReadout.symbol(marker.key))
-                        .font(.system(size: 13))
-                        .foregroundStyle(SharpitColor.slate)
-                        .frame(width: 20, alignment: .leading)
-                    Text(SanteReadout.title(marker.key))
-                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text([value.text, value.unit].compactMap { $0 }.joined(separator: " "))
-                        .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote, digits: true))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1)
-                }
-                .padding(.vertical, 9)
-            }
+            let marker = overview.marker(.vo2max)
+            return Reading(
+                value: marker.map { SanteReadout.number($0.value, digits: 0) } ?? "—", unit: "ml/kg/min",
+                fraction: 1,
+                title: "VO₂max",
+                note: marker?.norm?.label
+            )
         }
     }
 
-    private func figure(eyebrow: String, value: String, scale: String, note: String?) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(eyebrow)
-                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.slate)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(value)
-                    .font(SharpitTypography.system(size: 72, weight: .semibold, relativeTo: .largeTitle, digits: true))
-                    .tracking(-2.5)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text(scale)
-                    .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body, digits: true))
-                    .foregroundStyle(SharpitColor.slate)
-            }
-            if let note {
-                Text(note)
-                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.foreground)
+    /// Up to three vital signs under the summary: resting heart rate, HRV, VO₂max — those measured.
+    static func facts(_ overview: V1HealthOverview) -> [(name: String, value: String)] {
+        [V1HealthMarker.Key.restingHr, .hrv, .vo2max].compactMap { key in
+            overview.marker(key).map { marker in
+                let value = SanteReadout.value(marker)
+                return (SanteReadout.title(key), [value.text, value.unit].compactMap { $0 }.joined(separator: " "))
             }
         }
     }
