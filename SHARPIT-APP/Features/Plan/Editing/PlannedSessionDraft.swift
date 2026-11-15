@@ -181,7 +181,8 @@ struct StrengthExerciseDraft: Identifiable, Equatable {
         sets: Int = 3,
         reps: Int = 10,
         weightKg: Double? = nil,
-        durationSec: Int? = nil
+        durationSec: Int? = nil,
+        notes: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -189,7 +190,7 @@ struct StrengthExerciseDraft: Identifiable, Equatable {
         self.reps = reps
         self.weightKg = weightKg
         self.durationSec = durationSec
-        preserved = [:]
+        preserved = notes.map { ["notes": .string($0)] } ?? [:]
         originalName = name
     }
 

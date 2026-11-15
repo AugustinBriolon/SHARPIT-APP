@@ -168,6 +168,76 @@ struct GuidedStrengthSession: Equatable, Sendable {
         )
     }
 
+    /// A session logged by hand, opened on the exercises already written — their sets done —
+    /// or empty, for the athlete to add what they did.
+    static func logging(title: String, exercises: [StrengthExerciseDraft], startedAt: Date = .now) -> GuidedStrengthSession {
+        var session = GuidedStrengthSession(title: title, plannedSessionId: nil, targets: [], startedAt: startedAt)
+        for exercise in exercises where exercise.isNamed {
+            session.addExercise(
+                name: exercise.name, catalogId: exercise.exerciseCatalogId, note: exercise.notes,
+                sets: exercise.sets, reps: exercise.reps, weightKg: exercise.weightKg,
+                durationSec: exercise.durationSec, isDone: true
+            )
+        }
+        return session
+    }
+
+    /// Adds an exercise at the end — outside the plan if need be: better noted than left out. Its
+    /// sets open on what the athlete last did (`history`), else on three sets of ten. An exercise
+    /// already in the session gets one more set instead of a second block.
+    mutating func addExercise(name rawName: String, catalogId: String? = nil, note: String? = nil, history: V1StrengthExercise? = nil) {
+        let last = history?.last
+        addExercise(
+            name: rawName, catalogId: catalogId ?? history?.catalogId, note: note ?? history?.note,
+            sets: last?.sets ?? 3, reps: last?.reps ?? 10, weightKg: last?.weightKg,
+            durationSec: last?.durationSec, isDone: false
+        )
+    }
+
+    private mutating func addExercise(
+        name rawName: String, catalogId: String?, note: String?,
+        sets: Int, reps: Int, weightKg: Double?, durationSec: Int?, isDone: Bool
+    ) {
+        let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        if let existing = targets.first(where: { StrengthExerciseKey.of($0.exerciseName) == StrengthExerciseKey.of(name) }) {
+            addSet(toExercise: existing.exerciseName)
+            return
+        }
+        let count = max(sets, 1)
+        let usesDuration = GuidedStrengthSetTarget.defaultUsesDuration(reps: reps <= 1 && (durationSec ?? 0) > 0 ? 0 : reps, durationSec: durationSec)
+        let resolved = ExerciseMediaCatalog.resolveCatalogId(catalogId: catalogId, name: name)
+        for number in 1...count {
+            targets.append(
+                GuidedStrengthSetTarget(
+                    id: UUID(), exerciseName: name, exerciseCatalogId: resolved,
+                    setNumber: number, setCount: count,
+                    targetReps: usesDuration ? 0 : reps, targetWeightKg: weightKg, targetDurationSec: durationSec,
+                    restSec: nil, restIsTimed: false, notes: number == 1 ? note : nil,
+                    loggedReps: usesDuration ? 0 : max(reps, 1), loggedWeightKg: weightKg, loggedDurationSec: durationSec,
+                    usesDuration: usesDuration, isDone: isDone, isSkipped: false
+                )
+            )
+        }
+    }
+
+    /// Opens each set not yet done on what the athlete last lifted or held, where the plan
+    /// prescribes neither a load nor a time: the plan's own figures always win.
+    mutating func applyHistory(_ exercises: [V1StrengthExercise]) {
+        let byKey = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for index in targets.indices where !targets[index].isDone && !targets[index].isSkipped {
+            guard let last = byKey[StrengthExerciseKey.of(targets[index].exerciseName)]?.last else { continue }
+            if targets[index].usesDuration {
+                if (targets[index].targetDurationSec ?? 0) <= 0, let seconds = last.durationSec, seconds > 0 {
+                    targets[index].loggedDurationSec = seconds
+                }
+            } else if targets[index].targetWeightKg == nil, targets[index].loggedWeightKg == nil,
+                      let kg = last.weightKg, kg > 0 {
+                targets[index].loggedWeightKg = kg
+            }
+        }
+    }
+
     var exerciseGroups: [GuidedStrengthExerciseGroup] {
         var order: [String] = []
         var indices: [String: [Int]] = [:]
@@ -348,7 +418,8 @@ struct GuidedStrengthSession: Equatable, Sendable {
                 sets: done.count,
                 reps: last.usesDuration ? 0 : last.loggedReps,
                 weightKg: last.usesDuration ? nil : last.loggedWeightKg,
-                durationSec: last.usesDuration ? last.loggedDurationSec : nil
+                durationSec: last.usesDuration ? last.loggedDurationSec : nil,
+                notes: targets.first { $0.exerciseName == name }?.notes
             )
         }
     }
@@ -363,6 +434,24 @@ struct GuidedStrengthSession: Equatable, Sendable {
         draft.rpe = rpe
         draft.feeling = feeling
         return draft
+    }
+}
+
+nonisolated enum GuidedStrengthReadout {
+    /// Where an exercise stands in the session: « En cours » once a set is done, « Terminé » when
+    /// all are; nothing before the first.
+    static func standing(done: Int, total: Int) -> (label: String, status: CliniqueStatus)? {
+        guard total > 0, done > 0 else { return nil }
+        return done >= total
+            ? (String(localized: "Terminé"), .good)
+            : (String(localized: "En cours"), .watch)
+    }
+
+    /// What the overview's button says: nothing to end before a first set, the session to end
+    /// when it is run live, the exercises to hand back when it is logged by hand.
+    static func finishTitle(done: Int, isLogging: Bool) -> String {
+        if done == 0 { return String(localized: "Aucune série encore") }
+        return isLogging ? String(localized: "Valider les exercices") : String(localized: "Terminer la séance")
     }
 }
 

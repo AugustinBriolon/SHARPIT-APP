@@ -10,10 +10,20 @@ struct GuidedStrengthFinishContext {
     var onFinished: (String) -> Void = { _ in }
 }
 
+/// The same view used to log a session by hand: no clock, no rest, no heart rate — the sets are
+/// entered as they would be live, then handed back to the form that holds the day and the time.
+struct GuidedStrengthLogging {
+    let tokenProvider: () async throws -> String
+    let onLogged: ([StrengthExerciseDraft]) -> Void
+}
+
 /// Full-screen phone follow — Strong's overview → sets card → rest ring, in Sharpit tokens.
 struct GuidedStrengthWorkoutView: View {
     @State private var session: GuidedStrengthSession
-    let finish: GuidedStrengthFinishContext
+    /// Nil when the session is only being logged (`logging`).
+    let finish: GuidedStrengthFinishContext?
+    var logging: GuidedStrengthLogging?
+    @State private var showingExercisePicker = false
 
     @Environment(\.dismiss) private var dismiss
     /// Nil when shown on its own (the design gallery): then it is a plain cover.
@@ -64,10 +74,14 @@ struct GuidedStrengthWorkoutView: View {
 
     private var isResting: Bool { path.last == .rest }
 
-    init(session: GuidedStrengthSession, finish: GuidedStrengthFinishContext) {
+    init(session: GuidedStrengthSession, finish: GuidedStrengthFinishContext?, logging: GuidedStrengthLogging? = nil) {
         _session = State(initialValue: session)
         self.finish = finish
+        self.logging = logging
     }
+
+    private var isLogging: Bool { logging != nil }
+    private var tokenProvider: (() async throws -> String)? { finish?.tokenProvider ?? logging?.tokenProvider }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -97,9 +111,11 @@ struct GuidedStrengthWorkoutView: View {
                 .cliniqueSheet(wash: .coach, height: 220)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .principal) { sessionStatus }
-                    if dock != nil {
-                        ToolbarItem(placement: .primaryAction) { minimizeButton }
+                    if !isLogging {
+                        ToolbarItem(placement: .principal) { sessionStatus }
+                        if dock != nil {
+                            ToolbarItem(placement: .primaryAction) { minimizeButton }
+                        }
                     }
                 }
             }
@@ -110,7 +126,20 @@ struct GuidedStrengthWorkoutView: View {
         .sheet(isPresented: $showingHeartRatePicker) {
             GuidedHeartRatePickerSheet(monitor: heartRate)
         }
+        .sheet(isPresented: $showingExercisePicker) {
+            ExercisePickerSheet(library: StrengthLibraryStore.shared.exercises) { pick in
+                SharpitMotion.run {
+                    session.addExercise(name: pick.name, catalogId: pick.catalogId, note: pick.note, history: pick.history)
+                }
+            }
+        }
+        // What the athlete last lifted or held opens each set the plan leaves without a figure.
+        .task {
+            guard let tokenProvider else { return }
+            session.applyHistory(await StrengthLibraryStore.shared.load(tokenProvider: tokenProvider))
+        }
         .onAppear {
+            guard !isLogging else { return }
             publishLiveActivityIfNeeded()
             heartRate.startIfEnabled()
         }
@@ -149,10 +178,10 @@ struct GuidedStrengthWorkoutView: View {
     private var toolbarContent: some ToolbarContent {
         // « Réduire » stays one tap away, in the open; finishing and quitting are rarer and
         // one tap further, in « … » (a Menu, not a confirmationDialog: it opens from the button).
-        if dock != nil {
+        if dock != nil, !isLogging {
             ToolbarItem(placement: .topBarLeading) { minimizeButton }
         }
-        if phase == .overview {
+        if phase == .overview, !isLogging {
             ToolbarItem(placement: .principal) { sessionStatus }
         }
         ToolbarItem(placement: .primaryAction) { moreMenu }
@@ -161,7 +190,7 @@ struct GuidedStrengthWorkoutView: View {
     private var moreMenu: some View {
         Menu {
             // Only on the session overview — never on a single exercise's sets.
-            if phase == .overview {
+            if phase == .overview, !isLogging {
                 Button("Terminer la séance", systemImage: "checkmark.circle") {
                     stopTimers()
                     SharpitMotion.run { phase = .summary }
@@ -280,10 +309,6 @@ struct GuidedStrengthWorkoutView: View {
                         .tracking(-0.5)
                         .foregroundStyle(SharpitColor.foreground)
                         .accessibilityAddTraits(.isHeader)
-                    Text(overviewSubtitle)
-                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
-                        .foregroundStyle(SharpitColor.slate)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 VStack(spacing: 0) {
@@ -291,20 +316,32 @@ struct GuidedStrengthWorkoutView: View {
                         CliniqueDivider()
                         overviewExerciseRow(group: group, order: offset + 1)
                     }
-                    CliniqueDivider()
+                    if !session.targets.isEmpty { CliniqueDivider() }
                 }
 
-                SharpitProgressBar(
-                    label: String(localized: "Séries faites"),
-                    value: "\(session.completedCount) / \(session.targets.count)",
-                    fraction: session.targets.isEmpty ? 0 : Double(session.completedCount) / Double(session.targets.count)
-                )
+                // Outside the plan if need be: what was done on top is better noted than left out.
+                SharpitDashedAddButton(title: String(localized: "Ajouter un exercice")) {
+                    showingExercisePicker = true
+                }
+
+                if !session.targets.isEmpty {
+                    SharpitProgressBar(
+                        label: String(localized: "Séries faites"),
+                        value: "\(session.completedCount) / \(session.targets.count)",
+                        fraction: Double(session.completedCount) / Double(session.targets.count)
+                    )
+                }
 
                 Button {
                     stopTimers()
-                    SharpitMotion.run { phase = .summary }
+                    if let logging {
+                        logging.onLogged(session.activityExercises())
+                        dismiss()
+                    } else {
+                        SharpitMotion.run { phase = .summary }
+                    }
                 } label: {
-                    Text(session.completedCount == 0 ? String(localized: "Aucune série encore") : String(localized: "Terminer la séance"))
+                    Text(GuidedStrengthReadout.finishTitle(done: session.completedCount, isLogging: isLogging))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
@@ -313,12 +350,6 @@ struct GuidedStrengthWorkoutView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, SharpitSpacing.md)
         }
-    }
-
-    private var overviewSubtitle: String {
-        let names = session.exerciseGroups.map(\.name)
-        if names.count <= 3 { return names.joined(separator: " · ") }
-        return "\(names.prefix(3).joined(separator: " · ")) · +\(names.count - 3)"
     }
 
     private func overviewExerciseRow(group: GuidedStrengthExerciseGroup, order: Int) -> some View {
@@ -341,17 +372,25 @@ struct GuidedStrengthWorkoutView: View {
                         .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
                         .foregroundStyle(SharpitColor.foreground)
                         .multilineTextAlignment(.leading)
-                    if done == total, total > 0 {
-                        CliniqueStatusPill(String(localized: "Terminé"), status: .good)
+                    // One mark per set, filled as they are done: where the exercise stands, seen
+                    // rather than counted.
+                    HStack(spacing: 4) {
+                        ForEach(0..<total, id: \.self) { index in
+                            Capsule()
+                                .fill(index < done ? SharpitColor.foreground : SharpitColor.divider)
+                                .frame(width: 18, height: 5)
+                        }
                     }
+                    .padding(.top, 3)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(done) séries sur \(total)")
                 }
 
                 Spacer(minLength: SharpitSpacing.xs)
 
-                Text("\(done)/\(total) séries")
-                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize()
+                if let standing = GuidedStrengthReadout.standing(done: done, total: total) {
+                    CliniqueStatusPill(standing.label, status: standing.status)
+                }
                 if volume > 0 {
                     volumeFigure(volume)
                 }
@@ -411,10 +450,19 @@ struct GuidedStrengthWorkoutView: View {
                             .foregroundStyle(SharpitColor.foreground)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
-                        Text(group?.notes.flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Séries prescrites"))
-                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
-                            .foregroundStyle(SharpitColor.slate)
-                            .fixedSize(horizontal: false, vertical: true)
+                        if let notes = group?.notes, !notes.isEmpty {
+                            Text(notes)
+                                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                                .foregroundStyle(SharpitColor.slate)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        // What was last done on it, and the best: the figures the next set is judged by.
+                        if let history = StrengthLibraryStore.shared.history(of: name) {
+                            Text(StrengthHistoryReadout.line(history))
+                                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                                .foregroundStyle(SharpitColor.slate)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         if volume > 0 {
                             HStack(spacing: SharpitSpacing.xs) {
                                 Text("Volume")
@@ -465,19 +513,6 @@ struct GuidedStrengthWorkoutView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom) {
-            if let nextSet {
-                Button {
-                    focusedField = nil
-                    completeSet(id: nextSet.id)
-                } label: {
-                    Text("Série terminée").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
-                .padding(.horizontal, SharpitSpacing.md)
-                .padding(.bottom, SharpitSpacing.xs)
-            }
-        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -532,6 +567,14 @@ struct GuidedStrengthWorkoutView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            // Validated where it is set: the card is the set in hand, its button with it.
+            Button {
+                focusedField = nil
+                completeSet(id: set.id)
+            } label: {
+                Label("Valider la série", systemImage: "checkmark").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
         }
         .padding(SharpitSpacing.md)
         .overlay(
@@ -1036,6 +1079,7 @@ struct GuidedStrengthWorkoutView: View {
     }
 
     private func publishLiveActivityIfNeeded(forceActive: Bool = false) {
+        guard !isLogging else { return }
         guard phase == .overview else { return }
         if isResting, !forceActive, restEndsAt != nil || restPaused { return }
 
@@ -1070,7 +1114,7 @@ struct GuidedStrengthWorkoutView: View {
 
     /// Saved or quit: off the dock when it runs there, else the cover closes.
     private func close() {
-        if let dock { dock.end() } else { dismiss() }
+        if let dock, !isLogging { dock.end() } else { dismiss() }
     }
 
     private func save() async {
@@ -1081,6 +1125,7 @@ struct GuidedStrengthWorkoutView: View {
         isSaving = true
         failure = nil
         defer { isSaving = false }
+        guard let finish else { return }
         let draft = session.activityDraft(rpe: rpe, feeling: feeling)
         guard draft.missingRequirement == nil else {
             failure = draft.missingRequirement
@@ -1095,6 +1140,8 @@ struct GuidedStrengthWorkoutView: View {
                 try? await finish.linker.link(sessionId: plannedId, activityId: activityId, token: token)
             }
             finish.onFinished(activityId)
+            // The sets just saved are the next session's defaults.
+            Task { await StrengthLibraryStore.shared.load(tokenProvider: finish.tokenProvider, fresh: true) }
             close()
         } catch let SharpitAPIError.message(reason) {
             failure = reason

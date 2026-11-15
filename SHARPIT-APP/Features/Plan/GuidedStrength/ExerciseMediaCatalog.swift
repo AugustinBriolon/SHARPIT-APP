@@ -67,8 +67,32 @@ enum ExerciseMediaCatalog {
         return URL(string: "\(cdnRoot)/images/\(id)-\(mediaId).jpg")
     }
 
+    /// An exercise the catalog knows, as the search lists it.
+    struct Entry: Identifiable, Equatable, Sendable {
+        let id: String
+        let name: String
+    }
+
+    /// The catalog's exercises whose name holds every word typed, French aliases first, one
+    /// line per exercise. Empty for an empty query: the catalog is searched, not browsed.
+    static func search(_ query: String, limit: Int = 30) -> [Entry] {
+        let words = normalize(query).split(separator: " ")
+        guard !words.isEmpty else { return [] }
+        var seen = Set<String>()
+        var found: [Entry] = []
+        for source in [index.aliases, index.names] {
+            for (name, id) in source.sorted(by: { $0.key < $1.key }) where !seen.contains(id) {
+                guard words.allSatisfy({ name.contains($0) }) else { continue }
+                seen.insert(id)
+                found.append(Entry(id: id, name: name.prefix(1).uppercased() + name.dropFirst()))
+                if found.count >= limit { return found }
+            }
+        }
+        return found
+    }
+
     /// Same normalization as `@sharpit/app/lib/exercises/normalize`.
-    static func normalize(_ raw: String) -> String {
+    nonisolated static func normalize(_ raw: String) -> String {
         let folded = raw.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "en_US_POSIX"))
         var scaled = ""
         scaled.reserveCapacity(folded.count)
