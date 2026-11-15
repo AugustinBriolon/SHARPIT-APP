@@ -46,3 +46,10 @@ times, the projection's reliability as a pill — then « En cours » (a ring, t
 
 The race header sets the server's compact times with their spaces (« 2 h 28 », « 27 min »,
 `GoalsReadout.spaced`); the goal's own page keeps the server's form.
+
+**Détail d'un objectif, Clinique.** `GoalDetailView` takes the coach wash and drops its bar title:
+the race's phase and role, its name, its day with the countdown on one line (no hero figure), then
+« Position » — the projected finish read big with its range, the gap to the aim as a status pill, the
+trajectory — and « Détail par segment » as lines marked in each leg's hue, a transition quiet between
+them. Sessions and time are two plain figures; « Valider l'objectif » is the app's ink capsule.
+`SharpitScreenDemo goal` shows it.

@@ -95,3 +95,9 @@ bordered card. The mock-up's « Critère par critère » table (duration, intens
 rate, each with a status) is not built: the analysis carries sentences, not a score per criterion.
 `SharpitScreenDemo compliance` shows it. Records, the technical analysis and the race analysis open
 their sections on titles, without cards.
+
+**Ressenti et analyse technique, Clinique.** « Comment s'est passée la séance ? »
+(`SubjectiveEditorSheet`) rates on hairline tiles, the chosen one lined in ink (`RatingGrid`, shared
+with the brick's evaluation) — no shadow, no coloured tick under a figure. The technical analysis
+reads its figures plainly and each zone as a line: its name, its range over a gauge filled to its
+share in the zone's hue, its time. `SharpitScreenDemo feeling` shows the sheet.

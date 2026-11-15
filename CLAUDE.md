@@ -371,7 +371,8 @@ section title (`\.sharpitSectionTitles`), outside it stays a caption. `sharpitGr
 the page's one wash. `SharpitCardHeader` is a section title as well — no icon tile — and a page's
 sections are no longer wrapped in cards: a card is kept for what the mock-ups box (a coach's
 reading, a question, a card in the conversation). A sheet's actions sit in one glass bar
-(`SharpitActionDock`). A page read on its own takes the large title; a form keeps the small one
+(`SharpitActionDock`). Paramètres alone keeps its groups as cards
+on the tinted canvas (`sharpitGroupedList(cards: true)`): its mock-up draws a menu of destinations. A page read on its own takes the large title; a form keeps the small one
 between « Annuler » and its action.
 
 Notifications speak as a coach who knows the athlete: « tu », warm and plain (« Ta séance t'attend

@@ -80,3 +80,8 @@ in the grade's status hue, the grade as a pill (`FoodHealthPresentation.status`)
 sources; each reason is a line marked by a bar in its status hue (`FoodHighlightRow`), never
 coloured words or a tick dial. A saved meal is a line — its name, its first foods and their count,
 its energy. `SharpitScreenDemo quality` / `savedmeals` / `ownfood` / `recipe` show them.
+
+**Objectifs, Clinique.** `NutritionTargetsSheet` reads the day's energy big between − and + (50 kcal
+a tap), then « Répartition »: the macros' split on one bar, grams or shares typed in hairline fields.
+The mock-up's per-macro steppers are not built: the fields accept an empty value, which removes a
+target. `SharpitScreenDemo targets` shows it.

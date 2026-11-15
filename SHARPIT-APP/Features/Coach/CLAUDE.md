@@ -55,3 +55,9 @@ things are kept under the title (`CoachMemoryReadout.lead`), kinds as chips with
 entry a line — the athlete's sentence, its kind and when it was kept, « Pèse sur le plan » when it
 constrains training — that opens to be corrected, with a cross that erases it; « Dire quelque chose au
 coach » floats at the bottom; the athlete's own profile text closes the page.
+
+**Cartes de données, Clinique.** A data card in the conversation (`CoachDataCardView`) keeps its
+border and opens on a quiet line — what it reads and for which day (`CoachCardCaption`), a pill at
+the trailing edge — never a section title or an icon tile. `SharpitScreenDemo coachcards` shows the
+three cards from the web's own fixtures. The mock-up's sparkline in a card is not built: the tool
+returns the day's figures, not a series.

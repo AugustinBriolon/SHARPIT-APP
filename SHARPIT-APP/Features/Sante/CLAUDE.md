@@ -80,3 +80,7 @@ values deserve a look as a pill, « Analyse sanguine, 16 sept. 2026 », how many
 then the results in Santé's own table (`SanteTable`; a line opens the marker's history) and the
 coach's reading. The bar keeps the deletion. The mock-up's « depuis mars » and « prochaine » figures
 are not shown: the app holds neither a trend per test nor a next date.
+
+**Faire le point, Clinique.** A zone's check-in rates on hairline tiles, the chosen one lined in ink
+with the level's hue as a mark under the figure (`ZoneSeverityScale`, shared with the onboarding);
+what the athlete could do is a list of hairline tiles; « Enregistrer » sits in the glass dock.

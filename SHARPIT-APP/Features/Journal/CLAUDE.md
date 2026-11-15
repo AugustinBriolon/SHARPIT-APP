@@ -50,3 +50,6 @@ tiles, as many bars as the step (`RessentiStepPicker`), details on five dashes (
 **Analyses, Clinique.** `JournalAnalysesView` takes the sleep wash and the large title; « À retenir »
 is a bordered card — the sentence to act on, what it rests on, what already holds — and each
 outcome's habits stay dumbbells under their titles. `SharpitScreenDemo analyses` shows it.
+
+« Mes signaux » (`JournalPrefsDrawer`) filters with the app's chips — ink once chosen, a hairline
+otherwise — and titles each group.
