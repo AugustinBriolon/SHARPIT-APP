@@ -31,14 +31,6 @@ nonisolated enum FoodHealthPresentation {
         }
     }
 
-    static func highlightTone(_ tone: V1FoodHealth.Highlight.Tone) -> Color {
-        switch tone {
-        case .negative: SharpitColor.signalRisk
-        case .positive: SharpitColor.signalRecovery
-        case .neutral: SharpitColor.signalNeutral
-        }
-    }
-
     static func dietTone(_ status: V1FoodHealth.DietFit.Status) -> Color {
         switch status {
         case .compatible: SharpitColor.signalRecovery

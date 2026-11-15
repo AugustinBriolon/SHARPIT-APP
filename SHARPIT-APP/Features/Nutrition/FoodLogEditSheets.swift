@@ -146,12 +146,13 @@ struct NutritionTargetsSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+                VStack(alignment: .leading, spacing: 24) {
                     energyPlate
                     macrosCard
                     problemNote
                 }
-                .padding(SharpitSpacing.pageInset)
+                .padding(.horizontal, 24)
+                .padding(.vertical, SharpitSpacing.md)
                 .animation(SharpitMotion.reveal, value: mode)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -164,7 +165,7 @@ struct NutritionTargetsSheet: View {
                     Button("Annuler") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("OK") { save() }
+                    Button("Enregistrer") { save() }
                         .disabled(parsed == nil)
                 }
             }
@@ -174,37 +175,36 @@ struct NutritionTargetsSheet: View {
         .sharpitSheet()
     }
 
-    /// The energy, big, on the ink plate: typed, or stepped by 50.
+    /// The energy, read big on the sheet: typed, or stepped by 50.
     private var energyPlate: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .center, spacing: SharpitSpacing.xs) {
             Text("Énergie par jour")
-                .font(SharpitTypography.cardTitle)
-                .foregroundStyle(SharpitColor.foreground)
-            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
+            HStack(alignment: .center, spacing: 18) {
                 SharpitStepButton(symbol: "minus", label: String(localized: "Moins 50 kcal")) { stepKcal(-50) }
-                VStack(spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
                     TextField("—", text: $kcal)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.center)
-                        .font(SharpitTypography.heroScore)
-                        .tracking(SharpitTypography.heroScoreTracking)
+                        .font(SharpitTypography.system(size: 56, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-1.6)
                         .foregroundStyle(SharpitColor.foreground)
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
+                        .fixedSize()
                         .accessibilityLabel("Calories")
                     Text("kcal")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
+                        .font(SharpitTypography.system(size: 20, weight: .regular, relativeTo: .title3))
+                        .foregroundStyle(SharpitColor.slate)
                 }
-                .frame(maxWidth: .infinity)
                 SharpitStepButton(symbol: "plus", label: String(localized: "Plus 50 kcal")) { stepKcal(50) }
             }
             Text(energyFooter)
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
     }
 
     private func stepKcal(_ delta: Int) {
@@ -219,7 +219,13 @@ struct NutritionTargetsSheet: View {
 
     private var macrosCard: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitFieldLabel(String(localized: "Macronutriments"))
+            Text("Répartition")
+                .font(SharpitTypography.sectionTitle)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            if let targets = parsed, let protein = targets.proteinG, let carbs = targets.carbsG, let fat = targets.fatG {
+                NutritionMacroSplitBar(protein: protein, carbohydrates: carbs, fat: fat, height: 10)
+            }
             SharpitSegmentedChoice(
                 options: [NutritionTargetsMode.grams, .percent],
                 label: { $0 == .grams ? String(localized: "Grammes") : "%" },
