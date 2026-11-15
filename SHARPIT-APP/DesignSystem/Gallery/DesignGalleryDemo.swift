@@ -710,6 +710,29 @@ struct ScreenDemoHost: View {
                     ),
                     onDiscussWithCoach: { _ in }
                 )
+            case "signals":
+                Color.clear.sheet(isPresented: .constant(true)) {
+                    JournalPrefsDrawer(store: JournalStore(client: DemoJournal(), tokenProvider: { "demo" }))
+                }
+            case "caffeine":
+                Color.clear.sheet(isPresented: .constant(true)) {
+                    CaffeineInputSheet(store: JournalStore(client: DemoJournal(), tokenProvider: { "demo" }))
+                }
+            case "session-strength":
+                ScrollView {
+                    PlannedSessionSummary(
+                        preview: .demo,
+                        steps: [
+                            V1PlannedSessionStep(key: "a", label: "Développé couché", detail: "4 × 8 · 60 kg", target: nil, notes: "Repos 90 s"),
+                            V1PlannedSessionStep(key: "b", label: "Tractions", detail: "3 × 10", target: nil, notes: nil),
+                            V1PlannedSessionStep(key: "c", label: "Gainage planche", detail: "3 × 45 s", target: nil, notes: nil),
+                            V1PlannedSessionStep(key: "d", label: "Rotation externe d'épaule à la bande élastique", detail: "2 × 15", target: nil, notes: "Tempo lent"),
+                        ],
+                        stepsAreDerived: false
+                    ) { EmptyView() }
+                    .padding(SharpitSpacing.pageInset)
+                }
+                .background(SharpitCanvasBackground())
             case "session-routines":
                 // The summary alone, writable: the drawer only asks « Fait / Raccourci / Sauté »
                 // with a plan editor, which the demo has none of.
