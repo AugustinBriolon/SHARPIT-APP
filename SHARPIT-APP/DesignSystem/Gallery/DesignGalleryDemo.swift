@@ -402,7 +402,7 @@ struct ScreenDemoHost: View {
                     String(localized: "Page introuvable"),
                     detail: String(localized: "Ce lien ne mène plus nulle part.")
                 )
-            case "sleep-lanes":
+            case "sleep-lanes": // A night with no course: figures, never a chart made up from totals.
                 if let sleep = Self.sleep {
                     ScrollView { SleepSections(sleep: sleep).padding(.top, SharpitSpacing.md) }
                         .cliniqueSheet(wash: .sleep, height: 240)
@@ -746,19 +746,13 @@ struct ScreenDemoHost: View {
                 }
                 .background(SharpitCanvasBackground())
             case "session-routines":
-                // The summary alone, writable: the drawer only asks « Fait / Raccourci / Sauté »
-                // with a plan editor, which the demo has none of.
-                ScrollView {
-                    PlannedSessionSummary(
-                        preview: .demo,
-                        steps: PlannedSessionPreview.demo.steps,
-                        stepsAreDerived: false,
-                        routines: PlannedSessionPreview.demo.routines,
-                        onRoutineStatus: { _, _ in }
-                    ) { EmptyView() }
-                    .padding(SharpitSpacing.pageInset)
+                // The routines drawer, writable: the session's own drawer only asks « Fait /
+                // Raccourci / Sauté » with a plan editor, which the demo has none of.
+                Color.clear.sheet(isPresented: .constant(true)) {
+                    if let routines = PlannedSessionPreview.demo.routines {
+                        SessionRoutinesSheet(routines: routines, durationMin: PlannedSessionPreview.demo.durationMin, onStatus: { _, _ in })
+                    }
                 }
-                .background(SharpitCanvasBackground())
             case "status":
                 Color.clear.sheet(isPresented: .constant(true)) {
                     ActivityStatusButtonDemo()
