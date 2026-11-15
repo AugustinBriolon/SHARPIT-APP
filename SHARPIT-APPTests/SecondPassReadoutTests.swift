@@ -157,3 +157,95 @@ private func week(_ start: Date, _ index: Int, _ phase: V1PlanPhase, load: Doubl
     #expect(SessionRoutinesReadout.hasMoves(nil) == false)
     #expect(SessionRoutinesReadout.hasMoves(PlannedSessionPreview.demo.routines))
 }
+
+private func history(_ name: String, weight: Double? = 60, duration: Int? = nil, best: V1StrengthExercise.Best = .init()) -> V1StrengthExercise {
+    V1StrengthExercise(
+        name: name, last: .init(date: "2026-11-10", sets: 4, reps: duration == nil ? 8 : 1, weightKg: weight, durationSec: duration),
+        best: best
+    )
+}
+
+@Test func anExercisesHistoryReadsItsLastSessionAndItsBest() {
+    let bench = history("Développé couché", best: .init(weightKg: 70, reps: 5))
+    #expect(StrengthHistoryReadout.line(bench) == "Dernière fois 4 × 8 · 60 kg · Meilleur 70 kg × 5")
+    let plank = history("Gainage", weight: nil, duration: 45, best: .init(durationSec: 90))
+    #expect(StrengthHistoryReadout.line(plank) == "Dernière fois 4 × 45 s · Meilleur 1 min 30 s")
+    #expect(StrengthHistoryReadout.best(history("Pompes", weight: nil)) == nil)
+    #expect(bench.id == history("developpe  COUCHE").id)
+}
+
+@Test func aSetOpensOnTheLastLoadOnlyWhereThePlanGivesNone() {
+    var session = GuidedStrengthSession.logging(title: "Libre", exercises: [])
+    session.addExercise(name: "Squat")
+    session.addExercise(name: "Développé couché", history: history("Développé couché", weight: 55))
+    session.applyHistory([history("Squat", weight: 80), history("Développé couché", weight: 90)])
+    let squat = session.targets.filter { $0.exerciseName == "Squat" }
+    #expect(squat.count == 3)
+    #expect(squat.allSatisfy { $0.loggedWeightKg == 80 })
+    // Added from its history, the exercise already carries a figure: it is kept.
+    #expect(session.targets.filter { $0.exerciseName == "Développé couché" }.allSatisfy { $0.loggedWeightKg == 55 })
+}
+
+@Test func anExerciseAddedTwiceGetsOneMoreSetNotASecondBlock() {
+    var session = GuidedStrengthSession.logging(title: "Libre", exercises: [])
+    session.addExercise(name: "Tractions")
+    session.addExercise(name: " tractions ")
+    #expect(session.exerciseGroups.map(\.name) == ["Tractions"])
+    #expect(session.targets.count == 4)
+    session.addExercise(name: "   ")
+    #expect(session.targets.count == 4)
+}
+
+@Test func aLoggedSessionReopensOnItsExercisesAndHandsThemBack() {
+    let written = [
+        StrengthExerciseDraft(name: "Squat", sets: 3, reps: 8, weightKg: 80),
+        StrengthExerciseDraft(name: "Étirement psoas", sets: 2, reps: 0, durationSec: 30, notes: "Zone travaillée : Hanches et fessiers"),
+    ]
+    let session = GuidedStrengthSession.logging(title: "Libre", exercises: written)
+    #expect(session.completedCount == 5)
+    let back = session.activityExercises()
+    #expect(back.map(\.name) == ["Squat", "Étirement psoas"])
+    #expect(back.map(\.sets) == [3, 2])
+    #expect(back[0].weightKg == 80)
+    #expect(back[1].durationSec == 30)
+    #expect(back[1].notes == "Zone travaillée : Hanches et fessiers")
+}
+
+@Test func theExerciseSearchPutsTheAthletesOwnFirstAndOffersToCreate() {
+    let library = [history("Développé couché"), history("Squat bulgare")]
+    #expect(ExercisePickerReadout.results(query: "", library: library).own.count == 2)
+    let found = ExercisePickerReadout.results(query: "squat", library: library)
+    #expect(found.own.map(\.name) == ["Squat bulgare"])
+    #expect(found.creatable == "squat")
+    #expect(ExercisePickerReadout.results(query: "Squat Bulgare", library: library).creatable == nil)
+    #expect(ExercisePickerReadout.results(query: "x", library: library).creatable == nil)
+    #expect(ExercisePickerReadout.zoneNote("Tronc") == "Zone travaillée : Tronc")
+}
+
+@Test func aSessionLeftUnsavedComesBackAsTyped() throws {
+    let url = FileManager.default.temporaryDirectory.appending(path: "draft-\(UUID().uuidString).json")
+    let store = ActivityDraftLocalStore(fileURL: url)
+    var draft = ActivityDraft(date: Date(timeIntervalSince1970: 1_794_000_000))
+    draft.sport = .strength
+    draft.title = "Haut du corps"
+    draft.rpe = 7
+    draft.exercises = [StrengthExerciseDraft(name: "Tractions", sets: 4, reps: 6, notes: "Zone travaillée : Dos")]
+    store.save(draft.snapshot)
+    let back = try #require(store.load().flatMap(ActivityDraft.init(snapshot:)))
+    #expect(back.title == "Haut du corps")
+    #expect(back.sport == .strength)
+    #expect(back.rpe == 7)
+    #expect(back.exercises.map(\.name) == ["Tractions"])
+    #expect(back.exercises.first?.notes == "Zone travaillée : Dos")
+    store.erase()
+    #expect(store.load() == nil)
+}
+
+@Test func anExerciseSaysWhereItStandsInTheSession() {
+    #expect(GuidedStrengthReadout.standing(done: 0, total: 4) == nil)
+    #expect(GuidedStrengthReadout.standing(done: 2, total: 4)?.label == "En cours")
+    #expect(GuidedStrengthReadout.standing(done: 4, total: 4)?.label == "Terminé")
+    #expect(GuidedStrengthReadout.finishTitle(done: 0, isLogging: true) == "Aucune série encore")
+    #expect(GuidedStrengthReadout.finishTitle(done: 2, isLogging: true) == "Valider les exercices")
+    #expect(GuidedStrengthReadout.finishTitle(done: 2, isLogging: false) == "Terminer la séance")
+}
