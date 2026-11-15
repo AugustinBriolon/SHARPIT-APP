@@ -1207,6 +1207,9 @@ private struct GalleryWorkoutDockDemo: View {
 }
 #endif
 
+#if DEBUG
+import SwiftUI
+
 /// A triathlete who also lifts at home, for Matériel.
 private struct DemoEquipment: AthleteProfileServing {
     private static let profile = Data("""
@@ -1319,3 +1322,4 @@ private struct DemoGoalPage: View {
         .task { await store.load() }
     }
 }
+#endif
