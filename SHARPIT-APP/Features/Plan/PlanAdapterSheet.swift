@@ -9,6 +9,8 @@ struct PlanAdapterSheet: View {
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @Bindable var store: PlanAdjustmentStore
     var onPlanChanged: () -> Void = {}
+    /// Half the screen for the question, the whole of it once the coach answers.
+    @State private var detent: PresentationDetent = .medium
 
     /// What the coach reads before proposing anything, in order.
     static let readingSteps = [
@@ -44,21 +46,21 @@ struct PlanAdapterSheet: View {
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom, spacing: 0) { actions }
         .background(SharpitColor.card)
-        .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.foreground)
-                    .frame(width: 44, height: 44)
-                    .background(SharpitColor.tile, in: Circle())
-            }
-            .buttonStyle(.sharpitPressable)
-            .accessibilityLabel("Fermer")
-            .padding(.trailing, 22)
-            .padding(.top, 22)
-        }
+        .cliniqueSheetCross { dismiss() }
+        .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
         .sharpitSheet()
+        .onAppear { detent = needsRoom ? .large : .medium }
+        .onChange(of: needsRoom) { _, needsRoom in detent = needsRoom ? .large : .medium }
+    }
+
+    /// The question alone fits half the screen; the coach's work and its proposal do not.
+    private var needsRoom: Bool {
+        if store.needsPro { return true }
+        switch store.phase {
+        case .idle, .failed: return false
+        case .analyzing, .ready, .applying: return true
+        }
     }
 
     /// The coach's summary once it has one; before, what the sheet does.

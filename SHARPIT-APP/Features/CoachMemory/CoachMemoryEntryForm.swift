@@ -37,12 +37,14 @@ struct CoachMemoryEntryForm: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                if entry == nil, kinds.count > 1 { kindChoice }
-                nameField
-                if draft.hasDates { dates }
-                if draft.hasTraining { training }
-                noteField
+            VStack(alignment: .leading, spacing: 28) {
+                if entry == nil, kinds.count > 1 {
+                    question(String(localized: "Qu'est-ce qui change ?")) { kindChoice }
+                }
+                question(nameQuestion) { nameField }
+                if draft.hasDates { question(String(localized: "Quand ?")) { dates } }
+                if draft.hasTraining { question(String(localized: "Tu t'entraînes ?")) { training } }
+                question(String(localized: "Un mot pour le coach"), isOptional: true) { noteField }
                 if let failure {
                     Text(failure)
                         .font(SharpitTypography.meta)
@@ -54,7 +56,21 @@ struct CoachMemoryEntryForm: View {
             .padding(.vertical, SharpitSpacing.md)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(SharpitCanvasBackground())
+        .background(SharpitColor.card)
+        // The action sits where the thumb is, in words that say what it does.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button { Task { await save() } } label: {
+                Group {
+                    if isSaving { ProgressView().tint(SharpitColor.primaryForeground) } else { Text(saveTitle) }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+            .disabled(isSaving || !draft.isComplete || draft == initial)
+            .padding(.horizontal, 16)
+            .padding(.vertical, SharpitSpacing.xs)
+            .background(SharpitColor.card)
+        }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         // A half-typed entry is not thrown away by a swipe back: « Annuler » says it.
@@ -62,16 +78,6 @@ struct CoachMemoryEntryForm: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Annuler") { dismiss() }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                if isSaving {
-                    ProgressView()
-                } else {
-                    Button(entry == nil ? String(localized: "Ajouter") : String(localized: "Enregistrer")) {
-                        Task { await save() }
-                    }
-                    .disabled(!draft.isComplete || draft == initial)
-                }
             }
         }
         .confirmationDialog(
@@ -95,6 +101,39 @@ struct CoachMemoryEntryForm: View {
         case .injury: entry == nil ? String(localized: "Nouvelle blessure") : String(localized: "Blessure")
         case .preference: entry == nil ? String(localized: "Nouvelle préférence") : String(localized: "Préférence")
         case .note: entry == nil ? String(localized: "Nouvelle note") : String(localized: "Note")
+        }
+    }
+
+    private var saveTitle: String {
+        guard entry == nil else { return String(localized: "Enregistrer") }
+        return draft.hasDates ? String(localized: "Ajouter au plan") : String(localized: "Ajouter")
+    }
+
+    private var nameQuestion: String {
+        switch draft.type {
+        case .travel: String(localized: "Où vas-tu ?")
+        case .constraint: String(localized: "Qu'est-ce qui te prend du temps ?")
+        case .injury: String(localized: "Où ça gêne ?")
+        case .preference, .note: String(localized: "De quoi s'agit-il ?")
+        }
+    }
+
+    /// A step of the form, asked as a question over its answer.
+    private func question(_ title: String, isOptional: Bool = false, @ViewBuilder answer: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Text(title)
+                    .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3))
+                    .tracking(-0.3)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
+                if isOptional {
+                    Text("optionnel")
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                        .foregroundStyle(SharpitColor.slate)
+                }
+            }
+            answer()
         }
     }
 
@@ -195,7 +234,6 @@ struct CoachMemoryEntryForm: View {
 
     private var training: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitFieldLabel(String(localized: "Entraînement"))
             SharpitSegmentedChoice(
                 options: Array(TripTraining.Mode.allCases),
                 label: \.label,
@@ -213,7 +251,6 @@ struct CoachMemoryEntryForm: View {
 
     private var noteField: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitFieldLabel(String(localized: "Note pour le coach"))
             TextField(String(localized: "Hôtel avec petite salle…"), text: $draft.note, axis: .vertical)
                 .font(SharpitTypography.body)
                 .lineLimit(2...5)
@@ -299,26 +336,49 @@ struct CoachMemoryEntryRow: View {
     let entry: CoachMemoryEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitCardHeader(title: entry.displayTitle, symbol: entry.type.symbol, subtitle: subtitle) {
-                if entry.trainingConstraint != .full {
-                    SharpitPill(entry.trainingConstraint.badgeText)
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            Image(systemName: entry.type.symbol)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(SharpitColor.foreground)
+                .frame(width: 36, height: 36)
+                .background(SharpitColor.tile, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(entry.displayTitle)
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                 }
-            }
-            if !sports.isEmpty {
-                HStack(spacing: SharpitSpacing.sm) {
-                    ForEach(sports) { sport in
-                        Image(systemName: sport.symbol)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
+                if !sports.isEmpty {
+                    HStack(spacing: SharpitSpacing.sm) {
+                        ForEach(sports) { sport in
+                            Image(systemName: sport.symbol)
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.slate)
+                        }
                     }
+                    .accessibilityElement()
+                    .accessibilityLabel(sports.map(\.label).formatted(.list(type: .and).locale(AppLanguage.locale)))
                 }
-                .padding(.leading, SharpitTokens.tileSize + SharpitSpacing.sm)
-                .accessibilityElement()
-                .accessibilityLabel(sports.map(\.label).formatted(.list(type: .and).locale(AppLanguage.locale)))
             }
+            Spacer(minLength: SharpitSpacing.xs)
+            if entry.trainingConstraint != .full {
+                CliniqueStatusPill(entry.trainingConstraint.badgeText, status: .unknown)
+            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(SharpitColor.slate.opacity(0.6))
+                .accessibilityHidden(true)
         }
         .padding(.vertical, SharpitSpacing.xxs)
+        .contentShape(.rect)
     }
 
     private var subtitle: String? {

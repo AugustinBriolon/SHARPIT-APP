@@ -570,11 +570,11 @@ struct CoachDiscussButton: View {
                     .imageScale(.small)
                     .accessibilityHidden(true)
             }
-            .font(SharpitTypography.bodyEmphasis)
-            .foregroundStyle(SharpitColor.primary)
-            .padding(.horizontal, SharpitSpacing.sm)
-            .padding(.vertical, SharpitSpacing.xs)
-            .background(SharpitColor.primary.opacity(0.10), in: Capsule())
+            .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+            .foregroundStyle(SharpitColor.foreground)
+            .padding(.horizontal, SharpitSpacing.md)
+            .frame(minHeight: 40)
+            .overlay(Capsule().strokeBorder(SharpitColor.outline, lineWidth: 1))
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityHint("Ouvre le coach avec ce sujet")

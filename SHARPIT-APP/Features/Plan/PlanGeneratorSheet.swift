@@ -8,6 +8,9 @@ struct PlanGeneratorSheet: View {
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @Bindable var store: PlanGenerationStore
     var onPlanChanged: () -> Void = {}
+    /// The request fits half the screen; the week being written and the proposal take all of it.
+    @State private var detent: PresentationDetent = PlanGeneratorSheet.request
+    private static let request = PresentationDetent.fraction(0.72)
 
     var body: some View {
         NavigationStack {
@@ -32,7 +35,18 @@ struct PlanGeneratorSheet: View {
             }
             .task { await store.loadGoals() }
         }
+        .presentationDetents([Self.request, .large], selection: $detent)
         .sharpitSheet()
+        .onAppear { detent = needsRoom ? .large : Self.request }
+        .onChange(of: needsRoom) { _, needsRoom in detent = needsRoom ? .large : Self.request }
+    }
+
+    private var needsRoom: Bool {
+        if store.needsPro { return true }
+        switch store.phase {
+        case .idle, .failed: return false
+        case .generating, .ready, .inserting: return true
+        }
     }
 
     private var isReady: Bool {
@@ -118,22 +132,17 @@ struct PlanGeneratorSheet: View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             heading(String(localized: "Remplir ma semaine"), String(localized: "Le coach écrit tes séances autour de tes jours libres, de ta forme et de ton objectif."))
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                SharpitFieldLabel(String(localized: "Durée"))
-                Picker("Durée", selection: $store.days) {
-                    Text("3 jours").tag(3)
-                    Text("1 semaine").tag(7)
-                    Text("2 semaines").tag(14)
-                }
-                .pickerStyle(.segmented)
+                SharpitFieldLabel(String(localized: "Sur combien de temps"))
+                SharpitSegmentedChoice(
+                    options: [3, 7, 14],
+                    label: { PlanGeneratorReadout.span($0) },
+                    selection: Binding(get: { Optional(store.days) }, set: { store.days = $0 ?? store.days })
+                )
             }
 
             if !store.goals.isEmpty {
-                HStack(spacing: SharpitSpacing.sm) {
-                    Text("Objectif")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .layoutPriority(1)
-                    Spacer(minLength: SharpitSpacing.xs)
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    SharpitFieldLabel(String(localized: "Vers quel objectif"))
                     Menu {
                         Picker("Objectif", selection: $store.goalId) {
                             Text("Forme générale").tag(String?.none)
@@ -143,18 +152,20 @@ struct PlanGeneratorSheet: View {
                         }
                     } label: {
                         // One line whatever the goal's name: a long title is cut, never wrapped.
-                        HStack(spacing: 4) {
+                        HStack(spacing: SharpitSpacing.xs) {
                             Text(selectedGoalTitle)
+                                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                                .foregroundStyle(SharpitColor.foreground)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
+                            Spacer(minLength: 0)
                             Image(systemName: "chevron.up.chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(SharpitColor.slate)
                         }
-                        .font(SharpitTypography.body)
-                        .foregroundStyle(SharpitColor.slate)
+                        .sharpitFieldWell()
                     }
                 }
-                .cliniqueCard()
             }
 
             SharpitFormField(String(localized: "Une demande (optionnel)"), placeholder: String(localized: "Deux sorties vélo, repos vendredi…"), text: $store.focus)
@@ -223,5 +234,16 @@ struct PlanGeneratorSheet: View {
         )
         onPlanChanged()
         dismiss()
+    }
+}
+
+enum PlanGeneratorReadout {
+    /// How far ahead the coach writes, as the choice reads.
+    static func span(_ days: Int) -> String {
+        switch days {
+        case 7: String(localized: "1 semaine")
+        case 14: String(localized: "2 semaines")
+        default: String(localized: "\(days) jours")
+        }
     }
 }

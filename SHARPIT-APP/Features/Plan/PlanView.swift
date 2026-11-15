@@ -85,7 +85,10 @@ struct PlanView: View {
                         onOpenCalendar: { showingCalendar = true },
                         onOpenTravel: { showingTravel = true },
                         onFillWeek: { router.isShowingPlanGenerator = true },
-                        onAddSession: { showingNewSession = true }
+                        onAddSession: { showingNewSession = true },
+                        onOpenGoals: { router.isShowingGoals = true },
+                        onOpenMacroPlan: { showingMacroPlan = true },
+                        onOpenWeeklyReview: { router.isShowingWeeklyReview = true }
                     ),
                     onSelect: { selection = $0 },
                     onOpenTrajectory: { openedTrajectory = $0 }
@@ -106,11 +109,7 @@ struct PlanView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     PlanActionsMenu(
                         onAddSession: { showingNewSession = true },
-                        onOpenGoals: { router.isShowingGoals = true },
-                        onOpenTrips: { showingTravel = true },
-                        onOpenMacroPlan: { showingMacroPlan = true },
                         onOpenGenerator: { router.isShowingPlanGenerator = true },
-                        onOpenWeeklyReview: { router.isShowingWeeklyReview = true },
                         onDiscussWithCoach: {
                             router.discussWithCoach(
                                 about: CoachDiscuss.describe(.planning(horizonDays: 7))
@@ -463,17 +462,11 @@ extension PlanView {
     }
 }
 
-/// The week's actions, gathered behind one control.
-///
-/// Native sheets for the three key planning operations (macro plan, fill week, adapt plan)
-/// and direct bridge to discussion with the Coach.
+/// Plan's « … »: what acts on the week — add a session, have it filled, talk it over. The pages
+/// around the plan (goals, macro plan, trips, review) are lines at the foot of the week instead.
 private struct PlanActionsMenu: View {
     let onAddSession: () -> Void
-    let onOpenGoals: () -> Void
-    let onOpenTrips: () -> Void
-    let onOpenMacroPlan: () -> Void
     let onOpenGenerator: () -> Void
-    let onOpenWeeklyReview: () -> Void
     let onDiscussWithCoach: () -> Void
 
     var body: some View {
@@ -481,24 +474,9 @@ private struct PlanActionsMenu: View {
             Button(action: onAddSession) {
                 Label("Ajouter une séance", systemImage: "plus")
             }
-            Divider()
-            Button(action: onOpenGoals) {
-                Label("Objectifs", systemImage: "flag.fill")
-            }
-            Button(action: onOpenTrips) {
-                Label("Déplacements", systemImage: CoachMemoryType.travel.symbol)
-            }
-            Divider()
-            Button(action: onOpenMacroPlan) {
-                Label("Consulter le plan macro", systemImage: "map")
-            }
             Button(action: onOpenGenerator) {
                 Label("Remplir ma semaine", systemImage: "calendar.badge.plus")
             }
-            Button(action: onOpenWeeklyReview) {
-                Label("Bilan de la semaine", systemImage: "doc.text.magnifyingglass")
-            }
-            Divider()
             Button(action: onDiscussWithCoach) {
                 Label("Discuter avec le coach", systemImage: "bubble.left.and.bubble.right")
             }
@@ -507,6 +485,77 @@ private struct PlanActionsMenu: View {
                 .font(SharpitTypography.bodyEmphasis)
         }
         .accessibilityLabel("Actions du plan")
+    }
+}
+
+/// « Autour du plan »: the pages the week rests on, a line each at the foot of its sheet.
+private struct PlanAroundSection: View {
+    let chrome: PlanWeekChrome
+    let weekStart: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Autour du plan")
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.bottom, 4)
+            line(String(localized: "Objectifs"), symbol: "flag", detail: nil, action: chrome.onOpenGoals)
+            CliniqueDivider()
+            line(
+                String(localized: "Plan macro"), symbol: "map",
+                detail: PlanPhaseReadout.line(chrome.plan, weekStart: weekStart), action: chrome.onOpenMacroPlan
+            )
+            CliniqueDivider()
+            line(
+                String(localized: "Déplacements"), symbol: CoachMemoryType.travel.symbol,
+                detail: PlanAroundReadout.trips(chrome.travels.count), action: chrome.onOpenTravel
+            )
+            CliniqueDivider()
+            line(String(localized: "Bilan de la semaine"), symbol: "doc.text.magnifyingglass", detail: nil, action: chrome.onOpenWeeklyReview)
+        }
+    }
+
+    private func line(_ title: String, symbol: String, detail: String?, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: SharpitSpacing.sm) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .frame(width: 36, height: 36)
+                    .background(SharpitColor.tile, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: SharpitSpacing.xs)
+                if let detail {
+                    Text(detail)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .lineLimit(1)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, 10)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.sharpitPressable)
+    }
+}
+
+enum PlanAroundReadout {
+    /// « 2 déclarés » beside Déplacements; nothing while none is.
+    static func trips(_ count: Int) -> String? {
+        switch count {
+        case ...0: nil
+        case 1: String(localized: "1 déclaré")
+        default: String(localized: "\(count) déclarés")
+        }
     }
 }
 
@@ -624,6 +673,9 @@ struct PlanWeekChrome {
     var onOpenTravel: () -> Void = {}
     var onFillWeek: () -> Void = {}
     var onAddSession: () -> Void = {}
+    var onOpenGoals: () -> Void = {}
+    var onOpenMacroPlan: () -> Void = {}
+    var onOpenWeeklyReview: () -> Void = {}
 }
 
 /// Where a week sits in the plan: its phase, and the days left to the race.
@@ -721,6 +773,7 @@ private struct PlanWeekContent: View {
                     if let trajectory {
                         PlanTrajectoryCards(trajectory: trajectory, onOpen: onOpenTrajectory)
                     }
+                    PlanAroundSection(chrome: chrome, weekStart: store.weekStart(forOffset: offset))
                 }
                 .padding(.horizontal, SharpitSpacing.lg)
                 .padding(.top, SharpitSpacing.lg)

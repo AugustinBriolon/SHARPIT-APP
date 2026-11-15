@@ -60,32 +60,31 @@ struct MacroPlanSheet: View {
     // MARK: - Active Plan View
 
     private func activePlanContent(_ plan: V1TrainingPlan) -> some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 24) {
-                MacroPlanHero(plan: plan, range: dateRangeString(for: plan))
+        let runs = MacroPlanReadout.runs(plan.weeks)
+        let topLoad = plan.weeks.map(\.targetLoad).max() ?? 0
+        return ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 28) {
+                MacroPlanHero(plan: plan, runs: runs, range: dateRangeString(for: plan))
 
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Les semaines")
-                            .font(SharpitTypography.sectionTitle)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .accessibilityAddTraits(.isHeader)
-                        Spacer(minLength: SharpitSpacing.xs)
-                        Text("charge prévue")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                    }
-                    .padding(.bottom, SharpitSpacing.xs)
-                    ForEach(Array(plan.weeks.enumerated()), id: \.element.id) { index, week in
-                        MacroWeekRowView(week: week)
-                        if index < plan.weeks.count - 1 { CliniqueDivider() }
+                VStack(alignment: .leading, spacing: 20) {
+                    ForEach(Array(runs.enumerated()), id: \.offset) { _, run in
+                        MacroPhaseSection(run: run, topLoad: topLoad)
                     }
                 }
 
-                Text("Ensuite : « Remplir ma semaine » pose les séances, « Ajuster le planning » réarrange la charge.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-                    .padding(.horizontal, SharpitSpacing.xxs)
+                if let summary = plan.summary, !summary.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Le mot du coach")
+                            .font(SharpitTypography.sectionTitle)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .accessibilityAddTraits(.isHeader)
+                        Text(summary)
+                            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
 
                 Button("Archiver ce plan macro") { showingArchiveAlert = true }
                     .buttonStyle(CliniqueButtonStyle(kind: .outline))
@@ -233,37 +232,100 @@ struct MacroPlanSheet: View {
 
 // MARK: - MacroPlanHero
 
-/// The plan's head, on the sheet: how long and when, then the phases as a rail — each as wide
-/// as its weeks, in its hue, the current one ringed in ink.
+/// The plan's head, on the sheet: where the athlete stands in it — the week, the phase and what
+/// that phase is for — then the phases as a rail, each as wide as its weeks.
 private struct MacroPlanHero: View {
     let plan: V1TrainingPlan
+    let runs: [MacroPlanReadout.Run]
     let range: String?
 
     var body: some View {
+        let current = runs.first(where: \.isCurrent)
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 6) {
                 if let range {
                     Text(range)
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.slate)
                 }
-                Text("\(plan.weeks.count) semaines")
-                    .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2, digits: true))
-                    .tracking(-0.4)
+                Text(MacroPlanReadout.standing(plan.weeks))
+                    .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title, digits: true))
+                    .tracking(-0.5)
                     .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
+                if let current {
+                    Text("\(current.phase.label) : \(MacroPlanReadout.purpose(current.phase))")
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-
-            MacroPhaseRailView(plan: plan)
-
-            if let summary = plan.summary, !summary.isEmpty {
-                Text(summary)
-                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.slate)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            MacroPhaseRailView(runs: runs)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - MacroPhaseSection
+
+/// A phase and its weeks: its mark, its name, how long it runs and what it is for — the weeks
+/// under it open on a tap, the current phase's shown from the start.
+private struct MacroPhaseSection: View {
+    let run: MacroPlanReadout.Run
+    let topLoad: Double
+    @State private var isOpen: Bool
+
+    init(run: MacroPlanReadout.Run, topLoad: Double) {
+        self.run = run
+        self.topLoad = topLoad
+        _isOpen = State(initialValue: run.isCurrent)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button { withAnimation(SharpitMotion.fade) { isOpen.toggle() } } label: {
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(MacroPlanReadout.hue(run.phase))
+                        .frame(width: 4, height: 36)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: SharpitSpacing.xs) {
+                            Text(run.phase.label)
+                                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                                .foregroundStyle(SharpitColor.foreground)
+                            if run.isCurrent {
+                                CliniqueStatusPill(String(localized: "En cours"), status: .good)
+                            }
+                        }
+                        Text(MacroPlanReadout.span(run))
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                            .foregroundStyle(SharpitColor.slate)
+                    }
+                    Spacer(minLength: SharpitSpacing.xs)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(SharpitColor.slate)
+                        .rotationEffect(.degrees(isOpen ? 180 : 0))
+                        .accessibilityHidden(true)
+                }
+                .frame(minHeight: 44)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityHint(isOpen ? String(localized: "Replie les semaines") : String(localized: "Montre les semaines"))
+
+            if isOpen {
+                VStack(spacing: 0) {
+                    ForEach(run.weeks) { week in
+                        CliniqueDivider()
+                        MacroWeekRowView(week: week, topLoad: topLoad, hue: MacroPlanReadout.hue(run.phase))
+                    }
+                }
+                .padding(.leading, 16)
+                .padding(.top, 8)
+            }
+        }
     }
 }
 
@@ -310,12 +372,11 @@ private struct MacroGoalChoiceRow: View {
 // MARK: - MacroPhaseRailView
 
 private struct MacroPhaseRailView: View {
-    let plan: V1TrainingPlan
+    let runs: [MacroPlanReadout.Run]
 
     var body: some View {
-        let runs = computePhaseRuns(plan.weeks)
         HStack(spacing: 6) {
-            ForEach(runs, id: \.phase) { run in
+            ForEach(Array(runs.enumerated()), id: \.offset) { _, run in
                 VStack(alignment: .leading, spacing: 6) {
                     Capsule()
                         .fill(MacroPlanReadout.hue(run.phase))
@@ -333,77 +394,109 @@ private struct MacroPhaseRailView: View {
                 }
                 // Each phase as wide as its weeks.
                 .frame(maxWidth: .infinity)
-                .layoutPriority(Double(run.weeks))
+                .layoutPriority(Double(run.weeks.count))
             }
         }
-    }
-
-    private func computePhaseRuns(_ weeks: [V1PlanWeek]) -> [(phase: V1PlanPhase, weeks: Int, isCurrent: Bool)] {
-        var runs: [(phase: V1PlanPhase, weeks: Int)] = []
-        for week in weeks {
-            if runs.last?.phase == week.phase {
-                runs[runs.count - 1].weeks += 1
-            } else {
-                runs.append((week.phase, 1))
-            }
-        }
-
-        let now = Date()
-        var cal = Calendar(identifier: .gregorian)
-        cal.firstWeekday = 2
-        let currentMonday = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
-
-        let currentPhase = weeks.first { week in
-            let weekStart = cal.dateInterval(of: .weekOfYear, for: week.weekStart)?.start ?? week.weekStart
-            return abs(weekStart.timeIntervalSince(currentMonday)) < 86400
-        }?.phase
-
-        return runs.map { run in
-            (phase: run.phase, weeks: run.weeks, isCurrent: run.phase == currentPhase)
-        }
+        .accessibilityHidden(true)
     }
 }
 
 // MARK: - MacroWeekRowView
 
-/// A week as a line of the table: its Monday, what it works, the load it aims for — this week
-/// in bold.
+/// A week of a phase: its Monday, what it works, and its load as a bar against the plan's
+/// heaviest week — this week in bold.
 private struct MacroWeekRowView: View {
     let week: V1PlanWeek
+    let topLoad: Double
+    let hue: Color
 
     var body: some View {
-        let isCurrent = isCurrentWeek(week.weekStart)
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
+        let isCurrent = MacroPlanReadout.isCurrent(week)
+        HStack(alignment: .center, spacing: 10) {
             Text(week.weekStart.sharpitFormatted(.dateTime.day().month(.abbreviated)))
-                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                 .foregroundStyle(SharpitColor.slate)
-                .frame(width: 70, alignment: .leading)
+                .frame(width: 58, alignment: .leading)
             Text(WeekQualityLabel.from(focus: week.focus, phase: week.phase, isDeload: week.isDeload) ?? week.phase.label)
-                .font(SharpitTypography.system(size: 16, weight: isCurrent ? .semibold : .regular, relativeTo: .callout))
+                .font(SharpitTypography.system(size: 15, weight: isCurrent ? .semibold : .regular, relativeTo: .subheadline))
                 .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(1)
             Spacer(minLength: SharpitSpacing.xs)
+            SharpitBarTrack(fraction: topLoad > 0 ? week.targetLoad / topLoad : 0, tone: hue)
+                .frame(width: 56, height: 4)
+                .accessibilityHidden(true)
             Text("\(Int(week.targetLoad))")
-                .font(SharpitTypography.system(size: 15, weight: isCurrent ? .semibold : .regular, relativeTo: .subheadline, digits: true))
+                .font(SharpitTypography.system(size: 14, weight: isCurrent ? .semibold : .regular, relativeTo: .footnote, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
+                .frame(minWidth: 32, alignment: .trailing)
         }
-        .frame(minHeight: 54)
+        .frame(minHeight: 44)
         .accessibilityElement(children: .combine)
+        .accessibilityValue("charge prévue \(Int(week.targetLoad))")
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
-    }
-
-    private func isCurrentWeek(_ date: Date) -> Bool {
-        var cal = Calendar(identifier: .gregorian)
-        cal.firstWeekday = 2
-        let currentInterval = cal.dateInterval(of: .weekOfYear, for: .now)
-        let weekInterval = cal.dateInterval(of: .weekOfYear, for: date)
-        guard let c = currentInterval, let w = weekInterval else { return false }
-        return abs(c.start.timeIntervalSince(w.start)) < 86400
     }
 }
 
-/// The macro plan's marks.
+/// The macro plan's marks and words.
 enum MacroPlanReadout {
+    /// A stretch of weeks in one phase.
+    struct Run: Equatable {
+        let phase: V1PlanPhase
+        var weeks: [V1PlanWeek]
+        var isCurrent: Bool
+    }
+
+    private static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        return calendar
+    }
+
+    static func isCurrent(_ week: V1PlanWeek, now: Date = .now) -> Bool {
+        calendar.isDate(week.weekStart, equalTo: now, toGranularity: .weekOfYear)
+    }
+
+    /// The weeks gathered phase by phase, in order; the one holding today is current.
+    static func runs(_ weeks: [V1PlanWeek], now: Date = .now) -> [Run] {
+        var runs: [Run] = []
+        for week in weeks {
+            if runs.last?.phase == week.phase {
+                runs[runs.count - 1].weeks.append(week)
+            } else {
+                runs.append(Run(phase: week.phase, weeks: [week], isCurrent: false))
+            }
+            if isCurrent(week, now: now) { runs[runs.count - 1].isCurrent = true }
+        }
+        return runs
+    }
+
+    /// « Semaine 3 sur 12 » while the plan runs; its length before it starts or once it is over.
+    static func standing(_ weeks: [V1PlanWeek], now: Date = .now) -> String {
+        if let index = weeks.firstIndex(where: { isCurrent($0, now: now) }) {
+            return String(localized: "Semaine \(index + 1) sur \(weeks.count)")
+        }
+        return String(localized: "\(weeks.count) semaines")
+    }
+
+    /// « 4 semaines · dès le 3 nov. »
+    static func span(_ run: Run) -> String {
+        let count = run.weeks.count == 1 ? String(localized: "1 semaine") : String(localized: "\(run.weeks.count) semaines")
+        guard let first = run.weeks.first else { return count }
+        let start = first.weekStart.sharpitFormatted(.dateTime.day().month(.abbreviated))
+        return String(localized: "\(count) · dès le \(start)")
+    }
+
+    /// What a phase is for, in a few words.
+    static func purpose(_ phase: V1PlanPhase) -> String {
+        switch phase {
+        case .base: String(localized: "du volume facile pour construire l'endurance.")
+        case .build: String(localized: "l'intensité monte, semaine après semaine.")
+        case .peak: String(localized: "les allures de course et les séances clés.")
+        case .taper: String(localized: "la charge baisse pour arriver frais.")
+        case .race: String(localized: "la semaine de ta course.")
+        }
+    }
+
     /// A phase's hue on the rail: the season cools into volume, greens into the specific work,
     /// warms into the taper — chart marks, never text.
     static func hue(_ phase: V1PlanPhase) -> Color {

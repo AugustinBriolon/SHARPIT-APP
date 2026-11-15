@@ -60,79 +60,65 @@ nonisolated struct PlanTrajectoryTile: Equatable, Sendable {
     }
 }
 
+/// « Trajectoire » as a section of the week's sheet: Effort then Adaptation, a line each — the
+/// reading as a status pill, the figure, and the way into its screen.
 struct PlanTrajectoryCards: View {
     let trajectory: PlanTrajectory
     let onOpen: (PlanTrajectoryDestination) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Trajectoire"))
-            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                Button { onOpen(.effort) } label: {
-                    PlanTrajectoryTileView(
-                        title: String(localized: "Effort"),
-                        symbol: "bolt",
-                        tile: .effort(trajectory.effort)
-                    )
-                }
-                .buttonStyle(.sharpitPressable)
-
-                Button { onOpen(.adaptation) } label: {
-                    PlanTrajectoryTileView(
-                        title: String(localized: "Adaptation"),
-                        symbol: "arrow.triangle.2.circlepath",
-                        tile: .adaptation(trajectory.adaptation)
-                    )
-                }
-                .buttonStyle(.sharpitPressable)
-            }
-            .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Trajectoire")
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.bottom, 4)
+            line(String(localized: "Effort"), .effort(trajectory.effort)) { onOpen(.effort) }
+            CliniqueDivider()
+            line(String(localized: "Adaptation"), .adaptation(trajectory.adaptation)) { onOpen(.adaptation) }
         }
     }
-}
 
-private struct PlanTrajectoryTileView: View {
-    let title: String
-    let symbol: String
-    let tile: PlanTrajectoryTile
-
-    private var tone: Color { RecoveryReadout.tone(for: tile.tone) }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitCardHeader(title: title, symbol: symbol, isCompact: true)
-            VStack(alignment: .leading, spacing: 2) {
+    private func line(_ title: String, _ tile: PlanTrajectoryTile, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.foreground)
+                    if let caption = tile.caption ?? (tile.unit == nil ? tile.headline : nil) {
+                        Text(caption)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                Spacer(minLength: SharpitSpacing.xs)
+                if tile.unit != nil, let headline = tile.headline {
+                    CliniqueStatusPill(headline, status: RecoveryReadout.status(for: tile.tone))
+                }
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(tile.value)
-                        .font(SharpitTypography.gaugeScore)
-                        .tracking(SharpitTypography.gaugeScoreTracking)
+                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                         .foregroundStyle(tile.unit == nil ? SharpitColor.slate : SharpitColor.foreground)
-                        .contentTransition(.numericText())
                     if let unit = tile.unit {
                         Text(unit)
-                            .font(SharpitTypography.meta)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                             .foregroundStyle(SharpitColor.slate)
                     }
                 }
-                if let headline = tile.headline {
-                    Text(headline)
-                        .font(SharpitTypography.meta)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(tile.unit == nil ? SharpitColor.slate : tone)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.85)
-                }
+                .fixedSize()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
+                    .accessibilityHidden(true)
             }
-            Spacer(minLength: 0)
-            if let caption = tile.caption {
-                SharpitTelemetryCapsule(lead: caption)
-            }
+            .padding(.vertical, 14)
+            .contentShape(.rect)
         }
-        .padding(.horizontal, SharpitSpacing.sm + 2)
-        .padding(.vertical, SharpitSpacing.md)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .sharpitSurface(.panel)
+        .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
     }
 }

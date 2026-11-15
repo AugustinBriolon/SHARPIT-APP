@@ -165,3 +165,14 @@ card: net form read big with « Dans ta zone » / « Hors zone » as a pill, chr
 fatigue as two figures, the six-week curves in blue and orange with net form dashed, « Charge par
 semaine » as bars, the current week in ink. `SharpitScreenDemo forme` shows it. The mock-up's
 acute / chronic ratio is not shown here: Effort already carries it.
+
+**Second pass (the athlete's call, 2026-11-15).** Plan's « ⋯ » only acts on the week (add a
+session, fill the week, talk to the coach); goals, macro plan, trips and the weekly review are
+lines at the foot of every week (`PlanAroundSection`, « Autour du plan », each with what is known —
+the phase, « 2 déclarés »). « Trajectoire » is two lines (`PlanTrajectoryCards`: name, reading as a
+pill, figure, chevron). « Ajuster ton plan » and « Remplir ma semaine » open at part of the screen
+while they only ask, and take all of it once the coach works. The macro plan says where the athlete
+stands (« Semaine 3 sur 12 », the phase and what it is for, `MacroPlanReadout`), then each phase as
+a line that opens onto its weeks — the current one open — each week's load a bar against the plan's
+heaviest. Déplacements docks « Déclarer un déplacement »; a trip's line carries its glyph; the form
+asks questions (« Où vas-tu ? », « Quand ? », « Tu t'entraînes ? ») and docks « Ajouter au plan ».

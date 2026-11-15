@@ -17,12 +17,6 @@ struct PlanTripsView: View {
         content
             .navigationTitle("Déplacements")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Ajouter") { route = .new }
-                        .accessibilityLabel("Ajouter un déplacement ou une contrainte")
-                }
-            }
             .navigationDestination(item: $route) { route in
                 CoachMemoryEntryForm(store: store, kinds: Self.kinds, entry: route.entry)
             }
@@ -41,6 +35,13 @@ struct PlanTripsView: View {
             }
             .sharpitGroupedList()
             .refreshable { await store.load() }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Button { route = .new } label: { Text("Déclarer un déplacement").frame(maxWidth: .infinity) }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, SharpitSpacing.xs)
+                    .background(SharpitColor.card)
+            }
         } else if !hasLoaded {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -55,18 +56,26 @@ struct PlanTripsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: SharpitSpacing.md) {
-            SharpitIconTile(symbol: CoachMemoryType.travel.symbol, size: 56)
+        VStack(alignment: .leading, spacing: 14) {
+            Image(systemName: CoachMemoryType.travel.symbol)
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(SharpitColor.slate)
+                .accessibilityHidden(true)
             Text("Aucun déplacement prévu")
-                .font(SharpitTypography.sectionTitle)
-                .tracking(SharpitTypography.sectionTitleTracking)
+                .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3))
                 .foregroundStyle(SharpitColor.foreground)
-            SharpitPrimaryButton(title: String(localized: "Ajouter un déplacement")) { route = .new }
-                .frame(maxWidth: 260)
+            Text("Dis où tu pars et quand : le plan s'allège ou se déplace sur ces jours-là.")
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .foregroundStyle(SharpitColor.slate)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Déclarer un déplacement") { route = .new }
+                .buttonStyle(CliniqueButtonStyle(kind: .primary))
+                .padding(.top, 6)
         }
-        .padding(SharpitSpacing.pageInset)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(SharpitCanvasBackground())
+        .padding(.horizontal, 24)
+        .padding(.top, SharpitSpacing.lg)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(SharpitColor.card)
     }
 
     @ViewBuilder private func section(_ eyebrow: String, _ entries: [CoachMemoryEntry]) -> some View {

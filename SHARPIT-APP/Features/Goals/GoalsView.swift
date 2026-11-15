@@ -104,7 +104,6 @@ struct GoalsView: View {
                 }
             }
         }
-        .cliniqueReturnButton(to: .plan, symbol: "calendar", label: String(localized: "Plan"))
         .navigationDestination(for: GoalRoute.self) { route in
             switch route {
             case .detail(let goal):
