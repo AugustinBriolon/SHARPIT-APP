@@ -190,6 +190,10 @@ the newest and deleting the rest; a default on every attribute and an optional p
 sign-in): another account wipes the SwiftData snapshots, the cached answers and the activity files
 first, and deleting the account wipes them at once.
 
+**No cover when the app is left (the athlete's call, 2026-11-15).** The opaque mask that hid the
+screen whenever the scene was not active is gone: it also fell over the app under the notification
+centre and Control Center. The app switcher shows the last screen, as any app's.
+
 **Drawers close by a swipe.** A drawer with a drag indicator carries no « Fermer »: its « … » is
 its only bar item (`PlannedSessionDrawer`, `BrickSessionDrawer`, `DoneBrickDrawer`). A form keeps
 its Annuler, a task sheet its Fermer.

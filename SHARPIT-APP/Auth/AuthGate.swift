@@ -10,7 +10,6 @@ import SwiftUI
 struct AuthGate<SignedIn: View>: View {
     @Environment(Clerk.self) private var clerk
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.scenePhase) private var scenePhase
     @State private var authIsPresented = false
     /// Why the sign-up is asked for, when the wizard asks for it.
     @State private var authHeadline: String?
@@ -48,11 +47,6 @@ struct AuthGate<SignedIn: View>: View {
         }
         .sheet(isPresented: $authIsPresented) {
             SharpitAuthDrawer(headline: authHeadline)
-        }
-        .overlay {
-            if scenePhase != .active {
-                PrivacyMaskView()
-            }
         }
         .task {
             // Signed out: the welcome screen is drawn at once, and plays its own entrance.
