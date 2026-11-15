@@ -71,3 +71,11 @@ between − and +, the usual portions to add, « Remettre à zéro »). « Mesur
 line's own glyph from the catalogue (`JournalCatalogue.symbolName(forAuto:)`). « Mes signaux » keeps
 its sheet as it was (the athlete's call): only each signal's glyph takes its category's hue
 (`JournalCategory.hue`) — no mark or rule on the titles.
+
+**Check-ins, wide tiles (2026-11-15).** Both check-ins answer on the session rating's five wide
+tiles with the word read beside the name and the two ends named under (`WellnessDimensionRow`,
+`WellnessReadout.ends`): the journal's « Humeur et ressenti » (a titled sheet, « Enregistrer »
+docked) and the details of Résumé's « Ton ressenti ce matin » — the thin dashes are gone.
+
+**Check-ins, one track (2026-11-15).** The wide tiles are gone: every question of both check-ins is a
+`CliniqueScale` (`WellnessDimensionRow`), answered by a tap or a slide along its track.

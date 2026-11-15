@@ -104,3 +104,8 @@ then lines — norm, month, min, max, count, source. « Ajouter une pesée » is
 writes no weight. Analyses de sang follows « A-Sang-Liste »: the disclaimer under the title,
 « Évolution » as one marker's curve over its lab bounds with a chip per followed marker (the curve
 opens its history), then « Analyses » with the count, a line per report. `SharpitScreenDemo corps`.
+
+**Share cards, posters (2026-11-15).** Three cards at most — markers in their norm, biological
+age, VO₂max — each an ink poster: the brand, the day, one ring in the pillar's hue with the figure
+inside, its meaning under it (`SanteShareReadout.reading`); the summary adds resting heart rate,
+HRV and VO₂max as three facts. Fixed colours, so the image is the same in light and dark.

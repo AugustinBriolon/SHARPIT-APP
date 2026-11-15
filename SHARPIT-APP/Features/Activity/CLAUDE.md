@@ -110,3 +110,17 @@ until when as a pill, the modes as lines (a check on the one held), « Durée »
 **Back swipe.** The page follows the finger back, so a control the swipe started on used to fire
 on the page returned to. `InteractivePopGestureEnabler` turns the page's touches off while either
 pop gesture runs (`BackSwipeTouches`), which cancels the press; a swipe let go half-way gives them back.
+
+**Back swipe, for good (2026-11-15).** A full-width row kept its press through a horizontal swipe
+and fired when the finger lifted: the pop gesture's delegate let every gesture run with it. It now
+runs only with a scroll view's pan, and a press waits for it to fail (`BackSwipeTouches.sharesWith`,
+`shouldBeRequiredToFailBy`) — seen in the simulator: a swipe begun on « Effort · Ressenti » pops the
+page and opens nothing.
+
+**Drawers, redone (2026-11-15).** « Comment s'est passée la séance ? » is a titled sheet at its
+content's height with two `CliniqueScale` tracks (effort with its word, `SessionEffortReadout`), each
+answer saved. « Conformité au plan » follows its mock-up: titled sheet with its cross, the score
+beside the verdict pill, the coach's sentences as hairline lines, « En parler au coach » and
+« Réanalyser » docked; « Délier » closes the scroll. The mock-up's « Critère par critère » pills are
+not built: the analysis carries sentences, not a status per criterion. On the activity page the
+compliance block sits on the sheet (title, pill, score, summary, a line into the reading), no card.

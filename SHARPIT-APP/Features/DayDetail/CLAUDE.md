@@ -6,7 +6,7 @@ Feature notes, loaded when working in this directory. Repo-wide rules live in th
 nutrition ring and section (`ResumeNutritionSection`), Effort and Adaptation from Plan. All five are a
 `DayResourceStore` inside `DayDetailScaffold`, which puts the day in the bar as a capsule
 (`DayDetailDatePicker`: « Ven. 14 nov. », « Nuit du 13 nov. » for a night; it opens the month),
-hides the tab bar and floats a glass home button at the foot; a new
+and keeps the tab bar, as every sub-page does; a new
 day's drill-down is a v1 resource plus a sections view, not a new store. The store keeps every day it
 read, and every day read anywhere this launch (`DayReadCache`, filled by `SharpitClient`'s day reads):
 a day seen once opens at once, today included, and the server answers behind. A past day still fresh
@@ -55,5 +55,14 @@ Nutrition page at zero (`NutritionReadout.emptyDay`, from the food log's targets
 veille » under the meals — never a different screen.
 
 Sommeil's one action, its targets, is a button in the bar — a menu only where a screen has several.
-Nutrition floats its own « + » at the foot, so it carries no home button (`showsHomeButton: false`); the
-bar's back is the way out.
+Nutrition floats its own « + » at the foot, over the tab bar.
+
+**Sommeil without its course.** When the watch kept only the totals, the night is still four lanes
+(`SleepSheetReadout.lanes`): each stage one block as long as its share, all starting at the left —
+how much of each, never when. With the course (Apple Health's segments) the timeline draws as before.
+
+**Tab bar everywhere (2026-11-15).** No sub-page hides the tab bar or swaps it for a floating home
+button any more (`cliniqueReturnButton` is gone, the athlete's call): the bar's back is the way out.
+Sommeil reads the night's course from Apple Health for the day on screen (`store.selectedDay`), and
+never draws a night with another one's course; a night without a course keeps the four lanes, one
+block per stage.
