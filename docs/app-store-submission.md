@@ -97,6 +97,24 @@ Update `docs/beta-testflight.md` « Beta App Review notes » with the demo accou
 > Apple Santé est optionnel et en lecture/écriture limitée (journal alimentaire, poids). Les données
 > de santé ne sont jamais synchronisées sur iCloud.
 
+## Before every review submission — Clerk Device Trust
+
+Version 1.0 was rejected on 2026-11-15 (guideline 2.1(a)): the reviewer typed the demo password on
+a fresh iPad and Clerk answered `needs_client_trust`, asking for a code sent to a mailbox App Review
+cannot read. Device Trust (formerly Client Trust) challenges every password sign-in from an unknown
+device, and no per-user exemption exists.
+
+1. **Before submitting** (first version and every update): turn Device Trust off on the production
+   Clerk instance (Dashboard › Protections).
+2. Delete the app from a simulator, reinstall, sign in with the demo account: the password alone
+   must open the app.
+3. Submit. Keep it off until the review is over.
+4. **Once approved**: turn Device Trust back on.
+
+The app handles `needs_client_trust` for real athletes (`SignIn.Status.awaitsClientTrustCode` in
+`Auth/SharpitAuthDrawer.swift`), but that screen asks for the e-mailed code, so it does not let a
+reviewer in.
+
 ## Screenshots
 
 The app ships on iPhone only (`TARGETED_DEVICE_FAMILY = 1`, `docs/adr/0022`), so App Store

@@ -271,7 +271,8 @@ struct SharpitAuthDrawer: View {
             }
             .padding(.top, SharpitSpacing.xxs)
 
-            if activeSignIn?.supportedFirstFactors?.contains(where: { $0.strategy == .password }) == true {
+            if activeSignIn?.status.awaitsClientTrustCode != true,
+               activeSignIn?.supportedFirstFactors?.contains(where: { $0.strategy == .password }) == true {
                 Button {
                     verificationCode = ""
                     errorMessage = nil
@@ -525,7 +526,9 @@ struct SharpitAuthDrawer: View {
 
         do {
             if let activeSignIn {
-                let result = try await activeSignIn.verifyCode(cleanCode)
+                let result = activeSignIn.status.awaitsClientTrustCode
+                    ? try await activeSignIn.verifyMfaCode(cleanCode, type: .emailCode)
+                    : try await activeSignIn.verifyCode(cleanCode)
                 self.activeSignIn = result
                 if result.status == .complete {
                     if let sessionId = result.createdSessionId {
@@ -567,7 +570,9 @@ struct SharpitAuthDrawer: View {
         errorMessage = nil
         do {
             if let activeSignIn {
-                let prepared = try await activeSignIn.sendEmailCode()
+                let prepared = activeSignIn.status.awaitsClientTrustCode
+                    ? try await activeSignIn.sendMfaEmailCode()
+                    : try await activeSignIn.sendEmailCode()
                 self.activeSignIn = prepared
                 errorMessage = String(localized: "Un nouveau code a été envoyé !")
             } else if let activeSignUp {
@@ -590,6 +595,13 @@ struct SharpitAuthDrawer: View {
         do {
             let result = try await activeSignIn.authenticateWithPassword(verificationCode)
             self.activeSignIn = result
+            if result.status.awaitsClientTrustCode, case .password(let email) = step {
+                self.activeSignIn = try await result.sendMfaEmailCode()
+                verificationCode = ""
+                step = .codeVerification(email: email)
+                isLoading = false
+                return
+            }
             guard result.status == .complete, let sessionId = result.createdSessionId else {
                 errorMessage = "Connexion incomplète (\(result.status.rawValue))."
                 isLoading = false
@@ -606,4 +618,12 @@ struct SharpitAuthDrawer: View {
         }
         isLoading = false
     }
+}
+
+extension SignIn.Status {
+    /// Clerk accepted the password on a device it has never seen and wants an e-mailed code as a
+    /// second factor. Left unhandled, this is the sign-in error App Review met on a fresh iPad.
+    /// A reviewer cannot read that code: Device Trust must be off in Clerk before every review
+    /// submission and back on once approved (docs/app-store-submission.md).
+    var awaitsClientTrustCode: Bool { self == .needsClientTrust }
 }
