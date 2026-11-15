@@ -106,6 +106,9 @@ struct FoodDescribePage: View {
                 .lineLimit(4...10)
                 .textInputAutocapitalization(.sentences)
                 .disabled(phase == .loading)
+                .padding(.vertical, 12)
+                .sharpitFieldWell()
+                .listRowSeparator(.hidden)
             }
             .sharpitListRows()
 
@@ -139,7 +142,7 @@ struct FoodDescribePage: View {
             .sharpitListRows()
 
             Section(
-                eyebrow: String(localized: "Aliments"),
+                eyebrow: String(localized: "Ce que j’ai compris"),
                 footer: String(localized: "Ajuste les grammes ; les macros suivent. Un aliment connu garde sa note. Glisse pour retirer une ligne.")
             ) {
                 ForEach($items) { $line in

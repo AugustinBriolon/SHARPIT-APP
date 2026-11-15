@@ -1248,3 +1248,16 @@ private nonisolated let skyrItem = V1SavedMealItem(
     #expect(decoded.isRecipe)
     #expect(decoded.recipe?.ingredients.first?.kcalPer100g == 350)
 }
+
+@Test func aMealSaysItsShareOfTheDayOnlyAgainstATarget() {
+    #expect(FoodLogMealReadout.share(of: 890, in: 2850) == "31 % de ta journée")
+    #expect(FoodLogMealReadout.share(of: 890, in: nil) == nil)
+    #expect(FoodLogMealReadout.share(of: 890, in: 0) == nil)
+    #expect(FoodLogMealReadout.share(of: 0, in: 2850) == nil)
+}
+
+@Test func addingAFoodNamesTheMealWithItsArticle() {
+    #expect(FoodLogMeal.dinner.addTitle == "Ajouter au dîner")
+    #expect(FoodLogMeal.snacks.addTitle == "Ajouter aux collations")
+    #expect(Set(FoodLogMeal.allCases.map(\.addTitle)).count == FoodLogMeal.allCases.count)
+}

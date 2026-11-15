@@ -8,8 +8,12 @@ struct NutritionMacroSplitBar: View {
     let fat: Double
     var height: CGFloat = 4
 
+    /// Carbs, protein, fat: the order every macro row of the app is read in.
+    private static let order: [NutritionReadout.Macro] = [.carbohydrates, .protein, .fat]
+
     private var split: [(macro: NutritionReadout.Macro, share: Double)] {
         NutritionReadout.energySplit(protein: protein, carbohydrates: carbohydrates, fat: fat)
+            .sorted { (Self.order.firstIndex(of: $0.macro) ?? 0) < (Self.order.firstIndex(of: $1.macro) ?? 0) }
     }
 
     var body: some View {

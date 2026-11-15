@@ -469,32 +469,24 @@ struct FoodPortionPage: View {
     var body: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(product.name)
-                        .font(SharpitTypography.cardTitle)
-                        .tracking(SharpitTypography.cardTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                    if let brand = product.brand, !brand.isEmpty {
-                        Text(brand)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(product.name)
+                            .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
+                            .tracking(-0.4)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let brand = product.brand, !brand.isEmpty {
+                            Text(brand)
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.slate)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    if scoredHealth != nil {
+                        FoodHealthBadge(health: product.health)
                     }
                 }
-                FoodPortionPreview(nutrients: FoodPortion.nutrients(of: product, grams: grams ?? 0))
-            }
-            .sharpitListRows()
-
-            if let health = scoredHealth {
-                Section {
-                    FoodHealthScoreHeader(health: health)
-                    FoodDietConflictLine(health: health)
-                } header: {
-                    SharpitEyebrow(String(localized: "Score Sharpit"))
-                }
-                .sharpitListRows()
-            }
-
-            Section {
                 FoodGramsRows(
                     text: $gramsText,
                     presets: FoodPortion.presets(for: product, lastGrams: lastGrams),
@@ -505,15 +497,25 @@ struct FoodPortionPage: View {
                         .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.signalRisk)
                 }
+            }
+            .sharpitListRows()
+            .listRowSeparator(.hidden)
+
+            Section {
+                FoodNutrientLines(
+                    nutrients: FoodPortion.nutrients(of: product, grams: grams ?? 0),
+                    fiber: product.fiberPer100g.map { $0 * (grams ?? 0) / 100 }
+                )
             } header: {
-                SharpitEyebrow(String(localized: "Quantité"))
-            } footer: {
-                SharpitListFooter(String(localized: "Pour 100 g : \(NutritionReadout.kcal(product.kcalPer100g)) kcal · P \(FoodPortion.figure(product.proteinPer100g)) · G \(FoodPortion.figure(product.carbsPer100g)) · L \(FoodPortion.figure(product.fatPer100g)) g"))
+                SharpitEyebrow(String(localized: "Pour \(FoodPortion.gramsLabel(grams ?? 0))"))
             }
             .sharpitListRows()
 
             Section {
                 FoodMealPicker(meal: $meal)
+                if let health = scoredHealth {
+                    FoodDietConflictLine(health: health)
+                }
             }
             .sharpitListRows()
 
@@ -529,12 +531,16 @@ struct FoodPortionPage: View {
         .task { await completeIfSummary() }
         .safeAreaInset(edge: .bottom) {
             SharpitActionDock {
-                SharpitPrimaryButton(title: String(localized: "Ajouter")) { add() }
-                    .disabled(grams == nil)
+                Button { add() } label: {
+                    Text(meal.addTitle).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                .disabled(grams == nil)
             }
         }
         .navigationTitle("Portion")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .principal) { Text("") } }
     }
 
     private func add() {
@@ -639,8 +645,9 @@ struct FoodNumberRow: View {
                 TextField(placeholder, text: $text)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
-                    .monospacedDigit()
+                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
                 Text(unit)
+                    .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
             }
         }

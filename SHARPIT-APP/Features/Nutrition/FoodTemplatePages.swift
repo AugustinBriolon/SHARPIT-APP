@@ -42,7 +42,7 @@ struct SavedMealsPage: View {
         }
         .sharpitGroupedList()
         .navigationTitle("Mes repas")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task { await store.load() }
         .refreshable { await store.load() }
         .confirmationDialog(
@@ -229,7 +229,7 @@ struct FoodRecipePage: View {
             }
         }
         .navigationTitle(recipe == nil ? String(localized: "Créer une recette") : String(localized: "Modifier la recette"))
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
     }
 
     @ViewBuilder

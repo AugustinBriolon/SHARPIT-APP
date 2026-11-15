@@ -33,11 +33,9 @@ enum NutritionReadout {
             }
         }
 
-        /// One hue per macro, from the signal family, so the columns and the split read together.
-        var tone: Color { kind.tone }
-
-        /// The macro's bar on the Nutrition sheet, as its mock-up draws it: a chart mark, never text.
-        var sheetTone: Color {
+        /// One hue per macro on every bar and split of the app, as the mock-ups draw them: carbs
+        /// blue, protein purple, fat green — a chart mark, never text.
+        var tone: Color {
             switch self {
             case .carbohydrates: SharpitColor.pillarSleep
             case .protein: SharpitColor.pillarCoach

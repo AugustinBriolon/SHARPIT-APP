@@ -164,22 +164,25 @@ struct MealHealthSection: View {
 
     var body: some View {
         Section {
-            HStack(spacing: SharpitSpacing.sm) {
-                FoodHealthBadge(meal: health)
-                Text(health.grade?.label ?? String(localized: "Non noté"))
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(FoodHealthPresentation.gradeTone(health.grade))
-                Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                HStack {
+                    Text("Qualité du repas")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    FoodHealthBadge(meal: health)
+                }
+                ForEach(health.highlights) { FoodHighlightRow(highlight: $0) }
+                Text("Moyenne des scores des aliments, pondérée par leur énergie. \(FoodHealthPresentation.disclaimer)")
+                    .font(SharpitTypography.meta)
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .accessibilityElement(children: .combine)
-            ForEach(health.highlights) { FoodHighlightRow(highlight: $0) }
-        } header: {
-            SharpitEyebrow(String(localized: "Note du repas"))
-        } footer: {
-            SharpitListFooter(String(localized: "Moyenne des scores des aliments, pondérée par leur énergie. \(FoodHealthPresentation.disclaimer)"))
+            .cliniqueCard()
+            .accessibilityElement(children: .contain)
         }
         .sharpitListRows()
+        .listRowSeparator(.hidden)
     }
 }
 

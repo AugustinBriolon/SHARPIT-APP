@@ -153,21 +153,19 @@ struct FoodLogMealPage: View {
         let section = store.section(meal)
         List {
             Section {
-                FoodPortionPreview(nutrients: FoodPortion.Nutrients(
-                    kcal: section.kcal, protein: section.protein, carbs: section.carbs, fat: section.fat
-                ))
+                FoodPortionPreview(
+                    nutrients: FoodPortion.Nutrients(kcal: section.kcal, protein: section.protein, carbs: section.carbs, fat: section.fat),
+                    caption: FoodLogMealReadout.share(of: section.kcal, in: store.targets.kcal)
+                )
             }
             .sharpitListRows()
+            .listRowSeparator(.hidden)
 
             if let health = store.mealHealth(meal), health.score != nil || !health.highlights.isEmpty {
                 MealHealthSection(health: health)
             }
 
             Section {
-                if section.entries.isEmpty {
-                    Button("Ajouter un aliment") { addRequest = FoodAddRequest(meal: meal) }
-                        .foregroundStyle(SharpitNutritionTone.mealLabel(meal.storedName))
-                }
                 ForEach(section.entries) { entry in
                     Button { editing = entry } label: {
                         FoodLogEntryRow(entry: entry, flag: flags.first { $0.matches(meal: meal, entry: entry.name) })
@@ -191,16 +189,25 @@ struct FoodLogMealPage: View {
             }
             .sharpitListRows()
         }
-        .sharpitGroupedList()
+        .sharpitGroupedList(wash: .watch)
         .animation(SharpitMotion.selection, value: section.entries)
         .navigationTitle(meal.label)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { addRequest = FoodAddRequest(meal: meal) } label: {
-                    Label("Ajouter un aliment", systemImage: "plus")
+        .navigationBarTitleDisplayMode(.large)
+        .safeAreaInset(edge: .bottom) {
+            SharpitActionDock {
+                HStack(spacing: 8) {
+                    Button { addRequest = FoodAddRequest(meal: meal) } label: {
+                        Text("Ajouter un aliment").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                    if section.entries.isEmpty {
+                        Button("Copier hier") { Task { await store.copyFromPreviousDay(meal) } }
+                            .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                    }
                 }
             }
+        }
+        .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button { Task { await store.copyFromPreviousDay(meal) } } label: {
@@ -261,12 +268,10 @@ private struct FoodLogEntryRow: View {
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(detail)
+                Text(FoodPortion.gramsLabel(entry.grams))
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
                     .foregroundStyle(SharpitColor.slate)
-                NutritionMacroSplitBar(entry: entry)
-                    .frame(maxWidth: 120)
                 if let flag {
                     Label(flag.label, systemImage: "exclamationmark.circle.fill")
                         .font(SharpitTypography.meta.weight(.semibold))
@@ -277,13 +282,17 @@ private struct FoodLogEntryRow: View {
                 }
             }
             Spacer(minLength: 0)
-            VStack(alignment: .trailing, spacing: SharpitSpacing.xs) {
-                if entry.health != nil {
-                    FoodHealthBadge(health: entry.health)
+            VStack(alignment: .trailing, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(NutritionReadout.kcal(entry.kcal))
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("kcal")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
                 }
-                Text(NutritionReadout.kcal(entry.kcal))
-                    .font(SharpitTypography.instrument)
-                    .foregroundStyle(SharpitColor.foreground)
+                NutritionMacroSplitBar(entry: entry)
+                    .frame(width: 120)
             }
         }
         .opacity(entry.isPending ? 0.55 : 1)
@@ -292,8 +301,13 @@ private struct FoodLogEntryRow: View {
         .accessibilityHint(entry.isPending ? "" : String(localized: "Modifie la quantité ou le repas"))
     }
 
-    private var detail: String {
-        let macros = "P \(Int(entry.protein.rounded())) · G \(Int(entry.carbs.rounded())) · L \(Int(entry.fat.rounded())) g"
-        return "\(FoodPortion.gramsLabel(entry.grams)) · \(macros)"
+}
+
+/// The words of a meal's page.
+enum FoodLogMealReadout {
+    /// « 31 % de ta journée »: the meal's energy against the day's target, nil without one.
+    static func share(of kcal: Double, in target: Int?) -> String? {
+        guard let target, target > 0, kcal > 0, let percent = Int(exactly: (kcal / Double(target) * 100).rounded()) else { return nil }
+        return String(localized: "\(percent) % de ta journée")
     }
 }

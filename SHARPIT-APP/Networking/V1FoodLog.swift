@@ -22,6 +22,16 @@ nonisolated enum FoodLogMeal: String, CaseIterable, Codable, Sendable, Identifia
         }
     }
 
+    /// The action that logs a food in this meal, with the meal's own article.
+    var addTitle: String {
+        switch self {
+        case .breakfast: String(localized: "Ajouter au petit-déjeuner")
+        case .lunch: String(localized: "Ajouter au déjeuner")
+        case .dinner: String(localized: "Ajouter au dîner")
+        case .snacks: String(localized: "Ajouter aux collations")
+        }
+    }
+
     /// The name `/api/v1/nutrition` gives the meal (`DailyNutrition.meals[].name`), which the
     /// meal symbols and the coach's flags are keyed by.
     var storedName: String { rawValue.lowercased() }

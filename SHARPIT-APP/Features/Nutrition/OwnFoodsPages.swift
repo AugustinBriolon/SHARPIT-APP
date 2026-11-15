@@ -43,7 +43,7 @@ struct OwnFoodsPage: View {
         }
         .sharpitGroupedList()
         .navigationTitle("Mes aliments")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task { await store.load() }
         .refreshable { await store.load() }
         .confirmationDialog(

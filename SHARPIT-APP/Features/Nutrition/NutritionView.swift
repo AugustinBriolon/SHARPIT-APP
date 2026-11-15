@@ -556,7 +556,7 @@ private struct NutritionMacrosSection: View {
                 .foregroundStyle(SharpitColor.slate))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
-            SharpitBarTrack(fraction: NutritionReadout.fill(pct: line?.pct), tone: macro.sheetTone)
+            SharpitBarTrack(fraction: NutritionReadout.fill(pct: line?.pct), tone: macro.tone)
                 .frame(height: 3)
         }
         .frame(maxWidth: .infinity)
