@@ -34,7 +34,7 @@ struct GoalDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: SharpitSpacing.md) {
+            VStack(alignment: .leading, spacing: 24) {
                 GoalHero(goal: goal)
                     .revealed(hasAppeared, index: 0)
                 if goal.raceStatus == .awaitingResult {
@@ -64,12 +64,13 @@ struct GoalDetailView: View {
                         .revealed(hasAppeared, index: 2)
                 }
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.horizontal, 24)
             .padding(.vertical, SharpitSpacing.md)
         }
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: .coach, height: 240)
         .navigationTitle(goal.kind == .race ? String(localized: "Course") : String(localized: "Objectif"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .principal) { Text("") } }
         .onAppear { hasAppeared = true }
         .task(id: goalId) {
             let activities = await store.linkedActivities(goalId: goalId)
@@ -147,24 +148,18 @@ struct GoalDetailView: View {
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
                 Spacer()
-                Image(systemName: symbol)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.primary)
             }
 
             Text(value)
-                .font(SharpitTypography.data)
+                .font(SharpitTypography.system(size: 19, weight: .semibold, relativeTo: .title3, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
-                .monospacedDigit()
 
             Text(caption)
-                .font(.system(size: 11))
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panelAlt)
     }
 
     /// The server's projection: the finish and its range, the gap to the aim, how far to trust
@@ -175,11 +170,11 @@ struct GoalDetailView: View {
             if let proj {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(proj.finishLabel)
-                            .font(SharpitTypography.verdict)
+                        Text(GoalsReadout.spaced(proj.finishLabel))
+                            .font(SharpitTypography.system(size: 46, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                            .tracking(-1.2)
                             .foregroundStyle(SharpitColor.foreground)
-                            .monospacedDigit()
-                        Text(proj.rangeLabel)
+                        Text(GoalsReadout.spaced(proj.rangeLabel))
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.slate)
                             .monospacedDigit()
@@ -247,13 +242,7 @@ struct GoalDetailView: View {
     }
 
     private func deltaPill(_ delta: RaceDelta) -> some View {
-        Text(delta.label)
-            .font(.system(size: 12, weight: .semibold))
-            .monospacedDigit()
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background((delta.isAhead ? SharpitColor.primary : SharpitColor.signalCaution).opacity(0.15), in: Capsule())
-            .foregroundStyle(delta.isAhead ? SharpitColor.primary : SharpitColor.signalCaution)
+        CliniqueStatusPill(delta.label, status: delta.isAhead ? .good : .watch)
     }
 
     /// A race run: the time, the projection it was read against, and the gap to the aim.
@@ -338,31 +327,35 @@ struct GoalDetailView: View {
                     .foregroundStyle(SharpitColor.slate)
             }
             RaceLegsBar(segments: legs.map(\.segment), compact: true)
-            VStack(spacing: SharpitSpacing.xs) {
-                ForEach(legs) { leg in
-                    HStack(alignment: .firstTextBaseline) {
-                        VStack(alignment: .leading, spacing: 1) {
+            VStack(spacing: 0) {
+                ForEach(Array(legs.enumerated()), id: \.element.id) { index, leg in
+                    HStack(alignment: .center, spacing: 10) {
+                        // The leg's hue as a mark; a transition carries none.
+                        Capsule()
+                            .fill(leg.segment.isTransition ? Color.clear : GoalsReadout.hue(leg.segment.sport))
+                            .frame(width: 4, height: 24)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(leg.segment.label)
-                                .font(SharpitTypography.meta)
+                                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                                 .foregroundStyle(leg.segment.isTransition ? SharpitColor.slate : SharpitColor.foreground)
                             if let source = leg.sourceLabel {
                                 Text(source)
                                     .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.slate.opacity(0.8))
+                                    .foregroundStyle(SharpitColor.slate)
                             }
                         }
                         Spacer()
                         Text(leg.timeLabel)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .monospacedDigit()
+                            .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                            .foregroundStyle(leg.segment.isTransition ? SharpitColor.slate : SharpitColor.foreground)
                     }
+                    .frame(minHeight: leg.segment.isTransition ? 36 : 52)
                     .accessibilityElement(children: .combine)
+                    if index < legs.count - 1 { CliniqueDivider() }
                 }
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panelAlt)
     }
 
     // MARK: - Metric Progress Section
@@ -412,8 +405,7 @@ struct GoalDetailView: View {
                         .monospacedDigit()
                 }
             }
-            .padding(SharpitSpacing.cardPadding)
-            .sharpitSurface(.panelAlt)
+            .cliniqueCard()
         }
     }
 
@@ -444,9 +436,8 @@ struct GoalDetailView: View {
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.slate)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panelAlt)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        .cliniqueCard()
     }
 
     // MARK: - Action Buttons
@@ -462,21 +453,14 @@ struct GoalDetailView: View {
             } label: {
                 HStack(spacing: SharpitSpacing.xs) {
                     if isUpdating {
-                        ProgressView()
-                            .tint(.white)
+                        ProgressView().tint(SharpitColor.primaryForeground)
                     } else {
-                        Image(systemName: goal.achieved ? "arrow.counterclockwise" : "checkmark.circle.fill")
                         Text(goal.achieved ? String(localized: "Marquer comme en cours") : String(localized: "Valider l'objectif"))
                     }
                 }
-                .font(SharpitTypography.bodyEmphasis)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .sharpitContainerCorner(SharpitRadius.panel)
-                .background(SharpitColor.primary, in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous))
-                .foregroundStyle(SharpitColor.primaryForeground)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CliniqueButtonStyle(kind: goal.achieved ? .outline : .primary, isLarge: true))
             .disabled(isUpdating)
         }
         .padding(.top, SharpitSpacing.xs)
