@@ -12,6 +12,7 @@ struct RestDayPlate: View {
                 Text("Le Twin valide la récupération. Pas de séance prévue.")
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }

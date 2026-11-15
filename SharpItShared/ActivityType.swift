@@ -1,5 +1,14 @@
 import Foundation
 
+extension Optional where Wrapped == String {
+    /// A name someone could read: nil when it is missing or only white space.
+    nonisolated var named: String? {
+        guard let name = self?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else { return nil }
+        // A title is one line: a line break typed in it reads as a space.
+        return name.components(separatedBy: .newlines).joined(separator: " ")
+    }
+}
+
 /// An activity's sport. Shared with the widgets, which draw a session's sport the app's way.
 nonisolated enum V1ActivityType: String, Codable, Sendable {
     case run = "RUN"
@@ -15,10 +24,10 @@ nonisolated enum V1ActivityType: String, Codable, Sendable {
         case .run: String(localized: "Course")
         case .bike: String(localized: "Vélo")
         case .swim: String(localized: "Natation")
-        case .strength: String(localized: "Force")
+        case .strength: String(localized: "Musculation")
         case .hike: String(localized: "Randonnée")
         case .triathlon: String(localized: "Triathlon")
-        case .other: String(localized: "Activité")
+        case .other: String(localized: "Autre")
         }
     }
 

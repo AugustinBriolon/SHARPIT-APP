@@ -20,7 +20,10 @@ private let unreadable: [Double] = [.nan, .infinity, -.infinity, 1e300, -1e300]
 
 @Test func activityFiguresKeepLongAndZeroSessionsReadable() {
     #expect(ActivityFormat.duration(0) == "0 min")
-    #expect(ActivityFormat.duration(36 * 3_600 + 15 * 60) == "36 h 15 min")
+    #expect(ActivityFormat.duration(36 * 3_600 + 15 * 60) == "36 h 15")
+    #expect(ActivityFormat.duration(45) == "45 s")
+    #expect(ActivityFormat.duration(3_600) == "1 h")
+    #expect(ActivityFormat.duration(59 * 60 + 59) == "59 min")
     #expect(ActivityFormat.paceClock(0) == "0'00\"")
     #expect(ActivityFormat.paceClock(3_599.6) == "60'00\"")
     #expect(ActivityFormat.speedKmh(distanceM: 180_000, duration: 18_000) == "36,0")

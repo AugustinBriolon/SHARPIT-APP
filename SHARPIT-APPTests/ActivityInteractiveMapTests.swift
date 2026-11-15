@@ -52,7 +52,8 @@ import SwiftUI
     @Test func theMapCardSaysOnlyTheFiguresTheSessionCarries() {
         let whole = ActivityMapReadout.figures(distanceM: 12_500, duration: 3_600, elevationM: 150)
         #expect(whole.hasPrefix("12,5 km"))
-        #expect(whole.contains("1 h 0 min"))
+        #expect(whole.contains("1 h"))
+        #expect(!whole.contains("0 min"))
         #expect(whole.contains("150 m"))
         #expect(whole.components(separatedBy: " · ").count == 3)
         #expect(ActivityMapReadout.figures(distanceM: 800, duration: nil, elevationM: 0) == "800 m")

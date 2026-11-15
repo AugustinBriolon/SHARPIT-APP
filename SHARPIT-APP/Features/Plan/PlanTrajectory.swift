@@ -30,12 +30,13 @@ nonisolated struct PlanTrajectoryTile: Equatable, Sendable {
         if let empty = effort.empty {
             return PlanTrajectoryTile(value: "—", unit: nil, headline: empty.title, tone: .neutral, caption: nil)
         }
-        let score = effort.strain.score
+        // No effort measured, no reading of it: « Réduire la charge » beside « — » advised nothing.
+        guard let score = effort.strain.score else {
+            return PlanTrajectoryTile(value: "—", unit: nil, headline: nil, tone: .neutral, caption: nil)
+        }
         return PlanTrajectoryTile(
-            value: score.map {
-                $0.formatted(.number.precision(.fractionLength(1)).locale(AppLanguage.locale))
-            } ?? "—",
-            unit: score == nil ? nil : "/21",
+            value: score.formatted(.number.precision(.fractionLength(1)).locale(AppLanguage.locale)),
+            unit: "/21",
             headline: effort.strain.label,
             tone: effort.strain.tone,
             caption: effort.verdict.label
@@ -83,33 +84,23 @@ struct PlanTrajectoryCards: View {
     private func line(_ title: String, _ tile: PlanTrajectoryTile, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: SharpitSpacing.sm) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
-                        .foregroundStyle(SharpitColor.foreground)
-                    if let caption = tile.caption ?? (tile.unit == nil ? tile.headline : nil) {
-                        Text(caption)
-                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
-                            .foregroundStyle(SharpitColor.slate)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
+                // One line while the name, the pill and the figure fit whole; the reading goes
+                // under the name otherwise (a narrow iPhone, the large text sizes).
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: SharpitSpacing.sm) {
+                        names(title, tile)
+                        Spacer(minLength: SharpitSpacing.xs)
+                        HStack(spacing: SharpitSpacing.sm) { reading(tile) }
                     }
-                }
-                Spacer(minLength: SharpitSpacing.xs)
-                if tile.unit != nil, let headline = tile.headline {
-                    CliniqueStatusPill(headline, status: RecoveryReadout.status(for: tile.tone))
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(tile.value)
-                        .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
-                        .foregroundStyle(tile.unit == nil ? SharpitColor.slate : SharpitColor.foreground)
-                    if let unit = tile.unit {
-                        Text(unit)
-                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
-                            .foregroundStyle(SharpitColor.slate)
+                    VStack(alignment: .leading, spacing: 6) {
+                        names(title, tile)
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: SharpitSpacing.sm) { reading(tile) }
+                            VStack(alignment: .leading, spacing: 4) { reading(tile) }
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .fixedSize()
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(SharpitColor.slate.opacity(0.6))
@@ -120,5 +111,39 @@ struct PlanTrajectoryCards: View {
         }
         .buttonStyle(.sharpitPressable)
         .accessibilityElement(children: .combine)
+    }
+
+    private func names(_ title: String, _ tile: PlanTrajectoryTile) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                .foregroundStyle(SharpitColor.foreground)
+            if let caption = tile.caption ?? (tile.unit == nil ? tile.headline : nil) {
+                Text(caption)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                    .foregroundStyle(SharpitColor.slate)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
+        }
+    }
+
+    /// The reading as a pill, then the figure; a `Group` so the caller chooses how they sit.
+    @ViewBuilder
+    private func reading(_ tile: PlanTrajectoryTile) -> some View {
+        if tile.unit != nil, let headline = tile.headline {
+            CliniqueStatusPill(headline, status: RecoveryReadout.status(for: tile.tone))
+        }
+        HStack(alignment: .firstTextBaseline, spacing: 2) {
+            Text(tile.value)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(tile.unit == nil ? SharpitColor.slate : SharpitColor.foreground)
+            if let unit = tile.unit {
+                Text(unit)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+        }
+        .fixedSize()
     }
 }

@@ -123,6 +123,12 @@ final class ShellRouter {
         selectedTab = .plan
     }
 
+    /// A sheet someone asked for — a link, a notification, a tap — is up or on its way. What the
+    /// app would open by itself (the morning check-in) waits for it rather than taking its place.
+    var isShowingRequestedSheet: Bool {
+        isShowingSettings || isShowingGoals || isShowingPlanGenerator || isShowingWeeklyReview
+    }
+
     func openSettings(on route: SettingsRoute? = nil) {
         settingsRoute = route
         isShowingSettings = true

@@ -259,7 +259,7 @@ struct RessentiStepPicker: View {
                     }
                     .foregroundStyle(isOn ? SharpitColor.primaryForeground : SharpitColor.foreground)
                     .frame(maxWidth: .infinity, minHeight: 76)
-                    .padding(.horizontal, 2)
+                    .padding(.horizontal, 6)
                     .background(isOn ? SharpitColor.primary : .clear, in: shape)
                     .overlay(shape.strokeBorder(SharpitColor.divider, lineWidth: isOn ? 0 : 1))
                     .contentShape(.rect)

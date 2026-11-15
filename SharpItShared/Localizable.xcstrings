@@ -30677,6 +30677,22 @@
         }
       }
     },
+    "Lire la suite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read more"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lire la suite"
+          }
+        }
+      }
+    },
     "Lire le bilan complet" : {
       "localizations" : {
         "en" : {
@@ -40794,6 +40810,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rédaction des séances"
+          }
+        }
+      }
+    },
+    "Réduire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show less"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réduire"
           }
         }
       }

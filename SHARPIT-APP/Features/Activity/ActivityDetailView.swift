@@ -1257,7 +1257,7 @@ private struct ActivityDetailContent: View {
                 )
             }
             if let notes = detail.notes, !notes.isEmpty {
-                Text(notes).font(SharpitTypography.body).foregroundStyle(SharpitColor.slate)
+                SharpitExpandableText(text: notes)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1614,7 +1614,7 @@ enum ActivitySheetReadout {
 
     /// « Course · Tempo 3 × 10 min »; the sport alone when the session has no name of its own.
     static func title(sport: String, title: String?) -> String {
-        guard let title, !title.isEmpty, title.localizedCaseInsensitiveCompare(sport) != .orderedSame else { return sport }
+        guard let title = title.named, title.localizedCaseInsensitiveCompare(sport) != .orderedSame else { return sport }
         return title.localizedCaseInsensitiveContains(sport) ? title : "\(sport) · \(title)"
     }
 
@@ -1623,7 +1623,9 @@ enum ActivitySheetReadout {
         let day = date.sharpitFormatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst
         let parts = calendar.dateComponents([.hour, .minute], from: date)
         let clock = "\(parts.hour ?? 0) h \(String(format: "%02d", parts.minute ?? 0))"
-        return ([day, clock] + [weather].compactMap { $0 }).joined(separator: " · ")
+        // The weather is the athlete's own sentence: it wraps, but a degree stays with its figure.
+        let sky = weather?.replacingOccurrences(of: " °", with: "\u{00A0}°")
+        return [[day, clock].joinedAsFacts(), sky].compactMap { $0 }.joined(separator: " · ")
     }
 
     /// « 7/10 · 4/5 », the effort then the feeling; « Noter » while neither is said.

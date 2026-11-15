@@ -24,7 +24,7 @@ nonisolated struct V1ActivityListItem: Decodable, Sendable, Hashable, Identifiab
         let decodedType = try container.decodeIfPresent(V1ActivityType.self, forKey: .type) ?? .other
         type = decodedType
         date = try Date.fromAPI(container.decode(String.self, forKey: .date))
-        title = try container.decodeIfPresent(String.self, forKey: .title)
+        title = try container.decodeIfPresent(String.self, forKey: .title).named
         duration = try container.decodeIfPresent(Double.self, forKey: .duration)
         load = try container.decodeIfPresent(Double.self, forKey: .load)
         rpe = try container.decodeIfPresent(Double.self, forKey: .rpe)
@@ -526,7 +526,7 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         let decodedType = try container.decodeIfPresent(V1ActivityType.self, forKey: .type) ?? .other
         type = decodedType
         date = try Date.fromAPI(container.decode(String.self, forKey: .date))
-        title = try container.decodeIfPresent(String.self, forKey: .title)
+        title = try container.decodeIfPresent(String.self, forKey: .title).named
         duration = try container.decodeIfPresent(Double.self, forKey: .duration)
         load = try container.decodeIfPresent(Double.self, forKey: .load)
         rpe = try container.decodeIfPresent(Double.self, forKey: .rpe)

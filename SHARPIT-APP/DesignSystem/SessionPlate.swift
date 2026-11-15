@@ -93,7 +93,9 @@ struct SessionPlate: View {
         if showPriorityTag { parts.append(String(localized: "Prioritaire")) }
         if session.isKey, session.kind != .done { parts.append(String(localized: "Séance clé")) }
         if let subtitle { parts.append(subtitle) }
-        parts += telemetryMetrics.map { metric in
+        // The server's line already gives the session's length: the same figure is not said twice.
+        let saysLength = subtitle != nil
+        parts += telemetryMetrics.filter { !(saysLength && $0.label.lowercased() == "durée") }.map { metric in
             let unit = metric.unit.isEmpty ? "" : " \(metric.unit)"
             return "\(metric.label.lowercased()) \(metric.value)\(unit)"
         }

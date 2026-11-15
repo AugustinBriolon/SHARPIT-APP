@@ -391,17 +391,32 @@ private struct ActivityWeekSection: View {
     let week: ActivityWeek
     @Binding var selectedActivity: V1ActivityListItem?
 
+    private var weekTitle: some View {
+        Text(week.title)
+            .font(SharpitTypography.sectionTitle)
+            .tracking(SharpitTypography.sectionTitleTracking)
+            .foregroundStyle(SharpitColor.foreground)
+    }
+
+    private var weekSummary: some View {
+        Text(week.summary)
+            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+            .foregroundStyle(SharpitColor.slate)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(week.title)
-                    .font(SharpitTypography.sectionTitle)
-                    .tracking(SharpitTypography.sectionTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                Spacer(minLength: SharpitSpacing.xs)
-                Text(week.summary)
-                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
-                    .foregroundStyle(SharpitColor.slate)
+            // On one line while both fit whole; the summary under the title otherwise.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    weekTitle
+                    Spacer(minLength: SharpitSpacing.xs)
+                    weekSummary
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    weekTitle
+                    weekSummary
+                }
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
@@ -430,10 +445,11 @@ private struct ActivityRow: View {
         HStack(spacing: 12) {
             CliniqueSportTile(symbol: activity.type.symbolName, size: 44)
             VStack(alignment: .leading, spacing: 3) {
-                Text(activity.title ?? activity.type.label)
+                Text(activity.title.named ?? activity.type.label)
                     .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
                 Text(ActivityRowReadout.line(activity, isExpertReading: isExpertReading))
                     .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                     .foregroundStyle(SharpitColor.slate)
@@ -459,7 +475,7 @@ enum ActivityRowReadout {
             ActivityFormat.primaryMetric(activity),
             activity.duration.map(ActivityFormat.duration),
             activity.load.flatMap { $0 > 0 ? ActivityFormat.trainingLoad($0, isExpertReading: isExpertReading) : nil },
-        ].compactMap { $0 }.joined(separator: " · ")
+        ].compactMap { $0 }.joinedAsFacts()
     }
 
     /// Against the plan: the server's verdict, « À lire » until it lands, « Libre » off plan.
@@ -504,9 +520,7 @@ enum ActivityFormat {
     }
 
     static func duration(_ seconds: Double) -> String {
-        // A corrupt or computed figure (∞, NaN, beyond Int) reads as missing rather than trapping.
-        guard let minutes = Int(exactly: (seconds / 60).rounded(.towardZero)), minutes >= 0 else { return "—" }
-        return minutes >= 60 ? String(localized: "\(minutes / 60) h \(minutes % 60) min") : "\(minutes) min"
+        SharpitFigureFormat.duration(seconds: seconds)
     }
 
     static func pace(_ seconds: Double) -> String {

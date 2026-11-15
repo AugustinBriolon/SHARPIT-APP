@@ -93,7 +93,7 @@ private func activity(
         calendar: calendar
     )
     #expect(candidates.first?.sport == "Natation")
-    #expect(candidates.first?.durationLabel == "1 h 5 min")
+    #expect(candidates.first?.durationLabel == "1 h 05")
 }
 
 @Test func anActivityWithoutADurationHasNoDurationLabel() {

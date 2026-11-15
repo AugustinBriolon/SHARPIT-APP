@@ -24,12 +24,10 @@ struct FoodPortionPreview: View {
                     .minimumScaleFactor(0.8)
             }
             NutritionMacroSplitBar(protein: nutrients.protein, carbohydrates: nutrients.carbs, fat: nutrients.fat, height: 10)
-            HStack(spacing: SharpitSpacing.xs) {
-                macro(.carbohydrates, nutrients.carbs)
-                Spacer(minLength: 0)
-                macro(.protein, nutrients.protein)
-                Spacer(minLength: 0)
-                macro(.fat, nutrients.fat)
+            // A figure is never cut: when the three do not fit on a line, each goes under its name.
+            ViewThatFits(in: .horizontal) {
+                macros(stacked: false)
+                macros(stacked: true)
             }
         }
         .animation(SharpitMotion.selection, value: nutrients)
@@ -40,8 +38,21 @@ struct FoodPortionPreview: View {
         )
     }
 
-    private func macro(_ macro: NutritionReadout.Macro, _ grams: Double) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 5) {
+    private func macros(stacked: Bool) -> some View {
+        HStack(alignment: .top, spacing: SharpitSpacing.xs) {
+            macro(.carbohydrates, nutrients.carbs, stacked: stacked)
+            Spacer(minLength: 0)
+            macro(.protein, nutrients.protein, stacked: stacked)
+            Spacer(minLength: 0)
+            macro(.fat, nutrients.fat, stacked: stacked)
+        }
+    }
+
+    private func macro(_ macro: NutritionReadout.Macro, _ grams: Double, stacked: Bool) -> some View {
+        let layout = stacked
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 5))
+        return layout {
             Text(macro.label)
                 .foregroundStyle(SharpitColor.slate)
             Text("\(FoodPortion.figure(grams)) g")
@@ -51,7 +62,7 @@ struct FoodPortionPreview: View {
         }
         .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
         .lineLimit(1)
-        .minimumScaleFactor(0.8)
+        .fixedSize()
     }
 }
 

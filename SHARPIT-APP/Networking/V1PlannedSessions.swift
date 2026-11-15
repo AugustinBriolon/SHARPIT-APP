@@ -101,7 +101,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
         id = try container.decode(String.self, forKey: .id)
         date = try Date.fromPlannedAPI(container.decode(String.self, forKey: .date))
         startTime = try? container.decodeIfPresent(String.self, forKey: .startTime)
-        title = try container.decodeIfPresent(String.self, forKey: .title)
+        title = try container.decodeIfPresent(String.self, forKey: .title).named
         type = try container.decodeIfPresent(String.self, forKey: .type)
         durationMin = try container.decodeIfPresent(Int.self, forKey: .durationMin)
         intensity = try container.decodeIfPresent(String.self, forKey: .intensity)
@@ -133,15 +133,7 @@ nonisolated struct V1PlannedSessionItem: Decodable, Sendable, Hashable, Identifi
     }
 
     var displayType: String {
-        switch type?.uppercased() {
-        case "RUN": String(localized: "Course")
-        case "BIKE": String(localized: "Vélo")
-        case "SWIM": String(localized: "Natation")
-        case "STRENGTH": String(localized: "Force")
-        case "HIKE": String(localized: "Randonnée")
-        case "TRIATHLON": String(localized: "Triathlon")
-        default: type?.capitalized ?? String(localized: "Séance")
-        }
+        type == nil ? String(localized: "Séance") : activityType.label
     }
 
     var activityType: V1ActivityType {

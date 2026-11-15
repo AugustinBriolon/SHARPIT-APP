@@ -258,14 +258,17 @@ private struct NextRaceCard: View {
                     .multilineTextAlignment(.leading)
             }
             if let readout {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(GoalsReadout.spaced(readout.finishLabel))
-                        .font(SharpitTypography.system(size: 46, weight: .semibold, relativeTo: .largeTitle, digits: true))
-                        .tracking(-1.2)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text([String(localized: "projeté"), goal.targetPerformance.flatMap { $0.isEmpty ? nil : String(localized: "objectif \($0)") }].compactMap(\.self).joined(separator: " · "))
-                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
-                        .foregroundStyle(SharpitColor.slate)
+                let finish = Text(GoalsReadout.spaced(readout.finishLabel))
+                    .font(SharpitTypography.system(size: 46, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                    .tracking(-1.2)
+                    .foregroundStyle(SharpitColor.foreground)
+                let aim = Text([String(localized: "projeté"), goal.targetPerformance.flatMap { $0.isEmpty ? nil : String(localized: "objectif \($0)") }].compactMap(\.self).joined(separator: " · "))
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                // Beside the time while the aim fits on its line; under it when the athlete wrote a long one.
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) { finish; aim }
+                    VStack(alignment: .leading, spacing: 4) { finish; aim }
                 }
                 let legs = readout.legs
                 if !legs.isEmpty {
@@ -335,6 +338,14 @@ enum GoalsReadout {
         }
     }
 
+    /// A goal's month at the end of its line; with its year when that is not this one, so a
+    /// race of last October is not read as the coming one.
+    static func rowDate(_ date: Date, now: Date = .now, calendar: Calendar = .current) -> String {
+        calendar.isDate(date, equalTo: now, toGranularity: .year)
+            ? date.sharpitFormatted(.dateTime.month(.wide))
+            : date.sharpitFormatted(.dateTime.month(.abbreviated).year())
+    }
+
     /// « Triathlon M, 21 décembre »; the name alone without a day.
     static func title(_ goal: V1Goal) -> String {
         guard let day = goal.targetDate?.sharpitFormatted(.dateTime.day().month(.wide)) else { return goal.title }
@@ -381,7 +392,7 @@ private struct GoalCard: View {
             }
             Spacer(minLength: SharpitSpacing.xs)
             if !goal.isReached, let date = goal.targetDate {
-                Text(date.sharpitFormatted(.dateTime.month(.wide)))
+                Text(GoalsReadout.rowDate(date))
                     .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
                     .foregroundStyle(SharpitColor.slate)
             }

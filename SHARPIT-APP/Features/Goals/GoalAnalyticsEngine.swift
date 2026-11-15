@@ -93,15 +93,7 @@ enum GoalAnalyticsEngine {
     }
 
     static func sportDisplayName(_ type: String) -> String {
-        switch type.uppercased() {
-        case "BIKE": String(localized: "Vélo")
-        case "RUN": String(localized: "Course")
-        case "SWIM": String(localized: "Natation")
-        case "STRENGTH": String(localized: "Force")
-        case "HIKE": String(localized: "Randonnée")
-        case "TRIATHLON": String(localized: "Triathlon")
-        default: String(localized: "Autre")
-        }
+        (V1ActivityType(rawValue: type.uppercased()) ?? .other).label
     }
 
     static func formatDuration(_ totalSeconds: Double) -> String {

@@ -188,54 +188,88 @@ struct CliniqueScoreColumn: View {
     var note: String? = nil
     var isPulsing = false
     var animated = true
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// At the accessibility sizes a column cannot hold its words: the score becomes a line of the
+    /// strip — the ring, then its name over its figure — and the strip stacks the lines.
+    private var isLine: Bool { typeSize.isAccessibilitySize }
 
     var body: some View {
-        VStack(spacing: 6) {
-            CliniqueRing(pillar: pillar, fraction: fraction, symbol: symbol, animated: animated)
-                .padding(.bottom, 2)
-            Text(title)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            if let value {
-                (Text(value)
-                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
-                    .foregroundStyle(SharpitColor.foreground)
-                    + Text(scale.map { " / \($0)" } ?? unit.map { " \($0)" } ?? "").font(SharpitTypography.meta).foregroundStyle(SharpitColor.slate))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .opacity(isPulsing ? 0.55 : 1)
+        Group {
+            if isLine {
+                HStack(spacing: 12) {
+                    ring
+                    VStack(alignment: .leading, spacing: 2) { name; figure; reading }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, SharpitSpacing.lg)
             } else {
-                Text("Pas encore")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
-            if let note, value != nil {
-                Text(note)
-                    .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2, digits: true))
-                    .foregroundStyle(SharpitColor.slate)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
+                VStack(spacing: 6) { ring.padding(.bottom, 2); name; figure; reading }
+                    .padding(.horizontal, SharpitSpacing.xxs)
             }
         }
-        .padding(.horizontal, SharpitSpacing.xxs)
         .frame(maxWidth: .infinity)
+    }
+
+    private var ring: some View {
+        CliniqueRing(pillar: pillar, fraction: fraction, symbol: symbol, animated: animated)
+    }
+
+    private var name: some View {
+        Text(title)
+            .font(SharpitTypography.meta)
+            .foregroundStyle(SharpitColor.slate)
+            .lineLimit(isLine ? nil : 1)
+            .minimumScaleFactor(0.8)
+    }
+
+    @ViewBuilder
+    private var figure: some View {
+        if let value {
+            (Text(value)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+                + Text(scale.map { " / \($0)" } ?? unit.map { " \($0)" } ?? "").font(SharpitTypography.meta).foregroundStyle(SharpitColor.slate))
+                .lineLimit(isLine ? 2 : 1)
+                .minimumScaleFactor(0.7)
+                .opacity(isPulsing ? 0.55 : 1)
+        } else {
+            Text("Pas encore")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
+        }
+    }
+
+    @ViewBuilder
+    private var reading: some View {
+        if let note, value != nil {
+            Text(note)
+                .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2, digits: true))
+                .foregroundStyle(SharpitColor.slate)
+                .multilineTextAlignment(isLine ? .leading : .center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+        }
     }
 }
 
-/// A row of scores between two hairlines, its columns split by a hairline too.
+/// A row of scores between two hairlines, its columns split by a hairline too. At the
+/// accessibility sizes the scores run down the strip, one a line.
 struct CliniqueScoreStrip<Columns: View>: View {
     @ViewBuilder var columns: Columns
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        VStack(spacing: 0) {
+        let isStacked = typeSize.isAccessibilitySize
+        let layout = isStacked
+            ? AnyLayout(VStackLayout(spacing: SharpitSpacing.sm))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 0))
+        return VStack(spacing: 0) {
             CliniqueDivider()
-            HStack(alignment: .top, spacing: 0) {
+            layout {
                 Group(subviews: columns) { subviews in
                     ForEach(Array(subviews.enumerated()), id: \.offset) { index, column in
-                        if index > 0 {
+                        if index > 0, !isStacked {
                             Rectangle().fill(SharpitColor.divider).frame(width: 1).accessibilityHidden(true)
                         }
                         column

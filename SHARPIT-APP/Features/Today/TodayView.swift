@@ -183,6 +183,10 @@ struct TodayView: View {
                 guard hasSleep else { return }
                 Task { await evaluateRessentiPrompt() }
             }
+            .onChange(of: router.isShowingRequestedSheet) { _, isUp in
+                guard !isUp else { return }
+                Task { await evaluateRessentiPrompt() }
+            }
             .onChange(of: router.calendarRevision) { _, _ in
                 Task { await store.refresh() }
             }
@@ -369,23 +373,38 @@ extension TodayView {
 
     fileprivate var chips: some View {
         SharpitGlassGroup {
-            HStack(spacing: SharpitSpacing.xs) {
-                if let activityStatusStore {
-                    ActivityStatusButton(store: activityStatusStore, showsLabel: true, drawerScheme: colorScheme)
+            // Side by side while each chip keeps its word whole; one under the other otherwise
+            // (the largest text sizes), never a word cut in two.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: SharpitSpacing.xs) {
+                    statusAndJournalChips
+                    Spacer(minLength: 0)
+                    WeatherChip(service: weather)
                 }
-                if features.isOn(.journal), let journalClient, let wellnessClient, let tokenProvider {
-                    NavigationLink(value: TodayNav.journal) {
-                        Label("Journal", systemImage: "book.closed")
-                            .labelStyle(.titleAndIcon)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .sharpitGlassChip()
-                    }
-                    .buttonStyle(.sharpitPressable)
+                VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+                    statusAndJournalChips
+                    WeatherChip(service: weather)
                 }
-                Spacer(minLength: 0)
-                WeatherChip(service: weather)
             }
             .animation(SharpitMotion.reveal, value: weather.reading)
+        }
+    }
+
+    @ViewBuilder
+    private var statusAndJournalChips: some View {
+        if let activityStatusStore {
+            ActivityStatusButton(store: activityStatusStore, showsLabel: true, drawerScheme: colorScheme)
+                .fixedSize()
+        }
+        if features.isOn(.journal), journalClient != nil, wellnessClient != nil, tokenProvider != nil {
+            NavigationLink(value: TodayNav.journal) {
+                Label("Journal", systemImage: "book.closed")
+                    .labelStyle(.titleAndIcon)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .sharpitGlassChip()
+            }
+            .buttonStyle(.sharpitPressable)
+            .fixedSize()
         }
     }
 
@@ -422,6 +441,9 @@ extension TodayView {
                 athleteId: athleteId,
                 localDate: status.localDate
             ) else { return }
+            // Asked while the status was read: the sheet the athlete asked for goes first, and
+            // the prompt is evaluated again once it closes.
+            guard !router.isShowingRequestedSheet else { return }
             showsCheckIn = true
         } catch {
             // Silent — never block Résumé on a status read; the athlete can still open it
