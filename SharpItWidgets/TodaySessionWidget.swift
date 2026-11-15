@@ -140,7 +140,7 @@ private struct SessionHero: View {
     var body: some View {
         WidgetFrame(title: eyebrow) {
             if session.isDone {
-                WidgetGlyph(symbol: "checkmark.circle.fill", tint: SharpitColor.inkAccent)
+                WidgetGlyph(symbol: "checkmark.circle.fill", tint: SharpitColor.pillarRecovery)
             } else {
                 WidgetGlyph(symbol: session.sport.symbolName, tint: SharpitColor.foreground)
             }

@@ -52,8 +52,10 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         var verdict: Verdict?
         var sessions: [Session]
         var sleep: Sleep?
-        /// ADR-079. Callers: EnergyBankWidget. API: Today fold energyBank.
+        /// Kept so an older snapshot still decodes; no widget reads it any more.
         var energyBank: EnergyBank? = nil
+        /// The morning's recovery, as Résumé's gauge reads it.
+        var recovery: Sleep? = nil
 
         /// The session to put forward: the first one still to do, else the last one done.
         var leadSession: Session? {

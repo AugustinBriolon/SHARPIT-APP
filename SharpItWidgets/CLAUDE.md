@@ -38,3 +38,13 @@ detail), `/plan/session/<id>` before (Plan opens today's week and the session's 
 there), the typography (SF Pro), `V1ActivityType` with its identity colour (ink, since ADR-085), `V1TodayPosture` with its tone, and the snapshot.
 The target was added by hand to `project.pbxproj` (IDs `…05…`); its Info.plist and entitlements are
 in `Config/`.
+
+**Clinique (2026-11-15).** The widgets left the ink plate for the app's sheet (`docs/adr/0035`):
+`sharpitWidgetChrome()` is the card's white in the phone's own appearance, figures in ink, each
+pillar's hue on its marks (`WidgetRing`, the header glyph), names in sentence case (`WidgetEyebrow`).
+The tick dial is gone: `DialReadout` draws a score in its ring (sleep blue, recovery green, nutrition
+orange). « Résumé » (`ResumeRingsWidget`, small and medium) is new: the day's four rings as the first
+screen draws them (`WidgetResumeRing.rings`, in `SharpItShared`, tested), a hidden feature's ring
+left out. « Récupération » (`RecoveryWidget`, `Day.recovery` from Résumé's gauge) takes the place
+of « Réserve », a score Résumé's rings no longer carry; `Day.energyBank` stays decodable, unread.
+Not seen on a Home Screen: the simulator's widget gallery was not driven.

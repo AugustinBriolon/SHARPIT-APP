@@ -73,7 +73,7 @@ struct WeightSmall: View {
             if let weight {
                 WidgetHero(value: SharpitFigureFormat.kilograms(weight.kilograms), unit: "kg")
                 if let changeLine = weight.changeLine {
-                    WidgetCaption(text: changeLine, tint: weight.movesTowardsTarget == true ? SharpitColor.inkAccent : SharpitColor.mutedForeground)
+                    WidgetCaption(text: changeLine, tint: weight.movesTowardsTarget == true ? SharpitColor.foreground : SharpitColor.mutedForeground)
                 }
                 if let targetLine = weight.targetLine {
                     WidgetCaption(text: targetLine, lines: 2)

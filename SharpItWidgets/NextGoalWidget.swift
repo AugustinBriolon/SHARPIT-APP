@@ -60,14 +60,14 @@ struct NextGoalBody: View {
     let showsContext: Bool
 
     var body: some View {
-        WidgetFrame(showsContext ? String(localized: "Prochain objectif") : String(localized: "Objectif"), symbol: "flag.checkered", tint: SharpitColor.inkAccent) {
+        WidgetFrame(showsContext ? String(localized: "Prochain objectif") : String(localized: "Objectif"), symbol: "flag.checkered", tint: SharpitColor.pillarCoach) {
             if let goal {
                 let days = goal.daysLeft(from: date)
                 WidgetHero(value: days == 0 ? String(localized: "Jour J") : "\(days)", unit: days == 0 ? nil : (days == 1 ? "jour" : "jours"))
                 WidgetTitle(text: goal.title, lines: 1)
                 WidgetCaption(text: goal.dateLine)
                 if showsContext, let context = goal.contextLine {
-                    WidgetCaption(text: context, tint: SharpitColor.inkAccent)
+                    WidgetCaption(text: context, tint: SharpitColor.foreground)
                         .padding(.top, 2)
                 }
             } else {

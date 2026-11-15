@@ -31,7 +31,7 @@ struct CoachWidgetView: View {
             }
             .accessibilityLabel("Demander au coach")
         default:
-            WidgetFrame(String(localized: "Coach"), symbol: "bubble.left.and.text.bubble.right", tint: SharpitColor.inkAccent) {
+            WidgetFrame(String(localized: "Coach"), symbol: "bubble.left.and.text.bubble.right", tint: SharpitColor.pillarCoach) {
                 WidgetTitle(text: String(localized: "Demander au coach"))
                     .padding(.bottom, 10)
                 HStack(spacing: 6) {
@@ -62,9 +62,9 @@ private struct SendMark: View {
         if renderingMode == .fullColor {
             Image(systemName: "arrow.up")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(SharpitColor.highlightForeground)
+                .foregroundStyle(SharpitColor.primaryForeground)
                 .frame(width: 22, height: 22)
-                .background(SharpitColor.inkAccent, in: Circle())
+                .background(SharpitColor.primary, in: Circle())
         } else {
             Image(systemName: "arrow.up.circle.fill")
                 .font(.system(size: 22))

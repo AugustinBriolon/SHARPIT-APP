@@ -256,3 +256,42 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     #expect(DialFigureScale.factor(for: "1 250") < DialFigureScale.factor(for: "100"))
     #expect(DialFigureScale.factor(for: "—") == 1)
 }
+
+@Test func theWidgetsCarryTheMorningsRecovery() {
+    var folded = fold(sessions: [])
+    folded.gauges = [
+        OvernightGaugeModel(key: .sleep, score: "82", caption: "7 h 12"),
+        OvernightGaugeModel(key: .recovery, score: "71", caption: nil),
+    ]
+    let day = WidgetSnapshot.Day(fold: folded)
+    #expect(day.recovery == WidgetSnapshot.Sleep(score: 71, caption: nil))
+    #expect(WidgetSnapshot.Day(fold: fold(sessions: [])).recovery == nil)
+}
+
+@Test func theResumeWidgetDrawsOnlyTheRingsTheAthleteKeeps() {
+    var day = WidgetSnapshot.Day(fold: fold(sessions: []))
+    day.sleep = WidgetSnapshot.Sleep(score: 82, caption: nil)
+    day.recovery = WidgetSnapshot.Sleep(score: 140, caption: nil)
+    let nutrition = WidgetSnapshot.Nutrition(trainingDayId: "2026-09-28", isConnected: true, calories: 1_155, calorieGoal: 2_310, remaining: 1_155, macros: [])
+    let regularity = WidgetSnapshot.Regularity(
+        trainingDayId: "2026-09-28",
+        days: [
+            .init(date: "2026-09-27", weekdayLabel: "dim.", dayOfMonth: 27, hasActivity: true, isToday: false, isFuture: false),
+            .init(date: "2026-09-28", weekdayLabel: "lun.", dayOfMonth: 28, hasActivity: false, isToday: true, isFuture: false),
+        ],
+        weekSessionCount: 1
+    )
+
+    let all = WidgetResumeRing.rings(day: day, nutrition: nutrition, regularity: regularity, features: V1FeaturePrefs())
+    #expect(all.map(\.kind) == [.sleep, .recovery, .nutrition, .regularity])
+    #expect(all.map(\.value) == ["82", "140", "50 %", "1/2"])
+    #expect(all.map(\.fraction) == [0.82, 1, 0.5, 0.5])
+
+    var hidden = V1FeaturePrefs()
+    hidden.set(.nutrition, false)
+    hidden.set(.regularity, false)
+    let kept = WidgetResumeRing.rings(day: nil, nutrition: nil, regularity: nil, features: hidden)
+    #expect(kept.map(\.kind) == [.sleep, .recovery])
+    #expect(kept.map(\.value) == ["—", "—"])
+    #expect(kept.allSatisfy { $0.fraction == nil })
+}

@@ -1,39 +1,56 @@
 import SwiftUI
 import WidgetKit
 
-/// The ink plate behind a widget, as the app's lead card and the Live Activities (ADR-085): lime
-/// glyphs and white figures on ink read from across the Home Screen, in light and dark alike.
+/// The sheet behind a widget, as every screen of the app (Clinique, `docs/adr/0035`): the
+/// card's white — near-black in dark — with ink figures and each pillar's hue on its marks.
 ///
-/// Clipped to `ContainerRelativeShape` so the fill follows Apple's continuous widget corner —
-/// the same radius Weather and Calendar use — instead of reading as a tighter card inside it.
+/// Clipped to `ContainerRelativeShape` so the fill follows Apple's continuous widget corner.
 /// A tinted or clear Home Screen removes it, as it removes every container background.
 struct WidgetCanvas: View {
     var body: some View {
-        SharpitColor.inkSurface
+        SharpitColor.card
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(ContainerRelativeShape())
     }
 }
 
 extension View {
-    /// Every widget's chrome: the ink plate, and the content read as on a dark surface so the
-    /// tokens resolve to white figures and muted captions on it.
+    /// Every widget's chrome: the sheet, in the phone's own appearance.
     func sharpitWidgetChrome() -> some View {
-        environment(\.colorScheme, .dark)
-            .containerBackground(for: .widget) { WidgetCanvas() }
+        containerBackground(for: .widget) { WidgetCanvas() }
     }
 }
 
-/// A small uppercase line over a block — the app's eyebrow.
+/// A ring as the app draws its scores: a quiet track, the share in the pillar's hue.
+struct WidgetRing: View {
+    /// 0…1; nil leaves the track alone.
+    let fraction: Double?
+    let hue: Color
+    var lineWidth: CGFloat = 6
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(SharpitColor.divider, lineWidth: lineWidth)
+            if let fraction {
+                Circle()
+                    .trim(from: 0, to: min(max(fraction, 0.001), 1))
+                    .stroke(hue, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .widgetAccentable()
+            }
+        }
+        .padding(lineWidth / 2)
+    }
+}
+
+/// A widget's name over its body: quiet, in sentence case as every title of the app.
 struct WidgetEyebrow: View {
     let text: String
     var tint: Color = SharpitColor.mutedForeground
 
     var body: some View {
         Text(text)
-            .font(SharpitTypography.label)
-            .tracking(SharpitTypography.labelTracking)
-            .textCase(.uppercase)
+            .font(SharpitTypography.meta.weight(.semibold))
             .foregroundStyle(tint)
             .lineLimit(1)
     }
@@ -94,7 +111,7 @@ struct DoneSeal: View {
     var body: some View {
         Image(systemName: "checkmark.circle.fill")
             .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(SharpitColor.inkAccent)
+            .foregroundStyle(SharpitColor.pillarRecovery)
             .widgetAccentable()
             .accessibilityLabel("Faite")
     }
@@ -228,7 +245,7 @@ struct WidgetAwaitingData: View {
         VStack(alignment: .leading, spacing: 6) {
             Image(systemName: "circle.hexagonpath.fill")
                 .font(.system(size: 20))
-                .foregroundStyle(SharpitColor.inkAccent)
+                .foregroundStyle(SharpitColor.pillarRecovery)
             WidgetCaption(text: text, lines: 3)
         }
     }

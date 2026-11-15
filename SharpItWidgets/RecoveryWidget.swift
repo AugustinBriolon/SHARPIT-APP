@@ -1,82 +1,70 @@
 import SwiftUI
 import WidgetKit
 
-/// « Réserve »: SharpIt Energy Bank dial (ADR-079).
-/// Callers: SharpItWidgetsBundle.
-/// API: WidgetSnapshot.Day.energyBank from Today fold.
-/// Schema: App Group WidgetSnapshot (no DB).
-/// User: "Implement the plan as specified… Don't stop until you have completed all the to-dos."
-struct EnergyBankWidget: Widget {
+/// « Récupération »: the morning's recovery in its ring, as Résumé reads it. It takes the place
+/// of « Réserve », a score Résumé's rings no longer carry.
+struct RecoveryWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "EnergyBank", provider: SnapshotProvider()) { entry in
+        StaticConfiguration(kind: "Recovery", provider: SnapshotProvider()) { entry in
             Group {
                 if entry.unlocksExtraWidgets {
-                    EnergyBankWidgetView(entry: entry)
+                    RecoveryWidgetView(entry: entry)
                 } else {
-                    WidgetProLocked(title: String(localized: "Réserve"), symbol: "battery.100")
+                    WidgetProLocked(title: String(localized: "Récupération"), symbol: "bolt")
                 }
             }
             .sharpitWidgetChrome()
             .widgetURL(entry.extraLink("/"))
         }
-        .configurationDisplayName("Réserve")
-        .description("Ta réserve d’énergie du jour.")
+        .configurationDisplayName("Récupération")
+        .description("Ta récupération de ce matin.")
         .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryRectangular])
     }
 }
 
-struct EnergyBankWidgetView: View {
+struct RecoveryWidgetView: View {
     let entry: SnapshotEntry
     @Environment(\.widgetFamily) private var family
 
-    private var energy: WidgetSnapshot.EnergyBank? { entry.day?.energyBank }
+    private var recovery: WidgetSnapshot.Sleep? { entry.day?.recovery }
 
     var body: some View {
         // Health values: redacted on a locked device.
         Group {
             switch family {
             case .accessoryCircular:
-                Gauge(value: Double(energy?.score ?? 0), in: 0...100) {
-                    Image(systemName: "battery.100")
+                Gauge(value: Double(recovery?.score ?? 0), in: 0...100) {
+                    Image(systemName: "bolt")
                 } currentValueLabel: {
-                    Text(energy?.score.map(String.init) ?? "—").monospacedDigit()
+                    Text(recovery?.score.map(String.init) ?? "—").monospacedDigit()
                 }
                 .gaugeStyle(.accessoryCircular)
             case .accessoryRectangular:
                 VStack(alignment: .leading, spacing: 1) {
-                    Label("Réserve \(energy?.score.map(String.init) ?? "—")", systemImage: "battery.100")
+                    Label("Récupération \(recovery?.score.map(String.init) ?? "—")", systemImage: "bolt")
                         .font(.headline)
                         .widgetAccentable()
-                    if let caption = energy?.caption {
+                    if let caption = recovery?.caption {
                         Text(caption).font(.caption).lineLimit(1)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             default:
-                EnergyBankSmall(energy: energy, hasDay: entry.day != nil)
+                WidgetFrame(String(localized: "Récupération"), symbol: "bolt", tint: SharpitColor.pillarRecovery) {
+                    if let recovery, let score = recovery.score {
+                        DialReadout(score: CGFloat(score), figure: "\(score)", hue: SharpitColor.pillarRecovery)
+                        WidgetCaption(text: recovery.caption ?? String(localized: "Score de récupération"))
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        WidgetAwaitingData(
+                            text: entry.day != nil
+                                ? String(localized: "Pas encore de récupération lue.")
+                                : String(localized: "Ouvre SharpIt pour charger ta journée.")
+                        )
+                    }
+                }
             }
         }
         .privacySensitive()
-    }
-}
-
-struct EnergyBankSmall: View {
-    let energy: WidgetSnapshot.EnergyBank?
-    let hasDay: Bool
-
-    var body: some View {
-        WidgetFrame(String(localized: "Réserve"), symbol: "battery.100") {
-            if let energy, let score = energy.score {
-                DialReadout(score: CGFloat(score), figure: "\(score)")
-                WidgetCaption(text: energy.caption ?? String(localized: "Énergie du jour"))
-                    .frame(maxWidth: .infinity)
-            } else {
-                WidgetAwaitingData(
-                    text: hasDay
-                        ? String(localized: "Pas encore de réserve calculée.")
-                        : String(localized: "Ouvre SharpIt pour charger ta journée.")
-                )
-            }
-        }
     }
 }

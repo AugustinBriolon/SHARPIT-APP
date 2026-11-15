@@ -68,7 +68,8 @@ extension WidgetSnapshot {
                 Session(id: "p1", isDone: false, title: String(localized: "Seuil 3 × 8 min"), sport: .run, plannedSessionId: "p1",
                         figures: [Figure(value: "55", unit: "min"), Figure(value: "62", unit: "charge")]),
             ],
-            sleep: Sleep(score: 82, caption: "7 h 12")
+            sleep: Sleep(score: 82, caption: "7 h 12"),
+            recovery: Sleep(score: 71, caption: nil)
         ),
         nutrition: Nutrition(
             trainingDayId: dayId(.now),

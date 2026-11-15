@@ -62,7 +62,7 @@ struct NutritionSmall: View {
     var body: some View {
         if let nutrition, nutrition.hasLog {
             WidgetFrame(String(localized: "Nutrition"), symbol: "fork.knife") {
-                DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure)
+                DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure, hue: SharpitColor.pillarNutrition)
                 WidgetCaption(text: nutrition.dialCaption)
                     .frame(maxWidth: .infinity)
             }
@@ -80,7 +80,7 @@ struct NutritionMedium: View {
             WidgetFrame(String(localized: "Nutrition"), symbol: "fork.knife") {
                 HStack(alignment: .bottom, spacing: 16) {
                     VStack(spacing: 2) {
-                        DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure)
+                        DialReadout(score: nutrition.dialScore, figure: nutrition.dialFigure, hue: SharpitColor.pillarNutrition)
                         WidgetCaption(text: nutrition.dialCaption)
                     }
                     .frame(width: 118)

@@ -128,9 +128,9 @@ struct RegularityMarks: View {
     @ViewBuilder
     private func mark(_ day: WidgetSnapshot.RegularityDay) -> some View {
         if day.hasActivity {
-            Circle().fill(SharpitColor.inkAccent).widgetAccentable()
+            Circle().fill(SharpitColor.pillarCoach).widgetAccentable()
         } else if day.isToday {
-            Circle().strokeBorder(SharpitColor.inkAccent, lineWidth: 1.5)
+            Circle().strokeBorder(SharpitColor.pillarCoach, lineWidth: 1.5)
         } else {
             Circle().fill(SharpitColor.mutedForeground.opacity(day.isFuture ? 0.12 : 0.28))
         }
