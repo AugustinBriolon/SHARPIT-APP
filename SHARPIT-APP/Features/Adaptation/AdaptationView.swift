@@ -75,22 +75,23 @@ struct AdaptationSections: View {
                 note: AdaptationReadout.history(adaptation.historyLength)
             )
         }
-        .padding(.horizontal, SharpitSpacing.pageInset)
+        .padding(.horizontal, 24)
         .padding(.bottom, SharpitSpacing.xl)
+        .environment(\.sharpitSectionTitles, true)
     }
 
+    /// The state as a pill, what it means as the page's line, then the index and its trend.
     private var hero: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitHeroScore(
-                score: adaptation.index,
-                label: adaptation.status.label,
-                tone: RecoveryReadout.tone(for: adaptation.status.tone)
-            )
-            if let trend = AdaptationReadout.trend(adaptation.trendLabel) {
-                Label(trend, systemImage: "chart.line.uptrend.xyaxis")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
-            }
+            CliniqueStatusPill(adaptation.status.label, status: RecoveryReadout.status(for: adaptation.status.tone))
+            Text(adaptation.verdict.label)
+                .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+            Text([adaptation.index.map { String(localized: "Indice \(Int($0.rounded())) sur 100") }, AdaptationReadout.trend(adaptation.trendLabel)].compactMap(\.self).joined(separator: " · "))
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
+                .foregroundStyle(SharpitColor.slate)
             CoachDiscussButton(title: String(localized: "Discuter de mon adaptation")) {
                 router.discussWithCoach(about: CoachDiscuss.describe(.today))
             }
