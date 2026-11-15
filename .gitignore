@@ -9,6 +9,9 @@ xcuserdata/
 
 # Local QA captures and agent tooling — machine state, not project source
 .qa-screenshots/
+# App Store Connect CLI state and store captures (49 MB of PNG): regenerable, kept off the history
+.asc/
+/screenshots/
 .agents/
 skills-lock.json
 
