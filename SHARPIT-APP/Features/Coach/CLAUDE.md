@@ -76,3 +76,6 @@ track, the form on its own line (another scale). Sleep and form: a column a day 
 form as a dot — and a tap on a day reads its two figures (`CoachDataCardLayout`).
 
 The bar reads « nouvelle conversation » then « ⋯ » (Conversations, Mémoire, Consommation), the list of actions on the right.
+
+« Consommation » gives a time only once the budget is spent (« De nouveau disponible »): a rolling
+window has no reset date to show.

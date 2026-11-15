@@ -405,3 +405,7 @@ inside a screen that has its own sheet. `SharpitScreenDemo offline` / `notfound`
 **Scales.** A rating is answered on `CliniqueScale`: its name, the answer in figures and words, one
 track of steps to tap or slide on (44 pt under the finger, a notch per step), the two ends named
 under. Ink only. No grid of numbered tiles.
+
+**Settings rows** carry their page's glyph (`SharpitSettingsLabel(symbol:)`, `SharpitSettingsGlyph`):
+plain ink in a fixed column, no tile. A sheet presented from a forced-dark region must be handed the
+app's real scheme (`ActivityStatusButton.drawerScheme`), or it opens dark.

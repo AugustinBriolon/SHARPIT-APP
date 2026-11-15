@@ -66,3 +66,10 @@ button any more (`cliniqueReturnButton` is gone, the athlete's call): the bar's 
 Sommeil reads the night's course from Apple Health for the day on screen (`store.selectedDay`), and
 never draws a night with another one's course; a night without a course keeps the four lanes, one
 block per stage.
+
+**Sommeil, course and widgets (2026-11-15).** The night's course by stage exists only where Apple
+Health holds stage samples for that night; a source that sent totals alone has none. Then the page
+shows Couché / Levé / Au lit as figures and a line saying so — never a chart made up from totals
+(the lanes are gone). « Ce soir » is a row of figures (`SleepFigures`) and the need cut by what adds
+to it (`SleepNeedBar`, drawn only when something does); « Banque de sommeil » draws the last seven
+nights against the need (`SleepGapChart`) over the balances.

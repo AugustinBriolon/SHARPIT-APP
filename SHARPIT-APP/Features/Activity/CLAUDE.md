@@ -124,3 +124,9 @@ beside the verdict pill, the coach's sentences as hairline lines, « En parler a
 « Réanalyser » docked; « Délier » closes the scroll. The mock-up's « Critère par critère » pills are
 not built: the analysis carries sentences, not a status per criterion. On the activity page the
 compliance block sits on the sheet (title, pill, score, summary, a line into the reading), no card.
+
+**Goals on a session (2026-11-15).** « Lier à un objectif » is a titled sheet of hairline rows and
+lists only races not yet run on the session's day, plus the one linked (`ActivityGoalCandidates`).
+`Activity.goalId` means *raced for*: the server records a race result on it, so a training session is
+never auto-linked that way. A session done from a goal's plan reads « Prépare l'objectif » from its
+planned session's goal (`V1ActivityPlannedSession.goal`, web `plannedSessionSummarySelect`).
