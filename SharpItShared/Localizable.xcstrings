@@ -1363,6 +1363,7 @@
       }
     },
     "%@ %lld sur 5" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1379,6 +1380,7 @@
       }
     },
     "%@ %lld sur 5, %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4037,6 +4039,7 @@
       }
     },
     "+%lld mg" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4053,6 +4056,7 @@
       }
     },
     "+%lld ml" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4085,6 +4089,7 @@
       }
     },
     "± 15 min" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4101,6 +4106,7 @@
       }
     },
     "± 20 mg" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4117,6 +4123,7 @@
       }
     },
     "± 100 ml" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6772,6 +6779,7 @@
       }
     },
     "Ajouter 15 minutes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6788,6 +6796,7 @@
       }
     },
     "Ajouter 25 centilitres" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8097,6 +8106,7 @@
       }
     },
     "Analyses indisponibles" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9741,6 +9751,7 @@
       }
     },
     "Augmenter de 20 milligrammes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9757,6 +9768,7 @@
       }
     },
     "Augmenter de 100 millilitres" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11179,6 +11191,7 @@
       }
     },
     "Caféine consommée sur la journée" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13564,6 +13577,7 @@
       }
     },
     "Chargement impossible" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -15544,6 +15558,7 @@
       }
     },
     "Consigne" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -15571,6 +15586,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Consommation"
+          }
+        }
+      }
+    },
+    "Consommée sur la journée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consumed over the day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consommée sur la journée"
           }
         }
       }
@@ -18712,6 +18743,7 @@
       }
     },
     "Diminuer de 20 milligrammes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -18728,6 +18760,7 @@
       }
     },
     "Diminuer de 100 millilitres" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -19598,6 +19631,7 @@
       }
     },
     "Eau et liquides consommés sur la journée" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -19609,6 +19643,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eau et liquides consommés sur la journée"
+          }
+        }
+      }
+    },
+    "Eau et liquides sur la journée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Water and liquids over the day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eau et liquides sur la journée"
           }
         }
       }
@@ -20999,6 +21049,7 @@
       }
     },
     "Énergie du jour" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24784,6 +24835,7 @@
       }
     },
     "Historique indisponible" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24928,6 +24980,7 @@
       }
     },
     "Humeur & Ressenti" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24939,6 +24992,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Humeur & Ressenti"
+          }
+        }
+      }
+    },
+    "Humeur et ressenti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mood and feeling"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Humeur et ressenti"
           }
         }
       }
@@ -31820,6 +31889,7 @@
       }
     },
     "Mes repères" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -32076,6 +32146,7 @@
       }
     },
     "mg" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -32156,6 +32227,7 @@
       }
     },
     "ml" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -32199,6 +32271,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mobilité avant"
+          }
+        }
+      }
+    },
+    "Mobilité et étirements" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobility and stretches"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobilité et étirements"
           }
         }
       }
@@ -33735,6 +33823,7 @@
       }
     },
     "Note pour le coach (optionnel)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -35536,6 +35625,22 @@
         }
       }
     },
+    "Ouvre la durée de conduite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the driving time"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre la durée de conduite"
+          }
+        }
+      }
+    },
     "Ouvre la mémoire du coach" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -35725,6 +35830,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ouvre le repas"
+          }
+        }
+      }
+    },
+    "Ouvre le ressenti du matin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the morning check-in"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre le ressenti du matin"
           }
         }
       }
@@ -36706,7 +36827,24 @@
         }
       }
     },
+    "Pas encore de récupération lue." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No recovery read yet."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore de récupération lue."
+          }
+        }
+      }
+    },
     "Pas encore de réserve calculée." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -37306,6 +37444,7 @@
       }
     },
     "Plan indisponible" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -39566,6 +39705,22 @@
         }
       }
     },
+    "Quatre réponses, de 1 à 5. Elles ajustent la séance du jour." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Four answers, from 1 to 5. They adjust today's session."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quatre réponses, de 1 à 5. Elles ajustent la séance du jour."
+          }
+        }
+      }
+    },
     "Quel côté ?" : {
       "localizations" : {
         "en" : {
@@ -40309,6 +40464,7 @@
       }
     },
     "Records indisponibles" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -40385,6 +40541,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "RÉCUPÉRATION"
+          }
+        }
+      }
+    },
+    "Récupération %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recovery %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récupération %@"
           }
         }
       }
@@ -40870,6 +41042,7 @@
       }
     },
     "Réinitialiser à 0" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -40995,6 +41168,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Relue par le coach"
+          }
+        }
+      }
+    },
+    "Remettre à zéro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to zero"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remettre à zéro"
           }
         }
       }
@@ -41449,6 +41638,7 @@
       }
     },
     "Repères" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -41460,6 +41650,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Repères"
+          }
+        }
+      }
+    },
+    "Repères dans la norme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markers in their norm"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repères dans la norme"
           }
         }
       }
@@ -42075,6 +42281,7 @@
       }
     },
     "Réserve" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -42091,6 +42298,7 @@
       }
     },
     "Réserve %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -42317,6 +42525,7 @@
       }
     },
     "Ressenti indisponible" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -42657,6 +42866,7 @@
       }
     },
     "Retirer 15 minutes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -43825,6 +44035,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Score %lld / 100"
+          }
+        }
+      }
+    },
+    "Score de récupération" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recovery score"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Score de récupération"
           }
         }
       }
@@ -48338,6 +48564,22 @@
         }
       }
     },
+    "Ta récupération de ce matin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This morning's recovery."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta récupération de ce matin."
+          }
+        }
+      }
+    },
     "Ta récupération n'a pas pu être chargée." : {
       "localizations" : {
         "en" : {
@@ -48387,7 +48629,24 @@
         }
       }
     },
+    "Ta réponse n'a pas pu être enregistrée. Réessaie dans un instant." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answer could not be saved. Try again in a moment."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta réponse n'a pas pu être enregistrée. Réessaie dans un instant."
+          }
+        }
+      }
+    },
     "Ta réserve d’énergie du jour." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -49141,6 +49400,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tes aliments"
+          }
+        }
+      }
+    },
+    "Tes anneaux du jour : sommeil, récupération, nutrition, régularité." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's rings: sleep, recovery, nutrition, regularity."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tes anneaux du jour : sommeil, récupération, nutrition, régularité."
           }
         }
       }
@@ -52127,6 +52402,22 @@
         }
       }
     },
+    "Un long trajet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A long trip"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un long trajet"
+          }
+        }
+      }
+    },
     "Un mot (facultatif)" : {
       "localizations" : {
         "en" : {
@@ -52155,6 +52446,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un mot pour le coach"
+          }
+        }
+      }
+    },
+    "Un mot pour le coach (optionnel)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A word for the coach (optional)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un mot pour le coach (optionnel)"
           }
         }
       }
@@ -52305,6 +52612,38 @@
         }
       }
     },
+    "Un trajet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A trip"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un trajet"
+          }
+        }
+      }
+    },
+    "Un trajet court" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A short trip"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un trajet court"
+          }
+        }
+      }
+    },
     "Un truc qui coince, une idée, une envie ? Écris-le comme ça vient : je lis tout. Ton message part avec ton identifiant SharpIt et la version de l’app, rien d’autre." : {
       "localizations" : {
         "en" : {
@@ -52317,6 +52656,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un truc qui coince, une idée, une envie ? Écris-le comme ça vient : je lis tout. Ton message part avec ton identifiant SharpIt et la version de l’app, rien d’autre."
+          }
+        }
+      }
+    },
+    "Un verre ≈ 25 cl" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A glass ≈ 25 cl"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un verre ≈ 25 cl"
           }
         }
       }
@@ -52577,6 +52932,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Une FTP, une VMA, une charge…"
+          }
+        }
+      }
+    },
+    "Une heure" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An hour"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une heure"
           }
         }
       }
@@ -53379,6 +53750,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vérifie ta connexion, puis réessaie."
+          }
+        }
+      }
+    },
+    "Vérifie ton réseau, puis réessaie. Ce que tu as déjà lu reste là." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your network, then try again. What you already read stays here."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifie ton réseau, puis réessaie. Ce que tu as déjà lu reste là."
           }
         }
       }
@@ -54313,194 +54700,146 @@
         }
       }
     },
-    "Remettre à zéro" : {
+    "Ce qui est tenu" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reset to zero"
+            "value" : "What held"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remettre à zéro"
+            "value" : "Ce qui est tenu"
           }
         }
       }
     },
-    "Consommée sur la journée" : {
+    "Critère par critère" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Consumed over the day"
+            "value" : "Criterion by criterion"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Consommée sur la journée"
+            "value" : "Critère par critère"
           }
         }
       }
     },
-    "Eau et liquides sur la journée" : {
+    "Dur" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Water and liquids over the day"
+            "value" : "Hard"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eau et liquides sur la journée"
+            "value" : "Dur"
           }
         }
       }
     },
-    "Un verre ≈ 25 cl" : {
+    "Très dur" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A glass ≈ 25 cl"
+            "value" : "Very hard"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un verre ≈ 25 cl"
+            "value" : "Très dur"
           }
         }
       }
     },
-    "Un trajet court" : {
+    "Fluides" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A short trip"
+            "value" : "Smooth"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un trajet court"
+            "value" : "Fluides"
           }
         }
       }
     },
-    "Un trajet" : {
+    "Ratées" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A trip"
+            "value" : "Missed"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un trajet"
+            "value" : "Ratées"
           }
         }
       }
     },
-    "Une heure" : {
+    "Quatre réponses, d'un glissement du doigt. Elles ajustent la séance du jour." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "An hour"
+            "value" : "Four answers, each a slide of the finger. They adjust today's session."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Une heure"
+            "value" : "Quatre réponses, d'un glissement du doigt. Elles ajustent la séance du jour."
           }
         }
       }
     },
-    "Un long trajet" : {
+    "Ce lien ne mène plus nulle part." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A long trip"
+            "value" : "This link no longer leads anywhere."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un long trajet"
+            "value" : "Ce lien ne mène plus nulle part."
           }
         }
       }
     },
-    "Mobilité et étirements" : {
+    "Page introuvable" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mobility and stretches"
+            "value" : "Page not found"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mobilité et étirements"
-          }
-        }
-      }
-    },
-    "Ta réponse n'a pas pu être enregistrée. Réessaie dans un instant." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your answer could not be saved. Try again in a moment."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ta réponse n'a pas pu être enregistrée. Réessaie dans un instant."
-          }
-        }
-      }
-    },
-    "Ouvre le ressenti du matin" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opens the morning check-in"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvre le ressenti du matin"
-          }
-        }
-      }
-    },
-    "Ouvre la durée de conduite" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opens the driving time"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvre la durée de conduite"
+            "value" : "Page introuvable"
           }
         }
       }
