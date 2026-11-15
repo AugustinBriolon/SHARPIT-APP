@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// « Mobilité et étirements » on a session already done: the warm-up and the stretches the plan
+/// « Échauffement et étirements » on a session already done: the warm-up and the stretches the plan
 /// carried, each with its « Fait / Raccourci / Sauté » — so what was forgotten at the time can
 /// still be said afterwards. Read from the plan session the activity is linked to; nothing
 /// shows when that session carried none.
@@ -15,10 +15,10 @@ struct ActivityRoutinesSection: View {
     var body: some View {
         if let routines, !routines.warmup.moves.isEmpty || !routines.cooldown.moves.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                ActivitySectionTitle(String(localized: "Mobilité et étirements"))
+                ActivitySectionTitle(String(localized: "Échauffement et étirements"))
                     .padding(.bottom, 4)
                 if !routines.warmup.moves.isEmpty {
-                    SessionRoutinePanel(title: String(localized: "Mobilité avant"), routine: routines.warmup) { record($0, .warmup) }
+                    SessionRoutinePanel(title: String(localized: "Échauffement avant"), routine: routines.warmup) { record($0, .warmup) }
                 }
                 if !routines.cooldown.moves.isEmpty {
                     SessionRoutinePanel(title: String(localized: "Étirements ciblés"), routine: routines.cooldown) { record($0, .cooldown) }

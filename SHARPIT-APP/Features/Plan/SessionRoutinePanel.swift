@@ -200,7 +200,7 @@ struct SessionRoutinePanel: View {
     }
 }
 
-/// « Mobilité et étirements »: what goes around a session, in a drawer of its own — the whole in
+/// « Échauffement et étirements »: what goes around a session, in a drawer of its own — the whole in
 /// time, then the mobility before and the stretches after, each laid open with its answer.
 struct SessionRoutinesSheet: View {
     let routines: V1SessionRoutines
@@ -213,12 +213,12 @@ struct SessionRoutinesSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 VStack(alignment: .leading, spacing: 18) {
-                    CliniqueSheetTitle(String(localized: "Mobilité et étirements"))
+                    CliniqueSheetTitle(String(localized: "Échauffement et étirements"))
                     if let sequence = SessionSequence.of(durationMin: durationMin, routines: routines) {
                         SessionSequenceBar(sequence: sequence)
                     }
                 }
-                panel(String(localized: "Mobilité avant"), routines.warmup, .warmup)
+                panel(String(localized: "Échauffement avant"), routines.warmup, .warmup)
                 panel(String(localized: "Étirements ciblés"), routines.cooldown, .cooldown)
             }
             .padding(.horizontal, 24)

@@ -12,7 +12,7 @@ struct SessionSequence: Equatable {
 
         var label: String {
             switch self {
-            case .before: String(localized: "Mobilité")
+            case .before: String(localized: "Échauffement")
             case .session: String(localized: "Séance")
             case .after: String(localized: "Étirements")
             }

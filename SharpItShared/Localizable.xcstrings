@@ -32348,34 +32348,34 @@
         }
       }
     },
-    "Mobilité avant" : {
+    "Échauffement avant" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mobility before"
+            "value" : "Warm-up before"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mobilité avant"
+            "value" : "Échauffement avant"
           }
         }
       }
     },
-    "Mobilité et étirements" : {
+    "Échauffement et étirements" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mobility and stretches"
+            "value" : "Warm-up and stretches"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mobilité et étirements"
+            "value" : "Échauffement et étirements"
           }
         }
       }

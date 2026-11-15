@@ -18,7 +18,7 @@ struct SessionActionsMenu: View {
         Menu {
             if let onRoutines {
                 Button(action: onRoutines) {
-                    Label("Mobilité et étirements", systemImage: "figure.flexibility")
+                    Label("Échauffement et étirements", systemImage: "figure.flexibility")
                 }
             }
             if let watch {
