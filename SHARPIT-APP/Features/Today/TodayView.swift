@@ -887,7 +887,8 @@ private struct TodayFoldView: View {
             ResumeScoreRow(
                 gauges: fold.isPlateOnly ? OvernightGaugeModel.placeholders : fold.gauges,
                 nutritionPercent: ResumeScoreReadout.nutritionPercent(nutritionDay),
-                showsNutrition: features.isOn(.nutrition) && nutrition != nil,
+                // The column is the feature's, not the read's: a day turned to keeps it, empty until read.
+                showsNutrition: features.isOn(.nutrition),
                 week: regularity == nil ? nil : weekTotals,
                 consistency: regularity,
                 sleepOverrideCaption: sleepOverrideCaption,

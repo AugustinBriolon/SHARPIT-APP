@@ -11,6 +11,10 @@ struct SharpitLaunchSplash: View {
     var body: some View {
         ZStack {
             SharpitCanvasBackground()
+            // The welcome's and the sheets' wash: the launch opens on the app's own page.
+            LinearGradient(colors: [CliniqueWash.good.color, SharpitColor.card], startPoint: .top, endPoint: .bottom)
+                .frame(height: 360)
+                .frame(maxHeight: .infinity, alignment: .top)
             Self.mark
                 .symbolEffect(.breathe, isActive: !reduceMotion)
         }
