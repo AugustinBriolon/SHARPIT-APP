@@ -48,3 +48,12 @@ screen draws them (`WidgetResumeRing.rings`, in `SharpItShared`, tested), a hidd
 left out. « Récupération » (`RecoveryWidget`, `Day.recovery` from Résumé's gauge) takes the place
 of « Réserve », a score Résumé's rings no longer carry; `Day.energyBank` stays decodable, unread.
 Not seen on a Home Screen: the simulator's widget gallery was not driven.
+
+**Verdict, Dernière activité: removed (the athlete's call, 2026-11-15).** Both widgets are gone
+(little use, poor faces): the bundle no longer declares them, so one already placed shows the
+system's empty tile until removed. The snapshot keeps `day.verdict` (Résumé's fold writes it; no
+widget reads it) and lost `lastActivity` with its publisher; a stored `lastActivity` key is ignored
+on decode, and `erase` still deletes the map PNG an earlier build wrote. « Résumé » small shows each
+ring's glyph instead of its figure, and `WidgetRing`'s track fades on a tinted or clear Home Screen,
+where an opaque track read as a full ring.
+

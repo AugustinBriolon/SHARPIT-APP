@@ -130,44 +130,6 @@ enum WidgetSnapshotPublisher {
         update { $0.training = WidgetSnapshot.Training(activities: activities) }
     }
 
-    /// Most recent GPS session for the « Dernière activité » widget (trail coords in the snapshot).
-    static func publishLastActivity(
-        from activities: [V1ActivityListItem],
-        routes: [String: [V1ActivityCoordinate]]
-    ) async {
-        let latest = activities
-            .sorted { $0.date > $1.date }
-            .first { activity in
-                !activity.id.isEmpty && (routes[activity.id]?.count ?? 0) >= 2
-            }
-        guard let activity = latest, let route = routes[activity.id], route.count >= 2 else {
-            if WidgetSnapshotStore.update({ $0.lastActivity = nil }) {
-                WidgetCenter.shared.reloadTimelines(ofKind: "LastActivity")
-            }
-            ActivityRouteMapImage.erase()
-            return
-        }
-        let stats = ActivityRouteStats(activity)
-        let next = WidgetSnapshot.LastActivity(
-            id: activity.id,
-            title: activity.title ?? activity.type.label,
-            sport: activity.type,
-            dayId: WidgetSnapshot.dayId(activity.date),
-            distanceValue: stats.distance.value,
-            distanceUnit: stats.distance.unit,
-            durationValue: stats.duration.value,
-            durationUnit: stats.duration.unit,
-            paceLabel: stats.paceLabel,
-            paceValue: stats.pace.value,
-            paceUnit: stats.pace.unit,
-            route: route.map { [$0.latitude, $0.longitude] }
-        )
-        update { $0.lastActivity = next }
-        WidgetCenter.shared.reloadTimelines(ofKind: "LastActivity")
-        // No MapKit PNG: the widget face is text-only (WidgetKit has no reliable map surface).
-        ActivityRouteMapImage.erase()
-    }
-
     /// Nil clears it: a race done or deleted leaves no countdown behind.
     static func publish(_ goals: [V1Goal]) {
         update { $0.goal = WidgetSnapshot.Goal(goals: goals) }
@@ -185,7 +147,6 @@ enum WidgetSnapshotPublisher {
 
     static func erase() {
         WidgetSnapshotStore.erase()
-        ActivityRouteMapImage.erase()
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -212,7 +173,7 @@ enum WidgetSnapshotPublisher {
         async let nutritionRead = try? nutrition.nutrition(trainingDayId: dayId, token: token)
         async let overviewRead = try? body.bodyOverview(token: token)
         async let profileRead = try? profile.athleteProfile(token: token)
-        // The newest page holds the fortnight Training reads and the last route.
+        // The newest page holds the fortnight Training reads.
         async let activitiesRead = try? activities.activityPage(before: nil, limit: 60, token: token)
         async let goalsRead = try? goals.goals(token: token)
         let (payload, food, overview, athlete) = await (todayRead, nutritionRead, overviewRead, profileRead)
@@ -223,12 +184,7 @@ enum WidgetSnapshotPublisher {
         }
         if let food { publish(food) }
         if let overview { publish(overview, targetKilograms: athlete?.targetWeightKg) }
-        if let recorded {
-            publish(recorded)
-            if let previews = try? await activities.routePreviews(token: token) {
-                await publishLastActivity(from: recorded, routes: previews)
-            }
-        }
+        if let recorded { publish(recorded) }
         if let races { publish(races) }
         return payload != nil || food != nil || overview != nil || recorded != nil || races != nil
     }

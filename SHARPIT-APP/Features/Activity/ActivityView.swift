@@ -212,12 +212,6 @@ struct ActivityView: View {
                         phase = activities.isEmpty ? .empty : .loaded(activities)
                     }
                 }
-                // Widget « Dernière activité » only — the list stays as plain rows.
-                let snapshotActivities = activities
-                Task(priority: .utility) {
-                    guard let previews = try? await client.routePreviews(token: token) else { return }
-                    await WidgetSnapshotPublisher.publishLastActivity(from: snapshotActivities, routes: previews)
-                }
                 return true
             } catch is CancellationError {
                 return false
