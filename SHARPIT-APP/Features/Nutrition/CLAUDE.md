@@ -61,3 +61,16 @@ meal as the title with a cross, a capsule search field beside the scanner, chips
 the foods as lines split by hairlines — name, « 100 g · 124 kcal » and what it is, the score at the
 trailing edge (`FoodProductRow`, everywhere it is listed). A food still pushes its portion page: the
 mock-up's portion stepper docked on the search is not built.
+
+**Repas et portion, Clinique.** A meal's page (`FoodLogMealPage`) follows its mock-up: the meal as
+the large title under the nutrition wash, its energy read big with « 31 % de ta journée »
+(`FoodLogMealReadout.share`, only against a target), the macros' split on one bar and their grams
+(`FoodPortionPreview`, shared by the portion, the edit sheet and a recipe), « Qualité du repas » as a
+bordered card, each food a line — name, grams, energy, its own split — and « Ajouter un aliment »
+docked (« Copier hier » beside it while the meal is empty). The portion (`FoodPortionPage`) reads the
+grams big between − and + (10 g a tap, typed in place too, `FoodGramsRows`), the presets as chips,
+then « Pour 200 g » a line per nutrient marked in its hue (`FoodNutrientLines`) and « Ajouter au
+dîner » (`FoodLogMeal.addTitle`). Macros keep one hue everywhere — carbs blue, protein purple, fat
+green (`NutritionReadout.Macro.tone`) — and one order. `SharpitScreenDemo meal` / `portion` show them.
+The mock-ups' recipe, saved meals, own food, food quality, targets and import pages take the shared
+list's shape; their own heroes are not built yet.
