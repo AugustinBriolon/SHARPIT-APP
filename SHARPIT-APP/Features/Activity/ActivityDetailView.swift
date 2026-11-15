@@ -188,6 +188,7 @@ struct ActivityDetailView: View {
                                     onShowCompliance: { showingCompliance = true },
                                     onShowSubjective: { openSubjective(for: detail) },
                                     clearsBackButton: false,
+                                    tokenProvider: tokenProvider,
                                     isMapExpanded: isMapExpanded,
                                     onExpandToggle: {
                                         withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
@@ -228,6 +229,7 @@ struct ActivityDetailView: View {
                             onShowCompliance: { showingCompliance = true },
                             onShowSubjective: { openSubjective(for: detail) },
                             clearsBackButton: true,
+                            tokenProvider: tokenProvider,
                             isMapExpanded: false,
                             onExpandToggle: {},
                             reassessments: reassessments(for: detail),
@@ -856,6 +858,8 @@ private struct ActivityDetailContent: View {
     /// Without a map the panel starts at the top of the screen, under the floating back
     /// button, and has to leave room for it. Below a map it does not.
     let clearsBackButton: Bool
+    /// Reads and writes the linked plan session's routines; nil where the page cannot.
+    var tokenProvider: (() async throws -> String)?
     var isMapExpanded: Bool = false
     var onExpandToggle: () -> Void = {}
     var reassessments: [PainReassessment] = []
@@ -1000,6 +1004,10 @@ private struct ActivityDetailContent: View {
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 2)), value: appeared)
+
+            if let sessionId = detail.plannedSession?.id, let tokenProvider {
+                ActivityRoutinesSection(sessionId: sessionId, around: detail.date, tokenProvider: tokenProvider)
+            }
 
             if !reassessments.isEmpty {
                 PainReassessmentSection(items: reassessments, onAnswer: onReassess)
