@@ -144,23 +144,17 @@ struct SharpitDashedAddButton: View {
     }
 }
 
-/// A sheet's actions, docked at the bottom over the scrolled content: a fade keeps them
-/// readable when a long list passes under them.
+/// A sheet's actions, docked at its foot in one glass bar floating over the scrolled content,
+/// as every Clinique sheet docks them.
 struct SharpitActionDock<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
         VStack(spacing: SharpitSpacing.xs) { content }
-            .padding(.horizontal, SharpitSpacing.pageInset)
-            .padding(.vertical, SharpitSpacing.sm)
-            .background(
-                LinearGradient(
-                    colors: [SharpitColor.card.opacity(0), SharpitColor.card.opacity(0.9), SharpitColor.card],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea(edges: .bottom)
-            )
+            .padding(8)
+            .sharpitGlassControl(in: RoundedRectangle(cornerRadius: 34, style: .continuous), fallback: SharpitColor.tile)
+            .padding(.horizontal, SharpitSpacing.md)
+            .padding(.bottom, SharpitSpacing.xs)
     }
 }
 

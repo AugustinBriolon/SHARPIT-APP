@@ -1,36 +1,52 @@
 import SwiftUI
 
-/// The system's inset-grouped `List`, dressed in SHARPIT's canvas and typeface
-/// (`docs/adr/0008`).
+/// A `List` as a Clinique sheet (`docs/adr/0035`): the sheet's own white, rows read straight on
+/// it and split by hairlines, a section opening on its title — no grey canvas, no card per group.
 ///
-/// Structure, row metrics, separators and Dynamic Type stay the system's; the brand lives in
-/// the palette and the words. A settings-like screen is this list and nothing custom on top.
+/// Row metrics, swipe actions, separators and Dynamic Type stay the system's (`docs/adr/0008`);
+/// only the surface, the margins and the section titles are the app's.
 extension View {
     /// Apply to the `List`. The default font and ink are set here so every row label — a
     /// `Label`, a `Toggle`, a `LabeledContent` — reads in the brand body face and text colour
     /// without each one asking; left alone they fall back to SF Pro in system black.
-    func sharpitGroupedList() -> some View {
-        listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
-            .background(SharpitElevatedColor.groupedCanvas.ignoresSafeArea())
-            .font(SharpitTypography.body)
-            .foregroundStyle(SharpitColor.foreground)
-    }
-
-    /// Apply to a `Section`: its rows take the panel tone instead of the system grey, which
-    /// would sit beside the brand canvas as a foreign colour. A fill only — a grouped row
-    /// carries no shadow of its own.
-    func sharpitListRows() -> some View {
-        modifier(SharpitListRowSurface())
+    /// `wash` puts the screen's one wash at the top of the sheet, for a page read on its own.
+    @ViewBuilder
+    func sharpitGroupedList(wash: CliniqueWash? = nil) -> some View {
+        let list = listStyle(.insetGrouped).scrollContentBackground(.hidden)
+        if let wash {
+            list.cliniqueSheet(wash: wash, height: 240).modifier(SharpitListDress())
+        } else {
+            list.background(SharpitCanvasBackground()).modifier(SharpitListDress())
+        }
     }
 }
 
-private struct SharpitListRowSurface: ViewModifier {
-    @Environment(\.sharpitElevation) private var elevation
-
+private struct SharpitListDress: ViewModifier {
     func body(content: Content) -> some View {
-        content.listRowBackground(SharpitSurfaceStyle.panel.fill(at: elevation))
+        content
+            .contentMargins(.horizontal, 22, for: .scrollContent)
+            .listSectionSpacing(.compact)
+            .font(SharpitTypography.body)
+            .foregroundStyle(SharpitColor.foreground)
+            .environment(\.sharpitSectionTitles, true)
     }
+}
+
+extension View {
+    /// Apply to a `Section`: its rows sit on the sheet, edge to edge of its margins, split by
+    /// the app's hairline.
+    func sharpitListRows() -> some View {
+        listRowBackground(Color.clear)
+            // Two points inside the cell, which clips a glyph's overhang at its very edge.
+            .listRowInsets(EdgeInsets(top: 10, leading: 2, bottom: 10, trailing: 2))
+            .listRowSeparatorTint(SharpitColor.divider)
+            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+    }
+}
+
+extension EnvironmentValues {
+    /// Inside a Clinique list a section marker is the section's title, not a caption.
+    @Entry var sharpitSectionTitles = false
 }
 
 /// A section title in the app's eyebrow voice, so a grouped list reads like the screens
