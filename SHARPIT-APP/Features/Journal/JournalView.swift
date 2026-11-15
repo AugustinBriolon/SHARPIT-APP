@@ -50,7 +50,7 @@ struct JournalView: View {
     var body: some View {
         entries
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .cliniqueSheet(wash: .neutral, height: 240)
+            .cliniqueSheet(wash: .coach, height: 240)
             .navigationTitle("Journal")
             .navigationBarTitleDisplayMode(.inline)
             // The bar carries the way back and the signals' choice; the name opens the page.
@@ -194,24 +194,24 @@ struct JournalView: View {
             + store.visibleTrackables.filter { [.caffeine, .hydration, .driving].contains($0.kind) }
         return VStack(alignment: .leading, spacing: 26) {
             if !metrics.isEmpty {
-                JournalGroup(title: String(localized: "Journée")) {
+                JournalGroup(title: String(localized: "Journée"), hue: SharpitColor.pillarNutrition) {
                     ForEach(metrics) { trackable in metricLine(trackable) }
                 }
             }
             if !pending, !store.checklist.isEmpty {
-                JournalGroup(title: String(localized: "Mesuré pour toi"), hint: String(localized: "Lu de tes données. Rien à noter.")) {
+                JournalGroup(title: String(localized: "Mesuré pour toi"), hint: String(localized: "Lu de tes données. Rien à noter."), hue: SharpitColor.pillarRecovery) {
                     ForEach(store.checklist) { item in JournalChecklistLine(item: item) }
                 }
             }
             if !store.priorNightTrackables.isEmpty {
-                JournalGroup(title: String(localized: "Nuit dernière")) {
+                JournalGroup(title: String(localized: "Nuit dernière"), hue: SharpitColor.pillarSleep) {
                     ForEach(store.priorNightTrackables) { trackable in
                         factorLine(id: trackable.id, label: trackable.label, symbol: trackable.symbolName, pending: pending)
                     }
                 }
             }
             if !store.dayTrackables.isEmpty || !store.visibleCustomItems.isEmpty {
-                JournalGroup(title: String(localized: "Signaux du jour")) {
+                JournalGroup(title: String(localized: "Signaux du jour"), hue: SharpitColor.pillarCoach) {
                     ForEach(store.dayTrackables) { trackable in
                         factorLine(id: trackable.id, label: trackable.label, symbol: trackable.symbolName, pending: pending)
                     }
@@ -469,6 +469,7 @@ struct JournalLines<Content: View>: View {
 struct JournalGroup<Content: View>: View {
     let title: String
     var hint: String? = nil
+    var hue: Color? = nil
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -486,6 +487,7 @@ struct JournalGroup<Content: View>: View {
             }
             JournalLines { content }
                 .padding(.top, 8)
+                .environment(\.journalHue, hue)
         }
     }
 }
@@ -494,15 +496,22 @@ struct JournalGroup<Content: View>: View {
 struct JournalRowIcon: View {
     static let tile: CGFloat = 32
     let symbolName: String
+    /// The group's hue, as a glyph on its own faint wash — a mark, never the line's text.
+    var hue: Color? = nil
 
     var body: some View {
         Image(systemName: symbolName)
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(SharpitColor.foreground)
+            .foregroundStyle(hue ?? SharpitColor.foreground)
             .frame(width: Self.tile, height: Self.tile)
-            .sharpitConcentricBackground(SharpitColor.tile, minimum: 9)
+            .sharpitConcentricBackground(hue?.opacity(0.14) ?? SharpitColor.tile, minimum: 9)
             .accessibilityHidden(true)
     }
+}
+
+extension EnvironmentValues {
+    /// The hue a journal group lends its lines' glyphs.
+    @Entry var journalHue: Color? = nil
 }
 
 /// A journal line: a name over what it holds, its control at the trailing edge. The words open
@@ -514,10 +523,11 @@ struct JournalLine<Control: View>: View {
     var detail: String? = nil
     var onOpen: (() -> Void)? = nil
     @ViewBuilder let control: Control
+    @Environment(\.journalHue) private var hue
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            if let symbol { JournalRowIcon(symbolName: symbol) }
+            if let symbol { JournalRowIcon(symbolName: symbol, hue: hue) }
             if let onOpen {
                 Button(action: onOpen) { words.contentShape(.rect) }
                     .buttonStyle(.sharpitPressable)

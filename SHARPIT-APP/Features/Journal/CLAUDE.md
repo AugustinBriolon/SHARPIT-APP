@@ -58,3 +58,7 @@ otherwise — and titles each group.
 « Mesuré pour toi », « Nuit dernière », « Signaux du jour » (`JournalGroup`) — each line opening on
 its glyph. A signal shows both answers (« Non » / « Oui », `JournalFactorLine`): a tap gives one, a
 second tap on it takes it back (`JournalReadout.tapped`); the cycling capsule is gone.
+
+**Hues.** Each group lends its lines' glyphs a data hue on its faint wash (`journalHue`: nutrition
+for the day's values, recovery for what was measured, sleep for the night, coach for the signals);
+the sheet takes the coach's wash. Words and answers stay ink.
