@@ -139,6 +139,8 @@ struct SanteTable: View {
     struct Row: Identifiable {
         let id: String
         let name: String
+        /// A glyph before the name, to tell the markers apart at a glance.
+        var symbol: String? = nil
         var status: (word: String, status: CliniqueStatus)? = nil
         let value: String
     }
@@ -146,6 +148,8 @@ struct SanteTable: View {
     let title: String
     let rows: [Row]
     var onOpen: ((Row) -> Void)? = nil
+    /// A last line that leads to the whole list, when the table shows a part of it.
+    var more: (title: String, action: () -> Void)? = nil
 
     private static let nameWidth: CGFloat = 132
 
@@ -177,16 +181,41 @@ struct SanteTable: View {
                     line(row)
                 }
             }
+            if let more {
+                CliniqueDivider()
+                Button(action: more.action) {
+                    HStack {
+                        Text(more.title)
+                            .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                            .foregroundStyle(SharpitColor.foreground)
+                        Spacer(minLength: SharpitSpacing.xs)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(SharpitColor.slate)
+                            .accessibilityHidden(true)
+                    }
+                    .padding(.vertical, 13)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+            }
         }
     }
 
     private func line(_ row: Row) -> some View {
         HStack(spacing: 0) {
+            if let symbol = row.symbol {
+                Image(systemName: symbol)
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundStyle(SharpitColor.slate)
+                    .frame(width: 28, alignment: .leading)
+                    .accessibilityHidden(true)
+            }
             Text(row.name)
                 .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
                 .foregroundStyle(SharpitColor.foreground)
                 .lineLimit(2)
-                .frame(width: Self.nameWidth, alignment: .leading)
+                .frame(width: Self.nameWidth - (row.symbol == nil ? 0 : 28), alignment: .leading)
             if let status = row.status {
                 CliniqueStatusPill(status.word, status: status.status)
             }
@@ -210,6 +239,7 @@ extension SanteTable.Row {
         self.init(
             id: marker.key.rawValue,
             name: SanteReadout.title(marker.key),
+            symbol: SanteReadout.symbol(marker.key),
             status: status.map { (SanteHeroReadout.word($0), $0) },
             value: [value.text, value.unit].compactMap { $0 }.joined(separator: " ")
         )

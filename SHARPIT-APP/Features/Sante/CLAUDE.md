@@ -84,3 +84,14 @@ are not shown: the app holds neither a trend per test nor a next date.
 **Faire le point, Clinique.** A zone's check-in rates on hairline tiles, the chosen one lined in ink
 with the level's hue as a mark under the figure (`ZoneSeverityScale`, shared with the onboarding);
 what the athlete could do is a list of hairline tiles; « Enregistrer » sits in the glass dock.
+
+**Second pass (the athlete's call, 2026-11-15).** The bar holds « Partager » and the weight target
+only (a blood test is added from « Analyses de sang »). The biomarkers table lists five results,
+those outside the lab's range first (`SanteReadout.leading`), then « Voir les N biomarqueurs ». A
+marker's line opens with its glyph. A marker's sheet reads its norm and its month as two lines
+(`SanteReadingBlock`: the norm as a status pill, never coloured words). « Partager » opens
+`SanteShareSheet`: ready-made cards (`SanteShareCard.available`: bilan, biological age, VO₂max,
+markers — only what the overview holds), one a page, sent as an image (`ImageRenderer`, light), or
+the figures as text. `WeightTargetSheet` is as tall as its content, full height once typing. Zones
+sensibles no longer opens on « Ce que ça change à ton plan »: each open zone carries its own effect
+in two lines, the rest on its page. `SharpitScreenDemo share` shows the cards.

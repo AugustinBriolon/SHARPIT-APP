@@ -5,6 +5,20 @@ import SwiftUI
 /// and the sentence its month makes. Formatting only — every band, trend and alert is the web's
 /// (SHARPIT ADR-053).
 enum SanteReadout {
+    /// How many biomarkers Santé lists before sending to the analysis itself.
+    static let biomarkerLimit = 5
+
+    /// The results Santé shows: those outside the lab's range first, in the report's order.
+    static func leading(_ results: [V1BloodTest.Result], limit: Int = biomarkerLimit) -> [V1BloodTest.Result] {
+        let outside = results.filter { $0.status == .low || $0.status == .high }
+        let rest = results.filter { $0.status != .low && $0.status != .high }
+        return Array((outside + rest).prefix(limit))
+    }
+
+    static func allBiomarkers(_ count: Int) -> String {
+        String(localized: "Voir les \(count) biomarqueurs")
+    }
+
     static func title(_ key: V1HealthMarker.Key) -> String {
         switch key {
         case .restingHr: String(localized: "FC de repos")

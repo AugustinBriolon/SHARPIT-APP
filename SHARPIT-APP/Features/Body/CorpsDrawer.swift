@@ -101,19 +101,7 @@ struct CorpsMetricDrawer: View {
             .padding(.bottom, SharpitSpacing.lg)
         }
         .background(SharpitColor.card)
-        .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.foreground)
-                    .frame(width: 44, height: 44)
-                    .background(SharpitColor.tile, in: Circle())
-            }
-            .buttonStyle(.sharpitPressable)
-            .accessibilityLabel("Fermer")
-            .padding(.trailing, 22)
-            .padding(.top, 22)
-        }
+        .cliniqueSheetCross { dismiss() }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()

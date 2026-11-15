@@ -233,80 +233,83 @@ struct WeightTargetSheet: View {
         text.trimmingCharacters(in: .whitespaces).isEmpty || (parsed.map { (30...250).contains($0) } ?? false)
     }
 
+    /// As tall as what it holds; the whole screen once the keyboard is up.
+    @State private var detent: PresentationDetent = WeightTargetSheet.compact
+    private static let compact = PresentationDetent.height(400)
+
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    plate
-                    if !isValid {
-                        Label("Entre 30 et 250 kg.", systemImage: "exclamationmark.triangle.fill")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalRisk)
-                    }
-                    if store.profile.targetWeightKg != nil {
-                        Button("Retirer l'objectif", role: .destructive) {
-                            text = ""
-                            save()
-                        }
-                        .frame(maxWidth: .infinity, minHeight: SharpitSpacing.minimumTouchTarget)
-                    }
-                }
-                .padding(SharpitSpacing.pageInset)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Objectif de poids")
+                .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.trailing, 56)
+            plate
+                .padding(.top, 18)
+            if !isValid {
+                CliniqueStatusPill(String(localized: "Entre 30 et 250 kg"), status: .alert)
+                    .padding(.top, 10)
             }
-            .scrollDismissesKeyboard(.interactively)
-            .background(SharpitCanvasBackground())
-            .disabled(!hasLoaded)
-            .navigationTitle("Objectif de poids")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+            Spacer(minLength: 16)
+            VStack(spacing: 6) {
+                Button { save() } label: { Text("Enregistrer").frame(maxWidth: .infinity) }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                    .disabled(!hasLoaded || !isValid)
+                if store.profile.targetWeightKg != nil {
+                    Button("Retirer l'objectif") {
+                        text = ""
+                        save()
+                    }
+                    .buttonStyle(CliniqueButtonStyle(kind: .plain))
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("OK") { save() }
-                        .disabled(!hasLoaded || !isValid)
-                }
-            }
-            .task {
-                await store.load()
-                text = ProfileFieldFormat.decimal(store.profile.targetWeightKg)
-                hasLoaded = true
-                isFocused = true
             }
         }
-        .presentationDetents([.large])
+        .padding(.horizontal, 24)
+        .padding(.top, 30)
+        .padding(.bottom, SharpitSpacing.xs)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(SharpitColor.card)
+        .disabled(!hasLoaded)
+        .cliniqueSheetCross { dismiss() }
+        .task {
+            await store.load()
+            text = ProfileFieldFormat.decimal(store.profile.targetWeightKg)
+            hasLoaded = true
+        }
+        .onChange(of: isFocused) { _, focused in if focused { detent = .large } }
+        .presentationDetents([Self.compact, .large], selection: $detent)
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
 
-    /// The target, big on the ink plate: typed, or stepped by half a kilo.
+    /// The target read big between − and +: typed in place, or stepped by half a kilo.
     private var plate: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            Text("Poids cible")
-                .font(SharpitTypography.cardTitle)
-                .foregroundStyle(SharpitColor.foreground)
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                 SharpitStepButton(symbol: "minus", label: String(localized: "Moins 0,5 kg")) { step(-0.5) }
-                VStack(spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
                     TextField("72,0", text: $text)
                         .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.center)
-                        .font(SharpitTypography.heroScore)
-                        .tracking(SharpitTypography.heroScoreTracking)
+                        .multilineTextAlignment(.trailing)
+                        .font(SharpitTypography.system(size: 44, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-1.5)
                         .foregroundStyle(SharpitColor.foreground)
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
+                        .fixedSize()
                         .focused($isFocused)
                         .accessibilityLabel("Poids cible en kilos")
                     Text("kg")
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
+                        .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.slate)
                 }
                 .frame(maxWidth: .infinity)
                 SharpitStepButton(symbol: "plus", label: String(localized: "Plus 0,5 kg")) { step(0.5) }
             }
             Text("Optionnel. Tracé sur ta courbe de poids et pris en compte dans la lecture nutritionnelle, jamais une alerte.")
-                .font(SharpitTypography.meta)
+                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                .lineSpacing(2)
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
         }

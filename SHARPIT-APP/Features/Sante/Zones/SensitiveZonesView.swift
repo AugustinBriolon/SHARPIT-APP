@@ -137,7 +137,6 @@ struct SensitiveZonesView: View {
                     emptyState
                 } else {
                     question(zones.open)
-                    planEffects(zones.open)
                     group(String(localized: "Ouvertes"), zones.open)
                     group(String(localized: "Résolues"), zones.resolved)
                     if zones.open.contains(where: { SensitiveZoneBody.isOnMap($0.bodyPart) }) {
@@ -180,27 +179,6 @@ struct SensitiveZonesView: View {
                 }
             }
             .cliniqueCard()
-        }
-    }
-
-    /// « Ce que ça change à ton plan »: each open zone's effect, behind a bar in its strategy's tone.
-    @ViewBuilder
-    private func planEffects(_ open: [V1SensitiveZone]) -> some View {
-        let acting = open.filter { $0.affectsTraining && !$0.strategyDetail.isEmpty }
-        if !acting.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                SanteSectionTitle(String(localized: "Ce que ça change à ton plan"))
-                ForEach(acting) { zone in
-                    Text(zone.strategyDetail)
-                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.leading, 18)
-                        .overlay(alignment: .leading) {
-                            Capsule().fill(zone.strategy.status.mark).frame(width: 4).padding(.vertical, 2)
-                        }
-                }
-            }
         }
     }
 
@@ -304,6 +282,15 @@ private struct SensitiveZoneRow: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     Spacer(minLength: 0)
+                }
+                // What the plan does with it, where the zone is read — two lines, the rest on its page.
+                if zone.affectsTraining, !zone.strategyDetail.isEmpty {
+                    Text(zone.strategyDetail)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                        .lineSpacing(2)
+                        .foregroundStyle(SharpitColor.slate)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                 }
                 if zone.resolutionSuggested {
                     Text("Plus de douleur depuis deux semaines")

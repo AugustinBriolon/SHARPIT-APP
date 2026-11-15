@@ -18,13 +18,13 @@ struct SanteView: View {
     /// The latest blood test heads the tables as « N biomarqueurs ».
     @State private var blood: BloodTestsStore
     @State private var isShowingBloodTests = false
-    @State private var isImportingBloodTest = false
     private let profileClient: any AthleteProfileServing
     private let tokenProvider: () async throws -> String
     private let modelContext: ModelContext?
 
     @State private var opened: V1HealthMarker?
     @State private var isEditingWeightTarget = false
+    @State private var isSharing = false
     @State private var hasAppeared = false
     @State private var reloadGate = LoadGate()
 
@@ -80,29 +80,24 @@ struct SanteView: View {
                 ToolbarItem(placement: .principal) { Text("") }
                 // The title shares the bar's row with its buttons, as on the mock-up.
                 SharpitBarTitle(String(localized: "Santé"))
-                if let overview = store.overview {
+                if store.overview != nil {
                     ToolbarItem(placement: .topBarTrailing) {
-                        ShareLink(item: SanteReadout.shareText(overview)) {
+                        Button { isSharing = true } label: {
                             Label("Partager", systemImage: "square.and.arrow.up")
                         }
                     }
                     SharpitBarGap()
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button { isImportingBloodTest = true } label: {
-                            Label("Analyse de sang", systemImage: "drop")
-                        }
-                        Button { isEditingWeightTarget = true } label: {
-                            Label("Objectif de poids", systemImage: "target")
-                        }
-                    } label: {
-                        Label("Ajouter", systemImage: "plus")
+                    Button { isEditingWeightTarget = true } label: {
+                        Label("Objectif de poids", systemImage: "target")
                     }
                 }
             }
+            .sheet(isPresented: $isSharing) {
+                if let overview = store.overview { SanteShareSheet(overview: overview) }
+            }
             .navigationDestination(isPresented: $isShowingBloodTests) { BloodTestsView(tokenProvider: tokenProvider) }
-            .navigationDestination(isPresented: $isImportingBloodTest) { BloodTestImportView(tokenProvider: tokenProvider) }
             .sheet(isPresented: $isEditingWeightTarget, onDismiss: { Task { await reload(force: true) } }) {
                 WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
             }
@@ -135,10 +130,16 @@ struct SanteView: View {
                     VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                         SanteTrends(markers: SanteTrendReadout.drawable(overview.allMarkers))
                         if let latest = blood.tests.first, !latest.results.isEmpty {
+                            // The five that matter first — out of the lab's range before the rest;
+                            // the whole analysis sits on its own page.
                             SanteTable(
                                 title: SanteReadout.biomarkers(latest.results.count),
-                                rows: latest.results.map(SanteTable.Row.init)
-                            ) { _ in isShowingBloodTests = true }
+                                rows: SanteReadout.leading(latest.results).map(SanteTable.Row.init),
+                                onOpen: { _ in isShowingBloodTests = true },
+                                more: latest.results.count > SanteReadout.biomarkerLimit
+                                    ? (SanteReadout.allBiomarkers(latest.results.count), { isShowingBloodTests = true })
+                                    : nil
+                            )
                         }
                         if !overview.allMarkers.isEmpty {
                             SanteTable(
@@ -363,39 +364,59 @@ struct SanteFigureRow: View {
     }
 }
 
-/// Where a marker stands: its norm and the source of it, then its month against the one before.
+/// Where a marker stands, as two lines of the sheet: its norm as a status pill over the source
+/// of it, then its month against the one before.
 struct SanteReadingBlock: View {
     let marker: V1HealthMarker
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+        VStack(alignment: .leading, spacing: 0) {
             if let norm = marker.norm {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(norm.label)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(norm.tone.color)
-                    Text(norm.reference)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                        .fixedSize(horizontal: false, vertical: true)
+                CliniqueDivider()
+                line(String(localized: "Par rapport à la norme"), detail: norm.reference) {
+                    if let status = SanteHeroReadout.status(norm.tone) {
+                        CliniqueStatusPill(norm.label, status: status)
+                    } else {
+                        Text(norm.label)
+                            .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body))
+                            .foregroundStyle(SharpitColor.foreground)
+                    }
                 }
             }
             if let trend = marker.trend, let line = SanteReadout.trend(marker) {
-                VStack(alignment: .leading, spacing: 2) {
+                CliniqueDivider()
+                self.line(String(localized: "Sur le mois"), detail: SanteReadout.comparison(marker, trend: trend)) {
                     Text(line)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(trend.stable ? SharpitColor.foreground : trend.tone.color)
-                    Text(SanteReadout.comparison(marker, trend: trend))
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
+                        .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.trailing)
                 }
             }
+            CliniqueDivider()
         }
-        .cliniqueCard()
+    }
+
+    private func line(_ name: String, detail: String, @ViewBuilder value: () -> some View) -> some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                    .foregroundStyle(SharpitColor.foreground)
+                Text(detail)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: SharpitSpacing.xs)
+            value()
+        }
+        .padding(.vertical, 13)
+        .accessibilityElement(children: .combine)
     }
 }
 
-/// A marker the web keeps no longer history for (sleep, steps, breathing): its month.
+/// A marker the web keeps no longer history for (sleep, steps, breathing): its month, on the
+/// same titled sheet as the others.
 private struct SanteMarkerSheet: View {
     let marker: V1HealthMarker
 
@@ -403,47 +424,48 @@ private struct SanteMarkerSheet: View {
 
     var body: some View {
         let value = SanteReadout.value(marker)
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                        HStack(alignment: .lastTextBaseline, spacing: SharpitSpacing.xs) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(SanteReadout.title(marker.key))
+                        .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
+                        .tracking(-0.4)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding(.trailing, 56)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(SanteReadout.basis(marker))
+                            .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                            .foregroundStyle(SharpitColor.slate)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text(value.text)
-                                .font(SharpitTypography.heroScore)
-                                .tracking(SharpitTypography.heroScoreTracking)
+                                .font(SharpitTypography.system(size: 52, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                                .tracking(-1.5)
                                 .foregroundStyle(SharpitColor.foreground)
                             if let unit = value.unit {
                                 Text(unit)
-                                    .font(SharpitTypography.meta)
+                                    .font(SharpitTypography.system(size: 19, weight: .regular, relativeTo: .title3))
                                     .foregroundStyle(SharpitColor.slate)
                             }
                         }
-                        Text(SanteReadout.basis(marker))
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
                     }
-                    SanteReadingBlock(marker: marker)
-                    if marker.series.count > 1 {
-                        CorpsSparkline(points: marker.series, tone: SharpitColor.primary)
-                            .frame(height: 140)
-                            .padding(SharpitSpacing.md)
-                            .sharpitSurface(.panel)
-                    }
-                    Text(SanteReadout.explanation(marker.key))
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(SharpitSpacing.pageInset)
-            }
-            .navigationTitle(SanteReadout.title(marker.key))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("OK") { dismiss() }
+                SanteReadingBlock(marker: marker)
+                if marker.series.count > 1 {
+                    CorpsSparkline(points: marker.series, tone: SharpitColor.pillarSleep)
+                        .frame(height: 140)
                 }
+                Text(SanteReadout.explanation(marker.key))
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 30)
+            .padding(.bottom, SharpitSpacing.lg)
         }
+        .background(SharpitColor.card)
+        .cliniqueSheetCross { dismiss() }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
