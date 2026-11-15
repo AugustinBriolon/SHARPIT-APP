@@ -152,7 +152,8 @@ struct SubjectiveEditorSheet: View {
 
                     SaveStatusLine(status: store.status)
                 }
-                .padding(SharpitSpacing.pageInset)
+                .padding(.horizontal, 24)
+                .padding(.vertical, SharpitSpacing.md)
             }
             .navigationTitle("Comment s'est passée la séance ?")
             .navigationBarTitleDisplayMode(.inline)
@@ -177,11 +178,11 @@ struct SubjectiveScale<Grid: View>: View {
                 Spacer()
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value.map(String.init) ?? "—")
-                        .font(SharpitTypography.gaugeScore)
+                        .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
                         .foregroundStyle(tone == nil ? SharpitColor.slate : SharpitColor.foreground)
                         .contentTransition(.numericText())
-                    Text("/\(outOf)")
-                        .font(SharpitTypography.meta)
+                    Text("/ \(outOf)")
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                         .foregroundStyle(SharpitColor.slate)
                 }
             }
@@ -241,25 +242,17 @@ struct RatingGrid: View {
             ForEach(values, id: \.self) { value in
                 let isSelected = selection == value
                 Button { onSelect(value) } label: {
+                    // The mock-up's tile: the sheet's white inside a hairline, lined in ink once chosen.
                     Text("\(value)")
-                        .font(SharpitTypography.data)
+                        .font(SharpitTypography.system(size: 18, weight: isSelected ? .semibold : .regular, relativeTo: .title3, digits: true))
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                        .background {
-                            RoundedRectangle(cornerRadius: SharpitRadius.control, style: .continuous)
-                                .fill(isSelected ? SharpitColor.primary : SharpitElevatedColor.panelOnSheet)
-                                .sharpitShadow(.control)
-                        }
-                        .overlay(alignment: .bottom) {
-                            if !isSelected {
-                                Capsule()
-                                    .fill(tone(value))
-                                    .frame(width: 14, height: 3)
-                                    .padding(.bottom, 7)
-                            }
-                        }
-                        .scaleEffect(isSelected ? 1.04 : 1)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.outline, lineWidth: isSelected ? 2 : 1)
+                        )
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.sharpitPressable)
                 .accessibilityLabel("\(value) sur \(values.count)")

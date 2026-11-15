@@ -143,15 +143,12 @@ struct ActivityTechnicalGrid: View {
             ForEach(rows) { row in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(row.label)
-                        .font(SharpitTypography.label)
-                        .tracking(SharpitTypography.labelTracking)
+                        .font(SharpitTypography.meta)
                         .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                     Text(row.value)
-                        .font(SharpitTypography.data)
-                        .tracking(SharpitTypography.dataTracking)
+                        .font(SharpitTypography.system(size: 19, weight: .semibold, relativeTo: .title3, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
-                        .monospacedDigit()
                     if let note = row.note {
                         Text(note)
                             .font(SharpitTypography.meta)
@@ -165,52 +162,41 @@ struct ActivityTechnicalGrid: View {
     }
 }
 
-/// Time in each zone: one bar split by zone, then a line per zone with its share and time.
+/// Time in each zone, a line per zone as the mock-up draws it: its name, its range over a gauge
+/// filled to its share in the zone's hue, then its time.
 private struct ZoneDistribution: View {
     let title: String
     let zones: [V1ActivityAnalysis.Zone]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(title)
-                .font(SharpitTypography.bodyEmphasis)
+                .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
                 .foregroundStyle(SharpitColor.foreground)
-            GeometryReader { proxy in
-                HStack(spacing: 2) {
-                    ForEach(Array(zones.enumerated()), id: \.element.id) { index, zone in
-                        if zone.percent > 0 {
-                            Rectangle()
-                                .fill(SharpitZoneTone.color(index))
-                                .frame(width: max(2, (proxy.size.width - CGFloat(zones.count) * 2) * zone.percent / 100))
-                        }
-                    }
-                }
-            }
-            .frame(height: 8)
-            .clipShape(Capsule())
-            VStack(spacing: 6) {
-                ForEach(Array(zones.enumerated()), id: \.element.id) { index, zone in
-                    HStack(spacing: SharpitSpacing.xs) {
-                        Circle().fill(SharpitZoneTone.color(index)).frame(width: 7, height: 7)
-                        Text(zone.shortLabel)
-                            .font(SharpitTypography.meta.weight(.semibold))
-                            .foregroundStyle(SharpitColor.foreground)
-                            .frame(width: 28, alignment: .leading)
+                .padding(.bottom, SharpitSpacing.xs)
+            ForEach(Array(zones.enumerated()), id: \.element.id) { index, zone in
+                HStack(spacing: 10) {
+                    Text(zone.shortLabel)
+                        .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .frame(width: 30, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 5) {
                         Text(zone.label)
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.slate)
                             .lineLimit(1)
-                        Spacer(minLength: 4)
-                        Text(ActivityFormat.duration(zone.seconds))
-                            .font(SharpitTypography.meta.monospacedDigit())
-                            .foregroundStyle(SharpitColor.slate)
-                        Text("\(Int(zone.percent.rounded())) %")
-                            .font(SharpitTypography.meta.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(SharpitColor.foreground)
-                            .frame(width: 40, alignment: .trailing)
+                        SharpitBarTrack(fraction: zone.percent / 100, tone: SharpitZoneTone.color(index))
+                            .frame(height: 6)
                     }
-                    .accessibilityElement(children: .combine)
+                    Text(ActivityFormat.duration(zone.seconds))
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .frame(width: 62, alignment: .trailing)
                 }
+                .frame(minHeight: 44)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(zone.shortLabel), \(zone.label), \(ActivityFormat.duration(zone.seconds)), \(Int(zone.percent.rounded())) %")
+                if index < zones.count - 1 { CliniqueDivider() }
             }
         }
     }
