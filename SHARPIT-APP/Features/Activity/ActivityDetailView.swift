@@ -914,7 +914,7 @@ private struct ActivityDetailContent: View {
 
             // The session's head, centred: how it went against the plan, what it was, when.
             VStack(spacing: 8) {
-                // Said, not hidden behind: the way into the compliance is its own card below.
+                // Said once, here: the score and the way into its reading sit among the figures below.
                 if let verdict {
                     CliniqueStatusPill(verdict.label, status: ActivitySheetReadout.status(verdict))
                 }
@@ -1001,21 +1001,10 @@ private struct ActivityDetailContent: View {
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 1)), value: appeared)
 
-            if let analysis = detail.plannedSession?.analysis {
-                complianceCard(analysis)
-                    .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : 12)
-                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 2)), value: appeared)
-            }
-
             contextSection
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 2)), value: appeared)
-
-            if let sessionId = detail.plannedSession?.id, let tokenProvider {
-                ActivityRoutinesSection(sessionId: sessionId, around: detail.date, tokenProvider: tokenProvider)
-            }
 
             if !reassessments.isEmpty {
                 PainReassessmentSection(items: reassessments, onAnswer: onReassess)
@@ -1090,7 +1079,8 @@ private struct ActivityDetailContent: View {
 
     private var metricGrid: some View {
         ActivityMetricGrid(
-            metrics: ActivityHeroMetricData.primary(for: detail, distanceM: effectiveDistanceM, isExpertReading: isExpertReading)
+            metrics: ActivityHeroMetricData.compliance(detail.plannedSession?.analysis, open: onShowCompliance)
+                + ActivityHeroMetricData.primary(for: detail, distanceM: effectiveDistanceM, isExpertReading: isExpertReading)
         )
     }
 
@@ -1109,6 +1099,9 @@ private struct ActivityDetailContent: View {
                 action: onShowSubjective
             )
             .accessibilityHint("Ouvre l'évaluation de la séance")
+            if let sessionId = detail.plannedSession?.id, let tokenProvider {
+                ActivityRoutinesSection(sessionId: sessionId, around: detail.date, tokenProvider: tokenProvider)
+            }
             // A session done from a goal's plan belongs to that goal already: said, not asked.
             if detail.goal == nil, let prepared = detail.plannedSession?.goal {
                 CliniqueDivider()
@@ -1126,87 +1119,8 @@ private struct ActivityDetailContent: View {
         detail.plannedSession?.analysis?.verdict.flatMap(SessionVerdict.init(rawValue:))
     }
 
-    /// How the session matched the plan, on the sheet like every other section: its name beside
-    /// the verdict, the score read big over the coach's sentence, then the way into the reading.
-    private func complianceCard(_ analysis: V1PlannedSessionAnalysis) -> some View {
-        Button(action: onShowCompliance) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Conformité au plan")
-                        .font(SharpitTypography.sectionTitle)
-                        .tracking(SharpitTypography.sectionTitleTracking)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Spacer(minLength: SharpitSpacing.xs)
-                    if let verdict = analysis.verdict.flatMap(SessionVerdict.init(rawValue:)) {
-                        CliniqueStatusPill(verdict.label, status: ActivitySheetReadout.status(verdict))
-                    }
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
-                        .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .largeTitle, digits: true))
-                        .tracking(-0.8)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text("/ 100")
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
-                        .foregroundStyle(SharpitColor.slate)
-                }
-                .padding(.top, 10)
-                if let summary = analysis.summary, !summary.isEmpty {
-                    Text(summary)
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.slate)
-                        .lineSpacing(2)
-                        .lineLimit(3)
-                        .multilineTextAlignment(.leading)
-                        .padding(.top, 4)
-                }
-                CliniqueDivider().padding(.top, 14)
-                HStack {
-                    Text("Critère par critère")
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
-                        .foregroundStyle(SharpitColor.foreground)
-                    Spacer(minLength: SharpitSpacing.xs)
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(SharpitColor.slate)
-                        .accessibilityHidden(true)
-                }
-                .padding(.vertical, 13)
-                CliniqueDivider()
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(.rect)
-        }
-        .buttonStyle(.sharpitPressable)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Ouvre la conformité au plan")
-    }
-
-    /// A line of « Ta séance »: what it is, its reading, and the way in when it opens something.
-    @ViewBuilder
     private func contextRow(_ title: String, value: String, action: (() -> Void)?) -> some View {
-        let line = HStack(spacing: SharpitSpacing.sm) {
-            Text(title)
-                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
-                .foregroundStyle(SharpitColor.foreground)
-            Spacer(minLength: SharpitSpacing.xs)
-            Text(value)
-                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
-                .foregroundStyle(SharpitColor.foreground)
-            if action != nil {
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
-                    .accessibilityHidden(true)
-            }
-        }
-        .padding(.vertical, 13)
-        .contentShape(.rect)
-        if let action {
-            Button(action: action) { line }.buttonStyle(.sharpitPressable)
-        } else {
-            line.accessibilityElement(children: .combine)
-        }
+        ActivityContextRow(title: title, value: value, action: action)
     }
 
     private var coachAnalysis: some View {
@@ -1642,6 +1556,38 @@ enum ActivitySheetReadout {
     }
 }
 
+/// A line of « Ta séance »: what it is, its reading, and the way in when it opens something.
+struct ActivityContextRow: View {
+    let title: String
+    let value: String
+    let action: (() -> Void)?
+
+    var body: some View {
+        let line = HStack(spacing: SharpitSpacing.sm) {
+            Text(title)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
+            Spacer(minLength: SharpitSpacing.xs)
+            Text(value)
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+            if action != nil {
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.vertical, 13)
+        .contentShape(.rect)
+        if let action {
+            Button(action: action) { line }.buttonStyle(.sharpitPressable)
+        } else {
+            line.accessibilityElement(children: .combine)
+        }
+    }
+}
+
 /// A section's name on the session's sheet.
 struct ActivitySectionTitle: View {
     let title: String
@@ -1721,9 +1667,17 @@ struct ActivityHeroMetricData: Identifiable {
     let label: String
     let value: String
     let unit: String?
+    /// Set when the figure opens its own reading: the cell is then a button.
+    var action: (() -> Void)? = nil
 }
 
 extension ActivityHeroMetricData {
+    /// How the session matched the plan, first among its figures: the score opens its reading.
+    static func compliance(_ analysis: V1PlannedSessionAnalysis?, open: @escaping () -> Void) -> [ActivityHeroMetricData] {
+        guard let score = analysis?.complianceScore else { return [] }
+        return [.init(label: String(localized: "Conformité"), value: "\(Int(score.rounded()))", unit: "/ 100", action: open)]
+    }
+
     /// « Résumé de séance »: what the session was, then what it cost (ADR 0006).
     static func primary(for detail: V1ActivityDetail, distanceM: Double?, isExpertReading: Bool) -> [ActivityHeroMetricData] {
         var metrics: [ActivityHeroMetricData] = []
@@ -1777,7 +1731,13 @@ struct ActivityMetricGrid: View {
                         if index > 0 {
                             Rectangle().fill(SharpitColor.divider).frame(width: 1).accessibilityHidden(true)
                         }
-                        figure(metric)
+                        if let action = metric.action {
+                            Button(action: action) { figure(metric).contentShape(.rect) }
+                                .buttonStyle(.sharpitPressable)
+                                .accessibilityHint("Ouvre le détail")
+                        } else {
+                            figure(metric)
+                        }
                     }
                 }
                 .fixedSize(horizontal: false, vertical: true)
@@ -1789,10 +1749,18 @@ struct ActivityMetricGrid: View {
 
     private func figure(_ metric: ActivityHeroMetricData) -> some View {
         VStack(spacing: 4) {
-            Text(metric.label)
-                .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
-                .foregroundStyle(SharpitColor.slate)
-                .lineLimit(1)
+            HStack(spacing: 3) {
+                Text(metric.label)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                    .foregroundStyle(SharpitColor.slate)
+                    .lineLimit(1)
+                if metric.action != nil {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(SharpitColor.slate)
+                        .accessibilityHidden(true)
+                }
+            }
             (Text(metric.value)
                 .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
