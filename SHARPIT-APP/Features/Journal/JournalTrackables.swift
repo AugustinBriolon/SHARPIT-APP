@@ -29,6 +29,21 @@ nonisolated enum JournalCategory: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// The category's data hue, on the glyphs of its signals and the mark of its title.
+    var hue: Color {
+        switch self {
+        case .sante: SharpitColor.statusAlertMark
+        case .nutrition: SharpitColor.pillarNutrition
+        case .complement: SharpitColor.pillarRecovery
+        case .styleVie: SharpitColor.zone3
+        case .bienEtre: SharpitColor.zone2
+        case .medicament: SharpitColor.pillarCoach
+        case .comportement: SharpitColor.statusWatchMark
+        case .sommeil: SharpitColor.pillarSleep
+        case .automatique: SharpitColor.slate
+        }
+    }
+
     /// Logical sort order for athlete's daily journal flow.
     var sortOrder: Int {
         switch self {

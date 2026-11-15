@@ -56,11 +56,20 @@ struct JournalView: View {
             // The bar carries the way back and the signals' choice; the name opens the page.
             .toolbar {
                 ToolbarItem(placement: .principal) { Text("") }
+                // The analyses a glyph away, then the signals' choice: no scrolling to the foot.
+                if let analysesStore {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink { JournalAnalysesView(store: analysesStore) } label: {
+                            Label("Analyses du journal", systemImage: "chart.xyaxis.line")
+                        }
+                    }
+                    SharpitBarGap()
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Choisir mes signaux") { showsPrefs = true }
-                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .disabled(store.phase == .loading)
+                    Button { showsPrefs = true } label: {
+                        Label("Choisir mes signaux", systemImage: "plus")
+                    }
+                    .disabled(store.phase == .loading)
                 }
             }
             .cliniqueReturnButton()
@@ -236,36 +245,48 @@ struct JournalView: View {
         switch trackable.kind {
         case .mood:
             JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: String(localized: "Lu de ton ressenti du matin"), onOpen: { showsWellness = true }) {
-                if let mood = store.moodLabel {
-                    JournalValuePill(text: mood)
-                } else {
-                    JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
+                Button { showsWellness = true } label: {
+                    if let mood = store.moodLabel {
+                        JournalValuePill(text: mood)
+                    } else {
+                        JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
+                    }
                 }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityLabel(trackable.label)
+                .accessibilityHint("Ouvre le ressenti du matin")
             }
         case .caffeine:
+            // Caffeine and water read alike: the words open the sheet, the stepper adds a usual portion.
             JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: String(localized: "Un café ≈ 80 mg"), onOpen: { showsCaffeine = true }) {
                 JournalStepper(
-                    value: store.entry.caffeineMg.map { "\($0) mg" } ?? "— mg",
+                    value: JournalAmountFormat.milligrams(store.entry.caffeineMg ?? 0),
                     label: trackable.label,
                     onLess: { store.adjustCaffeine(by: -80) },
                     onMore: { store.adjustCaffeine(by: 80) }
                 )
             }
         case .hydration:
-            JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: JournalReadout.litres(store.entry.hydrationMl), onOpen: { showsHydration = true }) {
-                Button { store.adjustHydration(by: 250) } label: {
-                    JournalCapsule(text: "+ 25 cl", style: .outline)
-                }
-                .buttonStyle(.sharpitPressable)
-                .accessibilityLabel("Ajouter 25 centilitres")
+            JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: String(localized: "Un verre ≈ 25 cl"), onOpen: { showsHydration = true }) {
+                JournalStepper(
+                    value: JournalAmountFormat.volume(store.entry.hydrationMl ?? 0),
+                    label: trackable.label,
+                    onLess: { store.adjustHydration(by: -250) },
+                    onMore: { store.adjustHydration(by: 250) }
+                )
             }
         case .driving:
             JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: String(localized: "Par quarts d'heure"), onOpen: { showsDriving = true }) {
-                if (store.entry.drivingMinutes ?? 0) == 0 {
-                    JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
-                } else {
-                    JournalValuePill(text: JournalDrivingFormat.minutes(store.entry.drivingMinutes))
+                Button { showsDriving = true } label: {
+                    if (store.entry.drivingMinutes ?? 0) == 0 {
+                        JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
+                    } else {
+                        JournalValuePill(text: JournalDrivingFormat.minutes(store.entry.drivingMinutes))
+                    }
                 }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityLabel(trackable.label)
+                .accessibilityHint("Ouvre la durée de conduite")
             }
         case .factor, .auto, .diet:
             // A derived line or a standing diet carries no value, so it has no line here.
@@ -313,6 +334,14 @@ struct JournalView: View {
                     .accessibilityLabel("Analyses du journal")
             }
         }
+    }
+}
+
+extension JournalCatalogue {
+    /// A measured line's own glyph — steps, sleep, stress — by the id the server sends; a plain
+    /// pulse when the id is one the app does not know.
+    static func symbolName(forAuto id: String) -> String {
+        all.first { $0.id == id }?.symbolName ?? "waveform.path.ecg"
     }
 }
 
@@ -638,7 +667,7 @@ private struct JournalChecklistLine: View {
     let item: V1JournalAutoChecklistItem
 
     var body: some View {
-        JournalLine(title: item.label, symbol: "waveform.path.ecg", detail: item.detail?.isEmpty == false ? item.detail : nil) {
+        JournalLine(title: item.label, symbol: JournalCatalogue.symbolName(forAuto: item.id), detail: item.detail?.isEmpty == false ? item.detail : nil) {
             Image(systemName: item.status == .done ? "checkmark.circle" : item.status == .missed ? "minus.circle" : "circle.dashed")
                 .font(.system(size: 22, weight: .regular))
                 // Only a met threshold takes a tone: a missed one stays quiet, the journal never scolds.

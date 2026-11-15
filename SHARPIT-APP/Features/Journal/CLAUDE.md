@@ -62,3 +62,12 @@ second tap on it takes it back (`JournalReadout.tapped`); the cycling capsule is
 **Hues.** Each group lends its lines' glyphs a data hue on its faint wash (`journalHue`: nutrition
 for the day's values, recovery for what was measured, sleep for the night, coach for the signals);
 the sheet takes the coach's wash. Words and answers stay ink.
+
+**Third pass (2026-11-15).** The bar holds the analyses (a chart glyph) and « Mes signaux » (a
+plus). Every line's control is a button: the mood and driving capsules open their sheet. Caffeine
+and water read alike — a stepper (a coffee, a glass) and a line « Un café ≈ 80 mg » / « Un verre ≈
+25 cl »; their sheets, and the driving one, are one light sheet (`JournalAmountSheet`: the figure
+between − and +, the usual portions to add, « Remettre à zéro »). « Mesuré pour toi » takes each
+line's own glyph from the catalogue (`JournalCatalogue.symbolName(forAuto:)`). « Mes signaux » keeps
+its sheet as it was (the athlete's call): only each signal's glyph takes its category's hue
+(`JournalCategory.hue`) — no mark or rule on the titles.

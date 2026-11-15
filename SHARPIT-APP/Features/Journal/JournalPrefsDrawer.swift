@@ -22,6 +22,7 @@ struct JournalPrefsDrawer: View {
                                 JournalPrefsToggleRow(
                                     label: trackable.label,
                                     symbolName: trackable.symbolName,
+                                    hue: category.hue,
                                     isOn: store.prefs.isEnabled(trackable.id),
                                     isBlocked: isBlocked(enabled: store.prefs.isEnabled(trackable.id))
                                 ) { enabled in
@@ -122,6 +123,7 @@ struct JournalPrefsDrawer: View {
                 JournalPrefsToggleRow(
                     label: item.label,
                     symbolName: JournalCatalogue.customSymbolName,
+                    hue: JournalCategory.bienEtre.hue,
                     isOn: item.enabled,
                     isBlocked: isBlocked(enabled: item.enabled)
                 ) { enabled in
@@ -188,6 +190,7 @@ private struct JournalFilterChip: View {
 private struct JournalPrefsToggleRow: View {
     let label: String
     let symbolName: String
+    let hue: Color
     let isOn: Bool
     let isBlocked: Bool
     let onChange: @MainActor (Bool) -> Void
@@ -197,12 +200,14 @@ private struct JournalPrefsToggleRow: View {
     init(
         label: String,
         symbolName: String,
+        hue: Color,
         isOn: Bool,
         isBlocked: Bool,
         onChange: @escaping @MainActor (Bool) -> Void
     ) {
         self.label = label
         self.symbolName = symbolName
+        self.hue = hue
         self.isOn = isOn
         self.isBlocked = isBlocked
         self.onChange = onChange
@@ -212,7 +217,7 @@ private struct JournalPrefsToggleRow: View {
     var body: some View {
         Toggle(isOn: $toggleValue) {
             HStack(spacing: SharpitSpacing.sm) {
-                JournalRowIcon(symbolName: symbolName)
+                JournalRowIcon(symbolName: symbolName, hue: hue)
                 Text(label)
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
