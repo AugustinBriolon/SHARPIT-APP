@@ -538,6 +538,7 @@ private struct PlanWeekPager: View {
     let onOpenTrajectory: (PlanTrajectoryDestination) -> Void
 
     @State private var position: Int?
+    static let space = "planWeekPager"
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -560,6 +561,7 @@ private struct PlanWeekPager: View {
             }
             .scrollTargetLayout()
         }
+        .coordinateSpace(.named(Self.space))
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $position)
@@ -705,6 +707,12 @@ private struct PlanWeekContent: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header(standing)
+                    // Held still while a week is turned: the page slides under it, and the week
+                    // nearest the middle is the one it speaks of.
+                    .visualEffect { content, proxy in
+                        let x = proxy.frame(in: .named(PlanWeekPager.space)).minX
+                        return content.offset(x: -x).opacity(abs(x) < proxy.size.width / 2 ? 1 : 0)
+                    }
                 if isEmptyWeekAhead {
                     weekHeading
                     emptyWeek
@@ -878,13 +886,19 @@ private struct PlanTimeline: View {
         let id: String
         let day: Date
         let entry: PlanEntry?
+        /// 0 for the day's first session; a day holding several ranks the others after it.
+        var rank = 0
+        /// The next line is the same day's: the two read as one day, with no rule between.
+        var sharesDayWithNext = false
     }
 
     private var lines: [Line] {
         days.flatMap { day -> [Line] in
             let entries = entriesOn(day)
             if entries.isEmpty { return [Line(id: "rest-\(day.timeIntervalSince1970)", day: day, entry: nil)] }
-            return entries.map { Line(id: $0.id, day: day, entry: $0) }
+            return entries.enumerated().map { rank, entry in
+                Line(id: entry.id, day: day, entry: entry, rank: rank, sharesDayWithNext: rank < entries.count - 1)
+            }
         }
     }
 
@@ -896,13 +910,15 @@ private struct PlanTimeline: View {
                     PlanRailMark(
                         mark: PlanTimelineReadout.mark(for: line.entry, on: line.day),
                         isFirst: index == 0,
-                        isLast: index == lines.count - 1
+                        isLast: index == lines.count - 1,
+                        isFollowUp: line.rank > 0
                     )
                     VStack(spacing: 0) {
                         if let entry = line.entry {
                             PlanEntryRow(
                                 entry: entry,
                                 day: line.day,
+                                rank: line.rank,
                                 activityClient: activityClient,
                                 tokenProvider: tokenProvider,
                                 onSelect: onSelect
@@ -914,7 +930,7 @@ private struct PlanTimeline: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, 14)
                         }
-                        if index < lines.count - 1 { CliniqueDivider() }
+                        if index < lines.count - 1, !line.sharesDayWithNext { CliniqueDivider() }
                     }
                 }
                 .fixedSize(horizontal: false, vertical: true)
@@ -944,6 +960,11 @@ enum PlanTimelineReadout {
     }
 
     /// « Lun. 10 », or « Aujourd'hui » on the day itself.
+    /// What opens a line: the day for its first session, « 2ᵉ séance » for the ones that share it.
+    static func lead(_ day: Date, rank: Int, calendar: Calendar = .current) -> String {
+        rank == 0 ? dayLabel(day, calendar: calendar) : String(localized: "\(rank + 1)ᵉ séance")
+    }
+
     static func dayLabel(_ day: Date, calendar: Calendar = .current) -> String {
         if calendar.isDateInToday(day) { return String(localized: "Aujourd'hui") }
         let weekday = day.sharpitFormatted(.dateTime.weekday(.abbreviated))
@@ -955,11 +976,14 @@ private struct PlanRailMark: View {
     let mark: PlanTimelineReadout.Mark
     let isFirst: Bool
     let isLast: Bool
+    /// A day's second session and after: a smaller dot, so the first one stays the day's.
+    var isFollowUp = false
 
     var body: some View {
+        let size: CGFloat = isFollowUp ? 8 : 14
         VStack(spacing: 0) {
-            segment(hidden: isFirst).frame(height: 20)
-            dot.frame(width: 14, height: 14)
+            segment(hidden: isFirst).frame(height: 20 + (14 - size) / 2)
+            dot.frame(width: size, height: size)
             segment(hidden: isLast).frame(maxHeight: .infinity)
         }
         .frame(width: 14)
@@ -978,7 +1002,7 @@ private struct PlanRailMark: View {
         case .done: Circle().fill(SharpitColor.statusGoodMark)
         case .missed: Circle().fill(SharpitColor.statusWatchMark)
         case .today:
-            Circle().strokeBorder(SharpitColor.foreground, lineWidth: 4)
+            Circle().strokeBorder(SharpitColor.foreground, lineWidth: isFollowUp ? 2.5 : 4)
         case .ahead: Circle().strokeBorder(SharpitColor.slate, lineWidth: 1.5)
         case .rest: Circle().strokeBorder(SharpitColor.outline, lineWidth: 1.5)
         }
@@ -990,6 +1014,7 @@ private struct PlanRailMark: View {
 private struct PlanEntryRow: View {
     let entry: PlanEntry
     let day: Date
+    var rank = 0
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let onSelect: (PlanSelection) -> Void
@@ -1005,7 +1030,7 @@ private struct PlanEntryRow: View {
         }
     }
 
-    private var line: PlanTimelineLine { PlanTimelineLine(entry: entry, day: day) }
+    private var line: PlanTimelineLine { PlanTimelineLine(entry: entry, day: day, rank: rank) }
 
     @ViewBuilder
     private var link: some View {
@@ -1040,6 +1065,7 @@ private struct PlanEntryRow: View {
 private struct PlanTimelineLine: View {
     let entry: PlanEntry
     let day: Date
+    var rank = 0
 
     private var isToday: Bool { Calendar.current.isDateInToday(day) }
 
@@ -1057,7 +1083,7 @@ private struct PlanTimelineLine: View {
 
     /// « Lun. 10 », with the start time today and « séance clé » where they are known.
     private var overline: String {
-        var parts = [PlanTimelineReadout.dayLabel(day)]
+        var parts = [PlanTimelineReadout.lead(day, rank: rank)]
         switch entry {
         case .executed, .doneBrick:
             break
