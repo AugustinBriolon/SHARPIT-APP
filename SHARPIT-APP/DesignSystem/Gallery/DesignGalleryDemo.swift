@@ -353,7 +353,7 @@ struct ScreenDemoHost: View {
                             .toolbar {
                                 ToolbarItem(placement: .topBarLeading) { Button {} label: { Image(systemName: "chevron.left") } }
                                 ToolbarItem(placement: .principal) { DayDetailDatePicker(selectedDay: .now, onSelect: { _ in }, label: { SleepSheetReadout.nightLabel($0) }) }
-                                ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "ellipsis") } }
+                                ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "target") } }
                             }
                     }
                 }
@@ -382,6 +382,18 @@ struct ScreenDemoHost: View {
                             ToolbarItem(placement: .principal) { DayDetailDatePicker(selectedDay: .now, onSelect: { _ in }) }
                             ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "ellipsis") } }
                         }
+                }
+            case "corps":
+                if let weight = Self.health.marker(.weight) {
+                    Color.clear.sheet(isPresented: .constant(true)) {
+                        CorpsMetricDrawer(
+                            metric: CorpsMetric(
+                                key: .weight, value: weight.value, measuredAt: .now, source: "Withings",
+                                series: weight.series, baseline: nil, note: String(localized: "Stable"), tone: .inRange
+                            ),
+                            target: 71, reading: weight
+                        ) { _ in weight.series }
+                    }
                 }
             case "share":
                 Color.clear.sheet(isPresented: .constant(true)) { SanteShareSheet(overview: Self.health) }
