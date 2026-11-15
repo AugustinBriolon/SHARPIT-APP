@@ -20,18 +20,15 @@ struct CoachHistoryView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(alignment: .leading, spacing: 8) {
+            CliniqueSheetTitle(String(localized: "Historique"))
+                .padding(.horizontal, 24)
+                .padding(.top, 30)
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(SharpitCanvasBackground())
-                .navigationTitle("Historique")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Fermer") { dismiss() }
-                    }
-                }
         }
+        .background(SharpitColor.card)
+        .cliniqueSheetCross { dismiss() }
         .presentationDetents([.medium, .large])
         .sharpitSheet()
         .presentationDragIndicator(.visible)
@@ -91,12 +88,7 @@ struct CoachHistoryView: View {
                 .buttonStyle(.plain)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(
-                    top: SharpitSpacing.xxs,
-                    leading: SharpitSpacing.pageInset,
-                    bottom: SharpitSpacing.xxs,
-                    trailing: SharpitSpacing.pageInset
-                ))
+                .listRowInsets(EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 24))
                 .swipeActions(edge: .trailing) {
                     SharpitSwipeDeleteButton {
                         Task { await store.delete(conversation) }
@@ -114,28 +106,28 @@ private struct CoachHistoryRow: View {
     let isCurrent: Bool
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(conversation.title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                Text(ActivityFormat.dayLabel(for: conversation.updatedAt))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
+        VStack(spacing: 0) {
+            HStack(spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(conversation.title)
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                    Text(ActivityFormat.dayLabel(for: conversation.updatedAt))
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                }
+                Spacer(minLength: 0)
+                if isCurrent {
+                    CliniqueStatusPill(String(localized: "Ouverte"), status: .pro)
+                }
             }
-            Spacer(minLength: 0)
-            if isCurrent {
-                Circle()
-                    .fill(SharpitColor.primary)
-                    .frame(width: 7, height: 7)
-                    .accessibilityLabel("Conversation ouverte")
-            }
+            .padding(.vertical, 14)
+            CliniqueDivider()
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }

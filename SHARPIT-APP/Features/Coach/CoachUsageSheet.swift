@@ -8,66 +8,73 @@ struct CoachUsageSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                if let quota {
-                    usage(quota)
-                        .padding(SharpitSpacing.md)
-                } else {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, SharpitSpacing.xl)
-                }
-            }
-            .navigationTitle("Consommation")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("OK") { dismiss() }
-                }
+        VStack(alignment: .leading, spacing: 20) {
+            CliniqueSheetTitle(String(localized: "Consommation"))
+            if let quota {
+                usage(quota)
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, SharpitSpacing.xl)
             }
         }
-        .presentationDetents([.medium, .large])
+        .padding(.horizontal, 24)
+        .padding(.top, 30)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(SharpitColor.card)
+        .cliniqueSheetCross { dismiss() }
+        .presentationDetents([.height(quota?.isPro == false ? 440 : 380)])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
 
     private func usage(_ quota: V1CoachQuota) -> some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(
-                title: quota.isPro ? String(localized: "Coach Pro") : String(localized: "Coach gratuit"),
-                symbol: "gauge.with.dots.needle.33percent",
-                showsChevron: false
+        VStack(alignment: .leading, spacing: 0) {
+            CliniqueStatusPill(
+                quota.isPro ? String(localized: "Coach Pro") : String(localized: "Coach gratuit"),
+                status: quota.isPro ? .pro : .unknown
             )
-            SharpitProgressBar(
-                label: String(localized: "Utilisé"),
-                value: CoachQuotaReadout.usedPercent(quota),
-                fraction: quota.usedRatio,
-                style: .ink
-            )
-            row(String(localized: "Échanges restants"), CoachQuotaReadout.questionsLeft(quota))
-            row(String(localized: "Renouvellement"), CoachQuotaReadout.resetLine(quota))
-            if !quota.isPro {
-                Button("Passer Pro") { onUpgrade() }
-                    .font(SharpitTypography.meta.weight(.semibold))
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(CoachQuotaReadout.usedPercent(quota))
+                    .font(SharpitTypography.system(size: 44, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                    .tracking(-1.5)
                     .foregroundStyle(SharpitColor.foreground)
+                Text("du budget utilisé")
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+            .padding(.top, 10)
+            .accessibilityElement(children: .combine)
+            SharpitBarTrack(fraction: quota.usedRatio, tone: SharpitColor.pillarCoach)
+                .frame(height: 6)
+                .padding(.top, 10)
+                .padding(.bottom, 18)
+                .accessibilityHidden(true)
+            CliniqueDivider()
+            row(String(localized: "Échanges restants"), CoachQuotaReadout.questionsLeft(quota))
+            CliniqueDivider()
+            row(String(localized: "Renouvellement"), CoachQuotaReadout.resetLine(quota))
+            CliniqueDivider()
+            if !quota.isPro {
+                Button { onUpgrade() } label: { Text("Passer Pro").frame(maxWidth: .infinity) }
+                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                    .padding(.top, 20)
             }
         }
-        .padding(SharpitSpacing.cardPadding)
-        .sharpitSurface(.panel)
     }
 
     private func row(_ label: String, _ value: String) -> some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
             Text(label)
-                .foregroundStyle(SharpitColor.slate)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                .foregroundStyle(SharpitColor.foreground)
             Spacer(minLength: SharpitSpacing.xs)
             Text(value)
-                .fontWeight(.semibold)
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
                 .foregroundStyle(SharpitColor.foreground)
                 .multilineTextAlignment(.trailing)
         }
-        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .body))
+        .padding(.vertical, 14)
         .accessibilityElement(children: .combine)
     }
 }

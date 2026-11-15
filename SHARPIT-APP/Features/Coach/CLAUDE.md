@@ -61,3 +61,10 @@ border and opens on a quiet line — what it reads and for which day (`CoachCard
 the trailing edge — never a section title or an icon tile. `SharpitScreenDemo coachcards` shows the
 three cards from the web's own fixtures. The mock-up's sparkline in a card is not built: the tool
 returns the day's figures, not a series.
+
+**Cards, audit (2026-11-15).** A data card is drawn only when the coach calls one of the three
+read tools; the server's prompt left that optional, so answers came without cards. The web's prompt
+now asks for the tool first (SHARPIT `coach-system-prompt.ts`, « Cartes de données ») — effective
+once the web is deployed. « Consommation » and « Historique » are titled sheets with their cross
+(`CliniqueSheetTitle`, `cliniqueSheetCross`): the budget read big over a thin bar and two lines;
+conversations as hairline rows, the open one tagged « Ouverte ».
