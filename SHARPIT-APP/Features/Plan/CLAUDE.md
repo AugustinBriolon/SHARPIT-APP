@@ -188,7 +188,7 @@ what to do. A routine is a hairline block with « Fait / Raccourci / Sauté » o
 (`ActivityRoutinesSection`, read from the linked plan session), so a forgotten mobility can still be said.
 
 **Routines drawer (2026-11-15).** Mobility and stretches left the déroulé: the session's « ⋯ »
-opens « Mobilité et étirements » (`SessionRoutinesSheet`): the whole in time, then each routine
+opens « Échauffement et étirements » (`SessionRoutinesSheet`): the whole in time, then each routine
 laid open with its answer. Plan's « Autour du plan » no longer adds a session — that is done from
 Activité.
 
