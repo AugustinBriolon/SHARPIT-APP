@@ -173,7 +173,7 @@ struct SubjectiveScale<Grid: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             HStack(alignment: .lastTextBaseline) {
-                SharpitEyebrow(title)
+                SharpitEyebrow.title(title)
                 Spacer()
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value.map(String.init) ?? "—")
@@ -295,10 +295,10 @@ struct ComplianceDetailSheet: View {
 
                     if let summary = analysis.summary, !summary.isEmpty {
                         Text(summary)
-                            .font(SharpitTypography.cardTitle)
-                            .tracking(SharpitTypography.cardTitleTracking)
+                            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                             .foregroundStyle(SharpitColor.foreground)
                             .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     if let strengths = analysis.strengths, !strengths.isEmpty {
@@ -331,31 +331,21 @@ struct ComplianceDetailSheet: View {
                                     }
                                 }
                             }
-                            .padding(SharpitSpacing.md)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .sharpitSurface(.panel)
                         }
                     }
 
                     if let recommendation = analysis.recommendation, !recommendation.isEmpty {
-                        HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                            Image(systemName: "arrow.forward.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(SharpitColor.primary)
-                            VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
-                                SharpitEyebrow(String(localized: "Pour la suite"))
-                                Text(recommendation)
-                                    .font(SharpitTypography.body)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Pour la suite")
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.slate)
+                            Text(recommendation)
+                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                                .foregroundStyle(SharpitColor.foreground)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .padding(SharpitSpacing.md)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .sharpitContainerCorner(SharpitRadius.panel)
-                        .background(
-                            SharpitColor.primary.opacity(0.10),
-                            in: RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                        )
+                        .cliniqueCard()
                     }
 
                     if let reassessments = analysis.physicalReassessments, !reassessments.isEmpty {
@@ -371,7 +361,9 @@ struct ComplianceDetailSheet: View {
                             .foregroundStyle(SharpitColor.slate)
                     }
                 }
-                .padding(SharpitSpacing.pageInset)
+                .padding(.horizontal, 24)
+                .padding(.vertical, SharpitSpacing.md)
+                .environment(\.sharpitSectionTitles, true)
             }
             .navigationTitle("Conformité au plan")
             .navigationBarTitleDisplayMode(.inline)
@@ -408,40 +400,28 @@ struct ComplianceDetailSheet: View {
         }
     }
 
+    /// The session it was read against, then the score big beside the verdict as a pill.
     private var header: some View {
-        HStack(spacing: SharpitSpacing.md) {
-            ZStack {
-                SharpitScoreRing(
-                    fraction: (analysis.complianceScore ?? 0) / 100,
-                    tone: tone,
-                    lineWidth: 7
-                )
-                VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
+            Text(title)
+                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                .foregroundStyle(SharpitColor.slate)
+                .lineLimit(2)
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
-                        .font(SharpitTypography.gaugeScore)
-                        .foregroundStyle(tone)
-                    Text("%")
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 46, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-1.2)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("/ 100")
+                        .font(SharpitTypography.system(size: 18, weight: .regular, relativeTo: .title3))
                         .foregroundStyle(SharpitColor.slate)
                 }
-            }
-            .frame(width: 84, height: 84)
-
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                Text(title)
-                    .font(SharpitTypography.sectionTitle)
-                    .tracking(SharpitTypography.sectionTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(2)
                 if let verdict {
-                    Label(verdict.label, systemImage: verdict.symbolName)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(verdict.tone)
-                        .padding(.horizontal, SharpitSpacing.sm)
-                        .padding(.vertical, SharpitSpacing.xxs + 2)
-                        .background(verdict.tone.opacity(0.14), in: Capsule())
+                    CliniqueStatusPill(verdict.label, status: ActivitySheetReadout.status(verdict))
                 }
             }
+            .accessibilityElement(children: .combine)
         }
     }
 }
@@ -453,7 +433,7 @@ private struct AnalysisBulletBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(title)
+            SharpitEyebrow.title(title)
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
                 ForEach(items, id: \.self) { item in
                     HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
@@ -467,9 +447,7 @@ private struct AnalysisBulletBlock: View {
                     }
                 }
             }
-            .padding(SharpitSpacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .sharpitSurface(.panel)
         }
     }
 }

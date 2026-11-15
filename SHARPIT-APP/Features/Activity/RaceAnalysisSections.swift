@@ -45,7 +45,7 @@ private struct RaceObjectiveBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(title)
+            SharpitEyebrow.title(title)
             if let totalLine {
                 Text(totalLine)
                     .font(SharpitTypography.bodyEmphasis)
@@ -126,7 +126,7 @@ struct RaceZonesBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Zones cardiaques par étape"))
+            SharpitEyebrow.title(String(localized: "Zones cardiaques par étape"))
             ForEach(rows) { row in
                 VStack(alignment: .leading, spacing: SharpitSpacing.xxs) {
                     HStack {
@@ -178,7 +178,7 @@ private struct RaceFiguresBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitEyebrow(title)
+            SharpitEyebrow.title(title)
             ActivityTechnicalGrid(rows: rows)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

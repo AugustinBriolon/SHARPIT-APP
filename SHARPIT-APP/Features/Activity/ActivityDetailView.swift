@@ -1259,7 +1259,7 @@ private struct ActivityDetailContent: View {
 
     private var multisportLegsSection: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow(String(localized: "Enchaînement"))
+            SharpitEyebrow.title(String(localized: "Enchaînement"))
             let segments = RaceLegsTimeline.segments(detail.multisportLegs)
             if !segments.isEmpty {
                 RaceLegsBar(segments: segments, compact: true)

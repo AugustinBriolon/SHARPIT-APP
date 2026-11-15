@@ -37,7 +37,7 @@ struct PainReassessmentSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(String(localized: "Réévaluer une douleur"))
+            SharpitEyebrow.title(String(localized: "Réévaluer une douleur"))
             ForEach(items) { item in
                 Button { onAnswer(item) } label: {
                     HStack(spacing: SharpitSpacing.sm) {

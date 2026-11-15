@@ -110,7 +110,7 @@ struct ActivityTechnicalSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitEyebrow(String(localized: "Analyse technique"))
+            SharpitEyebrow.title(String(localized: "Analyse technique"))
             if !rows.isEmpty {
                 ActivityTechnicalGrid(rows: rows)
             }
