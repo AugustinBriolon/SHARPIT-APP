@@ -1,0 +1,58 @@
+import Foundation
+import Testing
+@testable import Sharpit
+
+private func result(_ key: String, _ value: Double, low: Double?, high: Double?) -> V1BloodTest.Result {
+    V1BloodTest.Result(markerKey: key, value: value, unit: "", refLow: low, refHigh: high)
+}
+
+@Test func santeListsTheBiomarkersOutOfRangeFirst() {
+    let results = [
+        result("a", 5, low: 1, high: 10),
+        result("b", 12, low: 1, high: 10),
+        result("c", 5, low: 1, high: 10),
+        result("d", 0.5, low: 1, high: 10),
+        result("e", 5, low: 1, high: 10),
+        result("f", 5, low: 1, high: 10),
+    ]
+    #expect(SanteReadout.leading(results).map(\.markerKey) == ["b", "d", "a", "c", "e"])
+    #expect(SanteReadout.leading(Array(results.prefix(2))).count == 2)
+}
+
+private func week(_ start: Date, _ index: Int, _ phase: V1PlanPhase, load: Double = 400) -> V1PlanWeek {
+    V1PlanWeek(weekStart: start, weekIndex: index, phase: phase, targetLoad: load)
+}
+
+@Test func theMacroPlanGathersItsWeeksByPhaseAndMarksTheCurrentOne() {
+    let now = Date(timeIntervalSince1970: 1_794_700_800) // mid-November 2026
+    let day: TimeInterval = 86_400
+    let weeks = [
+        week(now.addingTimeInterval(-14 * day), 0, .base),
+        week(now.addingTimeInterval(-7 * day), 1, .base),
+        week(now, 2, .build),
+        week(now.addingTimeInterval(7 * day), 3, .build),
+        week(now.addingTimeInterval(14 * day), 4, .taper),
+    ]
+    let runs = MacroPlanReadout.runs(weeks, now: now)
+    #expect(runs.map(\.phase) == [.base, .build, .taper])
+    #expect(runs.map(\.weeks.count) == [2, 2, 1])
+    #expect(runs.map(\.isCurrent) == [false, true, false])
+    #expect(MacroPlanReadout.standing(weeks, now: now) == "Semaine 3 sur 5")
+    #expect(MacroPlanReadout.standing(weeks, now: now.addingTimeInterval(90 * day)) == "5 semaines")
+}
+
+@Test func planWordsItsTripsAndItsGeneratorSpans() {
+    #expect(PlanAroundReadout.trips(0) == nil)
+    #expect(PlanAroundReadout.trips(1) == "1 déclaré")
+    #expect(PlanAroundReadout.trips(3) == "3 déclarés")
+    #expect(PlanGeneratorReadout.span(3) == "3 jours")
+    #expect(PlanGeneratorReadout.span(7) == "1 semaine")
+    #expect(PlanGeneratorReadout.span(14) == "2 semaines")
+}
+
+@Test func santeSharesOnlyTheCardsItCanFill() {
+    let empty = V1HealthOverview(synthesis: V1HealthSynthesis(normed: 0, inNorm: 0))
+    #expect(SanteShareCard.available(for: empty).isEmpty)
+    let normed = V1HealthOverview(synthesis: V1HealthSynthesis(normed: 7, inNorm: 6))
+    #expect(SanteShareCard.available(for: normed) == [.summary])
+}
