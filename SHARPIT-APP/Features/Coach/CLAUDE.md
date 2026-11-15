@@ -68,3 +68,9 @@ now asks for the tool first (SHARPIT `coach-system-prompt.ts`, « Cartes de donn
 once the web is deployed. « Consommation » and « Historique » are titled sheets with their cross
 (`CliniqueSheetTitle`, `cliniqueSheetCross`): the budget read big over a thin bar and two lines;
 conversations as hairline rows, the open one tagged « Ouverte ».
+
+**Data cards, light (2026-11-15).** `CoachDataCardView` is a white card inside a hairline that rises
+and fades in as it arrives (a fade alone under Reduce Motion). Scores: a thin bar per score in its
+hue, filling on arrival. Effort target: the window read big over its place on the 0–21 effort
+track, the form on its own line (another scale). Sleep and form: a column a day — sleep as a bar,
+form as a dot — and a tap on a day reads its two figures (`CoachDataCardLayout`).
