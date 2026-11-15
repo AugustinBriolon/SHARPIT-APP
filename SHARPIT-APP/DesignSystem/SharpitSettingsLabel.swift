@@ -6,9 +6,12 @@ import SwiftUI
 struct SharpitSettingsLabel: View {
     let title: String
     var detail: String?
+    /// The page's glyph, so a row is told at a glance before its title is read.
+    var symbol: String?
 
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
+            if let symbol { SharpitSettingsGlyph(symbol: symbol) }
             Text(title)
                 .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
                 .foregroundStyle(SharpitColor.foreground)
@@ -24,6 +27,19 @@ struct SharpitSettingsLabel: View {
             }
         }
         .padding(.vertical, 3)
+    }
+}
+
+/// A settings row's glyph: plain ink in a fixed column, so every title starts on the same line.
+struct SharpitSettingsGlyph: View {
+    let symbol: String
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 17, weight: .regular))
+            .foregroundStyle(SharpitColor.foreground)
+            .frame(width: 28)
+            .accessibilityHidden(true)
     }
 }
 
