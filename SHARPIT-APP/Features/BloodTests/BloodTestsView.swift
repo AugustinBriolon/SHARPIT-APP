@@ -7,6 +7,8 @@ import SwiftUI
 struct BloodTestsView: View {
     @State private var store: BloodTestsStore
     @State private var isImporting = false
+    /// The marker « Évolution » draws; the first followed one until the athlete picks.
+    @State private var shownMarker: String?
     private let tokenProvider: () async throws -> String
 
     init(client: any BloodTestServing = BloodTestClient(), tokenProvider: @escaping () async throws -> String) {
@@ -43,16 +45,17 @@ struct BloodTestsView: View {
 
     private var content: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+            VStack(alignment: .leading, spacing: 26) {
+                Text("Intervalles du laboratoire, pas un avis médical.")
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.slate)
+                    .padding(.top, -12)
                 if store.phase == .loaded, store.tests.isEmpty {
                     emptyState
                 } else {
-                    tests
                     followed
+                    tests
                 }
-                Text("Intervalles du laboratoire, pas un avis médical.")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
             }
             .padding(.horizontal, 24)
             .padding(.vertical, SharpitSpacing.md)
@@ -74,39 +77,116 @@ struct BloodTestsView: View {
     }
 
     private var tests: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow.title(String(localized: "Analyses"))
-            SharpitInsetGroup {
-                ForEach(store.tests) { test in
-                    NavigationLink {
-                        BloodTestDetailView(store: store, testId: test.id)
-                    } label: {
-                        BloodTestRow(test: test)
-                    }
-                    .buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: 6) {
+            sectionHead(String(localized: "Analyses"), trailing: BloodTestsReadout.count(store.tests.count))
+            ForEach(Array(store.tests.enumerated()), id: \.element.id) { index, test in
+                if index > 0 { CliniqueDivider() }
+                NavigationLink {
+                    BloodTestDetailView(store: store, testId: test.id)
+                } label: {
+                    BloodTestRow(test: test)
                 }
+                .buttonStyle(.sharpitPressable)
             }
         }
     }
 
+    private func sectionHead(_ title: String, trailing: String?) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3))
+                .tracking(-0.3)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: SharpitSpacing.xs)
+            if let trailing {
+                Text(trailing)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+            }
+        }
+    }
+
+    /// « Évolution »: one marker measured twice or more as a curve over its lab interval, the
+    /// others a chip away; the curve opens the marker's own page.
     @ViewBuilder
     private var followed: some View {
         let markers = store.followedMarkers
-        if !markers.isEmpty {
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                SharpitEyebrow.title(String(localized: "Évolution"))
-                SharpitInsetGroup {
-                    ForEach(markers, id: \.markerKey) { history in
-                        NavigationLink {
-                            BloodMarkerHistoryView(history: history)
-                        } label: {
-                            BloodMarkerEvolutionRow(history: history)
+        if let shown = markers.first(where: { $0.markerKey == shownMarker }) ?? markers.first {
+            VStack(alignment: .leading, spacing: 10) {
+                sectionHead(
+                    String(localized: "Évolution"),
+                    trailing: [shown.marker?.label ?? shown.markerKey, shown.marker?.unit].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+                )
+                NavigationLink {
+                    BloodMarkerHistoryView(history: shown)
+                } label: {
+                    BloodEvolutionChart(history: shown)
+                }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Ouvre toutes les valeurs")
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        ForEach(markers, id: \.markerKey) { history in
+                            let isChosen = history.markerKey == shown.markerKey
+                            Button { shownMarker = history.markerKey } label: {
+                                Text(history.marker?.label ?? history.markerKey)
+                                    .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                                    .foregroundStyle(isChosen ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                                    .padding(.horizontal, 14)
+                                    .frame(minHeight: 34)
+                                    .background(isChosen ? SharpitColor.primary : .clear, in: Capsule())
+                                    .overlay(Capsule().strokeBorder(SharpitColor.outline, lineWidth: isChosen ? 0 : 1))
+                            }
+                            .buttonStyle(.sharpitPressable)
+                            .accessibilityAddTraits(isChosen ? .isSelected : [])
                         }
-                        .buttonStyle(.plain)
                     }
                 }
+                .scrollIndicators(.hidden)
+                .scrollClipDisabled()
             }
         }
+    }
+}
+
+enum BloodTestsReadout {
+    /// « 4 comptes rendus »
+    static func count(_ count: Int) -> String {
+        count == 1 ? String(localized: "1 compte rendu") : String(localized: "\(count) comptes rendus")
+    }
+}
+
+/// A marker across the tests that measured it: a line over its area, in the watch hue when the
+/// latest value sits outside the lab's interval, the interval's nearest bound dashed.
+private struct BloodEvolutionChart: View {
+    let history: BloodMarkerHistory
+
+    var body: some View {
+        let isOut = history.latest.map { BloodMarkerReadout.isOutOfRange($0.status) } ?? false
+        let tone = isOut ? SharpitColor.statusWatchMark : SharpitColor.pillarSleep
+        let values = history.points.map(\.value) + [history.latest?.refLow, history.latest?.refHigh].compactMap { $0 }
+        let domain = CorpsFormat.domain(values, padding: 0.15)
+        Chart {
+            ForEach(history.points) { point in
+                AreaMark(x: .value("Date", point.date), yStart: .value("Bas", domain.lowerBound), yEnd: .value("Valeur", point.value))
+                    .foregroundStyle(tone.opacity(0.12))
+                LineMark(x: .value("Date", point.date), y: .value("Valeur", point.value))
+                    .foregroundStyle(tone)
+                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+            ForEach([history.latest?.refLow, history.latest?.refHigh].compactMap { $0 }, id: \.self) { bound in
+                RuleMark(y: .value("Intervalle", bound))
+                    .foregroundStyle(SharpitColor.outline)
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [3, 4]))
+            }
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartYScale(domain: domain)
+        .frame(height: 84)
+        .contentShape(.rect)
+        .accessibilityLabel("Évolution de \(history.marker?.label ?? history.markerKey)")
     }
 }
 
@@ -116,11 +196,11 @@ private struct BloodTestRow: View {
     var body: some View {
         HStack(spacing: SharpitSpacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(test.sampledAt.formatted(date: .long, time: .omitted))
-                    .font(SharpitTypography.bodyEmphasis)
+                Text(test.sampledAt.sharpitFormatted(.dateTime.day().month(.wide).year()))
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
                     .foregroundStyle(SharpitColor.foreground)
                 Text(test.results.count == 1 ? String(localized: "1 marqueur") : String(localized: "\(test.results.count) marqueurs"))
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                     .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: SharpitSpacing.xs)
@@ -129,46 +209,10 @@ private struct BloodTestRow: View {
                 status: test.outOfRangeCount > 0 ? .watch : .good
             )
             Image(systemName: "chevron.right")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(SharpitColor.slate.opacity(0.6))
         }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
-        .padding(.vertical, SharpitSpacing.xs)
-        .frame(minHeight: SharpitSpacing.rowHeight)
-        .contentShape(Rectangle())
-    }
-}
-
-private struct BloodMarkerEvolutionRow: View {
-    let history: BloodMarkerHistory
-
-    var body: some View {
-        HStack(spacing: SharpitSpacing.sm) {
-            Text(history.marker?.label ?? history.markerKey)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.foreground)
-            Spacer(minLength: SharpitSpacing.xs)
-            if let latest = history.latest {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(BloodMarkerReadout.value(latest.value, unit: history.marker?.unit ?? ""))
-                        .font(SharpitTypography.bodyEmphasis)
-                        .monospacedDigit()
-                        .foregroundStyle(BloodMarkerReadout.isOutOfRange(latest.status) ? SharpitColor.signalCaution : SharpitColor.foreground)
-                    if let change = history.lastChange {
-                        Text(BloodMarkerReadout.delta(change))
-                            .font(SharpitTypography.meta)
-                            .monospacedDigit()
-                            .foregroundStyle(SharpitColor.slate)
-                    }
-                }
-            }
-            Image(systemName: "chevron.right")
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-        }
-        .padding(.horizontal, SharpitSpacing.rowPaddingX)
-        .padding(.vertical, SharpitSpacing.xs)
-        .frame(minHeight: SharpitSpacing.rowHeight)
+        .frame(minHeight: 62)
         .contentShape(Rectangle())
     }
 }

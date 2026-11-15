@@ -31,6 +31,9 @@ struct SharpitScrubChart: View {
     var axisName: String
     var yAxisStride: Double?
     var height: CGFloat = 160
+    /// Set on a Clinique sheet: the curve in this data hue over its faint area, no axes — the
+    /// figures sit around the chart, and the finger still reads any point.
+    var hue: Color? = nil
     var redrawToken = 0
     var axisLabel: (Double) -> String
     var readout: (Double) -> String
@@ -50,12 +53,21 @@ struct SharpitScrubChart: View {
             ForEach(points) { point in
                 switch kind {
                 case .line:
+                    if let hue {
+                        AreaMark(x: .value(String(localized: "Jour"), point.date), y: .value(axisName, point.value))
+                            .interpolationMethod(.monotone)
+                            .foregroundStyle(hue.opacity(0.08))
+                    }
                     LineMark(x: .value(String(localized: "Jour"), point.date), y: .value(axisName, point.value))
                         .interpolationMethod(.monotone)
-                        .foregroundStyle(SharpitColor.primary)
-                    PointMark(x: .value(String(localized: "Jour"), point.date), y: .value(axisName, point.value))
-                        .foregroundStyle(SharpitColor.primary)
-                        .symbolSize((points.count > 40 ? 6 : 22) * dotScale)
+                        .foregroundStyle(hue ?? SharpitColor.primary)
+                        .lineStyle(StrokeStyle(lineWidth: hue == nil ? 2 : 2.5, lineCap: .round))
+                    // On a sheet only the latest measure is marked; elsewhere every one is.
+                    if hue == nil || point.id == points.last?.id {
+                        PointMark(x: .value(String(localized: "Jour"), point.date), y: .value(axisName, point.value))
+                            .foregroundStyle(hue ?? SharpitColor.primary)
+                            .symbolSize((hue != nil ? 60 : points.count > 40 ? 6 : 22) * dotScale)
+                    }
                 case .bars:
                     BarMark(x: .value(String(localized: "Jour"), point.date, unit: .day), y: .value(axisName, point.value))
                         .foregroundStyle(barTint(point.value))
@@ -71,6 +83,8 @@ struct SharpitScrubChart: View {
             }
         }
         .modifier(ScrubYScale(kind: kind, values: domainValues))
+        .chartYAxis(hue == nil ? .automatic : .hidden)
+        .chartXAxis(hue == nil ? .automatic : .hidden)
         .chartYAxis {
             AxisMarks(position: .leading, values: yAxisValues) { value in
                 AxisGridLine().foregroundStyle(SharpitColor.divider)
@@ -115,10 +129,10 @@ struct SharpitScrubChart: View {
     private var targetMark: some ChartContent {
         if let target, target > 0 {
             RuleMark(y: .value(String(localized: "Cible"), target))
-                .foregroundStyle(SharpitColor.slate)
-                .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                .foregroundStyle(hue == nil ? SharpitColor.slate : SharpitColor.pillarRecovery)
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
                 .annotation(position: .top, alignment: .trailing) {
-                    if let targetLabel {
+                    if hue == nil, let targetLabel {
                         Text(targetLabel)
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.slate)

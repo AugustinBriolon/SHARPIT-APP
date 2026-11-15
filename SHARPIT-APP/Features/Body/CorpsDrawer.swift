@@ -69,18 +69,16 @@ struct CorpsMetricDrawer: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header
-                if let reading {
-                    SanteReadingBlock(marker: reading)
-                }
-                SharpitSegmentedControl(
-                    selection: $range,
-                    options: CorpsRange.allCases.map {
-                        SharpitSegmentedControl<CorpsRange>.Option(value: $0, label: $0.label)
-                    }
-                )
+                CorpsRangePicker(selection: $range)
                 if points.count > 1 {
-                    chart
-                    stats
+                    VStack(spacing: 8) {
+                        chart
+                        chartFoot
+                    }
+                    VStack(spacing: 0) {
+                        if let reading { SanteReadingBlock(marker: reading) }
+                        stats
+                    }
                 } else if isLoading {
                     RoundedRectangle(cornerRadius: SharpitRadius.panel)
                         .fill(SharpitColor.slate.opacity(0.12))
@@ -147,8 +145,36 @@ struct CorpsMetricDrawer: View {
                         CliniqueStatusPill(note, status: metric.tone.status)
                     }
                 }
+                if let summary = CorpsFormat.summary(
+                    trend: reading.flatMap(SanteReadout.trend),
+                    target: target.map { CorpsReadout.format($0, for: metric.key) + unitSuffix }
+                ) {
+                    Text(summary)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                }
             }
         }
+    }
+
+    /// Under the curve: where it starts, the target when one is drawn, where it ends.
+    private var chartFoot: some View {
+        HStack {
+            if let first = points.first, let last = points.last {
+                Text(first.date.sharpitFormatted(.dateTime.day().month(.abbreviated)))
+                Spacer(minLength: 0)
+                if let target {
+                    Text("visé \(CorpsReadout.format(target, for: metric.key))")
+                    Spacer(minLength: 0)
+                }
+                Text(last.date.sharpitFormatted(.dateTime.day().month(.abbreviated)))
+            }
+        }
+        .font(SharpitTypography.system(size: 12, weight: .regular, relativeTo: .caption2, digits: true))
+        .foregroundStyle(SharpitColor.slate)
+        .accessibilityHidden(true)
     }
 
     /// The web's series once it answered; until then, what the tile already holds.
@@ -163,7 +189,8 @@ struct CorpsMetricDrawer: View {
             target: target,
             targetLabel: target.map { String(localized: "cible \(CorpsReadout.format($0, for: metric.key))") },
             axisName: metric.key.label,
-            height: 220,
+            height: 130,
+            hue: SharpitColor.pillarSleep,
             redrawToken: redrawToken,
             axisLabel: { CorpsReadout.format($0, for: metric.key) },
             readout: { CorpsReadout.format($0, for: metric.key) + (metric.key.unit.map { " \($0)" } ?? "") }
@@ -179,27 +206,68 @@ struct CorpsMetricDrawer: View {
                 stat(String(localized: "Min"), CorpsReadout.format(low, for: metric.key) + unitSuffix)
                 stat(String(localized: "Max"), CorpsReadout.format(high, for: metric.key) + unitSuffix)
                 stat(String(localized: "Mesures"), "\(values.count)")
+                if let source = metric.source {
+                    stat(String(localized: "Source"), source, isQuiet: true)
+                }
+                CliniqueDivider()
             }
         }
     }
 
     private var unitSuffix: String { metric.key.unit.map { " \($0)" } ?? "" }
 
-    private func stat(_ label: String, _ value: String) -> some View {
+    private func stat(_ label: String, _ value: String, isQuiet: Bool = false) -> some View {
         VStack(spacing: 0) {
             CliniqueDivider()
             HStack {
                 Text(label)
-                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
                     .foregroundStyle(SharpitColor.foreground)
                 Spacer(minLength: SharpitSpacing.xs)
                 Text(value)
-                    .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
-                    .foregroundStyle(SharpitColor.foreground)
+                    .font(SharpitTypography.system(size: 15, weight: isQuiet ? .regular : .semibold, relativeTo: .body, digits: true))
+                    .foregroundStyle(isQuiet ? SharpitColor.slate : SharpitColor.foreground)
             }
-            .padding(.vertical, 16)
+            .frame(minHeight: 56)
             .accessibilityElement(children: .combine)
         }
+    }
+}
+
+/// The period as the mock-up draws it: a small tray at the leading edge, the chosen span lifted
+/// on white.
+private struct CorpsRangePicker: View {
+    @Binding var selection: CorpsRange
+    @Namespace private var thumb
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(CorpsRange.allCases) { range in
+                let isChosen = range == selection
+                Button { SharpitMotion.run(SharpitMotion.selection) { selection = range } } label: {
+                    Text(range.label)
+                        .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .caption, digits: true))
+                        .foregroundStyle(isChosen ? SharpitColor.foreground : SharpitColor.slate)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 32)
+                        .background {
+                            if isChosen {
+                                Capsule().fill(SharpitColor.card)
+                                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                                    .matchedGeometryEffect(id: "thumb", in: thumb)
+                            }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isChosen ? .isSelected : [])
+            }
+        }
+        .padding(4)
+        .background(SharpitColor.tile, in: Capsule())
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Période")
     }
 }
 
@@ -243,6 +311,12 @@ enum CorpsFormat {
     static func caption(_ metric: CorpsMetric) -> String {
         let when = metric.measuredAt?.sharpitFormatted(.dateTime.day().month(.wide))
         return [when, metric.source].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// « − 0,6 kg sur le mois · visé 71,0 kg »: the month's move, then the target, whichever is known.
+    static func summary(trend: String?, target: String?) -> String? {
+        let parts = [trend, target.map { String(localized: "visé \($0)") }].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     /// Padding either side so a flat series still has room, never a zero-based axis.

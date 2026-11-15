@@ -392,7 +392,6 @@ struct SanteReadingBlock: View {
                         .multilineTextAlignment(.trailing)
                 }
             }
-            CliniqueDivider()
         }
     }
 
@@ -450,7 +449,10 @@ private struct SanteMarkerSheet: View {
                         }
                     }
                 }
-                SanteReadingBlock(marker: marker)
+                VStack(spacing: 0) {
+                    SanteReadingBlock(marker: marker)
+                    CliniqueDivider()
+                }
                 if marker.series.count > 1 {
                     CorpsSparkline(points: marker.series, tone: SharpitColor.pillarSleep)
                         .frame(height: 140)

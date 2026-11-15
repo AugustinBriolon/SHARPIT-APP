@@ -95,3 +95,12 @@ markers — only what the overview holds), one a page, sent as an image (`ImageR
 the figures as text. `WeightTargetSheet` is as tall as its content, full height once typing. Zones
 sensibles no longer opens on « Ce que ça change à ton plan »: each open zone carries its own effect
 in two lines, the rest on its page. `SharpitScreenDemo share` shows the cards.
+
+**Third pass, on the mock-ups (2026-11-15).** A marker's sheet (`CorpsMetricDrawer`) follows
+« Corps »: the month's move and the target under the figure (`CorpsFormat.summary`), the period as
+a small tray (`CorpsRangePicker`), the curve in the sleep hue over its area with no axes
+(`SharpitScrubChart(hue:)`, still read under the finger), its two dates and the target under it,
+then lines — norm, month, min, max, count, source. « Ajouter une pesée » is not built: the app
+writes no weight. Analyses de sang follows « A-Sang-Liste »: the disclaimer under the title,
+« Évolution » as one marker's curve over its lab bounds with a chip per followed marker (the curve
+opens its history), then « Analyses » with the count, a line per report. `SharpitScreenDemo corps`.
