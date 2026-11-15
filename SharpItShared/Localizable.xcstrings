@@ -53137,6 +53137,38 @@
           }
         }
       }
+    },
+    "%@, %@, %@, %lld %%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, %@, %lld %%"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, %@, %lld %%"
+          }
+        }
+      }
+    },
+    "Mes signaux" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My signals"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mes signaux"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
