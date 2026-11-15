@@ -86,6 +86,6 @@ private struct StubQuota: CoachQuotaServing {
 
 @Test func theUsageSheetGivesATimeOnlyOnceTheBudgetIsSpent() {
     let now = Date(timeIntervalSince1970: 0)
-    #expect(CoachQuotaReadout.resetLine(quota(remaining: 3, usedRatio: 0.5), now: now) == "Au fil de l'eau : chaque échange compte 24 h")
-    #expect(CoachQuotaReadout.resetLine(quota(remaining: 0, usedRatio: 1, retryAfter: 600), now: now) == "De nouveau dans 10 min")
+    #expect(CoachQuotaReadout.resetLine(quota(remaining: 3, usedRatio: 0.5), now: now) == nil)
+    #expect(CoachQuotaReadout.resetLine(quota(remaining: 0, usedRatio: 1, retryAfter: 600), now: now) == "Dans 10 min")
 }

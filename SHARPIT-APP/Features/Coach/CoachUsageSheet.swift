@@ -23,7 +23,7 @@ struct CoachUsageSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(SharpitColor.card)
         .cliniqueSheetCross { dismiss() }
-        .presentationDetents([.height(quota?.isPro == false ? 440 : 380)])
+        .presentationDetents([.height(quota?.isPro == false ? 380 : 320)])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
@@ -53,8 +53,10 @@ struct CoachUsageSheet: View {
             CliniqueDivider()
             row(String(localized: "Échanges restants"), CoachQuotaReadout.questionsLeft(quota))
             CliniqueDivider()
-            row(String(localized: "Renouvellement"), CoachQuotaReadout.resetLine(quota))
-            CliniqueDivider()
+            if let back = CoachQuotaReadout.resetLine(quota) {
+                row(String(localized: "De nouveau disponible"), back)
+                CliniqueDivider()
+            }
             if !quota.isPro {
                 Button { onUpgrade() } label: { Text("Passer Pro").frame(maxWidth: .infinity) }
                     .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))

@@ -37,13 +37,13 @@ nonisolated enum CoachQuotaReadout {
         "\(max(0, quota.remainingQuestions)) sur \(quota.dailyQuestions)"
     }
 
-    /// When the budget comes back. The window is rolling, so there is no fixed reset date: only a
-    /// spent budget has a time, the server's wait.
-    static func resetLine(_ quota: V1CoachQuota, now: Date = .now) -> String {
-        guard let wait = quota.retryAfterSeconds else {
-            return String(localized: "Au fil de l'eau : chaque échange compte 24 h")
+    /// When a spent budget comes back, by the server's wait; nil while there is budget left —
+    /// the window is rolling, so there is no reset date to give.
+    static func resetLine(_ quota: V1CoachQuota, now: Date = .now) -> String? {
+        quota.retryAfterSeconds.map { wait in
+            let text = eta(wait, now: now)
+            return text.prefix(1).uppercased() + text.dropFirst()
         }
-        return String(localized: "De nouveau \(eta(wait, now: now))")
     }
 
     /// « dans 12 min », or the clock time past an hour: a relative wait goes stale on a screen
