@@ -1,21 +1,15 @@
 import SwiftUI
 
-/// What a session holds, top to bottom: who and when, its figures and why the coach wrote it,
-/// then the session in time — mobility, steps, stretches. Shared by the
+/// What a session holds, top to bottom: who and when, its figures, its steps, then why the coach
+/// wrote it. Mobility and stretches live in their own drawer (`SessionRoutinesSheet`). Shared by the
 /// planned session's drawer and the proposal's page, so both read the same; each screen adds
 /// its own actions under the why.
 ///
-/// One panel leads, the steps': the routines fold to a line around them, and the figures and
-/// the why sit on the canvas rather than in cards of the same weight.
 struct PlannedSessionSummary<Actions: View>: View {
     let preview: PlannedSessionPreview
     let steps: [V1PlannedSessionStep]
     let stepsAreDerived: Bool
     var isLoadingBreakdown = false
-    /// Mobility and stretches around the steps (SHARPIT ADR-114), when the session has them.
-    var routines: V1SessionRoutines?
-    /// Records what the athlete did with a routine; nil where it cannot be said yet.
-    var onRoutineStatus: ((V1RoutinePart, V1RoutineStatus?) -> Void)?
     @ViewBuilder var actions: Actions
 
     var body: some View {
@@ -28,13 +22,6 @@ struct PlannedSessionSummary<Actions: View>: View {
             }
             actions
             VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                if let sequence = SessionSequence.of(durationMin: preview.durationMin, routines: routines) {
-                    SessionSequenceBar(sequence: sequence)
-                        .padding(.bottom, SharpitSpacing.xs)
-                }
-                if let routines {
-                    routinePanel(String(localized: "Mobilité avant"), routines.warmup, .warmup)
-                }
                 if !steps.isEmpty {
                     PlannedSessionBreakdownList(steps: steps, derived: stepsAreDerived)
                         .padding(.top, SharpitSpacing.xs)
@@ -46,9 +33,6 @@ struct PlannedSessionSummary<Actions: View>: View {
                             .font(SharpitTypography.meta)
                             .foregroundStyle(SharpitColor.slate)
                     }
-                }
-                if let routines {
-                    routinePanel(String(localized: "Étirements ciblés"), routines.cooldown, .cooldown)
                 }
             }
             if let rationale = preview.rationale, !rationale.isEmpty {
@@ -107,20 +91,6 @@ struct PlannedSessionSummary<Actions: View>: View {
         }
     }
 
-    /// The coach's reason, on the canvas under the figures: it is what makes the session his
-    /// and the athlete's, so it is read before the steps rather than after them.
-    /// A routine with no move — the stretches after a recovery session — leaves no panel.
-    @ViewBuilder
-    private func routinePanel(_ title: String, _ routine: V1SessionRoutine, _ part: V1RoutinePart) -> some View {
-        if !routine.moves.isEmpty {
-            SessionRoutinePanel(
-                title: title,
-                routine: routine,
-                onStatus: onRoutineStatus.map { record in { record(part, $0) } }
-            )
-        }
-    }
-
     /// The coach's reason: a titled paragraph on the sheet, after the steps.
     private func words(_ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -149,8 +119,7 @@ nonisolated enum PlannedSessionReadout {
 extension PlannedSessionSummary where Actions == EmptyView {
     init(preview: PlannedSessionPreview) {
         self.init(
-            preview: preview, steps: preview.steps, stepsAreDerived: preview.stepsAreDerived,
-            routines: preview.routines
+            preview: preview, steps: preview.steps, stepsAreDerived: preview.stepsAreDerived
         ) { EmptyView() }
     }
 }

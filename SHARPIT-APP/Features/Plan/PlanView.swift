@@ -463,8 +463,6 @@ private struct PlanAroundSection: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .accessibilityAddTraits(.isHeader)
                 .padding(.bottom, 4)
-            line(String(localized: "Ajouter une séance"), symbol: "plus", detail: nil, action: chrome.onAddSession)
-            CliniqueDivider()
             line(String(localized: "Objectifs"), symbol: "flag", detail: nil, action: chrome.onOpenGoals)
             CliniqueDivider()
             line(

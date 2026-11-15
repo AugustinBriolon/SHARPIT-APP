@@ -73,12 +73,12 @@ struct ScreenSnapshotTests {
 
     // MARK: Planned session
 
-    /// The header, the figures between hairlines, the steps as a table, the routines folded.
+    /// The header, the figures between hairlines, the steps as a table.
     @Test(arguments: [UIUserInterfaceStyle.light, .dark])
     func thePlannedSessionLeadsWithItsSteps(style: UIUserInterfaceStyle) async throws {
         let preview = PlannedSessionPreview.demo
         let summary = PlannedSessionSummary(
-            preview: preview, steps: preview.steps, stepsAreDerived: false, routines: preview.routines
+            preview: preview, steps: preview.steps, stepsAreDerived: false
         ) { EmptyView() }
         // At its ideal height, as its scroll view lays it out.
         try await assertSnapshot(onCanvas(summary.fixedSize(horizontal: false, vertical: true)), named: "planned-session", style: style)

@@ -230,6 +230,7 @@ struct PlannedSessionDrawer: View {
     @Environment(GuidedWorkoutDock.self) private var workoutDock: GuidedWorkoutDock?
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @State private var showingLinkPicker = false
+    @State private var showingRoutines = false
     @State private var loadedBreakdown: V1PlannedSessionBreakdown?
     @State private var isLoadingBreakdown = false
     @State private var loadedPrescription: JSONValue?
@@ -268,6 +269,9 @@ struct PlannedSessionDrawer: View {
         else { return nil }
         return { part, status in editing.editor.markRoutine(part, of: editing.session, as: status) }
     }
+
+    /// Mobility and stretches around the steps (SHARPIT ADR-114), when the session has them.
+    private var routines: V1SessionRoutines? { preview.routines ?? loadedBreakdown?.routines }
 
     private var stepsAreDerived: Bool {
         preview.steps.isEmpty ? loadedBreakdown?.derived ?? false : preview.stepsAreDerived
@@ -312,9 +316,7 @@ struct PlannedSessionDrawer: View {
                     preview: preview,
                     steps: steps,
                     stepsAreDerived: stepsAreDerived,
-                    isLoadingBreakdown: isLoadingBreakdown,
-                    routines: preview.routines ?? loadedBreakdown?.routines,
-                    onRoutineStatus: routineStatusRecorder
+                    isLoadingBreakdown: isLoadingBreakdown
                 ) { EmptyView() }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -356,6 +358,11 @@ struct PlannedSessionDrawer: View {
         .sheet(isPresented: $isShowingProPaywall) {
             if let pro { SharpitProPaywallSheet(store: pro) }
         }
+        .sheet(isPresented: $showingRoutines) {
+            if let routines {
+                SessionRoutinesSheet(routines: routines, durationMin: preview.durationMin, onStatus: routineStatusRecorder)
+            }
+        }
         .sheet(isPresented: $showingLinkPicker) {
             if let sessionId = preview.sessionId, let linking {
                 SessionLinkPicker(sessionId: sessionId, context: linking) {
@@ -388,7 +395,8 @@ struct PlannedSessionDrawer: View {
                 }
             },
             // Linking needs to know *which* session, as the coach button does.
-            onLink: preview.sessionId != nil && linking != nil ? { showingLinkPicker = true } : nil
+            onLink: preview.sessionId != nil && linking != nil ? { showingLinkPicker = true } : nil,
+            onRoutines: SessionRoutinesReadout.hasMoves(routines) ? { showingRoutines = true } : nil
         )
     }
 

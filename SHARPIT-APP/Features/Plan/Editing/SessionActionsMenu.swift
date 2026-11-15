@@ -8,12 +8,19 @@ struct SessionActionsMenu: View {
     /// « Envoyer sur ma montre », titled by where the session stands on the watch.
     var watch: SessionMenuAction?
     var onLink: (() -> Void)?
+    /// Opens the mobility and stretches around the session; nil when it has none.
+    var onRoutines: (() -> Void)?
 
     /// Nothing to offer: the drawer shows no « … » at all rather than an empty menu.
-    var isEmpty: Bool { editing == nil && watch == nil && onLink == nil }
+    var isEmpty: Bool { editing == nil && watch == nil && onLink == nil && onRoutines == nil }
 
     var body: some View {
         Menu {
+            if let onRoutines {
+                Button(action: onRoutines) {
+                    Label("Mobilité et étirements", systemImage: "figure.flexibility")
+                }
+            }
             if let watch {
                 Button(action: watch.action) {
                     Label(watch.title, systemImage: watch.symbolName)
@@ -25,7 +32,7 @@ struct SessionActionsMenu: View {
                 }
             }
             if let editing {
-                if watch != nil || onLink != nil { Divider() }
+                if watch != nil || onLink != nil || onRoutines != nil { Divider() }
                 Button(action: editing.onEdit) {
                     Label("Modifier", systemImage: "pencil")
                 }
