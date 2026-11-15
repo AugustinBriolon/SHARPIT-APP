@@ -83,3 +83,24 @@ private func week(_ start: Date, _ index: Int, _ phase: V1PlanPhase, load: Doubl
     #expect(CoachDataCardLayout.dayNumber("2026-11-14") == "14")
     #expect(CoachDataCardLayout.dayNumber("x") == "")
 }
+
+@Test func theJournalWordsItsAmounts() {
+    let french = Locale(identifier: "fr_FR")
+    #expect(JournalAmountFormat.milligrams(160) == "160 mg")
+    #expect(JournalAmountFormat.volume(250, locale: french) == "25 cl")
+    #expect(JournalAmountFormat.volume(0, locale: french) == "0 cl")
+    #expect(JournalAmountFormat.volume(1_250, locale: french) == "1,25 L")
+    #expect(JournalAmountFormat.volume(2_000, locale: french) == "2 L")
+}
+
+@Test func eachMeasuredLineHasItsOwnGlyph() {
+    #expect(JournalCatalogue.symbolName(forAuto: "steps_10k") == "figure.walk")
+    #expect(JournalCatalogue.symbolName(forAuto: "sleep_target") != JournalCatalogue.symbolName(forAuto: "steps_10k"))
+    #expect(JournalCatalogue.symbolName(forAuto: "unknown_line") == "waveform.path.ecg")
+}
+
+@Test func routinesAreReadFromTheLinkedPlanSession() {
+    let sessions = [V1PlannedSessionItem(id: "s1", date: .now, type: "RUN")]
+    #expect(ActivityRoutinesReadout.routines(of: "s1", in: sessions) == nil)
+    #expect(ActivityRoutinesReadout.routines(of: "missing", in: sessions) == nil)
+}
