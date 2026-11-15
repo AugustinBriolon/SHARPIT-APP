@@ -77,16 +77,21 @@ enum SanteReadout {
 
     /// The value and its unit, as the tile writes them.
     static func value(_ marker: V1HealthMarker) -> (text: String, unit: String?) {
-        switch marker.key {
-        case .sleep: (hoursMinutes(marker.value), nil)
-        case .steps: (steps(marker.value), "pas")
-        case .restingHr: (number(marker.value, digits: 0), "bpm")
-        case .hrv: (number(marker.value, digits: 0), "ms")
-        case .vo2max: (number(marker.value, digits: 0), "mL/kg/min")
-        case .weight: (number(marker.value, digits: 1), "kg")
-        case .bodyFatPct, .musclePct: (number(marker.value, digits: 1), "%")
-        case .visceralFat: (number(marker.value, digits: 0), "indice")
-        case .respiration: (number(marker.value, digits: 1), "/min")
+        reading(marker.value, of: marker.key)
+    }
+
+    /// Any reading of a marker in its own unit — a day picked on its trend as well as the latest.
+    static func reading(_ value: Double, of key: V1HealthMarker.Key) -> (text: String, unit: String?) {
+        switch key {
+        case .sleep: (hoursMinutes(value), nil)
+        case .steps: (steps(value), "pas")
+        case .restingHr: (number(value, digits: 0), "bpm")
+        case .hrv: (number(value, digits: 0), "ms")
+        case .vo2max: (number(value, digits: 0), "mL/kg/min")
+        case .weight: (number(value, digits: 1), "kg")
+        case .bodyFatPct, .musclePct: (number(value, digits: 1), "%")
+        case .visceralFat: (number(value, digits: 0), "indice")
+        case .respiration: (number(value, digits: 1), "/min")
         }
     }
 

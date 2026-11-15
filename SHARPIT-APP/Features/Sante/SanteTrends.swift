@@ -16,6 +16,11 @@ enum SanteTrendReadout {
         markers.filter { $0.series.count > 2 }
     }
 
+    /// The reading nearest a day pointed at on the chart; nil for an empty series.
+    static func nearest(_ points: [CorpsPoint], to date: Date) -> CorpsPoint? {
+        points.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+    }
+
     /// « 16 sept. »
     static func day(_ date: Date) -> String {
         date.sharpitFormatted(.dateTime.day().month(.abbreviated))
@@ -23,12 +28,14 @@ enum SanteTrendReadout {
 }
 
 /// « Tendances »: a marker's month as a line over its area, another laid over it with
-/// « Comparer », and the last reading named in a bubble.
+/// « Comparer », and a reading named in a bubble — the last one, or the day under the finger.
 struct SanteTrends: View {
     let markers: [V1HealthMarker]
 
     @State private var shownKey: V1HealthMarker.Key?
     @State private var comparedKey: V1HealthMarker.Key?
+    /// The day under the finger while the chart is scrubbed.
+    @State private var scrubbed: Date?
 
     private var shown: V1HealthMarker? {
         markers.first { $0.key == shownKey } ?? markers.first { $0.key == .vo2max } ?? markers.first
@@ -88,7 +95,11 @@ struct SanteTrends: View {
     private func chart(_ shown: V1HealthMarker) -> some View {
         let line = SanteTrendReadout.normalised(shown.series)
         let other = compared.map { SanteTrendReadout.normalised($0.series) } ?? []
-        let value = SanteReadout.value(shown)
+        // The bubble follows the finger; lifted, it goes back to the latest reading.
+        let picked = scrubbed.flatMap { SanteTrendReadout.nearest(shown.series, to: $0) }
+        let index = picked.flatMap { pick in shown.series.firstIndex { $0.date == pick.date } }
+        let value = picked.map { SanteReadout.reading($0.value, of: shown.key) } ?? SanteReadout.value(shown)
+        let isLeading = (index ?? line.count - 1) > line.count / 2
         return Chart {
             ForEach(line) { point in
                 AreaMark(x: .value("Jour", point.date), y: .value("Niveau", point.value))
@@ -102,14 +113,14 @@ struct SanteTrends: View {
                     .foregroundStyle(SharpitColor.pillarNutrition)
                     .lineStyle(StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
             }
-            if let last = line.last {
+            if let last = index.map({ line[$0] }) ?? line.last {
                 RuleMark(x: .value("Jour", last.date))
                     .foregroundStyle(SharpitColor.outline)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 3]))
                 PointMark(x: .value("Jour", last.date), y: .value("Niveau", last.value))
                     .foregroundStyle(SharpitColor.pillarSleep)
                     .symbolSize(36)
-                    .annotation(position: .topLeading, spacing: 6) {
+                    .annotation(position: isLeading ? .topLeading : .topTrailing, spacing: 6, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(SanteTrendReadout.day(last.date))
                                 .foregroundStyle(SharpitColor.slate)
@@ -129,6 +140,10 @@ struct SanteTrends: View {
         .chartYAxis(.hidden)
         .chartYScale(domain: -0.15...1.5)
         .chartLegend(.hidden)
+        .chartXSelection(value: $scrubbed)
+        .onChange(of: picked?.date) { _, day in
+            if day != nil { SharpitHaptics.play(.notch(major: false)) }
+        }
         .frame(height: 124)
         .accessibilityLabel("\(SanteReadout.title(shown.key)) sur le mois")
     }

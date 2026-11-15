@@ -128,6 +128,21 @@ struct SanteView: View {
                 if let overview = store.overview {
                     SanteHero(synthesis: overview.synthesis, vo2max: overview.marker(.vo2max))
                     VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                        // In the order they are looked at: what asks for attention and the day,
+                        // read every morning; the markers and their month; the blood test, read
+                        // a few times a year, last.
+                        if !overview.watch.isEmpty {
+                            SanteWatchSection(items: overview.watch)
+                        }
+                        if let day = store.dayState {
+                            SanteTodaySection(state: day)
+                        }
+                        if !overview.allMarkers.isEmpty {
+                            SanteTable(
+                                title: SanteReadout.markers(overview.allMarkers.count),
+                                rows: overview.allMarkers.map(SanteTable.Row.init)
+                            ) { row in opened = overview.allMarkers.first { $0.key.rawValue == row.id } }
+                        }
                         SanteTrends(markers: SanteTrendReadout.drawable(overview.allMarkers))
                         if let latest = blood.tests.first, !latest.results.isEmpty {
                             // The five that matter first — out of the lab's range before the rest;
@@ -140,18 +155,6 @@ struct SanteView: View {
                                     ? (SanteReadout.allBiomarkers(latest.results.count), { isShowingBloodTests = true })
                                     : nil
                             )
-                        }
-                        if !overview.allMarkers.isEmpty {
-                            SanteTable(
-                                title: SanteReadout.markers(overview.allMarkers.count),
-                                rows: overview.allMarkers.map(SanteTable.Row.init)
-                            ) { row in opened = overview.allMarkers.first { $0.key.rawValue == row.id } }
-                        }
-                        if !overview.watch.isEmpty {
-                            SanteWatchSection(items: overview.watch)
-                        }
-                        if let day = store.dayState {
-                            SanteTodaySection(state: day)
                         }
                         // What is followed on its own page, as lines of one table.
                         VStack(alignment: .leading, spacing: 0) {
