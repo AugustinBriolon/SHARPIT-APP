@@ -93,22 +93,20 @@ private struct SavedMealRow: View {
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
-                NutritionMacroSplitBar(protein: saved.protein, carbohydrates: saved.carbs, fat: saved.fat, height: 4)
-                    .frame(maxWidth: 120)
-                    .padding(.top, 3)
             }
             Spacer(minLength: SharpitSpacing.xs)
             VStack(alignment: .trailing, spacing: SharpitSpacing.xs) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(NutritionReadout.kcal(saved.kcal))
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("kcal")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                }
                 if let health = saved.health, health.score != nil {
                     FoodHealthBadge(meal: health)
                 }
-                Text(NutritionReadout.kcal(saved.kcal))
-                    .font(SharpitTypography.instrument)
-                    .monospacedDigit()
-                    .foregroundStyle(SharpitColor.foreground)
-                Text("kcal")
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.slate)
             }
         }
         .contentShape(Rectangle())
@@ -118,7 +116,8 @@ private struct SavedMealRow: View {
 
     private var detail: String {
         let count = saved.items.count == 1 ? String(localized: "1 aliment") : "\(saved.items.count) aliments"
-        return "\(count) · P \(Int(saved.protein.rounded())) · G \(Int(saved.carbs.rounded())) · L \(Int(saved.fat.rounded())) g"
+        let names = saved.items.prefix(3).map { $0.name.components(separatedBy: ",").first ?? $0.name }.joined(separator: ", ")
+        return names.isEmpty ? count : "\(names) · \(count)"
     }
 }
 

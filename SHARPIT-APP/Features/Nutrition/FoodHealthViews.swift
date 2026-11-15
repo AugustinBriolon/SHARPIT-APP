@@ -3,6 +3,24 @@ import SwiftUI
 /// The words and symbols the score is read with. The server words the reasons; the app only
 /// chooses how they look (SHARPIT ADR-063).
 nonisolated enum FoodHealthPresentation {
+    /// The grade as a status, for its pill and its ring.
+    static func status(_ grade: V1FoodHealth.Grade?) -> CliniqueStatus {
+        switch grade {
+        case .excellent, .good: .good
+        case .mediocre: .watch
+        case .poor: .alert
+        case nil: .unknown
+        }
+    }
+
+    static func highlightStatus(_ tone: V1FoodHealth.Highlight.Tone) -> CliniqueStatus {
+        switch tone {
+        case .negative: .alert
+        case .positive: .good
+        case .neutral: .unknown
+        }
+    }
+
     static func gradeTone(_ grade: V1FoodHealth.Grade?) -> Color {
         switch grade {
         case .excellent: SharpitColor.signalRecovery
@@ -260,32 +278,30 @@ struct FoodHealthSections: View {
     }
 }
 
-/// The dial with the score, the grade in its tone, the verdict and where the grade comes from.
+/// The score in its ring, the grade as a pill, the verdict and where the grade comes from.
 struct FoodHealthScoreHeader: View {
     let health: V1FoodHealth
 
-    @ScaledMetric(relativeTo: .title) private var dialWidth: CGFloat = 112
-
     var body: some View {
-        HStack(spacing: SharpitSpacing.md) {
-            SharpitTickGauge(score: health.score.map { CGFloat($0) }, tone: SharpitColor.pillarNutrition)
-                .frame(width: dialWidth)
-                .sharpitDialCentre {
-                    Text(health.score.map(String.init) ?? "—")
-                        .font(SharpitTypography.gaugeScore)
-                        .tracking(SharpitTypography.gaugeScoreTracking)
-                        .monospacedDigit()
-                        .foregroundStyle(SharpitColor.foreground)
-                }
+        HStack(alignment: .center, spacing: 18) {
+            ZStack {
+                Circle().stroke(SharpitColor.divider, lineWidth: 5)
+                Circle()
+                    .trim(from: 0, to: CliniqueRingMath.trim(for: health.score.map { Double($0) / 100 }))
+                    .stroke(FoodHealthPresentation.status(health.grade).mark, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Text(health.score.map(String.init) ?? "—")
+                    .font(SharpitTypography.system(size: 30, weight: .semibold, relativeTo: .title, digits: true))
+                    .tracking(-1)
+                    .foregroundStyle(SharpitColor.foreground)
+            }
+            .frame(width: 96, height: 96)
             .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(health.grade?.label ?? String(localized: "Non noté"))
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(FoodHealthPresentation.gradeTone(health.grade))
+            VStack(alignment: .leading, spacing: 8) {
+                CliniqueStatusPill(health.grade?.label ?? String(localized: "Non noté"), status: FoodHealthPresentation.status(health.grade))
                 Text(FoodHealthPresentation.verdict(health))
-                    .font(SharpitTypography.body)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                     .foregroundStyle(SharpitColor.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 if let sources = FoodHealthPresentation.sources(health) {
@@ -313,10 +329,12 @@ struct FoodHighlightRow: View {
     let highlight: V1FoodHealth.Highlight
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-            Image(systemName: FoodHealthPresentation.symbol(for: highlight))
-                .foregroundStyle(FoodHealthPresentation.highlightTone(highlight.tone))
-                .frame(width: 22)
+        HStack(alignment: .center, spacing: 12) {
+            // The reason's weight as a mark in its status hue, never as coloured words.
+            Capsule()
+                .fill(FoodHealthPresentation.highlightStatus(highlight.tone).mark)
+                .frame(width: 4)
+                .frame(minHeight: 24)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(highlight.label)
