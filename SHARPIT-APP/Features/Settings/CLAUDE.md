@@ -62,3 +62,7 @@ the mock-ups do not draw.
 glass capsule on iOS 26). Priorités gives each source one control, its switch; which one leads is
 its own line (« Source principale », a menu) shown once two are on, the leading source tagged
 « Principale ».
+
+**Utilisation du coach.** Under « Mémoire du coach », as the mock-up: the share of the budget spent
+over a thin bar in the coach's hue, opening `CoachUsageSheet`. It reads « 38 % sur 24 h », not the
+mock-up's « ce mois »: the budget is a rolling day (SHARPIT ADR-077). Hidden until the quota is read.

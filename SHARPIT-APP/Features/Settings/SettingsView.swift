@@ -29,6 +29,9 @@ struct SettingsView: View {
     @State private var push = PushNotificationManager.shared
     @State private var notificationStatus: UNAuthorizationStatus?
     @State private var providerKeys: [String] = []
+    /// The coach's budget, read when the page opens; the line shows only once it is known.
+    @State private var coachQuota: V1CoachQuota?
+    @State private var showingCoachUsage = false
     @Environment(ProStore.self) private var pro: ProStore?
     /// The pages open, the first one given when a notification opens Paramètres on it.
     @State private var path: [SettingsRoute]
@@ -103,6 +106,12 @@ struct SettingsView: View {
                     NavigationLink(value: SettingsRoute.coachMemory) {
                         SharpitSettingsLabel(title: String(localized: "Mémoire du coach"))
                     }
+                    if let coachQuota {
+                        Button { showingCoachUsage = true } label: {
+                            CoachUsageLine(quota: coachQuota)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .sharpitListRows()
 
@@ -175,6 +184,13 @@ struct SettingsView: View {
             .task { await profile.load() }
             .task { await refreshNotificationStatus() }
             .task { await refreshProviderKeys() }
+            .task { coachQuota = try? await CoachQuotaClient().quota(token: try await tokenProvider()) }
+            .sheet(isPresented: $showingCoachUsage) {
+                CoachUsageSheet(quota: coachQuota) {
+                    showingCoachUsage = false
+                    path.append(.pro)
+                }
+            }
         }
         .sharpitSheet()
     }
@@ -322,5 +338,33 @@ nonisolated enum SettingsReadout {
         let age = birthDate.flatMap { calendar.dateComponents([.year], from: $0, to: now).year }
         let parts = [age.map { String(localized: "\($0) ans") }, heightCm.map { "\($0) cm" }].compactMap(\.self)
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+}
+
+/// « Utilisation du coach »: the share of the rolling day's budget spent, over a thin bar in the
+/// coach's hue. It opens the usage sheet.
+private struct CoachUsageLine: View {
+    let quota: V1CoachQuota
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Utilisation du coach")
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: SharpitSpacing.xs)
+                Text("\(CoachQuotaReadout.usedPercent(quota)) sur 24 h")
+                    .monospacedDigit()
+                    .foregroundStyle(SharpitColor.slate)
+            }
+            .font(SharpitTypography.body)
+            SharpitBarTrack(fraction: quota.usedRatio, tone: SharpitColor.pillarCoach)
+                .frame(height: 4)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, 6)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Ouvre la consommation")
     }
 }
