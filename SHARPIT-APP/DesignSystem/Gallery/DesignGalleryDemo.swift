@@ -483,6 +483,36 @@ struct ScreenDemoHost: View {
                 NavigationStack {
                     FoodRecipePage(recipe: nil, client: DemoFoodLog(), tokenProvider: { "demo" }, onSave: { _ in DemoFoodLog.pasta }, onSaved: { _ in })
                 }
+            case "forme":
+                ScrollView {
+                    if let load = DemoDataset.decode(V1TrainingLoad.self, DemoDataset.trainingLoad) {
+                        TrainingLoadCard(load: load).padding(24)
+                    }
+                }
+            case "analyses":
+                NavigationStack { DemoAnalysesPage() }
+            case "blood":
+                NavigationStack { BloodTestsView(client: DemoBloodTests(), tokenProvider: { "demo" }) }
+            case "priorities":
+                NavigationStack { SourcePrioritiesView(client: DemoSourcePrefs(), tokenProvider: { "demo" }) }
+            case "trips":
+                NavigationStack { PlanTripsView(client: DemoCoachMemory(), tokenProvider: { "demo" }) }
+            case "privacy":
+                NavigationStack { PrivacySettingsView(client: DemoPrivacyConsents(), tokenProvider: { "demo" }) }
+            case "features":
+                NavigationStack { FeaturesView(store: FeatureStore(client: DemoEquipment()), tokenProvider: { "demo" }) }
+            case "savedmeals":
+                NavigationStack { DemoSavedMealsPage() }
+            case "quality":
+                NavigationStack {
+                    List {
+                        if let health = DemoDataset.decode(V1FoodHealth.self, DemoDataset.foodHealth) {
+                            FoodHealthSections(health: health)
+                        }
+                    }
+                    .sharpitGroupedList()
+                    .navigationTitle("Pâtes à la bolognaise")
+                }
             case "thresholds":
                 NavigationStack {
                     ThresholdsView(client: AthleteProfileClient(), tokenProvider: { "demo" })
@@ -1202,7 +1232,7 @@ private struct DemoFoodLog: FoodLogServing {
     func setTargets(_ targets: V1NutritionTargets, trainingDayId: String, token: String) async throws -> V1NutritionTargets { targets }
     func setSkipped(_ meal: FoodLogMeal, skipped: Bool, trainingDayId: String, token: String) async throws -> [FoodLogMeal] { [] }
     func copy(from fromDayId: String, meal: FoodLogMeal?, to toDayId: String, token: String) async throws -> [V1FoodLogEntry] { [] }
-    func savedMeals(token: String) async throws -> [V1SavedMeal] { [] }
+    func savedMeals(token: String) async throws -> [V1SavedMeal] { DemoDataset.decode([V1SavedMeal].self, DemoDataset.savedMeals) ?? [] }
     func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> V1SavedMeal { throw SharpitAPIError.server }
     func deleteSavedMeal(id: String, token: String) async throws { throw SharpitAPIError.server }
     func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry] { [] }
@@ -1222,5 +1252,21 @@ private struct DemoTargetsSheet: View {
             await store.load(trainingDayId: TrainingDayId.today(now: .now))
             isLoaded = true
         }
+    }
+}
+
+private struct DemoAnalysesPage: View {
+    @State private var store = JournalAnalysesStore(client: DemoJournalAnalyses(), tokenProvider: { "demo" })
+
+    var body: some View {
+        JournalAnalysesView(store: store).task { await store.load() }
+    }
+}
+
+private struct DemoSavedMealsPage: View {
+    @State private var store = SavedMealsStore(client: DemoFoodLog(), tokenProvider: { "demo" })
+
+    var body: some View {
+        SavedMealsPage(store: store, meal: .lunch) { _ in }.task { await store.load() }
     }
 }
