@@ -349,9 +349,11 @@ struct ScreenDemoHost: View {
                     NavigationStack {
                         ScrollView { SleepSections(sleep: sleep, segments: Self.night).padding(.top, SharpitSpacing.md) }
                             .cliniqueSheet(wash: .sleep, height: 240)
+                            .navigationBarTitleDisplayMode(.inline)
                             .toolbar {
                                 ToolbarItem(placement: .topBarLeading) { Button {} label: { Image(systemName: "chevron.left") } }
-                                ToolbarItem(placement: .topBarTrailing) { Button(SleepSheetReadout.nightLabel(.now)) {} .foregroundStyle(SharpitColor.foreground) }
+                                ToolbarItem(placement: .principal) { DayDetailDatePicker(selectedDay: .now, onSelect: { _ in }, label: { SleepSheetReadout.nightLabel($0) }) }
+                                ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "ellipsis") } }
                             }
                     }
                 }
@@ -363,15 +365,26 @@ struct ScreenDemoHost: View {
                         tokenProvider: { "demo" }
                     )
                 }
-            case "nutrition":
+            case "nutrition", "nutrition-empty":
                 NavigationStack {
-                    ScrollView { NutritionSections(nutrition: NutritionReadout.placeholderResponse).padding(.top, SharpitSpacing.md) }
+                    ScrollView {
+                        NutritionSections(
+                            nutrition: screen == "nutrition"
+                                ? NutritionReadout.placeholderResponse
+                                : V1NutritionResponse(trainingDayId: TrainingDayId.today(now: .now), day: nil)
+                        )
+                        .padding(.top, SharpitSpacing.md)
+                    }
                         .cliniqueSheet(wash: .watch, height: 240)
+                        .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .topBarLeading) { Button {} label: { Image(systemName: "chevron.left") } }
-                            ToolbarItem(placement: .topBarTrailing) { Button(DayDetailDatePicker.shortDay(.now)) {} .foregroundStyle(SharpitColor.foreground) }
+                            ToolbarItem(placement: .principal) { DayDetailDatePicker(selectedDay: .now, onSelect: { _ in }) }
+                            ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "ellipsis") } }
                         }
                 }
+            case "share":
+                Color.clear.sheet(isPresented: .constant(true)) { SanteShareSheet(overview: Self.health) }
             case "recovery":
                 if let recovery = Self.recovery {
                     NavigationStack {
@@ -379,7 +392,7 @@ struct ScreenDemoHost: View {
                             .cliniqueSheet(wash: .good, height: 240)
                             .toolbar {
                                 ToolbarItem(placement: .topBarLeading) { Button {} label: { Image(systemName: "chevron.left") } }
-                                ToolbarItem(placement: .topBarTrailing) { Button(DayDetailDatePicker.shortDay(.now)) {} .foregroundStyle(SharpitColor.foreground) }
+                                ToolbarItem(placement: .principal) { DayDetailDatePicker(selectedDay: .now, onSelect: { _ in }) }
                             }
                     }
                 }
@@ -404,7 +417,7 @@ struct ScreenDemoHost: View {
                             SharpitBarTitle("Santé")
                             ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "square.and.arrow.up") } }
                             SharpitBarGap()
-                            ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "plus") } }
+                            ToolbarItem(placement: .topBarTrailing) { Button {} label: { Image(systemName: "target") } }
                         }
                     } } label: { SharpitTabLabel("Santé", systemImage: "heart") }
                 }
