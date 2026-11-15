@@ -2,7 +2,7 @@ import SwiftUI
 import WidgetKit
 
 /// « Résumé »: the day's four rings as the app's first screen draws them — last night, the
-/// recovery, the day's food, the week's regularity — two by two on the small widget, side by
+/// recovery, the day's food, the week's regularity — two by two with their glyphs on the small widget, side by
 /// side with their names on the medium one. A ring the athlete hides in the app is left out.
 struct ResumeRingsWidget: Widget {
     var body: some WidgetConfiguration {
@@ -79,17 +79,16 @@ struct ResumeRingsView: View {
         .accessibilityLabel("\(ring.kind.title), \(ring.value)")
     }
 
-    /// Small: the ring with its figure inside.
+    /// Small: the ring with its glyph inside — on a tinted or clear Home Screen the hues are
+    /// gone, and four figures alone no longer say which ring is which.
     private func cell(_ ring: WidgetResumeRing) -> some View {
         WidgetRing(fraction: ring.fraction, hue: ring.kind.hue, lineWidth: 5)
             .aspectRatio(1, contentMode: .fit)
             .overlay {
-                Text(ring.value)
-                    .font(SharpitTypography.meta.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .padding(.horizontal, 8)
+                Image(systemName: ring.kind.symbol)
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundStyle(ring.kind.hue)
+                    .widgetAccentable()
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(ring.kind.title), \(ring.value)")

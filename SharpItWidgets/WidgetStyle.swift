@@ -27,10 +27,14 @@ struct WidgetRing: View {
     let fraction: Double?
     let hue: Color
     var lineWidth: CGFloat = 6
+    @Environment(\.widgetRenderingMode) private var renderingMode
 
     var body: some View {
         ZStack {
+            // A tinted or clear Home Screen keeps a colour's alpha only: the track, opaque, read
+            // as a full ring. There it is faint, so the arc alone says the score.
             Circle().stroke(SharpitColor.divider, lineWidth: lineWidth)
+                .opacity(renderingMode == .fullColor ? 1 : 0.22)
             if let fraction {
                 Circle()
                     .trim(from: 0, to: min(max(fraction, 0.001), 1))
