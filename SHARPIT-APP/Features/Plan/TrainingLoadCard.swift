@@ -11,23 +11,38 @@ struct TrainingLoadCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(title: String(localized: "Forme"), symbol: "chart.xyaxis.line", showsChevron: false)
+            Text("Forme")
+                .font(SharpitTypography.sectionTitle)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
             if let calibration = load.calibration, calibration.isCalibrating {
                 Text(calibrationCaption(calibration))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.signalCaution)
+                    .foregroundStyle(SharpitColor.slate)
             }
             if let today {
-                HStack(alignment: .top, spacing: SharpitSpacing.md) {
-                    figure(String(localized: "Forme chronique"), value: "\(Int(today.ctl.rounded()))", caption: "CTL", tone: SharpitColor.foreground)
-                    figure(String(localized: "Fatigue aiguë"), value: "\(Int(today.atl.rounded()))", caption: "ATL", tone: SharpitColor.foreground)
-                    figure(
-                        String(localized: "Forme nette"),
-                        value: TrainingLoadReadout.signed(today.tsb),
-                        caption: "TSB",
-                        tone: TrainingLoadReadout.isInFormBand(today.tsb) ? SharpitColor.foreground : SharpitColor.signalCaution
+                // Net form read big, whether it sits in its usual band said by a pill.
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(TrainingLoadReadout.signed(today.tsb))
+                        .font(SharpitTypography.system(size: 46, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-1.2)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("forme nette · TSB")
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.slate)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    CliniqueStatusPill(
+                        TrainingLoadReadout.isInFormBand(today.tsb) ? String(localized: "Dans ta zone") : String(localized: "Hors zone"),
+                        status: TrainingLoadReadout.isInFormBand(today.tsb) ? .good : .watch
                     )
                 }
+                .accessibilityElement(children: .combine)
+                CliniqueDivider()
+                HStack(alignment: .top, spacing: SharpitSpacing.md) {
+                    figure(String(localized: "Forme chronique"), value: "\(Int(today.ctl.rounded()))", caption: "CTL")
+                    figure(String(localized: "Fatigue aiguë"), value: "\(Int(today.atl.rounded()))", caption: "ATL")
+                }
+                CliniqueDivider()
             }
             VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                 curve
@@ -38,9 +53,7 @@ struct TrainingLoadCard: View {
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
         }
-        .padding(SharpitSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
     }
 
     private func calibrationCaption(_ calibration: V1TrainingLoad.Calibration) -> String {
@@ -53,22 +66,16 @@ struct TrainingLoadCard: View {
             : String(localized: "En calibration. Encore \(remaining) jours de charge pour fiabiliser la forme.")
     }
 
-    private func figure(_ label: String, value: String, caption: String, tone: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(SharpitTypography.label)
-                .tracking(SharpitTypography.labelTracking)
+    private func figure(_ label: String, value: String, caption: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("\(label) · \(caption)")
+                .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Text(value)
-                .font(SharpitTypography.data)
-                .tracking(SharpitTypography.dataTracking)
-                .foregroundStyle(tone)
-                .monospacedDigit()
-            Text(caption)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
+                .font(SharpitTypography.system(size: 19, weight: .semibold, relativeTo: .title3, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -84,9 +91,9 @@ struct TrainingLoadCard: View {
             .foregroundStyle(SharpitColor.tile)
             ForEach(load.days) { day in
                 LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("CTL", day.ctl), series: .value(String(localized: "Série"), "CTL"))
-                    .foregroundStyle(SharpitColor.primary)
+                    .foregroundStyle(SharpitColor.pillarSleep)
                 LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("ATL", day.atl), series: .value(String(localized: "Série"), "ATL"))
-                    .foregroundStyle(SharpitColor.signalVo2)
+                    .foregroundStyle(SharpitColor.pillarNutrition)
                 LineMark(x: .value(String(localized: "Jour"), day.date), y: .value("TSB", day.tsb), series: .value(String(localized: "Série"), "TSB"))
                     .foregroundStyle(SharpitColor.slate)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
@@ -115,9 +122,9 @@ struct TrainingLoadCard: View {
 
     private var legend: some View {
         HStack(spacing: SharpitSpacing.md) {
-            legendItem("CTL", tone: SharpitColor.primary, dashed: false)
-            legendItem("ATL", tone: SharpitColor.signalVo2, dashed: false)
-            legendItem("TSB", tone: SharpitColor.slate, dashed: true)
+            legendItem(String(localized: "Forme chronique"), tone: SharpitColor.pillarSleep, dashed: false)
+            legendItem(String(localized: "Fatigue aiguë"), tone: SharpitColor.pillarNutrition, dashed: false)
+            legendItem(String(localized: "Forme nette"), tone: SharpitColor.slate, dashed: true)
             Spacer(minLength: 0)
         }
         .accessibilityHidden(true)
@@ -138,8 +145,8 @@ struct TrainingLoadCard: View {
         let peak = max(load.weeks.map(\.tss).max() ?? 0, 1)
         return VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
             HStack {
-                Text("TSS par semaine")
-                    .font(SharpitTypography.bodyEmphasis)
+                Text("Charge par semaine")
+                    .font(SharpitTypography.sectionTitle)
                     .foregroundStyle(SharpitColor.foreground)
                 Spacer()
                 if let current = load.weeks.last {
@@ -151,8 +158,8 @@ struct TrainingLoadCard: View {
             HStack(alignment: .bottom, spacing: 6) {
                 ForEach(Array(load.weeks.enumerated()), id: \.element.id) { index, week in
                     VStack(spacing: 4) {
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(index == load.weeks.count - 1 ? SharpitColor.primary : SharpitColor.primary.opacity(0.35))
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(index == load.weeks.count - 1 ? SharpitColor.foreground : SharpitColor.outline)
                             .frame(height: max(3, 44 * week.tss / peak))
                             .frame(height: 44, alignment: .bottom)
                         Text("\(Int(week.tss.rounded()))")
