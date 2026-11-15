@@ -74,27 +74,16 @@ struct NutritionView: View {
             loadingPlaceholder: NutritionReadout.placeholderResponse,
             wash: .watch
         )
-        // One tap to log a food, wherever the page is scrolled.
-        .overlay(alignment: .bottomTrailing) {
-            Button { addRequest = FoodAddRequest(meal: suggestedMeal) } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(SharpitColor.primaryForeground)
-                    .frame(width: 58, height: 58)
-                    .background(SharpitColor.primary, in: Circle())
-                    .sharpitShadow(.control)
-            }
-            .buttonStyle(.sharpitPressable)
-            .accessibilityLabel("Ajouter un aliment")
-            .padding(.trailing, 16)
-            .padding(.bottom, 2)
-        }
         .toolbar {
+            // One tap to log a food, wherever the page is scrolled: in the bar, beside the menu.
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { addRequest = FoodAddRequest(meal: suggestedMeal) } label: {
+                    Label("Ajouter un aliment", systemImage: "plus")
+                }
+            }
+            SharpitBarGap()
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button { addRequest = FoodAddRequest(meal: suggestedMeal) } label: {
-                        Label("Ajouter un aliment", systemImage: "plus")
-                    }
                     if BarcodeScannerView.isAvailable {
                         Button { addRequest = FoodAddRequest(meal: suggestedMeal, start: .scan) } label: {
                             Label("Scanner un code-barres", systemImage: "barcode.viewfinder")

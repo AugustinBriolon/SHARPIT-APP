@@ -26,11 +26,14 @@ struct FoodAddSheet: View {
     @State private var savedMeals: SavedMealsStore
     @State private var path: [FoodAddRoute] = []
     @State private var query = ""
+    /// The meal the food goes into: the one asked for, changed from the title.
+    @State private var meal: FoodLogMeal
     @Environment(\.dismiss) private var dismiss
 
     init(store: FoodLogStore, request: FoodAddRequest) {
         self.store = store
         self.request = request
+        _meal = State(initialValue: request.meal)
         _search = State(initialValue: FoodSearchStore(client: store.client, tokenProvider: store.tokenProvider))
         _ownFoods = State(initialValue: OwnFoodsStore(client: store.client, tokenProvider: store.tokenProvider))
         _savedMeals = State(initialValue: SavedMealsStore(client: store.client, tokenProvider: store.tokenProvider))
@@ -40,7 +43,7 @@ struct FoodAddSheet: View {
     var body: some View {
         NavigationStack(path: $path) {
             FoodSearchPage(
-                title: request.meal.label,
+                meal: $meal,
                 onClose: { dismiss() },
                 store: store,
                 search: search,
@@ -54,7 +57,7 @@ struct FoodAddSheet: View {
                 onSavedMeals: { path.append(.savedMeals) },
                 onRecipe: { path.append(.recipe(nil)) }
             )
-            .navigationTitle(request.meal.label)
+            .navigationTitle(meal.label)
             // The page carries its own name and its way out; pushed pages keep the bar.
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: FoodAddRoute.self, destination: destination)
@@ -70,13 +73,13 @@ struct FoodAddSheet: View {
             FoodPortionPage(
                 product: product,
                 lastGrams: store.lastGrams(of: product),
-                meal: request.meal,
+                meal: meal,
                 complete: { await search.fullProduct(of: $0) }
             ) { meal, grams in
                 log(FoodLogDraft(trainingDayId: store.trainingDayId, meal: meal, grams: grams, source: .product(product)))
             }
         case .quick(let name):
-            FoodQuickAddPage(initialName: name, meal: request.meal) { meal, grams, quick in
+            FoodQuickAddPage(initialName: name, meal: meal) { meal, grams, quick in
                 log(FoodLogDraft(trainingDayId: store.trainingDayId, meal: meal, grams: grams, source: .quick(quick)))
             }
         case .custom(let name):
@@ -104,8 +107,8 @@ struct FoodAddSheet: View {
                 path.removeLast()
             }
         case .savedMeals:
-            SavedMealsPage(store: savedMeals, meal: request.meal) { saved in
-                Task { await store.logSavedMeal(saved, into: request.meal) }
+            SavedMealsPage(store: savedMeals, meal: meal) { saved in
+                Task { await store.logSavedMeal(saved, into: meal) }
                 dismiss()
             }
         case .recipe(let recipe):
@@ -135,7 +138,7 @@ struct FoodAddSheet: View {
         case .describe:
             FoodDescribePage(
                 trainingDayId: store.trainingDayId,
-                meal: request.meal,
+                meal: meal,
                 client: store.client,
                 tokenProvider: store.tokenProvider
             ) { drafts in
@@ -175,7 +178,7 @@ enum FoodAddRoute: Hashable {
 private struct FoodSearchPage: View {
     private enum Filter { case all, recent }
 
-    let title: String
+    @Binding var meal: FoodLogMeal
     let onClose: () -> Void
     let store: FoodLogStore
     let search: FoodSearchStore
@@ -197,11 +200,28 @@ private struct FoodSearchPage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text(title)
-                        .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
-                        .tracking(-0.4)
+                    // The title is the meal, and the way to another one.
+                    Menu {
+                        Picker("Repas", selection: $meal) {
+                            ForEach(FoodLogMeal.allCases) { Text($0.label).tag($0) }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(meal.label)
+                                .font(SharpitTypography.system(size: 24, weight: .semibold, relativeTo: .title2))
+                                .tracking(-0.4)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(SharpitColor.slate)
+                                .accessibilityHidden(true)
+                        }
                         .foregroundStyle(SharpitColor.foreground)
-                        .accessibilityAddTraits(.isHeader)
+                        .frame(minHeight: 44)
+                        .contentShape(.rect)
+                    }
+                    .accessibilityLabel("Repas")
+                    .accessibilityValue(meal.label)
+                    .accessibilityHint("Change le repas")
                     Spacer(minLength: SharpitSpacing.xs)
                     circleButton("xmark", String(localized: "Fermer"), size: 13, action: onClose)
                 }
