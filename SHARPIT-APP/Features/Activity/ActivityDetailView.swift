@@ -902,12 +902,9 @@ private struct ActivityDetailContent: View {
 
             // The session's head, centred: how it went against the plan, what it was, when.
             VStack(spacing: 8) {
-                if let verdict = detail.plannedSession?.analysis?.verdict.flatMap(SessionVerdict.init(rawValue:)) {
-                    Button(action: onShowCompliance) {
-                        CliniqueStatusPill(verdict.label, status: ActivitySheetReadout.status(verdict))
-                    }
-                    .buttonStyle(.sharpitPressable)
-                    .accessibilityHint("Ouvre la conformité au plan")
+                // Said, not hidden behind: the way into the compliance is its own card below.
+                if let verdict {
+                    CliniqueStatusPill(verdict.label, status: ActivitySheetReadout.status(verdict))
                 }
                 Text(ActivitySheetReadout.title(sport: detail.type.label, title: detail.title))
                     .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
@@ -991,6 +988,13 @@ private struct ActivityDetailContent: View {
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
                 .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 1)), value: appeared)
+
+            if let analysis = detail.plannedSession?.analysis {
+                complianceCard(analysis)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 12)
+                    .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: 2)), value: appeared)
+            }
 
             contextSection
                 .opacity(appeared ? 1 : 0)
@@ -1089,20 +1093,52 @@ private struct ActivityDetailContent: View {
                 action: onShowSubjective
             )
             .accessibilityHint("Ouvre l'évaluation de la séance")
-            if let planned = detail.plannedSession {
+            if detail.plannedSession != nil, detail.plannedSession?.analysis == nil {
                 CliniqueDivider()
-                if let analysis = planned.analysis {
-                    contextRow(
-                        String(localized: "Conformité au plan"),
-                        value: analysis.complianceScore.map { "\(Int($0.rounded())) %" } ?? "—",
-                        action: onShowCompliance
-                    )
-                } else {
-                    contextRow(String(localized: "Conformité au plan"), value: String(localized: "Calcul en cours…"), action: nil)
-                }
+                contextRow(String(localized: "Conformité au plan"), value: String(localized: "Calcul en cours…"), action: nil)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var verdict: SessionVerdict? {
+        detail.plannedSession?.analysis?.verdict.flatMap(SessionVerdict.init(rawValue:))
+    }
+
+    /// How the session matched the plan, as a card that opens the full reading: the score read
+    /// big, the verdict as a pill — a button that looks like one.
+    private func complianceCard(_ analysis: V1PlannedSessionAnalysis) -> some View {
+        Button(action: onShowCompliance) {
+            HStack(spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Conformité au plan")
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                        .foregroundStyle(SharpitColor.slate)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
+                            .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title, digits: true))
+                            .tracking(-0.6)
+                            .foregroundStyle(SharpitColor.foreground)
+                        Text("/ 100")
+                            .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
+                            .foregroundStyle(SharpitColor.slate)
+                    }
+                }
+                Spacer(minLength: SharpitSpacing.xs)
+                Text("Voir le détail")
+                    .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.foreground)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+            }
+            .cliniqueCard()
+            .contentShape(.rect)
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Ouvre la conformité au plan")
     }
 
     /// A line of « Ta séance »: what it is, its reading, and the way in when it opens something.

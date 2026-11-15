@@ -62,65 +62,61 @@ struct ActivityStatusDrawer: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                    if case .failed(let message) = store.phase {
-                        Text(message)
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.signalCaution)
-                    }
-
-                    statusPlate
-                    modesCard
-                    if store.store.status != .active {
-                        deadlineSection
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                Text("Statut d'activité")
+                    .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
+                    .tracking(-0.4)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
+                    .padding(.trailing, 56)
+                if case .failed(let message) = store.phase {
+                    CliniqueStatusPill(message, status: .watch)
                 }
-                .animation(SharpitMotion.reveal, value: store.store.status)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SharpitSpacing.pageInset)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(SharpitCanvasBackground())
-            .navigationTitle("Statut d'activité")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Terminé") { dismiss() }
+                statusPlate
+                modesCard
+                if store.store.status != .active {
+                    deadlineSection
                 }
             }
+            .animation(SharpitMotion.reveal, value: store.store.status)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 30)
+            .padding(.bottom, SharpitSpacing.lg)
         }
+        .background(SharpitColor.card)
+        .cliniqueSheetCross { dismiss() }
         .presentationDetents([.medium, .large])
         .sharpitSheet()
         .presentationDragIndicator(.visible)
         .onAppear(perform: syncFromStore)
     }
 
-    /// The mode now, on the ink plate this tab leads with: what it is, what it changes for the
-    /// plan and the coach, until when.
+    /// The mode now: its name, until when as a pill, what it changes for the plan and the coach.
     private var statusPlate: some View {
         let status = store.store.status
-        return VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: SharpitSpacing.sm) {
                 Image(systemName: status.symbolName)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(SharpitColor.primaryForeground)
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(SharpitColor.foreground)
                     .frame(width: 44, height: 44)
-                    .background(SharpitColor.primary, in: Circle())
+                    .overlay(Circle().strokeBorder(SharpitColor.outline, lineWidth: 1))
                     .contentTransition(.symbolEffect(.replace))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    SharpitEyebrow(String(localized: "Mode actuel"))
+                    Text("Mode actuel")
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
                         .foregroundStyle(SharpitColor.slate)
                     Text(status.label)
-                        .font(SharpitTypography.cardTitle)
+                        .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3))
                         .foregroundStyle(SharpitColor.foreground)
                         .contentTransition(.opacity)
                 }
                 Spacer(minLength: 0)
                 if let until = untilLabel, !typeSize.isAccessibilitySize {
-                    SharpitPill(until, style: .lime)
+                    CliniqueStatusPill(until, status: .unknown)
                 }
             }
             // A pill never shrinks: beside the title at the largest sizes it pushed the plate off screen.
@@ -131,20 +127,16 @@ struct ActivityStatusDrawer: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(status.planningImpact)
-                .font(SharpitTypography.body)
+                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                .lineSpacing(2)
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
             if status != .active {
-                Button {
+                Button("En parler au coach") {
                     router.discussWithCoach(about: CoachDiscuss.describe(.planning(horizonDays: 7)))
                     dismiss()
-                } label: {
-                    Label(String(localized: "En parler au coach"), systemImage: "arrow.up.right")
-                        .labelStyle(.titleAndIcon)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
                 }
-                .buttonStyle(.sharpitPressable)
+                .buttonStyle(CliniqueButtonStyle(kind: .outline))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -158,32 +150,37 @@ struct ActivityStatusDrawer: View {
     }
 
     private var modesCard: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(String(localized: "Changer de mode"))
-            SharpitInsetGroup {
-                ForEach(ActivityStatusId.allCases, id: \.self) { status in
-                    ActivityStatusOptionRow(
-                        status: status,
-                        isSelected: store.store.status == status
-                    ) {
-                        Task { await pick(status) }
-                    }
+        VStack(alignment: .leading, spacing: 4) {
+            sectionTitle(String(localized: "Changer de mode"))
+            ForEach(Array(ActivityStatusId.allCases.enumerated()), id: \.element) { index, status in
+                if index > 0 { CliniqueDivider() }
+                ActivityStatusOptionRow(status: status, isSelected: store.store.status == status) {
+                    Task { await pick(status) }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(SharpitTypography.sectionTitle)
+            .tracking(SharpitTypography.sectionTitleTracking)
+            .foregroundStyle(SharpitColor.foreground)
+            .accessibilityAddTraits(.isHeader)
+    }
+
     private var deadlineSection: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            SharpitEyebrow(String(localized: "Durée"))
+        VStack(alignment: .leading, spacing: 4) {
+            sectionTitle(String(localized: "Durée"))
             Toggle("Jusqu'à une date", isOn: $usesDeadline)
-                .font(SharpitTypography.bodyEmphasis)
-                .tint(SharpitColor.primary)
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .toggleStyle(SharpitSwitchStyle())
+                .frame(minHeight: 48)
                 .onChange(of: usesDeadline) { _, isOn in
                     Task { await applyRetention(usesDeadline: isOn) }
                 }
-
+            CliniqueDivider()
             if usesDeadline {
                 DatePicker(
                     String(localized: "Reprise prévue"),
@@ -192,14 +189,17 @@ struct ActivityStatusDrawer: View {
                     displayedComponents: .date
                 )
                 .datePickerStyle(.compact)
-                .font(SharpitTypography.body)
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                .tint(SharpitColor.foreground)
+                .frame(minHeight: 48)
                 .onChange(of: untilDate) { _, _ in
                     Task { await applyRetention(usesDeadline: true) }
                 }
             } else {
                 Text("Le mode reste actif jusqu'à ce que tu le changes.")
-                    .font(SharpitTypography.meta)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
                     .foregroundStyle(SharpitColor.slate)
+                    .padding(.top, 10)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -242,28 +242,37 @@ private struct ActivityStatusOptionRow: View {
         Button(action: onPick) {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                 if !typeSize.isAccessibilitySize {
-                    SharpitIconTile(symbol: status.symbolName, size: 40)
+                    Image(systemName: status.symbolName)
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .frame(width: 36, height: 36)
+                        .background(SharpitColor.tile, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .accessibilityHidden(true)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(status.label)
-                        .font(SharpitTypography.bodyEmphasis)
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
                         .foregroundStyle(SharpitColor.foreground)
                     // The same line whether or not it is picked: a description that
                     // rewrites itself on selection reads as a different option.
                     Text(status.hint)
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
                         .foregroundStyle(SharpitColor.slate)
                         .multilineTextAlignment(.leading)
                 }
 
                 Spacer(minLength: 0)
 
-                SharpitCheckBox(isOn: isSelected)
+                // One mode at a time: the one held carries a check, the others nothing.
+                Image(systemName: "checkmark")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .opacity(isSelected ? 1 : 0)
+                    .accessibilityHidden(true)
             }
-            .padding(.horizontal, SharpitSpacing.rowPaddingX)
-            .padding(.vertical, SharpitSpacing.xs)
-            .frame(maxWidth: .infinity, minHeight: SharpitSpacing.rowHeight, alignment: .leading)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
