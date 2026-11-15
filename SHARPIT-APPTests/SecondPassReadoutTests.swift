@@ -122,3 +122,38 @@ private func week(_ start: Date, _ index: Int, _ phase: V1PlanPhase, load: Doubl
     #expect(SessionEffortReadout.word(11) == nil)
     #expect(WellnessReadout.ends(.energy) == ("Épuisé", "Plein"))
 }
+
+@Test func tonightsNeedIsCutByWhatAddsToIt() {
+    let parts = SleepSheetReadout.needParts(
+        need: 500, contributors: V1SleepNeededContributors(debtBoostMin: 20, strainBoostMin: 0, efficiencyBoostMin: 10)
+    )
+    #expect(parts.map(\.minutes) == [470, 20, 10])
+    #expect(parts.map(\.label) == ["habituel 7 h 50", "dette +20 min", "efficacité +10 min"])
+    #expect(SleepSheetReadout.needParts(need: 450, contributors: nil).map(\.minutes) == [450])
+}
+
+@Test func theSleepBankDrawsEachNightAgainstTheNeed() {
+    let history = [
+        V1SleepNight(date: "2026-11-09", minutes: 400), V1SleepNight(date: "2026-11-10", minutes: nil),
+        V1SleepNight(date: "2026-11-11", minutes: 480),
+    ]
+    let gaps = SleepSheetReadout.gaps(history, targetMin: 450)
+    #expect(gaps.map(\.minutes) == [-50, 30])
+    #expect(gaps.map(\.id) == ["2026-11-09", "2026-11-11"])
+    #expect(SleepSheetReadout.dayInitial("nope") == "")
+}
+
+@Test func aSessionIsOnlyLinkedToARaceStillToRun() {
+    let day = Date(timeIntervalSince1970: 1_794_000_000)
+    func race(_ id: String, _ offsetDays: Double?) -> V1Goal {
+        V1Goal(id: id, title: id, kind: .race, targetDate: offsetDays.map { day.addingTimeInterval($0 * 86_400) })
+    }
+    let goals = [race("past", -30), race("soon", 3), race("undated", nil), race("linked-past", -60)]
+    #expect(ActivityGoalCandidates.ordered(goals, around: day).map(\.id) == ["soon", "undated"])
+    #expect(ActivityGoalCandidates.ordered(goals, around: day, linked: "linked-past").map(\.id) == ["soon", "linked-past", "undated"])
+}
+
+@Test func aSessionWithoutMovesHasNoRoutinesDrawer() {
+    #expect(SessionRoutinesReadout.hasMoves(nil) == false)
+    #expect(SessionRoutinesReadout.hasMoves(PlannedSessionPreview.demo.routines))
+}
