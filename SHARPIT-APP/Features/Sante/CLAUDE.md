@@ -109,3 +109,8 @@ opens its history), then « Analyses » with the count, a line per report. `Shar
 age, VO₂max — each an ink poster: the brand, the day, one ring in the pillar's hue with the figure
 inside, its meaning under it (`SanteShareReadout.reading`); the summary adds resting heart rate,
 HRV and VO₂max as three facts. Fixed colours, so the image is the same in light and dark.
+
+**Faire le point, redone (2026-11-15).** `ZoneCheckinSheet` is a titled sheet with its cross: the
+question as its title, the pain on one `CliniqueScale` track (0–10, its word beside), what the
+athlete could do as checked lines, a word for the coach, « Enregistrer » docked. The onboarding keeps
+`ZoneSeverityScale`.

@@ -130,3 +130,11 @@ lists only races not yet run on the session's day, plus the one linked (`Activit
 `Activity.goalId` means *raced for*: the server records a race result on it, so a training session is
 never auto-linked that way. A session done from a goal's plan reads « Prépare l'objectif » from its
 planned session's goal (`V1ActivityPlannedSession.goal`, web `plannedSessionSummarySelect`).
+
+**Logging strength as it is done (2026-11-15).** In « Saisir une séance » a strength session's
+exercises are entered in the guided session's own view (`GuidedStrengthLogging`: no clock, rest or
+heart rate), opened from « Saisir les exercices » and handed back as lines; the form keeps the day,
+the duration and the feeling. A new session left unsaved is kept on the iPhone
+(`ActivityDraftLocalStore`, protected, wiped with the account) and reopens as typed; « Fermer »
+keeps it, « Effacer la saisie » drops it. « Zones à réévaluer » follows its mock-up: a line per zone
+with where it stood, « Faire le point » as an outline button.

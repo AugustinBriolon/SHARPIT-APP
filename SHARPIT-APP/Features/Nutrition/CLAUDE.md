@@ -85,3 +85,6 @@ its energy. `SharpitScreenDemo quality` / `savedmeals` / `ownfood` / `recipe` sh
 a tap), then « Répartition »: the macros' split on one bar, grams or shares typed in hairline fields.
 The mock-up's per-macro steppers are not built: the fields accept an empty value, which removes a
 target. `SharpitScreenDemo targets` shows it.
+
+**Energy ring (2026-11-15).** The ring holds what was eaten; beside it the goal, exercise, and
+« Restant » (« Au-delà » once passed) — the athlete's call, reversing the mock-up's remaining-in-ring.

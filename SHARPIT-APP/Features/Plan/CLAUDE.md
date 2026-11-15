@@ -191,3 +191,15 @@ what to do. A routine is a hairline block with « Fait / Raccourci / Sauté » o
 opens « Mobilité et étirements » (`SessionRoutinesSheet`): the whole in time, then each routine
 laid open with its answer. Plan's « Autour du plan » no longer adds a session — that is done from
 Activité.
+
+**Guided session, exercises and history (2026-11-15).** The set in hand is validated in its own card
+(« Valider la série »): a button docked at the foot sat under the tab bar, the view being mounted over
+the tabs. The overview shows a mark per set and « En cours » / « Terminé » instead of « 2/4 séries »,
+and no longer lists the exercises under the title. « Ajouter un exercice » (`ExercisePickerSheet`)
+searches the athlete's own exercises first — each with « Dernière fois … · Meilleur … » — then the
+bundled catalog; a name found in neither is created once its zone is named, kept as a note on its
+sets (« Zone travaillée : … »: the server has no column for it), and found again once saved. It is
+offered in a programmed session too: better noted than left out. `/api/v1/strength-exercises`
+(`StrengthLibraryStore`, read once a launch and after a save) gives each exercise's last session and
+best, computed from the logged sets; a set opens on the last load or hold only where the plan gives
+none (`applyHistory`). The coach's generator does not read these figures yet.
