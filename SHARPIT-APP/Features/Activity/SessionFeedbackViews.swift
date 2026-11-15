@@ -112,87 +112,65 @@ struct CompliancePendingTile: View {
 
 // MARK: - Effort and feeling drawer
 
-/// Two scales, no buttons: each tap saves. Closing the drawer writes anything still pending.
+/// Two scales, no buttons: each answer saves. Closing the drawer writes anything still pending.
 struct SubjectiveEditorSheet: View {
     @Bindable var store: ActivitySubjectiveStore
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    SubjectiveScale(
-                        title: String(localized: "Effort perçu"),
-                        value: store.rpe,
-                        outOf: 10,
-                        caption: String(localized: "1 très facile · 10 maximal"),
-                        tone: store.rpe.map(SessionFeedbackTone.effort)
-                    ) {
-                        RatingGrid(
-                            values: Array(1...10),
-                            selection: store.rpe,
-                            tone: SessionFeedbackTone.effort
-                        ) { store.setRPE($0) }
-                    }
-
-                    SubjectiveScale(
-                        title: String(localized: "Ressenti"),
-                        value: store.feeling?.rawValue,
-                        outOf: 5,
-                        caption: store.feeling?.hint ?? String(localized: "1 très mal · 5 très bien"),
-                        tone: store.feeling.map(SessionFeedbackTone.feeling)
-                    ) {
-                        RatingGrid(
-                            values: SessionFeeling.allCases.map(\.rawValue),
-                            selection: store.feeling?.rawValue,
-                            tone: { SessionFeedbackTone.feeling(SessionFeeling(rawValue: $0) ?? .okay) }
-                        ) { raw in
-                            if let feeling = SessionFeeling(rawValue: raw) { store.setFeeling(feeling) }
-                        }
-                    }
-
-                    SaveStatusLine(status: store.status)
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, SharpitSpacing.md)
+        VStack(alignment: .leading, spacing: 0) {
+            CliniqueSheetTitle(String(localized: "Comment s'est passée la séance ?"))
+                .padding(.bottom, 22)
+            CliniqueScale(
+                title: String(localized: "Effort perçu"),
+                values: Array(1...10),
+                selection: store.rpe,
+                word: SessionEffortReadout.word,
+                ends: (String(localized: "Très facile"), String(localized: "Maximal"))
+            ) { store.setRPE($0) }
+            CliniqueDivider().padding(.vertical, 18)
+            CliniqueScale(
+                title: String(localized: "Ressenti"),
+                values: SessionFeeling.allCases.map(\.rawValue),
+                selection: store.feeling?.rawValue,
+                word: { SessionFeeling(rawValue: $0)?.storedValue },
+                ends: (SessionFeeling.veryBad.storedValue, SessionFeeling.veryGood.storedValue)
+            ) { raw in
+                if let feeling = SessionFeeling(rawValue: raw) { store.setFeeling(feeling) }
             }
-            .navigationTitle("Comment s'est passée la séance ?")
-            .navigationBarTitleDisplayMode(.inline)
+            if let hint = store.feeling?.hint {
+                Text(hint)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
+            }
+            Spacer(minLength: SharpitSpacing.md)
+            SaveStatusLine(status: store.status)
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 30)
+        .padding(.bottom, SharpitSpacing.md)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(SharpitColor.card)
+        .cliniqueSheetCross { dismiss() }
         .onDisappear { Task { await store.flush() } }
     }
 }
 
-/// One titled scale: its value read large on the right, the grid, a caption that reads the choice.
-struct SubjectiveScale<Grid: View>: View {
-    let title: String
-    let value: Int?
-    let outOf: Int
-    let caption: String
-    let tone: Color?
-    @ViewBuilder let grid: Grid
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            HStack(alignment: .lastTextBaseline) {
-                SharpitEyebrow.title(title)
-                Spacer()
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(value.map(String.init) ?? "—")
-                        .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
-                        .foregroundStyle(tone == nil ? SharpitColor.slate : SharpitColor.foreground)
-                        .contentTransition(.numericText())
-                    Text("/ \(outOf)")
-                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.slate)
-                }
-            }
-            grid
-            Text(caption)
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.slate)
-                .contentTransition(.opacity)
+nonisolated enum SessionEffortReadout {
+    /// The word a perceived effort stands for, on the 1–10 scale.
+    static func word(_ rpe: Int) -> String? {
+        switch rpe {
+        case 1: String(localized: "Très facile")
+        case 2...3: String(localized: "Facile")
+        case 4...5: String(localized: "Modéré")
+        case 6: String(localized: "Soutenu")
+        case 7...8: String(localized: "Dur")
+        case 9: String(localized: "Très dur")
+        case 10: String(localized: "Maximal")
+        default: nil
         }
-        .animation(SharpitMotion.selection, value: value)
     }
 }
 
@@ -223,47 +201,6 @@ struct SaveStatusLine: View {
     }
 }
 
-/// A row of numbered steps. The selected one fills with its own tone, so the scale reads
-/// as a ramp and not as a column of identical buttons.
-struct RatingGrid: View {
-    let values: [Int]
-    let selection: Int?
-    let tone: (Int) -> Color
-    let onSelect: (Int) -> Void
-
-    var body: some View {
-        LazyVGrid(
-            columns: Array(
-                repeating: GridItem(.flexible(minimum: 0), spacing: SharpitSpacing.xs),
-                count: min(values.count, 5)
-            ),
-            spacing: SharpitSpacing.xs
-        ) {
-            ForEach(values, id: \.self) { value in
-                let isSelected = selection == value
-                Button { onSelect(value) } label: {
-                    // The mock-up's tile: the sheet's white inside a hairline, lined in ink once chosen.
-                    Text("\(value)")
-                        .font(SharpitTypography.system(size: 18, weight: isSelected ? .semibold : .regular, relativeTo: .title3, digits: true))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.outline, lineWidth: isSelected ? 2 : 1)
-                        )
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.sharpitPressable)
-                .accessibilityLabel("\(value) sur \(values.count)")
-                .accessibilityValue(isSelected ? String(localized: "Sélectionné") : String(localized: "Non sélectionné"))
-                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-            }
-        }
-        .animation(SharpitMotion.selection, value: selection)
-    }
-}
-
 // MARK: - Compliance drawer
 
 struct ComplianceDetailSheet: View {
@@ -273,123 +210,103 @@ struct ComplianceDetailSheet: View {
     var onUnlink: (() -> Void)?
     var onReanalyze: (() -> Void)?
 
+    /// Opens the coach on this session; nil where the coach cannot be reached from here.
+    var onDiscuss: (() -> Void)?
+
     @State private var isConfirmingUnlink = false
+    @Environment(\.dismiss) private var dismiss
 
     private var verdict: SessionVerdict? { analysis.verdict.flatMap(SessionVerdict.init(rawValue:)) }
-    private var tone: Color {
-        analysis.complianceScore.map(SessionFeedbackTone.compliance) ?? verdict?.tone ?? SharpitColor.signalNeutral
-    }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    header
-
-                    if let summary = analysis.summary, !summary.isEmpty {
-                        Text(summary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                CliniqueSheetTitle(String(localized: "Conformité au plan"))
+                    .padding(.bottom, 14)
+                header
+                if let summary = analysis.summary, !summary.isEmpty {
+                    Text(summary)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 10)
+                }
+                if let strengths = analysis.strengths, !strengths.isEmpty {
+                    AnalysisLines(title: String(localized: "Ce qui est tenu"), items: strengths)
+                }
+                if let improvements = analysis.improvements, !improvements.isEmpty {
+                    AnalysisLines(title: String(localized: "À travailler"), items: improvements)
+                }
+                if let remarks = analysis.remarks, !remarks.isEmpty {
+                    AnalysisLines(title: String(localized: "Ce que montrent les données"), items: remarks)
+                }
+                if let reassessments = analysis.physicalReassessments, !reassessments.isEmpty {
+                    AnalysisLines(
+                        title: String(localized: "Zones à réévaluer"),
+                        items: reassessments.map { "\($0.noteTitle) — \($0.question)" }
+                    )
+                }
+                if let tags = analysis.scoreTags, !tags.isEmpty {
+                    Text(tags.map(SessionAnalysisScoreTagLabel.fr).joined(separator: " · "))
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                        .padding(.top, 14)
+                }
+                if let recommendation = analysis.recommendation, !recommendation.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Pour la suite")
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.slate)
+                        Text(recommendation)
                             .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                             .foregroundStyle(SharpitColor.foreground)
-                            .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-
-                    if let strengths = analysis.strengths, !strengths.isEmpty {
-                        AnalysisBulletBlock(title: String(localized: "Forces"), items: strengths, tone: SharpitColor.foreground)
-                    }
-
-                    if let improvements = analysis.improvements, !improvements.isEmpty {
-                        AnalysisBulletBlock(title: String(localized: "À travailler"), items: improvements, tone: SharpitColor.signalCaution)
-                    }
-
-                    if let tags = analysis.scoreTags, !tags.isEmpty {
-                        Text(tags.map(SessionAnalysisScoreTagLabel.fr).joined(separator: " · "))
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                    }
-
-                    if let remarks = analysis.remarks, !remarks.isEmpty {
-                        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                            SharpitEyebrow(String(localized: "Ce que montrent les données"))
-                            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                                ForEach(remarks, id: \.self) { remark in
-                                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-                                        Circle()
-                                            .fill(tone)
-                                            .frame(width: 7, height: 7)
-                                            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
-                                        Text(remark)
-                                            .font(SharpitTypography.body)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-
-                    if let recommendation = analysis.recommendation, !recommendation.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Pour la suite")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.slate)
-                            Text(recommendation)
-                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                                .foregroundStyle(SharpitColor.foreground)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .cliniqueCard()
-                    }
-
-                    if let reassessments = analysis.physicalReassessments, !reassessments.isEmpty {
-                        AnalysisBulletBlock(
-                            title: String(localized: "Zones à réévaluer"),
-                            items: reassessments.map { item in
-                                "\(item.noteTitle) — \(item.question)"
-                            },
-                            tone: SharpitColor.signalCaution
-                        )
-                        Text("Parle au coach pour Continuer, Alléger, Reporter ou Pause.")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                    }
+                    .cliniqueCard()
+                    .padding(.top, 18)
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, SharpitSpacing.md)
-                .environment(\.sharpitSectionTitles, true)
-            }
-            .navigationTitle("Conformité au plan")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if onUnlink != nil || onReanalyze != nil {
-                    ToolbarItem(placement: .primaryAction) {
-                        Menu {
-                            if let onReanalyze {
-                                Button("Réanalyser", systemImage: "arrow.clockwise", action: onReanalyze)
-                            }
-                            if onUnlink != nil {
-                                Divider()
-                                Button(role: .destructive) { isConfirmingUnlink = true } label: {
-                                    Label("Délier de la séance prévue", systemImage: "link.badge.minus")
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                        }
-                        .accessibilityLabel("Actions de la séance prévue")
+                if onUnlink != nil {
+                    Button(role: .destructive) { isConfirmingUnlink = true } label: {
+                        Text("Délier de la séance prévue").frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(CliniqueButtonStyle(kind: .plain))
+                    .padding(.top, 10)
                 }
             }
-            .confirmationDialog(
-                String(localized: "Délier cette activité ?"),
-                isPresented: $isConfirmingUnlink,
-                titleVisibility: .visible
-            ) {
-                Button("Délier", role: .destructive) { onUnlink?() }
-                Button("Annuler", role: .cancel) {}
-            } message: {
-                Text("« \(title) » redevient à faire dans ton plan, et cette analyse disparaît.")
+            .padding(.horizontal, 24)
+            .padding(.top, 30)
+            .padding(.bottom, SharpitSpacing.md)
+        }
+        .background(SharpitColor.card)
+        .cliniqueSheetCross { dismiss() }
+        // Docked, as on the mock-up: the coach first, the new reading beside it.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if onDiscuss != nil || onReanalyze != nil {
+                HStack(spacing: 8) {
+                    if let onDiscuss {
+                        Button(action: onDiscuss) { Text("En parler au coach").frame(maxWidth: .infinity) }
+                            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+                    }
+                    if let onReanalyze {
+                        Button("Réanalyser", action: onReanalyze)
+                            .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, SharpitSpacing.xs)
+                .background(SharpitColor.card)
             }
+        }
+        .confirmationDialog(
+            String(localized: "Délier cette activité ?"),
+            isPresented: $isConfirmingUnlink,
+            titleVisibility: .visible
+        ) {
+            Button("Délier", role: .destructive) { onUnlink?() }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("« \(title) » redevient à faire dans ton plan, et cette analyse disparaît.")
         }
     }
 
@@ -419,28 +336,29 @@ struct ComplianceDetailSheet: View {
     }
 }
 
-private struct AnalysisBulletBlock: View {
+/// A titled run of the coach's sentences, each on its own line of the sheet.
+private struct AnalysisLines: View {
     let title: String
     let items: [String]
-    let tone: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            SharpitEyebrow.title(title)
-            VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                ForEach(items, id: \.self) { item in
-                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-                        Circle()
-                            .fill(tone)
-                            .frame(width: 7, height: 7)
-                            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
-                        Text(item)
-                            .font(SharpitTypography.body)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.top, 26)
+                .padding(.bottom, 6)
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                if index > 0 { CliniqueDivider() }
+                Text(item)
+                    .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout, digits: true))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 13)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

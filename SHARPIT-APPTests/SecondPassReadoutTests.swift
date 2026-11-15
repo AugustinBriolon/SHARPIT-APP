@@ -104,3 +104,21 @@ private func week(_ start: Date, _ index: Int, _ phase: V1PlanPhase, load: Doubl
     #expect(ActivityRoutinesReadout.routines(of: "s1", in: sessions) == nil)
     #expect(ActivityRoutinesReadout.routines(of: "missing", in: sessions) == nil)
 }
+
+@Test func aScaleReadsTheStepUnderTheFinger() {
+    #expect(CliniqueScaleReadout.step(at: 0, width: 300, count: 10) == 0)
+    #expect(CliniqueScaleReadout.step(at: 199, width: 300, count: 10) == 6)
+    #expect(CliniqueScaleReadout.step(at: 300, width: 300, count: 10) == 9)
+    #expect(CliniqueScaleReadout.step(at: -40, width: 300, count: 5) == 0)
+    #expect(CliniqueScaleReadout.step(at: 900, width: 300, count: 5) == 4)
+    #expect(CliniqueScaleReadout.step(at: 10, width: 0, count: 5) == 0)
+}
+
+@Test func aScaleSaysItsAnswerInFiguresAndWords() {
+    #expect(CliniqueScaleReadout.answer(7, outOf: 10, word: SessionEffortReadout.word(7)) == "7 / 10 · Dur")
+    #expect(CliniqueScaleReadout.answer(4, outOf: 5, word: nil) == "4 / 5")
+    #expect(CliniqueScaleReadout.answer(nil, outOf: 5, word: nil) == "À noter")
+    #expect((1...10).allSatisfy { SessionEffortReadout.word($0) != nil })
+    #expect(SessionEffortReadout.word(11) == nil)
+    #expect(WellnessReadout.ends(.energy) == ("Épuisé", "Plein"))
+}

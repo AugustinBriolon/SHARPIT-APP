@@ -49,49 +49,28 @@ struct BrickEvaluationSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-                    SubjectiveScale(
+                    CliniqueScale(
                         title: String(localized: "Effort global"),
-                        value: store.rpe,
-                        outOf: 10,
-                        caption: String(localized: "Le brick entier, transitions comprises, pas chaque sport."),
-                        tone: store.rpe.map(SessionFeedbackTone.effort)
-                    ) {
-                        RatingGrid(
-                            values: Array(1...10),
-                            selection: store.rpe,
-                            tone: SessionFeedbackTone.effort
-                        ) { store.setRPE($0) }
-                    }
-
-                    SubjectiveScale(
+                        values: Array(1...10),
+                        selection: store.rpe,
+                        word: SessionEffortReadout.word,
+                        ends: (String(localized: "Très facile"), String(localized: "Maximal"))
+                    ) { store.setRPE($0) }
+                    // The brick entire, transitions included — not each sport.
+                    CliniqueScale(
                         title: String(localized: "Transitions"),
-                        value: store.transitionRating,
-                        outOf: 5,
-                        caption: store.transitionRating.flatMap(BrickTransitionRating.init(rawValue:))?.hint
-                            ?? String(localized: "1 ratées · 5 fluides"),
-                        tone: store.transitionRating.map { _ in SharpitColor.primary }
-                    ) {
-                        RatingGrid(
-                            values: BrickTransitionRating.allCases.map(\.rawValue),
-                            selection: store.transitionRating,
-                            tone: { _ in SharpitColor.primary }
-                        ) { store.setTransitionRating($0) }
-                    }
-
-                    SubjectiveScale(
+                        values: BrickTransitionRating.allCases.map(\.rawValue),
+                        selection: store.transitionRating,
+                        ends: (String(localized: "Ratées"), String(localized: "Fluides"))
+                    ) { store.setTransitionRating($0) }
+                    CliniqueScale(
                         title: String(localized: "Ressenti"),
-                        value: store.feeling?.rawValue,
-                        outOf: 5,
-                        caption: store.feeling?.hint ?? String(localized: "1 très mal · 5 très bien"),
-                        tone: store.feeling.map(SessionFeedbackTone.feeling)
-                    ) {
-                        RatingGrid(
-                            values: SessionFeeling.allCases.map(\.rawValue),
-                            selection: store.feeling?.rawValue,
-                            tone: { SessionFeedbackTone.feeling(SessionFeeling(rawValue: $0) ?? .okay) }
-                        ) { raw in
-                            if let feeling = SessionFeeling(rawValue: raw) { store.setFeeling(feeling) }
-                        }
+                        values: SessionFeeling.allCases.map(\.rawValue),
+                        selection: store.feeling?.rawValue,
+                        word: { SessionFeeling(rawValue: $0)?.storedValue },
+                        ends: (SessionFeeling.veryBad.storedValue, SessionFeeling.veryGood.storedValue)
+                    ) { raw in
+                        if let feeling = SessionFeeling(rawValue: raw) { store.setFeeling(feeling) }
                     }
 
                     notesField

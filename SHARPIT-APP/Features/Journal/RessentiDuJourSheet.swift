@@ -2,9 +2,9 @@ import SwiftUI
 
 /// Résumé half-sheet: « Comment tu te sens ce matin ? »
 ///
-/// One answer is enough: five named steps (`RessentiStepPicker`), the chosen one lime. Energy,
-/// body and stress, and a note for the coach, wait under « Ajouter un détail » in the same picker
-/// with their own words; opening them switches the detent to `.large`.
+/// One answer is enough: five named steps (`RessentiStepPicker`), the chosen one ink. Energy,
+/// body and stress, and a note for the coach, wait under « Ajouter un détail », each on one
+/// track to slide on (`WellnessDimensionRow`); opening them switches the detent to `.large`.
 ///
 /// « Enregistrer » is optimistic: the sheet closes at once; the host clears the
 /// morning-feel badge. Server confirmation finalises; a refusal reopens with the
@@ -133,19 +133,17 @@ struct RessentiDuJourSheet: View {
             .accessibilityHint("Énergie, corps, stress, un mot pour le coach")
 
             if store.detailsExpanded {
-                ForEach([WellnessDimension.energy, .soreness, .stress], id: \.self) { dimension in
-                    CliniqueDivider()
-                    RessentiScaleRow(
-                        title: dimension.title,
-                        word: binding(for: dimension).map { dimension.label(for: $0) },
-                        score: binding(for: dimension)?.rawValue
-                    ) { raw in
-                        if let score = WellnessScore(rawValue: raw) {
+                // Each detail on one track to slide on, the whole row under the finger.
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach([WellnessDimension.energy, .soreness, .stress], id: \.self) { dimension in
+                        WellnessDimensionRow(dimension: dimension, selected: binding(for: dimension)) { score in
                             set(score, for: dimension)
                             store.persistDraft()
                         }
                     }
                 }
+                .padding(.top, 4)
+                .padding(.bottom, 20)
                 CliniqueDivider()
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -271,46 +269,5 @@ struct RessentiStepPicker: View {
                 .accessibilityAddTraits(isOn ? [.isSelected] : [])
             }
         }
-    }
-}
-
-/// A detail on five dashes: its name, the word for where it stands, and the dashes to tap.
-struct RessentiScaleRow: View {
-    let title: String
-    let word: String?
-    let score: Int?
-    let onPick: (Int) -> Void
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text(title)
-                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
-                .foregroundStyle(SharpitColor.foreground)
-            Spacer(minLength: SharpitSpacing.xs)
-            if let word {
-                Text(word)
-                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(SharpitColor.slate)
-                    .lineLimit(1)
-            }
-            HStack(spacing: 0) {
-                ForEach(1...5, id: \.self) { step in
-                    Button {
-                        withAnimation(SharpitMotion.selection) { onPick(step) }
-                    } label: {
-                        Capsule()
-                            .fill(step <= (score ?? 0) ? SharpitColor.foreground : SharpitColor.tile)
-                            .frame(width: 24, height: 7)
-                            .padding(.horizontal, 2.5)
-                            .frame(height: 44)
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(title) \(step) sur 5")
-                    .accessibilityAddTraits(step == score ? [.isSelected] : [])
-                }
-            }
-        }
-        .padding(.vertical, 6)
     }
 }

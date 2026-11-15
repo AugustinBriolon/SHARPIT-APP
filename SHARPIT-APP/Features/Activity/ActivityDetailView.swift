@@ -450,9 +450,17 @@ struct ActivityDetailView: View {
                     },
                     onReanalyze: detail.plannedSession?.id.map { sessionId -> () -> Void in
                         { reanalyze(sessionId, previous: analysis) }
+                    },
+                    onDiscuss: router.map { router -> () -> Void in
+                        {
+                            showingCompliance = false
+                            router.discussWithCoach(
+                                about: CoachDiscuss.describe(.activity(activityId: detail.id), name: detail.title ?? detail.type.label)
+                            )
+                        }
                     }
                 )
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
                 .sharpitSheet()
                 .presentationDragIndicator(.visible)
             }
@@ -498,7 +506,7 @@ struct ActivityDetailView: View {
         }
         .sheet(item: $subjectiveStore) { store in
             SubjectiveEditorSheet(store: store)
-                .presentationDetents([.fraction(0.72), .large])
+                .presentationDetents([.height(470)])
                 .sharpitSheet()
                 .presentationDragIndicator(.visible)
         }
@@ -1113,35 +1121,55 @@ private struct ActivityDetailContent: View {
         detail.plannedSession?.analysis?.verdict.flatMap(SessionVerdict.init(rawValue:))
     }
 
-    /// How the session matched the plan, as a card that opens the full reading: the score read
-    /// big, the verdict as a pill — a button that looks like one.
+    /// How the session matched the plan, on the sheet like every other section: its name beside
+    /// the verdict, the score read big over the coach's sentence, then the way into the reading.
     private func complianceCard(_ analysis: V1PlannedSessionAnalysis) -> some View {
         Button(action: onShowCompliance) {
-            HStack(spacing: SharpitSpacing.sm) {
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
                     Text("Conformité au plan")
-                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
-                        .foregroundStyle(SharpitColor.slate)
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
-                            .font(SharpitTypography.system(size: 28, weight: .semibold, relativeTo: .title, digits: true))
-                            .tracking(-0.6)
-                            .foregroundStyle(SharpitColor.foreground)
-                        Text("/ 100")
-                            .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
-                            .foregroundStyle(SharpitColor.slate)
+                        .font(SharpitTypography.sectionTitle)
+                        .tracking(SharpitTypography.sectionTitleTracking)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    if let verdict = analysis.verdict.flatMap(SessionVerdict.init(rawValue:)) {
+                        CliniqueStatusPill(verdict.label, status: ActivitySheetReadout.status(verdict))
                     }
                 }
-                Spacer(minLength: SharpitSpacing.xs)
-                Text("Voir le détail")
-                    .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
-                    .foregroundStyle(SharpitColor.foreground)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
-                    .accessibilityHidden(true)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(analysis.complianceScore.map { "\(Int($0.rounded()))" } ?? "—")
+                        .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .largeTitle, digits: true))
+                        .tracking(-0.8)
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("/ 100")
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                }
+                .padding(.top, 10)
+                if let summary = analysis.summary, !summary.isEmpty {
+                    Text(summary)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.slate)
+                        .lineSpacing(2)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                        .padding(.top, 4)
+                }
+                CliniqueDivider().padding(.top, 14)
+                HStack {
+                    Text("Critère par critère")
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(SharpitColor.slate)
+                        .accessibilityHidden(true)
+                }
+                .padding(.vertical, 13)
+                CliniqueDivider()
             }
-            .cliniqueCard()
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
         }
         .buttonStyle(.sharpitPressable)
