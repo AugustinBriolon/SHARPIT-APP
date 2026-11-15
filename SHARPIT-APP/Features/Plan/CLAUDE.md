@@ -203,3 +203,11 @@ offered in a programmed session too: better noted than left out. `/api/v1/streng
 (`StrengthLibraryStore`, read once a launch and after a save) gives each exercise's last session and
 best, computed from the logged sets; a set opens on the last load or hold only where the plan gives
 none (`applyHistory`). The coach's generator does not read these figures yet.
+
+**Strength session into Apple Santé (2026-11-15).** A session followed on the phone and saved is
+also written to Apple Santé as a traditional strength workout — its start, its end, its name, the
+activity's id as external UUID (`HealthKitWriter.saveStrengthWorkout`), behind the save and never
+blocking it. The right to write workouts is asked the first time. No energy is written: the app
+measures none. Read back, SharpIt's own workouts are left out of the upload
+(`StrengthWorkoutMirror.isOwn`), or the session would be logged twice. A session logged by hand is
+not mirrored.

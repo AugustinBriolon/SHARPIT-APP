@@ -1,7 +1,8 @@
 import Foundation
 import HealthKit
 
-/// Writes Sharpit-owned samples into Apple Santé (nutrition day totals + body mass).
+/// Writes Sharpit-owned samples into Apple Santé (nutrition day totals, body mass, and the
+/// strength session followed on the phone).
 protocol HealthWriting: Sendable {
     func saveNutritionDay(
         day: String,
@@ -29,8 +30,28 @@ final class HealthKitWriter: HealthWriting, @unchecked Sendable {
         for identifier in quantities {
             types.insert(HKQuantityType(identifier))
         }
+        types.insert(HKWorkoutType.workoutType())
         return types
     }()
+
+    /// The strength session followed on the phone, as a workout in Apple Santé: its start, its
+    /// end, its name. Asks for the right to write workouts the first time (an athlete linked
+    /// before this existed never was), and writes nothing the athlete refuses.
+    func saveStrengthWorkout(activityId: String, title: String, start: Date, end: Date) async throws {
+        guard HKHealthStore.isHealthDataAvailable(), let interval = StrengthWorkoutMirror.interval(start: start, end: end) else { return }
+        try await store.requestAuthorization(toShare: [HKWorkoutType.workoutType()], read: [])
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = .traditionalStrengthTraining
+        configuration.locationType = .indoor
+        let builder = HKWorkoutBuilder(healthStore: store, configuration: configuration, device: .local())
+        try await builder.beginCollection(at: interval.start)
+        try await builder.addMetadata([
+            HKMetadataKeyWorkoutBrandName: title,
+            HKMetadataKeyExternalUUID: activityId,
+        ])
+        try await builder.endCollection(at: interval.end)
+        _ = try await builder.finishWorkout()
+    }
 
     func saveNutritionDay(
         day: String,
@@ -150,5 +171,20 @@ final class HealthKitWriter: HealthWriting, @unchecked Sendable {
         else { return nil }
         let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start
         return DateInterval(start: start, end: end)
+    }
+}
+
+/// What makes a strength session a workout Apple Santé can hold, and how the app tells its own
+/// workouts apart when it reads Santé back.
+nonisolated enum StrengthWorkoutMirror {
+    /// The session's span; nil for one that ends before it starts or lasts under a minute.
+    static func interval(start: Date, end: Date) -> DateInterval? {
+        end.timeIntervalSince(start) >= 60 ? DateInterval(start: start, end: end) : nil
+    }
+
+    /// A workout SharpIt wrote itself: the server already holds that session, so importing it
+    /// from Santé would log it twice.
+    static func isOwn(sourceBundleIdentifier: String, app: String? = Bundle.main.bundleIdentifier) -> Bool {
+        app != nil && sourceBundleIdentifier == app
     }
 }

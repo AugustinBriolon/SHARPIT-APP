@@ -109,13 +109,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SharpIt can write your day's food total (energy and macros) and the weight you log in the app to Apple Health, to keep them in line with Health."
+            "value" : "SharpIt can write your day's food total (energy and macros), the weight you log in the app and the strength sessions you follow in it to Apple Health, to keep them in line with Health."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SHARPIT peut écrire dans Apple Santé le total de ta journée alimentaire (énergie et macros) et le poids que tu notes dans l'app, pour les garder alignés avec Santé."
+            "value" : "SHARPIT peut écrire dans Apple Santé le total de ta journée alimentaire (énergie et macros), le poids que tu notes dans l'app et les séances de musculation que tu y suis, pour les garder alignés avec Santé."
           }
         }
       }

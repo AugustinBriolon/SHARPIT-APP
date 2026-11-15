@@ -53,4 +53,17 @@ struct FeedbackPassTests {
         #expect(SanteTrendReadout.nearest([], to: start) == nil)
         #expect(SanteReadout.reading(52, of: .restingHr) == SanteReadout.value(V1HealthMarker(key: .restingHr, value: 52, basis: .latest)))
     }
+
+    @Test func aStrengthSessionIsMirroredOnceIntoAppleHealth() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        #expect(StrengthWorkoutMirror.interval(start: start, end: start.addingTimeInterval(2_700))?.duration == 2_700)
+        // Too short to be a workout, or a clock that went backwards: nothing is written.
+        #expect(StrengthWorkoutMirror.interval(start: start, end: start.addingTimeInterval(30)) == nil)
+        #expect(StrengthWorkoutMirror.interval(start: start, end: start.addingTimeInterval(-60)) == nil)
+
+        // Read back from Santé, SharpIt's own workout is not imported a second time.
+        #expect(StrengthWorkoutMirror.isOwn(sourceBundleIdentifier: "app.sharpit.ios", app: "app.sharpit.ios"))
+        #expect(!StrengthWorkoutMirror.isOwn(sourceBundleIdentifier: "com.apple.health", app: "app.sharpit.ios"))
+        #expect(!StrengthWorkoutMirror.isOwn(sourceBundleIdentifier: "app.sharpit.ios", app: nil))
+    }
 }

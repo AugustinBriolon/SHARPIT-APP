@@ -1140,6 +1140,9 @@ struct GuidedStrengthWorkoutView: View {
                 try? await finish.linker.link(sessionId: plannedId, activityId: activityId, token: token)
             }
             finish.onFinished(activityId)
+            // Mirrored into Apple Santé behind: the session is saved either way.
+            let (title, start, end) = (session.title, session.startedAt, Date.now)
+            Task { try? await HealthKitWriter().saveStrengthWorkout(activityId: activityId, title: title, start: start, end: end) }
             // The sets just saved are the next session's defaults.
             Task { await StrengthLibraryStore.shared.load(tokenProvider: finish.tokenProvider, fresh: true) }
             close()

@@ -134,7 +134,8 @@ final class HealthKitReader: HealthReading, @unchecked Sendable {
         )
         guard let workouts = try? await descriptor.result(for: store) else { return [] }
         var result: [HealthWorkout] = []
-        for workout in workouts {
+        // Not the ones SharpIt wrote: the server already holds those sessions.
+        for workout in workouts where !StrengthWorkoutMirror.isOwn(sourceBundleIdentifier: workout.sourceRevision.source.bundleIdentifier) {
             result.append(await healthWorkout(from: workout))
         }
         return result
