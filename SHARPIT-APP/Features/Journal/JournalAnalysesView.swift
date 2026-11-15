@@ -38,13 +38,8 @@ struct JournalAnalysesView: View {
                 notReady(analyses)
             }
         case .failed(let message):
-            ContentUnavailableView {
-                Label("Analyses indisponibles", systemImage: "wifi.slash")
-            } description: {
-                Text(message)
-            } actions: {
-                Button("Réessayer") { Task { await store.load() } }
-            }
+            SharpitStateMessage.failed(message) { Task { await store.load() } }
+                .embedded()
             .containerRelativeFrame(.vertical)
         case .unauthorized:
             ContentUnavailableView {

@@ -823,7 +823,7 @@ final class OnboardingStore {
     private func message(for error: Error, failure: String) -> String {
         switch error as? SharpitAPIError {
         case .unauthorized: String(localized: "Session expirée. Reconnecte-toi.")
-        case .transport: String(localized: "Pas de connexion internet. Vérifie ton réseau, puis réessaie.")
+        case .transport: SharpitErrorGuidance.offline
         default: failure
         }
     }

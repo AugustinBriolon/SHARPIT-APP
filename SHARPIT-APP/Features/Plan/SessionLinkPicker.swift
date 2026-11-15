@@ -74,13 +74,8 @@ struct SessionLinkPicker: View {
                 .allowsHitTesting(false)
                 .accessibilityLabel("Chargement des séances réalisées")
         case .failed(let message) where store.candidates.isEmpty:
-            ContentUnavailableView {
-                Label("Chargement impossible", systemImage: "wifi.slash")
-            } description: {
-                Text(message)
-            } actions: {
-                Button("Réessayer") { Task { await store.load() } }
-            }
+            SharpitStateMessage.failed(message) { Task { await store.load() } }
+                .embedded()
         case .ready where store.candidates.isEmpty:
             ContentUnavailableView(
                 String(localized: "Rien à rapprocher"),

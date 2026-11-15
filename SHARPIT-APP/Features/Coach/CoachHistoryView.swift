@@ -55,13 +55,8 @@ struct CoachHistoryView: View {
                 .allowsHitTesting(false)
                 .accessibilityLabel("Chargement de l'historique")
         case .failed(let message):
-            ContentUnavailableView {
-                Label("Historique indisponible", systemImage: "wifi.slash")
-            } description: {
-                Text(message)
-            } actions: {
-                Button("Réessayer") { Task { await store.load() } }
-            }
+            SharpitStateMessage.failed(message) { Task { await store.load() } }
+                .embedded()
         case .loaded(let conversations) where conversations.isEmpty:
             ContentUnavailableView(
                 String(localized: "Aucune conversation"),

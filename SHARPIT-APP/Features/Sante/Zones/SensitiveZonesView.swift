@@ -99,7 +99,6 @@ struct SensitiveZonesView: View {
                     .foregroundStyle(SharpitColor.foreground)
             }
         }
-        .cliniqueReturnButton(to: .body, symbol: "heart", label: String(localized: "Santé"))
         .sheet(isPresented: $isDeclaring) {
             SensitiveZoneFormSheet(
                 draft: SensitiveZoneDraft(),
@@ -322,9 +321,8 @@ struct SensitiveZoneDetailView: View {
             if let zone = store.zone(zoneId) {
                 detail(zone)
             } else {
-                SharpitStateMessage(
-                    title: String(localized: "Zone introuvable"),
-                    symbol: "questionmark.circle",
+                SharpitStateMessage.notFound(
+                    String(localized: "Zone introuvable"),
                     detail: String(localized: "Elle a peut-être été supprimée.")
                 )
             }

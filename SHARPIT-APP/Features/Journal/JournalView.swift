@@ -72,7 +72,6 @@ struct JournalView: View {
                     .disabled(store.phase == .loading)
                 }
             }
-            .cliniqueReturnButton()
             .sheet(isPresented: $showsPrefs) {
                 JournalPrefsDrawer(store: store)
             }
@@ -124,13 +123,8 @@ struct JournalView: View {
                 case .loading:
                     JournalLoadingRows()
                 case .failed(let message):
-                    ContentUnavailableView {
-                        Label("Journal indisponible", systemImage: "wifi.slash")
-                    } description: {
-                        Text(message)
-                    } actions: {
-                        Button("Réessayer") { Task { await store.load() } }
-                    }
+                    SharpitStateMessage.failed(message) { Task { await store.load() } }
+                        .embedded()
                     .padding(.top, SharpitSpacing.xl)
                 case .ready:
                     if store.hasNothingToShow {

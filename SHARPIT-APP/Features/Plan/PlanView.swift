@@ -611,13 +611,8 @@ private struct PlanWeekPage: View {
                 onOpenTrajectory: onOpenTrajectory
             )
         case .error(let message):
-            ContentUnavailableView {
-                Label("Plan indisponible", systemImage: "wifi.slash")
-            } description: {
-                Text(message)
-            } actions: {
-                Button("Réessayer") { Task { await store.load(offset: offset, force: true) } }
-            }
+            SharpitStateMessage.failed(message) { Task { await store.load(offset: offset, force: true) } }
+                .embedded()
         case .unauthorized:
             ContentUnavailableView {
                 Label("Session expirée", systemImage: "person.crop.circle.badge.exclamationmark")
