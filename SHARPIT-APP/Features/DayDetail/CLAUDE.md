@@ -55,3 +55,5 @@ Nutrition page at zero (`NutritionReadout.emptyDay`, from the food log's targets
 veille » under the meals — never a different screen.
 
 Sommeil's one action, its targets, is a button in the bar — a menu only where a screen has several.
+Nutrition floats its own « + » at the foot, so it carries no home button (`showsHomeButton: false`); the
+bar's back is the way out.

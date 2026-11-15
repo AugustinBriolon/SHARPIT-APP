@@ -72,7 +72,8 @@ struct NutritionView: View {
                 await foodLog.load(trainingDayId: selectedDayId)
             },
             loadingPlaceholder: NutritionReadout.placeholderResponse,
-            wash: .watch
+            wash: .watch,
+            showsHomeButton: false
         )
         // One tap to log a food, wherever the page is scrolled.
         .overlay(alignment: .bottomTrailing) {

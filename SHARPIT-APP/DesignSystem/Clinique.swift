@@ -441,6 +441,8 @@ struct CliniqueReturnButton: ViewModifier {
     let tab: ShellTab
     let symbol: String
     let label: String
+    /// False keeps the tab bar away without the glass button: a screen with its own floating action.
+    var showsButton = true
     @Environment(\.dismiss) private var dismiss
     @Environment(ShellRouter.self) private var router: ShellRouter?
 
@@ -448,7 +450,7 @@ struct CliniqueReturnButton: ViewModifier {
         content
             .toolbar(.hidden, for: .tabBar)
             .overlay(alignment: .bottomLeading) {
-                Button {
+                if showsButton { Button {
                     dismiss()
                     router?.select(tab)
                 } label: {
@@ -462,13 +464,16 @@ struct CliniqueReturnButton: ViewModifier {
                 .accessibilityLabel(label)
                 .padding(.leading, 16)
                 .padding(.bottom, 4)
+                }
             }
     }
 }
 
 extension View {
-    func cliniqueReturnButton(to tab: ShellTab = .today, symbol: String = "house", label: String = String(localized: "Résumé")) -> some View {
-        modifier(CliniqueReturnButton(tab: tab, symbol: symbol, label: label))
+    func cliniqueReturnButton(
+        to tab: ShellTab = .today, symbol: String = "house", label: String = String(localized: "Résumé"), showsButton: Bool = true
+    ) -> some View {
+        modifier(CliniqueReturnButton(tab: tab, symbol: symbol, label: label, showsButton: showsButton))
     }
 }
 

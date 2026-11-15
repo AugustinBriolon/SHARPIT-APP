@@ -20,6 +20,9 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
     var wash: CliniqueWash = .neutral
     /// How the bar's capsule names the day.
     var dayLabel: @MainActor (Date) -> String = { DayDetailDatePicker.shortDay($0) }
+    /// False where the screen floats an action of its own at the foot (Nutrition's « + »): the
+    /// way back is the bar's, the home button leaves.
+    var showsHomeButton = true
 
     @Environment(\.dismiss) private var dismiss
     @Environment(ShellRouter.self) private var router: ShellRouter?
@@ -57,7 +60,7 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
             }
         }
         // A drill-down is read whole: the tab bar leaves, and home is one tap away.
-        .cliniqueReturnButton()
+        .cliniqueReturnButton(showsButton: showsHomeButton)
         .task { await store.load() }
     }
 
