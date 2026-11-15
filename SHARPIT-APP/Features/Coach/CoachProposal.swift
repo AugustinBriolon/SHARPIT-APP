@@ -24,6 +24,17 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
     let intentLine: String?
     let steps: [String]
 
+    /// As read from the thread (`init?(part:)`), or built whole by a demo or a test.
+    init(id: String, toolType: String, status: Status, headline: String, date: String? = nil, intentLine: String? = nil, steps: [String] = []) {
+        self.id = id
+        self.toolType = toolType
+        self.status = status
+        self.headline = headline
+        self.date = date
+        self.intentLine = intentLine
+        self.steps = steps
+    }
+
     var isDelete: Bool { toolType == "tool-deletePlannedSession" }
 
     /// « Ajouter une séance », « Modifier une séance »…
@@ -271,11 +282,13 @@ private extension String {
     nonisolated var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 
-/// A proposal in the thread. While it waits, a card to decide on: what, when, how, the steps
-/// on a rail, and the two answers as full buttons. Once settled, a compact receipt that keeps
-/// its place in the thread — what was proposed and what became of it, in the status's tone.
+/// A proposal in the thread, Clinique (the athlete's call, 2026-11-15). While it waits, a bordered
+/// card to decide on: what the coach wants to do as a pill beside the day, the session as the
+/// title, its figures on one line, the steps as numbered lines, then one ink action over the two
+/// quiet ones. Once settled, one line that keeps its place in the thread — the session and what
+/// became of it as a status pill. No hue but a status's.
 ///
-/// Deleting asks twice, as on the web — the first « Confirmer » names the consequence.
+/// Deleting asks twice, as on the web — the first « Supprimer » names the consequence.
 struct CoachProposalCard: View {
     let proposal: CoachProposal
     /// Nil while an answer is on its way: the buttons wait with it.
@@ -286,19 +299,10 @@ struct CoachProposalCard: View {
 
     var body: some View {
         Group {
-            switch proposal.status {
-            case .awaiting:
+            if case .awaiting = proposal.status {
                 card
-            case .drafting:
-                receipt(status: proposal.proposal + "…", symbol: proposal.symbolName, tone: SharpitColor.slate, inProgress: true)
-            case .accepted:
-                receipt(status: String(localized: "Validé, en cours d'application"), symbol: "checkmark", tone: SharpitColor.primary, inProgress: true)
-            case .applied:
-                receipt(status: proposal.doneLabel, symbol: "checkmark.circle.fill", tone: SharpitColor.foreground)
-            case .refused:
-                receipt(status: String(localized: "Refusé"), symbol: "xmark.circle", tone: SharpitColor.slate, struck: true)
-            case .failed(let hint):
-                receipt(status: hint, symbol: "exclamationmark.triangle.fill", tone: SharpitColor.statusAlertForeground)
+            } else {
+                receipt
             }
         }
         .animation(SharpitMotion.reveal, value: proposal.status)
@@ -306,183 +310,177 @@ struct CoachProposalCard: View {
 
     // MARK: Awaiting
 
-    private var tone: Color {
-        proposal.isDelete ? SharpitColor.statusAlertForeground : SharpitColor.primary
-    }
-
     private var card: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            SharpitCardHeader(
-                title: proposal.isDelete ? String(localized: "Suppression à valider") : proposal.proposal,
-                symbol: proposal.symbolName,
-                tint: tone,
-                showsChevron: false
-            ) {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: SharpitSpacing.xs) {
+                CliniqueStatusPill(proposal.proposal, status: proposal.isDelete ? .alert : .unknown)
+                Spacer(minLength: SharpitSpacing.xs)
                 if let date = proposal.date {
                     Text(date)
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                         .foregroundStyle(SharpitColor.slate)
                         .lineLimit(1)
                 }
             }
 
             Text(proposal.headline)
-                .font(SharpitTypography.cardTitle)
-                .tracking(SharpitTypography.cardTitleTracking)
+                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .headline))
                 .foregroundStyle(SharpitColor.foreground)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10)
 
-            if let intent = proposal.intentLine {
-                metricChips(intent)
+            if let facts = CoachProposalReadout.facts(proposal.intentLine) {
+                Text(facts)
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 3)
             }
 
             if !proposal.steps.isEmpty {
-                stepsRail
+                steps.padding(.top, 12)
             }
 
             if proposal.isDelete, confirmingDelete {
-                Label(
+                Text(
                     proposal.date.map { String(localized: "Cette séance sera retirée du plan (\($0)). Action irréversible.") }
-                        ?? String(localized: "Cette séance sera retirée du plan. Action irréversible."),
-                    systemImage: "exclamationmark.triangle"
+                        ?? String(localized: "Cette séance sera retirée du plan. Action irréversible.")
                 )
-                .font(SharpitTypography.meta)
+                .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
                 .foregroundStyle(SharpitColor.statusAlertForeground)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
                 .transition(.opacity)
             }
 
-            HStack(spacing: SharpitSpacing.sm) {
-                answerButton(proposal.isDelete ? String(localized: "Garder") : String(localized: "Ignorer"), prominent: false) {
-                    confirmingDelete = false
-                    onAnswer?(false, nil)
-                }
-                if !proposal.isDelete {
-                    answerButton(String(localized: "Modifier"), prominent: false) {
-                        onAnswer?(false, CoachUIParts.reviseReason)
-                    }
-                }
-                answerButton(approveLabel, prominent: true) {
-                    if proposal.isDelete, !confirmingDelete {
-                        withAnimation(SharpitMotion.selection) { confirmingDelete = true }
-                        return
-                    }
-                    onAnswer?(true, nil)
-                }
-            }
-            .disabled(onAnswer == nil)
-            .opacity(onAnswer == nil ? 0.5 : 1)
+            actions.padding(.top, 14)
         }
-        .padding(SharpitSpacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
+        .cliniqueCard()
     }
 
-    /// « Course · 45 min · Seuil · charge 60 » as chips: each figure read on its own.
-    private func metricChips(_ intent: String) -> some View {
-        let parts = intent.components(separatedBy: " · ")
-        return HStack(spacing: SharpitSpacing.xs) {
-            ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
-                Text(part)
-                    .font(index == 0 ? SharpitTypography.meta.weight(.semibold) : SharpitTypography.meta)
-                    .foregroundStyle(index == 0 ? tone : SharpitColor.foreground)
-                    .lineLimit(1)
-                    .padding(.horizontal, SharpitSpacing.xs)
-                    .padding(.vertical, 4)
-                    .background(
-                        (index == 0 ? tone.opacity(0.10) : SharpitColor.tile),
-                        in: Capsule()
-                    )
-            }
-        }
-    }
-
-    /// The session's steps on a numbered rail, the way a workout reads on the watch.
-    private var stepsRail: some View {
+    /// The session's steps, each a line under a hairline: its number, then what to do.
+    private var steps: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(proposal.steps.enumerated()), id: \.offset) { index, step in
-                HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-                    VStack(spacing: 0) {
-                        Text("\(index + 1)")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(tone)
-                            .frame(width: 18, height: 18)
-                            .background(tone.opacity(0.12), in: Circle())
-                        if index < proposal.steps.count - 1 {
-                            Rectangle()
-                                .fill(SharpitColor.divider)
-                                .frame(width: 1.5)
-                                .frame(minHeight: 10)
-                        }
-                    }
+                CliniqueDivider()
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+                    Text("\(index + 1)")
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .frame(width: 16, alignment: .leading)
                     Text(step)
-                        .font(SharpitTypography.meta)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline, digits: true))
                         .foregroundStyle(SharpitColor.foreground)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, index < proposal.steps.count - 1 ? SharpitSpacing.sm : 0)
-                        .padding(.top, 1)
                 }
+                .padding(.vertical, 8)
+            }
+            CliniqueDivider()
+        }
+    }
+
+    /// The answer that changes the plan in ink across the card; the ways out side by side under it.
+    private var actions: some View {
+        VStack(spacing: SharpitSpacing.xs) {
+            Button {
+                if proposal.isDelete, !confirmingDelete {
+                    withAnimation(SharpitMotion.selection) { confirmingDelete = true }
+                    return
+                }
+                onAnswer?(true, nil)
+            } label: {
+                Text(CoachProposalReadout.approve(proposal, confirming: confirmingDelete)).frame(maxWidth: .infinity)
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary))
+
+            HStack(spacing: SharpitSpacing.xs) {
+                if !proposal.isDelete {
+                    Button { onAnswer?(false, CoachUIParts.reviseReason) } label: {
+                        Text("Modifier").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                }
+                Button {
+                    confirmingDelete = false
+                    onAnswer?(false, nil)
+                } label: {
+                    Text(proposal.isDelete ? String(localized: "Garder la séance") : String(localized: "Ignorer")).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CliniqueButtonStyle(kind: proposal.isDelete ? .outline : .plain))
             }
         }
-    }
-
-    private func answerButton(_ title: String, prominent: Bool, action: @escaping () -> Void) -> some View {
-        let destructive = proposal.isDelete && confirmingDelete && prominent
-        let fill = destructive ? SharpitColor.statusAlertForeground : (prominent ? SharpitColor.foreground : SharpitColor.tile)
-        let text = prominent ? SharpitColor.card : SharpitColor.foreground
-        return Button(action: action) {
-            Text(title)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(text)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, SharpitSpacing.sm)
-                .background(fill, in: Capsule())
-        }
-        .buttonStyle(.sharpitPressable)
-    }
-
-    private var approveLabel: String {
-        guard proposal.isDelete else { return String(localized: "Appliquer") }
-        return confirmingDelete ? String(localized: "Confirmer la suppression") : String(localized: "Confirmer")
+        .disabled(onAnswer == nil)
+        .opacity(onAnswer == nil ? 0.5 : 1)
     }
 
     // MARK: Settled
 
     /// What was proposed, and what became of it. Kept in the thread, never collapsed to a chip.
-    private func receipt(status: String, symbol: String, tone: Color, inProgress: Bool = false, struck: Bool = false) -> some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            ZStack {
-                Circle().fill(tone.opacity(0.12)).frame(width: 30, height: 30)
-                if inProgress {
-                    ProgressView().controlSize(.mini).tint(tone)
-                } else {
-                    Image(systemName: symbol)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(tone)
-                }
-            }
+    private var receipt: some View {
+        let outcome = CoachProposalReadout.outcome(proposal)
+        return HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(proposal.headline)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(struck ? SharpitColor.slate : SharpitColor.foreground)
-                    .strikethrough(struck, color: SharpitColor.slate)
+                    .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body))
+                    .foregroundStyle(outcome.isStruck ? SharpitColor.slate : SharpitColor.foreground)
+                    .strikethrough(outcome.isStruck, color: SharpitColor.slate)
                     .lineLimit(2)
-                Text([status, proposal.date].compactMap { $0 }.joined(separator: " · "))
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(tone)
-                    .lineLimit(2)
+                if let detail = outcome.detail ?? proposal.date {
+                    Text(detail)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .lineLimit(3)
+                }
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: SharpitSpacing.xs)
+            if outcome.isWorking {
+                ProgressView().controlSize(.small).tint(SharpitColor.slate)
+            } else {
+                CliniqueStatusPill(outcome.word, status: outcome.status)
+            }
         }
-        .padding(SharpitSpacing.sm + 2)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // A tinted wash, no hairline: surfaces separate by luminosity (docs/adr/0002).
-        .background(
-            RoundedRectangle(cornerRadius: SharpitRadius.panel, style: .continuous)
-                .fill(tone.opacity(0.07))
-        )
+        .cliniqueCard()
         .accessibilityElement(children: .combine)
+        .accessibilityValue(outcome.word)
         .transition(.opacity)
+    }
+}
+
+/// How a proposal reads on its card: its figures, its main answer, and what became of it.
+nonisolated enum CoachProposalReadout {
+    struct Outcome: Equatable {
+        let word: String
+        let status: CliniqueStatus
+        /// Said under the session instead of its day: why it failed.
+        var detail: String? = nil
+        var isWorking = false
+        var isStruck = false
+    }
+
+    /// « Course · 45 min · Seuil · charge 60 », each figure kept whole when the line breaks.
+    static func facts(_ intentLine: String?) -> String? {
+        guard let parts = intentLine?.components(separatedBy: " · ").filter({ !$0.isEmpty }), !parts.isEmpty else { return nil }
+        return parts.joinedAsFacts()
+    }
+
+    /// The ink button says what it does: « Ajouter au plan », never a bare « Appliquer ».
+    static func approve(_ proposal: CoachProposal, confirming: Bool) -> String {
+        switch proposal.toolType {
+        case "tool-createPlannedSession", "tool-createBrickSession": String(localized: "Ajouter au plan")
+        case "tool-updatePlannedSession": String(localized: "Appliquer la modification")
+        case "tool-deletePlannedSession": confirming ? String(localized: "Confirmer la suppression") : String(localized: "Supprimer la séance")
+        default: String(localized: "Enregistrer")
+        }
+    }
+
+    static func outcome(_ proposal: CoachProposal) -> Outcome {
+        switch proposal.status {
+        case .awaiting: Outcome(word: String(localized: "À valider"), status: .watch)
+        case .drafting: Outcome(word: proposal.proposal, status: .unknown, isWorking: true)
+        case .accepted: Outcome(word: String(localized: "En cours d'application"), status: .unknown, isWorking: true)
+        case .applied: Outcome(word: proposal.doneLabel, status: proposal.isDelete ? .unknown : .good)
+        case .refused: Outcome(word: String(localized: "Refusé"), status: .unknown, isStruck: true)
+        case .failed(let hint): Outcome(word: String(localized: "Échec"), status: .alert, detail: hint)
+        }
     }
 }

@@ -66,4 +66,26 @@ struct FeedbackPassTests {
         #expect(!StrengthWorkoutMirror.isOwn(sourceBundleIdentifier: "com.apple.health", app: "app.sharpit.ios"))
         #expect(!StrengthWorkoutMirror.isOwn(sourceBundleIdentifier: "app.sharpit.ios", app: nil))
     }
+
+    @Test func aCoachProposalSaysWhatItsButtonDoesAndWhatBecameOfIt() {
+        func proposal(_ tool: String, _ status: CoachProposal.Status) -> CoachProposal {
+            CoachProposal(id: "p", toolType: tool, status: status, headline: "Seuil")
+        }
+        let create = proposal("tool-createPlannedSession", .awaiting(approvalId: "a"))
+        let delete = proposal("tool-deletePlannedSession", .awaiting(approvalId: "a"))
+        #expect(CoachProposalReadout.approve(create, confirming: false) == "Ajouter au plan")
+        #expect(CoachProposalReadout.approve(delete, confirming: false) == "Supprimer la séance")
+        #expect(CoachProposalReadout.approve(delete, confirming: true) == "Confirmer la suppression")
+
+        #expect(CoachProposalReadout.facts("Course · 45 min · charge 60") == "Course · 45\u{00A0}min · charge\u{00A0}60")
+        #expect(CoachProposalReadout.facts(nil) == nil)
+        #expect(CoachProposalReadout.facts("") == nil)
+
+        #expect(CoachProposalReadout.outcome(proposal("tool-createPlannedSession", .applied)).status == .good)
+        #expect(CoachProposalReadout.outcome(proposal("tool-createPlannedSession", .refused)).isStruck)
+        #expect(CoachProposalReadout.outcome(proposal("tool-createPlannedSession", .accepted)).isWorking)
+        let failed = CoachProposalReadout.outcome(proposal("tool-updatePlannedSession", .failed("Créneau déjà pris")))
+        #expect(failed.status == .alert)
+        #expect(failed.detail == "Créneau déjà pris")
+    }
 }

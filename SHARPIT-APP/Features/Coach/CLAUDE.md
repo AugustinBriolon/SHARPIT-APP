@@ -79,3 +79,12 @@ The bar reads « nouvelle conversation » then « ⋯ » (Conversations, Mémoir
 
 « Consommation » gives a time only once the budget is spent (« De nouveau disponible »): a rolling
 window has no reset date to show.
+
+**Proposal card, Clinique (the athlete's call, 2026-11-15).** A calendar change the coach proposes
+(`CoachProposalCard`) is a bordered card: what it does as a status pill beside the day, the session
+as the title, its figures on one slate line, the steps as numbered lines between hairlines, then
+one ink button that says what it does (« Ajouter au plan », « Appliquer la modification »,
+« Supprimer la séance » then « Confirmer la suppression » — `CoachProposalReadout.approve`) over
+« Modifier » and « Ignorer ». Settled, it is one bordered line: the session, its day (or why it
+failed), and what became of it as a pill (`CoachProposalReadout.outcome`), a spinner while it is
+applied. No tinted chips, numbered discs or coloured wash. `SharpitScreenDemo proposal` shows every state.

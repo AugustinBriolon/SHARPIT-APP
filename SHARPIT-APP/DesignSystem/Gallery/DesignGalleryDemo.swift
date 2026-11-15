@@ -510,6 +510,31 @@ struct ScreenDemoHost: View {
                 NavigationStack { NotificationPrefsView(profileClient: DemoEquipment(), tokenProvider: { "demo" }) }
             case "account":
                 NavigationStack { AccountView(profileClient: DemoEquipment(), tokenProvider: { "demo" }, modelContext: nil) }
+            case "proposal":
+                ScrollView {
+                    VStack(spacing: SharpitSpacing.sm) {
+                        let steps = [String(localized: "15 min échauffement en aisance"), String(localized: "5 × 4 min au seuil, récup 90 s"), String(localized: "10 min retour au calme")]
+                        ForEach([
+                            ("a", "tool-createPlannedSession", CoachProposal.Status.awaiting(approvalId: "a")),
+                            ("b", "tool-deletePlannedSession", .awaiting(approvalId: "b")),
+                            ("c", "tool-createPlannedSession", .applied),
+                            ("d", "tool-updatePlannedSession", .refused),
+                            ("e", "tool-updatePlannedSession", .failed(String(localized: "Créneau déjà pris"))),
+                            ("f", "tool-createPlannedSession", .accepted),
+                        ], id: \.0) { id, tool, status in
+                            CoachProposalCard(
+                                proposal: CoachProposal(
+                                    id: id, toolType: tool, status: status, headline: String(localized: "Seuil 5 × 4 min"),
+                                    date: String(localized: "mar. 17 nov."), intentLine: String(localized: "Course · 55 min · Seuil · charge 78"),
+                                    steps: id == "a" ? steps : []
+                                ),
+                                onAnswer: { _, _ in }
+                            )
+                        }
+                    }
+                    .padding(SharpitSpacing.pageInset)
+                }
+                .background(SharpitColor.card)
             case "targets":
                 DemoTargetsSheet()
             case "ownfood":
