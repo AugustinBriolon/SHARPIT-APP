@@ -32,7 +32,7 @@ struct FeaturesView: View {
         }
         .sharpitGroupedList()
         .navigationTitle("Pages et widgets")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
     }
 }
 

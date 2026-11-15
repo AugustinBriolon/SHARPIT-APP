@@ -34,7 +34,7 @@ struct SourcePrioritiesView: View {
             }
         }
         .navigationTitle("Priorités")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task {
             await store.load()
             resyncAppleCalendarLink()

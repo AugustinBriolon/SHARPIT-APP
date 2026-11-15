@@ -41,7 +41,7 @@ struct AppleCalendarPickerView: View {
             }
         }
         .navigationTitle("Calendrier Apple")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task { await load() }
     }
 

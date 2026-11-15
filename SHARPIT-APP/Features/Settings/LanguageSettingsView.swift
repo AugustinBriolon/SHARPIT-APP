@@ -29,7 +29,7 @@ struct LanguageSettingsView: View {
         }
         .sharpitGroupedList()
         .navigationTitle("Langue")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private var footer: String {

@@ -376,7 +376,7 @@ struct NotificationPrefsView: View {
         .sharpitGroupedList()
         .animation(SharpitMotion.reveal, value: isOn)
         .navigationTitle("Notifications")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task {
             await refreshStatus()
             await store.load()

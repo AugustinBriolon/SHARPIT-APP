@@ -37,7 +37,7 @@ struct DisplayModeView: View {
             }
         }
         .navigationTitle("Densité de lecture")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task { if store.phase != .loaded { await store.load() } }
         // Every surface reading the density follows the profile — the tap at once, and a write
         // that failed for good once the profile is read back.

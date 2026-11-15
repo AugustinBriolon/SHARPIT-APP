@@ -98,7 +98,7 @@ struct FeedbackView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(SharpitElevatedColor.groupedCanvas.ignoresSafeArea())
         .navigationTitle("Donner un avis")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .animation(SharpitMotion.reveal, value: store.isSent)
         .onChange(of: store.isSent) { _, sent in
             if sent { sealArrival += 1 }

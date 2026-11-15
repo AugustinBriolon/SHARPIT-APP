@@ -111,7 +111,7 @@ struct PrivacySettingsView: View {
             }
         }
         .navigationTitle("Confidentialité")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task { await store.load() }
         .sheet(item: $openDocument) { LegalDocumentSheet(document: $0) }
         .confirmationDialog(

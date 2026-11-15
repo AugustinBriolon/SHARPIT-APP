@@ -35,7 +35,7 @@ struct GoogleCalendarPickerView: View {
             }
         }
         .navigationTitle("Calendrier Google")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task { await store.load() }
     }
 

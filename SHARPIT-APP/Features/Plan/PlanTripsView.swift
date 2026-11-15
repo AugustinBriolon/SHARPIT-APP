@@ -16,7 +16,7 @@ struct PlanTripsView: View {
     var body: some View {
         content
             .navigationTitle("Déplacements")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button { route = .new } label: {
