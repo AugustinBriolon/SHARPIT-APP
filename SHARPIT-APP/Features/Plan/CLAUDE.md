@@ -176,3 +176,6 @@ stands (« Semaine 3 sur 12 », the phase and what it is for, `MacroPlanReadout`
 a line that opens onto its weeks — the current one open — each week's load a bar against the plan's
 heaviest. Déplacements docks « Déclarer un déplacement »; a trip's line carries its glyph; the form
 asks questions (« Où vas-tu ? », « Quand ? », « Tu t'entraînes ? ») and docks « Ajouter au plan ».
+
+**Bar, two glyphs (2026-11-15).** Plan's bar holds « Remplir ma semaine » and « Adapter » as icons,
+each its own glass button; the « ⋯ » is gone. « Ajouter une séance » opens « Autour du plan ».

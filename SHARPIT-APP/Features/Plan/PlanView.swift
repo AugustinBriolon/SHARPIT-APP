@@ -106,28 +106,16 @@ struct PlanView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .principal) { Text("") }
+                // Two actions, two glyphs: have the week written, have it adapted.
                 ToolbarItem(placement: .topBarTrailing) {
-                    PlanActionsMenu(
-                        onAddSession: { showingNewSession = true },
-                        onOpenGenerator: { router.isShowingPlanGenerator = true },
-                        onDiscussWithCoach: {
-                            router.discussWithCoach(
-                                about: CoachDiscuss.describe(.planning(horizonDays: 7))
-                            )
-                        }
-                    )
+                    Button { router.isShowingPlanGenerator = true } label: {
+                        Label("Remplir ma semaine", systemImage: "calendar.badge.plus")
+                    }
                 }
                 SharpitBarGap()
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: openAdapter) {
-                        // Spelled out: the bar would keep a label's glyph alone.
-                        HStack(spacing: 6) {
-                            Image(systemName: "slider.horizontal.3")
-                            Text("Adapter")
-                        }
-                        .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
-                        .foregroundStyle(SharpitColor.foreground)
-                        .padding(.horizontal, SharpitSpacing.xxs)
+                        Label("Adapter", systemImage: "slider.horizontal.3")
                     }
                     .accessibilityHint("Dis au coach ce qui a changé dans ta semaine")
                 }
@@ -462,32 +450,6 @@ extension PlanView {
     }
 }
 
-/// Plan's « … »: what acts on the week — add a session, have it filled, talk it over. The pages
-/// around the plan (goals, macro plan, trips, review) are lines at the foot of the week instead.
-private struct PlanActionsMenu: View {
-    let onAddSession: () -> Void
-    let onOpenGenerator: () -> Void
-    let onDiscussWithCoach: () -> Void
-
-    var body: some View {
-        Menu {
-            Button(action: onAddSession) {
-                Label("Ajouter une séance", systemImage: "plus")
-            }
-            Button(action: onOpenGenerator) {
-                Label("Remplir ma semaine", systemImage: "calendar.badge.plus")
-            }
-            Button(action: onDiscussWithCoach) {
-                Label("Discuter avec le coach", systemImage: "bubble.left.and.bubble.right")
-            }
-        } label: {
-            Image(systemName: "ellipsis")
-                .font(SharpitTypography.bodyEmphasis)
-        }
-        .accessibilityLabel("Actions du plan")
-    }
-}
-
 /// « Autour du plan »: the pages the week rests on, a line each at the foot of its sheet.
 private struct PlanAroundSection: View {
     let chrome: PlanWeekChrome
@@ -501,6 +463,8 @@ private struct PlanAroundSection: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .accessibilityAddTraits(.isHeader)
                 .padding(.bottom, 4)
+            line(String(localized: "Ajouter une séance"), symbol: "plus", detail: nil, action: chrome.onAddSession)
+            CliniqueDivider()
             line(String(localized: "Objectifs"), symbol: "flag", detail: nil, action: chrome.onOpenGoals)
             CliniqueDivider()
             line(
