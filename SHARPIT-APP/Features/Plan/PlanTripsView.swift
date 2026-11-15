@@ -19,10 +19,8 @@ struct PlanTripsView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button { route = .new } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("Ajouter un déplacement ou une contrainte")
+                    Button("Ajouter") { route = .new }
+                        .accessibilityLabel("Ajouter un déplacement ou une contrainte")
                 }
             }
             .navigationDestination(item: $route) { route in
