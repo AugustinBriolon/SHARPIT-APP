@@ -325,8 +325,9 @@ struct PrivacySettingsView: View {
             }
         }
         .sharpitGroupedList()
+        // The page's words are known before the server answers: only the switches wait, never a
+        // greyed page.
         .disabled(store.phase != .loaded || store.isSaving)
-        .redacted(reason: store.phase == .loaded ? [] : .placeholder)
         .refreshable { await store.load() }
     }
 

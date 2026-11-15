@@ -29,3 +29,6 @@ the server builds the file.
 as lines under « Nécessaires pour utiliser SharpIt » and « Facultatifs, modifiables à tout moment »
 (`ConsentLabel`: what it is, what it covers), « Tout accepter » (ticks all five and saves) over
 « Continuer avec ma sélection » (the required three ticked). `SharpitScreenDemo consent` shows it.
+
+The settings page is never redacted while the consents are read: its words are static, only the
+switches wait (disabled) for the server.
