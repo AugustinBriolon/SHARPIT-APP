@@ -13,13 +13,13 @@ struct JournalAnalysesView: View {
         ScrollView {
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SharpitSpacing.pageInset)
+                .padding(.horizontal, 24)
                 .padding(.bottom, SharpitSpacing.section)
         }
         .scrollIndicators(.hidden)
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: .sleep, height: 240)
         .navigationTitle("Analyses")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task { await store.load() }
         .refreshable { await store.load() }
     }
@@ -154,24 +154,18 @@ private struct JournalAnalysesPlate: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-            HStack(spacing: SharpitSpacing.sm) {
-                SharpitIconTile(symbol: "lightbulb")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("À retenir")
-                        .font(SharpitTypography.cardTitle)
-                        .foregroundStyle(ink)
-                    Text(reading.summary)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(ink.opacity(0.6))
-                        .monospacedDigit()
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
+            Text("À retenir")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
 
             Text(sentence)
-                .font(SharpitTypography.system(size: 22, weight: .semibold, relativeTo: .title2))
-                .tracking(-0.3)
+                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
                 .foregroundStyle(ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(reading.summary)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
+                .monospacedDigit()
                 .fixedSize(horizontal: false, vertical: true)
 
             if !reading.strengths.isEmpty {
@@ -191,7 +185,7 @@ private struct JournalAnalysesPlate: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .cliniqueCard()
         .accessibilityElement(children: .combine)
     }
 }

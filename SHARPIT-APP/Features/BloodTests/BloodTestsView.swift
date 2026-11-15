@@ -9,9 +9,9 @@ struct BloodTestsView: View {
     @State private var isImporting = false
     private let tokenProvider: () async throws -> String
 
-    init(tokenProvider: @escaping () async throws -> String) {
+    init(client: any BloodTestServing = BloodTestClient(), tokenProvider: @escaping () async throws -> String) {
         self.tokenProvider = tokenProvider
-        _store = State(initialValue: BloodTestsStore(tokenProvider: tokenProvider))
+        _store = State(initialValue: BloodTestsStore(client: client, tokenProvider: tokenProvider))
     }
 
     var body: some View {
@@ -25,16 +25,13 @@ struct BloodTestsView: View {
                 content
             }
         }
-        .background(SharpitCanvasBackground())
+        .cliniqueSheet(wash: store.tests.first.map { $0.outOfRangeCount > 0 } == true ? .watch : .neutral, height: 240)
         .navigationTitle("Analyses de sang")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    isImporting = true
-                } label: {
-                    Label("Importer une analyse", systemImage: "plus")
-                }
+                Button("Importer") { isImporting = true }
+                    .accessibilityLabel("Importer une analyse")
             }
         }
         .navigationDestination(isPresented: $isImporting) {
@@ -57,7 +54,7 @@ struct BloodTestsView: View {
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.slate)
             }
-            .padding(.horizontal, SharpitSpacing.pageInset)
+            .padding(.horizontal, 24)
             .padding(.vertical, SharpitSpacing.md)
         }
         .refreshable { await store.load() }
@@ -89,9 +86,6 @@ struct BloodTestsView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, SharpitSpacing.cardPadding)
-            .padding(.vertical, SharpitSpacing.xs)
-            .sharpitSurface(.panel)
         }
     }
 
@@ -111,9 +105,6 @@ struct BloodTestsView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, SharpitSpacing.cardPadding)
-                .padding(.vertical, SharpitSpacing.xs)
-                .sharpitSurface(.panel)
             }
         }
     }
@@ -128,11 +119,15 @@ private struct BloodTestRow: View {
                 Text(test.sampledAt.formatted(date: .long, time: .omitted))
                     .font(SharpitTypography.bodyEmphasis)
                     .foregroundStyle(SharpitColor.foreground)
-                Text(summary)
+                Text(test.results.count == 1 ? String(localized: "1 marqueur") : String(localized: "\(test.results.count) marqueurs"))
                     .font(SharpitTypography.meta)
-                    .foregroundStyle(test.outOfRangeCount > 0 ? SharpitColor.signalCaution : SharpitColor.slate)
+                    .foregroundStyle(SharpitColor.slate)
             }
             Spacer(minLength: SharpitSpacing.xs)
+            CliniqueStatusPill(
+                test.outOfRangeCount > 0 ? String(localized: "\(test.outOfRangeCount) à surveiller") : String(localized: "Tout dans la plage"),
+                status: test.outOfRangeCount > 0 ? .watch : .good
+            )
             Image(systemName: "chevron.right")
                 .font(SharpitTypography.meta)
                 .foregroundStyle(SharpitColor.slate)
@@ -141,12 +136,6 @@ private struct BloodTestRow: View {
         .padding(.vertical, SharpitSpacing.xs)
         .frame(minHeight: SharpitSpacing.rowHeight)
         .contentShape(Rectangle())
-    }
-
-    private var summary: String {
-        let count = String(localized: "\(test.results.count) marqueurs")
-        guard test.outOfRangeCount > 0 else { return count }
-        return String(localized: "\(count) · \(test.outOfRangeCount) hors intervalle")
     }
 }
 
