@@ -79,34 +79,6 @@ struct SharpitHeroFigure: View {
     }
 }
 
-/// One reading of the coach, with the tone of what it says: a dot, a title, a line.
-struct SharpitInsightRow: View {
-    let title: String
-    let detail: String
-    let tone: Color
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
-            Circle()
-                .fill(tone)
-                .frame(width: 8, height: 8)
-                .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text(detail)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.slate)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-    }
-}
-
 /// How sure the reading is, as a quiet closing line — the last step of the causal column.
 struct SharpitConfidenceLine: View {
     let pct: Double?

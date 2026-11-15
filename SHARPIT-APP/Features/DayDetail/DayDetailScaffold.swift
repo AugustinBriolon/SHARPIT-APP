@@ -43,10 +43,10 @@ struct DayDetailScaffold<Payload: V1DayResource, Content: View>: View {
         .cliniqueSheet(wash: wash, height: 240)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        // The bar carries the way back and the day; the screen's name is said, not shown.
+        // The bar carries the way back, the day in its middle, and the screen's own « ⋯ » on
+        // the right: one layout for every day screen, no two buttons sharing a capsule.
         .toolbar {
-            ToolbarItem(placement: .principal) { Text("") }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .principal) {
                 DayDetailDatePicker(
                     selectedDay: store.selectedDay,
                     hasData: store.hasData(on:),

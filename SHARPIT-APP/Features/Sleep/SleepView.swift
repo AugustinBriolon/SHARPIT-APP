@@ -56,10 +56,12 @@ struct SleepView: View {
         // The sleep targets, set where they are read — right of the title, beside « Aujourd'hui ».
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showsTargets = true
+                Menu {
+                    Button { showsTargets = true } label: {
+                        Label("Objectifs de sommeil", systemImage: "target")
+                    }
                 } label: {
-                    Label("Objectifs de sommeil", systemImage: "target")
+                    Label("Actions", systemImage: "ellipsis")
                 }
             }
         }
@@ -258,10 +260,12 @@ private struct SleepShapeSection: View {
 private struct SleepSectionTitle: View {
     let title: String
     var trailing: String? = nil
+    var pill: (label: String, status: CliniqueStatus)? = nil
 
-    init(_ title: String, trailing: String? = nil) {
+    init(_ title: String, trailing: String? = nil, pill: (String, CliniqueStatus)? = nil) {
         self.title = title
         self.trailing = trailing
+        self.pill = pill.map { (label: $0.0, status: $0.1) }
     }
 
     var body: some View {
@@ -276,6 +280,9 @@ private struct SleepSectionTitle: View {
                 Text(trailing)
                     .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                     .foregroundStyle(SharpitColor.slate)
+            }
+            if let pill {
+                CliniqueStatusPill(pill.label, status: pill.status)
             }
         }
     }
@@ -357,88 +364,111 @@ enum SleepSheetReadout {
     }
 }
 
-/// The recommendation step: tonight's bedtime first, the coach's readings behind it, and
-/// the way to ask the coach about them.
+/// Tonight, as lines: when to go to bed, when to put the screens down, what the night owes —
+/// then what the coach reads in the recent nights, and the way to talk about it.
 private struct SleepCoachCard: View {
     @Environment(ShellRouter.self) private var router
     let sleep: V1SleepResponse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+        VStack(alignment: .leading, spacing: 0) {
             SleepSectionTitle(String(localized: "Ce soir"))
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                if let bedtime = sleep.recommendedBedtimeMin {
-                    HStack(spacing: SharpitSpacing.md) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Ce soir, au lit vers")
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.slate)
-                            Text(SleepReadout.clock(bedtime))
-                                .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .title, digits: true))
-                                .tracking(SharpitTypography.gaugeScoreTracking)
-                                .foregroundStyle(SharpitColor.foreground)
-                            // Callers: SleepCoachCard. API: windDownStartMin. User: fix all — P3 bedtime.
-                            if let windDown = sleep.windDownStartMin {
-                                Text("Coupez les écrans vers \(SleepReadout.clock(windDown))")
-                                    .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.slate)
-                            }
-                        }
-                        Spacer(minLength: 0)
-                        // ADR-079. Callers: SleepCoachCard. API: sleepNeededMin. User: Bevel gaps plan.
-                        if let duration = sleep.sleepNeededMin ?? sleep.recommendedDurationMin {
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text("Besoin cette nuit")
-                                    .font(SharpitTypography.meta)
-                                    .foregroundStyle(SharpitColor.slate)
-                                Text(SleepReadout.duration(duration))
-                                    .font(SharpitTypography.instrument)
-                                    .foregroundStyle(SharpitColor.foreground)
-                            }
-                        }
-                    }
-                    if let contributors = sleep.sleepNeededContributors {
-                        let bits = [
-                            contributors.debtBoostMin > 0
-                                ? String(localized: "dette +\(Int(contributors.debtBoostMin)) min") : nil,
-                            contributors.strainBoostMin > 0
-                                ? String(localized: "effort +\(Int(contributors.strainBoostMin)) min") : nil,
-                            contributors.efficiencyBoostMin > 0
-                                ? String(localized: "efficacité +\(Int(contributors.efficiencyBoostMin)) min") : nil,
-                        ].compactMap { $0 }
-                        if !bits.isEmpty {
-                            Text(bits.joined(separator: " · "))
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.slate)
-                        }
-                    }
+                .padding(.bottom, 4)
+            if let bedtime = sleep.recommendedBedtimeMin {
+                SleepLine(String(localized: "Au lit vers"), value: SleepReadout.clock(bedtime))
+                CliniqueDivider()
+                if let windDown = sleep.windDownStartMin {
+                    SleepLine(String(localized: "Écrans coupés vers"), value: SleepReadout.clock(windDown))
+                    CliniqueDivider()
                 }
-
-                if !sleep.insights.isEmpty {
-                    if sleep.recommendedBedtimeMin != nil {
-                        Divider().overlay(SharpitColor.divider)
-                    }
-                    ForEach(sleep.insights, id: \.self) { insight in
-                        SharpitInsightRow(
-                            title: insight.title,
-                            detail: insight.detail,
-                            tone: SleepReadout.tone(for: insight.tone)
-                        )
-                    }
-                }
-
-                if let note = sleep.recoveryNote {
-                    Text(note)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                }
-
-                CoachDiscussButton(title: String(localized: "Discuter de mon sommeil")) {
-                    router.discussWithCoach(about: CoachDiscuss.describe(.today))
+                // ADR-079: the need grows with the debt, the day's effort and a poor efficiency.
+                if let duration = sleep.sleepNeededMin ?? sleep.recommendedDurationMin {
+                    SleepLine(String(localized: "Besoin cette nuit"), detail: needDetail, value: SleepReadout.duration(duration))
+                    CliniqueDivider()
                 }
             }
+            ForEach(sleep.insights, id: \.self) { insight in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(insight.title)
+                        .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text(insight.detail)
+                        .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                        .lineSpacing(2)
+                        .foregroundStyle(SharpitColor.slate)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 14)
+                .accessibilityElement(children: .combine)
+                CliniqueDivider()
+            }
+            HStack(spacing: 12) {
+                Text(sleep.recoveryNote ?? String(localized: "Une question sur tes nuits ?"))
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                    .lineSpacing(2)
+                    .foregroundStyle(SharpitColor.slate)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    router.discussWithCoach(about: CoachDiscuss.describe(.today))
+                } label: {
+                    Text("En parler au coach")
+                        .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .footnote))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(.sharpitPressable)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(SharpitColor.divider, lineWidth: 1))
+            .padding(.top, 16)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var needDetail: String? {
+        guard let contributors = sleep.sleepNeededContributors else { return nil }
+        let bits = [
+            contributors.debtBoostMin > 0 ? String(localized: "dette +\(Int(contributors.debtBoostMin)) min") : nil,
+            contributors.strainBoostMin > 0 ? String(localized: "effort +\(Int(contributors.strainBoostMin)) min") : nil,
+            contributors.efficiencyBoostMin > 0 ? String(localized: "efficacité +\(Int(contributors.efficiencyBoostMin)) min") : nil,
+        ].compactMap { $0 }
+        return bits.isEmpty ? nil : bits.joined(separator: " · ")
+    }
+}
+
+/// A name, what it rests on, its figure: one line of the sheet.
+private struct SleepLine: View {
+    let name: String
+    var detail: String? = nil
+    let value: String
+
+    init(_ name: String, detail: String? = nil, value: String) {
+        self.name = name
+        self.detail = detail
+        self.value = value
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .body))
+                    .foregroundStyle(SharpitColor.foreground)
+                if let detail {
+                    Text(detail)
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                }
+            }
+            Spacer(minLength: SharpitSpacing.sm)
+            Text(value)
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body, digits: true))
+                .foregroundStyle(SharpitColor.foreground)
+        }
+        .padding(.vertical, 14)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -488,66 +518,33 @@ private struct SleepTimeline: View {
 
 // MARK: - Sleep bank
 
-/// What the recent nights owe the athlete, and how steady they were.
+/// What the recent nights owe the athlete, and how steady they were — a line each.
 private struct SleepBankSection: View {
     let sleep: V1SleepResponse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.lg) {
-            SleepSectionTitle(String(localized: "Banque de sommeil"))
-            VStack(alignment: .leading, spacing: SharpitSpacing.md) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Solde 7 jours")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                        Text(SleepReadout.bankBalance(debtMin: sleep.debt7Min))
-                            .font(SharpitTypography.system(size: 34, weight: .semibold, relativeTo: .title, digits: true))
-                            .tracking(SharpitTypography.gaugeScoreTracking)
-                            .foregroundStyle(SleepReadout.bankTone(debtMin: sleep.debt7Min))
-                    }
-                    Spacer(minLength: 0)
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("Solde 14 jours")
-                            .font(SharpitTypography.meta)
-                            .foregroundStyle(SharpitColor.slate)
-                        Text(SleepReadout.bankBalance(debtMin: sleep.debt14Min))
-                            .font(SharpitTypography.instrument)
-                            .foregroundStyle(SleepReadout.bankTone(debtMin: sleep.debt14Min))
-                    }
-                }
-                Divider().overlay(SharpitColor.divider)
-                HStack {
-                    bankFact(
-                        caption: String(localized: "Moyenne 7 j"),
-                        value: SleepReadout.duration(sleep.averages.durationMin)
-                    )
-                    Spacer(minLength: 0)
-                    bankFact(
-                        caption: String(localized: "Régularité"),
-                        value: sleep.regularityMin.map { String(localized: "± \(Int($0.rounded())) min") } ?? "—"
-                    )
-                    Spacer(minLength: 0)
-                    bankFact(
-                        caption: String(localized: "Score moyen"),
-                        value: sleep.averages.score.map { "\(Int($0.rounded()))" } ?? "—"
-                    )
-                }
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            SleepSectionTitle(
+                String(localized: "Banque de sommeil"),
+                pill: sleep.debt7Min.map { $0.rounded() <= 0
+                    ? (String(localized: "À l'équilibre"), CliniqueStatus.good)
+                    : (String(localized: "En dette"), CliniqueStatus.watch) }
+            )
+            .padding(.bottom, 4)
+            SleepLine(String(localized: "Solde 7 jours"), value: SleepReadout.bankBalance(debtMin: sleep.debt7Min))
+            CliniqueDivider()
+            SleepLine(String(localized: "Solde 14 jours"), value: SleepReadout.bankBalance(debtMin: sleep.debt14Min))
+            CliniqueDivider()
+            SleepLine(String(localized: "Moyenne 7 jours"), value: SleepReadout.duration(sleep.averages.durationMin))
+            CliniqueDivider()
+            SleepLine(
+                String(localized: "Régularité"),
+                value: sleep.regularityMin.map { String(localized: "± \(Int($0.rounded())) min") } ?? "—"
+            )
+            CliniqueDivider()
+            SleepLine(String(localized: "Score moyen"), value: sleep.averages.score.map { "\(Int($0.rounded()))" } ?? "—")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func bankFact(caption: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body, digits: true))
-                .foregroundStyle(SharpitColor.foreground)
-            Text(caption)
-                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .foregroundStyle(SharpitColor.slate)
-        }
-        .accessibilityElement(children: .combine)
     }
 }
 

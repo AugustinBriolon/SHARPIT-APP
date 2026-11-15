@@ -313,3 +313,13 @@ private struct CountingNutritionClient: NutritionServing {
     #expect(NutritionReadout.mealLine(["Flocons d'avoine", "Banane", "Boisson soja"]) == "Flocons d'avoine, banane, boisson soja")
     #expect(NutritionReadout.mealLine([]) == "")
 }
+
+@Test func anEmptyDayLeavesTheWholeTargetToEat() {
+        let day = NutritionReadout.emptyDay(targets: V1NutritionTargets(kcal: 2_400, proteinG: 140, carbsG: nil, fatG: 70))
+        #expect(day.calories == 0)
+        #expect(day.goals?.calories.remaining == 2_400)
+        #expect(day.goals?.calories.pct == 0)
+        #expect(day.goals?.carbohydrates.goal == nil)
+        #expect(day.goals?.carbohydrates.pct == nil)
+        #expect(NutritionReadout.emptyDay(targets: .none).goals?.calories.remaining == nil)
+}

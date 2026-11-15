@@ -156,34 +156,28 @@ struct NutritionSections: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let day = nutrition.day {
-                NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete)
-                    .padding(.horizontal, 24)
-                NutritionEnergyPlate(day: day, dayId: nutrition.trainingDayId, keptGoal: keptGoal(day))
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
-                NutritionMacrosSection(day: day)
-                    .padding(.top, 20)
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    coachReading
-                    meals(importedMeals: day.meals)
-                }
+            // A day with nothing noted is the same page at zero: the goal whole in the ring, the
+            // macros empty, every meal offering « Ajouter » — never a different screen.
+            let day = nutrition.day ?? NutritionReadout.emptyDay(targets: foodLog?.targets ?? .none)
+            NutritionDayHeader(diet: nutrition.diet, isComplete: day.complete)
                 .padding(.horizontal, 24)
+            NutritionEnergyPlate(day: day, dayId: nutrition.trainingDayId, keptGoal: keptGoal(day))
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+            NutritionMacrosSection(day: day)
                 .padding(.top, 20)
-            } else {
-                VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                    NutritionDayHeader(diet: nutrition.diet, isComplete: false)
-                    if foodLog?.hasEntries != true {
-                        NutritionEmptyDayPlate(
-                            isToday: isToday,
-                            onAdd: { onAdd(FoodAddRequest(meal: suggestedMeal, start: $0)) },
-                            onCopyPreviousDay: copyPreviousDay
-                        )
+            VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                if nutrition.day != nil { coachReading }
+                meals(importedMeals: day.meals)
+                if nutrition.day == nil, foodLog?.hasEntries != true, let copyPreviousDay {
+                    Button(action: copyPreviousDay) {
+                        Label("Copier la veille", systemImage: "doc.on.doc")
                     }
-                    meals(importedMeals: [])
+                    .buttonStyle(CliniqueButtonStyle(kind: .outline))
                 }
-                .padding(.horizontal, 24)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
             if !nutrition.history.isEmpty {
                 NutritionRegularitySection(
                     history: nutrition.history,
@@ -258,82 +252,6 @@ struct NutritionSections: View {
     }
 }
 
-// MARK: - Empty days
-
-/// A day with nothing logged: the empty dial and the next step — scan or search a first food.
-private struct NutritionEmptyDayPlate: View {
-    let isToday: Bool
-    let onAdd: (FoodAddStart) -> Void
-    /// Logs the whole day before into this one (SHARPIT ADR-071); nil while no log is held.
-    var onCopyPreviousDay: (() -> Void)?
-
-    var body: some View {
-        VStack(spacing: SharpitSpacing.md) {
-            SharpitTickGauge(score: nil)
-                .sharpitDialCentre {
-                    VStack(spacing: 4) {
-                        Image(systemName: "fork.knife")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(SharpitColor.slate)
-                        Text("0 kcal")
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(SharpitColor.slate)
-                    }
-                }
-            .frame(width: 200, height: 200 / SharpitTickGaugeGeometry.aspectRatio)
-            .accessibilityHidden(true)
-
-            VStack(spacing: SharpitSpacing.xxs) {
-                Text(isToday ? String(localized: "Rien de noté pour l'instant") : String(localized: "Rien de noté ce jour-là"))
-                    .font(SharpitTypography.cardTitle)
-                    .tracking(SharpitTypography.cardTitleTracking)
-                    .foregroundStyle(SharpitColor.foreground)
-                Text(isToday
-                     ? String(localized: "Note ton premier repas : scanne un emballage ou cherche un aliment. Calories, macros et lecture du coach suivent.")
-                     : String(localized: "Ajoute ce que tu as mangé ce jour-là, repas par repas."))
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.slate)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            HStack(spacing: SharpitSpacing.xs) {
-                if BarcodeScannerView.isAvailable {
-                    capsule(String(localized: "Scanner"), symbol: "barcode.viewfinder", tone: SharpitNutritionTone.Action.scan) { onAdd(.scan) }
-                }
-                capsule(String(localized: "Chercher un aliment"), symbol: "magnifyingglass", tone: SharpitColor.primary) { onAdd(.search) }
-            }
-
-            if let onCopyPreviousDay {
-                Button(action: onCopyPreviousDay) {
-                    Label("Copier la veille", systemImage: "doc.on.doc")
-                        .font(SharpitTypography.meta.weight(.semibold))
-                        .foregroundStyle(SharpitColor.slate)
-                        .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                }
-                .buttonStyle(.sharpitPressable)
-            }
-        }
-        .padding(SharpitSpacing.lg)
-        .frame(maxWidth: .infinity)
-        .sharpitSurface(.panel)
-    }
-
-    private func capsule(_ title: String, symbol: String, tone: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: symbol)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(tone)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .padding(.horizontal, SharpitSpacing.md)
-                .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                .background(tone.opacity(0.10), in: Capsule())
-        }
-        .buttonStyle(.sharpitPressable)
-    }
-}
-
 struct NutritionEntryFlag: Hashable {
     let meal: String
     let entry: String
@@ -367,8 +285,10 @@ private struct NutritionEnergyPlate: View {
                 if let goals = day.goals {
                     row(String(localized: "Objectif"), NutritionReadout.kcal(goals.calories.goal))
                     CliniqueDivider()
-                    row(String(localized: "Exercice"), "+ \(NutritionReadout.kcal(goals.exerciseCalories))")
-                    CliniqueDivider()
+                    if goals.exerciseCalories > 0 {
+                        row(String(localized: "Exercice"), "+ \(NutritionReadout.kcal(goals.exerciseCalories))")
+                        CliniqueDivider()
+                    }
                 }
                 row(String(localized: "Mangé"), NutritionReadout.kcal(day.calories))
             }

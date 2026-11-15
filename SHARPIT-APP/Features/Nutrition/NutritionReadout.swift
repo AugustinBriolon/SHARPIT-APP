@@ -165,6 +165,22 @@ enum NutritionReadout {
         complete: false, goals: nil, fuelDensity: nil, meals: []
     )
 
+    /// A day with nothing noted, read against the athlete's targets: everything is left to eat.
+    static func emptyDay(targets: V1NutritionTargets) -> V1NutritionDay {
+        func line(_ goal: Double?) -> V1NutritionMacro {
+            V1NutritionMacro(consumed: 0, goal: goal, remaining: goal, pct: goal == nil ? nil : 0)
+        }
+        let kcal = targets.kcal.map(Double.init)
+        return V1NutritionDay(
+            calories: 0, protein: 0, carbohydrates: 0, fat: 0, fiber: nil, sugar: nil, complete: false,
+            goals: V1NutritionGoals(
+                calories: line(kcal), protein: line(targets.proteinG), carbohydrates: line(targets.carbsG),
+                fat: line(targets.fatG), exerciseCalories: 0, calorieBudget: kcal ?? 0
+            ),
+            fuelDensity: nil, meals: []
+        )
+    }
+
     /// The page's shape while a day loads.
     static var placeholderResponse: V1NutritionResponse {
         let line = V1NutritionMacro(consumed: 1_850, goal: 2_400, remaining: 550, pct: 77)

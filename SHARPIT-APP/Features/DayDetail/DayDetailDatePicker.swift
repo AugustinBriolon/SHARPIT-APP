@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Picks the day a drill-down reads: the day as a capsule in the bar, opening the month. Nights
+/// Picks the day a drill-down reads: the day in the middle of the bar, opening the month. Nights
 /// and readiness exist only for days that have happened, so future days cannot be picked; in the
 /// month a mark says whether a day holds data. A swipe on the page turns the day.
 struct DayDetailDatePicker: View {
@@ -18,13 +18,18 @@ struct DayDetailDatePicker: View {
 
     var body: some View {
         Button { showingCalendar = true } label: {
-            Text(label(selectedDay))
-                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
-                .foregroundStyle(SharpitColor.foreground)
-                .lineLimit(1)
-                // The date changes in place: no roll, the page's slide says the direction.
-                .contentTransition(.identity)
-                .padding(.horizontal, SharpitSpacing.xxs)
+            HStack(spacing: 5) {
+                Text(label(selectedDay))
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                    .lineLimit(1)
+                    // The date changes in place: no roll, the page's slide says the direction.
+                    .contentTransition(.identity)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+            }
+            .foregroundStyle(SharpitColor.foreground)
         }
         .accessibilityHint("Ouvre le calendrier")
         .sheet(isPresented: $showingCalendar) {

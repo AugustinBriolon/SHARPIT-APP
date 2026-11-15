@@ -85,11 +85,6 @@ enum SleepReadout {
         return "−" + duration(debtMin)
     }
 
-    static func bankTone(debtMin: Double?) -> Color {
-        guard let debtMin else { return SharpitColor.slate }
-        return debtMin.rounded() <= 0 ? SharpitColor.signalRecovery : SharpitColor.signalCaution
-    }
-
     /// The sleep structure: the three stages of actual sleep, in shades of the sleep hue. Time awake is not sleep, so it is not a share of it.
     enum Stage: CaseIterable, Identifiable {
         case deep, rem, light
