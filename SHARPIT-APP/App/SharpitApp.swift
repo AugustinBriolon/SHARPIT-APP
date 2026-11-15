@@ -118,6 +118,15 @@ struct SharpitApp: App {
                 try? await Clerk.shared.handle(url)
             }
         }
+        #if DEBUG
+        // Universal links do not reach a simulator build, so a scripted run names its screen
+        // at launch: SHARPIT_DEBUG_OPEN_URL=https://sharpit.app/plan.
+        .task {
+            if let link = ProcessInfo.processInfo.environment["SHARPIT_DEBUG_OPEN_URL"].flatMap(URL.init(string:)) {
+                linkInbox.receive(link)
+            }
+        }
+        #endif
     }
 }
 
