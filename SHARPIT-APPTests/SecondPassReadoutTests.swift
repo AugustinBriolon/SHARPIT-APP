@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UIKit
 @testable import Sharpit
 
 private func result(_ key: String, _ value: Double, low: Double?, high: Double?) -> V1BloodTest.Result {
@@ -55,4 +56,30 @@ private func week(_ start: Date, _ index: Int, _ phase: V1PlanPhase, load: Doubl
     #expect(SanteShareCard.available(for: empty).isEmpty)
     let normed = V1HealthOverview(synthesis: V1HealthSynthesis(normed: 7, inNorm: 6))
     #expect(SanteShareCard.available(for: normed) == [.summary])
+}
+
+@Test func aPageTakesNoTouchWhileABackSwipeIsUnderWay() {
+    #expect(!BackSwipeTouches.allowed(during: .began))
+    #expect(!BackSwipeTouches.allowed(during: .changed))
+    #expect(BackSwipeTouches.allowed(during: .ended))
+    #expect(BackSwipeTouches.allowed(during: .cancelled))
+    #expect(BackSwipeTouches.allowed(during: .possible))
+}
+
+@Test func aMarkerSheetSumsUpItsMonthAndItsTarget() {
+    #expect(CorpsFormat.summary(trend: "− 0,6 kg sur le mois", target: "71,0 kg") == "− 0,6 kg sur le mois · visé 71,0 kg")
+    #expect(CorpsFormat.summary(trend: nil, target: "71,0 kg") == "visé 71,0 kg")
+    #expect(CorpsFormat.summary(trend: nil, target: nil) == nil)
+    #expect(BloodTestsReadout.count(1) == "1 compte rendu")
+    #expect(BloodTestsReadout.count(4) == "4 comptes rendus")
+}
+
+@Test func aCoachCardKeepsItsMarksInsideTheirTracks() {
+    #expect(CoachDataCardLayout.share(66) == 0.66)
+    #expect(CoachDataCardLayout.share(140) == 1)
+    #expect(CoachDataCardLayout.share(-3) == 0)
+    #expect(CoachDataCardLayout.effortShare(10.5) == 0.5)
+    #expect(CoachDataCardLayout.effortShare(30) == 1)
+    #expect(CoachDataCardLayout.dayNumber("2026-11-14") == "14")
+    #expect(CoachDataCardLayout.dayNumber("x") == "")
 }
