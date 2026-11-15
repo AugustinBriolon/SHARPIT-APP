@@ -75,17 +75,31 @@ struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
             return nav.viewControllers.count > 1
         }
 
+        /// A press waits for the edge swipe to fail — at once when the touch is not at the edge —
+        /// so a swipe that starts on a control pops the page instead of being held by its press.
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            !BackSwipeTouches.sharesWith(scrollPan: otherGestureRecognizer.view is UIScrollView)
+        }
+
         func gestureRecognizer(
             _ gestureRecognizer: UIGestureRecognizer,
             shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
         ) -> Bool {
-            // Allows the edge gesture to begin alongside scroll views
-            true
+            // Alongside a scroll view's own pan only. With anything else — a SwiftUI button's
+            // press above all — the swipe must win alone: recognised together, a full-width row
+            // kept its press through the whole swipe and fired when the finger lifted.
+            BackSwipeTouches.sharesWith(scrollPan: otherGestureRecognizer.view is UIScrollView)
         }
     }
 }
 
 nonisolated enum BackSwipeTouches {
+    /// The back swipe runs with a scroll view's pan, and with nothing else.
+    static func sharesWith(scrollPan: Bool) -> Bool { scrollPan }
+
     /// A page takes no touch while a back swipe is under way.
     static func allowed(during state: UIGestureRecognizer.State) -> Bool {
         switch state {

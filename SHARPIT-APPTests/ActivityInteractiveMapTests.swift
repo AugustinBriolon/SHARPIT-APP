@@ -33,12 +33,20 @@ import SwiftUI
         #expect(controller.gestureRecognizerShouldBegin(panGesture) == true)
     }
 
-    @Test func simultaneousGestureRecognitionAllowed() {
+    @Test func theBackSwipeSharesWithAScrollPanAndWinsOverAPress() {
         let controller = InteractivePopGestureEnabler.PopGestureController()
-        let gesture1 = UIPanGestureRecognizer()
-        let gesture2 = UIPanGestureRecognizer()
+        let swipe = UIPanGestureRecognizer()
+        let press = UILongPressGestureRecognizer()
+        // Held here: a recogniser's view is weak.
+        let row = UIView()
+        row.addGestureRecognizer(press)
+        let scroll = UIScrollView()
+        let scrollPan = scroll.panGestureRecognizer
 
-        #expect(controller.gestureRecognizer(gesture1, shouldRecognizeSimultaneouslyWith: gesture2) == true)
+        #expect(controller.gestureRecognizer(swipe, shouldRecognizeSimultaneouslyWith: scrollPan))
+        #expect(!controller.gestureRecognizer(swipe, shouldBeRequiredToFailBy: scrollPan))
+        #expect(!controller.gestureRecognizer(swipe, shouldRecognizeSimultaneouslyWith: press))
+        #expect(controller.gestureRecognizer(swipe, shouldBeRequiredToFailBy: press))
     }
 
     @Test func theMapCardSaysOnlyTheFiguresTheSessionCarries() {
