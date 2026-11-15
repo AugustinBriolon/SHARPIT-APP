@@ -964,3 +964,9 @@ func journalStatusesAreToldApart(status: Int, expected: SharpitAPIError?) {
     #expect(JournalReadout.answer(.unset) == "À noter")
     #expect(JournalReadout.answer(.yes) == "Oui")
 }
+
+@Test func aSecondTapOnAnAnswerTakesItBack() {
+    #expect(JournalReadout.tapped(.yes, from: .unset) == .yes)
+    #expect(JournalReadout.tapped(.no, from: .yes) == .no)
+    #expect(JournalReadout.tapped(.yes, from: .yes) == .unset)
+}

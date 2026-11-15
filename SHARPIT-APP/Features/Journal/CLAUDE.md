@@ -53,3 +53,8 @@ outcome's habits stay dumbbells under their titles. `SharpitScreenDemo analyses`
 
 « Mes signaux » (`JournalPrefsDrawer`) filters with the app's chips — ink once chosen, a hairline
 otherwise — and titles each group.
+
+**Second pass (the athlete's call, 2026-11-15).** The day is titled groups again — « Journée »,
+« Mesuré pour toi », « Nuit dernière », « Signaux du jour » (`JournalGroup`) — each line opening on
+its glyph. A signal shows both answers (« Non » / « Oui », `JournalFactorLine`): a tap gives one, a
+second tap on it takes it back (`JournalReadout.tapped`); the cycling capsule is gone.

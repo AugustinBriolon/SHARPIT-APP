@@ -185,38 +185,49 @@ struct JournalView: View {
         return JournalReadout.progress(noted: noted, of: total)
     }
 
-    /// One table, in the order the day was lived: the day's values, what the devices reported,
-    /// the night that ended this morning, then the day's own signals.
+    /// The day in the order it was lived, a titled group each: the day's values, what the
+    /// devices measured, the night that ended this morning, then the day's own signals.
     /// `pending`: the lines are known, the day's answers are not — values redacted, nothing
     /// tappable, and none of the shown day's own lines (the checklist) carried over.
     private func dayLines(pending: Bool) -> some View {
-        JournalLines {
-            // The mood opens the table: it is read from the morning, before anything else was lived.
-            ForEach(store.visibleTrackables.filter { $0.kind == .mood } + store.visibleTrackables.filter { [.caffeine, .hydration, .driving].contains($0.kind) }) { trackable in
-                metricLine(trackable)
-            }
-            if !pending {
-                ForEach(store.checklist) { item in
-                    JournalChecklistLine(item: item)
+        let metrics = store.visibleTrackables.filter { $0.kind == .mood }
+            + store.visibleTrackables.filter { [.caffeine, .hydration, .driving].contains($0.kind) }
+        return VStack(alignment: .leading, spacing: 26) {
+            if !metrics.isEmpty {
+                JournalGroup(title: String(localized: "Journée")) {
+                    ForEach(metrics) { trackable in metricLine(trackable) }
                 }
             }
-            ForEach(store.priorNightTrackables) { trackable in
-                factorLine(id: trackable.id, label: trackable.label, detail: String(localized: "Cette nuit"), pending: pending)
+            if !pending, !store.checklist.isEmpty {
+                JournalGroup(title: String(localized: "Mesuré pour toi"), hint: String(localized: "Lu de tes données. Rien à noter.")) {
+                    ForEach(store.checklist) { item in JournalChecklistLine(item: item) }
+                }
             }
-            ForEach(store.dayTrackables) { trackable in
-                factorLine(id: trackable.id, label: trackable.label, detail: nil, pending: pending)
+            if !store.priorNightTrackables.isEmpty {
+                JournalGroup(title: String(localized: "Nuit dernière")) {
+                    ForEach(store.priorNightTrackables) { trackable in
+                        factorLine(id: trackable.id, label: trackable.label, symbol: trackable.symbolName, pending: pending)
+                    }
+                }
             }
-            ForEach(store.visibleCustomItems) { item in
-                factorLine(id: item.id, label: item.label, detail: nil, pending: pending)
+            if !store.dayTrackables.isEmpty || !store.visibleCustomItems.isEmpty {
+                JournalGroup(title: String(localized: "Signaux du jour")) {
+                    ForEach(store.dayTrackables) { trackable in
+                        factorLine(id: trackable.id, label: trackable.label, symbol: trackable.symbolName, pending: pending)
+                    }
+                    ForEach(store.visibleCustomItems) { item in
+                        factorLine(id: item.id, label: item.label, symbol: "pencil.line", pending: pending)
+                    }
+                }
             }
         }
         .redacted(reason: pending ? .placeholder : [])
         .allowsHitTesting(!pending)
     }
 
-    private func factorLine(id: String, label: String, detail: String?, pending: Bool) -> some View {
-        JournalFactorLine(label: label, detail: detail, state: pending ? .unset : store.entry.state(of: id)) {
-            store.cycle(factorId: id)
+    private func factorLine(id: String, label: String, symbol: String, pending: Bool) -> some View {
+        JournalFactorLine(label: label, symbol: symbol, state: pending ? .unset : store.entry.state(of: id)) {
+            store.set(factorId: id, to: $0)
         }
     }
 
@@ -224,7 +235,7 @@ struct JournalView: View {
     private func metricLine(_ trackable: JournalTrackable) -> some View {
         switch trackable.kind {
         case .mood:
-            JournalLine(title: trackable.label, detail: String(localized: "Lu de ton ressenti du matin"), onOpen: { showsWellness = true }) {
+            JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: String(localized: "Lu de ton ressenti du matin"), onOpen: { showsWellness = true }) {
                 if let mood = store.moodLabel {
                     JournalValuePill(text: mood)
                 } else {
@@ -232,7 +243,7 @@ struct JournalView: View {
                 }
             }
         case .caffeine:
-            JournalLine(title: trackable.label, detail: String(localized: "Un café ≈ 80 mg"), onOpen: { showsCaffeine = true }) {
+            JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: String(localized: "Un café ≈ 80 mg"), onOpen: { showsCaffeine = true }) {
                 JournalStepper(
                     value: store.entry.caffeineMg.map { "\($0) mg" } ?? "— mg",
                     label: trackable.label,
@@ -241,7 +252,7 @@ struct JournalView: View {
                 )
             }
         case .hydration:
-            JournalLine(title: trackable.label, detail: JournalReadout.litres(store.entry.hydrationMl), onOpen: { showsHydration = true }) {
+            JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: JournalReadout.litres(store.entry.hydrationMl), onOpen: { showsHydration = true }) {
                 Button { store.adjustHydration(by: 250) } label: {
                     JournalCapsule(text: "+ 25 cl", style: .outline)
                 }
@@ -249,7 +260,7 @@ struct JournalView: View {
                 .accessibilityLabel("Ajouter 25 centilitres")
             }
         case .driving:
-            JournalLine(title: trackable.label, detail: String(localized: "Par quarts d'heure"), onOpen: { showsDriving = true }) {
+            JournalLine(title: trackable.label, symbol: trackable.symbolName, detail: String(localized: "Par quarts d'heure"), onOpen: { showsDriving = true }) {
                 if (store.entry.drivingMinutes ?? 0) == 0 {
                     JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
                 } else {
@@ -319,6 +330,11 @@ nonisolated enum JournalReadout {
     static func litres(_ millilitres: Int?, locale: Locale = .current) -> String? {
         guard let millilitres, millilitres > 0 else { return nil }
         return (Double(millilitres) / 1_000).formatted(.number.precision(.fractionLength(0...1)).locale(locale)) + " L"
+    }
+
+    /// The answer a tap leaves: the one tapped, or none when it was already given.
+    static func tapped(_ answer: JournalFactorState, from current: JournalFactorState) -> JournalFactorState {
+        current == answer ? .unset : answer
     }
 
     /// Unanswered is a real third answer, said « À noter ».
@@ -393,12 +409,16 @@ private struct JournalHeader: View {
 /// The journal's own lines, redacted, in the shape it is about to show.
 private struct JournalLoadingRows: View {
     var body: some View {
-        JournalLines {
-            JournalLine(title: String(localized: "Humeur"), detail: String(localized: "Lu de ton ressenti du matin")) {
-                JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
+        VStack(alignment: .leading, spacing: 26) {
+            JournalGroup(title: String(localized: "Journée")) {
+                JournalLine(title: String(localized: "Humeur"), symbol: "face.smiling", detail: String(localized: "Lu de ton ressenti du matin")) {
+                    JournalCapsule(text: JournalReadout.answer(.unset), style: .outline)
+                }
             }
-            ForEach([String(localized: "Caféine"), String(localized: "Alcool"), String(localized: "Écrans tard"), String(localized: "Sieste")], id: \.self) { label in
-                JournalFactorLine(label: label, detail: nil, state: .unset) {}
+            JournalGroup(title: String(localized: "Signaux du jour")) {
+                ForEach([String(localized: "Alcool"), String(localized: "Écrans tard"), String(localized: "Sieste")], id: \.self) { label in
+                    JournalFactorLine(label: label, symbol: "circle", state: .unset) { _ in }
+                }
             }
         }
         .redacted(reason: .placeholder)
@@ -445,6 +465,31 @@ struct JournalLines<Content: View>: View {
     }
 }
 
+/// A titled group of the day's lines: when they happened, then the lines under hairlines.
+struct JournalGroup<Content: View>: View {
+    let title: String
+    var hint: String? = nil
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            if let hint {
+                Text(hint)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                    .foregroundStyle(SharpitColor.slate)
+                    .padding(.top, 2)
+            }
+            JournalLines { content }
+                .padding(.top, 8)
+        }
+    }
+}
+
 /// A row's glyph in the signals' drawer and the check-in: ink on the chip tone.
 struct JournalRowIcon: View {
     static let tile: CGFloat = 32
@@ -464,12 +509,15 @@ struct JournalRowIcon: View {
 /// the line's own sheet when it has one.
 struct JournalLine<Control: View>: View {
     let title: String
+    /// The line's glyph, on a quiet tile: the signals are told apart before they are read.
+    var symbol: String? = nil
     var detail: String? = nil
     var onOpen: (() -> Void)? = nil
     @ViewBuilder let control: Control
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            if let symbol { JournalRowIcon(symbolName: symbol) }
             if let onOpen {
                 Button(action: onOpen) { words.contentShape(.rect) }
                     .buttonStyle(.sharpitPressable)
@@ -478,14 +526,14 @@ struct JournalLine<Control: View>: View {
             }
             control
         }
-        .padding(.vertical, 14)
-        .frame(minHeight: 72)
+        .padding(.vertical, 10)
+        .frame(minHeight: 60)
     }
 
     private var words: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(SharpitTypography.system(size: 17, weight: .semibold, relativeTo: .body))
+                .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
                 .foregroundStyle(SharpitColor.foreground)
             if let detail {
                 Text(detail)
@@ -580,7 +628,7 @@ private struct JournalChecklistLine: View {
     let item: V1JournalAutoChecklistItem
 
     var body: some View {
-        JournalLine(title: item.label, detail: item.detail?.isEmpty == false ? item.detail : nil) {
+        JournalLine(title: item.label, symbol: "waveform.path.ecg", detail: item.detail?.isEmpty == false ? item.detail : nil) {
             Image(systemName: item.status == .done ? "checkmark.circle" : item.status == .missed ? "minus.circle" : "circle.dashed")
                 .font(.system(size: 22, weight: .regular))
                 // Only a met threshold takes a tone: a missed one stays quiet, the journal never scolds.
@@ -591,25 +639,42 @@ private struct JournalChecklistLine: View {
     }
 }
 
-/// A yes / no / unanswered signal. Unanswered is its own answer — the analyses only weigh what
-/// the athlete actually said — so a tap walks the three: à noter, oui, non, à noter.
+/// A yes / no / unanswered signal. Both answers are on the line: a tap gives one, a second tap
+/// on it takes it back — unanswered is its own answer, since the analyses only weigh what the
+/// athlete actually said.
 struct JournalFactorLine: View {
     let label: String
-    let detail: String?
+    var symbol: String? = nil
     let state: JournalFactorState
-    let onCycle: () -> Void
+    let onChange: (JournalFactorState) -> Void
 
     var body: some View {
-        JournalLine(title: label, detail: detail) {
-            Button(action: onCycle) {
-                JournalCapsule(text: JournalReadout.answer(state), style: state == .unset ? .outline : state == .yes ? .ink : .quiet)
-                    .contentTransition(.numericText())
-                    .animation(SharpitMotion.selection, value: state)
+        JournalLine(title: label, symbol: symbol) {
+            HStack(spacing: 2) {
+                answer(.no)
+                answer(.yes)
             }
-            .buttonStyle(.sharpitPressable)
+            .padding(3)
+            .background(SharpitColor.tile, in: Capsule())
+            .animation(SharpitMotion.selection, value: state)
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(label)
             .accessibilityValue(JournalReadout.answer(state))
-            .accessibilityHint("Change la réponse")
         }
+    }
+
+    private func answer(_ value: JournalFactorState) -> some View {
+        let isChosen = state == value
+        return Button { onChange(JournalReadout.tapped(value, from: state)) } label: {
+            Text(JournalReadout.answer(value))
+                .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline))
+                .foregroundStyle(isChosen ? SharpitColor.primaryForeground : SharpitColor.slate)
+                .frame(minWidth: 52, minHeight: 38)
+                .background(isChosen ? SharpitColor.primary : .clear, in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityAddTraits(isChosen ? .isSelected : [])
+        .accessibilityHint(isChosen ? String(localized: "Touche de nouveau pour retirer ta réponse") : "")
     }
 }
