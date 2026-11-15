@@ -78,7 +78,19 @@ struct CoachView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) { Text("") }
                 SharpitBarTitle(String(localized: "Coach"))
-                // The past conversations, and what the coach keeps and costs, behind one button.
+                // A new conversation first, the list of actions after it, on the right as everywhere.
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        store.startNewConversation()
+                    } label: {
+                        Label("Nouvelle conversation", systemImage: "square.and.pencil")
+                    }
+                    // Nothing to leave when the thread is empty, and an answer arriving
+                    // would land in the conversation the athlete just walked out of.
+                    .disabled(store.isEmpty || store.isReplying)
+                }
+                SharpitBarGap()
+                // The list of actions — conversations, memory, usage — on the right, as everywhere.
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {
@@ -100,20 +112,9 @@ struct CoachView: View {
                             Label("Consommation", systemImage: "gauge.with.dots.needle.33percent")
                         }
                     } label: {
-                        Label("Historique", systemImage: "clock")
+                        Label("Actions", systemImage: "ellipsis")
                     }
                     .disabled(tokenProvider == nil)
-                }
-                SharpitBarGap()
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        store.startNewConversation()
-                    } label: {
-                        Label("Nouvelle conversation", systemImage: "square.and.pencil")
-                    }
-                    // Nothing to leave when the thread is empty, and an answer arriving
-                    // would land in the conversation the athlete just walked out of.
-                    .disabled(store.isEmpty || store.isReplying)
                 }
             }
             .sheet(isPresented: $showingMemory) {

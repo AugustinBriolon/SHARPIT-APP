@@ -74,3 +74,5 @@ and fades in as it arrives (a fade alone under Reduce Motion). Scores: a thin ba
 hue, filling on arrival. Effort target: the window read big over its place on the 0–21 effort
 track, the form on its own line (another scale). Sleep and form: a column a day — sleep as a bar,
 form as a dot — and a tap on a day reads its two figures (`CoachDataCardLayout`).
+
+The bar reads « nouvelle conversation » then « ⋯ » (Conversations, Mémoire, Consommation), the list of actions on the right.
