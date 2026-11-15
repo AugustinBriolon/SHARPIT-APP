@@ -52,7 +52,7 @@ private let run = V1TodayBrickLeg(id: "leg-run", type: "RUN", title: "Course", d
 
 @Test func aDoneLegReadsItsDurationAndRPE() throws {
     let brick = try #require(DoneBrickPreview(card: card(legs: [bike, run])))
-    #expect(DoneBrickFormat.legMeta(brick.legs[0]) == "1h20 · RPE 6")
+    #expect(DoneBrickFormat.legMeta(brick.legs[0]) == "1 h 20 · RPE 6")
     #expect(DoneBrickFormat.legMeta(brick.legs[1]) == "À faire")
 }
 

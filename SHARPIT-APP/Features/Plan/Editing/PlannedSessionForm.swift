@@ -346,9 +346,6 @@ struct StrengthExercisesEditor: View {
 enum PlannedSessionFormat {
     /// « 45 min », « 1 h 30 », « 2 h ».
     static func duration(_ minutes: Int) -> String {
-        guard minutes >= 60 else { return "\(minutes) min" }
-        let hours = minutes / 60
-        let rest = minutes % 60
-        return rest == 0 ? "\(hours) h" : String(format: "%d h %02d", hours, rest)
+        SharpitFigureFormat.duration(minutes: Double(minutes))
     }
 }

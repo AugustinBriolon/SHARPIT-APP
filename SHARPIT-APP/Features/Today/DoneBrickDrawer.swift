@@ -92,11 +92,9 @@ enum DoneBrickFormat {
         return "\(seconds / 60) min \(String(format: "%02d", seconds % 60))"
     }
 
-    /// « 1h20 », « 30 min ».
+    /// « 1 h 20 », « 30 min ».
     static func duration(_ seconds: Int) -> String {
-        let hours = seconds / 3600
-        let minutes = (seconds % 3600) / 60
-        return hours > 0 ? "\(hours)h\(String(format: "%02d", minutes))" : "\(minutes) min"
+        SharpitFigureFormat.duration(seconds: Double(seconds))
     }
 
     /// A done leg's line: « 1h20 · RPE 6 », or « À faire » while it is not done.

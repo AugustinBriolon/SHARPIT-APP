@@ -68,8 +68,10 @@ enum NutritionReadout {
 
     /// `128 g` — grams, whole.
     static func grams(_ value: Double?) -> String {
-        guard let value else { return "—" }
-        return "\(Int(value.rounded())) g"
+        // The app's whole figure: grouped from five digits, « — » for one that cannot be read
+        // (`Int(_:)` trapped on NaN and ∞).
+        let figure = SharpitFigureFormat.kcal(value)
+        return figure == "—" ? figure : "\(figure) g"
     }
 
     /// `1,8 g/kg` — one decimal, French separator.

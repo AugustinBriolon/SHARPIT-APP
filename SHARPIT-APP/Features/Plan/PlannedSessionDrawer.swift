@@ -93,7 +93,7 @@ extension PlannedSessionPreview {
     init(session: V1PlannedSessionItem, isExpertReading: Bool = false) {
         var metrics: [PlannedSessionMetric] = []
         if let durationMin = session.durationMin {
-            metrics.append(PlannedSessionMetric(label: String(localized: "Durée"), value: "\(durationMin) min"))
+            metrics.append(PlannedSessionMetric(label: String(localized: "Durée"), value: SharpitFigureFormat.duration(minutes: Double(durationMin))))
         }
         if let intensity = session.intensity, !intensity.isEmpty {
             metrics.append(PlannedSessionMetric(label: String(localized: "Intensité"), value: intensity.capitalized))
@@ -144,7 +144,7 @@ extension PlannedSessionPreview {
     init(generated session: V1GeneratedSession, isExpertReading: Bool = false) {
         var metrics: [PlannedSessionMetric] = []
         if session.durationMin > 0 {
-            metrics.append(PlannedSessionMetric(label: String(localized: "Durée"), value: "\(Int(session.durationMin)) min"))
+            metrics.append(PlannedSessionMetric(label: String(localized: "Durée"), value: SharpitFigureFormat.duration(minutes: session.durationMin)))
         }
         metrics.append(PlannedSessionMetric(
             label: String(localized: "Intensité"),

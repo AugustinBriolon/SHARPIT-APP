@@ -229,9 +229,7 @@ nonisolated enum GeneratedWeekReadout {
 
     /// « 45 min », « 1 h 30 », « 2 h ».
     static func duration(_ minutes: Double) -> String {
-        let whole = Int(minutes.rounded())
-        if whole < 60 { return "\(whole) min" }
-        return whole % 60 == 0 ? "\(whole / 60) h" : "\(whole / 60) h \(String(format: "%02d", whole % 60))"
+        SharpitFigureFormat.duration(minutes: minutes)
     }
 
     /// « Semaine du 17 novembre », from the first session's day; nil when it cannot be read.

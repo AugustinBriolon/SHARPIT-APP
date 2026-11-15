@@ -60,9 +60,6 @@ struct PlanWeekTotals: Equatable, Sendable {
 
     /// « 6 h 40 », « 45 min », « 2 h ».
     static func duration(minutes: Int) -> String {
-        let hours = minutes / 60
-        let rest = minutes % 60
-        if hours == 0 { return "\(rest) min" }
-        return rest == 0 ? "\(hours) h" : "\(hours) h \(String(format: "%02d", rest))"
+        SharpitFigureFormat.duration(minutes: Double(minutes))
     }
 }

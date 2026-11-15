@@ -53,7 +53,7 @@ struct SessionSequenceBar: View {
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                 SharpitEyebrow(String(localized: "Au total"))
                 Spacer(minLength: 0)
-                Text("~\(sequence.totalMinutes) min")
+                Text("~\(SharpitFigureFormat.duration(minutes: Double(sequence.totalMinutes)))")
                     .font(SharpitTypography.bodyEmphasis)
                     .monospacedDigit()
                     .foregroundStyle(SharpitColor.foreground)
@@ -71,7 +71,7 @@ struct SessionSequenceBar: View {
             HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                 ForEach(Array(sequence.parts.enumerated()), id: \.element.id) { index, part in
                     if index > 0 { Spacer(minLength: 0) }
-                    Text("\(part.kind.label) \(part.minutes) min")
+                    Text("\(part.kind.label) \(SharpitFigureFormat.duration(minutes: Double(part.minutes)))")
                         .font(SharpitTypography.meta)
                         .monospacedDigit()
                         .foregroundStyle(part.kind == .session ? SharpitColor.foreground : SharpitColor.slate)

@@ -2,6 +2,14 @@ import Foundation
 
 /// Figures as the app writes them, French-grouped: shared with the widgets so a kilocalorie or a
 /// kilogram reads the same on the home screen as in the app.
+extension Sequence where Element == String {
+    /// « Jeu. 13 · 12,4 km · 58 min »: facts split by a point, each one kept whole — a line may
+    /// break between two facts, never between a figure and its unit.
+    nonisolated func joinedAsFacts() -> String {
+        map { $0.replacingOccurrences(of: " ", with: "\u{00A0}") }.joined(separator: " · ")
+    }
+}
+
 nonisolated enum SharpitFigureFormat {
     private static let locale = AppLanguage.locale
 
@@ -53,5 +61,12 @@ nonisolated enum SharpitFigureFormat {
         guard total >= 60 else { return "\(total) min" }
         let rest = total % 60
         return rest == 0 ? "\(total / 60) h" : "\(total / 60) h \(String(format: "%02d", rest))"
+    }
+
+    /// The same from seconds, the minute cut rather than rounded (« 59 min » until the hour is
+    /// run); under a minute it says the seconds — `45 s` — rather than « 0 min ».
+    static func duration(seconds: Double) -> String {
+        guard let whole = Int(exactly: seconds.rounded(.towardZero)), whole >= 0 else { return "—" }
+        return (1..<60).contains(whole) ? "\(whole) s" : duration(minutes: Double(whole / 60))
     }
 }
