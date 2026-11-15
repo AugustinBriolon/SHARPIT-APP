@@ -180,3 +180,18 @@ struct SharpitBarGap: ToolbarContent {
         }
     }
 }
+
+/// A status shown in the bar, not a button: on iOS 26 it sits on the page without the glass
+/// capsule a bar item is given, which read as a button holding a tag.
+struct SharpitBarBadge<Content: View>: ToolbarContent {
+    @ViewBuilder let content: () -> Content
+
+    var body: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            ToolbarItem(placement: .topBarTrailing, content: content)
+                .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .topBarTrailing, content: content)
+        }
+    }
+}

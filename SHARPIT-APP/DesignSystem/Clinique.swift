@@ -471,3 +471,40 @@ extension View {
         modifier(CliniqueReturnButton(tab: tab, symbol: symbol, label: label))
     }
 }
+
+// MARK: - Titled sheet
+
+/// A titled sheet's head: its name where a navigation title would sit, clear of the cross.
+struct CliniqueSheetTitle: View {
+    let title: String
+
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title)
+            .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
+            .tracking(-0.4)
+            .foregroundStyle(SharpitColor.foreground)
+            .accessibilityAddTraits(.isHeader)
+            .padding(.trailing, 56)
+    }
+}
+
+extension View {
+    /// The cross at a titled sheet's top right, which closes it.
+    func cliniqueSheetCross(_ close: @escaping () -> Void) -> some View {
+        overlay(alignment: .topTrailing) {
+            Button(action: close) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .frame(width: 44, height: 44)
+                    .background(SharpitColor.tile, in: Circle())
+            }
+            .buttonStyle(.sharpitPressable)
+            .accessibilityLabel("Fermer")
+            .padding(.trailing, 22)
+            .padding(.top, 22)
+        }
+    }
+}
