@@ -75,7 +75,6 @@ struct ThresholdsView: View {
         .navigationTitle("Seuils et repères")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .principal) { Text("") } }
-        .cliniqueReturnButton()
         .task {
             if store.phase != .loaded {
                 await store.load()

@@ -321,7 +321,6 @@ struct EquipmentView: View {
                     .disabled(!hasLoaded)
             }
         }
-        .cliniqueReturnButton()
         .sheet(isPresented: $showingAdd) {
             SportAddSheet(sports: SportsReadout.addable(to: practicedSports)) { id in
                 showingAdd = false
