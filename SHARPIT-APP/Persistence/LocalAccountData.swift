@@ -54,6 +54,7 @@ enum LocalAccountData {
         disk.removeAll()
         dayReads.clear()
         WellnessCheckInLocalStore.shared.erase()
+        ActivityDraftLocalStore.shared.erase()
         GuidedHeartRatePreference.clear()
         defaults.removeObject(forKey: ownerKey)
         WidgetSnapshotPublisher.erase()

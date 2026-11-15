@@ -46,7 +46,7 @@ struct ActivityDraft: Equatable {
         feeling = SessionFeeling(stored: detail.feeling)
         notes = detail.notes ?? ""
         exercises = detail.strengthSets.map {
-            StrengthExerciseDraft(name: $0.exercise, sets: $0.sets, reps: $0.reps, weightKg: $0.weightKg)
+            StrengthExerciseDraft(name: $0.exercise, sets: $0.sets, reps: $0.reps, weightKg: $0.weightKg, durationSec: $0.durationSec)
         }
     }
 
@@ -223,6 +223,10 @@ struct ActivityDraft: Equatable {
             ]
             if let durationSec = exercise.durationSec {
                 object["durationSec"] = .number(Double(durationSec))
+            }
+            // An exercise of the athlete's own says which zone it works: kept with its sets.
+            if let notes = exercise.notes, !notes.isEmpty {
+                object["notes"] = .string(notes)
             }
             return .object(object)
         })

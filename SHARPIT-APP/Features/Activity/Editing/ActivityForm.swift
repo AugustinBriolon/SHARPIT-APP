@@ -41,7 +41,9 @@ struct ActivityFormSheet: View {
         self.onEdited = onEdited
         self.onSaved = onSaved
         original = draft
-        _draft = State(initialValue: draft)
+        // A new session reopens on what was typed and left unsaved, when there is any.
+        let kept: ActivityDraft? = if case .create = mode { ActivityDraftLocalStore.shared.load().flatMap(ActivityDraft.init(snapshot:)) } else { nil }
+        _draft = State(initialValue: kept ?? draft)
     }
 
     private var isCreating: Bool {
@@ -54,12 +56,19 @@ struct ActivityFormSheet: View {
 
     var body: some View {
         NavigationStack {
-            ActivityFormContent(draft: $draft, requirement: draft.missingRequirement, failure: failure)
+            ActivityFormContent(
+                draft: $draft, requirement: draft.missingRequirement, failure: failure, tokenProvider: tokenProvider,
+                onReset: isCreating && draft != original ? {
+                    ActivityDraftLocalStore.shared.erase()
+                    draft = original
+                } : nil
+            )
                 .navigationTitle(isCreating ? String(localized: "Saisir une séance") : String(localized: "Modifier la séance"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Annuler") { dismiss() }
+                        // A new session is kept while unsaved: closing is not giving up.
+                        Button(isCreating ? String(localized: "Fermer") : String(localized: "Annuler")) { dismiss() }
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         if isSaving {
@@ -71,7 +80,11 @@ struct ActivityFormSheet: View {
                     }
                 }
         }
-        .interactiveDismissDisabled(draft != original || isSaving)
+        .interactiveDismissDisabled(isSaving || (!isCreating && draft != original))
+        .onChange(of: draft) { _, typed in
+            guard isCreating else { return }
+            if typed == original { ActivityDraftLocalStore.shared.erase() } else { ActivityDraftLocalStore.shared.save(typed.snapshot) }
+        }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
@@ -89,6 +102,10 @@ struct ActivityFormSheet: View {
             let fields = draft.creation()
             let id = try await SharpitRetry.run {
                 try await client.createActivity(fields, token: try await tokenProvider())
+            }
+            ActivityDraftLocalStore.shared.erase()
+            if draft.isStrength {
+                Task { await StrengthLibraryStore.shared.load(tokenProvider: tokenProvider, fresh: true) }
             }
             onSaved(id)
             dismiss()
@@ -129,9 +146,57 @@ private struct ActivityFormContent: View {
     @Binding var draft: ActivityDraft
     let requirement: String?
     let failure: String?
+    let tokenProvider: () async throws -> String
+    /// Throws the kept draft away; nil when there is nothing typed to throw.
+    var onReset: (() -> Void)?
+    @State private var isLoggingExercises = false
 
     private let durationPresets = [30, 45, 60, 90, 120]
     @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// The exercises as lines, entered as a session is run: the same sets view as a programmed
+    /// session, with its search and the athlete's last figures.
+    private var exercisesCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Exercices")
+                .font(SharpitTypography.sectionTitle)
+                .tracking(SharpitTypography.sectionTitleTracking)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.bottom, 4)
+            ForEach(draft.exercises.filter(\.isNamed)) { exercise in
+                HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+                    Text(exercise.name)
+                        .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Spacer(minLength: SharpitSpacing.xs)
+                    Text(StrengthHistoryReadout.block(sets: exercise.sets, reps: exercise.reps, weightKg: exercise.weightKg, durationSec: exercise.durationSec))
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                }
+                .padding(.vertical, 12)
+                .accessibilityElement(children: .combine)
+                CliniqueDivider()
+            }
+            Button { isLoggingExercises = true } label: {
+                Text(draft.exercises.contains(where: \.isNamed) ? String(localized: "Modifier les exercices") : String(localized: "Saisir les exercices"))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .outline, isLarge: true))
+            .padding(.top, 14)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fullScreenCover(isPresented: $isLoggingExercises) {
+            GuidedStrengthWorkoutView(
+                session: .logging(
+                    title: draft.title.isEmpty ? String(localized: "Séance libre") : draft.title,
+                    exercises: draft.exercises
+                ),
+                finish: nil,
+                logging: GuidedStrengthLogging(tokenProvider: tokenProvider) { draft.exercises = $0 }
+            )
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -139,13 +204,18 @@ private struct ActivityFormContent: View {
                 plate
                 whenCard
                 if draft.isStrength {
-                    StrengthExercisesEditor(exercises: $draft.exercises)
+                    exercisesCard
                 } else if draft.measuresDistance || draft.measuresElevation {
                     measuresCard
                 }
                 effortCard
                 detailsCard
                 messages
+                if let onReset {
+                    Button("Effacer la saisie", role: .destructive, action: onReset)
+                        .buttonStyle(CliniqueButtonStyle(kind: .plain))
+                        .frame(maxWidth: .infinity)
+                }
             }
             .padding(.horizontal, 24)
             .padding(.vertical, SharpitSpacing.md)
