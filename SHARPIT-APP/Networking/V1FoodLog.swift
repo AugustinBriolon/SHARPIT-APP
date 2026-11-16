@@ -72,6 +72,9 @@ nonisolated struct V1FoodLogEntry: Codable, Sendable, Equatable, Hashable, Ident
     var createdAt: String?
     /// Live Sharpit score of the linked product, when known.
     var health: V1FoodHealth? = nil
+    /// The named meal this food was logged as part of (SHARPIT ADR-134); nil on its own.
+    var groupId: String? = nil
+    var groupLabel: String? = nil
 }
 
 /// A food the athlete can log: an Open Food Facts product cached by the server, or their own.

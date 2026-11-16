@@ -565,14 +565,23 @@ private actor StubFoodLog: FoodLogServing {
     var duringBatch: (@Sendable () async -> Void)?
     func setDuringBatch(_ hook: @escaping @Sendable () async -> Void) { duringBatch = hook }
 
-    func add(_ drafts: [FoodLogDraft], token: String) async throws -> [V1FoodLogEntry] {
+    private(set) var batchLabels: [String?] = []
+    private(set) var deletedGroups: [String] = []
+    func deleteGroup(id: String, token: String) async throws {
+        if let failure { throw failure }
+        deletedGroups.append(id)
+    }
+
+    func add(_ drafts: [FoodLogDraft], groupLabel: String?, token: String) async throws -> [V1FoodLogEntry] {
         await duringBatch?()
         if let failure { throw failure }
         batches.append(drafts)
+        batchLabels.append(groupLabel)
         return drafts.enumerated().map { index, draft in
             V1FoodLogEntry(
                 id: "batch-\(index)", meal: draft.meal, productId: nil, name: "Stored", brand: nil,
-                grams: draft.grams, kcal: 42, protein: 1, carbs: 2, fat: 3
+                grams: draft.grams, kcal: 42, protein: 1, carbs: 2, fat: 3,
+                groupId: groupLabel.map { _ in "g-stored" }, groupLabel: groupLabel
             )
         }
     }
@@ -1261,3 +1270,60 @@ private nonisolated let skyrItem = V1SavedMealItem(
     #expect(FoodLogMeal.snacks.addTitle == "Ajouter aux collations")
     #expect(Set(FoodLogMeal.allCases.map(\.addTitle)).count == FoodLogMeal.allCases.count)
 }
+
+// MARK: - A meal logged whole (SHARPIT ADR-134)
+
+@MainActor
+@Test func aNamedMealIsGroupedOnTheTapAndSentWithItsName() async {
+    let client = StubFoodLog()
+    let store = makeStore(client, recorder: Recorder())
+    await store.load(trainingDayId: "2026-10-01")
+    let seen = InFlightView()
+    await client.setDuringBatch {
+        await MainActor.run {
+            // Before the server answers: one meal on the page, not three foods.
+            seen.names = FoodLogMealItem.items(of: store.entries).map { item in
+                if case .group(let group) = item { return "\(group.label) ×\(group.entries.count)" }
+                return "food"
+            }
+        }
+    }
+
+    await store.add(describedDrafts, groupLabel: "Steak frites")
+    #expect(seen.names == ["Steak frites ×3"])
+    #expect(await client.batchLabels == ["Steak frites"])
+    #expect(store.entries.map(\.groupId) == ["g-stored", "g-stored", "g-stored"])
+
+    // Deleted whole on the tap, with one request.
+    await store.deleteGroup("g-stored")
+    #expect(store.entries.isEmpty)
+    #expect(await client.deletedGroups == ["g-stored"])
+}
+
+@Test func aMealPageListsANamedMealOnceAtItsFirstFood() {
+    func food(_ id: String, group: String? = nil) -> V1FoodLogEntry {
+        V1FoodLogEntry(
+            id: id, meal: .lunch, productId: nil, name: id, brand: nil, grams: 100, kcal: 100, protein: 1, carbs: 2, fat: 3,
+            groupId: group, groupLabel: group.map { _ in "Kebab complet" }
+        )
+    }
+    let items = FoodLogMealItem.items(of: [food("pomme"), food("pita", group: "g1"), food("yaourt"), food("frites", group: "g1"), food("seul", group: "g2")])
+    #expect(items.map(\.id) == ["pomme", "group-g1", "yaourt", "seul"])
+    guard case .group(let group) = items[1] else {
+        Issue.record("expected the named meal")
+        return
+    }
+    #expect(group.entries.map(\.id) == ["pita", "frites"])
+    #expect(group.kcal == 200)
+    // A meal down to one food is that food.
+    #expect(items[3] == .entry(food("seul", group: "g2")))
+}
+
+@Test func theBatchCarriesTheMealNameOnlyWhenThereIsOne() {
+    #expect(FoodLogClient.batchPayload([], groupLabel: nil)["group"] == nil)
+    #expect((FoodLogClient.batchPayload([], groupLabel: "Kebab")["group"] as? [String: String]) == ["label": "Kebab"])
+    #expect(DescribedMealTotal.name("  kebab, frites ") == "Kebab, frites")
+    #expect(DescribedMealTotal.name("   ") == nil)
+    #expect(DescribedMealTotal.name(String(repeating: "a", count: 200))?.count == 80)
+}
+

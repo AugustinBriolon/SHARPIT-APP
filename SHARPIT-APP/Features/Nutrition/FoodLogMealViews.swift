@@ -148,6 +148,9 @@ struct FoodLogMealPage: View {
     @State private var mealName = ""
     /// The name the meal was kept under, said once at the foot of the page.
     @State private var savedName: String?
+    /// The named meals laid open onto their foods.
+    @State private var openGroups: Set<String> = []
+    @State private var deleting: FoodLogMealItem.Group?
 
     var body: some View {
         let section = store.section(meal)
@@ -166,16 +169,22 @@ struct FoodLogMealPage: View {
             }
 
             Section {
-                ForEach(section.entries) { entry in
-                    Button { editing = entry } label: {
-                        FoodLogEntryRow(entry: entry, flag: flags.first { $0.matches(meal: meal, entry: entry.name) })
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(entry.isPending)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        if !entry.isPending {
-                            SharpitSwipeDeleteButton {
-                                Task { await store.delete(entry) }
+                ForEach(FoodLogMealItem.items(of: section.entries)) { item in
+                    switch item {
+                    case .entry(let entry):
+                        entryRow(entry)
+                    case .group(let group):
+                        FoodLogGroupRow(group: group, isOpen: openGroups.contains(group.id)) {
+                            SharpitMotion.run(SharpitMotion.reveal) { openGroups.formSymmetricDifference([group.id]) }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            if !group.isPending {
+                                SharpitSwipeDeleteButton { deleting = group }
+                            }
+                        }
+                        if openGroups.contains(group.id) {
+                            ForEach(group.entries) { entry in
+                                entryRow(entry).padding(.leading, SharpitSpacing.md)
                             }
                         }
                     }
@@ -235,8 +244,33 @@ struct FoodLogMealPage: View {
         } message: {
             Text("Il sera dans « Mes repas », à noter d'un geste un autre jour.")
         }
+        .confirmationDialog(
+            String(localized: "Supprimer « \(deleting?.label ?? "") » ?"),
+            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+            titleVisibility: .visible,
+            presenting: deleting
+        ) { group in
+            Button(String(localized: "Supprimer le repas et ses \(group.entries.count) aliments"), role: .destructive) {
+                Task { await store.deleteGroup(group.id) }
+            }
+        }
         .sheet(item: $addRequest) { FoodAddSheet(store: store, request: $0) }
         .sheet(item: $editing) { FoodEntryEditSheet(store: store, entry: $0) }
+    }
+
+    private func entryRow(_ entry: V1FoodLogEntry) -> some View {
+        Button { editing = entry } label: {
+            FoodLogEntryRow(entry: entry, flag: flags.first { $0.matches(meal: meal, entry: entry.name) })
+        }
+        .buttonStyle(.plain)
+        .disabled(entry.isPending)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if !entry.isPending {
+                SharpitSwipeDeleteButton {
+                    Task { await store.delete(entry) }
+                }
+            }
+        }
     }
 
     private func saveMeal() {
@@ -301,6 +335,84 @@ private struct FoodLogEntryRow: View {
         .accessibilityHint(entry.isPending ? "" : String(localized: "Modifie la quantité ou le repas"))
     }
 
+}
+
+/// What a meal's page lists: a food on its own, or the foods logged together as one named meal
+/// (SHARPIT ADR-134) — the meal at the place of its first food. A meal down to one food is that food.
+enum FoodLogMealItem: Identifiable, Equatable {
+    struct Group: Identifiable, Equatable {
+        let id: String
+        let label: String
+        let entries: [V1FoodLogEntry]
+
+        var kcal: Double { entries.reduce(0) { $0 + $1.kcal } }
+        var isPending: Bool { entries.contains(where: \.isPending) }
+    }
+
+    case entry(V1FoodLogEntry)
+    case group(Group)
+
+    var id: String {
+        switch self {
+        case .entry(let entry): entry.id
+        case .group(let group): "group-\(group.id)"
+        }
+    }
+
+    static func items(of entries: [V1FoodLogEntry]) -> [FoodLogMealItem] {
+        let grouped = Dictionary(grouping: entries.filter { $0.groupId != nil && $0.groupLabel != nil }, by: { $0.groupId ?? "" })
+        var seen: Set<String> = []
+        return entries.compactMap { entry in
+            guard let groupId = entry.groupId, let label = entry.groupLabel, let members = grouped[groupId], members.count > 1 else {
+                return .entry(entry)
+            }
+            guard seen.insert(groupId).inserted else { return nil }
+            return .group(Group(id: groupId, label: label, entries: members))
+        }
+    }
+}
+
+/// A named meal on its line: its name, how many foods, its energy, and the way to its foods.
+private struct FoodLogGroupRow: View {
+    let group: FoodLogMealItem.Group
+    let isOpen: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(group.label)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                    Text(DescribedMealTotal.foodsCaption(group.entries.count))
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                }
+                Spacer(minLength: 0)
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(NutritionReadout.kcal(group.kcal))
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                    Text("kcal")
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                }
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .rotationEffect(.degrees(isOpen ? 180 : 0))
+                    .accessibilityHidden(true)
+            }
+            .opacity(group.isPending ? 0.55 : 1)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(isOpen ? String(localized: "Ouvert") : String(localized: "Fermé"))
+    }
 }
 
 /// The words of a meal's page.

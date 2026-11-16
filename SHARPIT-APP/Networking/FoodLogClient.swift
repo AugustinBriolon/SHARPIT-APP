@@ -20,7 +20,9 @@ nonisolated protocol FoodLogServing: Sendable {
     func add(_ draft: FoodLogDraft, token: String) async throws -> V1FoodLogEntry
     /// Several entries in one transaction (a described meal validated whole): all stored or none,
     /// answered in the drafts' order.
-    func add(_ drafts: [FoodLogDraft], token: String) async throws -> [V1FoodLogEntry]
+    /// `groupLabel` logs the foods as one named meal (SHARPIT ADR-134).
+    func add(_ drafts: [FoodLogDraft], groupLabel: String?, token: String) async throws -> [V1FoodLogEntry]
+    func deleteGroup(id: String, token: String) async throws
     func update(entryId: String, _ change: FoodLogEntryChange, token: String) async throws -> V1FoodLogEntry
     func delete(entryId: String, token: String) async throws
     func search(_ query: String, token: String) async throws -> V1FoodSearchResults
@@ -73,10 +75,21 @@ actor FoodLogClient: FoodLogServing {
         return try decode(V1FoodLogEntryEnvelope.self, from: try await send(request)).entry
     }
 
-    func add(_ drafts: [FoodLogDraft], token: String) async throws -> [V1FoodLogEntry] {
+    func add(_ drafts: [FoodLogDraft], groupLabel: String?, token: String) async throws -> [V1FoodLogEntry] {
         var request = try request("\(Self.path)/entries/batch", method: "POST", token: token)
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["entries": drafts.map(Self.payload(for:))])
+        request.httpBody = try JSONSerialization.data(withJSONObject: Self.batchPayload(drafts, groupLabel: groupLabel))
         return try decode(V1FoodLogEntryList.self, from: try await send(request)).entries
+    }
+
+    /// The batch's body: its entries, and the meal's name when they are logged as one.
+    static func batchPayload(_ drafts: [FoodLogDraft], groupLabel: String?) -> [String: Any] {
+        var body: [String: Any] = ["entries": drafts.map(payload(for:))]
+        if let groupLabel { body["group"] = ["label": groupLabel] }
+        return body
+    }
+
+    func deleteGroup(id: String, token: String) async throws {
+        _ = try await send(try request("\(Self.path)/groups/\(id)", method: "DELETE", token: token))
     }
 
     func update(entryId: String, _ change: FoodLogEntryChange, token: String) async throws -> V1FoodLogEntry {

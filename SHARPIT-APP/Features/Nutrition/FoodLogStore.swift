@@ -162,17 +162,24 @@ final class FoodLogStore {
     /// Several foods at once (a described meal): all shown on the tap, sent in one request, and
     /// swapped for the server's rows in one change so the day moves once, not per food. The
     /// server stores them all or none, so a failure for good takes them all back.
-    func add(_ drafts: [FoodLogDraft]) async {
+    /// With a `groupLabel` they are one named meal (SHARPIT ADR-134), grouped from the tap.
+    func add(_ drafts: [FoodLogDraft], groupLabel: String? = nil) async {
         guard drafts.count > 1 else {
             if let draft = drafts.first { await add(draft) }
             return
         }
-        let pending = drafts.map(Self.pendingEntry(for:))
+        let pendingGroup = groupLabel.map { _ in "pending-\(UUID().uuidString)" }
+        let pending = drafts.map { draft in
+            var entry = Self.pendingEntry(for: draft)
+            entry.groupId = pendingGroup
+            entry.groupLabel = groupLabel
+            return entry
+        }
         entries.append(contentsOf: pending)
         let pendingIds = Set(pending.map(\.id))
         do {
             let stored = try await SharpitRetry.run {
-                try await client.add(drafts, token: try await tokenProvider())
+                try await client.add(drafts, groupLabel: groupLabel, token: try await tokenProvider())
             }
             // Same rows, new ids: swapped without the list animating them out and in again.
             var swap = Transaction()
@@ -230,6 +237,27 @@ final class FoodLogStore {
             entries.insert(entry, at: min(index, entries.count))
             reportFailure(Self.failureMessage(error, action: String(localized: "Aliment non supprimé")))
         }
+    }
+
+    /// A named meal and its foods, gone on the tap; put back whole if the server refuses.
+    func deleteGroup(_ groupId: String) async {
+        let previous = entries
+        entries.removeAll { $0.groupId == groupId }
+        guard entries.count != previous.count else { return }
+        do {
+            try await SharpitRetry.run {
+                try await client.deleteGroup(id: groupId, token: try await tokenProvider())
+            }
+        } catch FoodLogError.notFound {
+            // Already gone on the server: what the athlete asked for is true.
+        } catch {
+            entries = previous
+            reportFailure(Self.failureMessage(error, action: String(localized: "Repas non supprimé")))
+            return
+        }
+        await onChange()
+        await refreshHealth()
+        await mirrorNutritionToAppleHealth()
     }
 
     /// Marks an empty meal skipped on purpose, or clears it, so the coach's reading does not take

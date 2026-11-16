@@ -100,3 +100,11 @@ athlete's words, the energy big, the macros' split (`DescribedMealTotal`) — ov
 while every food is a known one and open with « À vérifier » when one is the model's guess. A food is a
 line (« 200 g · 620 kcal »); a tap opens its grams. The log still stores each food
 (`entries/batch`): scores, coach flags and « Déjà mangés » are per food. `SharpitScreenDemo describe`.
+
+**A meal logged whole (SHARPIT ADR-134, 2026-11-16).** A described meal is logged under a name — the
+review's « Nom du repas », opened on the athlete's words (`DescribedMealTotal.name`) — sent with the
+batch (`group: { label }`). Its foods stay entries carrying `groupId` / `groupLabel`; a meal's page
+folds them into one line (`FoodLogMealItem`, `FoodLogGroupRow`: name, « N aliments », energy) that
+opens onto the foods, each still edited or deleted on its own. A swipe on the line deletes the meal
+and its foods after asking (`FoodLogStore.deleteGroup`, `DELETE /food-log/groups/[id]`). A group down
+to one food is shown as that food. A server older than ADR-134 ignores the name: the foods log ungrouped.

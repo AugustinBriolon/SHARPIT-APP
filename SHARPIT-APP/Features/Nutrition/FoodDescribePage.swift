@@ -6,7 +6,8 @@ struct FoodDescribePage: View {
     let meal: FoodLogMeal
     let client: any FoodLogServing
     let tokenProvider: () async throws -> String
-    let onAdd: ([FoodLogDraft]) -> Void
+    /// The foods to log, and the name they are logged under as one meal.
+    let onAdd: ([FoodLogDraft], String?) -> Void
     /// The Debug screen demo has no Pro store to ask.
     var isProOverride: Bool?
 
@@ -20,6 +21,7 @@ struct FoodDescribePage: View {
     @State private var showsFoods = false
     /// The food whose grams are being set.
     @State private var editing: DescribedFoodLine.ID?
+    @State private var mealName = ""
 
     init(
         trainingDayId: String,
@@ -28,7 +30,7 @@ struct FoodDescribePage: View {
         tokenProvider: @escaping () async throws -> String,
         isProOverride: Bool? = nil,
         initialDescription: String = "",
-        onAdd: @escaping ([FoodLogDraft]) -> Void
+        onAdd: @escaping ([FoodLogDraft], String?) -> Void
     ) {
         self.isProOverride = isProOverride
         _description = State(initialValue: initialDescription)
@@ -83,7 +85,7 @@ struct FoodDescribePage: View {
                 SharpitActionDock {
                     if phase == .review {
                         SharpitPrimaryButton(title: addTitle) {
-                            onAdd(readyDrafts)
+                            onAdd(readyDrafts, DescribedMealTotal.name(mealName))
                         }
                         .disabled(readyDrafts.isEmpty)
                     } else {
@@ -155,10 +157,13 @@ struct FoodDescribePage: View {
             // forms to read back for one kebab was the page's whole cost.
             Section {
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    Text(description.trimmingCharacters(in: .whitespacesAndNewlines))
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                        .lineLimit(2)
+                    // The meal's name in the log, opened on the athlete's own words.
+                    TextField("Nom du repas", text: $mealName, axis: .vertical)
+                        .font(SharpitTypography.bodyEmphasis)
+                        .foregroundStyle(SharpitColor.foreground)
+                        .lineLimit(1...2)
+                        .textInputAutocapitalization(.sentences)
+                        .accessibilityLabel("Nom du repas")
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(NutritionReadout.kcal(total.kcal))
                             .font(SharpitTypography.system(size: 44, weight: .semibold, relativeTo: .largeTitle, digits: true))
@@ -268,6 +273,7 @@ struct FoodDescribePage: View {
             items = described.map { DescribedFoodLine(from: $0) }
             // A guessed food is not folded away: its grams are the meal's likeliest error.
             showsFoods = DescribedMealTotal.hasEstimate(items)
+            mealName = DescribedMealTotal.name(text) ?? ""
             editing = nil
             phase = .review
         } catch {
@@ -373,6 +379,14 @@ struct DescribedMealTotal: Equatable {
     /// A food no table knows: its figures are the model's guess.
     static func hasEstimate(_ lines: [DescribedFoodLine]) -> Bool {
         lines.contains { $0.product == nil }
+    }
+
+    /// The name a meal is logged under: trimmed, capitalised, 80 characters at most (the
+    /// server's limit); nil when nothing is left, and the foods then stand on their own.
+    static func name(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let first = trimmed.first else { return nil }
+        return String((first.uppercased() + trimmed.dropFirst()).prefix(80))
     }
 
     static func foodsCaption(_ count: Int) -> String {

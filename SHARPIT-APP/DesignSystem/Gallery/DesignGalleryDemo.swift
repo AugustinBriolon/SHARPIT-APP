@@ -499,7 +499,7 @@ struct ScreenDemoHost: View {
                 NavigationStack { DemoMealPage() }
             case "describe":
                 NavigationStack {
-                    FoodDescribePage(trainingDayId: TrainingDayId.today(now: .now), meal: .lunch, client: DemoFoodLog(), tokenProvider: { "demo" }, isProOverride: true, initialDescription: "Kebab salade tomate oignon, sauce algérienne, frites") { _ in }
+                    FoodDescribePage(trainingDayId: TrainingDayId.today(now: .now), meal: .lunch, client: DemoFoodLog(), tokenProvider: { "demo" }, isProOverride: true, initialDescription: "Kebab salade tomate oignon, sauce algérienne, frites") { _, _ in }
                 }
             case "portion":
                 NavigationStack {
@@ -1366,15 +1366,16 @@ private struct DemoFoodLog: FoodLogServing {
         try JSONDecoder().decode(V1FoodLogDay.self, from: Data("""
         {"trainingDayId":"\(trainingDayId)","recent":[],"targets":{"mode":"GRAMS","kcal":2850,"proteinG":150,"carbsG":380,"fatG":90},
          "entries":[
-          {"id":"1","meal":"LUNCH","name":"Riz basmati, cuit","grams":220,"kcal":286,"protein":6,"carbs":62,"fat":1},
-          {"id":"2","meal":"LUNCH","name":"Blanc de poulet grillé","grams":150,"kcal":248,"protein":46,"carbs":0,"fat":5},
-          {"id":"3","meal":"LUNCH","name":"Courgettes sautées","grams":180,"kcal":61,"protein":3,"carbs":6,"fat":3},
+          {"id":"1","meal":"LUNCH","name":"Riz basmati, cuit","grams":220,"kcal":286,"protein":6,"carbs":62,"fat":1,"groupId":"g1","groupLabel":"Poulet, riz et courgettes"},
+          {"id":"2","meal":"LUNCH","name":"Blanc de poulet grillé","grams":150,"kcal":248,"protein":46,"carbs":0,"fat":5,"groupId":"g1","groupLabel":"Poulet, riz et courgettes"},
+          {"id":"3","meal":"LUNCH","name":"Courgettes sautées","grams":180,"kcal":61,"protein":3,"carbs":6,"fat":3,"groupId":"g1","groupLabel":"Poulet, riz et courgettes"},
           {"id":"4","meal":"LUNCH","name":"Huile d'olive","grams":14,"kcal":126,"protein":0,"carbs":0,"fat":14}]}
         """.utf8))
     }
 
     func add(_ draft: FoodLogDraft, token: String) async throws -> V1FoodLogEntry { throw SharpitAPIError.server }
-    func add(_ drafts: [FoodLogDraft], token: String) async throws -> [V1FoodLogEntry] { throw SharpitAPIError.server }
+    func add(_ drafts: [FoodLogDraft], groupLabel: String?, token: String) async throws -> [V1FoodLogEntry] { throw SharpitAPIError.server }
+    func deleteGroup(id: String, token: String) async throws { throw SharpitAPIError.server }
     func update(entryId: String, _ change: FoodLogEntryChange, token: String) async throws -> V1FoodLogEntry { throw SharpitAPIError.server }
     func delete(entryId: String, token: String) async throws { throw SharpitAPIError.server }
     func search(_ query: String, token: String) async throws -> V1FoodSearchResults { throw SharpitAPIError.server }

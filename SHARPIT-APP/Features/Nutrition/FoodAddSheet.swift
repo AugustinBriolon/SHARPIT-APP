@@ -141,8 +141,8 @@ struct FoodAddSheet: View {
                 meal: meal,
                 client: store.client,
                 tokenProvider: store.tokenProvider
-            ) { drafts in
-                logMany(drafts)
+            ) { drafts, name in
+                logMany(drafts, as: name)
             }
         }
     }
@@ -152,8 +152,8 @@ struct FoodAddSheet: View {
         dismiss()
     }
 
-    private func logMany(_ drafts: [FoodLogDraft]) {
-        Task { await store.add(drafts) }
+    private func logMany(_ drafts: [FoodLogDraft], as name: String?) {
+        Task { await store.add(drafts, groupLabel: name) }
         dismiss()
     }
 }
