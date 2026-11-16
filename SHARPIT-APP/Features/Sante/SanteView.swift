@@ -128,14 +128,15 @@ struct SanteView: View {
                 if let overview = store.overview {
                     SanteHero(synthesis: overview.synthesis, vo2max: overview.marker(.vo2max))
                     VStack(alignment: .leading, spacing: SharpitSpacing.section) {
-                        // In the order they are looked at: what asks for attention and the day,
-                        // read every morning; the markers and their month; the blood test, read
-                        // a few times a year, last.
-                        if !overview.watch.isEmpty {
-                            SanteWatchSection(items: overview.watch)
-                        }
+                        // The athlete's order (2026-11-16): the month's trend, the day, what asks
+                        // for attention, then the markers; the blood test, read a few times a
+                        // year, last.
+                        SanteTrends(markers: SanteTrendReadout.drawable(overview.allMarkers))
                         if let day = store.dayState {
                             SanteTodaySection(state: day)
+                        }
+                        if !overview.watch.isEmpty {
+                            SanteWatchSection(items: overview.watch)
                         }
                         if !overview.allMarkers.isEmpty {
                             SanteTable(
@@ -143,7 +144,6 @@ struct SanteView: View {
                                 rows: overview.allMarkers.map(SanteTable.Row.init)
                             ) { row in opened = overview.allMarkers.first { $0.key.rawValue == row.id } }
                         }
-                        SanteTrends(markers: SanteTrendReadout.drawable(overview.allMarkers))
                         if let latest = blood.tests.first, !latest.results.isEmpty {
                             // The five that matter first — out of the lab's range before the rest;
                             // the whole analysis sits on its own page.
@@ -238,22 +238,41 @@ struct SanteWatchSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             SanteSectionTitle(String(localized: "À surveiller"))
-            ForEach(items) { item in
-                CliniqueDivider()
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.title)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                    Text(item.detail)
-                        .font(SharpitTypography.meta)
-                        .foregroundStyle(SharpitColor.slate)
-                        .fixedSize(horizontal: false, vertical: true)
+            // One plate in the watch status' hue: the section is told from the tables at a glance.
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    if index > 0 {
+                        Rectangle().fill(CliniqueStatus.watch.border).frame(height: 1).accessibilityHidden(true)
+                    }
+                    HStack(alignment: .top, spacing: 12) {
+                        Circle()
+                            .fill(CliniqueStatus.watch.mark)
+                            .frame(width: 8, height: 8)
+                            .padding(.top, 7)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.title)
+                                .font(SharpitTypography.bodyEmphasis)
+                                .foregroundStyle(SharpitColor.foreground)
+                            Text(item.detail)
+                                .font(SharpitTypography.meta)
+                                .foregroundStyle(SharpitColor.slate)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, SharpitSpacing.sm)
+                    .accessibilityElement(children: .combine)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, SharpitSpacing.sm)
-                .accessibilityElement(children: .combine)
             }
+            .padding(.horizontal, SharpitSpacing.md)
+            .background(CliniqueStatus.watch.fill, in: shape)
+            .overlay(shape.strokeBorder(CliniqueStatus.watch.border, lineWidth: 1))
         }
+    }
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
     }
 }
 

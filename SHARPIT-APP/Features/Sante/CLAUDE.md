@@ -114,3 +114,8 @@ HRV and VO₂max as three facts. Fixed colours, so the image is the same in ligh
 question as its title, the pain on one `CliniqueScale` track (0–10, its word beside), what the
 athlete could do as checked lines, a word for the coach, « Enregistrer » docked. The onboarding keeps
 `ZoneSeverityScale`.
+
+**Order and colour (the athlete's call, 2026-11-16).** Under the hero: « Tendances », « Aujourd'hui »,
+« À surveiller », then the markers. « Aujourd'hui » is a ring strip like the hero's (`SanteDayState.Tile`
+carries its pillar, glyph and fraction; « Effort visé » closes once the band is reached, the day's
+strain not being in the payload). « À surveiller » is one plate in the watch status' hue, a dot a line.
