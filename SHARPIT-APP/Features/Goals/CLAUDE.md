@@ -53,3 +53,6 @@ the race's phase and role, its name, its day with the countdown on one line (no 
 trajectory — and « Détail par segment » as lines marked in each leg's hue, a transition quiet between
 them. Sessions and time are two plain figures; « Valider l'objectif » is the app's ink capsule.
 `SharpitScreenDemo goal` shows it.
+
+**Skeleton (2026-11-16).** The loading page's race carries a placeholder projection, so its plate is
+as tall as the real one (finish, legs, reliability) and nothing jumps when the goals land.

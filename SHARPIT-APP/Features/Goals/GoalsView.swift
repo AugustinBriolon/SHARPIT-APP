@@ -57,7 +57,7 @@ struct GoalsView: View {
 
                 if store.goals.isEmpty && store.isLoading {
                     // The page's own shape while the goals load: the race plate, then each section.
-                    VStack(alignment: .leading, spacing: SharpitSpacing.section) {
+                    VStack(alignment: .leading, spacing: 26) {
                         NextRaceCard(goal: V1Goal.placeholderRace)
                         skeletonSection(String(localized: "En cours"), goals: V1Goal.placeholders)
                         skeletonSection(String(localized: "Atteints"), goals: [V1Goal.placeholderReached])
@@ -741,9 +741,19 @@ private extension V1Goal {
         V1Goal(id: "skeleton-0", title: String(localized: "Semi-marathon de printemps"), kind: .race, targetDate: .now.addingTimeInterval(60 * 86_400)),
         V1Goal(id: "skeleton-1", title: String(localized: "Poids de forme"), kind: .metric, currentValue: 72, targetValue: 70, unit: "kg"),
     ]
-    static let placeholderRace = V1Goal(
-        id: "skeleton-race", title: String(localized: "Triathlon de la saison"), kind: .race, targetDate: .now.addingTimeInterval(90 * 86_400)
-    )
+    /// With a projection, so the skeleton's race plate is as tall as the real one: the finish
+    /// read big, the legs' bar and times, the reliability pill.
+    static let placeholderRace: V1Goal = {
+        var race = V1Goal(
+            id: "skeleton-race", title: String(localized: "Triathlon de la saison"), kind: .race, targetDate: .now.addingTimeInterval(90 * 86_400)
+        )
+        race.projection = V1RaceProjection(
+            finishSec: 20_400, lowSec: 20_000, highSec: 20_900, deltaSec: -300,
+            legs: [.init(kind: .swim, sec: 2_100), .init(kind: .bike, sec: 10_800), .init(kind: .run, sec: 7_000)],
+            confidence: .medium
+        )
+        return race
+    }()
     static let placeholderReached = V1Goal(id: "skeleton-reached", title: String(localized: "Course de l'an dernier"), kind: .race, achieved: true)
 }
 
