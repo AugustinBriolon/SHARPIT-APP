@@ -11,7 +11,7 @@ struct TodaySessionWidget: Widget {
         }
         .configurationDisplayName("Séance du jour")
         .description("La séance prévue, puis ce que tu as fait.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline])
+        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryInline])
     }
 }
 
@@ -23,7 +23,6 @@ struct TodaySessionView: View {
         switch family {
         case .accessoryInline: inline
         case .accessoryRectangular: rectangular
-        case .systemMedium: TodaySessionMedium(entry: entry)
         default: TodaySessionSmall(entry: entry)
         }
     }
@@ -89,49 +88,6 @@ struct TodaySessionSmall: View {
     }
 }
 
-/// The medium « Séance du jour »: the day's sessions, each opening itself, beside the verdict.
-struct TodaySessionMedium: View {
-    let entry: SnapshotEntry
-
-    private var day: WidgetSnapshot.Day? { entry.day }
-    private var eyebrow: String { day.map { WidgetDay.label($0.trainingDayId) } ?? String(localized: "Aujourd'hui") }
-
-    var body: some View {
-        if let day {
-            WidgetFrame(title: eyebrow) {
-                if let verdict = day.verdict {
-                    WidgetGlyph(symbol: verdict.posture.symbolName, tint: verdict.posture.tone)
-                } else {
-                    WidgetGlyph(symbol: "calendar")
-                }
-            } content: {
-                HStack(alignment: .bottom, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        if day.sessions.isEmpty {
-                            WidgetTitle(text: String(localized: "Repos"))
-                            WidgetCaption(text: String(localized: "Rien de prévu aujourd'hui."))
-                        } else {
-                            ForEach(day.sessions.prefix(2)) { session in
-                                Link(destination: session.link) { SessionLine(session: session) }
-                            }
-                            if day.sessions.count > 2 {
-                                WidgetCaption(text: String(localized: "+ \(day.sessions.count - 2) autre\(day.sessions.count > 3 ? "s" : "")"))
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .bottomLeading)
-                    if let verdict = day.verdict {
-                        Link(destination: WidgetSnapshot.link("/today")) { VerdictPanel(verdict: verdict) }
-                    }
-                }
-            }
-            .widgetURL(WidgetSnapshot.link("/plan"))
-        } else {
-            WidgetAwaitingDay(eyebrow: String(localized: "Séance du jour"), symbol: "figure.run")
-        }
-    }
-}
-
 /// The small widget's session: the day and its glyph above, the sport, the title, the figures.
 private struct SessionHero: View {
     let session: WidgetSnapshot.Session
@@ -154,29 +110,6 @@ private struct SessionHero: View {
     }
 }
 
-/// One session in the medium widget: its sport as a bar of its color, title, figures.
-private struct SessionLine: View {
-    let session: WidgetSnapshot.Session
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Capsule()
-                .fill(SharpitColor.foreground)
-                .frame(width: 3, height: 34)
-                .widgetAccentable()
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.title)
-                    .font(SharpitTypography.cardTitle)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(1)
-                WidgetFigureRow(figures: Array(session.figures.prefix(2)), spacing: 10)
-            }
-            Spacer(minLength: 4)
-            if session.isDone { DoneSeal() }
-        }
-    }
-}
-
 /// A day with nothing planned: rest, said plainly.
 private struct RestDay: View {
     let eyebrow: String
@@ -190,45 +123,7 @@ private struct RestDay: View {
     }
 }
 
-/// The verdict beside the sessions: a panel in its posture's tone.
-struct VerdictPanel: View {
-    let verdict: WidgetSnapshot.Verdict
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 5) {
-                Circle().fill(verdict.posture.tone).frame(width: 7, height: 7)
-                WidgetEyebrow(text: verdict.status, tint: verdict.posture.tone)
-            }
-            Text(verdict.headline)
-                .font(SharpitTypography.cardTitle)
-                .foregroundStyle(SharpitColor.foreground)
-                .lineLimit(3)
-                .minimumScaleFactor(0.85)
-            Spacer(minLength: 0)
-            if let action = verdict.action {
-                Text(action)
-                    .font(SharpitTypography.meta)
-                    .foregroundStyle(SharpitColor.mutedForeground)
-                    .lineLimit(2)
-            }
-        }
-        .multilineTextAlignment(.leading)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .frame(width: 124, alignment: .topLeading)
-        .frame(maxHeight: .infinity, alignment: .topLeading)
-        .background(verdict.posture.tone.opacity(0.12), in: RoundedRectangle(cornerRadius: WidgetMetrics.panelRadius, style: .continuous))
-    }
-}
-
 #Preview(as: .systemSmall) {
-    TodaySessionWidget()
-} timeline: {
-    SnapshotEntry(date: .now, snapshot: .preview)
-}
-
-#Preview(as: .systemMedium) {
     TodaySessionWidget()
 } timeline: {
     SnapshotEntry(date: .now, snapshot: .preview)
