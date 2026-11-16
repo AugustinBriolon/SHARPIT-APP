@@ -55,7 +55,7 @@ enum LatestActivityMapImage {
         options.preferredConfiguration = style
         guard let snapshot = try? await MKMapSnapshotter(options: options).start() else { return nil }
 
-        let line = UIColor(SharpitColor.pillarRecovery).resolvedColor(with: options.traitCollection)
+        let line = UIColor(SharpitColor.destructive).resolvedColor(with: options.traitCollection)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 2
         return UIGraphicsImageRenderer(size: map.size, format: format).pngData { _ in

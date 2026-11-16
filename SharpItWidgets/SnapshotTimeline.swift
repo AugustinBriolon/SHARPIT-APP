@@ -115,8 +115,8 @@ extension WidgetSnapshot {
             date: Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now,
             stats: [
                 Stat(label: String(localized: "Distance"), value: "18,4", unit: "km"),
-                Stat(label: String(localized: "Durée"), value: "1 h 32", unit: ""),
-                Stat(label: String(localized: "Allure moyenne"), value: "5'01\"", unit: "/km"),
+                Stat(label: String(localized: "Durée"), value: "1:32:10", unit: "h"),
+                Stat(label: String(localized: "Allure"), value: "5:01", unit: "/km"),
             ],
             route: WidgetRoute.fit((0...60).map { step in
                 let angle = Double(step) / 60 * 2 * Double.pi

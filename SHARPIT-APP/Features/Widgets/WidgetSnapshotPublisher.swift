@@ -117,16 +117,17 @@ extension WidgetSnapshot.LatestActivity {
                 : .init(label: String(localized: "Distance"), value: "\(Int(meters.rounded()))", unit: "m"))
         }
         if let seconds {
-            stats.append(.init(label: String(localized: "Durée"), value: SharpitFigureFormat.duration(seconds: seconds), unit: ""))
+            // Read as a clock, as a watch shows it: « 28:14 min », « 1:32:10 h ».
+            stats.append(.init(label: String(localized: "Durée"), value: RaceTime.clock(seconds), unit: seconds >= 3_600 ? "h" : "min"))
         }
         if let meters, let seconds, meters >= 100 {
             switch activity.type {
             case .bike:
-                stats.append(.init(label: String(localized: "Vitesse moyenne"), value: ActivityFormat.speedKmh(distanceM: meters, duration: seconds), unit: "km/h"))
+                stats.append(.init(label: String(localized: "Vitesse"), value: ActivityFormat.speedKmh(distanceM: meters, duration: seconds), unit: "km/h"))
             case .swim:
-                stats.append(.init(label: String(localized: "Allure moyenne"), value: ActivityFormat.paceClock(seconds / (meters / 100)), unit: "/100 m"))
+                stats.append(.init(label: String(localized: "Allure"), value: RaceTime.clock(seconds / (meters / 100)), unit: "/100 m"))
             default:
-                stats.append(.init(label: String(localized: "Allure moyenne"), value: ActivityFormat.paceClock(seconds / (meters / 1_000)), unit: "/km"))
+                stats.append(.init(label: String(localized: "Allure"), value: RaceTime.clock(seconds / (meters / 1_000)), unit: "/km"))
             }
         } else if let load = activity.load, load > 0, let whole = Int(exactly: load.rounded()) {
             stats.append(.init(label: String(localized: "Charge"), value: "\(whole)", unit: ""))

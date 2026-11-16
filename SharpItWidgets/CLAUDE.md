@@ -61,10 +61,11 @@ where an opaque track read as a full ring.
 jour » lost its medium face (the day's sessions beside the verdict): it is the small square and the
 Lock Screen ones. In its place, « Dernière activité » (`LatestActivityWidget`, medium and large,
 free), laid out on the athlete's reference: the session's map runs to the widget's edge
-(`contentMarginsDisabled`) with the route on it, start hollow, and fades into the sheet where three
-figures stand, each under its name — « Distance », « Durée », « Allure moyenne » (a ride's « Vitesse
-moyenne », a swim's pace per 100 m; « Charge » when no distance was measured). A capsule at the top
-says when and what (« Hier · Course »). A widget cannot draw a map: the app draws them
+(`contentMarginsDisabled`) with the route on it in red, start hollow, and fades into the sheet where
+three figures stand, each under its name in capitals — « DISTANCE », « DURÉE », « ALLURE » (a ride's
+« VITESSE », a swim's pace per 100 m; « CHARGE » when no distance was measured), time and pace read as
+clocks (« 28:14 min », « 5:26 /km »). Nothing else is on the face — no title, no day: VoiceOver says
+them. « Allure moyenne » was cut at a third of a medium widget, hence the one word. A widget cannot draw a map: the app draws them
 (`LatestActivityMapImage`, `MKMapSnapshotter`, muted and turned to greys so the route is the only
 hue), one per face and per appearance, beside the snapshot in the App Group
 (`WidgetSnapshotStore.latestActivityMapURL`); `mapActivityId` says whose they are, so a new session
@@ -74,5 +75,5 @@ written in the snapshot); without a route, the sport's glyph. The snapshot's sec
 `latestActivity`, never the old `lastActivity` key (another shape, still on some devices).
 `WidgetSnapshotPublisher.publishLatestActivity` writes it from Activité's list and from the silent
 push, once per session. `SharpitScreenDemo widgets` feeds it a session and its maps without an
-account. Seen on the simulator's Home Screen, large, light and dark, on that demo; the medium face
+account. Seen on the simulator's Home Screen, large, on that demo; the medium face
 with a map and a real session were not seen.

@@ -332,18 +332,22 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     )
     #expect(run.stats == [
         .init(label: "Distance", value: "10,0", unit: "km"),
-        .init(label: "Durée", value: "50 min", unit: ""),
-        .init(label: "Allure moyenne", value: "5'00\"", unit: "/km"),
+        .init(label: "Durée", value: "50:00", unit: "min"),
+        .init(label: "Allure", value: "5:00", unit: "/km"),
     ])
     #expect(run.link.path == "/activity/a1")
 
     let ride = WidgetSnapshot.LatestActivity(activity: V1ActivityListItem(type: .bike, date: .now, duration: 3_600, distanceM: 30_000), route: nil)
-    #expect(ride.stats.last == .init(label: "Vitesse moyenne", value: "30,0", unit: "km/h"))
+    #expect(ride.stats.last == .init(label: "Vitesse", value: "30,0", unit: "km/h"))
     #expect(ride.title == V1ActivityType.bike.label)
 
     // Strength: no distance, so the time leads and the load follows.
     let strength = WidgetSnapshot.LatestActivity(activity: V1ActivityListItem(type: .strength, date: .now, duration: 2_700, load: 41.6), route: nil)
-    #expect(strength.stats == [.init(label: "Durée", value: "45 min", unit: ""), .init(label: "Charge", value: "42", unit: "")])
+    #expect(strength.stats == [.init(label: "Durée", value: "45:00", unit: "min"), .init(label: "Charge", value: "42", unit: "")])
+
+    // Past the hour the clock gains its hours and says so.
+    let long = WidgetSnapshot.LatestActivity(activity: V1ActivityListItem(type: .run, date: .now, duration: 5_530, distanceM: 18_400), route: nil)
+    #expect(long.stats[1] == .init(label: "Durée", value: "1:32:10", unit: "h"))
 }
 
 @Test func aMapIsShownOnlyForTheSessionItWasDrawnFor() throws {

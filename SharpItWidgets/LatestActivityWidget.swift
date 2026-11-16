@@ -39,19 +39,12 @@ struct LatestActivityView: View {
                     .padding(.horizontal, 18)
                     .padding(.bottom, family == .systemLarge ? 20 : 14)
             }
-            .overlay(alignment: .topLeading) {
-                Text(LatestActivityReadout.eyebrow(activity, now: entry.date))
-                    .font(SharpitTypography.meta.weight(.semibold))
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(1)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(SharpitColor.card.opacity(0.9), in: Capsule())
-                    .padding(12)
-            }
             .clipShape(ContainerRelativeShape())
             .widgetURL(activity.link)
             .accessibilityElement(children: .combine)
+            // The face names no day or sport: VoiceOver still says which session this is.
+            .accessibilityLabel(Text("\(LatestActivityReadout.eyebrow(activity, now: entry.date)), \(activity.title)"))
+            .accessibilityValue(Text(activity.stats.map { "\($0.label) \($0.value) \($0.unit)" }.joined(separator: ", ")))
         } else {
             WidgetFrame(String(localized: "Dernière activité"), symbol: "figure.run") {
                 WidgetAwaitingData(text: String(localized: "Ouvre Activité pour voir ta dernière séance ici."))
@@ -88,8 +81,9 @@ private struct StatRow: View {
         HStack(alignment: .bottom, spacing: 8) {
             ForEach(Array(stats.enumerated()), id: \.offset) { _, stat in
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(stat.label)
+                    Text(stat.label.uppercased(with: AppLanguage.locale))
                         .font(SharpitTypography.meta)
+                        .tracking(0.6)
                         .foregroundStyle(SharpitColor.mutedForeground)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -119,11 +113,11 @@ private struct PlainBackdrop: View {
                 SharpitColor.foreground.opacity(0.05)
                 if let start = points.first, points.count >= 2 {
                     Path { path in path.addLines(points) }
-                        .stroke(SharpitColor.pillarRecovery, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                        .stroke(SharpitColor.destructive, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                         .widgetAccentable()
                     Circle()
                         .fill(SharpitColor.card)
-                        .overlay(Circle().stroke(SharpitColor.pillarRecovery, lineWidth: 2.5))
+                        .overlay(Circle().stroke(SharpitColor.destructive, lineWidth: 2.5))
                         .frame(width: 10, height: 10)
                         .position(start)
                 } else {
