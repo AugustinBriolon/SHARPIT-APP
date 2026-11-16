@@ -53,9 +53,11 @@ dashed, next week, and the full text on its own page. `-SharpitWeeklyReviewDemo`
 fixed week in Debug builds.
 
 **Trips in the week.** The coach's trips (Mémoire du coach, `/api/v1/coach-memory`, type `TRAVEL`) that fall in the week
-shown carry a chip after the week's dates (`PlanTravelChip`, the web's `TravelContextBanner`: the
-first trip's name, « +1 » for more); `PlanTravel` compares calendar days — a trip's days are UTC
-midnights on the server, the week's are local — and the chip opens `PlanTripsView` as a sheet. Plan's « … » →
+shown sit on one band in the week's list (the athlete's call, 2026-11-16, replacing the chip
+beside the status): the days away share a neutral plate, rounded where the trip starts and ends in
+the week, with the trip's name and dates atop its first day (`PlanTravelLabel`, `PlanTravel.trip(on:in:)`);
+`PlanTravel` compares calendar days — a trip's days are UTC
+midnights on the server, the week's are local — and the label opens `PlanTripsView` as a sheet. Plan's « … » →
 « Déplacements » opens the same list (trips and constraints, under way then ahead); injuries, preferences and notes
 stay in the coach's memory. `CoachMemoryEntryForm` is pushed inside either list. `TripTraining` holds the choice:
 the server derives the constraint from the sports as soon as any are sent (`resolveTrainingFields`), so « Allégé »
@@ -211,3 +213,9 @@ blocking it. The right to write workouts is asked the first time. No energy is w
 measures none. Read back, SharpIt's own workouts are left out of the upload
 (`StrengthWorkoutMirror.isOwn`), or the session would be logged twice. A session logged by hand is
 not mirrored.
+
+**Turning a week (2026-11-16).** « Plan » and the status pill are held still across a swipe and swap
+at its middle; the rings stay in place too and dissolve over the first quarter of the turn. Both are
+drawn outside their page meanwhile, so a week's `ScrollView` is not clipped (`scrollClipDisabled`) and
+the header is framed to the page's width — the swap is measured against it. Checked on a screen
+recording, frame by frame: clipped, the title vanished for the second half of every swipe.

@@ -5,6 +5,8 @@ struct PlanView: View {
     let client: any PlannedSessionServing
     let linker: any PlannedSessionLinking
     let keyMutator: any PlannedSessionMutating
+    /// The coach's memory, read for the week's trips.
+    let memoryClient: any CoachMemoryServing
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
 
@@ -48,8 +50,10 @@ struct PlanView: View {
         client: any PlannedSessionServing,
         linker: any PlannedSessionLinking,
         activityClient: any ActivityServing,
+        memoryClient: any CoachMemoryServing = CoachMemoryClient(),
         tokenProvider: @escaping () async throws -> String
     ) {
+        self.memoryClient = memoryClient
         self.client = client
         self.linker = linker
         keyMutator = (client as? (any PlannedSessionMutating)) ?? PlannedSessionClient()
@@ -152,7 +156,7 @@ struct PlanView: View {
             }
             .sheet(isPresented: $showingTravel, onDismiss: { Task { await loadTravels() } }) {
                 NavigationStack {
-                    PlanTripsView(client: CoachMemoryClient(), tokenProvider: tokenProvider)
+                    PlanTripsView(client: memoryClient, tokenProvider: tokenProvider)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("OK") { showingTravel = false }
@@ -338,7 +342,7 @@ extension PlanView {
     /// The trips are a quiet extra: a failed read leaves the week without its chip.
     fileprivate func loadTravels() async {
         guard let token = try? await tokenProvider(),
-              let snapshot = try? await CoachMemoryClient().snapshot(token: token) else { return }
+              let snapshot = try? await memoryClient.snapshot(token: token) else { return }
         travels = snapshot.entries.filter { $0.type == .travel }
     }
 
@@ -706,24 +710,33 @@ private struct PlanWeekContent: View {
         let standing = PlanWeekReadout.status(totals)
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                // Held still while a week is turned: the days slide under the title and the
+                // status, and the week nearest the middle is the one they speak of. As wide as the
+                // page, since the swap is measured against this width — sized to its words, the
+                // header left 60 pt into a swipe.
                 header(standing)
-                    // Held still while a week is turned: the page slides under it, and the week
-                    // nearest the middle is the one it speaks of.
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .visualEffect { content, proxy in
                         let x = proxy.frame(in: .named(PlanWeekPager.space)).minX
                         return content.offset(x: -x).opacity(abs(x) < proxy.size.width / 2 ? 1 : 0)
                     }
-                if isEmptyWeekAhead {
-                    weekHeading
-                    emptyWeek
-                } else {
+                if !isEmptyWeekAhead {
+                    // The rings stay in place too, and dissolve over the first quarter of the
+                    // turn: gone before the next week's page reaches them, back once it has landed.
                     rings
-                    weekHeading
+                        .visualEffect { content, proxy in
+                            let x = proxy.frame(in: .named(PlanWeekPager.space)).minX
+                            return content.offset(x: -x).opacity(max(0, 1 - abs(x) / (proxy.size.width / 4)))
+                        }
                 }
+                weekHeading
+                if isEmptyWeekAhead { emptyWeek }
                 if !isEmptyWeekAhead {
                 PlanTimeline(
                     days: days,
                     entriesOn: { store.entries(on: $0, from: entries) },
+                    trips: PlanTravel.trips(chrome.travels, overlapping: days),
+                    onOpenTravel: chrome.onOpenTravel,
                     activityClient: activityClient,
                     tokenProvider: tokenProvider,
                     onSelect: onSelect
@@ -745,6 +758,9 @@ private struct PlanWeekContent: View {
             }
             .padding(.bottom, SharpitSpacing.xl)
         }
+        // The held header and rings are drawn outside their page while a week is turned: a
+        // clipped page cut them at its edge, so the title vanished for the second half of a swipe.
+        .scrollClipDisabled()
         .modifier(ScrollUnderGlass(hidesTopEdge: true))
         // No pull-to-refresh: nested in the horizontal pager, a fast fling to the top
         // fired it and the spinner shoved the week down. Plan reloads on each visit and edit.
@@ -807,10 +823,6 @@ private struct PlanWeekContent: View {
                     .foregroundStyle(SharpitColor.slate)
                     .lineLimit(1)
             }
-            PlanTravelChip(
-                trips: PlanTravel.trips(chrome.travels, overlapping: days),
-                onOpen: chrome.onOpenTravel
-            )
             Spacer(minLength: 0)
         }
     }
@@ -878,6 +890,9 @@ private struct PlanWeekContent: View {
 private struct PlanTimeline: View {
     let days: [Date]
     let entriesOn: (Date) -> [PlanEntry]
+    /// The week's trips: the days away sit on one band, named on its first day.
+    var trips: [CoachMemoryEntry] = []
+    var onOpenTravel: () -> Void = {}
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let onSelect: (PlanSelection) -> Void
@@ -886,6 +901,7 @@ private struct PlanTimeline: View {
         let id: String
         let day: Date
         let entry: PlanEntry?
+        var trip: CoachMemoryEntry?
         /// 0 for the day's first session; a day holding several ranks the others after it.
         var rank = 0
         /// The next line is the same day's: the two read as one day, with no rule between.
@@ -895,10 +911,29 @@ private struct PlanTimeline: View {
     private var lines: [Line] {
         days.flatMap { day -> [Line] in
             let entries = entriesOn(day)
-            if entries.isEmpty { return [Line(id: "rest-\(day.timeIntervalSince1970)", day: day, entry: nil)] }
+            let trip = PlanTravel.trip(on: day, in: trips)
+            if entries.isEmpty { return [Line(id: "rest-\(day.timeIntervalSince1970)", day: day, entry: nil, trip: trip)] }
             return entries.enumerated().map { rank, entry in
-                Line(id: entry.id, day: day, entry: entry, rank: rank, sharesDayWithNext: rank < entries.count - 1)
+                Line(id: entry.id, day: day, entry: entry, trip: trip, rank: rank, sharesDayWithNext: rank < entries.count - 1)
             }
+        }
+    }
+
+    /// The band behind a day away: rounded where the trip starts and ends in the week, and wider
+    /// than the text so the lines keep their margin.
+    @ViewBuilder
+    private func travelBand(_ lines: [Line], at index: Int) -> some View {
+        if let trip = lines[index].trip {
+            let opens = index == 0 || lines[index - 1].trip?.id != trip.id
+            let closes = index == lines.count - 1 || lines[index + 1].trip?.id != trip.id
+            UnevenRoundedRectangle(
+                topLeadingRadius: opens ? 14 : 0, bottomLeadingRadius: closes ? 14 : 0,
+                bottomTrailingRadius: closes ? 14 : 0, topTrailingRadius: opens ? 14 : 0,
+                style: .continuous
+            )
+            .fill(SharpitColor.tile)
+            .padding(.horizontal, -10)
+            .padding(.bottom, closes ? 2 : 0)
         }
     }
 
@@ -914,6 +949,9 @@ private struct PlanTimeline: View {
                         isFollowUp: line.rank > 0
                     )
                     VStack(spacing: 0) {
+                        if let trip = line.trip, index == 0 || lines[index - 1].trip?.id != trip.id {
+                            PlanTravelLabel(trip: trip, onOpen: onOpenTravel)
+                        }
                         if let entry = line.entry {
                             PlanEntryRow(
                                 entry: entry,
@@ -932,6 +970,7 @@ private struct PlanTimeline: View {
                         }
                         if index < lines.count - 1, !line.sharesDayWithNext { CliniqueDivider() }
                     }
+                    .background { travelBand(lines, at: index) }
                 }
                 .fixedSize(horizontal: false, vertical: true)
             }

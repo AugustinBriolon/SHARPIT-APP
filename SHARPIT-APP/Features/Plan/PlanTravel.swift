@@ -41,11 +41,10 @@ nonisolated enum PlanTravel {
         return (current, upcoming, dated.isEmpty)
     }
 
-    /// The chip's words: the first trip's name, and how many more share the week (« Lisbonne +1 »).
-    static func chipTitle(_ trips: [CoachMemoryEntry]) -> String? {
-        guard let first = trips.first else { return nil }
-        let extra = trips.count > 1 ? " +\(trips.count - 1)" : ""
-        return first.displayTitle + extra
+    /// The trip a day falls in — the earliest when two overlap; nil on a day at home.
+    static func trip(on day: Date, in trips: [CoachMemoryEntry], calendar: Calendar = .current) -> CoachMemoryEntry? {
+        let key = dayKey(day, in: calendar)
+        return trips.first { dayKey($0.startDate, in: utc) <= key && dayKey($0.endDate, in: utc) >= key }
     }
 
     /// What VoiceOver reads: each trip and its days.
@@ -67,32 +66,37 @@ nonisolated enum PlanTravel {
     }
 }
 
-/// The week's trips, beside its dates: the first trip's name in a faint primary capsule — the
-/// inline tag's family, raised to a control. It opens the list of trips, where they live.
-struct PlanTravelChip: View {
-    let trips: [CoachMemoryEntry]
+/// A trip's name atop its first day of the week: the band under it runs down the days away, so
+/// the week shows which sessions fall on the road. It opens the list of trips, where they live.
+struct PlanTravelLabel: View {
+    let trip: CoachMemoryEntry
     let onOpen: () -> Void
 
     var body: some View {
-        if let title = PlanTravel.chipTitle(trips) {
-            Button(action: onOpen) {
-                HStack(spacing: SharpitSpacing.xxs) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .imageScale(.small)
-                    Text(title)
-                        .lineLimit(1)
-                }
-                .font(SharpitTypography.meta)
-                .foregroundStyle(SharpitColor.primary)
-                .padding(.horizontal, SharpitSpacing.xs)
-                .padding(.vertical, SharpitSpacing.xxs)
-                .background(SharpitColor.primary.opacity(0.12), in: Capsule())
-                .contentShape(Capsule())
+        Button(action: onOpen) {
+            HStack(spacing: SharpitSpacing.xs) {
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.system(size: 13, weight: .semibold))
+                    .accessibilityHidden(true)
+                Text(trip.displayTitle)
+                    .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .caption))
+                    .lineLimit(1)
+                Text(trip.formattedDateRange)
+                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                    .foregroundStyle(SharpitColor.slate)
+                    .lineLimit(1)
+                Spacer(minLength: SharpitSpacing.xs)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
             }
-            .buttonStyle(.sharpitPressable)
-            .frame(maxWidth: 180, alignment: .trailing)
-            .accessibilityLabel(PlanTravel.accessibilityLabel(trips))
-            .accessibilityHint("Ouvre tes déplacements")
+            .foregroundStyle(SharpitColor.foreground)
+            .padding(.top, 10)
+            .contentShape(.rect)
         }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel(PlanTravel.accessibilityLabel([trip]))
+        .accessibilityHint("Ouvre tes déplacements")
     }
 }

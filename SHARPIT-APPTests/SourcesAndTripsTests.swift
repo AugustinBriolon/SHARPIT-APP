@@ -151,6 +151,8 @@ struct SourcesNetworkTests {
     )
     let trips = PlanTravel.trips([lisbon, before, edge, constraint], overlapping: week, calendar: utcCalendar)
     #expect(trips.map(\.displayTitle) == ["Nantes", "Lisbonne"])
-    #expect(PlanTravel.chipTitle(trips) == "Nantes +1")
-    #expect(PlanTravel.chipTitle([]) == nil)
+    // A day belongs to the trip that covers it; a day at home to none.
+    #expect(PlanTravel.trip(on: week[0], in: trips, calendar: utcCalendar)?.displayTitle == "Nantes")
+    #expect(PlanTravel.trip(on: week[6], in: trips, calendar: utcCalendar)?.displayTitle == "Lisbonne")
+    #expect(PlanTravel.trip(on: utcDate("2026-10-09T12:00:00Z"), in: trips, calendar: utcCalendar) == nil)
 }
