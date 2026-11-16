@@ -933,8 +933,16 @@ private struct PlanTimeline: View {
             )
             .fill(SharpitColor.tile)
             .padding(.horizontal, -10)
-            .padding(.bottom, closes ? 2 : 0)
+            // A little air where the band meets the days outside the trip.
+            .padding(.top, opens ? 4 : 0)
+            .padding(.bottom, closes ? 4 : 0)
         }
+    }
+
+    /// Whether a trip's band starts or ends between this line and the next: the band's own edge
+    /// parts the two days, and a rule drawn against it read as stuck to it.
+    private func bandEdge(_ lines: [Line], after index: Int) -> Bool {
+        lines[index].trip?.id != lines[index + 1].trip?.id
     }
 
     var body: some View {
@@ -968,7 +976,7 @@ private struct PlanTimeline: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, 14)
                         }
-                        if index < lines.count - 1, !line.sharesDayWithNext { CliniqueDivider() }
+                        if index < lines.count - 1, !line.sharesDayWithNext, !bandEdge(lines, after: index) { CliniqueDivider() }
                     }
                     .background { travelBand(lines, at: index) }
                 }
