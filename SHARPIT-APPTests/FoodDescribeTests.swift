@@ -89,3 +89,27 @@ import Testing
         Issue.record("expected product source")
     }
 }
+
+@Test func describedMealTotalSumsItsFoodsAtTheGramsSet() {
+    let steak = V1DescribedFood(
+        name: "Faux-filet", grams: 300, kcal: 600, protein: 75, carbs: 0, fat: 30,
+        per100g: V1DescribedFoodPer100g(kcal: 200, protein: 25, carbs: 0, fat: 10)
+    )
+    let fries = V1DescribedFood(
+        name: "Frites", grams: 200, kcal: 600, protein: 6, carbs: 80, fat: 30,
+        per100g: V1DescribedFoodPer100g(kcal: 300, protein: 3, carbs: 40, fat: 15)
+    )
+    var lines = [DescribedFoodLine(from: steak), DescribedFoodLine(from: fries)]
+    #expect(DescribedMealTotal(lines).kcal == 1_200)
+    #expect(DescribedMealTotal(lines).carbs == 80)
+    // Halving the fries moves the meal's total; a food without a weight counts for nothing.
+    lines[1].gramsText = "100"
+    #expect(DescribedMealTotal(lines).kcal == 900)
+    lines[0].gramsText = ""
+    #expect(DescribedMealTotal(lines).kcal == 300)
+    #expect(lines[1].portionCaption == "100 g · 300 kcal")
+    // Neither is a known food: the list opens for a look.
+    #expect(DescribedMealTotal.hasEstimate(lines))
+    #expect(DescribedMealTotal.foodsCaption(2) == "2 aliments")
+}
+
