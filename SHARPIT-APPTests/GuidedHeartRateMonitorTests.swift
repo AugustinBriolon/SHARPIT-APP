@@ -19,3 +19,11 @@ import Testing
     #expect(HeartRateMeasurement.parseBpm(Data([0x00])) == nil)
     #expect(HeartRateMeasurement.parseBpm(Data([0x01, 0x04])) == nil)
 }
+
+@Test func heartRateMeasurementRejectsPlaceholderReadings() {
+    // flags=0x04: contact supported, none detected
+    #expect(HeartRateMeasurement.parseBpm(Data([0x04, 100])) == nil)
+    // flags=0x06: contact supported and detected
+    #expect(HeartRateMeasurement.parseBpm(Data([0x06, 100])) == 100)
+    #expect(HeartRateMeasurement.parseBpm(Data([0x00, 0])) == nil)
+}

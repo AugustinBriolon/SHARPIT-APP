@@ -6,14 +6,14 @@ import Foundation
 enum HeartRateMeasurement {
     static func parseBpm(_ data: Data) -> Int? {
         guard let flags = data.first else { return nil }
+        // A sensor that reports skin contact and has none is sending a placeholder, not a pulse.
+        let contactSupported = (flags & 0x04) != 0
+        let contactDetected = (flags & 0x02) != 0
+        if contactSupported, !contactDetected { return nil }
         let isUint16 = (flags & 0x01) != 0
-        if isUint16 {
-            guard data.count >= 3 else { return nil }
-            let value = UInt16(data[1]) | (UInt16(data[2]) << 8)
-            return Int(value)
-        }
-        guard data.count >= 2 else { return nil }
-        return Int(data[1])
+        guard data.count >= (isUint16 ? 3 : 2) else { return nil }
+        let bpm = isUint16 ? Int(UInt16(data[1]) | (UInt16(data[2]) << 8)) : Int(data[1])
+        return bpm > 0 ? bpm : nil
     }
 }
 
@@ -47,6 +47,10 @@ final class GuidedHeartRateMonitor: NSObject, ObservableObject {
     private var wantsRunning = false
     /// Resume path: reconnect last peripheral without waiting for picker selection.
     private var preferLastPeripheral = false
+    /// A watch stays linked over Bluetooth after it stops broadcasting: a reading older than
+    /// this is no longer the athlete's pulse.
+    static let readingLifetime: TimeInterval = 5
+    private var readingExpiry: DispatchWorkItem?
 
     /// Session appear — reconnect only when the athlete already opted in.
     func startIfEnabled() {
@@ -290,8 +294,9 @@ extension GuidedHeartRateMonitor: CBPeripheralDelegate {
             .first(where: { $0.uuid == measurementUUID })
         else { return }
         measurementCharacteristic = characteristic
+        // Notifications only: the characteristic is not readable by spec, and a watch that is
+        // linked but not broadcasting answers a read with a placeholder value.
         peripheral.setNotifyValue(true, for: characteristic)
-        peripheral.readValue(for: characteristic)
     }
 
     func peripheral(
@@ -305,18 +310,10 @@ extension GuidedHeartRateMonitor: CBPeripheralDelegate {
         else { return }
         self.bpm = bpm
         status = .connected
-    }
-
-    func peripheral(
-        _ peripheral: CBPeripheral,
-        didUpdateNotificationStateFor characteristic: CBCharacteristic,
-        error: Error?
-    ) {
-        guard error == nil,
-              Self.isHeartRateMeasurement(characteristic.uuid),
-              characteristic.isNotifying
-        else { return }
-        peripheral.readValue(for: characteristic)
+        readingExpiry?.cancel()
+        let expiry = DispatchWorkItem { [weak self] in self?.bpm = nil }
+        readingExpiry = expiry
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.readingLifetime, execute: expiry)
     }
 
     private static func isHeartRateMeasurement(_ uuid: CBUUID) -> Bool {
