@@ -1453,6 +1453,7 @@ private struct DemoGoalPage: View {
 }
 #endif
 
+#if DEBUG
 /// Feeds « Dernière activité » a session and its maps, so the widget can be placed and read on
 /// the simulator's Home Screen without an account (`SharpitScreenDemo widgets`).
 private struct DemoWidgetSeed: View {
@@ -1485,3 +1486,4 @@ private struct DemoWidgetSeed: View {
             }
     }
 }
+#endif
