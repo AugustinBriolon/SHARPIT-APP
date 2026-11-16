@@ -15,6 +15,8 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     var regularity: Regularity?
     var training: Training?
     var goal: Goal?
+    /// The session recorded last, with its route when it has one.
+    var latestActivity: LatestActivity?
     /// The parts of SharpIt the athlete uses: a widget of a feature turned off says so.
     var features: V1FeaturePrefs?
     /// SharpIt Pro: the extra widgets (sleep, weight, volume, regularity, goal) are Pro. Nil until
@@ -28,6 +30,7 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         regularity: Regularity? = nil,
         training: Training? = nil,
         goal: Goal? = nil,
+        latestActivity: LatestActivity? = nil,
         features: V1FeaturePrefs? = nil
     ) {
         self.day = day
@@ -36,6 +39,7 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         self.regularity = regularity
         self.training = training
         self.goal = goal
+        self.latestActivity = latestActivity
         self.features = features
     }
 
@@ -83,6 +87,24 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
             if isDone { return WidgetSnapshot.link("/activity/\(id)") }
             return WidgetSnapshot.link(plannedSessionId.map { "/plan/session/\($0)" } ?? "/plan")
         }
+    }
+
+    // MARK: Latest activity
+
+    /// The session recorded last, whatever its day. Not `lastActivity`: an earlier build wrote
+    /// that key in another shape, and a stale one on disk must stay an unknown key.
+    nonisolated struct LatestActivity: Codable, Equatable, Sendable {
+        var id: String
+        var title: String
+        var sport: V1ActivityType
+        var date: Date
+        /// The first is read big; the others follow it.
+        var figures: [Figure]
+        /// The GPS route as `[x, y]` in a unit square (`WidgetRoute.fit`); nil for a session
+        /// without one — a pool swim, strength, a home trainer.
+        var route: [[Double]]?
+
+        var link: URL { WidgetSnapshot.link("/activity/\(id)") }
     }
 
     /// A number and its unit, set apart so the number can take the instrument face.
@@ -312,6 +334,34 @@ extension WidgetSnapshot.Macro.Kind {
         case .protein: SharpitColor.primary
         case .carbohydrates: SharpitColor.highlight
         case .fat: SharpitColor.signalBase
+        }
+    }
+}
+
+/// A GPS route made ready to draw: the widget strokes points, it projects nothing.
+nonisolated enum WidgetRoute {
+    /// `[latitude, longitude]` pairs as `[x, y]` in a unit square — north up, the route's own
+    /// proportions kept and centred, thinned to `maxPoints`. Nil when there is nothing to draw:
+    /// fewer than two points, or a route that never left its start.
+    static func fit(_ coordinates: [[Double]], maxPoints: Int = 120) -> [[Double]]? {
+        let valid = coordinates.filter { $0.count >= 2 && abs($0[0]) <= 90 && abs($0[1]) <= 180 && $0[0].isFinite && $0[1].isFinite }
+        guard valid.count >= 2, maxPoints >= 2 else { return nil }
+        let step = max(1, Int((Double(valid.count) / Double(maxPoints)).rounded(.up)))
+        var kept = stride(from: 0, to: valid.count, by: step).map { valid[$0] }
+        if let last = valid.last, kept.last != last { kept.append(last) }
+
+        let latitudes = kept.map { $0[0] }
+        let midLatitude = ((latitudes.min() ?? 0) + (latitudes.max() ?? 0)) / 2
+        // A degree of longitude shrinks with latitude: without this a route at 48° N is drawn too wide.
+        let shrink = cos(midLatitude * .pi / 180)
+        let xs = kept.map { $0[1] * shrink }
+        guard let minX = xs.min(), let maxX = xs.max(), let minY = latitudes.min(), let maxY = latitudes.max() else { return nil }
+        let span = max(maxX - minX, maxY - minY)
+        guard span > 0 else { return nil }
+        let padX = (1 - (maxX - minX) / span) / 2
+        let padY = (1 - (maxY - minY) / span) / 2
+        return zip(xs, latitudes).map { x, latitude in
+            [padX + (x - minX) / span, padY + (maxY - latitude) / span]
         }
     }
 }

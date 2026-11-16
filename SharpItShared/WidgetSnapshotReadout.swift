@@ -188,3 +188,30 @@ enum DialFigureScale {
         }
     }
 }
+
+/// The words of « Dernière activité ».
+nonisolated enum LatestActivityReadout {
+    /// « Hier · Course à pied », « Aujourd'hui · Vélo », « Sam. 14 · Natation ».
+    static func eyebrow(_ activity: WidgetSnapshot.LatestActivity, now: Date, calendar: Calendar = .current) -> String {
+        let day: String
+        if calendar.isDate(activity.date, inSameDayAs: now) {
+            day = String(localized: "Aujourd'hui")
+        } else if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(activity.date, inSameDayAs: yesterday) {
+            day = String(localized: "Hier")
+        } else {
+            day = WidgetDay.label(WidgetSnapshot.dayId(activity.date, calendar: calendar))
+        }
+        return "\(day) · \(activity.sport.label)"
+    }
+}
+
+/// A training day as a widget's header says it: « Sam. 14 ».
+nonisolated enum WidgetDay {
+    static func label(_ trainingDayId: String) -> String {
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.dateFormat = "yyyy-MM-dd"
+        guard let date = parser.date(from: trainingDayId) else { return String(localized: "Aujourd'hui") }
+        return date.formatted(.dateTime.weekday(.abbreviated).day().locale(AppLanguage.locale))
+    }
+}

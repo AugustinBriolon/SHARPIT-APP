@@ -57,3 +57,17 @@ on decode, and `erase` still deletes the map PNG an earlier build wrote. « Rés
 ring's glyph instead of its figure, and `WidgetRing`'s track fades on a tinted or clear Home Screen,
 where an opaque track read as a full ring.
 
+**Séance du jour square only, Dernière activité back (the athlete's call, 2026-11-16).** « Séance du
+jour » lost its medium face (the day's sessions beside the verdict): it is the small square and the
+Lock Screen ones. In its place, « Dernière activité » (`LatestActivityWidget`, medium only, free):
+the session recorded last, whatever its day — « Hier · Course », its title, how far read big, then
+the time and the pace (a ride's speed, a swim's pace per 100 m; the load when nothing was measured) —
+beside a plate holding its route as one line, start hollow and end full. A session without GPS keeps
+the same face with its sport's glyph in the plate. The snapshot's section is `latestActivity`, never
+the old `lastActivity` key (another shape, still on some devices). The route is `[x, y]` in a unit
+square (`WidgetRoute.fit`: north up, longitude shrunk by the latitude, proportions kept, thinned to
+120 points), so the widget projects nothing and needs no map. `WidgetSnapshotPublisher.publishLatestActivity`
+writes it from Activité's list and from the silent push; the route is read once per session
+(`activityStream`), and a read that fails publishes the session without it. Seen in the simulator's
+widget gallery on the preview; not on a Home Screen with a real session, and the face without a
+route only in Xcode's preview.

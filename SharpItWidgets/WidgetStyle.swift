@@ -122,16 +122,6 @@ struct DoneSeal: View {
 }
 
 /// The day the widget speaks of — « Lun. 28 ».
-enum WidgetDay {
-    static func label(_ trainingDayId: String) -> String {
-        let parser = DateFormatter()
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: trainingDayId) else { return String(localized: "Aujourd'hui") }
-        return date.formatted(.dateTime.weekday(.abbreviated).day().locale(AppLanguage.locale))
-    }
-}
-
 /// Every home-screen widget's frame: one header — its name and one glyph, the same height on
 /// every widget — then the body, anchored to the bottom, inside the system's content margins.
 /// Written once so no widget drifts a point from the others: a header without a glyph, a

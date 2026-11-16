@@ -10,6 +10,7 @@ struct SharpItWidgetsBundle: WidgetBundle {
     var body: some Widget {
         ResumeRingsWidget()
         TodaySessionWidget()
+        LatestActivityWidget()
         NutritionWidget()
         SleepWidget()
         RecoveryWidget()

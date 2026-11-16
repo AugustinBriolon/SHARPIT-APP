@@ -17,7 +17,8 @@ struct SnapshotEntry: TimelineEntry {
     var training: WidgetSnapshot.Training? { snapshot?.training }
     /// The next race while it is ahead.
     var goal: WidgetSnapshot.Goal? { snapshot?.goal(on: date) }
-    /// Latest GPS session for the map widget.
+    /// The session recorded last, whatever its day.
+    var latestActivity: WidgetSnapshot.LatestActivity? { snapshot?.latestActivity }
     /// The parts of SharpIt the athlete uses — all on until the app said otherwise.
     var features: V1FeaturePrefs { snapshot?.features ?? V1FeaturePrefs() }
     /// Whether the extra widgets show; true until the app said otherwise.
@@ -108,6 +109,15 @@ extension WidgetSnapshot {
         goal: Goal(
             id: "g1", title: String(localized: "Ironman 70.3 Nice"), date: Calendar.current.date(byAdding: .day, value: 42, to: .now) ?? .now,
             location: String(localized: "Nice"), format: "70.3", targetPerformance: "5 h 15"
+        ),
+        latestActivity: LatestActivity(
+            id: "preview", title: String(localized: "Sortie longue au bord du lac"), sport: .run,
+            date: Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now,
+            figures: [Figure(value: "18,4", unit: "km"), Figure(value: "1 h 32", unit: ""), Figure(value: "5'01\"", unit: "/km")],
+            route: WidgetRoute.fit((0...60).map { step in
+                let angle = Double(step) / 60 * 2 * Double.pi
+                return [45.90 + 0.020 * sin(angle) + 0.006 * sin(3 * angle), 6.13 + 0.034 * cos(angle) + 0.008 * cos(2 * angle)]
+            })
         )
     )
 }

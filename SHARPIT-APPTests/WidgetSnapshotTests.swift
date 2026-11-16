@@ -295,3 +295,73 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     #expect(kept.map(\.value) == ["—", "—"])
     #expect(kept.allSatisfy { $0.fraction == nil })
 }
+
+// MARK: - Dernière activité
+
+@Test func aRouteIsFittedToAUnitSquareNorthUpWithItsProportions() throws {
+    // Twice as tall as wide once longitude is shrunk by the latitude (cos 60° = 0.5).
+    let fitted = try #require(WidgetRoute.fit([[60.0, 10.0], [60.2, 10.0], [60.2, 10.2]]))
+    #expect(fitted.count == 3)
+    // South-west start: bottom of the square; the route is centred across its narrow side.
+    #expect(abs(fitted[0][1] - 1) < 1e-9)
+    #expect(abs(fitted[1][1]) < 1e-9)
+    #expect(abs(fitted[0][0] - 0.25) < 0.01)
+    #expect(abs(fitted[2][0] - 0.75) < 0.01)
+    #expect(fitted.allSatisfy { (0...1).contains($0[0]) && (0...1).contains($0[1]) })
+}
+
+@Test func aRouteWithNothingToDrawIsNoRoute() {
+    #expect(WidgetRoute.fit([]) == nil)
+    #expect(WidgetRoute.fit([[48.1, 2.3]]) == nil)
+    // A session that never left its start, and coordinates that are not ones.
+    #expect(WidgetRoute.fit([[48.1, 2.3], [48.1, 2.3]]) == nil)
+    #expect(WidgetRoute.fit([[480, 2.3], [48.1, 900], [48.1]]) == nil)
+}
+
+@Test func aLongRouteIsThinnedAndKeepsItsEnd() throws {
+    let long = (0..<1_000).map { [48.0 + Double($0) / 10_000, 2.0 + Double($0) / 20_000] }
+    let fitted = try #require(WidgetRoute.fit(long, maxPoints: 100))
+    #expect(fitted.count <= 101)
+    #expect(abs(fitted[fitted.count - 1][1]) < 1e-9)
+}
+
+@Test func theLatestActivityReadsDistanceTimeThenPaceOrLoad() {
+    let run = WidgetSnapshot.LatestActivity(
+        activity: V1ActivityListItem(id: "a1", type: .run, date: .now, title: "Footing", duration: 3_000, distanceM: 10_000),
+        route: nil
+    )
+    #expect(run.figures == [.init(value: "10,0", unit: "km"), .init(value: "50 min", unit: ""), .init(value: "5'00\"", unit: "/km")])
+    #expect(run.link.path == "/activity/a1")
+
+    let ride = WidgetSnapshot.LatestActivity(activity: V1ActivityListItem(type: .bike, date: .now, duration: 3_600, distanceM: 30_000), route: nil)
+    #expect(ride.figures.last == .init(value: "30,0", unit: "km/h"))
+    #expect(ride.title == V1ActivityType.bike.label)
+
+    // Strength: no distance, so the time leads and the load follows.
+    let strength = WidgetSnapshot.LatestActivity(activity: V1ActivityListItem(type: .strength, date: .now, duration: 2_700, load: 41.6), route: nil)
+    #expect(strength.figures == [.init(value: "45 min", unit: ""), .init(value: "42", unit: "charge")])
+}
+
+@Test func theLatestActivitySaysItsDayAndSport() {
+    let calendar = Calendar.current
+    let now = Date.now
+    func eyebrow(daysAgo: Int) -> String {
+        let date = calendar.date(byAdding: .day, value: -daysAgo, to: now) ?? now
+        return LatestActivityReadout.eyebrow(
+            WidgetSnapshot.LatestActivity(id: "a", title: "t", sport: .run, date: date, figures: [], route: nil), now: now
+        )
+    }
+    #expect(eyebrow(daysAgo: 0) == "Aujourd'hui · \(V1ActivityType.run.label)")
+    #expect(eyebrow(daysAgo: 1) == "Hier · \(V1ActivityType.run.label)")
+    #expect(!eyebrow(daysAgo: 3).hasPrefix("Hier"))
+}
+
+@Test func aSnapshotAnOlderBuildWroteStillDecodesWithItsOldLastActivity() throws {
+    // « lastActivity » had another shape: it must stay an unknown key, not blank every widget.
+    let old = #"{"lastActivity":{"id":"x","distanceValue":"5,2"},"isPro":true}"#
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let snapshot = try decoder.decode(WidgetSnapshot.self, from: Data(old.utf8))
+    #expect(snapshot.latestActivity == nil)
+    #expect(snapshot.isPro == true)
+}
