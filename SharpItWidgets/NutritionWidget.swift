@@ -99,6 +99,7 @@ struct NutritionMedium: View {
 
 /// One macro: its name, its grams against the goal, a bar in its hue.
 private struct MacroLine: View {
+    @Environment(\.widgetRenderingMode) private var renderingMode
     let macro: WidgetSnapshot.Macro
 
     private var fill: Double {
@@ -119,12 +120,14 @@ private struct MacroLine: View {
             }
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
+                    // Tinted or clear, a colour keeps its alpha only: an opaque track read as a full bar.
                     Capsule().fill(SharpitColor.analysisBorder)
+                        .opacity(renderingMode == .fullColor ? 1 : 0.22)
                     Capsule().fill(macro.kind.tone).frame(width: proxy.size.width * fill)
+                        .widgetAccentable()
                 }
             }
             .frame(height: 4)
-            .widgetAccentable()
         }
     }
 }

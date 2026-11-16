@@ -77,3 +77,10 @@ written in the snapshot); without a route, the sport's glyph. The snapshot's sec
 push, once per session. `SharpitScreenDemo widgets` feeds it a session and its maps without an
 account. Seen on the simulator's Home Screen, large, on that demo; the medium face
 with a map and a real session were not seen.
+
+**Clear and tinted Home Screens, latest activity on launch (2026-11-16).** There a colour keeps its
+alpha only. « Dernière activité » draws the route alone (`PlainBackdrop`, no plate): the map was a
+grey slab with its route lost in it and the fade a white block. Nutrition's macro track fades like
+`WidgetRing`'s. `refreshLatestActivity` runs on launch and on each return to the app (`RootView`),
+so the widget no longer waits for Activité to be opened. Seen on the simulator's Home Screen in
+« Transparent », large; the other widgets were not seen there.

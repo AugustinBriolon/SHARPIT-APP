@@ -431,9 +431,9 @@ struct ScreenDemoHost: View {
                                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                                     SanteTrends(markers: SanteTrendReadout.drawable(Self.health.allMarkers))
                                     SanteTodaySection(state: SanteDayState(tiles: [
-                                        .init(caption: "Énergie", value: "64", unit: "/100", note: "D'habitude 71", fraction: 0.64, pillar: .recovery, symbol: "bolt.fill"),
+                                        .init(caption: "Énergie", value: "64", unit: "/100", note: "D'habitude 71", fraction: 0.64, pillar: .recovery, symbol: "bolt.fill", baseline: 0.71),
                                         .init(caption: "Stress", value: "52", unit: "/100", note: "Modéré", fraction: 0.52, pillar: .sleep, symbol: "waveform.path.ecg"),
-                                        .init(caption: "Effort visé", value: "8–13", unit: nil, note: "Atteint", fraction: 1, pillar: .nutrition, symbol: "flame.fill"),
+                                        .init(caption: "Effort visé", value: "8–13", unit: nil, note: "Atteint", fraction: 1, pillar: .nutrition, symbol: "flame.fill", status: .good),
                                     ]))
                                     SanteWatchSection(items: Self.health.watch)
                                     SanteTable(title: SanteReadout.markers(Self.health.allMarkers.count), rows: Self.health.allMarkers.map(SanteTable.Row.init))

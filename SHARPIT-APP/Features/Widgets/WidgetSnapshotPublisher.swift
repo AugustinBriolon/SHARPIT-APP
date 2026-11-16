@@ -181,6 +181,16 @@ enum WidgetSnapshotPublisher {
         update { $0.latestActivity = next }
     }
 
+    /// Reads the newest sessions and publishes the last one: « Dernière activité » follows the
+    /// athlete's last session from the app's launch and each return to it, not only once
+    /// Activité has been opened. Quiet: a read that fails leaves the widget as it was.
+    static func refreshLatestActivity(client: any ActivityServing = ActivityClient(), tokenProvider: () async throws -> String) async {
+        guard let token = try? await tokenProvider(),
+              let recent = try? await client.activityPage(before: nil, limit: 5, token: token)
+        else { return }
+        await publishLatestActivity(from: recent, client: client, token: token)
+    }
+
     /// Nil clears it: a race done or deleted leaves no countdown behind.
     static func publish(_ goals: [V1Goal]) {
         update { $0.goal = WidgetSnapshot.Goal(goals: goals) }

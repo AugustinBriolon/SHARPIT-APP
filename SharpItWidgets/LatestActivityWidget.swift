@@ -22,6 +22,11 @@ struct LatestActivityView: View {
     let entry: SnapshotEntry
     @Environment(\.widgetFamily) private var family
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.widgetRenderingMode) private var renderingMode
+
+    /// A tinted or clear Home Screen keeps a colour's alpha only: a map there is a grey slab with
+    /// its route lost in it, and the fade to the sheet a white block. The route alone is drawn.
+    private var isFullColor: Bool { renderingMode == .fullColor }
 
     private var map: WidgetSnapshotStore.LatestActivityMap { family == .systemLarge ? .large : .medium }
 
@@ -29,12 +34,14 @@ struct LatestActivityView: View {
         if let activity = entry.latestActivity {
             ZStack(alignment: .bottom) {
                 backdrop(activity)
-                // The map dissolves into the sheet where the figures stand.
-                LinearGradient(
-                    stops: [.init(color: SharpitColor.card.opacity(0), location: 0), .init(color: SharpitColor.card, location: 0.62)],
-                    startPoint: .top, endPoint: .bottom
-                )
-                .frame(height: family == .systemLarge ? 150 : 96)
+                if isFullColor {
+                    // The map dissolves into the sheet where the figures stand.
+                    LinearGradient(
+                        stops: [.init(color: SharpitColor.card.opacity(0), location: 0), .init(color: SharpitColor.card, location: 0.62)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                    .frame(height: family == .systemLarge ? 150 : 96)
+                }
                 StatRow(stats: Array(activity.stats.prefix(3)))
                     .padding(.horizontal, 18)
                     .padding(.bottom, family == .systemLarge ? 20 : 14)
@@ -57,7 +64,7 @@ struct LatestActivityView: View {
     /// The session's map; without one, its route alone on the plate; without a route, its sport.
     @ViewBuilder
     private func backdrop(_ activity: WidgetSnapshot.LatestActivity) -> some View {
-        if activity.hasMap,
+        if isFullColor, activity.hasMap,
            let url = WidgetSnapshotStore.latestActivityMapURL(map, dark: colorScheme == .dark),
            let image = UIImage(contentsOfFile: url.path) {
             Image(uiImage: image)
@@ -68,7 +75,7 @@ struct LatestActivityView: View {
                 .clipped()
                 .accessibilityHidden(true)
         } else {
-            PlainBackdrop(route: activity.route, sport: activity.sport, routeShare: map.routeShare)
+            PlainBackdrop(route: activity.route, sport: activity.sport, routeShare: map.routeShare, showsPlate: isFullColor)
         }
     }
 }
@@ -100,6 +107,7 @@ private struct PlainBackdrop: View {
     let route: [[Double]]?
     let sport: V1ActivityType
     let routeShare: Double
+    var showsPlate = true
 
     var body: some View {
         GeometryReader { proxy in
@@ -110,14 +118,14 @@ private struct PlainBackdrop: View {
                 CGPoint(x: origin.x + $0[0] * side, y: origin.y + $0[1] * side)
             }
             ZStack {
-                SharpitColor.foreground.opacity(0.05)
+                if showsPlate { SharpitColor.foreground.opacity(0.05) }
                 if let start = points.first, points.count >= 2 {
                     Path { path in path.addLines(points) }
                         .stroke(SharpitColor.destructive, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                         .widgetAccentable()
                     Circle()
-                        .fill(SharpitColor.card)
-                        .overlay(Circle().stroke(SharpitColor.destructive, lineWidth: 2.5))
+                        .fill(showsPlate ? SharpitColor.card : .clear)
+                        .overlay(Circle().stroke(SharpitColor.destructive, lineWidth: 2.5).widgetAccentable())
                         .frame(width: 10, height: 10)
                         .position(start)
                 } else {

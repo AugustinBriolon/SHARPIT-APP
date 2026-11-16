@@ -170,11 +170,13 @@ struct RootView: View {
             Task { await refreshSessionReminders() }
             Task { await refreshDayCheckIns() }
             Task { await pro?.drainUnfinished() }
+            Task(priority: .utility) { await WidgetSnapshotPublisher.refreshLatestActivity(tokenProvider: liveToken) }
         }
         .task {
             // Open a cold-launch tap before any network work — otherwise the athlete sits on
             // the default tab while prefs load and thinks the notification did nothing.
             openPendingNotificationIfNeeded()
+            Task(priority: .utility) { await WidgetSnapshotPublisher.refreshLatestActivity(tokenProvider: liveToken) }
 
             // Read here, on the main actor: the `async let` below runs off it.
             // Only while the athlete has not switched SharpIt's notifications off.
