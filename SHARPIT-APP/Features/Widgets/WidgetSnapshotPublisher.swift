@@ -105,30 +105,35 @@ extension WidgetSnapshot.Training {
 }
 
 extension WidgetSnapshot.LatestActivity {
-    /// The session as the widget reads it: how far first, else how long; then the time and the
-    /// pace (a ride's speed, a swim's pace per 100 m), or the load when nothing was measured.
-    init(activity: V1ActivityListItem, route: [[Double]]?) {
-        var figures: [WidgetSnapshot.Figure] = []
+    /// The session as the widget reads it: how far, how long, then the average pace (a ride's
+    /// speed, a swim's pace per 100 m), or the load when no distance was measured.
+    init(activity: V1ActivityListItem, route: [[Double]]?, mapActivityId: String? = nil) {
+        var stats: [WidgetSnapshot.Stat] = []
         let meters = activity.distanceM.flatMap { $0 > 0 ? $0 : nil }
         let seconds = activity.duration.flatMap { $0 > 0 ? $0 : nil }
         if let meters {
-            figures.append(meters >= 1_000
-                ? .init(value: SharpitFigureFormat.kilometers(meters / 1_000), unit: "km")
-                : .init(value: "\(Int(meters.rounded()))", unit: "m"))
+            stats.append(meters >= 1_000
+                ? .init(label: String(localized: "Distance"), value: SharpitFigureFormat.kilometers(meters / 1_000), unit: "km")
+                : .init(label: String(localized: "Distance"), value: "\(Int(meters.rounded()))", unit: "m"))
         }
-        if let seconds { figures.append(.init(value: SharpitFigureFormat.duration(seconds: seconds), unit: "")) }
+        if let seconds {
+            stats.append(.init(label: String(localized: "Durée"), value: SharpitFigureFormat.duration(seconds: seconds), unit: ""))
+        }
         if let meters, let seconds, meters >= 100 {
             switch activity.type {
-            case .bike: figures.append(.init(value: ActivityFormat.speedKmh(distanceM: meters, duration: seconds), unit: "km/h"))
-            case .swim: figures.append(.init(value: ActivityFormat.paceClock(seconds / (meters / 100)), unit: "/100 m"))
-            default: figures.append(.init(value: ActivityFormat.paceClock(seconds / (meters / 1_000)), unit: "/km"))
+            case .bike:
+                stats.append(.init(label: String(localized: "Vitesse moyenne"), value: ActivityFormat.speedKmh(distanceM: meters, duration: seconds), unit: "km/h"))
+            case .swim:
+                stats.append(.init(label: String(localized: "Allure moyenne"), value: ActivityFormat.paceClock(seconds / (meters / 100)), unit: "/100 m"))
+            default:
+                stats.append(.init(label: String(localized: "Allure moyenne"), value: ActivityFormat.paceClock(seconds / (meters / 1_000)), unit: "/km"))
             }
         } else if let load = activity.load, load > 0, let whole = Int(exactly: load.rounded()) {
-            figures.append(.init(value: "\(whole)", unit: String(localized: "charge")))
+            stats.append(.init(label: String(localized: "Charge"), value: "\(whole)", unit: ""))
         }
         self.init(
             id: activity.id, title: activity.title ?? activity.type.label, sport: activity.type,
-            date: activity.date, figures: figures, route: route
+            date: activity.date, stats: stats, route: route, mapActivityId: mapActivityId
         )
     }
 }
@@ -159,17 +164,19 @@ enum WidgetSnapshotPublisher {
         update { $0.training = WidgetSnapshot.Training(activities: activities) }
     }
 
-    /// The session recorded last, for « Dernière activité ». Its route is read once per session:
-    /// the one already published is kept, and a read that fails publishes the session without it
-    /// rather than leave the previous session on the Home Screen.
+    /// The session recorded last, for « Dernière activité ». Its route and its maps are made
+    /// once per session: what is already published is kept, and a read or a map that fails
+    /// publishes the session without it rather than leave the previous one on the Home Screen.
     static func publishLatestActivity(from activities: [V1ActivityListItem], client: any ActivityServing, token: String) async {
         guard let latest = activities.max(by: { $0.date < $1.date }), !latest.id.isEmpty else { return }
         let published = WidgetSnapshotStore.read()?.latestActivity
         var route = published?.id == latest.id ? published?.route : nil
-        if route == nil, let stream = try? await client.activityStream(id: latest.id, token: token) {
-            route = WidgetRoute.fit((stream.path ?? []))
+        var mapActivityId = published?.id == latest.id ? published?.mapActivityId : nil
+        if route == nil || mapActivityId == nil, let stream = try? await client.activityStream(id: latest.id, token: token) {
+            route = WidgetRoute.fit(stream.path ?? [])
+            if mapActivityId == nil, await LatestActivityMapImage.write(route: stream.route) { mapActivityId = latest.id }
         }
-        let next = WidgetSnapshot.LatestActivity(activity: latest, route: route)
+        let next = WidgetSnapshot.LatestActivity(activity: latest, route: route, mapActivityId: mapActivityId)
         update { $0.latestActivity = next }
     }
 

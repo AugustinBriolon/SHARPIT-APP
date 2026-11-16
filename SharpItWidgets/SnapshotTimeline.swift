@@ -113,7 +113,11 @@ extension WidgetSnapshot {
         latestActivity: LatestActivity(
             id: "preview", title: String(localized: "Sortie longue au bord du lac"), sport: .run,
             date: Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now,
-            figures: [Figure(value: "18,4", unit: "km"), Figure(value: "1 h 32", unit: ""), Figure(value: "5'01\"", unit: "/km")],
+            stats: [
+                Stat(label: String(localized: "Distance"), value: "18,4", unit: "km"),
+                Stat(label: String(localized: "Durée"), value: "1 h 32", unit: ""),
+                Stat(label: String(localized: "Allure moyenne"), value: "5'01\"", unit: "/km"),
+            ],
             route: WidgetRoute.fit((0...60).map { step in
                 let angle = Double(step) / 60 * 2 * Double.pi
                 return [45.90 + 0.020 * sin(angle) + 0.006 * sin(3 * angle), 6.13 + 0.034 * cos(angle) + 0.008 * cos(2 * angle)]

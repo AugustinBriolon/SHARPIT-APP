@@ -1,5 +1,6 @@
 #if DEBUG
 import SwiftUI
+import WidgetKit
 
 /// The Ink & Lime references (ADR-085), rebuilt from the shared components, to compare them
 /// with the mock-ups in the simulator without an account. Debug builds only:
@@ -546,6 +547,8 @@ struct ScreenDemoHost: View {
                 .background(SharpitColor.card)
             case "targets":
                 DemoTargetsSheet()
+            case "widgets":
+                DemoWidgetSeed()
             case "ownfood":
                 NavigationStack {
                     FoodCustomPage(purpose: .edit(DemoFoodLog.pasta), save: { _ in DemoFoodLog.pasta }, onSaved: { _ in })
@@ -1449,3 +1452,36 @@ private struct DemoGoalPage: View {
     }
 }
 #endif
+
+/// Feeds « Dernière activité » a session and its maps, so the widget can be placed and read on
+/// the simulator's Home Screen without an account (`SharpitScreenDemo widgets`).
+private struct DemoWidgetSeed: View {
+    @State private var outcome = "…"
+
+    /// A run through Annecy: out along the canal, back by the avenues.
+    private static let route: [V1ActivityCoordinate] = [
+        (45.8992, 6.1262), (45.9003, 6.1238), (45.9018, 6.1215), (45.9036, 6.1196), (45.9057, 6.1183),
+        (45.9079, 6.1176), (45.9098, 6.1158), (45.9112, 6.1131), (45.9108, 6.1098), (45.9089, 6.1079),
+        (45.9066, 6.1072), (45.9044, 6.1081), (45.9027, 6.1102), (45.9016, 6.1131), (45.9012, 6.1163),
+        (45.9004, 6.1193), (45.8989, 6.1214),
+    ].map { V1ActivityCoordinate(latitude: $0.0, longitude: $0.1) }
+
+    var body: some View {
+        Text(outcome)
+            .font(SharpitTypography.body)
+            .task {
+                let drawn = await LatestActivityMapImage.write(route: Self.route)
+                let activity = WidgetSnapshot.LatestActivity(
+                    activity: V1ActivityListItem(
+                        id: "preview", type: .run, date: Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now,
+                        title: "Sortie au bord du lac", duration: 1_694, distanceM: 5_200
+                    ),
+                    route: WidgetRoute.fit(Self.route.map { [$0.latitude, $0.longitude] }),
+                    mapActivityId: drawn ? "preview" : nil
+                )
+                _ = WidgetSnapshotStore.update { $0.latestActivity = activity }
+                WidgetCenter.shared.reloadAllTimelines()
+                outcome = drawn ? "Widget alimenté, cartes dessinées." : "Widget alimenté, sans carte."
+            }
+    }
+}

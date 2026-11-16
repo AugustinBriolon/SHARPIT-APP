@@ -325,21 +325,46 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     #expect(abs(fitted[fitted.count - 1][1]) < 1e-9)
 }
 
-@Test func theLatestActivityReadsDistanceTimeThenPaceOrLoad() {
+@Test func theLatestActivityNamesDistanceTimeThenPaceOrLoad() {
     let run = WidgetSnapshot.LatestActivity(
         activity: V1ActivityListItem(id: "a1", type: .run, date: .now, title: "Footing", duration: 3_000, distanceM: 10_000),
         route: nil
     )
-    #expect(run.figures == [.init(value: "10,0", unit: "km"), .init(value: "50 min", unit: ""), .init(value: "5'00\"", unit: "/km")])
+    #expect(run.stats == [
+        .init(label: "Distance", value: "10,0", unit: "km"),
+        .init(label: "Durée", value: "50 min", unit: ""),
+        .init(label: "Allure moyenne", value: "5'00\"", unit: "/km"),
+    ])
     #expect(run.link.path == "/activity/a1")
 
     let ride = WidgetSnapshot.LatestActivity(activity: V1ActivityListItem(type: .bike, date: .now, duration: 3_600, distanceM: 30_000), route: nil)
-    #expect(ride.figures.last == .init(value: "30,0", unit: "km/h"))
+    #expect(ride.stats.last == .init(label: "Vitesse moyenne", value: "30,0", unit: "km/h"))
     #expect(ride.title == V1ActivityType.bike.label)
 
     // Strength: no distance, so the time leads and the load follows.
     let strength = WidgetSnapshot.LatestActivity(activity: V1ActivityListItem(type: .strength, date: .now, duration: 2_700, load: 41.6), route: nil)
-    #expect(strength.figures == [.init(value: "45 min", unit: ""), .init(value: "42", unit: "charge")])
+    #expect(strength.stats == [.init(label: "Durée", value: "45 min", unit: ""), .init(label: "Charge", value: "42", unit: "")])
+}
+
+@Test func aMapIsShownOnlyForTheSessionItWasDrawnFor() throws {
+    var activity = WidgetSnapshot.LatestActivity(id: "new", title: "t", sport: .run, date: .now, stats: [], route: nil)
+    #expect(!activity.hasMap)
+    // The maps on disk are still the previous session's.
+    activity.mapActivityId = "old"
+    #expect(!activity.hasMap)
+    activity.mapActivityId = "new"
+    #expect(activity.hasMap)
+
+    // Signing out takes the maps with the snapshot: they say where the athlete trains.
+    let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let urls = WidgetSnapshotStore.LatestActivityMap.allCases.flatMap { map in
+        [false, true].compactMap { WidgetSnapshotStore.latestActivityMapURL(map, dark: $0, in: directory) }
+    }
+    #expect(Set(urls).count == 4)
+    for url in urls { try Data([0x89]).write(to: url) }
+    WidgetSnapshotStore.erase(in: directory)
+    #expect(urls.allSatisfy { !FileManager.default.fileExists(atPath: $0.path) })
 }
 
 @Test func theLatestActivitySaysItsDayAndSport() {
@@ -348,7 +373,7 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     func eyebrow(daysAgo: Int) -> String {
         let date = calendar.date(byAdding: .day, value: -daysAgo, to: now) ?? now
         return LatestActivityReadout.eyebrow(
-            WidgetSnapshot.LatestActivity(id: "a", title: "t", sport: .run, date: date, figures: [], route: nil), now: now
+            WidgetSnapshot.LatestActivity(id: "a", title: "t", sport: .run, date: date, stats: [], route: nil), now: now
         )
     }
     #expect(eyebrow(daysAgo: 0) == "Aujourd'hui · \(V1ActivityType.run.label)")

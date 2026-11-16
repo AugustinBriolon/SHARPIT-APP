@@ -98,13 +98,27 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
         var title: String
         var sport: V1ActivityType
         var date: Date
-        /// The first is read big; the others follow it.
-        var figures: [Figure]
+        /// Up to three, each under its name: « Distance », « Durée », « Allure moyenne ».
+        var stats: [Stat]
         /// The GPS route as `[x, y]` in a unit square (`WidgetRoute.fit`); nil for a session
         /// without one — a pool swim, strength, a home trainer.
         var route: [[Double]]?
+        /// The session whose maps sit beside the snapshot (`WidgetSnapshotStore.latestActivityMapURL`):
+        /// a map is shown only while it is this session's, never the previous one's.
+        var mapActivityId: String? = nil
+
+        var hasMap: Bool { mapActivityId == id }
 
         var link: URL { WidgetSnapshot.link("/activity/\(id)") }
+    }
+
+    /// A figure under its name.
+    nonisolated struct Stat: Codable, Equatable, Sendable {
+        var label: String
+        var value: String
+        var unit: String
+
+        var figure: Figure { Figure(value: value, unit: unit) }
     }
 
     /// A number and its unit, set apart so the number can take the instrument face.
@@ -268,6 +282,32 @@ nonisolated enum WidgetSnapshotStore {
     /// The map PNG an earlier build wrote for « Dernière activité »: only ever erased now.
     static let lastActivityMapFileName = "last-activity-map.png"
 
+    /// The map under « Dernière activité », drawn by the app (a widget cannot draw one): one per
+    /// face and per appearance.
+    enum LatestActivityMap: String, CaseIterable, Sendable {
+        case medium, large
+
+        /// The face in points; the map is drawn at twice that.
+        var size: CGSize {
+            switch self {
+            case .medium: CGSize(width: 364, height: 170)
+            case .large: CGSize(width: 364, height: 382)
+            }
+        }
+
+        /// The share of the face above the figures, where the route must sit.
+        var routeShare: Double {
+            switch self {
+            case .medium: 0.62
+            case .large: 0.74
+            }
+        }
+    }
+
+    static func latestActivityMapURL(_ map: LatestActivityMap, dark: Bool, in directory: URL? = containerURL) -> URL? {
+        directory?.appending(path: "latest-activity-\(map.rawValue)-\(dark ? "dark" : "light").png")
+    }
+
     static func read(from directory: URL? = containerURL) -> WidgetSnapshot? {
         guard let url = directory?.appending(path: fileName),
               let data = try? Data(contentsOf: url)
@@ -299,6 +339,11 @@ nonisolated enum WidgetSnapshotStore {
         guard let directory else { return }
         for name in [fileName, lastActivityMapFileName] {
             try? FileManager.default.removeItem(at: directory.appending(path: name))
+        }
+        for map in LatestActivityMap.allCases {
+            for dark in [false, true] {
+                if let url = latestActivityMapURL(map, dark: dark, in: directory) { try? FileManager.default.removeItem(at: url) }
+            }
         }
     }
 

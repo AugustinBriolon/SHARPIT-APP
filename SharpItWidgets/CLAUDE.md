@@ -59,15 +59,20 @@ where an opaque track read as a full ring.
 
 **Séance du jour square only, Dernière activité back (the athlete's call, 2026-11-16).** « Séance du
 jour » lost its medium face (the day's sessions beside the verdict): it is the small square and the
-Lock Screen ones. In its place, « Dernière activité » (`LatestActivityWidget`, medium only, free):
-the session recorded last, whatever its day — « Hier · Course », its title, how far read big, then
-the time and the pace (a ride's speed, a swim's pace per 100 m; the load when nothing was measured) —
-beside a plate holding its route as one line, start hollow and end full. A session without GPS keeps
-the same face with its sport's glyph in the plate. The snapshot's section is `latestActivity`, never
-the old `lastActivity` key (another shape, still on some devices). The route is `[x, y]` in a unit
-square (`WidgetRoute.fit`: north up, longitude shrunk by the latitude, proportions kept, thinned to
-120 points), so the widget projects nothing and needs no map. `WidgetSnapshotPublisher.publishLatestActivity`
-writes it from Activité's list and from the silent push; the route is read once per session
-(`activityStream`), and a read that fails publishes the session without it. Seen in the simulator's
-widget gallery on the preview; not on a Home Screen with a real session, and the face without a
-route only in Xcode's preview.
+Lock Screen ones. In its place, « Dernière activité » (`LatestActivityWidget`, medium and large,
+free), laid out on the athlete's reference: the session's map runs to the widget's edge
+(`contentMarginsDisabled`) with the route on it, start hollow, and fades into the sheet where three
+figures stand, each under its name — « Distance », « Durée », « Allure moyenne » (a ride's « Vitesse
+moyenne », a swim's pace per 100 m; « Charge » when no distance was measured). A capsule at the top
+says when and what (« Hier · Course »). A widget cannot draw a map: the app draws them
+(`LatestActivityMapImage`, `MKMapSnapshotter`, muted and turned to greys so the route is the only
+hue), one per face and per appearance, beside the snapshot in the App Group
+(`WidgetSnapshotStore.latestActivityMapURL`); `mapActivityId` says whose they are, so a new session
+never shows the previous one's map. `RouteFraming` keeps the route above the figures. Without maps
+the face keeps its shape on a plain plate with the route as a line (`WidgetRoute.fit`, a unit square
+written in the snapshot); without a route, the sport's glyph. The snapshot's section is
+`latestActivity`, never the old `lastActivity` key (another shape, still on some devices).
+`WidgetSnapshotPublisher.publishLatestActivity` writes it from Activité's list and from the silent
+push, once per session. `SharpitScreenDemo widgets` feeds it a session and its maps without an
+account. Seen on the simulator's Home Screen, large, light and dark, on that demo; the medium face
+with a map and a real session were not seen.
