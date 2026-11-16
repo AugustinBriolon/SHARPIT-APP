@@ -456,21 +456,13 @@ struct GuidedStrengthWorkoutView: View {
                                 .foregroundStyle(SharpitColor.slate)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        // What was last done on it, and the best: the figures the next set is judged by.
-                        if let history = StrengthLibraryStore.shared.history(of: name) {
-                            Text(StrengthHistoryReadout.line(history))
-                                .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote, digits: true))
-                                .foregroundStyle(SharpitColor.slate)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        if volume > 0 {
-                            HStack(spacing: SharpitSpacing.xs) {
-                                Text("Volume")
-                                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
-                                    .foregroundStyle(SharpitColor.slate)
-                                volumeFigure(volume)
-                            }
-                        }
+                        // What was last done, the best, and today's volume: one strip, there from the
+                        // start. The volume used to appear with the first set done and push the sets down.
+                        ExerciseFiguresStrip(
+                            history: StrengthLibraryStore.shared.history(of: name),
+                            volume: volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kg" : nil
+                        )
+                        .padding(.top, SharpitSpacing.xs)
                     }
                 }
                 .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: 24, bottom: SharpitSpacing.sm, trailing: 24))
@@ -1289,3 +1281,46 @@ private struct GuidedRPEScale: View {
         }
     }
 }
+
+/// An exercise's figures between two hairlines: last time, the best, today's volume — a column
+/// each, its name over it. The volume's column is there before any set is done, empty.
+private struct ExerciseFiguresStrip: View {
+    let history: V1StrengthExercise?
+    let volume: String?
+
+    private var columns: [(label: String, value: String?)] {
+        var columns: [(String, String?)] = []
+        if let history {
+            columns.append((String(localized: "Dernière fois"), StrengthHistoryReadout.lastFigure(history)))
+            if let best = StrengthHistoryReadout.bestFigure(history) { columns.append((String(localized: "Meilleur"), best)) }
+        }
+        columns.append((String(localized: "Volume"), volume))
+        return columns
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            CliniqueDivider()
+            HStack(alignment: .top, spacing: SharpitSpacing.sm) {
+                ForEach(Array(columns.enumerated()), id: \.offset) { _, column in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(column.label)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineLimit(1)
+                        Text(column.value ?? "—")
+                            .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .subheadline, digits: true))
+                            .foregroundStyle(column.value == nil ? SharpitColor.slate : SharpitColor.foreground)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(.vertical, 10)
+            CliniqueDivider()
+        }
+    }
+}
+

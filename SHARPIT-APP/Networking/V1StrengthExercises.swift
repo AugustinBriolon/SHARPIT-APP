@@ -105,12 +105,22 @@ enum StrengthHistoryReadout {
 
     /// « Meilleur 70 kg × 5 », « Meilleur 1 min 30 s »; nil when nothing was ever loaded or timed.
     static func best(_ exercise: V1StrengthExercise) -> String? {
+        bestFigure(exercise).map { String(localized: "Meilleur \($0)") }
+    }
+
+    /// The same without its name, for a column that carries it: « 3 × 12 · 8 kg ».
+    static func lastFigure(_ exercise: V1StrengthExercise) -> String {
+        block(sets: exercise.last.sets, reps: exercise.last.reps, weightKg: exercise.last.weightKg, durationSec: exercise.last.durationSec)
+    }
+
+    /// « 70 kg × 5 », « 1 min 30 s ».
+    static func bestFigure(_ exercise: V1StrengthExercise) -> String? {
         if let kg = exercise.best.weightKg, kg > 0 {
             let reps = exercise.best.reps.map { " × \($0)" } ?? ""
-            return String(localized: "Meilleur \(GuidedStrengthSetTarget.kilograms(kg))\(reps)")
+            return "\(GuidedStrengthSetTarget.kilograms(kg))\(reps)"
         }
         if let seconds = exercise.best.durationSec, seconds > 0 {
-            return String(localized: "Meilleur \(PlannedSessionFormat.durationSeconds(seconds))")
+            return PlannedSessionFormat.durationSeconds(seconds)
         }
         return nil
     }

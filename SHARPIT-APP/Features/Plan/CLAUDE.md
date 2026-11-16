@@ -224,3 +224,9 @@ recording, frame by frame: clipped, the title vanished for the second half of ev
 athlete typed a load there, it was stored as repetitions (25 reps at 10 kg for 10 at 25), and the
 coach, who reads the last session, prescribed it back the next day. The line reads « 15 rép. × 10 kg ».
 The history code was read end to end and swaps nothing.
+
+**Trip band, exercise figures (2026-11-16).** No rule is drawn where a trip's band starts or ends
+(`bandEdge`): against the band's edge it read as stuck to it. An exercise's page shows « Dernière
+fois », « Meilleur » and « Volume » as one strip of named columns between hairlines
+(`ExerciseFiguresStrip`): the volume's column is there from the start, « — » until a set is done —
+it used to appear with the first set and push the sets down.
