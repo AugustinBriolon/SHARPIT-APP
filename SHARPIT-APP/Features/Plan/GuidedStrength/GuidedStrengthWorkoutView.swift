@@ -631,11 +631,15 @@ struct GuidedStrengthWorkoutView: View {
                         .frame(width: 44, alignment: .trailing)
                         .accessibilityLabel("Répétitions")
 
-                    Text("×")
+                    // Each figure carries its unit: « 15 × 10 kg » left the first one unnamed, and a
+                    // load typed there was stored as repetitions — then prescribed back by the coach.
+                    Text("rép. ×")
                         .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
                         .foregroundStyle(SharpitColor.slate)
+                        .fixedSize()
                         .padding(.leading, -SharpitSpacing.xs)
-                        .padding(.trailing, SharpitSpacing.sm)
+                        .padding(.trailing, SharpitSpacing.xs)
+                        .accessibilityHidden(true)
 
                     // No load prescribed: an empty field, not a « 0 » read as a weight.
                     TextField("—", text: weightText(for: set.id))

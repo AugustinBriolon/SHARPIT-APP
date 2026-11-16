@@ -219,3 +219,8 @@ at its middle; the rings stay in place too and dissolve over the first quarter o
 drawn outside their page meanwhile, so a week's `ScrollView` is not clipped (`scrollClipDisabled`) and
 the header is framed to the page's width — the swap is measured against it. Checked on a screen
 recording, frame by frame: clipped, the title vanished for the second half of every swipe.
+
+**A set's line names both figures (2026-11-16).** « 15 × 10 kg » left the first figure unnamed: the
+athlete typed a load there, it was stored as repetitions (25 reps at 10 kg for 10 at 25), and the
+coach, who reads the last session, prescribed it back the next day. The line reads « 15 rép. × 10 kg ».
+The history code was read end to end and swaps nothing.
