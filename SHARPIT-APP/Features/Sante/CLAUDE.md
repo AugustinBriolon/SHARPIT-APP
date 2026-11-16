@@ -119,3 +119,10 @@ athlete could do as checked lines, a word for the coach, « Enregistrer » docke
 « À surveiller », then the markers. « Aujourd'hui » is a ring strip like the hero's (`SanteDayState.Tile`
 carries its pillar, glyph and fraction; « Effort visé » closes once the band is reached, the day's
 strain not being in the payload). « À surveiller » is one plate in the watch status' hue, a dot a line.
+
+**Aujourd'hui as gauges, À surveiller as lines (the athlete's call, 2026-11-16, later that day).**
+Rings under the hero's rings read as the same section twice, and the tinted plate as a warning box.
+« Aujourd'hui » is three lines (`SanteTodayLine`): glyph in the pillar's hue, name, figure, then a
+gauge with a tick where the athlete usually stands (`Tile.baseline`); « Effort visé » has no gauge,
+its state is a status pill (`Tile.status`). « À surveiller » is lines on the sheet, each behind a bar
+in the watch hue, as the weekly review's « À retenir ».

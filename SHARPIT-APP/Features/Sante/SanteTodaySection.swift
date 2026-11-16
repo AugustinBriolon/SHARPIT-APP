@@ -12,6 +12,10 @@ struct SanteDayState: Equatable {
         var fraction: Double?
         var pillar: CliniquePillar
         var symbol: String
+        /// Where the athlete usually stands, 0…1: a tick on the gauge.
+        var baseline: Double? = nil
+        /// Read as a status rather than on a gauge — the target band, reached or not.
+        var status: CliniqueStatus? = nil
     }
 
     var tiles: [Tile]
@@ -27,7 +31,8 @@ struct SanteDayState: Equatable {
                 value: "\(Int(value.rounded()))",
                 unit: "/100",
                 note: bank.typicalBaseline.map { String(localized: "D'habitude \(Int($0.rounded()))") },
-                fraction: value / 100, pillar: .recovery, symbol: "bolt.fill"
+                fraction: value / 100, pillar: .recovery, symbol: "bolt.fill",
+                baseline: bank.typicalBaseline.map { $0 / 100 }
             ))
         }
         if let stress = response.stress {
@@ -47,7 +52,8 @@ struct SanteDayState: Equatable {
                 note: Self.statusLabel(band.status),
                 // The day's strain is not in the payload: the ring closes once the band is reached.
                 fraction: band.status == "within" || band.status == "above" ? 1 : 0,
-                pillar: .nutrition, symbol: "flame.fill"
+                pillar: .nutrition, symbol: "flame.fill",
+                status: Self.bandStatus(band.status)
             ))
         }
         guard !tiles.isEmpty else { return nil }
@@ -60,6 +66,14 @@ struct SanteDayState: Equatable {
         return String(localized: "Calme")
     }
 
+    static func bandStatus(_ status: String?) -> CliniqueStatus {
+        switch status {
+        case "within": .good
+        case "above": .watch
+        default: .unknown
+        }
+    }
+
     static func statusLabel(_ status: String?) -> String? {
         switch status {
         case "below": String(localized: "Encore à faire")
@@ -70,22 +84,91 @@ struct SanteDayState: Equatable {
     }
 }
 
+/// The day's readings as lines, each on its gauge: the hero above already reads as rings, and
+/// the same rings twice made one section look like the other (the athlete's call, 2026-11-16).
 struct SanteTodaySection: View {
     let state: SanteDayState
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             SanteSectionTitle(String(localized: "Aujourd'hui"))
-            CliniqueScoreStrip {
-                ForEach(state.tiles, id: \.caption) { tile in
-                    CliniqueScoreColumn(
-                        pillar: tile.pillar, fraction: tile.fraction, symbol: tile.symbol,
-                        title: tile.caption, value: tile.value, scale: tile.unit.map { String($0.dropFirst()) },
-                        note: tile.note
-                    )
+            ForEach(Array(state.tiles.enumerated()), id: \.element.caption) { index, tile in
+                if index > 0 { CliniqueDivider() }
+                SanteTodayLine(tile: tile)
+                    .padding(.vertical, SharpitSpacing.sm)
                     .accessibilityElement(children: .combine)
+            }
+        }
+    }
+}
+
+private struct SanteTodayLine: View {
+    let tile: SanteDayState.Tile
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: tile.symbol)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(tile.pillar.color)
+                    .frame(width: 20, alignment: .leading)
+                    .accessibilityHidden(true)
+                Text(tile.caption)
+                    .font(SharpitTypography.bodyEmphasis)
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: 8)
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(tile.value)
+                        .font(SharpitTypography.system(size: 20, weight: .semibold, relativeTo: .title3, digits: true))
+                        .foregroundStyle(SharpitColor.foreground)
+                    if let unit = tile.unit {
+                        Text(unit)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.slate)
+                    }
+                }
+            }
+            if let status = tile.status, let note = tile.note {
+                CliniqueStatusPill(note, status: status)
+                    .padding(.leading, 28)
+            } else {
+                if let fraction = tile.fraction {
+                    SanteGauge(fraction: fraction, baseline: tile.baseline, tint: tile.pillar.color)
+                        .padding(.leading, 28)
+                }
+                if let note = tile.note {
+                    Text(note)
+                        .font(SharpitTypography.meta)
+                        .foregroundStyle(SharpitColor.slate)
+                        .padding(.leading, 28)
                 }
             }
         }
+    }
+}
+
+/// A reading on its scale: how far it stands, and a tick where it usually does.
+private struct SanteGauge: View {
+    let fraction: Double
+    let baseline: Double?
+    let tint: Color
+
+    var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            ZStack(alignment: .leading) {
+                Capsule().fill(SharpitColor.tile)
+                Capsule().fill(tint).frame(width: max(6, width * min(max(fraction, 0), 1)))
+                if let baseline {
+                    Capsule()
+                        .fill(SharpitColor.foreground)
+                        .frame(width: 2, height: 12)
+                        .offset(x: width * min(max(baseline, 0), 1) - 1)
+                }
+            }
+        }
+        .frame(height: 6)
+        .padding(.vertical, 3)
+        .accessibilityHidden(true)
     }
 }

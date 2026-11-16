@@ -238,41 +238,32 @@ struct SanteWatchSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             SanteSectionTitle(String(localized: "À surveiller"))
-            // One plate in the watch status' hue: the section is told from the tables at a glance.
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    if index > 0 {
-                        Rectangle().fill(CliniqueStatus.watch.border).frame(height: 1).accessibilityHidden(true)
+            // Lines on the sheet, each behind a bar in the watch status' hue — as the weekly
+            // review's « À retenir ». The tinted plate read as a warning box (2026-11-16).
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                if index > 0 { CliniqueDivider() }
+                HStack(alignment: .top, spacing: 12) {
+                    Capsule()
+                        .fill(CliniqueStatus.watch.mark)
+                        .frame(width: 3)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.title)
+                            .font(SharpitTypography.bodyEmphasis)
+                            .foregroundStyle(SharpitColor.foreground)
+                        Text(item.detail)
+                            .font(SharpitTypography.meta)
+                            .foregroundStyle(SharpitColor.slate)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    HStack(alignment: .top, spacing: 12) {
-                        Circle()
-                            .fill(CliniqueStatus.watch.mark)
-                            .frame(width: 8, height: 8)
-                            .padding(.top, 7)
-                            .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.title)
-                                .font(SharpitTypography.bodyEmphasis)
-                                .foregroundStyle(SharpitColor.foreground)
-                            Text(item.detail)
-                                .font(SharpitTypography.meta)
-                                .foregroundStyle(SharpitColor.slate)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, SharpitSpacing.sm)
-                    .accessibilityElement(children: .combine)
                 }
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, SharpitSpacing.sm)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text("À surveiller : \(item.title). \(item.detail)"))
             }
-            .padding(.horizontal, SharpitSpacing.md)
-            .background(CliniqueStatus.watch.fill, in: shape)
-            .overlay(shape.strokeBorder(CliniqueStatus.watch.border, lineWidth: 1))
         }
-    }
-
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
     }
 }
 

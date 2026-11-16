@@ -23,10 +23,14 @@ private let bank = V1TodayEnergyBank(algorithmVersion: "v1", value: 63.6, typica
         stress: V1TodayStress(value: 52, asOf: "2026-10-12T08:00:00Z"),
         targetBand: V1TodayTargetBand(algorithmVersion: "v1", low: 8.4, high: 12.6, status: "within")
     )))
-    #expect(state.tiles == [
+    // The usual level, as a share of the scale: a tick on the gauge.
+    #expect(abs((state.tiles.first?.baseline ?? 0) - 0.712) < 1e-9)
+    var tiles = state.tiles
+    tiles[0].baseline = nil
+    #expect(tiles == [
         .init(caption: "Énergie", value: "64", unit: "/100", note: "D'habitude 71", fraction: 0.636, pillar: .recovery, symbol: "bolt.fill"),
         .init(caption: "Stress", value: "52", unit: "/100", note: "Modéré", fraction: 0.52, pillar: .sleep, symbol: "waveform.path.ecg"),
-        .init(caption: "Effort visé", value: "8–13", unit: nil, note: "Atteint", fraction: 1, pillar: .nutrition, symbol: "flame.fill"),
+        .init(caption: "Effort visé", value: "8–13", unit: nil, note: "Atteint", fraction: 1, pillar: .nutrition, symbol: "flame.fill", status: .good),
     ])
 }
 
