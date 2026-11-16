@@ -228,10 +228,7 @@ struct WeightTargetSheet: View {
     }
 
     private var parsed: Double? { ProfileFieldFormat.parseDecimal(text) }
-
-    private var isValid: Bool {
-        text.trimmingCharacters(in: .whitespaces).isEmpty || (parsed.map { (30...250).contains($0) } ?? false)
-    }
+    private var isValid: Bool { WeightTargetPlate.isValid(text) }
 
     /// As tall as what it holds; the whole screen once the keyboard is up.
     @State private var detent: PresentationDetent = WeightTargetSheet.compact
@@ -245,12 +242,8 @@ struct WeightTargetSheet: View {
                 .foregroundStyle(SharpitColor.foreground)
                 .accessibilityAddTraits(.isHeader)
                 .padding(.trailing, 56)
-            plate
+            WeightTargetPlate(text: $text, current: store.profile.targetWeightKg, isFocused: $isFocused)
                 .padding(.top, 18)
-            if !isValid {
-                CliniqueStatusPill(String(localized: "Entre 30 et 250 kg"), status: .alert)
-                    .padding(.top, 10)
-            }
             Spacer(minLength: 16)
             VStack(spacing: 6) {
                 Button { save() } label: { Text("Enregistrer").frame(maxWidth: .infinity) }
@@ -283,8 +276,29 @@ struct WeightTargetSheet: View {
         .sharpitSheet()
     }
 
-    /// The target read big between − and +: typed in place, or stepped by half a kilo.
-    private var plate: some View {
+    private func save() {
+        var patch = AthleteProfilePatch()
+        patch.setIfChanged(.targetWeightKg, double: parsed, was: store.profile.targetWeightKg)
+        store.save(patch)
+        dismiss()
+    }
+}
+
+/// The weight target read big between − and +: typed in place, or stepped by half a kilo. Shared
+/// by Santé's sheet and Nutrition's « Objectifs », so both set the one profile field the same way.
+struct WeightTargetPlate: View {
+    @Binding var text: String
+    /// The saved target, where the steppers start from when the field is empty.
+    let current: Double?
+    var isFocused: FocusState<Bool>.Binding
+
+    /// Empty clears the target; otherwise 30 to 250 kg.
+    static func isValid(_ text: String) -> Bool {
+        text.trimmingCharacters(in: .whitespaces).isEmpty
+            || (ProfileFieldFormat.parseDecimal(text).map { (30...250).contains($0) } ?? false)
+    }
+
+    var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.md) {
             HStack(alignment: .center, spacing: SharpitSpacing.sm) {
                 SharpitStepButton(symbol: "minus", label: String(localized: "Moins 0,5 kg")) { step(-0.5) }
@@ -298,7 +312,7 @@ struct WeightTargetSheet: View {
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
                         .fixedSize()
-                        .focused($isFocused)
+                        .focused(isFocused)
                         .accessibilityLabel("Poids cible en kilos")
                     Text("kg")
                         .font(SharpitTypography.system(size: 17, weight: .regular, relativeTo: .body))
@@ -312,19 +326,15 @@ struct WeightTargetSheet: View {
                 .lineSpacing(2)
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
+            if !Self.isValid(text) {
+                CliniqueStatusPill(String(localized: "Entre 30 et 250 kg"), status: .alert)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func step(_ delta: Double) {
-        let next = min(max((parsed ?? store.profile.targetWeightKg ?? 70) + delta, 30), 250)
+        let next = min(max((ProfileFieldFormat.parseDecimal(text) ?? current ?? 70) + delta, 30), 250)
         text = ProfileFieldFormat.decimal(next)
-    }
-
-    private func save() {
-        var patch = AthleteProfilePatch()
-        patch.setIfChanged(.targetWeightKg, double: parsed, was: store.profile.targetWeightKg)
-        store.save(patch)
-        dismiss()
     }
 }

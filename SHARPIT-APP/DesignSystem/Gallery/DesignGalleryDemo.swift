@@ -429,8 +429,13 @@ struct ScreenDemoHost: View {
                                     .padding(.top, SharpitSpacing.xs)
                                 VStack(alignment: .leading, spacing: SharpitSpacing.section) {
                                     SanteTrends(markers: SanteTrendReadout.drawable(Self.health.allMarkers))
-                                    SanteTable(title: SanteReadout.markers(Self.health.allMarkers.count), rows: Self.health.allMarkers.map(SanteTable.Row.init))
+                                    SanteTodaySection(state: SanteDayState(tiles: [
+                                        .init(caption: "Énergie", value: "64", unit: "/100", note: "D'habitude 71", fraction: 0.64, pillar: .recovery, symbol: "bolt.fill"),
+                                        .init(caption: "Stress", value: "52", unit: "/100", note: "Modéré", fraction: 0.52, pillar: .sleep, symbol: "waveform.path.ecg"),
+                                        .init(caption: "Effort visé", value: "8–13", unit: nil, note: "Atteint", fraction: 1, pillar: .nutrition, symbol: "flame.fill"),
+                                    ]))
                                     SanteWatchSection(items: Self.health.watch)
+                                    SanteTable(title: SanteReadout.markers(Self.health.allMarkers.count), rows: Self.health.allMarkers.map(SanteTable.Row.init))
                                 }
                                 .padding(.horizontal, 24)
                                 .padding(.top, 20)
@@ -492,6 +497,10 @@ struct ScreenDemoHost: View {
                 }
             case "meal":
                 NavigationStack { DemoMealPage() }
+            case "describe":
+                NavigationStack {
+                    FoodDescribePage(trainingDayId: TrainingDayId.today(now: .now), meal: .lunch, client: DemoFoodLog(), tokenProvider: { "demo" }, isProOverride: true, initialDescription: "Kebab salade tomate oignon, sauce algérienne, frites") { _ in }
+                }
             case "portion":
                 NavigationStack {
                     FoodPortionPage(product: DemoFoodLog.pasta, lastGrams: 200, meal: .dinner) { _, _ in }
@@ -647,7 +656,7 @@ struct ScreenDemoHost: View {
                     Tab("Plan", systemImage: "calendar") {
                         PlanView(
                             client: DemoPlan(), linker: PlannedSessionClient(),
-                            activityClient: DemoActivities(), tokenProvider: { "demo" }
+                            activityClient: DemoActivities(), memoryClient: DemoCoachMemory(), tokenProvider: { "demo" }
                         )
                     }
                 }
@@ -1382,7 +1391,15 @@ private struct DemoFoodLog: FoodLogServing {
     func deleteSavedMeal(id: String, token: String) async throws { throw SharpitAPIError.server }
     func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry] { [] }
     func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct { throw SharpitAPIError.server }
-    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] { [] }
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] {
+        [
+            V1DescribedFood(name: "Pain pita", grams: 90, kcal: 248, protein: 8, carbs: 50, fat: 1, per100g: .init(kcal: 275, protein: 9, carbs: 55, fat: 1.2)),
+            V1DescribedFood(name: "Viande de kebab", grams: 150, kcal: 375, protein: 27, carbs: 3, fat: 28, per100g: .init(kcal: 250, protein: 18, carbs: 2, fat: 19)),
+            V1DescribedFood(name: "Salade, tomate, oignon", grams: 80, kcal: 18, protein: 1, carbs: 3, fat: 0, per100g: .init(kcal: 22, protein: 1, carbs: 4, fat: 0.2)),
+            V1DescribedFood(name: "Sauce algérienne", grams: 40, kcal: 144, protein: 0, carbs: 4, fat: 14, per100g: .init(kcal: 360, protein: 1, carbs: 10, fat: 35)),
+            V1DescribedFood(name: "Frites", grams: 200, kcal: 620, protein: 7, carbs: 76, fat: 30, per100g: .init(kcal: 310, protein: 3.4, carbs: 38, fat: 15)),
+        ]
+    }
 }
 
 private struct DemoTargetsSheet: View {
@@ -1392,7 +1409,7 @@ private struct DemoTargetsSheet: View {
     var body: some View {
         // The sheet reads the targets once, at its creation: shown only when the day is read.
         Color.clear
-            .sheet(isPresented: $isLoaded) { NutritionTargetsSheet(store: store) }
+            .sheet(isPresented: $isLoaded) { NutritionTargetsSheet(store: store, profileClient: DemoEquipment(), tokenProvider: { "demo" }) }
             .task {
                 await store.load(trainingDayId: TrainingDayId.today(now: .now))
                 isLoaded = true

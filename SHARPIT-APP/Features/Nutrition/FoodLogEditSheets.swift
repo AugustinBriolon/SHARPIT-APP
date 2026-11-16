@@ -103,10 +103,15 @@ struct FoodEntryEditSheet: View {
 
 /// The athlete's own daily targets: energy and the three macros, in grams or as shares of the
 /// energy (« % », which needs the energy and three shares totalling 100). An empty grams field
-/// clears its target. Saved on « OK »; the day's goals follow on the server.
+/// clears its target. Saved on « OK »; the day's goals follow on the server. The weight target
+/// (a profile field) is set on the same screen and saved by the same button.
 struct NutritionTargetsSheet: View {
     let store: FoodLogStore
 
+    @State private var profile: AthleteProfileStore
+    @State private var weight = ""
+    @State private var hasLoadedWeight = false
+    @FocusState private var isWeightFocused: Bool
     @State private var mode: NutritionTargetsMode
     @State private var kcal: String
     @State private var protein: String
@@ -117,8 +122,9 @@ struct NutritionTargetsSheet: View {
     @State private var fatPct: String
     @Environment(\.dismiss) private var dismiss
 
-    init(store: FoodLogStore) {
+    init(store: FoodLogStore, profileClient: any AthleteProfileServing, tokenProvider: @escaping () async throws -> String) {
         self.store = store
+        _profile = State(initialValue: AthleteProfileStore(client: profileClient, tokenProvider: tokenProvider))
         let targets = store.targets
         let split = NutritionTargetSplit.prefill(from: targets)
         _mode = State(initialValue: targets.mode)
@@ -150,6 +156,7 @@ struct NutritionTargetsSheet: View {
                     energyPlate
                     macrosCard
                     problemNote
+                    weightCard
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, SharpitSpacing.md)
@@ -166,8 +173,13 @@ struct NutritionTargetsSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Enregistrer") { save() }
-                        .disabled(parsed == nil)
+                        .disabled(parsed == nil || !WeightTargetPlate.isValid(weight))
                 }
+            }
+            .task {
+                await profile.load()
+                weight = ProfileFieldFormat.decimal(profile.profile.targetWeightKg)
+                hasLoadedWeight = true
             }
         }
         .presentationDetents([.large])
@@ -249,6 +261,19 @@ struct NutritionTargetsSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var weightCard: some View {
+        VStack(alignment: .leading, spacing: SharpitSpacing.md) {
+            CliniqueDivider()
+            Text("Poids cible")
+                .font(SharpitTypography.sectionTitle)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+            WeightTargetPlate(text: $weight, current: profile.profile.targetWeightKg, isFocused: $isWeightFocused)
+                .disabled(!hasLoadedWeight)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var totalRow: some View {
         let split = split
         return HStack {
@@ -308,6 +333,12 @@ struct NutritionTargetsSheet: View {
         guard let parsed else { return }
         if parsed != store.targets {
             Task { await store.setTargets(parsed) }
+        }
+        // Untouched until the profile is read: an unloaded field must never clear the target.
+        if hasLoadedWeight {
+            var patch = AthleteProfilePatch()
+            patch.setIfChanged(.targetWeightKg, double: ProfileFieldFormat.parseDecimal(weight), was: profile.profile.targetWeightKg)
+            profile.save(patch)
         }
         dismiss()
     }

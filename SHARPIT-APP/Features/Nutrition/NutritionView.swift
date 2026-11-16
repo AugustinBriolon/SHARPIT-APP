@@ -11,8 +11,6 @@ struct NutritionView: View {
     @State private var foodLog: FoodLogStore
     @State private var addRequest: FoodAddRequest?
     @State private var isEditingTargets = false
-    @State private var isEditingWeightTarget = false
-    @State private var targetWeightKg: Double?
     @State private var scannerOpened = false
     private let opensScanner: Bool
     private let profileClient: any AthleteProfileServing
@@ -90,25 +88,14 @@ struct NutritionView: View {
                         }
                     }
                     Button { isEditingTargets = true } label: {
-                        Label("Objectifs nutritionnels", systemImage: "scope")
+                        Label("Objectifs", systemImage: "scope")
                     }
                     .disabled(foodLog.phase != .ready)
-                    Button { isEditingWeightTarget = true } label: {
-                        if let targetWeightKg {
-                            Label("Objectif de poids · \(NutritionReadout.kilograms(targetWeightKg))", systemImage: "target")
-                        } else {
-                            Label("Créer un objectif de poids", systemImage: "plus.circle")
-                        }
-                    }
                 } label: {
                     Label("Actions", systemImage: "ellipsis")
                 }
             }
         }
-        .sheet(isPresented: $isEditingWeightTarget, onDismiss: { Task { await loadWeightTarget() } }) {
-            WeightTargetSheet(profileClient: profileClient, tokenProvider: tokenProvider)
-        }
-        .task { await loadWeightTarget() }
         .onAppear {
             guard opensScanner, !scannerOpened else { return }
             scannerOpened = true
@@ -116,20 +103,13 @@ struct NutritionView: View {
         }
         .task(id: selectedDayId) { await foodLog.load(trainingDayId: selectedDayId) }
         .sheet(item: $addRequest) { FoodAddSheet(store: foodLog, request: $0) }
-        .sheet(isPresented: $isEditingTargets) { NutritionTargetsSheet(store: foodLog) }
+        .sheet(isPresented: $isEditingTargets) { NutritionTargetsSheet(store: foodLog, profileClient: profileClient, tokenProvider: tokenProvider) }
     }
 
     /// The meal a food added from the menu goes in: the one the hour suggests today, lunch on
     /// another day.
     private var suggestedMeal: FoodLogMeal {
         Calendar.current.isDateInToday(store.selectedDay) ? FoodLogMeal.suggested(at: .now) : .lunch
-    }
-
-    private func loadWeightTarget() async {
-        guard let token = try? await tokenProvider(),
-              let profile = try? await profileClient.athleteProfile(token: token)
-        else { return }
-        targetWeightKg = profile.targetWeightKg
     }
 }
 
@@ -282,11 +262,13 @@ private struct NutritionEnergyPlate: View {
                 if let remaining = calories?.remaining {
                     row(NutritionReadout.remainingCaption(remaining), NutritionReadout.kcal(abs(remaining)))
                 }
-            }
-        }
-        .overlay(alignment: .topLeading) {
-            if keptGoal {
-                NutritionGoalSeal(dayId: dayId)
+                // Its own line under the figures: laid over the plate, it covered the ring.
+                if keptGoal {
+                    CliniqueDivider()
+                    NutritionGoalSeal(dayId: dayId)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.top, 9)
+                }
             }
         }
     }
@@ -339,13 +321,7 @@ private struct NutritionGoalSeal: View {
     @State private var shown = false
 
     var body: some View {
-        Label("Objectif tenu", systemImage: "checkmark.seal.fill")
-            .font(SharpitTypography.label)
-            .tracking(SharpitTypography.labelTracking)
-            .foregroundStyle(SharpitColor.primary)
-            .padding(.horizontal, SharpitSpacing.xs)
-            .padding(.vertical, 4)
-            .background(SharpitColor.primary.opacity(0.10), in: Capsule())
+        CliniqueStatusPill(String(localized: "Objectif tenu"), status: .good)
             .scaleEffect(shown ? 1 : 0.85)
             .opacity(shown ? 1 : 0)
             .onAppear {

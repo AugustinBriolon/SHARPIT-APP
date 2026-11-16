@@ -88,3 +88,15 @@ target. `SharpitScreenDemo targets` shows it.
 
 **Energy ring (2026-11-15).** The ring holds what was eaten; beside it the goal, exercise, and
 « Restant » (« Au-delà » once passed) — the athlete's call, reversing the mock-up's remaining-in-ring.
+
+**One « Objectifs » (2026-11-16).** The « … » menu has one line for the targets: `NutritionTargetsSheet`
+ends on « Poids cible » (`WeightTargetPlate`, shared with Santé's `WeightTargetSheet`) and one
+« Enregistrer » saves the nutrition targets and the profile's `targetWeightKg`; the weight is never
+written before the profile is read. « Objectif tenu » is a status pill on its own line under the
+figures: laid over the plate it covered the ring.
+
+**A described meal reads as one (2026-11-16).** `FoodDescribePage`'s review opens on the meal — the
+athlete's words, the energy big, the macros' split (`DescribedMealTotal`) — over « N aliments », folded
+while every food is a known one and open with « À vérifier » when one is the model's guess. A food is a
+line (« 200 g · 620 kcal »); a tap opens its grams. The log still stores each food
+(`entries/batch`): scores, coach flags and « Déjà mangés » are per food. `SharpitScreenDemo describe`.

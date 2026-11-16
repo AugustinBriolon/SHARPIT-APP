@@ -92,7 +92,7 @@ nonisolated enum DemoDataset {
     static let coachMemory = #"""
     { "activeId": "m1", "profileContext": "", "entries": [
       { "id": "m1", "type": "TRAVEL", "label": "Déplacement pro", "locationLabel": "Lyon",
-        "startDate": "2026-11-12T00:00:00.000Z", "endDate": "2026-11-16T00:00:00.000Z",
+        "startDate": "2026-11-17T00:00:00.000Z", "endDate": "2026-11-19T00:00:00.000Z",
         "note": "Sans vélo", "trainingConstraint": "REDUCED", "isActive": true },
       { "id": "m2", "type": "TRAVEL", "label": "Vacances", "locationLabel": "Lisbonne",
         "startDate": "2026-11-28T00:00:00.000Z", "endDate": "2026-12-02T00:00:00.000Z",
