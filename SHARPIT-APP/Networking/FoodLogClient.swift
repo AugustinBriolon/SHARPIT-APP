@@ -42,7 +42,8 @@ nonisolated protocol FoodLogServing: Sendable {
     func copy(from fromDayId: String, meal: FoodLogMeal?, to toDayId: String, token: String) async throws -> [V1FoodLogEntry]
     func savedMeals(token: String) async throws -> [V1SavedMeal]
     /// Keeps a logged meal under a name.
-    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> V1SavedMeal
+    /// `groupId` keeps only the foods of one named meal (SHARPIT ADR-134).
+    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, groupId: String?, token: String) async throws -> V1SavedMeal
     func deleteSavedMeal(id: String, token: String) async throws
     func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry]
     /// Creates a recipe, or replaces one's ingredients when `id` is given; entries keep their values.
@@ -171,11 +172,11 @@ actor FoodLogClient: FoodLogServing {
     }
 
     /// The server refuses an empty meal with its own words (`Ce repas est vide`).
-    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> V1SavedMeal {
+    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, groupId: String?, token: String) async throws -> V1SavedMeal {
         var request = try request("\(Self.path)/meals", method: "POST", token: token)
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
-            "name": name, "trainingDayId": trainingDayId, "meal": meal.rawValue,
-        ])
+        var body = ["name": name, "trainingDayId": trainingDayId, "meal": meal.rawValue]
+        if let groupId { body["groupId"] = groupId }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
         return try decode(V1SavedMealEnvelope.self, from: try await send(request)).meal
     }
 

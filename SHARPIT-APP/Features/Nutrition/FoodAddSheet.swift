@@ -243,24 +243,35 @@ private struct FoodSearchPage: View {
                         circleButton("barcode.viewfinder", String(localized: "Scanner un code-barres"), size: 18, action: onScan)
                     }
                 }
+                // « Autre… » stays put at the trailing edge, opaque, and the chips slide under it.
+                // Their row is clipped inside the pinned chip (40 pt before the edge, the chip being
+                // wider), so a chip gone under it never shows again beyond it; on the leading side
+                // the row runs to the sheet's edge.
                 ScrollView(.horizontal) {
                     HStack(spacing: 8) {
                         chip(String(localized: "Tous"), isOn: filter == .all) { filter = .all }
                         chip(String(localized: "Récents"), isOn: filter == .recent) { filter = .recent }
                         chip(String(localized: "Mes repas"), isOn: false, action: onSavedMeals)
                         chip(String(localized: "Mes aliments"), isOn: false, action: onOwnFoods)
-                        Menu {
-                            Button(String(localized: "Décrire un repas"), systemImage: "text.bubble", action: onDescribe)
-                            Button(String(localized: "Saisie rapide"), systemImage: "bolt", action: onQuickAdd)
-                            Button(String(localized: "Créer un aliment"), systemImage: "plus.square.on.square", action: onCreate)
-                            Button(String(localized: "Créer une recette"), systemImage: "frying.pan", action: onRecipe)
-                        } label: {
-                            chipLabel(String(localized: "Autre…"), isOn: false)
-                        }
                     }
+                    .padding(.leading, 22)
+                    // Room for the last chip to come clear of the pinned one.
+                    .padding(.trailing, 76)
                 }
                 .scrollIndicators(.hidden)
-                .scrollClipDisabled()
+                .padding(.trailing, 40)
+                .overlay(alignment: .trailing) {
+                    Menu {
+                        Button(String(localized: "Décrire un repas"), systemImage: "text.bubble", action: onDescribe)
+                        Button(String(localized: "Saisie rapide"), systemImage: "bolt", action: onQuickAdd)
+                        Button(String(localized: "Créer un aliment"), systemImage: "plus.square.on.square", action: onCreate)
+                        Button(String(localized: "Créer une recette"), systemImage: "frying.pan", action: onRecipe)
+                    } label: {
+                        chipLabel(String(localized: "Autre…"), isOn: false)
+                            .background(SharpitColor.card, in: Capsule())
+                    }
+                }
+                .padding(.leading, -22)
 
                 VStack(alignment: .leading, spacing: 0) {
                     if isSearching {

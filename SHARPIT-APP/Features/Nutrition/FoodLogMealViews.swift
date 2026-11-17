@@ -88,6 +88,21 @@ struct FoodLogMealsSection: View {
     }
 }
 
+/// A meal's glyph before its name — sunrise, sun, moon, leaf — on the day's log and on an imported day.
+struct NutritionMealGlyph: View {
+    /// The meal's key (`breakfast`, `lunch`, `dinner`, `snacks`).
+    let meal: String
+    var isMuted = false
+
+    var body: some View {
+        Image(systemName: NutritionReadout.mealSymbol(meal))
+            .font(.system(size: 17, weight: .regular))
+            .foregroundStyle(isMuted ? SharpitColor.slate : SharpitColor.foreground)
+            .frame(width: 24)
+            .accessibilityHidden(true)
+    }
+}
+
 /// A meal on a line: its name over its foods, its energy at the end — or « Ajouter » while empty.
 private struct FoodLogMealRow: View {
     let section: FoodLogStore.MealSection
@@ -96,6 +111,7 @@ private struct FoodLogMealRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            NutritionMealGlyph(meal: section.meal.storedName, isMuted: section.entries.isEmpty)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(section.meal.label)
@@ -151,6 +167,8 @@ struct FoodLogMealPage: View {
     /// The named meals laid open onto their foods.
     @State private var openGroups: Set<String> = []
     @State private var deleting: FoodLogMealItem.Group?
+    /// The named meal being kept in « Mes repas »; nil, the whole meal of the day.
+    @State private var savingGroup: FoodLogMealItem.Group?
 
     var body: some View {
         let section = store.section(meal)
@@ -182,6 +200,16 @@ struct FoodLogMealPage: View {
                                 SharpitSwipeDeleteButton { deleting = group }
                             }
                         }
+                        .contextMenu {
+                            if !group.isPending {
+                                Button { nameMeal(group.label, group: group) } label: {
+                                    Label("Enregistrer dans Mes repas", systemImage: "bookmark")
+                                }
+                                Button(role: .destructive) { deleting = group } label: {
+                                    Label("Supprimer", systemImage: "trash")
+                                }
+                            }
+                        }
                         if openGroups.contains(group.id) {
                             ForEach(group.entries) { entry in
                                 entryRow(entry).padding(.leading, SharpitSpacing.md)
@@ -203,18 +231,13 @@ struct FoodLogMealPage: View {
         .navigationTitle(meal.label)
         .navigationBarTitleDisplayMode(.large)
         .safeAreaInset(edge: .bottom) {
-            SharpitActionDock {
-                HStack(spacing: 8) {
-                    Button { addRequest = FoodAddRequest(meal: meal) } label: {
-                        Text("Ajouter un aliment").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
-                    if section.entries.isEmpty {
-                        Button("Copier hier") { Task { await store.copyFromPreviousDay(meal) } }
-                            .buttonStyle(CliniqueButtonStyle(kind: .outline))
-                    }
-                }
+            // The button alone, no dock around it; « Copier la veille » is in the « … » menu.
+            Button { addRequest = FoodAddRequest(meal: meal) } label: {
+                Text("Ajouter un aliment").frame(maxWidth: .infinity)
             }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+            .padding(.horizontal, SharpitSpacing.md)
+            .padding(.bottom, SharpitSpacing.xs)
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -223,10 +246,7 @@ struct FoodLogMealPage: View {
                         Label("Copier le repas de la veille", systemImage: "doc.on.doc")
                     }
                     if !section.entries.isEmpty {
-                        Button {
-                            mealName = SavedMealNaming.defaultName(section.entries)
-                            isNamingMeal = true
-                        } label: {
+                        Button { nameMeal(SavedMealNaming.defaultName(section.entries), group: nil) } label: {
                             Label("Enregistrer ce repas", systemImage: "bookmark")
                         }
                         .disabled(section.entries.contains(where: \.isPending))
@@ -273,11 +293,18 @@ struct FoodLogMealPage: View {
         }
     }
 
+    private func nameMeal(_ name: String, group: FoodLogMealItem.Group?) {
+        mealName = String(name.prefix(80))
+        savingGroup = group
+        isNamingMeal = true
+    }
+
     private func saveMeal() {
         let name = String(mealName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
         guard !name.isEmpty else { return }
+        let groupId = savingGroup?.id
         Task {
-            if let saved = await store.saveMeal(meal, name: name) { savedName = saved.name }
+            if let saved = await store.saveMeal(meal, name: name, groupId: groupId) { savedName = saved.name }
         }
     }
 

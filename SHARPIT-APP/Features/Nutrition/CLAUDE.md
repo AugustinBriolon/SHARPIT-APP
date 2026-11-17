@@ -108,3 +108,14 @@ folds them into one line (`FoodLogMealItem`, `FoodLogGroupRow`: name, « N alime
 opens onto the foods, each still edited or deleted on its own. A swipe on the line deletes the meal
 and its foods after asking (`FoodLogStore.deleteGroup`, `DELETE /food-log/groups/[id]`). A group down
 to one food is shown as that food. A server older than ADR-134 ignores the name: the foods log ungrouped.
+
+**Meal glyphs, a named meal kept, the pinned filter (the athlete's remarks, 2026-11-17).** A meal's
+line starts with its glyph (`NutritionMealGlyph`, `NutritionReadout.mealSymbol`: sunrise, sun, moon,
+leaf), on the day's log and on an imported day. A long press on a named meal's line offers
+« Enregistrer dans Mes repas » — `saveMeal(_:name:groupId:)` sends `groupId`, so only that meal's foods
+are kept, under its name by default — and « Supprimer ». A meal's page ends on « Ajouter un aliment »
+alone, full width, no dock; « Copier la veille » is in « … ». In the add sheet « Autre… » is pinned at
+the trailing edge, opaque; the chips' row is clipped inside it, so a chip slides under it and never
+shows beyond. `SharpitScreenDemo meals` draws the day's four meals. Seen on the simulator: the glyphs,
+the long press and its naming alert, the button, a chip under « Autre… ». The context menu's preview
+cuts the line's text flush at its leading edge.

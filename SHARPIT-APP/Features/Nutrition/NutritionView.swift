@@ -486,6 +486,7 @@ private struct MealRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            NutritionMealGlyph(meal: meal.name)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(meal.label)

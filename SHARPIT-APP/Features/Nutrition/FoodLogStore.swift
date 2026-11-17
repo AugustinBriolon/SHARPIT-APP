@@ -353,11 +353,12 @@ final class FoodLogStore {
 
     /// Keeps a meal of this day under a name. It needs the server's answer to be listed, so the
     /// caller learns whether it was kept; a failure is said in the toast.
-    func saveMeal(_ meal: FoodLogMeal, name: String) async -> V1SavedMeal? {
+    /// With `groupId`, only that named meal's foods are kept.
+    func saveMeal(_ meal: FoodLogMeal, name: String, groupId: String? = nil) async -> V1SavedMeal? {
         let dayId = trainingDayId
         do {
             return try await SharpitRetry.run {
-                try await client.saveMeal(name: name, trainingDayId: dayId, meal: meal, token: try await tokenProvider())
+                try await client.saveMeal(name: name, trainingDayId: dayId, meal: meal, groupId: groupId, token: try await tokenProvider())
             }
         } catch {
             reportFailure(Self.failureMessage(error, action: String(localized: "Repas non enregistré")))

@@ -626,6 +626,7 @@ private actor StubFoodLog: FoodLogServing {
     var copySource: [V1FoodLogEntry] = []
     private(set) var copies: [(from: String, meal: FoodLogMeal?, to: String)] = []
     var saved: [V1SavedMeal] = []
+    var savedGroupIds: [String?] = []
     private(set) var savedLogs: [(id: String, meal: FoodLogMeal)] = []
     private(set) var recipesSent: [(id: String?, draft: FoodRecipeDraft)] = []
 
@@ -644,8 +645,9 @@ private actor StubFoodLog: FoodLogServing {
         return saved
     }
 
-    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> V1SavedMeal {
+    func saveMeal(name: String, trainingDayId: String, meal: FoodLogMeal, groupId: String?, token: String) async throws -> V1SavedMeal {
         if let failure { throw failure }
+        savedGroupIds.append(groupId)
         let kept = V1SavedMeal(id: "m\(saved.count + 1)", name: name, items: [], kcal: 0, protein: 0, carbs: 0, fat: 0)
         saved.append(kept)
         return kept
@@ -1138,6 +1140,21 @@ private nonisolated let skyrItem = V1SavedMealItem(
     #expect(store.entries.isEmpty)
     #expect(recorder.failures == ["Ce repas était vide la veille : rien à copier."])
     #expect(recorder.reloads == 0)
+}
+
+/// A described meal kept from its line: only its foods go to « Mes repas », not the whole lunch.
+@MainActor
+@Test func aNamedMealIsSavedOnItsOwn() async {
+    let client = StubFoodLog()
+    let store = makeStore(client, recorder: Recorder())
+    await store.load(trainingDayId: "2026-10-01")
+
+    let kept = await store.saveMeal(.lunch, name: "Kebab", groupId: "g1")
+    _ = await store.saveMeal(.lunch, name: "Déjeuner")
+
+    #expect(kept?.name == "Kebab")
+    let groupIds = await client.savedGroupIds
+    #expect(groupIds == ["g1", nil])
 }
 
 @MainActor
