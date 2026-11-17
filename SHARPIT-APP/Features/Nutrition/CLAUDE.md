@@ -120,3 +120,9 @@ shows beyond. `SharpitScreenDemo meals` draws the day's four meals. Seen on the 
 the long press and its naming alert, the button, a chip under « Autre… ». The context menu's preview
 cuts the line's text flush at its leading edge. « Supprimer » carries its bin in red itself
 (`withTintColor`, always original): on the athlete's iPhone the menu drew it in the app's ink tint.
+
+**The food typed, to create (the athlete's remark, 2026-11-17).** A search of all foods ends on one
+more line, `FoodCreateRow`: the words typed as the name, « Créer cet aliment », a « + » where a
+result carries its score. The whole line opens the custom-food form with that name
+(`.custom(name: query)`), found or not — Open Food Facts lists a brand's other products for one it
+lacks (SHARPIT ADR-136). Not shown under « Récents ». Written without Xcode: not built or seen yet.

@@ -333,9 +333,18 @@ private struct FoodSearchPage: View {
                 }
             }
             if results.isEmpty && !results.offUnavailable {
-                note(String(localized: "Aucun aliment pour « \(query) ». Saisis-le ou crée-le."))
+                note(String(localized: "Aucun aliment pour « \(query) »."))
             } else if filter == .recent, results.eaten.isEmpty {
                 note(String(localized: "Rien de déjà mangé pour « \(query) »."))
+            }
+            // The way out when the food is in no list: the words typed become its name.
+            if filter == .all {
+                if !results.isEmpty { CliniqueDivider() }
+                Button(action: onCreate) {
+                    FoodCreateRow(name: query)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.sharpitPressable)
             }
         } else if search.isSearching {
             HStack(spacing: SharpitSpacing.xs) {
@@ -457,6 +466,35 @@ struct FoodProductRow: View {
         // Its energy opens the line, as the mock-up reads it: « 100 g · 124 kcal ».
         parts.insert(String(localized: "100 g · \(NutritionReadout.kcal(product.kcalPer100g)) kcal"), at: 0)
         return parts.joined(separator: " · ")
+    }
+}
+
+/// The search's last line: the food typed, to create. A result's shape, a « + » where its score would sit.
+struct FoodCreateRow: View {
+    let name: String
+
+    var body: some View {
+        HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name.trimmingCharacters(in: .whitespacesAndNewlines))
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Text("Créer cet aliment")
+                    .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .footnote))
+                    .foregroundStyle(SharpitColor.slate)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: SharpitSpacing.xs)
+            Image(systemName: "plus")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityHidden(true)
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
