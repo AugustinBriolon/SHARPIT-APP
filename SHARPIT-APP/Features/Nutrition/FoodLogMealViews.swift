@@ -238,12 +238,12 @@ struct FoodLogMealPage: View {
         .navigationBarTitleDisplayMode(.large)
         .safeAreaInset(edge: .bottom) {
             // The button alone, no dock around it; « Copier la veille » is in the « … » menu.
-            Button { addRequest = FoodAddRequest(meal: meal) } label: {
-                Text("Ajouter un aliment").frame(maxWidth: .infinity)
+            SharpitBareActions {
+                Button { addRequest = FoodAddRequest(meal: meal) } label: {
+                    Text("Ajouter un aliment").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
             }
-            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
-            .padding(.horizontal, SharpitSpacing.md)
-            .padding(.bottom, SharpitSpacing.xs)
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

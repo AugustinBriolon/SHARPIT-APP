@@ -256,7 +256,7 @@ struct FoodCustomPage: View {
         }
         .sharpitGroupedList()
         .safeAreaInset(edge: .bottom) {
-            SharpitActionDock {
+            SharpitBareActions {
                 SharpitPrimaryButton(title: isEditing ? String(localized: "Enregistrer") : createTitle, isBusy: isSaving) {
                     Task { await submit() }
                 }

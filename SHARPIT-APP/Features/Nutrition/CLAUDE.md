@@ -137,3 +137,8 @@ evening, and a guess never reaches the server as a fact. An untouched time follo
 A meal's page shows the time before the grams (« 12:40 · 150 g »). The server places each meal of
 « Fil de la journée » at its foods' time and gives the times to the coach's reading of the day. Written
 without Xcode: not built or seen yet.
+
+**No dock under an action (the athlete's call, 2026-11-17).** Every Nutrition page ends on its button
+alone, across the width (`SharpitBareActions`): the portion's « Ajouter au dîner », quick add,
+describe, a recipe, an own food, a meal's page. The glass bar (`SharpitActionDock`) stays for
+onboarding and the paywall. Seen on the simulator: the portion page.

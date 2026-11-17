@@ -157,3 +157,10 @@ payload's `source`) reads « Non analysée : séance Strava » at once: the coac
 (SHARPIT ADR-126). The server asks again by itself for a reading that failed
 (`plannedSessionsAwaitingAnalysis`, on each read of today and each scheduled sync). Seen on the
 simulator: Plan's pill; the « Analyser » and Strava rows were not.
+
+**Why a session came by Strava alone (read in production, 2026-11-17).** The athlete's Zwift rides:
+Zwift sends them to Strava and to Garmin Connect, and Garmin's push never passes on a session
+another app recorded (no `activities` push for them in `GarminPushInbox`; every ride since Garmin's
+developer programme is `strava`). It is not the order of arrival: a Garmin push that lands after
+Strava's merges into the same row (`garminEnrichmentUpdate`) and the reading is then asked. The
+row « Non analysée : reçue de Strava seul » opens a notice that says so (`stravaOnlyNotice`).

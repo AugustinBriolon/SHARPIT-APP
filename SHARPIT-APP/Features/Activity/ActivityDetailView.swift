@@ -187,6 +187,7 @@ struct ActivityDetailView: View {
                                     splits: activitySplits(for: detail),
                                     onShowCompliance: { showingCompliance = true },
                                     onAnalyze: { sessionId in reanalyze(sessionId, previous: nil) },
+                            onExplainStravaOnly: { notice = Self.stravaOnlyNotice },
                                     onShowSubjective: { openSubjective(for: detail) },
                                     clearsBackButton: false,
                                     tokenProvider: tokenProvider,
@@ -229,6 +230,7 @@ struct ActivityDetailView: View {
                             splits: activitySplits(for: detail),
                             onShowCompliance: { showingCompliance = true },
                             onAnalyze: { sessionId in reanalyze(sessionId, previous: nil) },
+                            onExplainStravaOnly: { notice = Self.stravaOnlyNotice },
                             onShowSubjective: { openSubjective(for: detail) },
                             clearsBackButton: true,
                             tokenProvider: tokenProvider,
@@ -764,6 +766,13 @@ struct ActivityDetailView: View {
         }
     }
 
+    /// Seen on the athlete's Zwift rides: Zwift sends them to Strava and to Garmin Connect, and
+    /// Garmin does not pass on a session another app recorded.
+    fileprivate static let stravaOnlyNotice = ActivityNotice(
+        title: String(localized: "Séance non analysée"),
+        message: String(localized: "Cette séance n’est arrivée que par Strava, dont les conditions interdisent de la faire lire par le coach. Garmin ne transmet pas les séances enregistrées par une autre app, comme Zwift.")
+    )
+
     static let unlinkFailure = String(localized: "L’activité n’a pas pu être déliée. Réessaie dans un instant.")
 
     private func activitySplits(for detail: V1ActivityDetail) -> [ActivitySplit] {
@@ -866,6 +875,8 @@ private struct ActivityDetailContent: View {
     let onShowCompliance: () -> Void
     /// Asks for the compliance reading of a linked session that never got one.
     var onAnalyze: (String) -> Void = { _ in }
+    /// Says why a session only Strava sent is not read by the coach.
+    var onExplainStravaOnly: () -> Void = {}
     let onShowSubjective: () -> Void
     /// Without a map the panel starts at the top of the screen, under the floating back
     /// button, and has to leave room for it. Below a map it does not.
@@ -1115,7 +1126,8 @@ private struct ActivityDetailContent: View {
                 CliniqueDivider()
                 if detail.isStravaOnly {
                     // Never read by the coach: said, with no wait and nothing to tap.
-                    contextRow(String(localized: "Conformité au plan"), value: String(localized: "Non analysée : séance Strava"), action: nil)
+                    contextRow(String(localized: "Conformité au plan"), value: String(localized: "Non analysée : reçue de Strava seul"), action: onExplainStravaOnly)
+                        .accessibilityHint("Explique pourquoi")
                 } else if planned.awaitsAnalysis(sessionDate: detail.date, duration: detail.duration) {
                     contextRow(String(localized: "Conformité au plan"), value: String(localized: "Calcul en cours…"), action: nil)
                 } else {

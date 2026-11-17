@@ -214,7 +214,7 @@ struct FoodRecipePage: View {
         .autocorrectionDisabled()
         .onChange(of: query) { _, text in search.setQuery(text) }
         .safeAreaInset(edge: .bottom) {
-            SharpitActionDock {
+            SharpitBareActions {
                 VStack(spacing: SharpitSpacing.xs) {
                     if let message = failure ?? builder.problem, !builder.lines.isEmpty || failure != nil {
                         Text(message)

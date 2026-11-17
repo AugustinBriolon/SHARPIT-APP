@@ -89,7 +89,7 @@ struct FoodDescribePage: View {
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             if isPro {
-                SharpitActionDock {
+                SharpitBareActions {
                     if phase == .review {
                         SharpitPrimaryButton(title: addTitle) {
                             onAdd(readyDrafts, DescribedMealTotal.name(mealName))

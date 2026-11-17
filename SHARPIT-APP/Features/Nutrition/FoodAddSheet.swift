@@ -614,7 +614,7 @@ struct FoodPortionPage: View {
         .onChange(of: meal) { _, meal in eatenTime.follow(meal: meal, trainingDayId: trainingDayId) }
         .task { await completeIfSummary() }
         .safeAreaInset(edge: .bottom) {
-            SharpitActionDock {
+            SharpitBareActions {
                 Button { add() } label: {
                     Text(meal.addTitle).frame(maxWidth: .infinity)
                 }
@@ -715,7 +715,7 @@ private struct FoodQuickAddPage: View {
         .sharpitGroupedList()
         .onChange(of: meal) { _, meal in eatenTime.follow(meal: meal, trainingDayId: trainingDayId) }
         .safeAreaInset(edge: .bottom) {
-            SharpitActionDock {
+            SharpitBareActions {
                 SharpitPrimaryButton(title: String(localized: "Ajouter")) {
                     guard let entry else { return }
                     onAdd(meal, entry.grams, entry.quick, eatenTime.sent)

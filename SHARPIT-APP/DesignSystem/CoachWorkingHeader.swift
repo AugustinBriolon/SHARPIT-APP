@@ -146,6 +146,18 @@ struct SharpitDashedAddButton: View {
 
 /// A sheet's actions, docked at its foot in one glass bar floating over the scrolled content,
 /// as every Clinique sheet docks them.
+/// A page's action at its foot with nothing around it: the button alone, across the width.
+/// Nutrition's pages use it (the athlete's call, 2026-11-17: no glass bar behind « Ajouter »).
+struct SharpitBareActions<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(spacing: SharpitSpacing.xs) { content }
+            .padding(.horizontal, SharpitSpacing.md)
+            .padding(.bottom, SharpitSpacing.xs)
+    }
+}
+
 struct SharpitActionDock<Content: View>: View {
     @ViewBuilder var content: Content
 
