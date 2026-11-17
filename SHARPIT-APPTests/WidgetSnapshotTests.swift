@@ -55,6 +55,19 @@ private func card(_ id: String, _ kind: V1TodaySessionKind, sport: String = "Cou
     #expect(day.leadSession?.id == "b")
 }
 
+/// A strength session done says its work — kilos lifted, exercises — before its time.
+@Test func aStrengthSessionShowsItsKilosAndExercises() {
+    let done = [
+        V1TodayMetric(label: "Durée", value: "45:00", unit: "min"),
+        V1TodayMetric(label: "Volume", value: "2160", unit: "kg"),
+        V1TodayMetric(label: "Exercices", value: "6", unit: "exos"),
+    ]
+    #expect(WidgetSnapshot.Day.figures(done, sport: .strength) == [.init(value: "2160", unit: "kg"), .init(value: "6", unit: "exos")])
+    // No load recorded, or another sport: the card's first two figures, as before.
+    #expect(WidgetSnapshot.Day.figures(Array(done.prefix(1)) + [done[2]], sport: .strength).map(\.unit) == ["min", "exos"])
+    #expect(WidgetSnapshot.Day.figures(done, sport: .run).map(\.unit) == ["min", "kg"])
+}
+
 @Test func onceEverythingIsDoneTheLastSessionLeads() {
     let day = WidgetSnapshot.Day(fold: fold(sessions: [card("a", .done), card("b", .done)]))
     #expect(day.leadSession?.id == "b")

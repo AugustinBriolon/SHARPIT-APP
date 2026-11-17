@@ -84,3 +84,8 @@ grey slab with its route lost in it and the fade a white block. Nutrition's macr
 `WidgetRing`'s. `refreshLatestActivity` runs on launch and on each return to the app (`RootView`),
 so the widget no longer waits for Activité to be opened. Seen on the simulator's Home Screen in
 « Transparent », large; the other widgets were not seen there.
+
+**Strength on « Séance du jour » (2026-11-17).** A strength session done shows the kilos lifted and
+the number of exercises (`WidgetSnapshot.Day.figures`: the card's `kg` and `exos` metrics when both
+are there, else its first two, as every other sport). The server sends them (`strengthVolumeMetric`,
+sets × reps × load). Tested; not seen on a Home Screen.

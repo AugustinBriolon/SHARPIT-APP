@@ -3,6 +3,16 @@ import Foundation
 import WidgetKit
 
 extension WidgetSnapshot.Day {
+    /// A session's two figures: the card's first two — for strength done, the kilos lifted and
+    /// the exercises, which say more of it than its time.
+    static func figures(_ metrics: [V1TodayMetric], sport: V1ActivityType) -> [WidgetSnapshot.Figure] {
+        let work = metrics.filter { $0.unit == "kg" || $0.unit == "exos" }
+        let shown = sport == .strength && work.count == 2 ? work : Array(metrics.prefix(2))
+        return shown.map {
+            WidgetSnapshot.Figure(value: $0.value, unit: $0.unit.isEmpty ? $0.label.lowercased() : $0.unit)
+        }
+    }
+
     /// Résumé's day as the widgets show it — the fold already mapped for the screen, so the
     /// widgets say what Résumé says.
     init(fold: TodayFold) {
@@ -17,15 +27,14 @@ extension WidgetSnapshot.Day {
                 posture: fold.plate.posture
             ),
             sessions: fold.sessions.map { card in
-                WidgetSnapshot.Session(
+                let sport = V1ActivityType(sportLabel: card.sport ?? "")
+                return WidgetSnapshot.Session(
                     id: card.id,
                     isDone: card.kind == .done,
                     title: card.brickChain ?? card.title,
-                    sport: V1ActivityType(sportLabel: card.sport ?? ""),
+                    sport: sport,
                     plannedSessionId: card.plannedSessionId,
-                    figures: card.metrics.prefix(2).map {
-                        WidgetSnapshot.Figure(value: $0.value, unit: $0.unit.isEmpty ? $0.label.lowercased() : $0.unit)
-                    }
+                    figures: Self.figures(card.metrics, sport: sport)
                 )
             },
             sleep: sleep.map { WidgetSnapshot.Sleep(score: Int($0.score), caption: $0.caption) },
