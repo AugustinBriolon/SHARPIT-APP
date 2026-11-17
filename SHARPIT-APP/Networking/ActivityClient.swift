@@ -156,13 +156,13 @@ actor ActivityClient: ActivityServing, ActivityMutating {
     func activity(id: String, token: String) async throws -> V1ActivityDetail {
         // A copy still waiting for its compliance reading is asked again, or the page would
         // say « Calcul en cours » until the copy expired.
-        if let cached = detailCache[id], (cached.isStravaOnly || cached.plannedSession?.awaitsAnalysis(sessionDate: cached.date) != true) {
+        if let cached = detailCache[id], (cached.isStravaOnly || cached.plannedSession?.awaitsAnalysis(sessionDate: cached.date, duration: cached.duration) != true) {
             return cached
         }
         let stored = disk?.read(.detail, id: id)
         if let stored, ActivityCachePolicy.isFresh(.detail, savedAt: stored.savedAt),
            let detail = try? JSONDecoder().decode(V1ActivityDetail.self, from: stored.data),
-           (detail.isStravaOnly || detail.plannedSession?.awaitsAnalysis(sessionDate: detail.date) != true) {
+           (detail.isStravaOnly || detail.plannedSession?.awaitsAnalysis(sessionDate: detail.date, duration: detail.duration) != true) {
             detailCache[id] = detail
             return detail
         }

@@ -47,6 +47,10 @@ final class ProviderSyncStore {
         await joining { await self.checkThenPull() }
     }
 
+    /// Pulls the app started by itself that failed in a row. One is not worth a word: the
+    /// screen was left mid-pull, the network dropped, and the next one usually lands.
+    private var quietFailures = 0
+
     /// Pulls now, whatever the age of the last pull — the athlete asked for it.
     func syncNow() async -> Bool {
         await joining { await self.pullIfConnected() }
@@ -73,29 +77,41 @@ final class ProviderSyncStore {
         if let lastSyncAt, now().timeIntervalSince(lastSyncAt) < Self.staleAfter {
             return false
         }
-        return await pull()
+        return await pull(asked: false)
     }
 
     private func pullIfConnected() async -> Bool {
         guard hasProviders else { return false }
-        return await pull()
+        return await pull(asked: true)
     }
 
-    private func pull() async -> Bool {
+    /// `asked`: the athlete pulled to refresh, so a failure is theirs to hear. A pull the app
+    /// started itself says « Synchronisation impossible » only the second time running.
+    private func pull(asked: Bool) async -> Bool {
         state = .syncing
         do {
             let token = try await tokenProvider()
             apply(try await client.sync(token: token))
             state = .idle
+            quietFailures = 0
             return true
         } catch let error as SharpitAPIError where error == .rateLimited {
             // A pull ran moments ago; what the server holds is already fresh.
             state = .idle
             return false
+        } catch where Self.isCancellation(error) {
+            // The screen that asked went away: nothing failed, the server carries on.
+            state = .idle
+            return false
         } catch {
-            state = .failed
+            quietFailures += asked ? 0 : 1
+            state = asked || quietFailures >= 2 ? .failed : .idle
             return false
         }
+    }
+
+    private static func isCancellation(_ error: any Error) -> Bool {
+        error is CancellationError || (error as? URLError)?.code == .cancelled
     }
 
     private func apply(_ status: V1SyncStatus) {

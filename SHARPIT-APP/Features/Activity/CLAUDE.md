@@ -143,7 +143,8 @@ with where it stood, « Faire le point » as an outline button.
 and Activité's list read the same pill (`ActivityRowReadout.standing`): the coach's verdict once the
 session is analysed, « Faite » when linked without a reading (it read « Prévue » on Activité and a
 score on Plan), « Libre » off plan. The score stays on the session's page. « Calcul en cours… » is
-said only while the reading can still be on its way (`awaitsAnalysis(sessionDate:)`, six hours):
+said only while the reading can still be on its way (`awaitsAnalysis(sessionDate:duration:)`: half an
+hour after the session's end, read in wall clock as the date is; the athlete's call, 2026-11-17):
 after that the row reads « Conformité au plan · Analyser » and asks for it (`reanalyze`), and the
 detail is cached again. A session Strava alone recorded (`V1ActivityDetail.isStravaOnly`, the
 payload's `source`) reads « Non analysée : séance Strava » at once: the coach never reads it

@@ -59,6 +59,7 @@ nonisolated enum PlanCalendarPlanner {
 /// Apple Calendar: busy upload when enabled; EventKit write as soon as it is linked, for every athlete (ADR 0016).
 @MainActor
 final class AppleCalendarSync {
+    private var lastUploadedBusy: [V1CalendarBusyInterval]?
     static let shared = AppleCalendarSync()
 
     static let providerId = "apple-calendar"
@@ -380,24 +381,29 @@ final class AppleCalendarSync {
     ) async {
         guard let client else { return }
         let intervals = busyIntervals(from: start, to: end)
-        guard !intervals.isEmpty else { return }
+        // Sent again only when the calendar changed: the copy ran on every beat of the plan.
+        guard !intervals.isEmpty, intervals != lastUploadedBusy else { return }
         do {
             try await client.uploadAppleCalendarBusy(intervals, token: token)
+            lastUploadedBusy = intervals
         } catch {
-            SharpitWriteFailures.shared.report(String(localized: "Créneaux occupés : envoi impossible. Réessaie plus tard."))
+            // Background upkeep the athlete never asked for: the coach keeps the last copy
+            // and the next beat sends again. It used to raise a toast on every beat.
         }
+    }
+
+    /// A calendar event as the server takes it: one with no length (a reminder-like event) is
+    /// left out — the server refused the whole upload for a single such event.
+    nonisolated static func busyInterval(start: Date, end: Date) -> V1CalendarBusyInterval? {
+        guard end > start else { return nil }
+        return V1CalendarBusyInterval(start: APIDate.string(from: start), end: APIDate.string(from: end))
     }
 
     private func busyIntervals(from start: Date, to end: Date) -> [V1CalendarBusyInterval] {
         let calendars = store.calendars(for: .event)
         let predicate = store.predicateForEvents(withStart: start, end: end, calendars: calendars)
         let capped = store.events(matching: predicate).prefix(2_000)
-        return capped.map {
-            V1CalendarBusyInterval(
-                start: APIDate.string(from: $0.startDate),
-                end: APIDate.string(from: $0.endDate)
-            )
-        }
+        return capped.compactMap { Self.busyInterval(start: $0.startDate, end: $0.endDate) }
     }
 
     private func apply(

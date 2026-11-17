@@ -80,6 +80,17 @@ private func store(_ stub: StubSync) -> ProviderSyncStore {
     #expect(sync.state == .failed)
 }
 
+/// A pull the app started itself is quiet the first time it fails, said the second time
+/// running; a success in between starts the count again.
+@MainActor
+@Test func aPullNobodyAskedForFailsQuietlyOnce() async {
+    let sync = store(StubSync(calls: SyncCalls(), last: nil, pullError: .server))
+    _ = await sync.syncIfStale()
+    #expect(sync.state == .idle)
+    _ = await sync.syncIfStale()
+    #expect(sync.state == .failed)
+}
+
 /// Launch and foregrounding arrive together: one pull, not two.
 @MainActor
 @Test func concurrentTriggersShareOnePull() async {
@@ -105,4 +116,13 @@ private func store(_ stub: StubSync) -> ProviderSyncStore {
     let status = try JSONDecoder().decode(V1SyncStatus.self, from: Data(json.utf8))
     #expect(status.lastSyncAt != nil)
     #expect(status.providers.first?.lastSyncAt == status.lastSyncAt)
+}
+
+/// An event with no length is left out of the busy slots: the server refused the whole upload
+/// for one of them, and the app said « envoi impossible » on every beat.
+@Test func anEventWithoutLengthIsNotABusySlot() {
+    let start = Date(timeIntervalSince1970: 1_790_000_000)
+    #expect(AppleCalendarSync.busyInterval(start: start, end: start) == nil)
+    #expect(AppleCalendarSync.busyInterval(start: start, end: start.addingTimeInterval(-60)) == nil)
+    #expect(AppleCalendarSync.busyInterval(start: start, end: start.addingTimeInterval(1_800)) != nil)
 }

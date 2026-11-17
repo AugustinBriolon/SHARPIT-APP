@@ -123,12 +123,14 @@ nonisolated struct V1ActivityPlannedSession: Decodable, Sendable, Hashable {
     var goal: V1PlannedSessionGoal? = nil
 
     /// Linked, and the server's compliance reading is still on its way: it is written a few
-    /// seconds after the session arrives, so a copy read before then must not be kept. A session
-    /// hours old without one will not get it by waiting (not analysed, or the reading failed):
-    /// the page says so instead of « Calcul en cours ».
-    func awaitsAnalysis(sessionDate: Date, now: Date = .now) -> Bool {
-        // Six hours: the session's own length, and its date being wall clock read as UTC.
-        analysis == nil && now.timeIntervalSince(sessionDate) < 6 * 3_600
+    /// seconds after the session arrives, so a copy read before then must not be kept. Half an
+    /// hour after the session's end it is not coming by waiting (the reading failed): the page
+    /// then offers to ask for it instead of « Calcul en cours ».
+    func awaitsAnalysis(sessionDate: Date, duration: Double?, now: Date = .now, timeZone: TimeZone = .current) -> Bool {
+        // A session's date is its wall clock written as UTC: now is read the same way.
+        let wallNow = now.addingTimeInterval(TimeInterval(timeZone.secondsFromGMT(for: now)))
+        let sessionEnd = sessionDate.addingTimeInterval(duration ?? 0)
+        return analysis == nil && wallNow.timeIntervalSince(sessionEnd) < 30 * 60
     }
 }
 

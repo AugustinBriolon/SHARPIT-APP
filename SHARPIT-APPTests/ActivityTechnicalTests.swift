@@ -113,9 +113,13 @@ private let streamsJSON = #"""
     let pending = #"{"id":"p1","title":"Réveil musculaire","analysis":null}"#
     let read = #"{"id":"p1","title":"Réveil musculaire","analysis":{"verdict":"AS_PLANNED","complianceScore":100,"summary":"Parfait.","remarks":[],"recommendation":"Dors bien."}}"#
     let decode = { (json: String) in try JSONDecoder().decode(V1ActivityPlannedSession.self, from: Data(json.utf8)) }
-    let done = Date(timeIntervalSince1970: 1_790_000_000)
-    #expect(try decode(pending).awaitsAnalysis(sessionDate: done, now: done.addingTimeInterval(3_600)))
-    #expect(try !decode(read).awaitsAnalysis(sessionDate: done, now: done.addingTimeInterval(3_600)))
-    // A day later the reading is not on its way any more: the page offers to ask for it.
-    #expect(try !decode(pending).awaitsAnalysis(sessionDate: done, now: done.addingTimeInterval(86_400)))
+    let start = Date(timeIntervalSince1970: 1_790_000_000)
+    let utc = TimeZone(identifier: "UTC")!
+    let paris = TimeZone(identifier: "Europe/Paris")!
+    // An hour's session: its reading is awaited for half an hour after its end.
+    #expect(try decode(pending).awaitsAnalysis(sessionDate: start, duration: 3_600, now: start.addingTimeInterval(3_600 + 20 * 60), timeZone: utc))
+    #expect(try !decode(pending).awaitsAnalysis(sessionDate: start, duration: 3_600, now: start.addingTimeInterval(3_600 + 40 * 60), timeZone: utc))
+    #expect(try !decode(read).awaitsAnalysis(sessionDate: start, duration: 3_600, now: start.addingTimeInterval(3_700), timeZone: utc))
+    // The date is wall clock written as UTC: in Paris the same instant is an hour or two later.
+    #expect(try !decode(pending).awaitsAnalysis(sessionDate: start, duration: 3_600, now: start.addingTimeInterval(20 * 60), timeZone: paris))
 }

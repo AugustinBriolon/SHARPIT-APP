@@ -757,7 +757,7 @@ struct ActivityDetailView: View {
     /// « Calcul en cours », it looks again a few times, then leaves it to the next open.
     private func waitForCompliance() async {
         for _ in 0..<6 {
-            guard case .loaded(let detail) = phase, !detail.isStravaOnly, detail.plannedSession?.awaitsAnalysis(sessionDate: detail.date) == true else { return }
+            guard case .loaded(let detail) = phase, !detail.isStravaOnly, detail.plannedSession?.awaitsAnalysis(sessionDate: detail.date, duration: detail.duration) == true else { return }
             try? await Task.sleep(for: .seconds(10))
             if Task.isCancelled { return }
             await load()
@@ -1116,7 +1116,7 @@ private struct ActivityDetailContent: View {
                 if detail.isStravaOnly {
                     // Never read by the coach: said, with no wait and nothing to tap.
                     contextRow(String(localized: "Conformité au plan"), value: String(localized: "Non analysée : séance Strava"), action: nil)
-                } else if planned.awaitsAnalysis(sessionDate: detail.date) {
+                } else if planned.awaitsAnalysis(sessionDate: detail.date, duration: detail.duration) {
                     contextRow(String(localized: "Conformité au plan"), value: String(localized: "Calcul en cours…"), action: nil)
                 } else {
                     // Hours later it will not come by itself: the row asks for it.

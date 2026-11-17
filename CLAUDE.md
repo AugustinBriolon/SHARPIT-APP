@@ -413,3 +413,12 @@ under. Ink only. No grid of numbered tiles.
 **Settings rows** carry their page's glyph (`SharpitSettingsLabel(symbol:)`, `SharpitSettingsGlyph`):
 plain ink in a fixed column, no tile. A sheet presented from a forced-dark region must be handed the
 app's real scheme (`ActivityStatusButton.drawerScheme`), or it opens dark.
+
+**Background failures stay quiet (the athlete's remark, 2026-11-17).** Two toasts kept coming with
+nothing wrong for the athlete to fix. « Synchronisation impossible »: the server answered 200 every
+time (Vercel's logs); the pull was cancelled with the screen that started it, or dropped once.
+`ProviderSyncStore` now reads a cancellation as nothing, says a failure at once only when the athlete
+pulled to refresh, and for a pull it started itself only the second time running. « Créneaux occupés :
+envoi impossible »: one calendar event with no length made the server refuse the whole upload (400)
+on every beat; such an event is left out on both sides (`AppleCalendarSync.busyInterval`), the upload
+goes only when the calendar changed, and its failure is never said — it is upkeep nobody asked for.
