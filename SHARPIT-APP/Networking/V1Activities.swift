@@ -353,6 +353,9 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
     let goal: V1ActivityGoal?
     /// Nil unless the session is a triathlon or raced for a goal, and on older servers.
     let raceAnalysis: V1RaceAnalysis?
+    /// Recorded by Strava alone: such a session is never read by the coach (SHARPIT ADR-126), so
+    /// its page says so instead of waiting for a compliance reading.
+    var isStravaOnly = false
 
     var goalId: String? { goal?.id }
 
@@ -541,7 +544,7 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         case id, type, date, title, duration, load, rpe, feeling, weather, notes
         case runMetrics, bikeMetrics, swimMetrics, hikeMetrics, plannedSession
         case narrativeAnalysis, stream
-        case strengthSets, multisportLegs, goal, raceAnalysis
+        case strengthSets, multisportLegs, goal, raceAnalysis, source
     }
 
     init(from decoder: Decoder) throws {
@@ -563,6 +566,7 @@ nonisolated struct V1ActivityDetail: Decodable, Sendable, Equatable, Identifiabl
         multisportLegs = (try? container.decodeIfPresent([V1MultisportLeg].self, forKey: .multisportLegs)) ?? []
         goal = try? container.decodeIfPresent(V1ActivityGoal.self, forKey: .goal)
         raceAnalysis = try? container.decodeIfPresent(V1RaceAnalysis.self, forKey: .raceAnalysis)
+        isStravaOnly = (try? container.decodeIfPresent(String.self, forKey: .source)) == "strava"
 
         let metrics: V1ActivityMetricBundle? = {
             switch decodedType {

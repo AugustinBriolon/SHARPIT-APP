@@ -99,6 +99,16 @@ private let streamsJSON = #"""
     #expect(try decode(withDistance).isComplete)
 }
 
+/// A session Strava alone recorded is never read by the coach: the page knows it from the source.
+@Test func aStravaOnlySessionIsKnownFromItsSource() throws {
+    let decode = { (source: String) in
+        try JSONDecoder().decode(V1ActivityDetail.self, from: Data(#"{"id":"a","type":"BIKE","date":"2026-11-16T08:00:00.000Z","source":"\#(source)"}"#.utf8))
+    }
+    #expect(try decode("strava").isStravaOnly)
+    #expect(try !decode("strava+apple-health").isStravaOnly)
+    #expect(try !decode("garmin").isStravaOnly)
+}
+
 @Test func aLinkedSessionWithoutItsReadingAwaitsTheAnalysis() throws {
     let pending = #"{"id":"p1","title":"Réveil musculaire","analysis":null}"#
     let read = #"{"id":"p1","title":"Réveil musculaire","analysis":{"verdict":"AS_PLANNED","complianceScore":100,"summary":"Parfait.","remarks":[],"recommendation":"Dors bien."}}"#

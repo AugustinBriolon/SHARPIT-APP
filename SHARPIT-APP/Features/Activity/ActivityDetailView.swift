@@ -186,6 +186,7 @@ struct ActivityDetailView: View {
                                     onGenerateNarrative: { Task { await generateNarrative() } },
                                     splits: activitySplits(for: detail),
                                     onShowCompliance: { showingCompliance = true },
+                                    onAnalyze: { sessionId in reanalyze(sessionId, previous: nil) },
                                     onShowSubjective: { openSubjective(for: detail) },
                                     clearsBackButton: false,
                                     tokenProvider: tokenProvider,
@@ -227,6 +228,7 @@ struct ActivityDetailView: View {
                             onGenerateNarrative: { Task { await generateNarrative() } },
                             splits: activitySplits(for: detail),
                             onShowCompliance: { showingCompliance = true },
+                            onAnalyze: { sessionId in reanalyze(sessionId, previous: nil) },
                             onShowSubjective: { openSubjective(for: detail) },
                             clearsBackButton: true,
                             tokenProvider: tokenProvider,
@@ -755,7 +757,7 @@ struct ActivityDetailView: View {
     /// « Calcul en cours », it looks again a few times, then leaves it to the next open.
     private func waitForCompliance() async {
         for _ in 0..<6 {
-            guard case .loaded(let detail) = phase, detail.plannedSession?.awaitsAnalysis(sessionDate: detail.date) == true else { return }
+            guard case .loaded(let detail) = phase, !detail.isStravaOnly, detail.plannedSession?.awaitsAnalysis(sessionDate: detail.date) == true else { return }
             try? await Task.sleep(for: .seconds(10))
             if Task.isCancelled { return }
             await load()
@@ -862,6 +864,8 @@ private struct ActivityDetailContent: View {
     let onGenerateNarrative: () -> Void
     let splits: [ActivitySplit]
     let onShowCompliance: () -> Void
+    /// Asks for the compliance reading of a linked session that never got one.
+    var onAnalyze: (String) -> Void = { _ in }
     let onShowSubjective: () -> Void
     /// Without a map the panel starts at the top of the screen, under the floating back
     /// button, and has to leave room for it. Below a map it does not.
@@ -1107,9 +1111,18 @@ private struct ActivityDetailContent: View {
                 CliniqueDivider()
                 contextRow(String(localized: "Prépare l'objectif"), value: prepared.title, action: nil)
             }
-            if detail.plannedSession != nil, detail.plannedSession?.analysis == nil {
+            if let planned = detail.plannedSession, planned.analysis == nil {
                 CliniqueDivider()
-                contextRow(String(localized: "Conformité au plan"), value: String(localized: "Calcul en cours…"), action: nil)
+                if detail.isStravaOnly {
+                    // Never read by the coach: said, with no wait and nothing to tap.
+                    contextRow(String(localized: "Conformité au plan"), value: String(localized: "Non analysée : séance Strava"), action: nil)
+                } else if planned.awaitsAnalysis(sessionDate: detail.date) {
+                    contextRow(String(localized: "Conformité au plan"), value: String(localized: "Calcul en cours…"), action: nil)
+                } else {
+                    // Hours later it will not come by itself: the row asks for it.
+                    contextRow(String(localized: "Conformité au plan"), value: String(localized: "Analyser"), action: planned.id.map { id in { onAnalyze(id) } })
+                        .accessibilityHint("Demande au coach de lire la séance")
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

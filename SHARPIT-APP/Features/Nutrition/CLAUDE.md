@@ -118,4 +118,5 @@ alone, full width, no dock; « Copier la veille » is in « … ». In the add s
 the trailing edge, opaque; the chips' row is clipped inside it, so a chip slides under it and never
 shows beyond. `SharpitScreenDemo meals` draws the day's four meals. Seen on the simulator: the glyphs,
 the long press and its naming alert, the button, a chip under « Autre… ». The context menu's preview
-cuts the line's text flush at its leading edge.
+cuts the line's text flush at its leading edge. « Supprimer » carries its bin in red itself
+(`withTintColor`, always original): on the athlete's iPhone the menu drew it in the app's ink tint.

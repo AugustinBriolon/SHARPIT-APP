@@ -206,7 +206,13 @@ struct FoodLogMealPage: View {
                                     Label("Enregistrer dans Mes repas", systemImage: "bookmark")
                                 }
                                 Button(role: .destructive) { deleting = group } label: {
-                                    Label("Supprimer", systemImage: "trash")
+                                    // On the athlete's iPhone the menu drew the bin in the app's ink
+                                    // tint beside the red word: the glyph carries its own red.
+                                    Label {
+                                        Text("Supprimer")
+                                    } icon: {
+                                        Image(uiImage: UIImage(systemName: "trash")?.withTintColor(.systemRed, renderingMode: .alwaysOriginal) ?? UIImage())
+                                    }
                                 }
                             }
                         }

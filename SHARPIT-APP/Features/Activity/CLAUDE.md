@@ -145,6 +145,8 @@ session is analysed, « Faite » when linked without a reading (it read « Prév
 score on Plan), « Libre » off plan. The score stays on the session's page. « Calcul en cours… » is
 said only while the reading can still be on its way (`awaitsAnalysis(sessionDate:)`, six hours):
 after that the row reads « Conformité au plan · Analyser » and asks for it (`reanalyze`), and the
-detail is cached again. Why a session got no reading (a Strava-only record is never analysed, a
-failed run is not retried) is the server's; the page no longer pretends it is computing. Seen on
-the simulator: Plan's pill; the « Analyser » row was not.
+detail is cached again. A session Strava alone recorded (`V1ActivityDetail.isStravaOnly`, the
+payload's `source`) reads « Non analysée : séance Strava » at once: the coach never reads it
+(SHARPIT ADR-126). The server asks again by itself for a reading that failed
+(`plannedSessionsAwaitingAnalysis`, on each read of today and each scheduled sync). Seen on the
+simulator: Plan's pill; the « Analyser » and Strava rows were not.
