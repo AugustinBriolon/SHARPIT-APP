@@ -103,6 +103,9 @@ private let streamsJSON = #"""
     let pending = #"{"id":"p1","title":"Réveil musculaire","analysis":null}"#
     let read = #"{"id":"p1","title":"Réveil musculaire","analysis":{"verdict":"AS_PLANNED","complianceScore":100,"summary":"Parfait.","remarks":[],"recommendation":"Dors bien."}}"#
     let decode = { (json: String) in try JSONDecoder().decode(V1ActivityPlannedSession.self, from: Data(json.utf8)) }
-    #expect(try decode(pending).awaitsAnalysis)
-    #expect(try !decode(read).awaitsAnalysis)
+    let done = Date(timeIntervalSince1970: 1_790_000_000)
+    #expect(try decode(pending).awaitsAnalysis(sessionDate: done, now: done.addingTimeInterval(3_600)))
+    #expect(try !decode(read).awaitsAnalysis(sessionDate: done, now: done.addingTimeInterval(3_600)))
+    // A day later the reading is not on its way any more: the page offers to ask for it.
+    #expect(try !decode(pending).awaitsAnalysis(sessionDate: done, now: done.addingTimeInterval(86_400)))
 }

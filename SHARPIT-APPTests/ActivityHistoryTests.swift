@@ -32,6 +32,10 @@ private func day(_ iso: String) -> Date { TrainingDayId.date(iso)! }
     let free = V1ActivityListItem(id: "a", date: day("2026-10-13"), duration: 3480, load: 72)
     #expect(ActivityRowReadout.standing(free).word == "Libre")
     #expect(ActivityRowReadout.standing(free).status == .unknown)
+    // Linked to its plan with no reading: done, never « Prévue ». With one, the coach's verdict.
+    let linked = V1ActivityListItem(id: "b", date: day("2026-10-13"), plannedSession: .init(id: "p", title: "Endurance", analysis: nil))
+    #expect(ActivityRowReadout.standing(linked).word == "Faite")
+    #expect(ActivityRowReadout.standing(linked).status == .good)
     #expect(ActivitySheetReadout.status(.harder) == .watch)
     #expect(ActivitySheetReadout.status(.asPlanned) == .good)
     #expect(ActivitySheetReadout.title(sport: "Course", title: "Tempo 3 × 10 min") == "Course · Tempo 3 × 10 min")

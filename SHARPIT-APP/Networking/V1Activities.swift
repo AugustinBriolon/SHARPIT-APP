@@ -12,10 +12,21 @@ nonisolated struct V1ActivityListItem: Decodable, Sendable, Hashable, Identifiab
     let distanceM: Double?
     let elevationM: Double?
     let plannedSession: V1ActivityPlannedSession?
+    /// A strength session's kilos lifted (sets × reps × load) and exercises done; nil for
+    /// another sport, without a load, and from a server that lists the exercises' names only.
+    var strengthVolumeKg: Double? = nil
+    var strengthExerciseCount: Int? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, type, date, title, duration, load, rpe, weather
-        case runMetrics, bikeMetrics, swimMetrics, hikeMetrics, plannedSession
+        case runMetrics, bikeMetrics, swimMetrics, hikeMetrics, plannedSession, strengthSets
+    }
+
+    private struct ListedSet: Decodable {
+        let exercise: String
+        let sets: Int?
+        let reps: Int?
+        let weightKg: Double?
     }
 
     init(from decoder: Decoder) throws {
@@ -30,6 +41,10 @@ nonisolated struct V1ActivityListItem: Decodable, Sendable, Hashable, Identifiab
         rpe = try container.decodeIfPresent(Double.self, forKey: .rpe)
         weather = try container.decodeIfPresent(String.self, forKey: .weather)
         plannedSession = try container.decodeIfPresent(V1ActivityPlannedSession.self, forKey: .plannedSession)
+        let sets = (try? container.decodeIfPresent([ListedSet].self, forKey: .strengthSets)) ?? []
+        let kilos = sets.reduce(0.0) { $0 + Double(($1.sets ?? 0) * ($1.reps ?? 0)) * ($1.weightKg ?? 0) }
+        strengthVolumeKg = kilos > 0 ? kilos : nil
+        strengthExerciseCount = sets.isEmpty ? nil : Set(sets.map { $0.exercise.lowercased() }).count
 
         let metrics = try container.decodeIfPresent(V1ActivityMetricBundle.self, forKey: Self.metricsKey(for: type))
         distanceM = metrics?.distanceM
@@ -47,8 +62,12 @@ nonisolated struct V1ActivityListItem: Decodable, Sendable, Hashable, Identifiab
         weather: String? = nil,
         distanceM: Double? = nil,
         elevationM: Double? = nil,
-        plannedSession: V1ActivityPlannedSession? = nil
+        plannedSession: V1ActivityPlannedSession? = nil,
+        strengthVolumeKg: Double? = nil,
+        strengthExerciseCount: Int? = nil
     ) {
+        self.strengthVolumeKg = strengthVolumeKg
+        self.strengthExerciseCount = strengthExerciseCount
         self.id = id
         self.type = type
         self.date = date
@@ -103,9 +122,14 @@ nonisolated struct V1ActivityPlannedSession: Decodable, Sendable, Hashable {
     /// from a server that predates it.
     var goal: V1PlannedSessionGoal? = nil
 
-    /// Linked, but the server's compliance reading has not landed yet: it is written a few
-    /// seconds after the session arrives, so a copy read before then must not be kept.
-    var awaitsAnalysis: Bool { analysis == nil }
+    /// Linked, and the server's compliance reading is still on its way: it is written a few
+    /// seconds after the session arrives, so a copy read before then must not be kept. A session
+    /// hours old without one will not get it by waiting (not analysed, or the reading failed):
+    /// the page says so instead of « Calcul en cours ».
+    func awaitsAnalysis(sessionDate: Date, now: Date = .now) -> Bool {
+        // Six hours: the session's own length, and its date being wall clock read as UTC.
+        analysis == nil && now.timeIntervalSince(sessionDate) < 6 * 3_600
+    }
 }
 
 nonisolated struct V1PlannedSessionGoal: Decodable, Sendable, Hashable {

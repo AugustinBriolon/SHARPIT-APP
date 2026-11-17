@@ -721,7 +721,7 @@ struct ActivityDetailView: View {
 
     /// The coach reads the session again behind; the page looks for the new reading a few
     /// times, then leaves it to the next open.
-    private func reanalyze(_ sessionId: String, previous: V1PlannedSessionAnalysis) {
+    private func reanalyze(_ sessionId: String, previous: V1PlannedSessionAnalysis?) {
         showingCompliance = false
         Task {
             do {
@@ -755,7 +755,7 @@ struct ActivityDetailView: View {
     /// « Calcul en cours », it looks again a few times, then leaves it to the next open.
     private func waitForCompliance() async {
         for _ in 0..<6 {
-            guard case .loaded(let detail) = phase, detail.plannedSession?.awaitsAnalysis == true else { return }
+            guard case .loaded(let detail) = phase, detail.plannedSession?.awaitsAnalysis(sessionDate: detail.date) == true else { return }
             try? await Task.sleep(for: .seconds(10))
             if Task.isCancelled { return }
             await load()

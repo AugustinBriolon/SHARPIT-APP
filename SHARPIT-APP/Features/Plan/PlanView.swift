@@ -1173,12 +1173,9 @@ private struct PlanTimelineLine: View {
     private var trailing: some View {
         switch entry {
         case .executed(let executed):
-            if let score = executed.complianceScore {
-                // Green from 85: the session followed its plan.
-                CliniqueStatusPill("\(Int(score.rounded())) / 100", status: score >= 85 ? .good : .watch)
-            } else {
-                CliniqueStatusPill(String(localized: "Fait"), status: .good)
-            }
+            // Activité's own word for the session; its score is on its page.
+            let standing = ActivityRowReadout.standing(executed.activity)
+            CliniqueStatusPill(standing.word, status: standing.status)
         case .doneBrick:
             CliniqueStatusPill(String(localized: "Fait"), status: .good)
         case .missed:

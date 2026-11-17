@@ -89,3 +89,8 @@ so the widget no longer waits for Activité to be opened. Seen on the simulator'
 the number of exercises (`WidgetSnapshot.Day.figures`: the card's `kg` and `exos` metrics when both
 are there, else its first two, as every other sport). The server sends them (`strengthVolumeMetric`,
 sets × reps × load). Tested; not seen on a Home Screen.
+
+**Strength on « Dernière activité » (2026-11-17).** The athlete meant this widget: a strength
+session reads « DURÉE · VOLUME · EXERCICES » (kilos lifted, exercises done) from the list's
+`strengthSets` (`V1ActivityListItem.strengthVolumeKg` / `strengthExerciseCount`); without a load it
+keeps « CHARGE ». Tested; not seen on a Home Screen.

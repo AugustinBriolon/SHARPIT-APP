@@ -138,3 +138,13 @@ the duration and the feeling. A new session left unsaved is kept on the iPhone
 (`ActivityDraftLocalStore`, protected, wiped with the account) and reopens as typed; « Fermer »
 keeps it, « Effacer la saisie » drops it. « Zones à réévaluer » follows its mock-up: a line per zone
 with where it stood, « Faire le point » as an outline button.
+
+**One word per session, a reading that never came (the athlete's remark, 2026-11-17).** Plan's week
+and Activité's list read the same pill (`ActivityRowReadout.standing`): the coach's verdict once the
+session is analysed, « Faite » when linked without a reading (it read « Prévue » on Activité and a
+score on Plan), « Libre » off plan. The score stays on the session's page. « Calcul en cours… » is
+said only while the reading can still be on its way (`awaitsAnalysis(sessionDate:)`, six hours):
+after that the row reads « Conformité au plan · Analyser » and asks for it (`reanalyze`), and the
+detail is cached again. Why a session got no reading (a Strava-only record is never analysed, a
+failed run is not retried) is the server's; the page no longer pretends it is computing. Seen on
+the simulator: Plan's pill; the « Analyser » row was not.

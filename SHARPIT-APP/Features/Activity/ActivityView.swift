@@ -476,11 +476,12 @@ enum ActivityRowReadout {
         ].compactMap { $0 }.joinedAsFacts()
     }
 
-    /// Against the plan: the server's verdict, « À lire » until it lands, « Libre » off plan.
+    /// Against the plan: the server's verdict, « Faite » without one, « Libre » off plan. Activité
+    /// and Plan both read it, so a session never carries two words.
     static func standing(_ activity: V1ActivityListItem) -> (word: String, status: CliniqueStatus) {
         guard let planned = activity.plannedSession else { return (String(localized: "Libre"), .unknown) }
         guard let verdict = planned.analysis?.verdict.flatMap(SessionVerdict.init(rawValue:)) else {
-            return (String(localized: "Prévue"), .unknown)
+            return (String(localized: "Faite"), .good)
         }
         return (verdict.label, ActivitySheetReadout.status(verdict))
     }

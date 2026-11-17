@@ -338,7 +338,7 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     #expect(abs(fitted[fitted.count - 1][1]) < 1e-9)
 }
 
-@Test func theLatestActivityNamesDistanceTimeThenPaceOrLoad() {
+@Test func theLatestActivityNamesDistanceTimeThenPaceOrLoad() throws {
     let run = WidgetSnapshot.LatestActivity(
         activity: V1ActivityListItem(id: "a1", type: .run, date: .now, title: "Footing", duration: 3_000, distanceM: 10_000),
         route: nil
@@ -359,6 +359,15 @@ private func trained(_ day: String, _ sport: V1ActivityType, km: Double, minutes
     #expect(strength.stats == [.init(label: "Durée", value: "45:00", unit: "min"), .init(label: "Charge", value: "42", unit: "")])
 
     // Past the hour the clock gains its hours and says so.
+    // Strength with its sets: the kilos lifted and the exercises take the load's place.
+    let lifted = try JSONDecoder().decode(V1ActivityListItem.self, from: Data(#"""
+    {"id":"s","type":"STRENGTH","date":"2026-11-16T18:00:00.000Z","duration":2700,"load":41.6,
+     "strengthSets":[{"exercise":"Squat","sets":3,"reps":10,"weightKg":60},{"exercise":"Squat","sets":1,"reps":5,"weightKg":null},
+                     {"exercise":"Press","sets":2,"reps":8,"weightKg":22.5}]}
+    """#.utf8))
+    #expect(WidgetSnapshot.LatestActivity(activity: lifted, route: nil).stats.map(\.label) == ["Durée", "Volume", "Exercices"])
+    #expect(WidgetSnapshot.LatestActivity(activity: lifted, route: nil).stats.map(\.unit) == ["min", "kg", ""])
+    #expect(WidgetSnapshot.LatestActivity(activity: lifted, route: nil).stats.last?.value == "2")
     let long = WidgetSnapshot.LatestActivity(activity: V1ActivityListItem(type: .run, date: .now, duration: 5_530, distanceM: 18_400), route: nil)
     #expect(long.stats[1] == .init(label: "Durée", value: "1:32:10", unit: "h"))
 }

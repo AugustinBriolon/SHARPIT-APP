@@ -138,6 +138,10 @@ extension WidgetSnapshot.LatestActivity {
             default:
                 stats.append(.init(label: String(localized: "Allure"), value: RaceTime.clock(seconds / (meters / 1_000)), unit: "/km"))
             }
+        } else if let kilos = activity.strengthVolumeKg, let count = activity.strengthExerciseCount, let whole = Int(exactly: kilos.rounded()) {
+            // Strength: the work done — kilos lifted, exercises — beside its time.
+            stats.append(.init(label: String(localized: "Volume"), value: whole.formatted(.number.locale(AppLanguage.locale)), unit: "kg"))
+            stats.append(.init(label: String(localized: "Exercices"), value: "\(count)", unit: ""))
         } else if let load = activity.load, load > 0, let whole = Int(exactly: load.rounded()) {
             stats.append(.init(label: String(localized: "Charge"), value: "\(whole)", unit: ""))
         }
