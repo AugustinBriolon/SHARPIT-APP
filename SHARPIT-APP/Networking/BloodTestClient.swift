@@ -120,19 +120,18 @@ actor BloodTestClient: BloodTestWriting, BloodTestServing, BloodTestReading {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         request.httpBody = try encoder.encode(Body(sampledAt: sampledAt, results: results))
-        let (_, response) = try await session.data(for: request)
+        let (_, response) = try await session.sharpitData(for: request)
         try Self.check(status: Self.status(response))
     }
 
     func bloodTests(token: String) async throws -> [V1BloodTest] {
-        let (data, response) = try await session.data(for: request(path: "/api/v1/blood-tests", method: "GET", token: token))
+        let (data, response) = try await session.sharpitData(for: request(path: "/api/v1/blood-tests", method: "GET", token: token))
         try Self.check(status: Self.status(response))
         return try JSONDecoder().decode(ListBody.self, from: data).bloodTests
     }
 
     func reading(testId: String, token: String) async throws -> V1BloodTestReading {
-        let (data, response) = try await session.data(
-            for: request(path: "/api/v1/blood-tests/\(testId)/reading", method: "GET", token: token)
+        let (data, response) = try await session.sharpitData(for: request(path: "/api/v1/blood-tests/\(testId)/reading", method: "GET", token: token)
         )
         let status = Self.status(response)
         if status == 403, SharpitAPIError.isProRequired(data) { throw SharpitAPIError.proRequired }
@@ -141,7 +140,7 @@ actor BloodTestClient: BloodTestWriting, BloodTestServing, BloodTestReading {
     }
 
     func deleteBloodTest(id: String, token: String) async throws {
-        let (_, response) = try await session.data(for: request(path: "/api/v1/blood-tests/\(id)", method: "DELETE", token: token))
+        let (_, response) = try await session.sharpitData(for: request(path: "/api/v1/blood-tests/\(id)", method: "DELETE", token: token))
         let status = Self.status(response)
         // Already gone is what the athlete asked for.
         if status == 404 { return }

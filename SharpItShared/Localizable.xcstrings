@@ -29311,6 +29311,22 @@
         }
       }
     },
+    "Le plan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The plan"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le plan"
+          }
+        }
+      }
+    },
     "Le plan cesse de l'éviter. Pendant six semaines, il garde une vigilance contre la rechute." : {
       "localizations" : {
         "en" : {

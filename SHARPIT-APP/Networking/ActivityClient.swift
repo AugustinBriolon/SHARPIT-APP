@@ -23,6 +23,10 @@ protocol ActivityServing: Sendable {
     /// The sessions started in `[from, to)`, either side open when nil — for a screen that reads
     /// a week or a season, never the whole history.
     func activities(from: Date?, to: Date?, token: String) async throws -> [V1ActivityListItem]
+    /// The newest page and a window as last answered, from the iPhone: what a screen paints on a
+    /// relaunch before the server replies. Nil when never read.
+    nonisolated func storedActivityPage(limit: Int) -> [V1ActivityListItem]?
+    nonisolated func storedActivities(from: Date, to: Date) -> [V1ActivityListItem]?
     func activity(id: String, token: String) async throws -> V1ActivityDetail
     func activityStream(id: String, token: String) async throws -> V1ActivityStreamPayload
     /// A multisport session's sport legs, each with its own recording.
@@ -48,6 +52,9 @@ protocol ActivityMutating: Sendable {
 }
 
 extension ActivityServing {
+    nonisolated func storedActivityPage(limit _: Int) -> [V1ActivityListItem]? { nil }
+    nonisolated func storedActivities(from _: Date, to _: Date) -> [V1ActivityListItem]? { nil }
+
     func activities(forceRefresh: Bool, token: String) async throws -> [V1ActivityListItem] {
         try await activities(token: token)
     }
@@ -114,16 +121,38 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         if let before {
             query.append(URLQueryItem(name: "before", value: Self.instant(before)))
         }
-        let page: [V1ActivityListItem] = try await request(path: "/api/v1/activities", queryItems: query, token: token)
+        let data = try await fetch(path: "/api/v1/activities", queryItems: query, token: token)
+        let page: [V1ActivityListItem] = try decode(data)
+        // Only the newest page: it is what the history opens on.
+        if before == nil { disk?.write(data, .listRead, id: Self.storedPageKey(limit: limit)) }
         dropDetailsDisagreeing(with: page)
         return page
+    }
+
+    private nonisolated static func storedPageKey(limit: Int) -> String { "activities?newest\(limit)" }
+
+    private nonisolated static func storedWindowKey(from: Date, to: Date) -> String {
+        "activities?\(APIDate.dayString(from))..\(APIDate.dayString(to))"
+    }
+
+    nonisolated func storedActivityPage(limit: Int) -> [V1ActivityListItem]? {
+        guard let stored = disk?.read(.listRead, id: Self.storedPageKey(limit: limit)) else { return nil }
+        return try? JSONDecoder().decode([V1ActivityListItem].self, from: stored.data)
+    }
+
+    nonisolated func storedActivities(from: Date, to: Date) -> [V1ActivityListItem]? {
+        guard let stored = disk?.read(.listRead, id: Self.storedWindowKey(from: from, to: to)) else { return nil }
+        return try? JSONDecoder().decode([V1ActivityListItem].self, from: stored.data)
     }
 
     func activities(from: Date?, to: Date?, token: String) async throws -> [V1ActivityListItem] {
         var query: [URLQueryItem] = []
         if let from { query.append(URLQueryItem(name: "after", value: Self.instant(from))) }
         if let to { query.append(URLQueryItem(name: "before", value: Self.instant(to))) }
-        return try await request(path: "/api/v1/activities", queryItems: query, token: token)
+        let data = try await fetch(path: "/api/v1/activities", queryItems: query, token: token)
+        let activities: [V1ActivityListItem] = try decode(data)
+        if let from, let to { disk?.write(data, .listRead, id: Self.storedWindowKey(from: from, to: to)) }
+        return activities
     }
 
     /// An instant as the server reads it, to the millisecond.
@@ -293,11 +322,7 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         }
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         switch (response as? HTTPURLResponse)?.statusCode ?? 0 {
         case 200...299: return data
         case 401: throw SharpitAPIError.unauthorized
@@ -319,7 +344,7 @@ actor ActivityClient: ActivityServing, ActivityMutating {
         request.httpBody = body
         request.setValue("Bear" + "er " + token, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let (_, response) = try await session.data(for: request)
+        let (_, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if (200..<300).contains(status) { return }
         try SharpitHTTPStatus.throwIfUnauthorized(status)
@@ -375,11 +400,7 @@ actor ActivityClient: ActivityServing, ActivityMutating {
 
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         try Self.mapReadStatus(status, body: data)

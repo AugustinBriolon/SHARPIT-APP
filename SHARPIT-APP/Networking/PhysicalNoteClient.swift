@@ -90,7 +90,7 @@ actor PhysicalNoteClient: SensitiveZoneServing {
             request.httpBody = try JSONEncoder().encode(body)
         }
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         guard (200...299).contains(status) else { throw SharpitAPIError.server }

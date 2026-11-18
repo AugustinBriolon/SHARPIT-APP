@@ -172,11 +172,7 @@ actor PrivacyConsentClient: PrivacyConsentServing, AccountDeletionServing {
 
     private func sendDeletion(_ request: URLRequest) async throws {
         let response: URLResponse
-        do {
-            (_, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (_, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         guard (200..<300).contains(status) else { throw SharpitAPIError.server }
@@ -197,11 +193,7 @@ actor PrivacyConsentClient: PrivacyConsentServing, AccountDeletionServing {
     private func send(_ request: URLRequest) async throws -> V1PrivacyConsents {
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
             if status == 401 { throw SharpitAPIError.unauthorized }

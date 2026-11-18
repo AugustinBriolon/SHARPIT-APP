@@ -28,7 +28,7 @@ actor CoachQuotaClient: CoachQuotaServing {
     func quota(token: String) async throws -> V1CoachQuota {
         var request = URLRequest(url: baseURL.appending(path: "/api/v1/coach/quota"))
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         guard (200...299).contains(status) else { throw SharpitAPIError.server }

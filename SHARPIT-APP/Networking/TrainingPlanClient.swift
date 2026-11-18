@@ -17,7 +17,7 @@ actor TrainingPlanClient: TrainingPlanServing {
 
     func fetchActivePlan(token: String) async throws -> V1TrainingPlan? {
         let request = makeRequest(path: "/api/v1/training-plans", method: "GET", token: token)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         guard (200...299).contains(status) else { throw SharpitAPIError.server }
@@ -34,7 +34,7 @@ actor TrainingPlanClient: TrainingPlanServing {
         let payload = ["goalId": goalId]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         guard (200...299).contains(status) else {
@@ -49,7 +49,7 @@ actor TrainingPlanClient: TrainingPlanServing {
 
     func archivePlan(id: String, token: String) async throws {
         let request = makeRequest(path: "/api/v1/training-plans/\(id)", method: "DELETE", token: token)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         guard (200...299).contains(status) else {

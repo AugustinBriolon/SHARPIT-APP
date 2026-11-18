@@ -113,11 +113,7 @@ actor WeeklyReviewClient: WeeklyReviewServing {
     private func send(_ request: URLRequest) async throws -> Envelope {
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch status {
         case 200..<300: return try JSONDecoder().decode(Envelope.self, from: data)

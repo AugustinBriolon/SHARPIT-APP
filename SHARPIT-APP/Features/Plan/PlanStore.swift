@@ -28,6 +28,11 @@ final class PlanStore {
     var scrollTarget: Date?
 
     private var weeks: [Int: Phase] = [:]
+    /// The weeks the server answered this launch. A week painted from the iPhone's copy is not
+    /// one of them: it is shown, and still read.
+    @ObservationIgnored private var freshOffsets: Set<Int> = []
+    /// Each week as last answered, read from the iPhone once and only when its page is drawn.
+    @ObservationIgnored private var storedWeeks: [Int: [PlanEntry]?] = [:]
 
     private let client: any PlannedSessionServing
     private let activityClient: any ActivityServing
@@ -80,8 +85,28 @@ final class PlanStore {
 
     // MARK: - Reading
 
+    /// A week not read yet this launch shows what the iPhone kept of it rather than a skeleton.
     func phase(forOffset offset: Int) -> Phase {
-        weeks[offset] ?? .loading
+        if let phase = weeks[offset] { return phase }
+        return storedEntries(forOffset: offset).map(Phase.loaded) ?? .loading
+    }
+
+    private func storedEntries(forOffset offset: Int) -> [PlanEntry]? {
+        if let known = storedWeeks[offset] { return known }
+        let start = weekStart(forOffset: offset)
+        var entries: [PlanEntry]?
+        if let end = calendar.date(byAdding: .day, value: 6, to: start),
+           let nextWeek = calendar.date(byAdding: .day, value: 7, to: start),
+           let planned = client.storedPlannedSessions(from: start, to: end) {
+            entries = PlanEntryBuilder.entries(
+                planned: planned,
+                activities: (activityClient.storedActivities(from: start, to: nextWeek) ?? [])
+                    .filter { $0.date >= start && $0.date < nextWeek },
+                calendar: calendar
+            )
+        }
+        storedWeeks[offset] = .some(entries)
+        return entries
     }
 
     var phase: Phase { phase(forOffset: selectedOffset) }
@@ -216,9 +241,13 @@ final class PlanStore {
     }
 
     func load(offset: Int, force: Bool = false) async {
-        if !force, case .loaded = weeks[offset] { return }
+        if !force, freshOffsets.contains(offset) { return }
         if force {
             await activityClient.invalidateActivities()
+        }
+        // The kept week becomes the week on screen, so an edit made before the answer lands on it.
+        if weeks[offset] == nil, let stored = storedEntries(forOffset: offset) {
+            weeks[offset] = .loaded(stored)
         }
 
         let start = weekStart(forOffset: offset)
@@ -240,13 +269,24 @@ final class PlanStore {
                 activities: (await recorded ?? []).filter { $0.date >= start && $0.date < nextWeek },
                 calendar: calendar
             )
-            withAnimation(SharpitMotion.reveal) {
+            freshOffsets.insert(offset)
+            // The same week as the one shown is not swapped in: nothing would move, and a list
+            // replaced under the finger loses its scroll.
+            if case .loaded(let shown) = weeks[offset], shown == entries { return }
+            withAnimation(SharpitMotion.fade) {
                 weeks[offset] = .loaded(entries)
             }
         } catch is CancellationError {
         } catch let error as SharpitAPIError where error == .unauthorized {
             weeks[offset] = .unauthorized
         } catch {
+            // A week already on screen stays; the toast says it could not be read again.
+            if case .loaded = weeks[offset] {
+                SharpitWriteFailures.shared.reportStaleRead(
+                    SharpitErrorGuidance.message(for: error, subject: String(localized: "Le plan"))
+                )
+                return
+            }
             weeks[offset] = .error(error.localizedDescription)
         }
     }

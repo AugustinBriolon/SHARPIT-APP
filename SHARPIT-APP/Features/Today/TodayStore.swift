@@ -83,6 +83,12 @@ final class TodayStore {
         return accept
     }
 
+    /// The day on screen with its sessions and scores — not the plate alone, kept for offline.
+    var showsWholeDay: Bool {
+        if case .loaded(let fold) = phase { return !fold.isPlateOnly && fold.trainingDayId == dayId }
+        return false
+    }
+
     var phaseIdentity: String {
         switch phase {
         case .loading: "loading"
@@ -341,7 +347,7 @@ final class TodayStore {
         case .server:
             return String(localized: "Le serveur n'a pas pu produire le résumé")
         case .transport:
-            return String(localized: "Réseau indisponible")
+            return SharpitErrorGuidance.offline
         case .unauthorized:
             return String(localized: "Session expirée")
         case .rateLimited:

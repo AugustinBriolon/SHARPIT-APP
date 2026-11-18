@@ -148,11 +148,7 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
     private func sendJob(_ request: URLRequest) async throws -> V1PlanJob? {
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch status {
         case 200..<300: return try JSONDecoder().decode(JobEnvelope.self, from: data).job
@@ -179,7 +175,7 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
             "sessions": .array(sessions.map(\.insertBody)),
         ]))
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         if status == 403, SharpitAPIError.isProRequired(data) { throw SharpitAPIError.proRequired }
@@ -197,7 +193,7 @@ actor CoachPlanClient: CoachPlanServing, PlanJobServing, PlanAdjustmentServing {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.httpBody = try JSONEncoder().encode(JSONValue.object(["changes": .array(changes.map(\.applyBody))]))
 
-        let (_, response) = try await session.data(for: request)
+        let (_, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         if status == 409 {

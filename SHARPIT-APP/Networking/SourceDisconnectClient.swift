@@ -101,11 +101,7 @@ actor SourceDisconnectClient: SourceDisconnecting {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard !(200..<300).contains(status) else { return }
         if status == 401 || status == 403 { throw SharpitAPIError.unauthorized }

@@ -32,7 +32,7 @@ actor HealthGroundClient: HealthGroundWriting {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(Body(grounds: grounds))
-        let (_, response) = try await session.data(for: request)
+        let (_, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 401 { throw SharpitAPIError.unauthorized }
         guard (200...299).contains(status) else { throw SharpitAPIError.server }

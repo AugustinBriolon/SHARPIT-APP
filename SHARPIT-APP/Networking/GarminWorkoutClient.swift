@@ -40,11 +40,7 @@ actor GarminWorkoutClient: GarminWorkoutPushing {
 
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if (200...299).contains(status) {
             guard let receipt = try? JSONDecoder().decode(V1GarminWorkoutReceipt.self, from: data) else {

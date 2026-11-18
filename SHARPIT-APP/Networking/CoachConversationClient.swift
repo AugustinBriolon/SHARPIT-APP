@@ -111,11 +111,7 @@ actor CoachConversationClient: CoachConversationServing {
 
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
 
         switch (response as? HTTPURLResponse)?.statusCode ?? 0 {
         case 200..<300: return data

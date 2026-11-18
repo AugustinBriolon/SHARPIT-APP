@@ -138,6 +138,14 @@ projections). One call stays web-internal: `/api/coach/chat`, which has no `/api
 Its tools no longer act without asking — calendar changes wait for the athlete's approval, on
 the web and here — so moving it is a web task, not a design one.
 
+**Reads.** Every client sends through `URLSession.sharpitData(for:)` (`SharpitTransport`), never
+`session.data(for:)`: a request cancelled with its screen is thrown as `CancellationError`, which
+stores read as nothing, and a GET dropped in transit — the first read after a return from the
+background often is — is asked twice more (0.4 s, 1.2 s) before `SharpitAPIError.transport`. Both
+used to open a screen on « Pas de connexion » with the network up (the athlete's remark,
+2026-11-18). A page says « Pas de connexion » only for `SharpitErrorGuidance.offline`
+(`SharpitStateMessage.failed`).
+
 **Writes.** A write never makes the athlete wait: the change shows on the tap and goes out behind.
 Every write goes through `SharpitRetry`: a dropped connection, a timeout, a 429 or a 5xx is tried again
 (four tries, 1 s, 2 s, 4 s apart); a refusal (4xx, a session gone) is not, since the same request gets
@@ -177,6 +185,13 @@ layer is web-only; the app maps domain payloads itself.
 encoded `V1TodayResponse`, `JournalDaySnapshot` holds a day's entry, preferences and derived
 checklist. One repository each, and they are the only accessors, so both screens paint offline
 before the network answers.
+
+A relaunch paints what the iPhone kept, then reads: `DayReadCache` keeps every day read on disk,
+today included (under its own name, never `settled`, so it is always read again), and Plan's weeks
+and Activité's newest page are kept as answered (`ActivityDiskCache` `.listRead`, read back through
+`storedPlannedSessions` / `storedActivities` / `storedActivityPage`). A screen with a kept answer
+never opens on a skeleton, and a refresh that fails under it is a toast, not an error page. The
+splash lifts as soon as Résumé shows a whole day, kept or read (`TodayStore.showsWholeDay`).
 
 The cache is never the truth — the server is. A write goes to `/api`, the cache is written from
 the server's echo and never merged with it. It stays on the iPhone (`cloudKitDatabase: .none`,
@@ -282,9 +297,13 @@ is for fills — a rating grid's ticks, a bar — never for type on a white card
 `.buttonStyle(.sharpitPressable)`, and `CoachDiscussButton` is a tinted pill placed with
 the title of what it discusses — never at the bottom of a screen. Session feeling is written in the web's words (`SessionFeeling.storedValue`).
 
-Motion: `SharpitMotion.selection` for controls under the finger, `reveal` for content
-arriving; `staggerDelay(index:)` is capped, so use it instead of hard-coded delays.
-`.revealed(_:index:)` applies that reveal-and-stagger to a view arriving on screen.
+Motion: `SharpitMotion.selection` for controls under the finger, `reveal` for a layout change,
+`arrival` for content coming onto a screen: a 0.24 s fade over 6 pt of rise, no spring
+(`.arrived(_:delay:)`; `.revealed(_:index:)` adds the capped `staggerDelay(index:)`). An arrival
+never bounces, travels further or lands piece after piece — that read as cheap (the athlete's
+remark, 2026-11-18); a ring filling is the one thing that takes its time. A skeleton is the
+screen's own components drawn redacted over placeholder data (Résumé, the day screens, Activité),
+never grey blocks of guessed sizes.
 A Clinique button is felt under the finger (`CliniqueButtonStyle`: 0.97, `selection`), as a pressable
 tile is. A change that moves the layout rides `SharpitMotion.run` rather than jumping: the strength
 set in hand closing into its line, the map card growing for its legend. Recovery's ring sweeps when

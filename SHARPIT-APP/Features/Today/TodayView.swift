@@ -130,12 +130,8 @@ struct TodayView: View {
                     TodayEmptyView(empty: empty)
                         .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .failed(let message):
-                    SharpitStateMessage(
-                        title: String(localized: "Pas de connexion"),
-                        symbol: "wifi.slash",
-                        detail: message,
-                        retry: { Task { await store.load(resetToLoading: true) } }
-                    )
+                    // « Pas de connexion » only when the network is what failed.
+                    SharpitStateMessage.failed(message) { Task { await store.load(resetToLoading: true) } }
                     .clipShape(UnevenRoundedRectangle(topLeadingRadius: SharpitTokens.sheetShapeRadius, topTrailingRadius: SharpitTokens.sheetShapeRadius, style: .continuous))
                     .safeAreaInset(edge: .top) { pinnedDayTitle }
                 case .unauthorized:
@@ -245,6 +241,10 @@ struct TodayView: View {
                         }
                     )
                 }
+            }
+            // A whole day painted from what the iPhone kept: the splash has nothing to wait for.
+            .onChange(of: store.showsWholeDay, initial: true) { _, whole in
+                if whole { launchCurtain?.markReady() }
             }
             .task {
                 let shouldReset = !store.hasCompletedArrival && store.phase == .loading
@@ -884,13 +884,7 @@ private struct TodayFoldView: View {
                 TodayRaceLink(race: race, tokenProvider: tokenProvider)
                     .padding(.horizontal, SharpitSpacing.lg)
                     .padding(.top, SharpitSpacing.lg)
-                    .opacity(phase.showsPlate ? 1 : 0)
-                    .offset(y: phase.showsPlate ? 0 : 10)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80),
-                        value: phase.showsPlate
-                    )
+                    .arrived(phase.showsPlate)
             }
             VerdictHero(plate: fold.plate, revealed: phase.showsPlate)
 
@@ -899,13 +893,7 @@ private struct TodayFoldView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, SharpitSpacing.lg)
                     .padding(.bottom, SharpitSpacing.md)
-                    .opacity(phase.showsPlate ? 1 : 0)
-                    .offset(y: phase.showsPlate ? 0 : 18)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.07),
-                        value: phase.showsPlate
-                    )
+                    .arrived(phase.showsPlate)
             }
 
             ResumeScoreRow(
@@ -922,23 +910,11 @@ private struct TodayFoldView: View {
                 onOpenNutrition: nutrition.map { store in { openNutrition(store.phase) } },
                 onOpenRegularity: { router.openPlan(on: foldDay) }
             )
-            .opacity(phase.showsGauges ? 1 : 0)
-            .offset(y: phase.showsGauges ? 0 : 18)
-            .animation(
-                reduceMotion ? .easeOut(duration: 0.01)
-                    : .spring(response: 0.40, dampingFraction: 0.80).delay(0.08),
-                value: phase.showsGauges
-            )
+            .arrived(phase.showsGauges)
 
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 evidenceSection
-                    .opacity(phase.showsSession ? 1 : 0)
-                    .offset(y: phase.showsSession ? 0 : 18)
-                    .animation(
-                        reduceMotion ? .easeOut(duration: 0.01)
-                            : .spring(response: 0.40, dampingFraction: 0.80).delay(0.06),
-                        value: phase.showsSession
-                    )
+                    .arrived(phase.showsSession)
 
                 if let proposal = fold.morningProposal {
                     MorningProposalCard(proposal: proposal, onCheckIn: onCheckIn, onAnswer: onAnswerProposal)
@@ -957,14 +933,14 @@ private struct TodayFoldView: View {
                     CliniqueDivider().padding(.horizontal, -SharpitSpacing.lg)
                     ResumeNutritionSection(phase: nutrition.phase) { openNutrition(nutrition.phase) }
                         .padding(.top, SharpitSpacing.xxs)
-                        .opacity(phase.showsGauges ? 1 : 0)
+                        .arrived(phase.showsGauges)
                 }
 
                 if !fold.timeline.isEmpty {
                     CliniqueDivider().padding(.horizontal, -SharpitSpacing.lg)
                     TodayTimelineStrip(events: fold.timeline)
                         .padding(.top, SharpitSpacing.xxs)
-                        .opacity(phase.showsGauges ? 1 : 0)
+                        .arrived(phase.showsGauges)
                 }
             }
             .padding(.horizontal, SharpitSpacing.lg)

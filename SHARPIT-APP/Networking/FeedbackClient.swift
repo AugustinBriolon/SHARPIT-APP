@@ -31,11 +31,7 @@ actor FeedbackClient: FeedbackServing {
 
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         try Self.check(status: (response as? HTTPURLResponse)?.statusCode ?? 0, body: data)
     }
 

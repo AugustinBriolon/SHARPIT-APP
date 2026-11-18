@@ -11,15 +11,25 @@ import os
 /// expires them all, pull-to-refresh the day it shows; a stale day still paints at once, then
 /// is read again.
 ///
-/// Past days are also kept on disk as the server sent them, so a relaunch opens them without
-/// the network too. A copy on disk is fresh when it was written after the last `expireAll`.
+/// Days are also kept on disk as the server sent them, so a relaunch opens them without the
+/// network too. A copy on disk is fresh when it was written after the last `expireAll`.
+///
+/// Today is kept as well, under its own name (`liveSuffix`): it is what the app paints on a cold
+/// launch while the server is asked, instead of a skeleton. It is never `settled` — written
+/// while the day was still running, it may lack the evening — so the day after, it is still only
+/// painted and then read again, and the copy written then replaces it.
 nonisolated final class DayReadCache: Sendable {
     static let shared = DayReadCache(disk: .shared)
 
-    private struct Entry {
+    private struct Entry: Sendable {
         let payload: any Sendable
         var isFresh: Bool
+        /// Read once the day was over: only such an answer can stand for the server's.
+        var isFinal: Bool
     }
+
+    /// The disk name of a day read while it was still running.
+    private static let liveSuffix = "#live"
 
     /// `generation` counts the wipes: a read that began before one must not refill the cache after it.
     private struct State {
@@ -50,10 +60,11 @@ nonisolated final class DayReadCache: Sendable {
     func settled<Payload: Decodable & Sendable>(_: Payload.Type, day: String) -> Payload? {
         guard day < today() else { return nil }
         let key = Self.key(Payload.self, day)
-        if let fresh = state.withLock({ $0.entries[key].flatMap { $0.isFresh ? $0.payload : nil } }) {
-            return fresh as? Payload
+        if let known = state.withLock({ $0.entries[key] }) {
+            // A stale or unfinished answer in memory is newer than any file: ask the server.
+            return known.isFresh && known.isFinal ? known.payload as? Payload : nil
         }
-        guard let stored = fromDisk(Payload.self, key: key), stored.isFresh else { return nil }
+        guard let stored = fromDisk(Payload.self, key: key), stored.isFresh, stored.isFinal else { return nil }
         return stored.payload
     }
 
@@ -67,16 +78,23 @@ nonisolated final class DayReadCache: Sendable {
     /// The wipe count to read before a request, so `keep` can tell its answer belongs to a past session.
     var generation: Int { state.withLock { $0.generation } }
 
-    /// Keeps the day's answer; with the bytes the server sent, a past day survives a relaunch.
+    /// Keeps the day's answer; with the bytes the server sent, the day survives a relaunch.
     /// With the `generation` read before the request, an answer that outlived a `clear()` is dropped.
     func keep<Payload: Sendable>(_ payload: Payload, day: String, data: Data? = nil, generation: Int? = nil) {
         let key = Self.key(Payload.self, day)
+        let isFinal = day < today()
         let accepted = state.withLock { state in
             guard generation == nil || generation == state.generation else { return false }
-            state.entries[key] = Entry(payload: payload, isFresh: true)
+            state.entries[key] = Entry(payload: payload, isFresh: true, isFinal: isFinal)
             return true
         }
-        if accepted, let data, day < today() { disk?.write(data, .dayRead, id: key) }
+        guard accepted, let data else { return }
+        if isFinal {
+            disk?.write(data, .dayRead, id: key)
+            disk?.remove(.dayRead, id: key + Self.liveSuffix)
+        } else {
+            disk?.write(data, .dayRead, id: key + Self.liveSuffix)
+        }
     }
 
     /// Another athlete may sign in next: nothing read for this one stays in memory.
@@ -103,16 +121,25 @@ nonisolated final class DayReadCache: Sendable {
     }
 
     /// A day kept on disk, brought back into memory so the next read skips the file.
-    private func fromDisk<Payload: Decodable & Sendable>(_: Payload.Type, key: String) -> (payload: Payload, isFresh: Bool)? {
-        guard let stored = disk?.read(.dayRead, id: key),
+    /// The copy read once the day was over when there is one, else the one read while it ran.
+    private func fromDisk<Payload: Decodable & Sendable>(
+        _: Payload.Type,
+        key: String
+    ) -> (payload: Payload, isFresh: Bool, isFinal: Bool)? {
+        guard let disk else { return nil }
+        let settledCopy = disk.read(.dayRead, id: key)
+        guard let stored = settledCopy ?? disk.read(.dayRead, id: key + Self.liveSuffix),
               let payload = try? JSONDecoder().decode(Payload.self, from: stored.data)
         else { return nil }
         let expiredAt = defaults.object(forKey: expiredAtKey) as? Date ?? .distantPast
         let isFresh = stored.savedAt > expiredAt
+        let isFinal = settledCopy != nil
         state.withLock { state in
-            if state.entries[key] == nil { state.entries[key] = Entry(payload: payload, isFresh: isFresh) }
+            if state.entries[key] == nil {
+                state.entries[key] = Entry(payload: payload, isFresh: isFresh, isFinal: isFinal)
+            }
         }
-        return (payload, isFresh)
+        return (payload, isFresh, isFinal)
     }
 
     private static func key(_ type: Any.Type, _ day: String) -> String { "\(type)?\(day)" }

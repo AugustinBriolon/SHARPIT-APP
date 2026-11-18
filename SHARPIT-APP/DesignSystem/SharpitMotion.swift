@@ -6,6 +6,11 @@ enum SharpitMotion {
     /// for momentum-driven paths (DaySwipe flick, velocity sheet dismiss).
     static let revealDamping: Double = 1.0
     static let fadeDuration: TimeInterval = 0.28
+    /// How content comes onto a screen: a quiet fade over a few points of rise, no spring. An
+    /// arrival that bounced, travelled far or fell in one piece after another read as cheap
+    /// (the athlete's remark, 2026-11-18); a ring filling is the only thing that takes its time.
+    static let arrivalDuration: TimeInterval = 0.24
+    static let arrivalTravel: CGFloat = 6
     static let staggerStep: TimeInterval = 0.048
     static let countUpDuration: TimeInterval = 0.42
     static let gaugeFillDuration: TimeInterval = 0.72
@@ -29,6 +34,13 @@ enum SharpitMotion {
             return .easeOut(duration: 0.01)
         }
         return .spring(response: revealResponse, dampingFraction: revealDamping)
+    }
+
+    static var arrival: Animation {
+        if reduceMotion {
+            return .easeOut(duration: 0.01)
+        }
+        return .easeOut(duration: arrivalDuration)
     }
 
     static var fade: Animation {

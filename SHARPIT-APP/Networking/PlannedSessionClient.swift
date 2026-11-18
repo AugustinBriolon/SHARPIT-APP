@@ -2,6 +2,13 @@ import Foundation
 
 protocol PlannedSessionServing: Sendable {
     func plannedSessions(from: Date, to: Date, token: String) async throws -> [V1PlannedSessionItem]
+    /// The same window as last answered, from the iPhone: what Plan paints on a relaunch before
+    /// the server replies. Nil when it was never read.
+    nonisolated func storedPlannedSessions(from: Date, to: Date) -> [V1PlannedSessionItem]?
+}
+
+extension PlannedSessionServing {
+    nonisolated func storedPlannedSessions(from _: Date, to _: Date) -> [V1PlannedSessionItem]? { nil }
 }
 
 /// Pairs a prescription with the activity that carried it out, or unpairs it.
@@ -34,10 +41,25 @@ protocol PlannedSessionMutating: Sendable {
 actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, PlannedSessionMutating {
     private let session: URLSession
     private let baseURL: URL
+    private let disk: ActivityDiskCache?
 
-    init(session: URLSession = .shared, baseURL: URL = APIConfiguration.baseURL) {
+    init(
+        session: URLSession = .shared,
+        baseURL: URL = APIConfiguration.baseURL,
+        disk: ActivityDiskCache? = .shared
+    ) {
         self.session = session
         self.baseURL = baseURL
+        self.disk = disk
+    }
+
+    private nonisolated static func storedKey(from: Date, to: Date) -> String {
+        "planned-sessions?\(dayString(from))..\(dayString(to))"
+    }
+
+    nonisolated func storedPlannedSessions(from: Date, to: Date) -> [V1PlannedSessionItem]? {
+        guard let stored = disk?.read(.listRead, id: Self.storedKey(from: from, to: to)) else { return nil }
+        return try? JSONDecoder().decode([V1PlannedSessionItem].self, from: stored.data)
     }
 
     func plannedSessions(from: Date, to: Date, token: String) async throws -> [V1PlannedSessionItem] {
@@ -61,11 +83,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
 
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
@@ -73,7 +91,9 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
             throw SharpitAPIError.server
         }
         do {
-            return try JSONDecoder().decode([V1PlannedSessionItem].self, from: data)
+            let sessions = try JSONDecoder().decode([V1PlannedSessionItem].self, from: data)
+            disk?.write(data, .listRead, id: Self.storedKey(from: from, to: to))
+            return sessions
         } catch {
             throw PlannedSessionClientError.decoding(String(describing: error))
         }
@@ -88,11 +108,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
         let response: URLResponse
-        do {
-            (_, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (_, response) = try await session.sharpitData(for: request)
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch status {
@@ -140,11 +156,7 @@ actor PlannedSessionClient: PlannedSessionServing, PlannedSessionLinking, Planne
 
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch status {
         case 200...299: return data

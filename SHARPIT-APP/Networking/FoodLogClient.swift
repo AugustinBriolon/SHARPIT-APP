@@ -313,11 +313,7 @@ actor FoodLogClient: FoodLogServing {
     private func send(_ request: URLRequest, readsRefusal: Bool = false) async throws -> Data {
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         // A food entry changes that day's nutrition and Résumé, past days included.
         if request.httpMethod != "GET" { DayReadCache.shared.expireAll() }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
@@ -332,11 +328,7 @@ actor FoodLogClient: FoodLogServing {
     private func sendDescribe(_ request: URLRequest) async throws -> Data {
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if [400, 403, 422, 503].contains(status), let refusal = Self.refusal(in: data) {
             throw SharpitAPIError.message(refusal)

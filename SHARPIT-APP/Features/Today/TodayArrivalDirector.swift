@@ -33,15 +33,16 @@ enum TodayArrivalDirector {
             update(.idle)
             return
         }
+        // Three beats close together: the verdict, what to do, the scores. The rings then fill
+        // on their own time; nothing else waits on them.
         update(.plate)
-        try? await Task.sleep(for: .milliseconds(220))
+        try? await Task.sleep(for: .milliseconds(90))
         guard !Task.isCancelled else { return }
         update(.session)
-        let gaugeDelay = SharpitMotion.staggerDelay(index: max(gaugeCount, 1))
-        try? await Task.sleep(for: .seconds(gaugeDelay + 0.08))
+        try? await Task.sleep(for: .milliseconds(90))
         guard !Task.isCancelled else { return }
         update(.gauges)
-        try? await Task.sleep(for: .milliseconds(120))
+        try? await Task.sleep(for: .seconds(SharpitMotion.arrivalDuration))
         guard !Task.isCancelled else { return }
         update(.idle)
     }

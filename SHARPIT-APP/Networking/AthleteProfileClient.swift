@@ -95,12 +95,8 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing, Thres
     }
 
     private func exchange(_ request: URLRequest) async throws -> (Data, Int) {
-        do {
-            let (data, response) = try await session.data(for: request)
-            return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        let (data, response) = try await session.sharpitData(for: request)
+        return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
     }
 
     func bodyComposition(days: Int, token: String) async throws -> [V1BodyMeasurement] {
@@ -133,11 +129,7 @@ actor AthleteProfileClient: AthleteProfileServing, BodyCompositionServing, Thres
     private func send(_ request: URLRequest) async throws -> Data {
         let data: Data
         let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (data, response) = try await session.sharpitData(for: request)
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {

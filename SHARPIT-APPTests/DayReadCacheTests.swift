@@ -116,10 +116,26 @@ struct DayReadCacheTests {
         #expect(relaunched.lastKnown(Int.self, day: "2026-10-12") == 1)
     }
 
-    @Test func todayIsNeverWrittenToDisk() {
+    /// A cold launch paints today as last read, and still asks the server for it.
+    @Test func todayIsPaintedAfterARelaunchButNeverSettled() {
         let (directory, defaults) = Self.scratch()
         Self.launch(on: directory, defaults: defaults).keep(1, day: "2026-10-17", data: Data("1".utf8))
-        #expect(Self.launch(on: directory, defaults: defaults).lastKnown(Int.self, day: "2026-10-17") == nil)
+        let relaunched = Self.launch(on: directory, defaults: defaults)
+        #expect(relaunched.lastKnown(Int.self, day: "2026-10-17") == 1)
+        #expect(relaunched.settled(Int.self, day: "2026-10-17") == nil)
+    }
+
+    /// Read while it ran, a day may lack its evening: the day after, it is painted and read again.
+    @Test func aDayReadWhileItRanIsNotSettledTheDayAfter() {
+        let (directory, defaults) = Self.scratch()
+        Self.launch(on: directory, defaults: defaults).keep(1, day: "2026-10-17", data: Data("1".utf8))
+        let nextDay = DayReadCache(today: { "2026-10-18" }, disk: ActivityDiskCache(directory: directory), defaults: defaults)
+        #expect(nextDay.settled(Int.self, day: "2026-10-17") == nil)
+        #expect(nextDay.lastKnown(Int.self, day: "2026-10-17") == 1)
+
+        nextDay.keep(2, day: "2026-10-17", data: Data("2".utf8))
+        let later = DayReadCache(today: { "2026-10-18" }, disk: ActivityDiskCache(directory: directory), defaults: defaults)
+        #expect(later.settled(Int.self, day: "2026-10-17") == 2)
     }
 
     @Test func clearForgetsEverythingRead() {

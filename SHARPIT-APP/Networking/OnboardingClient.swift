@@ -23,11 +23,7 @@ actor OnboardingClient: OnboardingServing {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         let response: URLResponse
-        do {
-            (_, response) = try await session.data(for: request)
-        } catch {
-            throw SharpitAPIError.transport
-        }
+        (_, response) = try await session.sharpitData(for: request)
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {

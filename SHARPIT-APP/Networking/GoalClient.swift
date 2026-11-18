@@ -38,7 +38,7 @@ actor GoalClient: GoalServing {
 
     func goals(token: String) async throws -> [V1Goal] {
         let request = makeRequest(path: "/api/v1/goals", method: "GET", token: token)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         try validate(response: response)
         return try JSONDecoder().decode([V1Goal].self, from: data)
     }
@@ -46,7 +46,7 @@ actor GoalClient: GoalServing {
     func createGoal(_ input: CreateGoalInput, token: String) async throws -> V1Goal {
         var request = makeRequest(path: "/api/v1/goals", method: "POST", token: token)
         request.httpBody = try JSONEncoder().encode(input)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         try validate(response: response)
         return try JSONDecoder().decode(V1Goal.self, from: data)
     }
@@ -55,7 +55,7 @@ actor GoalClient: GoalServing {
         var request = makeRequest(path: "/api/v1/goals/\(id)", method: "PATCH", token: token)
         let body = ["achieved": achieved]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         try validate(response: response)
         return try JSONDecoder().decode(V1Goal.self, from: data)
     }
@@ -63,7 +63,7 @@ actor GoalClient: GoalServing {
     func updateGoal(id: String, fields: [String: JSONValue], token: String) async throws -> V1Goal {
         var request = makeRequest(path: "/api/v1/goals/\(id)", method: "PATCH", token: token)
         request.httpBody = try JSONEncoder().encode(fields)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(V1Goal.self, from: data)
     }
@@ -71,21 +71,21 @@ actor GoalClient: GoalServing {
     func achievements(limit: Int, token: String) async throws -> [V1GoalAchievement] {
         var request = makeRequest(path: "/api/v1/goals/achievements", method: "GET", token: token)
         request.url = request.url?.appending(queryItems: [URLQueryItem(name: "limit", value: String(limit))])
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         try validate(response: response)
         return (try JSONDecoder().decode(LossyRecordArray<V1GoalAchievement>.self, from: data)).items
     }
 
     func linkedActivities(goalId: String, token: String) async throws -> [V1GoalLinkedActivity] {
         let request = makeRequest(path: "/api/v1/goals/\(goalId)", method: "GET", token: token)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.sharpitData(for: request)
         try validate(response: response)
         return try JSONDecoder().decode(V1GoalDetailPayload.self, from: data).activities
     }
 
     func deleteGoal(id: String, token: String) async throws {
         let request = makeRequest(path: "/api/v1/goals/\(id)", method: "DELETE", token: token)
-        let (_, response) = try await session.data(for: request)
+        let (_, response) = try await session.sharpitData(for: request)
         try validate(response: response)
     }
 

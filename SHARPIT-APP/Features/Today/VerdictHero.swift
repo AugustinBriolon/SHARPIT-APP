@@ -95,12 +95,7 @@ struct VerdictHero: View {
         .padding(.bottom, 20)
         // A new verdict (ressenti saved, refresh) cross-fades in place — never a dip or a jump.
         .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: plate)
-        .opacity(revealed ? 1 : 0)
-        .offset(y: revealed || reduceMotion ? 0 : 8)
-        .animation(
-            reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.40, dampingFraction: 1.0),
-            value: revealed
-        )
+        .arrived(revealed)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
     }

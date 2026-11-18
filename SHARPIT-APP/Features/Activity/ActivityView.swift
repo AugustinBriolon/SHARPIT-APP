@@ -78,6 +78,8 @@ struct ActivityView: View {
                     RecordsView(store: records, activityClient: client, tokenProvider: tokenProvider)
                 }
             }
+            // The history as last read, before the first frame: the server is asked behind it.
+            .onAppear(perform: showStoredHistory)
             .task {
                 if records == nil { records = RecordsStore(tokenProvider: tokenProvider) }
                 async let history: Void = load()
@@ -100,6 +102,12 @@ struct ActivityView: View {
     private var content: some View {
         switch phase {
         case .loading:
+            // The list's own chips and rows, greyed: what arrives lands where this stood.
+            ActivityFilterChips(filter: .constant(ActivityFilter()), sports: ActivityListLoading.sports)
+                .padding(.horizontal, -SharpitSpacing.pageInset)
+                .redacted(reason: .placeholder)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             ActivityListLoading()
         case .loaded(let activities):
             let shown = filter.apply(to: activities)
@@ -166,6 +174,15 @@ struct ActivityView: View {
 
     /// A page holds about two months of training: enough to fill the screen and the week.
     private static let pageSize = 60
+
+    /// A relaunch opens on the newest page the iPhone kept, never on a skeleton it could fill.
+    private func showStoredHistory() {
+        guard case .loading = phase,
+              let stored = client.storedActivityPage(limit: Self.pageSize), !stored.isEmpty
+        else { return }
+        hasMore = stored.count == Self.pageSize
+        phase = .loaded(stored)
+    }
 
     /// Reads the page before the oldest session shown and adds it under the list.
     @MainActor
@@ -487,23 +504,36 @@ enum ActivityRowReadout {
     }
 }
 
+/// The history while it is read for the first time: two weeks of the list's own rows, greyed,
+/// so the sessions arrive in the places already drawn.
 private struct ActivityListLoading: View {
+    static let sports: [V1ActivityType] = [.run, .bike]
+
+    private static var placeholders: [V1ActivityListItem] {
+        let calendar = Calendar.current
+        return [0, 1, 3, 7, 9, 10].enumerated().map { index, daysAgo in
+            V1ActivityListItem(
+                id: "skeleton-\(index)",
+                type: index.isMultiple(of: 2) ? .run : .bike,
+                date: calendar.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now,
+                title: "Sortie endurance",
+                duration: 3_480,
+                load: 72,
+                distanceM: 12_400
+            )
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(SharpitColor.tile)
-                .frame(width: 210, height: 28)
-            RoundedRectangle(cornerRadius: 8)
-                .fill(SharpitColor.tile)
-                .frame(width: 280, height: 18)
-            ForEach(0..<5, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: SharpitSpacing.cardRadius)
-                    .fill(SharpitColor.tile)
-                    .frame(height: 78)
+        LazyVStack(alignment: .leading, spacing: 20) {
+            ForEach(ActivityHistory.weeks(Self.placeholders)) { week in
+                ActivityWeekSection(week: week, selectedActivity: .constant(nil))
             }
         }
+        .padding(.top, 14)
         .redacted(reason: .placeholder)
-        .padding(.top, SharpitSpacing.md)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Chargement de l’historique")
     }
 }
