@@ -232,6 +232,7 @@ actor FoodLogClient: FoodLogServing {
             "meal": draft.meal.rawValue,
             "grams": draft.grams,
         ]
+        if let minute = draft.eatenMinute { payload["eatenMinute"] = minute }
         switch draft.source {
         case .product(let product):
             payload["productId"] = product.id
@@ -252,6 +253,7 @@ actor FoodLogClient: FoodLogServing {
         var payload: [String: Any] = [:]
         if let grams = change.grams { payload["grams"] = grams }
         if let meal = change.meal { payload["meal"] = meal.rawValue }
+        if let minute = change.eatenMinute { payload["eatenMinute"] = minute }
         return try JSONSerialization.data(withJSONObject: payload)
     }
 

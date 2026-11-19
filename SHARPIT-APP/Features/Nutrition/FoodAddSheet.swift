@@ -74,13 +74,20 @@ struct FoodAddSheet: View {
                 product: product,
                 lastGrams: store.lastGrams(of: product),
                 meal: meal,
+                trainingDayId: store.trainingDayId,
                 complete: { await search.fullProduct(of: $0) }
-            ) { meal, grams in
-                log(FoodLogDraft(trainingDayId: store.trainingDayId, meal: meal, grams: grams, source: .product(product)))
+            ) { meal, grams, eatenMinute in
+                log(FoodLogDraft(
+                    trainingDayId: store.trainingDayId, meal: meal, grams: grams,
+                    source: .product(product), eatenMinute: eatenMinute
+                ))
             }
         case .quick(let name):
-            FoodQuickAddPage(initialName: name, meal: meal) { meal, grams, quick in
-                log(FoodLogDraft(trainingDayId: store.trainingDayId, meal: meal, grams: grams, source: .quick(quick)))
+            FoodQuickAddPage(initialName: name, meal: meal, trainingDayId: store.trainingDayId) { meal, grams, quick, eatenMinute in
+                log(FoodLogDraft(
+                    trainingDayId: store.trainingDayId, meal: meal, grams: grams,
+                    source: .quick(quick), eatenMinute: eatenMinute
+                ))
             }
         case .custom(let name):
             FoodCustomPage(purpose: .create(name: name)) { draft in
@@ -500,28 +507,34 @@ struct FoodCreateRow: View {
 
 // MARK: - Portion
 
-/// How much of a food, and in which meal: the grams with a few presets, what they bring, « Ajouter ».
+/// How much of a food, in which meal and when: the grams with a few presets, what they bring, « Ajouter ».
 struct FoodPortionPage: View {
     let lastGrams: Double?
+    let trainingDayId: String
     /// Reads the whole product when the one picked came from a search hit (its additives).
     let complete: ((V1FoodProduct) async -> V1FoodProduct?)?
-    let onAdd: (FoodLogMeal, Double) -> Void
+    /// The meal, the grams and the time to send (`FoodEatenTime.sent`).
+    let onAdd: (FoodLogMeal, Double, Int?) -> Void
 
     @State private var product: V1FoodProduct
     @State private var isCompleting = false
     @State private var gramsText: String
     @State private var meal: FoodLogMeal
+    @State private var eatenTime: FoodEatenTime
     @FocusState private var isGramsFocused: Bool
 
     init(
         product: V1FoodProduct,
         lastGrams: Double?,
         meal: FoodLogMeal,
+        trainingDayId: String = TrainingDayId.today(),
         complete: ((V1FoodProduct) async -> V1FoodProduct?)? = nil,
-        onAdd: @escaping (FoodLogMeal, Double) -> Void
+        onAdd: @escaping (FoodLogMeal, Double, Int?) -> Void
     ) {
         _product = State(initialValue: product)
         self.lastGrams = lastGrams
+        self.trainingDayId = trainingDayId
+        _eatenTime = State(initialValue: FoodEatenTime.initial(meal: meal, trainingDayId: trainingDayId))
         self.complete = complete
         self.onAdd = onAdd
         _gramsText = State(initialValue: FoodPortion.editableFigure(FoodPortion.initialGrams(for: product, lastGrams: lastGrams)))
@@ -582,6 +595,7 @@ struct FoodPortionPage: View {
 
             Section {
                 FoodMealPicker(meal: $meal)
+                FoodEatenTimePicker(time: $eatenTime)
                 if let health = scoredHealth {
                     FoodDietConflictLine(health: health)
                 }
@@ -597,6 +611,7 @@ struct FoodPortionPage: View {
             }
         }
         .sharpitGroupedList()
+        .onChange(of: meal) { _, meal in eatenTime.follow(meal: meal, trainingDayId: trainingDayId) }
         .task { await completeIfSummary() }
         .safeAreaInset(edge: .bottom) {
             SharpitActionDock {
@@ -614,7 +629,7 @@ struct FoodPortionPage: View {
 
     private func add() {
         guard let grams else { return }
-        onAdd(meal, grams)
+        onAdd(meal, grams, eatenTime.sent)
     }
 
     private func completeIfSummary() async {
@@ -629,7 +644,8 @@ struct FoodPortionPage: View {
 
 /// A food typed in by hand: its name and energy, the macros if known.
 private struct FoodQuickAddPage: View {
-    let onAdd: (FoodLogMeal, Double, FoodQuickAdd) -> Void
+    let trainingDayId: String
+    let onAdd: (FoodLogMeal, Double, FoodQuickAdd, Int?) -> Void
 
     @State private var name: String
     @State private var kcal = ""
@@ -639,8 +655,17 @@ private struct FoodQuickAddPage: View {
     @State private var gramsText = ""
     @State private var meal: FoodLogMeal
 
-    init(initialName: String, meal: FoodLogMeal, onAdd: @escaping (FoodLogMeal, Double, FoodQuickAdd) -> Void) {
+    @State private var eatenTime: FoodEatenTime
+
+    init(
+        initialName: String,
+        meal: FoodLogMeal,
+        trainingDayId: String,
+        onAdd: @escaping (FoodLogMeal, Double, FoodQuickAdd, Int?) -> Void
+    ) {
         self.onAdd = onAdd
+        self.trainingDayId = trainingDayId
+        _eatenTime = State(initialValue: FoodEatenTime.initial(meal: meal, trainingDayId: trainingDayId))
         _name = State(initialValue: initialName.trimmingCharacters(in: .whitespacesAndNewlines))
         _meal = State(initialValue: meal)
     }
@@ -683,15 +708,17 @@ private struct FoodQuickAddPage: View {
 
             Section {
                 FoodMealPicker(meal: $meal)
+                FoodEatenTimePicker(time: $eatenTime)
             }
             .sharpitListRows()
         }
         .sharpitGroupedList()
+        .onChange(of: meal) { _, meal in eatenTime.follow(meal: meal, trainingDayId: trainingDayId) }
         .safeAreaInset(edge: .bottom) {
             SharpitActionDock {
                 SharpitPrimaryButton(title: String(localized: "Ajouter")) {
                     guard let entry else { return }
-                    onAdd(meal, entry.grams, entry.quick)
+                    onAdd(meal, entry.grams, entry.quick, eatenTime.sent)
                 }
                 .disabled(entry == nil)
             }

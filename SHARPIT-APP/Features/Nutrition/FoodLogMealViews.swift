@@ -335,7 +335,7 @@ private struct FoodLogEntryRow: View {
                     .font(SharpitTypography.body)
                     .foregroundStyle(SharpitColor.foreground)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(FoodPortion.gramsLabel(entry.grams))
+                Text([entry.eatenMinute.map(FoodEatenTime.clock), FoodPortion.gramsLabel(entry.grams)].compactMap { $0 }.joined(separator: " · "))
                     .font(SharpitTypography.meta)
                     .monospacedDigit()
                     .foregroundStyle(SharpitColor.slate)

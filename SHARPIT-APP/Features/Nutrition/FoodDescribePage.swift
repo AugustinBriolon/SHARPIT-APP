@@ -22,6 +22,8 @@ struct FoodDescribePage: View {
     /// The food whose grams are being set.
     @State private var editing: DescribedFoodLine.ID?
     @State private var mealName = ""
+    /// When the meal was eaten: every food of it goes out at that time.
+    @State private var eatenTime: FoodEatenTime
 
     init(
         trainingDayId: String,
@@ -40,6 +42,7 @@ struct FoodDescribePage: View {
         self.tokenProvider = tokenProvider
         self.onAdd = onAdd
         _selectedMeal = State(initialValue: meal)
+        _eatenTime = State(initialValue: FoodEatenTime.initial(meal: meal, trainingDayId: trainingDayId))
     }
 
     private enum Phase {
@@ -54,7 +57,11 @@ struct FoodDescribePage: View {
     }
 
     private var readyDrafts: [FoodLogDraft] {
-        items.compactMap { $0.draft(trainingDayId: trainingDayId, meal: selectedMeal) }
+        items.compactMap {
+            var draft = $0.draft(trainingDayId: trainingDayId, meal: selectedMeal)
+            draft?.eatenMinute = eatenTime.sent
+            return draft
+        }
     }
 
     var body: some View {
@@ -150,8 +157,10 @@ struct FoodDescribePage: View {
         List {
             Section {
                 FoodMealPicker(meal: $selectedMeal)
+                FoodEatenTimePicker(time: $eatenTime)
             }
             .sharpitListRows()
+            .onChange(of: selectedMeal) { _, meal in eatenTime.follow(meal: meal, trainingDayId: trainingDayId) }
 
             // The meal read as one — its energy and what it is made of — before its foods: five
             // forms to read back for one kebab was the page's whole cost.

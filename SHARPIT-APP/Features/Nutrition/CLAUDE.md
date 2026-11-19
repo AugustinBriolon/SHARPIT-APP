@@ -126,3 +126,14 @@ more line, `FoodCreateRow`: the words typed as the name, « Créer cet aliment �
 result carries its score. The whole line opens the custom-food form with that name
 (`.custom(name: query)`), found or not — Open Food Facts lists a brand's other products for one it
 lacks (SHARPIT ADR-136). Not shown under « Récents ». Written without Xcode: not built or seen yet.
+
+**When a food was eaten (SHARPIT ADR-137, the athlete's request, 2026-11-19).** The portion, the
+quick add, a described meal's review and the edit sheet carry « Heure » under the meal
+(`FoodEatenTimePicker`, the system's compact time picker), sent as `eatenMinute` — minutes after the
+day's local midnight. `FoodEatenTime` decides what goes out: logging the meal of the hour today opens
+on now and sends it; any other meal or day opens on the meal's usual hour (08:00, 12:30, 16:00, 19:30,
+the server's) and sends nothing until the athlete sets it — the athlete often logs the day in the
+evening, and a guess never reaches the server as a fact. An untouched time follows a change of meal.
+A meal's page shows the time before the grams (« 12:40 · 150 g »). The server places each meal of
+« Fil de la journée » at its foods' time and gives the times to the coach's reading of the day. Written
+without Xcode: not built or seen yet.

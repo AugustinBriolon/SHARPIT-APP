@@ -506,7 +506,7 @@ struct ScreenDemoHost: View {
                 }
             case "portion":
                 NavigationStack {
-                    FoodPortionPage(product: DemoFoodLog.pasta, lastGrams: 200, meal: .dinner) { _, _ in }
+                    FoodPortionPage(product: DemoFoodLog.pasta, lastGrams: 200, meal: .dinner) { _, _, _ in }
                 }
             case "compliance":
                 if let analysis = try? JSONDecoder().decode(V1PlannedSessionAnalysis.self, from: Data("""

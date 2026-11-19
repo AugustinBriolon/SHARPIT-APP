@@ -448,12 +448,13 @@ final class FoodLogStore {
             return V1FoodLogEntry(
                 id: id, meal: draft.meal, productId: product.id, name: product.name, brand: product.brand,
                 grams: draft.grams, kcal: portion.kcal, protein: portion.protein, carbs: portion.carbs, fat: portion.fat,
-                health: product.health
+                health: product.health, eatenMinute: draft.eatenMinute
             )
         case .quick(let quick):
             return V1FoodLogEntry(
                 id: id, meal: draft.meal, productId: nil, name: quick.name, brand: nil, grams: draft.grams,
-                kcal: quick.kcal, protein: quick.protein ?? 0, carbs: quick.carbs ?? 0, fat: quick.fat ?? 0
+                kcal: quick.kcal, protein: quick.protein ?? 0, carbs: quick.carbs ?? 0, fat: quick.fat ?? 0,
+                eatenMinute: draft.eatenMinute
             )
         }
     }
@@ -478,6 +479,7 @@ final class FoodLogStore {
             updated.fat = portion.fat
         }
         if let meal = change.meal { updated.meal = meal }
+        if let minute = change.eatenMinute { updated.eatenMinute = minute }
         return updated
     }
 

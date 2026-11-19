@@ -75,6 +75,8 @@ nonisolated struct V1FoodLogEntry: Codable, Sendable, Equatable, Hashable, Ident
     /// The named meal this food was logged as part of (SHARPIT ADR-134); nil on its own.
     var groupId: String? = nil
     var groupLabel: String? = nil
+    /// When it was eaten, minutes after the day's local midnight (SHARPIT ADR-137); nil when not given.
+    var eatenMinute: Int? = nil
 }
 
 /// A food the athlete can log: an Open Food Facts product cached by the server, or their own.
@@ -580,12 +582,16 @@ nonisolated struct FoodLogDraft: Sendable, Equatable {
     var meal: FoodLogMeal
     var grams: Double
     var source: FoodLogEntrySource
+    /// When it was eaten (`FoodEatenTime.sent`); nil goes out as no time.
+    var eatenMinute: Int? = nil
 }
 
-/// A new portion or a new meal for an entry. Nil leaves the field as it is.
+/// A new portion, meal or time for an entry. Nil leaves the field as it is.
 nonisolated struct FoodLogEntryChange: Sendable, Equatable {
     var grams: Double?
     var meal: FoodLogMeal?
+    /// A time set by the athlete; nil leaves the entry's.
+    var eatenMinute: Int? = nil
 }
 
 /// The athlete's own food, per 100 g.

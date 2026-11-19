@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A logged food, edited: a new weight or another meal, or taken out. Saved on « OK » and shown
+/// A logged food, edited: a new weight, another meal or the time it was eaten, or taken out. Saved on « OK » and shown
 /// in the day at once (`FoodLogStore.update`).
 struct FoodEntryEditSheet: View {
     let store: FoodLogStore
@@ -8,6 +8,7 @@ struct FoodEntryEditSheet: View {
 
     @State private var gramsText: String
     @State private var meal: FoodLogMeal
+    @State private var eatenTime: FoodEatenTime
     @FocusState private var isGramsFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -16,17 +17,20 @@ struct FoodEntryEditSheet: View {
         self.entry = entry
         _gramsText = State(initialValue: FoodPortion.editableFigure(entry.grams))
         _meal = State(initialValue: entry.meal)
+        _eatenTime = State(initialValue: FoodEatenTime.existing(entry))
     }
 
     private var grams: Double? { FoodLogForm.grams(gramsText) }
 
     private var change: FoodLogEntryChange? {
         guard let grams else { return nil }
+        let minute = eatenTime.isSet ? eatenTime.minute : nil
         let change = FoodLogEntryChange(
             grams: grams == entry.grams ? nil : grams,
-            meal: meal == entry.meal ? nil : meal
+            meal: meal == entry.meal ? nil : meal,
+            eatenMinute: minute == entry.eatenMinute ? nil : minute
         )
-        return change.grams == nil && change.meal == nil ? nil : change
+        return change.grams == nil && change.meal == nil && change.eatenMinute == nil ? nil : change
     }
 
     var body: some View {
@@ -60,8 +64,13 @@ struct FoodEntryEditSheet: View {
 
                 Section {
                     FoodMealPicker(meal: $meal)
+                    FoodEatenTimePicker(time: $eatenTime)
                 }
                 .sharpitListRows()
+                // A food without a time follows its meal's usual hour until one is set.
+                .onChange(of: meal) { _, meal in
+                    if !eatenTime.isSet { eatenTime.minute = FoodEatenTime.usualMinute(of: meal) }
+                }
 
                 if let health = entry.health {
                     FoodHealthSections(health: health)
