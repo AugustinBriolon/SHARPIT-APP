@@ -322,3 +322,27 @@ private nonisolated let achievementsJSON = """
     #expect(RecordsReadout.figure("22:14") == ("22:14", nil))
     #expect(RecordsReadout.figure("4:27 /km") == ("4:27", "/km"))
 }
+
+// MARK: - Board
+
+private func mark(_ rank: Int, _ value: Double) -> V1RecordEntry {
+    V1RecordEntry(rank: rank, value: value, displayValue: "\(value)", date: Date(timeIntervalSince1970: 1_790_000_000))
+}
+
+/// A distance is better higher, a pace lower: either way the record's bar is the full one.
+@Test func aBarIsTheMarkAgainstTheRecordWhicheverWayBetterRuns() {
+    let distances = [mark(1, 30), mark(2, 24), mark(3, 15)]
+    #expect(!RecordsReadout.lowerIsBetter(distances))
+    #expect(RecordsReadout.fractions(distances) == [1, 0.8, 0.5])
+
+    let paces = [mark(1, 240), mark(2, 300)]
+    #expect(RecordsReadout.lowerIsBetter(paces))
+    #expect(RecordsReadout.fractions(paces) == [1, 0.8])
+}
+
+@Test func aMarkThatCannotBeComparedDrawsNothing() {
+    #expect(RecordsReadout.fractions([]) == [])
+    #expect(RecordsReadout.fractions([mark(1, 0), mark(2, 10)]) == [0, 0])
+    #expect(RecordsReadout.fractions([mark(1, 20), mark(2, .nan)]) == [1, 0])
+    #expect(RecordsReadout.fractions([mark(1, 20)]) == [1])
+}

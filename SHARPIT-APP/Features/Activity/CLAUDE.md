@@ -67,13 +67,19 @@ opening the zone's own `ZoneCheckinSheet`.
 Progression › Performance, and the app has no Progression tab, so they sit with the sessions they
 come from. `RecordsStore` (owned by `ActivityView`, created on the first open, so a reopen shows at
 once and refreshes quietly; a failed refresh keeps what is shown) reads `/api/v1/records`
-(`RecordsClient`, `V1Records`): per sport (Course / Vélo / Natation, a `SharpitSegmentedControl`) each
-category of the web's `PR_DEFS` as a card — the #1 in `SharpitColor.recordAccent` with its meta, its
-age in the web's words (`RecordsReadout.narrative`: « il y a 3 mois », « record de la saison ») and
-« Nouveau » for two weeks, then #2–#5 — then for running the best time over each reference distance
-(`runBests`, « Meilleurs temps »), and for cycling, in the expert reading only (`docs/adr/0006`, the
-web's `ExpertOnly`), the power curve on Swift Charts (`PowerCurveCard`, categorical durations,
-`chartXSelection` with a notch per duration). Every figure is the server's `displayValue`; a record
+(`RecordsClient`, `V1Records`) and draws a board (the athlete's call, 2026-11-21, replacing a tab
+per sport and a card per category): one section per sport on the sheet — its glyph and name, then
+each category of the web's `PR_DEFS` as a cell between hairlines, two a row: the server's label, the
+best mark, five bars for the five best against the record (`RecordBars`, `RecordsReadout.fractions`,
+whichever way better runs), a green dot for two weeks after a record. No border, no corner, no rank
+list. Running's reference distances (`runBests`) are a strip under its cells; cycling's power curve,
+in the expert reading only (`docs/adr/0006`, the web's `ExpertOnly`), a line under its. A cell pushes
+`RecordDetailView` (`RecordFocus`): the mark read big, « Nouveau » for two weeks, « Voir la séance »,
+the five best as bars with their dates (each opening its session) and « Dans le temps », those five
+by date — the server keeps no more, so it is not a full history. The power curve takes the same page
+(`PowerCurveCard`, Swift Charts, `chartXSelection` with a notch per duration). The loading state is
+the board redacted over `RecordsReadout.placeholder`.
+Every figure is the server's `displayValue`; a record
 with an `activityId` pushes its session. Arrays decode through `LossyRecordArray`, so one malformed
 record never blanks the page.
 

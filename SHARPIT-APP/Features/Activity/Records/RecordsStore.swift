@@ -92,6 +92,35 @@ nonisolated enum RecordsReadout {
         return String(localized: "Top 5 par catégorie sur \(sessions) (\(records.streamsAnalyzed) avec données détaillées).")
     }
 
+    /// A pace or a time is better lower, a distance or a power higher: the ranks say which, the
+    /// best being first. One mark alone, or five equal ones, read as higher.
+    static func lowerIsBetter(_ entries: [V1RecordEntry]) -> Bool {
+        guard let best = entries.first, let last = entries.last else { return false }
+        return best.value < last.value
+    }
+
+    /// Each mark against the record, 1 for the record itself, whichever way better runs — the
+    /// height of its bar. A mark that cannot be compared (zero, not finite) reads as nothing.
+    static func fractions(_ entries: [V1RecordEntry]) -> [Double] {
+        guard let best = entries.first?.value, best.isFinite, best > 0 else { return entries.map { _ in 0 } }
+        let lower = lowerIsBetter(entries)
+        return entries.map { entry in
+            guard entry.value.isFinite, entry.value > 0 else { return 0 }
+            return min(1, lower ? best / entry.value : entry.value / best)
+        }
+    }
+
+    /// The board drawn while the records are read: the shape of a page, redacted.
+    static var placeholder: V1Records {
+        func category(_ key: String, _ label: String) -> V1RecordCategory {
+            V1RecordCategory(key: key, label: label, entries: (1...5).map {
+                V1RecordEntry(rank: $0, value: Double(60 - $0 * 4), displayValue: "00,0 km", date: .distantPast)
+            })
+        }
+        let four = [category("a", "Plus longue sortie"), category("b", "Meilleure allure"), category("c", "Plus gros dénivelé"), category("d", "Plus long effort")]
+        return V1Records(prs: V1RecordGroups(run: four, bike: four, swim: Array(four.prefix(2))))
+    }
+
     /// « 312 W ».
     static func watts(_ value: Double) -> String {
         "\(Int(value.rounded())) W"
