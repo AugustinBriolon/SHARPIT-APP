@@ -6,7 +6,7 @@ import SwiftUI
 struct CaffeineInputSheet: View {
     @Bindable var store: JournalStore
 
-    static let amount = JournalAmountSheet.Amount(
+    static let amount = JournalAmount(
         title: String(localized: "Caféine"),
         caption: String(localized: "Consommée sur la journée"),
         format: JournalAmountFormat.milligrams,

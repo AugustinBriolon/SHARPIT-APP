@@ -5,7 +5,7 @@ import SwiftUI
 struct DrivingInputSheet: View {
     @Bindable var store: JournalStore
 
-    static let amount = JournalAmountSheet.Amount(
+    static let amount = JournalAmount(
         title: String(localized: "Conduite"),
         caption: String(localized: "Temps passé à conduire aujourd'hui"),
         format: { $0 == 0 ? "0 min" : JournalDrivingFormat.minutes($0) },

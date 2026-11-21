@@ -4,7 +4,7 @@ import SwiftUI
 struct HydrationInputSheet: View {
     @Bindable var store: JournalStore
 
-    static let amount = JournalAmountSheet.Amount(
+    static let amount = JournalAmount(
         title: String(localized: "Hydratation"),
         caption: String(localized: "Eau et liquides sur la journée"),
         format: { JournalAmountFormat.volume($0) },

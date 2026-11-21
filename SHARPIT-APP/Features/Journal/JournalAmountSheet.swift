@@ -4,25 +4,8 @@ import SwiftUI
 /// read big between − and +, the usual portions to add in one tap, and a way back to zero.
 /// Each amount only says what it is (`Amount`); the layout is the same, so they read alike.
 struct JournalAmountSheet<Detail: View>: View {
-    /// A usual portion: what it is, what it adds.
-    struct Portion: Identifiable {
-        let id: String
-        let label: String
-        let symbol: String
-        let delta: Int
-    }
-
-    struct Amount {
-        let title: String
-        let caption: String
-        /// How the figure reads, « 160 mg ».
-        let format: (Int) -> String
-        let stepDelta: Int
-        let portions: [Portion]
-        let portionLabel: (Portion) -> String
-        let resetTitle: String
-        let hue: Color
-    }
+    typealias Portion = JournalAmountPortion
+    typealias Amount = JournalAmount
 
     let amount: Amount
     let value: Int
@@ -151,4 +134,25 @@ extension JournalAmountSheet where Detail == EmptyView {
     init(amount: Amount, value: Int, onAdjust: @escaping (Int) -> Void, onReset: @escaping () -> Void) {
         self.init(amount: amount, value: value, onAdjust: onAdjust, onReset: onReset) { EmptyView() }
     }
+}
+
+/// A usual portion of a journal amount: what it is, what it adds.
+struct JournalAmountPortion: Identifiable {
+    let id: String
+    let label: String
+    let symbol: String
+    let delta: Int
+}
+
+/// What a journal amount sheet adds up: its words, its steps, its usual portions.
+struct JournalAmount {
+    let title: String
+    let caption: String
+    /// How the figure reads, « 160 mg ».
+    let format: (Int) -> String
+    let stepDelta: Int
+    let portions: [JournalAmountPortion]
+    let portionLabel: (JournalAmountPortion) -> String
+    let resetTitle: String
+    let hue: Color
 }
