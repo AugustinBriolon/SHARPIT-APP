@@ -53,9 +53,13 @@ dashed, next week, and the full text on its own page. `-SharpitWeeklyReviewDemo`
 fixed week in Debug builds.
 
 **Trips in the week.** The coach's trips (Mémoire du coach, `/api/v1/coach-memory`, type `TRAVEL`) that fall in the week
-shown sit on one band in the week's list (the athlete's call, 2026-11-16, replacing the chip
-beside the status): the days away share a neutral plate, rounded where the trip starts and ends in
-the week, with the trip's name and dates atop its first day (`PlanTravelLabel`, `PlanTravel.trip(on:in:)`);
+shown are a stretch of the week's rail (the athlete's call, 2026-11-21, replacing the grey band of
+2026-11-16, itself replacing the chip beside the status): the trip opens on a stop of its own above
+its first day shown (`PlanTripStop`: its glyph on the rail, the place and the days over its name as a
+day stands over its session, what training becomes as a pill, the sports when it narrows them), and
+the rail runs in ink, 3 pt, down the days away (`PlanRail`), back to a hairline at home. A trip under
+way before the week comes in from the top, one going on after it leaves by the last day
+(`PlanTravel.overflow`). Nothing is filled: the sheet stays white, every row keeps its hairline.
 `PlanTravel` compares calendar days — a trip's days are UTC
 midnights on the server, the week's are local — and the label opens `PlanTripsView` as a sheet. Plan's « … » →
 « Déplacements » opens the same list (trips and constraints, under way then ahead); injuries, preferences and notes
@@ -225,8 +229,7 @@ athlete typed a load there, it was stored as repetitions (25 reps at 10 kg for 1
 coach, who reads the last session, prescribed it back the next day. The line reads « 15 rép. × 10 kg ».
 The history code was read end to end and swaps nothing.
 
-**Trip band, exercise figures (2026-11-16).** No rule is drawn where a trip's band starts or ends
-(`bandEdge`): against the band's edge it read as stuck to it. An exercise's page shows « Dernière
+**Exercise figures (2026-11-16).** An exercise's page shows « Dernière
 fois », « Meilleur » and « Volume » as one strip of named columns between hairlines
 (`ExerciseFiguresStrip`): the volume's column is there from the start, « — » until a set is done —
 it used to appear with the first set and push the sets down.

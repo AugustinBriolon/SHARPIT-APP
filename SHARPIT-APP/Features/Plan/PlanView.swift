@@ -886,99 +886,115 @@ private struct PlanWeekContent: View {
 }
 
 /// The week's days down a rail: a dot per line says where it stands — filled for done, amber
-/// for missed, a bold ring for today, a hollow one ahead, grey for rest.
+/// for missed, a bold ring for today, a hollow one ahead, grey for rest. A trip is a stretch of
+/// that rail: it opens on a stop of its own, and the rail runs in ink down the days away.
 private struct PlanTimeline: View {
     let days: [Date]
     let entriesOn: (Date) -> [PlanEntry]
-    /// The week's trips: the days away sit on one band, named on its first day.
     var trips: [CoachMemoryEntry] = []
     var onOpenTravel: () -> Void = {}
     let activityClient: any ActivityServing
     let tokenProvider: () async throws -> String
     let onSelect: (PlanSelection) -> Void
 
-    private struct Line: Identifiable {
-        let id: String
+    private struct Line {
         let day: Date
         let entry: PlanEntry?
-        var trip: CoachMemoryEntry?
         /// 0 for the day's first session; a day holding several ranks the others after it.
         var rank = 0
         /// The next line is the same day's: the two read as one day, with no rule between.
         var sharesDayWithNext = false
     }
 
-    private var lines: [Line] {
-        days.flatMap { day -> [Line] in
-            let entries = entriesOn(day)
+    /// A day's line, or — `line` nil — the stop that opens a trip above its first day shown.
+    private struct Row: Identifiable {
+        let id: String
+        var line: Line?
+        var trip: CoachMemoryEntry?
+    }
+
+    private var rows: [Row] {
+        var rows: [Row] = []
+        for day in days {
             let trip = PlanTravel.trip(on: day, in: trips)
-            if entries.isEmpty { return [Line(id: "rest-\(day.timeIntervalSince1970)", day: day, entry: nil, trip: trip)] }
-            return entries.enumerated().map { rank, entry in
-                Line(id: entry.id, day: day, entry: entry, trip: trip, rank: rank, sharesDayWithNext: rank < entries.count - 1)
+            if let trip, rows.last?.trip?.id != trip.id {
+                rows.append(Row(id: "trip-\(trip.id)", trip: trip))
+            }
+            let entries = entriesOn(day)
+            if entries.isEmpty {
+                rows.append(Row(id: "rest-\(day.timeIntervalSince1970)", line: Line(day: day, entry: nil), trip: trip))
+            }
+            for (rank, entry) in entries.enumerated() {
+                let line = Line(day: day, entry: entry, rank: rank, sharesDayWithNext: rank < entries.count - 1)
+                rows.append(Row(id: entry.id, line: line, trip: trip))
             }
         }
+        return rows
     }
 
-    /// The band behind a day away: rounded where the trip starts and ends in the week, and wider
-    /// than the text so the lines keep their margin.
-    @ViewBuilder
-    private func travelBand(_ lines: [Line], at index: Int) -> some View {
-        if let trip = lines[index].trip {
-            let opens = index == 0 || lines[index - 1].trip?.id != trip.id
-            let closes = index == lines.count - 1 || lines[index + 1].trip?.id != trip.id
-            UnevenRoundedRectangle(
-                topLeadingRadius: opens ? 14 : 0, bottomLeadingRadius: closes ? 14 : 0,
-                bottomTrailingRadius: closes ? 14 : 0, topTrailingRadius: opens ? 14 : 0,
-                style: .continuous
-            )
-            .fill(SharpitColor.tile)
-            .padding(.horizontal, -10)
-            // A little air where the band meets the days outside the trip.
-            .padding(.top, opens ? 4 : 0)
-            .padding(.bottom, closes ? 4 : 0)
+    /// The rail above a row: in ink once inside a trip, and above a stop only when the trip was
+    /// already under way before the week.
+    private func railAbove(_ rows: [Row], at index: Int) -> PlanRail {
+        let row = rows[index]
+        guard let trip = row.trip else { return index == 0 ? .none : .plain }
+        if row.line == nil {
+            if index > 0 { return .plain }
+            return PlanTravel.overflow(of: trip, beyond: days).before ? .trip : .none
         }
+        return .trip
     }
 
-    /// Whether a trip's band starts or ends between this line and the next: the band's own edge
-    /// parts the two days, and a rule drawn against it read as stuck to it.
-    private func bandEdge(_ lines: [Line], after index: Int) -> Bool {
-        lines[index].trip?.id != lines[index + 1].trip?.id
+    /// The rail below a row: in ink while the next row is the same trip's, and off the week's
+    /// last day when the trip goes on after it.
+    private func railBelow(_ rows: [Row], at index: Int) -> PlanRail {
+        let row = rows[index]
+        guard index < rows.count - 1 else {
+            guard let trip = row.trip else { return .none }
+            return PlanTravel.overflow(of: trip, beyond: days).after ? .trip : .none
+        }
+        guard let trip = row.trip else { return .plain }
+        return rows[index + 1].trip?.id == trip.id ? .trip : .plain
+    }
+
+    private func railMark(_ row: Row) -> PlanRailMark.Mark {
+        guard let line = row.line else { return .stop(row.trip?.type.symbol ?? CoachMemoryType.travel.symbol) }
+        return .day(PlanTimelineReadout.mark(for: line.entry, on: line.day))
     }
 
     var body: some View {
-        let lines = lines
+        let rows = rows
         VStack(spacing: 0) {
-            ForEach(Array(lines.enumerated()), id: \.element.id) { index, line in
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                 HStack(alignment: .top, spacing: SharpitSpacing.sm) {
                     PlanRailMark(
-                        mark: PlanTimelineReadout.mark(for: line.entry, on: line.day),
-                        isFirst: index == 0,
-                        isLast: index == lines.count - 1,
-                        isFollowUp: line.rank > 0
+                        mark: railMark(row),
+                        above: railAbove(rows, at: index),
+                        below: railBelow(rows, at: index),
+                        isFollowUp: (row.line?.rank ?? 0) > 0
                     )
                     VStack(spacing: 0) {
-                        if let trip = line.trip, index == 0 || lines[index - 1].trip?.id != trip.id {
-                            PlanTravelLabel(trip: trip, onOpen: onOpenTravel)
+                        if let line = row.line {
+                            if let entry = line.entry {
+                                PlanEntryRow(
+                                    entry: entry,
+                                    day: line.day,
+                                    rank: line.rank,
+                                    activityClient: activityClient,
+                                    tokenProvider: tokenProvider,
+                                    onSelect: onSelect
+                                )
+                            } else {
+                                Text("\(PlanTimelineReadout.dayLabel(line.day)) · Repos")
+                                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                                    .foregroundStyle(SharpitColor.slate)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 14)
+                            }
+                        } else if let trip = row.trip {
+                            PlanTripStop(trip: trip, onOpen: onOpenTravel)
                         }
-                        if let entry = line.entry {
-                            PlanEntryRow(
-                                entry: entry,
-                                day: line.day,
-                                rank: line.rank,
-                                activityClient: activityClient,
-                                tokenProvider: tokenProvider,
-                                onSelect: onSelect
-                            )
-                        } else {
-                            Text("\(PlanTimelineReadout.dayLabel(line.day)) · Repos")
-                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                                .foregroundStyle(SharpitColor.slate)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 14)
-                        }
-                        if index < lines.count - 1, !line.sharesDayWithNext, !bandEdge(lines, after: index) { CliniqueDivider() }
+                        if index < rows.count - 1, row.line?.sharesDayWithNext != true { CliniqueDivider() }
                     }
-                    .background { travelBand(lines, at: index) }
                 }
                 .fixedSize(horizontal: false, vertical: true)
             }
@@ -1019,39 +1035,57 @@ enum PlanTimelineReadout {
     }
 }
 
+/// A stretch of the rail between two marks: none past the week's ends, a hairline at home, ink
+/// along a trip.
+enum PlanRail {
+    case none
+    case plain
+    case trip
+}
+
 private struct PlanRailMark: View {
-    let mark: PlanTimelineReadout.Mark
-    let isFirst: Bool
-    let isLast: Bool
+    enum Mark {
+        case day(PlanTimelineReadout.Mark)
+        /// A trip's stop: its glyph, where a day has its dot.
+        case stop(String)
+    }
+
+    let mark: Mark
+    let above: PlanRail
+    let below: PlanRail
     /// A day's second session and after: a smaller dot, so the first one stays the day's.
     var isFollowUp = false
 
     var body: some View {
         let size: CGFloat = isFollowUp ? 8 : 14
         VStack(spacing: 0) {
-            segment(hidden: isFirst).frame(height: 20 + (14 - size) / 2)
+            segment(above).frame(height: 20 + (14 - size) / 2)
             dot.frame(width: size, height: size)
-            segment(hidden: isLast).frame(maxHeight: .infinity)
+            segment(below).frame(maxHeight: .infinity)
         }
         .frame(width: 14)
         .accessibilityHidden(true)
     }
 
-    private func segment(hidden: Bool) -> some View {
+    private func segment(_ rail: PlanRail) -> some View {
         Rectangle()
-            .fill(hidden ? Color.clear : SharpitColor.outline)
-            .frame(width: 1)
+            .fill(rail == .none ? Color.clear : rail == .trip ? SharpitColor.foreground : SharpitColor.outline)
+            .frame(width: rail == .trip ? 3 : 1)
     }
 
     @ViewBuilder
     private var dot: some View {
         switch mark {
-        case .done: Circle().fill(SharpitColor.statusGoodMark)
-        case .missed: Circle().fill(SharpitColor.statusWatchMark)
-        case .today:
+        case .stop(let symbol):
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(SharpitColor.foreground)
+        case .day(.done): Circle().fill(SharpitColor.statusGoodMark)
+        case .day(.missed): Circle().fill(SharpitColor.statusWatchMark)
+        case .day(.today):
             Circle().strokeBorder(SharpitColor.foreground, lineWidth: isFollowUp ? 2.5 : 4)
-        case .ahead: Circle().strokeBorder(SharpitColor.slate, lineWidth: 1.5)
-        case .rest: Circle().strokeBorder(SharpitColor.outline, lineWidth: 1.5)
+        case .day(.ahead): Circle().strokeBorder(SharpitColor.slate, lineWidth: 1.5)
+        case .day(.rest): Circle().strokeBorder(SharpitColor.outline, lineWidth: 1.5)
         }
     }
 }

@@ -156,3 +156,42 @@ struct SourcesNetworkTests {
     #expect(PlanTravel.trip(on: week[6], in: trips, calendar: utcCalendar)?.displayTitle == "Lisbonne")
     #expect(PlanTravel.trip(on: utcDate("2026-10-09T12:00:00Z"), in: trips, calendar: utcCalendar) == nil)
 }
+
+@Test func aTripRunningPastTheWeekLeavesByItsEdge() {
+    let week = (5...11).map { utcDate("2026-10-\(String(format: "%02d", $0))T12:00:00Z") }
+    func trip(_ start: String, _ end: String) -> CoachMemoryEntry {
+        CoachMemoryEntry(type: .travel, startDate: utcDate("\(start)T00:00:00Z"), endDate: utcDate("\(end)T00:00:00Z"))
+    }
+    let inside = PlanTravel.overflow(of: trip("2026-10-05", "2026-10-11"), beyond: week, calendar: utcCalendar)
+    #expect(!inside.before && !inside.after)
+    let through = PlanTravel.overflow(of: trip("2026-10-01", "2026-10-14"), beyond: week, calendar: utcCalendar)
+    #expect(through.before && through.after)
+    let leaving = PlanTravel.overflow(of: trip("2026-10-09", "2026-10-12"), beyond: week, calendar: utcCalendar)
+    #expect(!leaving.before && leaving.after)
+}
+
+@Test func aTripStopSaysWhereWhenAndWhatTrainingBecomes() {
+    let start = utcDate("2026-10-08T00:00:00Z")
+    let end = utcDate("2026-10-11T00:00:00Z")
+    let named = CoachMemoryEntry(type: .travel, label: "Séminaire", locationLabel: "Lyon", startDate: start, endDate: end)
+    let place = CoachMemoryEntry(type: .travel, locationLabel: "Lisbonne", startDate: start, endDate: end)
+    let bare = CoachMemoryEntry(type: .travel, startDate: start, endDate: end)
+    // The place stands over a trip's own name; a trip named by its place is a « Déplacement ».
+    #expect(PlanTravel.overline(named) == "Lyon · \(named.formattedDateRange)")
+    #expect(PlanTravel.overline(place) == "Déplacement · \(place.formattedDateRange)")
+    #expect(PlanTravel.overline(bare) == bare.formattedDateRange)
+
+    // The sports are named only when the trip narrows them and the badge does not say it.
+    var trip = place
+    #expect(PlanTravel.sports(trip) == nil)
+    trip.allowedDisciplines = ["RUN", "MOBILITY"]
+    #expect(PlanTravel.sports(trip)?.hasSuffix("seulement") == true)
+    #expect(PlanTravel.sports(trip)?.contains("Course") == true)
+    trip.allowedDisciplines = ["MOBILITY"]
+    #expect(PlanTravel.sports(trip) == nil)
+    trip.allowedDisciplines = ["RUN", "BIKE", "SWIM", "STRENGTH", "MOBILITY"]
+    #expect(PlanTravel.sports(trip) == nil)
+    trip.allowedDisciplines = ["RUN"]
+    trip.trainingConstraint = .none
+    #expect(PlanTravel.sports(trip) == nil)
+}

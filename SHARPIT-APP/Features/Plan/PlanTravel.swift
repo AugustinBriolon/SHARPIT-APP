@@ -47,9 +47,52 @@ nonisolated enum PlanTravel {
         return trips.first { dayKey($0.startDate, in: utc) <= key && dayKey($0.endDate, in: utc) >= key }
     }
 
-    /// What VoiceOver reads: each trip and its days.
+    /// Whether a trip runs past the days shown, on either side: its rail then comes in from, or
+    /// leaves by, the week's edge instead of stopping on a day.
+    static func overflow(
+        of trip: CoachMemoryEntry,
+        beyond days: [Date],
+        calendar: Calendar = .current
+    ) -> (before: Bool, after: Bool) {
+        guard let first = days.min(), let last = days.max() else { return (false, false) }
+        return (
+            dayKey(trip.startDate, in: utc) < dayKey(first, in: calendar),
+            dayKey(trip.endDate, in: utc) > dayKey(last, in: calendar)
+        )
+    }
+
+    /// Above a trip's name, as a day stands above its session: the place when the trip has a name
+    /// of its own, « Déplacement » when the place is the name, then its days.
+    static func overline(_ trip: CoachMemoryEntry) -> String {
+        let label = trip.label ?? ""
+        let place = trip.locationLabel ?? ""
+        var parts: [String] = []
+        if !label.isEmpty, !place.isEmpty, label != place {
+            parts.append(place)
+        } else if !label.isEmpty || !place.isEmpty {
+            parts.append(CoachMemoryType.travel.shortLabel)
+        }
+        parts.append(trip.formattedDateRange)
+        return parts.joined(separator: " · ")
+    }
+
+    /// « Course et Mobilité seulement » when the trip narrows the sports; nil when the badge
+    /// already says it all (normal, lighter, mobility alone, a pause).
+    static func sports(_ trip: CoachMemoryEntry) -> String? {
+        let listed = AllowedDiscipline.allCases.filter { (trip.allowedDisciplines ?? []).contains($0.rawValue) }
+        guard !listed.isEmpty, listed.count < AllowedDiscipline.allCases.count, listed != [.mobility],
+              trip.trainingConstraint != .none
+        else { return nil }
+        let names = listed.map(\.label).formatted(.list(type: .and).locale(AppLanguage.locale))
+        return String(localized: "\(names) seulement")
+    }
+
+    /// What VoiceOver reads: each trip, its days and what training becomes.
     static func accessibilityLabel(_ trips: [CoachMemoryEntry]) -> String {
-        let parts = trips.map { "\($0.displayTitle), \($0.formattedDateRange)" }
+        let parts = trips.map { trip in
+            ([trip.displayTitle, trip.formattedDateRange, trip.trainingConstraint.label] + [sports(trip)].compactMap { $0 })
+                .joined(separator: ", ")
+        }
         return String(localized: "Déplacement cette semaine : ") + parts.joined(separator: " ; ")
     }
 
@@ -66,37 +109,58 @@ nonisolated enum PlanTravel {
     }
 }
 
-/// A trip's name atop its first day of the week: the band under it runs down the days away, so
-/// the week shows which sessions fall on the road. It opens the list of trips, where they live.
-struct PlanTravelLabel: View {
+/// A trip's stop on the week's rail, above its first day shown: when and where over its name, as
+/// a day stands over its session, and what training becomes at the end. The rail runs in ink from
+/// here down the days away. It opens the list of trips, where they live.
+struct PlanTripStop: View {
     let trip: CoachMemoryEntry
     let onOpen: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Button(action: onOpen) {
-            HStack(spacing: SharpitSpacing.xs) {
-                Image(systemName: "mappin.and.ellipse")
-                    .font(.system(size: 13, weight: .semibold))
-                    .accessibilityHidden(true)
-                Text(trip.displayTitle)
-                    .font(SharpitTypography.system(size: 13, weight: .semibold, relativeTo: .caption))
-                    .lineLimit(1)
-                Text(trip.formattedDateRange)
-                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
-                    .foregroundStyle(SharpitColor.slate)
-                    .lineLimit(1)
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(PlanTravel.overline(trip))
+                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
+                        .foregroundStyle(SharpitColor.slate)
+                        .lineLimit(1)
+                    Text(trip.displayTitle)
+                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                    if let sports = PlanTravel.sports(trip) {
+                        Text(sports)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                            .foregroundStyle(SharpitColor.slate)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(2)
+                    }
+                    // Beside the name it would squeeze it to a word at the largest sizes.
+                    if dynamicTypeSize.isAccessibilitySize { badge }
+                }
                 Spacer(minLength: SharpitSpacing.xs)
+                if !dynamicTypeSize.isAccessibilitySize { badge }
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate.opacity(0.6))
                     .accessibilityHidden(true)
             }
-            .foregroundStyle(SharpitColor.foreground)
-            .padding(.top, 10)
+            .padding(.vertical, 12)
             .contentShape(.rect)
         }
         .buttonStyle(.sharpitPressable)
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isButton)
         .accessibilityLabel(PlanTravel.accessibilityLabel([trip]))
         .accessibilityHint("Ouvre tes déplacements")
+    }
+
+    /// Said only when the trip changes training: a trip that changes nothing carries no word.
+    @ViewBuilder private var badge: some View {
+        if trip.trainingConstraint != .full {
+            CliniqueStatusPill(trip.trainingConstraint.badgeText, status: .unknown)
+        }
     }
 }
