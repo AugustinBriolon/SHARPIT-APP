@@ -24,11 +24,19 @@ struct ActivityStatusAlertLine: View {
 
     private var content: some View {
         HStack(spacing: SharpitSpacing.xs) {
-            CliniqueStatusPill(status.label, status: status.clinique)
+            Image(systemName: status.symbolName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(status.clinique.mark)
+                .accessibilityHidden(true)
+            Text(status.label)
+                .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .subheadline))
+                .foregroundStyle(status.clinique.foreground)
+                .lineLimit(1)
+                .fixedSize()
             // Two lines: the longest consequence does not fit beside the pill on a narrow iPhone.
             Text(detail)
                 .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
-                .foregroundStyle(SharpitColor.slate)
+                .foregroundStyle(status.clinique.foreground)
                 .multilineTextAlignment(.leading)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -36,15 +44,23 @@ struct ActivityStatusAlertLine: View {
             if store != nil {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
+                    .foregroundStyle(status.clinique.foreground)
                     .accessibilityHidden(true)
             }
         }
+        .padding(.horizontal, 14)
         .padding(.vertical, SharpitSpacing.xs)
         .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-        .contentShape(Rectangle())
+        // The whole line is the status' pill, grown to the row: its fill, its border, its ink.
+        .background(status.clinique.fill, in: shape)
+        .overlay(shape.strokeBorder(status.clinique.border, lineWidth: 1))
+        .contentShape(shape)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(status.label). \(status.alertLine)")
+    }
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
     }
 
     private var detail: String {

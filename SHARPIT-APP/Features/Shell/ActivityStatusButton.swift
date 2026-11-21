@@ -87,7 +87,9 @@ struct ActivityStatusDrawer: View {
             .padding(.top, 30)
             .padding(.bottom, SharpitSpacing.lg)
         }
-        .background(SharpitColor.card)
+        // The sheet's one wash, in the mode's tone: the drawer read all white (the athlete's remark, 2026-11-21).
+        .cliniqueSheet(wash: status.wash, height: 240)
+        .animation(SharpitMotion.reveal, value: status)
         .cliniqueSheetCross { dismiss() }
         .presentationDetents([.medium, .large])
         .sharpitSheet()
@@ -106,10 +108,11 @@ struct ActivityStatusDrawer: View {
                 .padding(.trailing, 56)
             HStack(spacing: 14) {
                 ZStack {
-                    Circle().strokeBorder(SharpitColor.divider, lineWidth: 3)
+                    Circle().fill(SharpitColor.card)
+                    Circle().strokeBorder(status.clinique.mark, lineWidth: 3)
                     Image(systemName: status.symbolName)
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(status == .active ? SharpitColor.foreground : status.clinique.mark)
+                        .foregroundStyle(status.clinique.mark)
                         .contentTransition(.symbolEffect(.replace))
                 }
                 .frame(width: 56, height: 56)
@@ -151,7 +154,7 @@ struct ActivityStatusDrawer: View {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Image(systemName: effect.symbol)
                         .font(.system(size: 15, weight: .regular))
-                        .foregroundStyle(SharpitColor.foreground)
+                        .foregroundStyle(status.clinique.mark)
                         .frame(width: 24)
                         .accessibilityHidden(true)
                     Text(effect.text)
@@ -179,16 +182,11 @@ struct ActivityStatusDrawer: View {
     private var durationSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle(String(localized: "Durée"))
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(ActivityStatusDuration.allCases, id: \.self) { option in
-                        ActivityStatusDurationChip(label: option.label, isSelected: duration == option) {
-                            Task { await choose(option) }
-                        }
-                    }
-                }
+            // Two rows, so the chip chosen is never off the edge of a scrolling one.
+            VStack(alignment: .leading, spacing: 8) {
+                durationRow([.days3, .week1, .weeks2])
+                durationRow([.untilModified, .date])
             }
-            .scrollClipDisabled()
             if duration == .date {
                 DatePicker(
                     String(localized: "Reprise prévue"),
@@ -202,6 +200,16 @@ struct ActivityStatusDrawer: View {
                 .frame(minHeight: 48)
                 .onChange(of: untilDate) { _, _ in
                     Task { await applyRetention() }
+                }
+            }
+        }
+    }
+
+    private func durationRow(_ options: [ActivityStatusDuration]) -> some View {
+        HStack(spacing: 8) {
+            ForEach(options, id: \.self) { option in
+                ActivityStatusDurationChip(label: option.label, isSelected: duration == option) {
+                    Task { await choose(option) }
                 }
             }
         }
@@ -260,7 +268,7 @@ struct ActivityStatusDrawer: View {
     }
 }
 
-/// One mode as a tile of the grid: its glyph and word, the held one ringed in ink.
+/// One mode as a tile of the grid: its glyph in its status' tint, its word, the held one ringed in ink.
 private struct ActivityStatusModeTile: View {
     let status: ActivityStatusId
     let isSelected: Bool
@@ -270,8 +278,11 @@ private struct ActivityStatusModeTile: View {
         Button(action: onPick) {
             VStack(alignment: .leading, spacing: 14) {
                 Image(systemName: status.symbolName)
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(SharpitColor.foreground)
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(status.clinique.foreground)
+                    .frame(width: 40, height: 40)
+                    .background(status.clinique.fill, in: Circle())
+                    .overlay(Circle().strokeBorder(status.clinique.border, lineWidth: 1))
                     .accessibilityHidden(true)
                 Text(status.label)
                     .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
@@ -281,6 +292,7 @@ private struct ActivityStatusModeTile: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(SharpitColor.card, in: RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous))
             .overlay(alignment: .topTrailing) {
                 if isSelected {
                     Image(systemName: "checkmark")

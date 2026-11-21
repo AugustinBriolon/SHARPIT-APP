@@ -15,6 +15,16 @@ extension ActivityStatusId {
         }
     }
 
+    /// The wash the mode's drawer takes at its top, in the same reading as its pill.
+    var wash: CliniqueWash {
+        switch self {
+        case .active: .good
+        case .paused: .neutral
+        case .sick: .watch
+        case .injured: .alert
+        }
+    }
+
     /// What the mode changes, one line for the plan and one for the coach, in the web's meaning
     /// (`planningImpact`). Nothing is promised that the server does not do.
     var effects: [ActivityStatusEffect] {
