@@ -22,6 +22,17 @@ struct SanteDayState: Equatable {
 
     init(tiles: [Tile]) { self.tiles = tiles }
 
+    /// The section's shape while the day is read: its three lines with stand-in figures, drawn
+    /// redacted — never grey blocks of guessed sizes.
+    static let placeholder = SanteDayState(tiles: [
+        Tile(caption: String(localized: "Énergie"), value: "00", unit: "/100", note: "D'habitude 00",
+             fraction: 0, pillar: .recovery, symbol: "bolt.fill"),
+        Tile(caption: String(localized: "Stress"), value: "00", unit: "/100", note: "Calme",
+             fraction: 0, pillar: .sleep, symbol: "waveform.path.ecg"),
+        Tile(caption: String(localized: "Effort visé"), value: "00–00", unit: nil, note: "Encore à faire",
+             fraction: 0, pillar: .nutrition, symbol: "flame.fill", status: .unknown),
+    ])
+
     /// Nil when the day carries none of the three readings.
     init?(_ response: V1TodayResponse) {
         var tiles: [Tile] = []
@@ -147,18 +158,22 @@ private struct SanteTodayLine: View {
     }
 }
 
-/// A reading on its scale: how far it stands, and a tick where it usually does.
+/// A reading on its scale: how far it stands, and a tick where it usually does. The bar fills
+/// from empty when the section is drawn and to each new reading after — the one thing in the
+/// section that moves (`SharpitMotion.gaugeFill`, instant under Reduce Motion).
 private struct SanteGauge: View {
     let fraction: Double
     let baseline: Double?
     let tint: Color
+
+    @State private var shown: Double = 0
 
     var body: some View {
         GeometryReader { proxy in
             let width = proxy.size.width
             ZStack(alignment: .leading) {
                 Capsule().fill(SharpitColor.tile)
-                Capsule().fill(tint).frame(width: max(6, width * min(max(fraction, 0), 1)))
+                Capsule().fill(tint).frame(width: max(6, width * shown))
                 if let baseline {
                     Capsule()
                         .fill(SharpitColor.foreground)
@@ -169,6 +184,14 @@ private struct SanteGauge: View {
         }
         .frame(height: 6)
         .padding(.vertical, 3)
+        .onAppear { fill(to: fraction) }
+        .onChange(of: fraction) { _, new in fill(to: new) }
         .accessibilityHidden(true)
+    }
+
+    private func fill(to fraction: Double) {
+        SharpitMotion.run(SharpitMotion.gaugeFill) {
+            shown = min(max(fraction, 0), 1)
+        }
     }
 }

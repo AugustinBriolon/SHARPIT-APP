@@ -32,13 +32,14 @@ struct TodayTimelineStrip: View {
     }
 
     /// One beat of the day down the rail, as Plan's week reads: a dot, the time above what
-    /// happened. A session's dot is the good status mark; the rest are hollow.
+    /// happened. A session done fills its dot with the good status mark; a planned one, and the
+    /// rest, stay hollow — a green dot before the session read as already done.
     private func row(_ event: V1DayTimelineEvent, isFirst: Bool, isLast: Bool) -> some View {
         HStack(alignment: .top, spacing: SharpitSpacing.sm) {
             VStack(spacing: 0) {
                 Rectangle().fill(isFirst ? Color.clear : SharpitColor.outline).frame(width: 1, height: 16)
                 Group {
-                    if event.kind == "session" {
+                    if event.isDoneSession {
                         Circle().fill(SharpitColor.statusGoodMark)
                     } else {
                         Circle().strokeBorder(SharpitColor.slate, lineWidth: 1.5)

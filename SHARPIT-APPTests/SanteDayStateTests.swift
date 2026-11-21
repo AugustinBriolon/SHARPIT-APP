@@ -62,10 +62,40 @@ private struct StubDay: TodayServing {
 
 @MainActor
 @Test func santeStoreLoadsTheDayFromToday() async throws {
-    let store = SanteStore(todayClient: StubDay(response: try day(energyBank: bank)), tokenProvider: { "t" })
+    let store = SanteStore(
+        todayClient: StubDay(response: try day(energyBank: bank)), tokenProvider: { "t" },
+        dayReads: DayReadCache()
+    )
     #expect(store.dayState == nil)
+    #expect(!store.dayIsKnown)
     await store.loadDay()
     #expect(store.dayState?.tiles.first?.value == "64")
+    #expect(store.dayIsKnown)
+}
+
+/// « Aujourd'hui » paints with the page from the day Résumé kept, not after the network.
+@MainActor
+@Test func santeStorePaintsTheKeptDayAtOnce() throws {
+    let reads = DayReadCache()
+    reads.keep(try day(energyBank: bank), day: TrainingDayId.today())
+    let store = SanteStore(todayClient: StubDay(response: try day()), tokenProvider: { "t" }, dayReads: reads)
+    #expect(store.dayIsKnown)
+    #expect(store.dayState?.tiles.first?.value == "64")
+}
+
+private struct FailingDay: TodayServing {
+    func today(trainingDayId _: String, token _: String) async throws -> V1TodayResponse {
+        throw SharpitAPIError.server
+    }
+}
+
+/// A failed read with nothing kept lets the placeholder go rather than hold it forever.
+@MainActor
+@Test func santeStoreDropsThePlaceholderWhenTheDayCannotBeRead() async {
+    let store = SanteStore(todayClient: FailingDay(), tokenProvider: { "t" }, dayReads: DayReadCache())
+    await store.loadDay()
+    #expect(store.dayState == nil)
+    #expect(store.dayIsKnown)
 }
 
 @Test func triathlonResolvesToTheCustomSymbol() {

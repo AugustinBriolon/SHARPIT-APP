@@ -50,6 +50,15 @@ nonisolated struct V1DayTimelineEvent: Codable, Sendable, Equatable, Identifiabl
     var minuteOfDay: Double?
     var title: String
     var detail: String?
+    /// A session's state, « done » or « planned » (SHARPIT ADR-138); nil on other kinds and from
+    /// a server before it, where the detail still says « Faite ».
+    var state: String? = nil
+
+    /// Only a session done is drawn as done: a planned one is a hollow dot like the rest.
+    var isDoneSession: Bool {
+        guard kind == "session" else { return false }
+        return state.map { $0 == "done" } ?? (detail == "Faite")
+    }
 
     var id: String { "\(kind)-\(minuteOfDay.map { String(Int($0)) } ?? "x")-\(title)" }
 }

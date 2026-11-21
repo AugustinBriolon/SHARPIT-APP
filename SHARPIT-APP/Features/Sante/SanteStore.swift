@@ -22,6 +22,9 @@ final class SanteStore {
     private(set) var refreshFailed = false
     /// « Aujourd'hui »: Energy Bank, stress, target band from the day Résumé also reads.
     private(set) var dayState: SanteDayState?
+    /// The day was read, or kept from an earlier read: until then the section holds its place
+    /// with its own lines drawn redacted, so nothing below it moves when it arrives.
+    private(set) var dayIsKnown = false
 
     private let client: any HealthOverviewServing
     private let todayClient: any TodayServing
@@ -32,7 +35,8 @@ final class SanteStore {
         client: any HealthOverviewServing = BodyClient(),
         todayClient: any TodayServing = SharpitClient(),
         tokenProvider: @escaping () async throws -> String,
-        modelContext: ModelContext? = nil
+        modelContext: ModelContext? = nil,
+        dayReads: DayReadCache = .shared
     ) {
         self.client = client
         self.todayClient = todayClient
@@ -41,7 +45,11 @@ final class SanteStore {
         if let cached = ResponseCache.read(V1HealthOverview.self, key: ResponseCacheKey.healthOverview, context: modelContext) {
             adopt(cached)
         }
-        // Day tiles need energy/stress/band — not in the glossary-only Today snapshot.
+        // The day Résumé last read, kept on disk: the section paints with the page, not after it.
+        if let kept = dayReads.lastKnown(V1TodayResponse.self, day: TrainingDayId.today()) {
+            dayState = SanteDayState(kept)
+            dayIsKnown = true
+        }
     }
 
     /// One GET /api/v1/today; glossary plate goes to the shared snapshot, tiles stay in memory.
@@ -51,9 +59,13 @@ final class SanteStore {
             if let modelContext {
                 try? TodaySnapshotRepository.save(TodayFoldMapper.map(day), context: modelContext)
             }
-            SharpitMotion.run { dayState = SanteDayState(day) }
+            // Figures change in place; only the gauges move, filling to their new reading.
+            dayState = SanteDayState(day)
+            dayIsKnown = true
         } catch {
-            // The section is secondary to the check-up: no error state of its own.
+            // The section is secondary to the check-up: no error state of its own. What was
+            // kept stays; with nothing kept, the placeholder goes rather than wait forever.
+            dayIsKnown = true
         }
     }
 

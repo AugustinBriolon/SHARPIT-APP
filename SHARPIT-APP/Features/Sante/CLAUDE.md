@@ -126,3 +126,10 @@ Rings under the hero's rings read as the same section twice, and the tinted plat
 gauge with a tick where the athlete usually stands (`Tile.baseline`); « Effort visé » has no gauge,
 its state is a status pill (`Tile.status`). « À surveiller » is lines on the sheet, each behind a bar
 in the watch hue, as the weekly review's « À retenir ».
+
+**« Aujourd'hui » paints with the page (the athlete's remark, 2026-11-21).** It used to come in after
+the rest, once `/api/v1/today` answered, and push the tables down. `SanteStore` now opens on the day
+Résumé kept (`DayReadCache.lastKnown`); with none, the section holds its place drawn redacted
+(`SanteDayState.placeholder`) until the read answers, and goes only if it fails with nothing kept.
+Figures change in place; the gauges alone move, filling from empty on appear and to each new reading
+(`SanteGauge`, `SharpitMotion.gaugeFill`). Written without Xcode: not built or seen yet.

@@ -75,3 +75,9 @@ the moment as a pill, the race, its format and aim or its result with the legs, 
 mock-up's pace per leg and pre-start checklist are not in `/api/v1/today`. A done brick
 (`DoneBrickDrawer`) opens on how far it is as a pill, the chain, its total and the legs as one bar,
 then each leg and each transition as a line.
+
+**The rail reads the clock (SHARPIT ADR-138, the athlete's remarks, 2026-11-21).** The server places
+each beat of « Fil de la journée »: a meal at its foods' time (ADR-137), the coffee when it was noted,
+a session at its activity's start or else its plan's. Only a session done fills its dot
+(`V1DayTimelineEvent.isDoneSession`: the server's `state`, else « Faite » in the detail); a planned
+one stays hollow — a green dot before the session read as done.

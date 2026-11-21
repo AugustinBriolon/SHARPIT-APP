@@ -134,6 +134,13 @@ struct SanteView: View {
                         SanteTrends(markers: SanteTrendReadout.drawable(overview.allMarkers))
                         if let day = store.dayState {
                             SanteTodaySection(state: day)
+                        } else if !store.dayIsKnown {
+                            // Its place held while the day is read: the section's own lines,
+                            // redacted, so the tables under it never jump down.
+                            SanteTodaySection(state: .placeholder)
+                                .redacted(reason: .placeholder)
+                                .allowsHitTesting(false)
+                                .accessibilityHidden(true)
                         }
                         if !overview.watch.isEmpty {
                             SanteWatchSection(items: overview.watch)
