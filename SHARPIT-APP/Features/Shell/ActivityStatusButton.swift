@@ -31,7 +31,7 @@ struct ActivityStatusButton: View {
             if showsLabel {
                 HStack(spacing: SharpitSpacing.xs) {
                     Image(systemName: store.store.status.symbolName)
-                        .foregroundStyle(store.store.status == .active ? SharpitColor.foreground : store.store.status.clinique.mark)
+                        .foregroundStyle(store.store.status.tone)
                         .contentTransition(.symbolEffect(.replace))
                     Text(store.store.status.label)
                         .foregroundStyle(SharpitColor.foreground)
@@ -95,36 +95,37 @@ struct ActivityStatusDrawer: View {
         .onAppear(perform: syncFromStore)
     }
 
-    /// The mode as a glyph in a ring, its word as a pill, and when it ends.
+    /// The title, then the mode as a glyph in a ring, its word as a pill, and when it ends.
     private var header: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle().strokeBorder(SharpitColor.divider, lineWidth: 3)
-                Image(systemName: status.symbolName)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(status == .active ? SharpitColor.foreground : status.clinique.mark)
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .frame(width: 64, height: 64)
-            .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Statut d'activité")
+                .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
+                .tracking(-0.4)
+                .foregroundStyle(SharpitColor.foreground)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.trailing, 56)
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().strokeBorder(SharpitColor.divider, lineWidth: 3)
+                    Image(systemName: status.symbolName)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(status == .active ? SharpitColor.foreground : status.clinique.mark)
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .frame(width: 56, height: 56)
+                .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Statut d'activité")
-                    .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
-                    .tracking(-0.4)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .accessibilityAddTraits(.isHeader)
-                HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     CliniqueStatusPill(status.label, status: status.clinique)
                     if let line = ActivityStatusReadout.resumption(store.store.retention) {
                         Text(line)
-                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                            .font(SharpitTypography.system(size: 14, weight: .regular, relativeTo: .subheadline))
                             .foregroundStyle(SharpitColor.slate)
-                            .lineLimit(1)
+                            .contentTransition(.opacity)
                     }
                 }
             }
-            .padding(.trailing, 40)
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -236,19 +237,26 @@ struct ActivityStatusDrawer: View {
     private func pick(_ mode: ActivityStatusId) async {
         guard mode != status else { return }
         // A mode picked from « Actif » opens until changed; one picked between two keeps its length.
-        let kept = status == .active ? ActivityStatusDuration.untilModified : duration
-        await store.apply(status: mode, retention: kept.retention(picked: untilDate))
-        syncFromStore()
+        if status == .active { duration = .untilModified }
+        await write(mode)
     }
 
     private func choose(_ option: ActivityStatusDuration) async {
+        guard option != duration else { return }
         duration = option
         await applyRetention()
     }
 
     private func applyRetention() async {
         guard status != .active else { return }
-        await store.apply(status: status, retention: duration.retention(picked: untilDate))
+        await write(status)
+    }
+
+    /// The chips and the picker keep what the athlete set — a day picked seven days out must not
+    /// turn into « 1 semaine » under the finger — unless the server refused it.
+    private func write(_ mode: ActivityStatusId) async {
+        await store.apply(status: mode, retention: duration.retention(picked: untilDate))
+        if case .failed = store.phase { syncFromStore() }
     }
 }
 

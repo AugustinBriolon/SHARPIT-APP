@@ -292,3 +292,33 @@ private func parisCalendar() -> Calendar {
     #expect(ActivityStatusReadout.resumption(.untilDate("2026-11-22"), now: now, calendar: calendar) == "Reprise demain")
     #expect(ActivityStatusReadout.resumption(.untilDate("2026-11-30"), now: now, calendar: calendar) == "Reprise dans 9 jours")
 }
+
+// MARK: - Overlapping writes
+
+/// Answers a write for `slow` late, so an older write can land after a newer one.
+private actor SlowFirstStatusClient: ActivityStatusServing {
+    let slow: ActivityStatusId
+    init(slow: ActivityStatusId) { self.slow = slow }
+
+    func activityStatus(token _: String) async throws -> V1ActivityStatusStore { V1ActivityStatusStore() }
+
+    func setActivityStatus(_ write: V1ActivityStatusWrite, token _: String) async throws -> V1ActivityStatusStore {
+        if write.status == slow { try await Task.sleep(for: .milliseconds(300)) }
+        return V1ActivityStatusStore(status: write.status, retention: write.retention ?? .untilModified)
+    }
+}
+
+/// A date dialled in the picker sends a write per stop: the last pick is what stays on screen.
+@MainActor
+@Test func anOlderWriteAnsweringLateDoesNotPaintOverANewerOne() async {
+    let store = ActivityStatusStore(client: SlowFirstStatusClient(slow: .sick), tokenProvider: { "token" })
+    await store.load()
+
+    let first = Task { await store.apply(status: .sick, retention: .untilModified) }
+    try? await Task.sleep(for: .milliseconds(50))
+    await store.apply(status: .injured, retention: .untilModified)
+    await first.value
+
+    #expect(store.current == .injured)
+    #expect(store.phase == .ready)
+}

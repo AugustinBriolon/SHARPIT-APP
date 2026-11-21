@@ -25,12 +25,15 @@ struct ActivityStatusAlertLine: View {
     private var content: some View {
         HStack(spacing: SharpitSpacing.xs) {
             CliniqueStatusPill(status.label, status: status.clinique)
+            // Two lines: the longest consequence does not fit beside the pill on a narrow iPhone.
             Text(detail)
                 .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
                 .foregroundStyle(SharpitColor.slate)
-                .lineLimit(1)
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
             if store != nil {
-                Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(SharpitColor.slate)
@@ -38,6 +41,8 @@ struct ActivityStatusAlertLine: View {
             }
         }
         .padding(.vertical, SharpitSpacing.xs)
+        .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(status.label). \(status.alertLine)")
     }

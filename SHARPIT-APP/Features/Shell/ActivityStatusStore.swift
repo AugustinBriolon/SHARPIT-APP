@@ -27,6 +27,10 @@ final class ActivityStatusStore {
     private let tokenProvider: () async throws -> String
     /// An in-flight read task; parallel callers wait on the first instead of firing redundant HTTP requests.
     private var inFlight: Task<Void, Never>?
+    /// The last store the server answered, read or written: what a failed write goes back to.
+    private var confirmed = V1ActivityStatusStore()
+    /// Counts the writes, so an older one answering late does not paint over a newer one.
+    private var writeGeneration = 0
 
     init(client: any ActivityStatusServing, tokenProvider: @escaping () async throws -> String) {
         self.client = client
@@ -54,21 +58,30 @@ final class ActivityStatusStore {
     }
 
     private func performLoad() async {
-        if phase != .ready { phase = .loading }
+        // A read that crosses a write is stale either way: the write's answer is the newer truth.
+        let generation = writeGeneration
+        if phase != .ready, phase != .saving { phase = .loading }
         do {
             let token = try await tokenProvider()
-            store = try await client.activityStatus(token: token)
+            let read = try await client.activityStatus(token: token)
+            guard generation == writeGeneration else { return }
+            confirmed = read
+            store = read
             phase = .ready
         } catch is CancellationError {
         } catch {
+            guard generation == writeGeneration else { return }
             phase = .failed(Self.message(for: error, fallback: String(localized: "Ton statut n'a pas pu être chargé.")))
         }
     }
 
     /// Writes the mode and keeps what the server answers, which may differ — a date
     /// already past comes back as `active`.
+    ///
+    /// Writes can overlap (a date dialled in the picker sends one per stop): only the newest
+    /// one's answer is shown, and a failure falls back to the last store the server confirmed,
+    /// never to another write's optimistic state.
     func apply(status: ActivityStatusId, retention: ActivityStatusRetention) async {
-        let previous = store
         let write = V1ActivityStatusWrite(
             status: status,
             retention: retention,
@@ -80,13 +93,19 @@ final class ActivityStatusStore {
             travelId: status == .paused ? store.travelId : nil
         )
         phase = .saving
+        writeGeneration += 1
+        let generation = writeGeneration
         do {
-            store = try await SharpitRetry.run {
+            let answer = try await SharpitRetry.run {
                 try await client.setActivityStatus(write, token: try await tokenProvider())
             }
+            confirmed = answer
+            guard generation == writeGeneration else { return }
+            store = answer
             phase = .ready
         } catch {
-            store = previous
+            guard generation == writeGeneration else { return }
+            store = confirmed
             phase = .failed(Self.message(for: error, fallback: String(localized: "Ton statut n'a pas pu être enregistré.")))
         }
     }
