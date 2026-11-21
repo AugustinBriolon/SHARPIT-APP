@@ -334,17 +334,39 @@ final class JournalStore {
 
     /// Steps match the web's: one cup of coffee, one large glass.
     func adjustCaffeine(by delta: Int) {
-        entry.caffeineMg = max(0, (entry.caffeineMg ?? 0) + delta)
+        setCaffeine((entry.caffeineMg ?? 0) + delta)
+    }
+
+    func setCaffeine(_ mg: Int) {
+        let previous = entry.caffeineMg ?? 0
+        let clamped = max(0, mg)
+        guard previous != clamped else { return }
+        entry.caffeineMg = clamped
+        entry.caffeineMinute = Self.caffeineMinute(
+            previousMg: previous, newMg: clamped, kept: entry.caffeineMinute,
+            isToday: entry.trainingDayId == TrainingDayId.today(),
+            nowMinute: FoodEatenTime.minuteOfDay(.now)
+        )
         updateCompletionState()
         scheduleSave()
     }
 
-    func setCaffeine(_ mg: Int) {
-        let clamped = max(0, mg)
-        guard (entry.caffeineMg ?? 0) != clamped else { return }
-        entry.caffeineMg = clamped
-        updateCompletionState()
+    /// When the last coffee was had, set by hand: a coffee noted late keeps its real hour.
+    func setCaffeineMinute(_ minute: Int) {
+        guard (entry.caffeineMg ?? 0) > 0, entry.caffeineMinute != minute else { return }
+        entry.caffeineMinute = minute
         scheduleSave()
+    }
+
+    /// The last coffee's time after a change of total (SHARPIT ADR-138): a coffee added today is
+    /// had now — the default, changed in the sheet when it was earlier; added to another day it
+    /// has no hour to assume. A lower total keeps the time; none left has none.
+    nonisolated static func caffeineMinute(
+        previousMg: Int, newMg: Int, kept: Int?, isToday: Bool, nowMinute: Int
+    ) -> Int? {
+        guard newMg > 0 else { return nil }
+        guard newMg > previousMg else { return kept }
+        return isToday ? nowMinute : kept
     }
 
     func adjustHydration(by delta: Int) {

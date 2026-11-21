@@ -3,7 +3,7 @@ import SwiftUI
 /// One light sheet for the journal's amounts — caffeine, water, time at the wheel: the figure
 /// read big between − and +, the usual portions to add in one tap, and a way back to zero.
 /// Each amount only says what it is (`Amount`); the layout is the same, so they read alike.
-struct JournalAmountSheet: View {
+struct JournalAmountSheet<Detail: View>: View {
     /// A usual portion: what it is, what it adds.
     struct Portion: Identifiable {
         let id: String
@@ -28,8 +28,12 @@ struct JournalAmountSheet: View {
     let value: Int
     let onAdjust: (Int) -> Void
     let onReset: () -> Void
+    /// A line under the quick adds that only this amount has (the last coffee's time).
+    @ViewBuilder var detail: () -> Detail
 
     @Environment(\.dismiss) private var dismiss
+
+    private var hasDetail: Bool { ObjectIdentifier(Detail.self) != ObjectIdentifier(EmptyView.self) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -93,6 +97,9 @@ struct JournalAmountSheet: View {
                 }
             }
 
+            detail()
+                .padding(.top, 18)
+
             Spacer(minLength: 16)
 
             VStack(spacing: 6) {
@@ -110,7 +117,7 @@ struct JournalAmountSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(SharpitColor.card)
         .cliniqueSheetCross { dismiss() }
-        .presentationDetents([.height(amount.portions.count > 4 ? 500 : 440)])
+        .presentationDetents([.height((amount.portions.count > 4 ? 500 : 440) + (hasDetail ? 56 : 0))])
         .presentationDragIndicator(.visible)
         .sharpitSheet()
     }
@@ -137,5 +144,11 @@ nonisolated enum JournalAmountFormat {
     static func volume(_ millilitres: Int, locale: Locale = .current) -> String {
         guard millilitres >= 1_000 else { return "\(millilitres / 10) cl" }
         return (Double(millilitres) / 1_000).formatted(.number.precision(.fractionLength(0...2)).locale(locale)) + " L"
+    }
+}
+
+extension JournalAmountSheet where Detail == EmptyView {
+    init(amount: Amount, value: Int, onAdjust: @escaping (Int) -> Void, onReset: @escaping () -> Void) {
+        self.init(amount: amount, value: value, onAdjust: onAdjust, onReset: onReset) { EmptyView() }
     }
 }

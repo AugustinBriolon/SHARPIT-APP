@@ -23,6 +23,10 @@ nonisolated struct V1DayJournalEntry: Equatable, Sendable {
     var moodLabel: String?
     var hydrationMl: Int?
     var caffeineMg: Int?
+    /// When the day's last coffee was had, minutes after local midnight (SHARPIT ADR-138): now by
+    /// default when a coffee is added today, changed by the athlete for one noted late. Nil when
+    /// unknown — then the server takes « now » on a rise, today only.
+    var caffeineMinute: Int?
     /// Minutes behind the wheel that day.
     var drivingMinutes: Int?
 
@@ -32,6 +36,7 @@ nonisolated struct V1DayJournalEntry: Equatable, Sendable {
         moodLabel: String? = nil,
         hydrationMl: Int? = nil,
         caffeineMg: Int? = 0,
+        caffeineMinute: Int? = nil,
         drivingMinutes: Int? = nil
     ) {
         self.trainingDayId = trainingDayId
@@ -39,6 +44,7 @@ nonisolated struct V1DayJournalEntry: Equatable, Sendable {
         self.moodLabel = moodLabel
         self.hydrationMl = hydrationMl
         self.caffeineMg = caffeineMg
+        self.caffeineMinute = caffeineMinute
         self.drivingMinutes = drivingMinutes
     }
 
@@ -62,6 +68,7 @@ nonisolated extension V1DayJournalEntry: Codable {
         case moodLabel
         case hydrationMl
         case caffeineMg
+        case caffeineMinute
         case drivingMinutes
     }
 
@@ -75,6 +82,7 @@ nonisolated extension V1DayJournalEntry: Codable {
         moodLabel = try container.decodeIfPresent(String.self, forKey: .moodLabel)
         hydrationMl = try container.decodeIfPresent(Int.self, forKey: .hydrationMl)
         caffeineMg = try container.decodeIfPresent(Int.self, forKey: .caffeineMg) ?? 0
+        caffeineMinute = try container.decodeIfPresent(Int.self, forKey: .caffeineMinute)
         drivingMinutes = try container.decodeIfPresent(Int.self, forKey: .drivingMinutes)
     }
 }

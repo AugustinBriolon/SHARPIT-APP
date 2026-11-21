@@ -79,3 +79,12 @@ docked) and the details of Résumé's « Ton ressenti ce matin » — the thin d
 
 **Check-ins, one track (2026-11-15).** The wide tiles are gone: every question of both check-ins is a
 `CliniqueScale` (`WellnessDimensionRow`), answered by a tap or a slide along its track.
+
+**The last coffee's time (SHARPIT ADR-138/139, the athlete's request, 2026-11-21).** The caffeine
+sheet ends on « Dernier café » and its time (`CaffeineTimeRow`, a compact time picker), sent as
+`caffeineMinute`. A coffee added today sets it to now (`JournalStore.caffeineMinute`); a coffee
+noted late is changed to its real hour there; added to another day it has none until « Indiquer
+l'heure ». A lower total keeps it, zero clears it. The server places the coffee on « Fil de la
+journée » at that time and reads the last coffee against the next night's bedtime (« Café tardif »
+in the journal analyses). `JournalAmountSheet` takes an optional detail line for it. Written without
+Xcode: not built or seen yet.
