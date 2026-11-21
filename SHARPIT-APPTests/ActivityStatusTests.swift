@@ -248,3 +248,47 @@ private actor StubActivityStatusClient: ActivityStatusServing {
 
     #expect(store.phase == .failed("Session expirée. Reconnecte-toi."))
 }
+
+// MARK: - Readout
+
+private func parisCalendar() -> Calendar {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "Europe/Paris")!
+    return calendar
+}
+
+@Test func eachNonActiveModeTellsWhatItChanges() {
+    for status in ActivityStatusId.allCases where status != .active {
+        #expect(status.effects.count == 2)
+    }
+    #expect(ActivityStatusId.active.effects.isEmpty)
+}
+
+@Test func aModeIsToldByOneCliniqueStatus() {
+    #expect(ActivityStatusId.active.clinique == .good)
+    #expect(ActivityStatusId.injured.clinique == .alert)
+    #expect(ActivityStatusId.sick.clinique == .watch)
+    #expect(ActivityStatusId.paused.clinique == .unknown)
+}
+
+@Test func aPresetWritesADayAndIsReadBackAsThePreset() {
+    let calendar = parisCalendar()
+    let now = calendar.date(from: DateComponents(year: 2026, month: 11, day: 21, hour: 9))!
+
+    let retention = ActivityStatusDuration.week1.retention(picked: now, now: now, calendar: calendar)
+
+    #expect(retention == .untilDate("2026-11-28"))
+    #expect(ActivityStatusDuration.matching(retention, now: now, calendar: calendar) == .week1)
+    #expect(ActivityStatusDuration.matching(.untilDate("2026-12-05"), now: now, calendar: calendar) == .date)
+    #expect(ActivityStatusDuration.matching(.untilModified, now: now, calendar: calendar) == .untilModified)
+}
+
+@Test func theResumptionCountsCalendarDays() {
+    let calendar = parisCalendar()
+    let now = calendar.date(from: DateComponents(year: 2026, month: 11, day: 21, hour: 23))!
+
+    #expect(ActivityStatusReadout.resumption(.untilModified, now: now, calendar: calendar) == nil)
+    #expect(ActivityStatusReadout.resumption(.untilDate("2026-11-21"), now: now, calendar: calendar) == "Reprise aujourd'hui")
+    #expect(ActivityStatusReadout.resumption(.untilDate("2026-11-22"), now: now, calendar: calendar) == "Reprise demain")
+    #expect(ActivityStatusReadout.resumption(.untilDate("2026-11-30"), now: now, calendar: calendar) == "Reprise dans 9 jours")
+}

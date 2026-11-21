@@ -1,28 +1,48 @@
 import SwiftUI
 
-/// A one-line alert shown under the Today verdict plate when the athlete's training
-/// mode is not `active`.
-///
-/// Uses `ActivityStatusId` for copy and tone — no new store, no second button. The mode
-/// chip in the controls row remains the only way to change the mode; this line only warns.
+/// A line shown under the Today verdict plate when the athlete's training mode is not `active`:
+/// the mode as a status pill, then when it ends — or, held until changed, the plan's first
+/// consequence. Given the store it opens the mode's drawer, so the warning is also the way to
+/// lift it.
 struct ActivityStatusAlertLine: View {
     let status: ActivityStatusId
+    var retention: ActivityStatusRetention = .untilModified
+    var store: ActivityStatusStore?
+
+    @State private var isPresented = false
 
     var body: some View {
-        HStack(spacing: SharpitSpacing.xs) {
-            Image(systemName: status.symbolName)
-                .font(SharpitTypography.label)
-                .foregroundStyle(status.tone)
-                .accessibilityHidden(true)
-
-            Text(status.alertLine)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.foreground)
+        if let store {
+            Button { isPresented = true } label: { content }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityHint("Changer ton statut d'activité")
+                .sheet(isPresented: $isPresented) { ActivityStatusDrawer(store: store) }
+        } else {
+            content
         }
-        .padding(.horizontal, SharpitSpacing.sm)
+    }
+
+    private var content: some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            CliniqueStatusPill(status.label, status: status.clinique)
+            Text(detail)
+                .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                .foregroundStyle(SharpitColor.slate)
+                .lineLimit(1)
+            if store != nil {
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+            }
+        }
         .padding(.vertical, SharpitSpacing.xs)
-        .background(status.tone.opacity(0.08), in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(status.label). \(status.alertLine)")
+    }
+
+    private var detail: String {
+        ActivityStatusReadout.resumption(retention) ?? status.effects.first?.text ?? ""
     }
 }

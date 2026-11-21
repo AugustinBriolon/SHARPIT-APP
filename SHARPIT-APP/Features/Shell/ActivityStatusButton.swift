@@ -31,7 +31,7 @@ struct ActivityStatusButton: View {
             if showsLabel {
                 HStack(spacing: SharpitSpacing.xs) {
                     Image(systemName: store.store.status.symbolName)
-                        .foregroundStyle(store.store.status.tone)
+                        .foregroundStyle(store.store.status == .active ? SharpitColor.foreground : store.store.status.clinique.mark)
                         .contentTransition(.symbolEffect(.replace))
                     Text(store.store.status.label)
                         .foregroundStyle(SharpitColor.foreground)
@@ -62,32 +62,26 @@ struct ActivityStatusDrawer: View {
     /// Mirrors the store while the sheet is open so the date picker can move before
     /// the athlete commits it.
     @State private var untilDate = ActivityStatusDate.defaultUntil()
-    @State private var usesDeadline = false
+    @State private var duration = ActivityStatusDuration.untilModified
+
+    private var status: ActivityStatusId { store.store.status }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Text("Statut d'activité")
-                    .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
-                    .tracking(-0.4)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding(.trailing, 56)
-                impact
-                    .padding(.top, -14)
+            VStack(alignment: .leading, spacing: 28) {
+                header
                 if case .failed(let message) = store.phase {
                     CliniqueStatusPill(message, status: .watch)
                 }
-                modesCard
-                if store.store.status != .active {
-                    deadlineSection
-                    Button("En parler au coach") {
-                        router.discussWithCoach(about: CoachDiscuss.describe(.planning(horizonDays: 7)))
-                        dismiss()
-                    }
-                    .buttonStyle(CliniqueButtonStyle(kind: .outline))
+                modes
+                if status != .active {
+                    effects
+                    durationSection
+                    actions
                 }
             }
-            .animation(SharpitMotion.reveal, value: store.store.status)
+            .animation(SharpitMotion.reveal, value: status)
+            .animation(SharpitMotion.reveal, value: duration)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
             .padding(.top, 30)
@@ -101,39 +95,76 @@ struct ActivityStatusDrawer: View {
         .onAppear(perform: syncFromStore)
     }
 
-    /// Under the title: what the mode held changes for the plan, and until when.
-    private var impact: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(store.store.status.planningImpact)
-                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                .lineSpacing(2)
-                .foregroundStyle(SharpitColor.slate)
-                .fixedSize(horizontal: false, vertical: true)
-                .contentTransition(.opacity)
-            if let until = untilLabel {
-                CliniqueStatusPill(until, status: .unknown)
+    /// The mode as a glyph in a ring, its word as a pill, and when it ends.
+    private var header: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle().strokeBorder(SharpitColor.divider, lineWidth: 3)
+                Image(systemName: status.symbolName)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(status == .active ? SharpitColor.foreground : status.clinique.mark)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .frame(width: 64, height: 64)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Statut d'activité")
+                    .font(SharpitTypography.system(size: 26, weight: .semibold, relativeTo: .title))
+                    .tracking(-0.4)
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityAddTraits(.isHeader)
+                HStack(spacing: 8) {
+                    CliniqueStatusPill(status.label, status: status.clinique)
+                    if let line = ActivityStatusReadout.resumption(store.store.retention) {
+                        Text(line)
+                            .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
+                            .foregroundStyle(SharpitColor.slate)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .padding(.trailing, 40)
+        }
+    }
+
+    private var modes: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+            spacing: 12
+        ) {
+            ForEach(ActivityStatusId.allCases, id: \.self) { mode in
+                ActivityStatusModeTile(status: mode, isSelected: status == mode) {
+                    Task { await pick(mode) }
+                }
             }
         }
     }
 
-    /// « 3 nov. » while a mode has an end, nothing when it holds until changed.
-    private var untilLabel: String? {
-        guard let day = store.store.retention.untilDate,
-              let date = ActivityStatusDate.date(from: day) else { return nil }
-        return String(localized: "Jusqu'au \(date.sharpitFormatted(.dateTime.day().month(.abbreviated)))")
-    }
-
-    private var modesCard: some View {
+    private var effects: some View {
         VStack(alignment: .leading, spacing: 0) {
+            sectionTitle(String(localized: "Ce que ça change"))
+                .padding(.bottom, 6)
             CliniqueDivider()
-            ForEach(ActivityStatusId.allCases, id: \.self) { status in
-                ActivityStatusOptionRow(status: status, isSelected: store.store.status == status) {
-                    Task { await pick(status) }
+            ForEach(status.effects) { effect in
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Image(systemName: effect.symbol)
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .frame(width: 24)
+                        .accessibilityHidden(true)
+                    Text(effect.text)
+                        .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
                 CliniqueDivider()
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .transition(.opacity)
     }
 
     private func sectionTitle(_ title: String) -> some View {
@@ -144,18 +175,20 @@ struct ActivityStatusDrawer: View {
             .accessibilityAddTraits(.isHeader)
     }
 
-    private var deadlineSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+    private var durationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
             sectionTitle(String(localized: "Durée"))
-            Toggle("Jusqu'à une date", isOn: $usesDeadline)
-                .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
-                .toggleStyle(SharpitSwitchStyle())
-                .frame(minHeight: 48)
-                .onChange(of: usesDeadline) { _, isOn in
-                    Task { await applyRetention(usesDeadline: isOn) }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(ActivityStatusDuration.allCases, id: \.self) { option in
+                        ActivityStatusDurationChip(label: option.label, isSelected: duration == option) {
+                            Task { await choose(option) }
+                        }
+                    }
                 }
-            CliniqueDivider()
-            if usesDeadline {
+            }
+            .scrollClipDisabled()
+            if duration == .date {
                 DatePicker(
                     String(localized: "Reprise prévue"),
                     selection: $untilDate,
@@ -167,91 +200,119 @@ struct ActivityStatusDrawer: View {
                 .tint(SharpitColor.foreground)
                 .frame(minHeight: 48)
                 .onChange(of: untilDate) { _, _ in
-                    Task { await applyRetention(usesDeadline: true) }
+                    Task { await applyRetention() }
                 }
-            } else {
-                Text("Le mode reste actif jusqu'à ce que tu le changes.")
-                    .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
-                    .foregroundStyle(SharpitColor.slate)
-                    .padding(.top, 10)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var actions: some View {
+        VStack(spacing: 12) {
+            Button {
+                Task { await pick(.active) }
+            } label: {
+                Text("Reprendre l'entraînement")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .primary, isLarge: true))
+            Button {
+                router.discussWithCoach(about: CoachDiscuss.describe(.planning(horizonDays: 7)))
+                dismiss()
+            } label: {
+                Text("En parler au coach")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(CliniqueButtonStyle(kind: .outline))
+        }
     }
 
     private func syncFromStore() {
-        usesDeadline = store.store.retention.untilDate != nil
-        if let day = store.store.retention.untilDate,
-           let date = ActivityStatusDate.date(from: day) {
+        duration = ActivityStatusDuration.matching(store.store.retention)
+        if let date = ActivityStatusReadout.endDay(store.store.retention) {
             untilDate = date
         }
     }
 
-    private func pick(_ status: ActivityStatusId) async {
-        guard status != store.store.status else { return }
-        await store.apply(status: status, retention: retention(usesDeadline: usesDeadline))
+    private func pick(_ mode: ActivityStatusId) async {
+        guard mode != status else { return }
+        // A mode picked from « Actif » opens until changed; one picked between two keeps its length.
+        let kept = status == .active ? ActivityStatusDuration.untilModified : duration
+        await store.apply(status: mode, retention: kept.retention(picked: untilDate))
         syncFromStore()
     }
 
-    private func applyRetention(usesDeadline: Bool) async {
-        guard store.store.status != .active else { return }
-        await store.apply(
-            status: store.store.status,
-            retention: retention(usesDeadline: usesDeadline)
-        )
+    private func choose(_ option: ActivityStatusDuration) async {
+        duration = option
+        await applyRetention()
     }
 
-    private func retention(usesDeadline: Bool) -> ActivityStatusRetention {
-        usesDeadline ? .untilDate(ActivityStatusDate.string(from: untilDate)) : .untilModified
+    private func applyRetention() async {
+        guard status != .active else { return }
+        await store.apply(status: status, retention: duration.retention(picked: untilDate))
     }
 }
 
-private struct ActivityStatusOptionRow: View {
+/// One mode as a tile of the grid: its glyph and word, the held one ringed in ink.
+private struct ActivityStatusModeTile: View {
     let status: ActivityStatusId
     let isSelected: Bool
     let onPick: () -> Void
-    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         Button(action: onPick) {
-            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-                if !typeSize.isAccessibilitySize {
-                    Image(systemName: status.symbolName)
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
-                        .frame(width: 40, height: 40)
-                        .background(isSelected ? SharpitColor.primary : .clear, in: Circle())
-                        .overlay(Circle().strokeBorder(SharpitColor.outline, lineWidth: isSelected ? 0 : 1))
+            VStack(alignment: .leading, spacing: 14) {
+                Image(systemName: status.symbolName)
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .accessibilityHidden(true)
+                Text(status.label)
+                    .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .topTrailing) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(SharpitColor.foreground)
+                        .padding(14)
                         .accessibilityHidden(true)
                 }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(status.label)
-                        .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
-                        .foregroundStyle(SharpitColor.foreground)
-                    // The same line whether or not it is picked: a description that
-                    // rewrites itself on selection reads as a different option.
-                    Text(status.hint)
-                        .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
-                        .foregroundStyle(SharpitColor.slate)
-                        .multilineTextAlignment(.leading)
-                }
-
-                Spacer(minLength: 0)
-
-                // One mode at a time: the one held carries a check, the others nothing.
-                Image(systemName: "checkmark")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(SharpitColor.foreground)
-                    .opacity(isSelected ? 1 : 0)
-                    .accessibilityHidden(true)
             }
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+            .overlay {
+                RoundedRectangle(cornerRadius: SharpitTokens.cardShapeRadius, style: .continuous)
+                    .strokeBorder(isSelected ? SharpitColor.foreground : SharpitColor.divider, lineWidth: isSelected ? 1.5 : 1)
+            }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel(status.label)
+        .accessibilityHint(status.hint)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+private struct ActivityStatusDurationChip: View {
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(SharpitTypography.system(size: 14, weight: .semibold, relativeTo: .subheadline))
+                .foregroundStyle(isSelected ? SharpitColor.primaryForeground : SharpitColor.foreground)
+                .lineLimit(1)
+                .padding(.horizontal, 16)
+                .frame(minHeight: SharpitSpacing.minimumTouchTarget)
+                .background(isSelected ? SharpitColor.primary : .clear, in: Capsule())
+                .overlay(Capsule().strokeBorder(SharpitColor.outline, lineWidth: isSelected ? 0 : 1))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.sharpitPressable)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

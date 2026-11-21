@@ -889,7 +889,7 @@ private struct TodayFoldView: View {
             VerdictHero(plate: fold.plate, revealed: phase.showsPlate)
 
             if let store = activityStatusStore, store.current != .active, store.phase != .loading {
-                ActivityStatusAlertLine(status: store.current)
+                ActivityStatusAlertLine(status: store.current, retention: store.store.retention, store: store)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, SharpitSpacing.lg)
                     .padding(.bottom, SharpitSpacing.md)
