@@ -6,7 +6,9 @@ import UIKit
 /// A thread and a composer — the shape every chat has, because the athlete already knows
 /// how to read it. What is not borrowed from a generic chat: no avatars, no typing dots
 /// pretending to be a person, no sparkle chrome. The coach is an instrument that answers
-/// in prose, and the design law keeps chatbot decoration off product surfaces.
+/// in prose, and the design law keeps chatbot decoration off product surfaces. While it works,
+/// one line says what it is doing (`CoachActivityLine`), read from the stream; its words then
+/// come up in a fade (`sharpitStreamFade`) rather than being typed.
 struct CoachView: View {
     @Environment(ShellRouter.self) private var router
     @Environment(\.scenePhase) private var scenePhase
@@ -27,6 +29,12 @@ struct CoachView: View {
     @State private var dictation = CoachDictation()
     /// Set by a send, so only a question just asked rises to the top.
     @State private var risesOnSend = false
+    /// False while the page opens: what the composer learns then — the budget read, a subject
+    /// brought from another screen — is simply there, never animated in (the athlete's remark,
+    /// 2026-11-22: the field and the card over it moving on arrival read as ugly).
+    @State private var composerIsSettled = false
+    /// The first moments on screen, while the composer is laid out: nothing moves then.
+    @State private var hasOpened = false
 
     private let conversations: any CoachConversationServing
     private let tokenProvider: (() async throws -> String)?
@@ -169,7 +177,16 @@ struct CoachView: View {
                 )
             }
         }
-        .task { await store.refreshQuota() }
+        .task {
+            await store.refreshQuota()
+            // After the frame that drew what was read, so that frame is not animated either.
+            try? await Task.sleep(for: .milliseconds(300))
+            composerIsSettled = true
+        }
+        .task {
+            try? await Task.sleep(for: .milliseconds(600))
+            hasOpened = true
+        }
         .task(id: router.pendingCoachContext) {
             if let context = router.consumeCoachContext() {
                 store.attach(context)
@@ -363,7 +380,7 @@ struct CoachView: View {
             }
             Spacer(minLength: 0)
             Button {
-                withAnimation(SharpitMotion.reveal) { isQuotaNoticeHidden = true }
+                withAnimation(SharpitMotion.fade) { isQuotaNoticeHidden = true }
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .semibold))
@@ -381,7 +398,8 @@ struct CoachView: View {
         .padding(SharpitSpacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sharpitSurface(.panel)
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        // A fade: sliding up from the field read as the composer taking itself apart.
+        .transition(.opacity)
     }
 
     /// The composer's one height — the smallest tappable size, for the field and both circles.
@@ -402,6 +420,10 @@ struct CoachView: View {
         }
     }
 
+    private var showsQuotaNotice: Bool {
+        !isQuotaNoticeHidden && store.quota.flatMap { CoachQuotaReadout.line($0) } != nil
+    }
+
     private var questionComposer: some View {
         VStack(spacing: SharpitSpacing.xs) {
             if let failure = dictation.failure {
@@ -410,16 +432,18 @@ struct CoachView: View {
                     .foregroundStyle(SharpitColor.statusWatchForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            if !isQuotaNoticeHidden, let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
+            if showsQuotaNotice, let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
                 quotaGauge(quota, line: line)
             }
             if showsQuickActions, !dictation.isListening {
                 quickActionsList
             }
             if let context = store.pendingContext {
-                CoachContextTag(context: context) { store.dropContext() }
+                CoachContextTag(context: context) {
+                    SharpitMotion.run { store.dropContext() }
+                }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .transition(.scale(scale: 0.9, anchor: .bottomLeading).combined(with: .opacity))
+                    .transition(.opacity)
             }
 
             SharpitGlassGroup {
@@ -443,7 +467,7 @@ struct CoachView: View {
                             // Return at end of a clean line = send. Paste with newlines stays editable.
                             .onChange(of: store.draft) { old, new in
                                 if old.isEmpty, !new.isEmpty, isQuotaNoticeHidden {
-                                    withAnimation(SharpitMotion.reveal) { isQuotaNoticeHidden = false }
+                                    withAnimation(SharpitMotion.fade) { isQuotaNoticeHidden = false }
                                 }
                                 guard new.contains("\n") else { return }
                                 if CoachComposerDraft.shouldSendOnNewline(old: old, new: new) {
@@ -476,7 +500,14 @@ struct CoachView: View {
         .padding(.bottom, SharpitSpacing.sm)
         .animation(SharpitMotion.reveal, value: composerIsFocused)
         .animation(SharpitMotion.reveal, value: dictation.isListening)
-        .animation(SharpitMotion.reveal, value: store.pendingContext)
+        // The budget card fades in when an answer takes the budget past half — never as the
+        // page opens, and a subject is animated only by the tap that sets or drops it.
+        .animation(composerIsSettled ? SharpitMotion.fade : nil, value: showsQuotaNotice)
+        .transaction { transaction in
+            guard !hasOpened else { return }
+            transaction.animation = nil
+            transaction.disablesAnimations = true
+        }
         .onChange(of: store.draft) { _, draft in
             if !draft.isEmpty, showsQuickActions { SharpitMotion.run(SharpitMotion.selection) { showsQuickActions = false } }
         }
@@ -543,9 +574,11 @@ struct CoachView: View {
     }
 
     private func start(_ action: CoachQuickAction) {
-        store.attach(action.context(trainingDayId: TrainingDayId.today()))
         store.draft = action.draft
-        SharpitMotion.run(SharpitMotion.selection) { showsQuickActions = false }
+        SharpitMotion.run(SharpitMotion.selection) {
+            store.attach(action.context(trainingDayId: TrainingDayId.today()))
+            showsQuickActions = false
+        }
         composerIsFocused = true
     }
 
@@ -757,17 +790,22 @@ private struct CoachMessageRow: View {
                     }
                 }
                 if isStreaming {
-                    CoachWritingMark()
+                    // What the coach is doing while no words come; gone once they do.
+                    if let activity = CoachActivity.current(parts: message.parts ?? []) {
+                        CoachActivityLine(activity: activity)
+                            .transition(.opacity)
+                    }
                 } else if !CoachMessageCopy.plainText(of: message).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     CoachCopyButton(text: CoachMessageCopy.plainText(of: message))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(SharpitMotion.fade, value: isStreaming ? CoachActivity.current(parts: message.parts ?? []) == nil : true)
         }
     }
 
     private func coachProse(_ markdown: String) -> some View {
-        SharpitMarkdownText(markdown: markdown)
+        SharpitMarkdownText(markdown: markdown, isStreaming: isStreaming)
     }
 }
 
@@ -924,24 +962,6 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
         }
         flush()
         return segments
-    }
-}
-
-/// A single pulsing mark while the answer arrives.
-///
-/// One mark, not three bouncing dots: it says the machine is working without performing
-/// a person typing.
-private struct CoachWritingMark: View {
-    @State private var dim = false
-
-    var body: some View {
-        Circle()
-            .fill(SharpitColor.primary)
-            .frame(width: 7, height: 7)
-            .opacity(dim ? 0.25 : 1)
-            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: dim)
-            .onAppear { dim = true }
-            .accessibilityLabel("Le coach répond")
     }
 }
 

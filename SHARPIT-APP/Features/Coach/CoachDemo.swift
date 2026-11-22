@@ -29,7 +29,7 @@ private struct DemoQuota: CoachQuotaServing {
     }
 }
 
-/// Writes a long answer word by word, at a reading pace.
+/// Reads the plan, then writes a long answer word by word, at a reading pace.
 private struct DemoCoachClient: CoachChatServing {
     private static let answer = String(localized: """
     Ta nuit était courte, 6 h 10, et ta VFC est sous ta moyenne de la semaine. \
@@ -48,8 +48,24 @@ private struct DemoCoachClient: CoachChatServing {
     func reply(to request: CoachChatRequest, token: String) -> AsyncThrowingStream<JSONValue, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
+                // The wait as the route spends it: the athlete's state gathered, the model
+                // thinking, the plan read, then the words — so the activity line can be watched.
+                try? await Task.sleep(for: .milliseconds(1100))
                 continuation.yield(chunk(["type": "start", "messageId": "demo-\(UUID().uuidString)"]))
                 continuation.yield(chunk(["type": "start-step"]))
+                try? await Task.sleep(for: .milliseconds(900))
+                continuation.yield(.object([
+                    "type": .string("tool-input-available"), "toolCallId": .string("demo-plan"),
+                    "toolName": .string("listPlannedSessions"), "input": .object([:]),
+                ]))
+                try? await Task.sleep(for: .milliseconds(1200))
+                continuation.yield(.object([
+                    "type": .string("tool-output-available"), "toolCallId": .string("demo-plan"),
+                    "output": .object(["ok": .bool(true)]),
+                ]))
+                continuation.yield(chunk(["type": "finish-step"]))
+                continuation.yield(chunk(["type": "start-step"]))
+                try? await Task.sleep(for: .milliseconds(900))
                 continuation.yield(chunk(["type": "text-start", "id": "t"]))
                 for word in Self.answer.split(separator: " ") {
                     try? await Task.sleep(for: .milliseconds(70))

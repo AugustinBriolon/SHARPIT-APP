@@ -25,6 +25,21 @@ possible); the frameworks' callbacks are built in nonisolated functions, since m
 closures trap when called on their queues. `-SharpitCoachDemo` scripts two questions on a
 streamed answer in Debug builds.
 
+**The wait and the words (the athlete's call, 2026-11-22).** While no words come, one slate line
+under the question says what the coach is doing, a band of ink passing over it
+(`CoachActivityLine`): « Lecture de tes données » before the server's first chunk, « Réflexion »
+once a step is open, the tool being called by its name (« Lecture de ton plan », « Construction de
+la séance »), « Analyse » once tools answered, « Application du changement » after an approval.
+`CoachActivity.current(parts:)` reads it from the turn's parts — what the stream says, never a
+script on a timer — and a line stays 0.65 s at least so quick steps do not flicker. It is gone
+once words arrive and leaves no trace in the thread: no « a réfléchi 12 s », no list of steps.
+The answer is not typed: `SharpitMarkdownText(isStreaming:)` draws prose up to a soft front
+(`SharpitFadeFrontRenderer`, a `TextRenderer`), the last glyphs fading in as the front follows
+the stream; a table, a code block or a list's marker fades in once. Text already there (history)
+never fades. Nothing in the composer animates as the page opens (`hasOpened`,
+`composerIsSettled`): the budget card and a subject brought from another screen are simply
+there; the card fades when an answer takes the budget past half, and nothing slides or scales.
+
 **Coach quota.** The coach is SharpIt Pro (SHARPIT ADR-097); the coach routes share a token budget
 per rolling 24 h (ADR-077: about 62 questions Pro). `CoachStore` reads `/api/v1/coach/quota`
 (`CoachQuotaClient`, `V1CoachQuota`) on open and after each answer; once half is spent, a thin gauge

@@ -7,6 +7,8 @@ import SwiftUI
 /// the same ramp as the rest of the app.
 struct SharpitMarkdownText: View {
     let markdown: String
+    /// The coach is still writing it: prose fades in as it comes (`sharpitStreamFade`).
+    var isStreaming = false
 
     private var blocks: [SharpitMarkdownBlock] {
         SharpitMarkdown.blocks(from: markdown)
@@ -32,14 +34,14 @@ struct SharpitMarkdownText: View {
     private func view(for block: SharpitMarkdownBlock) -> some View {
         switch block {
         case .heading(let level, let text):
-            Text(SharpitMarkdown.inline(text))
+            prose(text)
                 .font(headingFont(level))
                 .tracking(headingTracking(level))
                 .foregroundStyle(SharpitColor.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
         case .paragraph(let text):
-            Text(SharpitMarkdown.inline(text))
+            prose(text)
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.foreground)
                 .lineSpacing(4)
@@ -55,6 +57,7 @@ struct SharpitMarkdownText: View {
 
         case .table(let header, let rows):
             SharpitMarkdownTable(header: header, rows: rows)
+                .sharpitStreamArrival(isStreaming: isStreaming)
 
         case .numbered(let items):
             list(items) { index in
@@ -64,7 +67,7 @@ struct SharpitMarkdownText: View {
             }
 
         case .quote(let text):
-            Text(SharpitMarkdown.inline(text))
+            prose(text)
                 .font(SharpitTypography.body)
                 .foregroundStyle(SharpitColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
@@ -83,12 +86,20 @@ struct SharpitMarkdownText: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(SharpitSpacing.sm)
                 .sharpitConcentricBackground(SharpitColor.tile, minimum: SharpitRadius.small)
+                .sharpitStreamArrival(isStreaming: isStreaming)
 
         case .rule:
             Rectangle()
                 .fill(SharpitColor.divider)
                 .frame(height: 1)
         }
+    }
+
+    /// A run of prose: inline markdown, fading in glyph by glyph while the coach writes it.
+    private func prose(_ text: String) -> some View {
+        let inline = SharpitMarkdown.inline(text)
+        return Text(inline)
+            .sharpitStreamFade(count: inline.characters.count, isStreaming: isStreaming)
     }
 
     private func list(
@@ -100,7 +111,8 @@ struct SharpitMarkdownText: View {
                 HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
                     marker(index)
                         .frame(minWidth: 16, alignment: .leading)
-                    Text(SharpitMarkdown.inline(item))
+                        .sharpitStreamArrival(isStreaming: isStreaming)
+                    prose(item)
                         .font(SharpitTypography.body)
                         .foregroundStyle(SharpitColor.foreground)
                         .lineSpacing(4)
