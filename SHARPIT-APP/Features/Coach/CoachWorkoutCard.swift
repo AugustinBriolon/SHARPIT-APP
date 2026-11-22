@@ -2,9 +2,12 @@ import SwiftUI
 
 /// A session the coach proposes, drawn from `presentWorkout` (SHARPIT ADR-111): what it is for,
 /// how long, its blocks in order the way the watch runs them, and the athlete's own cautions.
-/// Nothing on it writes the plan: adding it is asked in the thread and goes through a proposal.
+/// Nothing on it writes the plan: « Ajouter au plan » asks for it in the thread, as the athlete's
+/// own question, and the coach answers with a proposal to validate.
 struct CoachWorkoutCard: View {
     let workout: CoachWorkout
+    /// Asks the coach to put this session in the plan — nil once the thread has moved on.
+    var onAdd: (() -> Void)? = nil
 
     @Environment(\.isExpertReading) private var isExpertReading
 
@@ -57,6 +60,15 @@ struct CoachWorkoutCard: View {
                     .font(SharpitTypography.meta)
                     .foregroundStyle(SharpitColor.statusWatchForeground)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+
+            // The card is a session to read; this asks for it in the thread, where the coach
+            // answers with a proposal to validate — the card itself never writes the plan.
+            if let onAdd {
+                Button(action: onAdd) {
+                    Text("Ajouter au plan").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CliniqueButtonStyle(kind: .outline))
             }
         }
         .padding(SharpitSpacing.cardPadding)

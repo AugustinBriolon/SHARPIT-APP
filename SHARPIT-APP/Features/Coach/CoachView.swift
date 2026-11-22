@@ -303,6 +303,7 @@ struct CoachView: View {
             onAnswer: answerHandler,
             onRetry: retryHandler,
             onOpenNutrition: { router.openToday(.nutrition) },
+            onOpenPlan: { router.openPlan(on: $0) },
             onFollowUp: followUpHandler(for: message)
         )
         .id(message.id)
@@ -730,6 +731,7 @@ private struct CoachMessageRow: View {
     let onAnswer: ((String, Bool, JSONValue?, String?) -> Void)?
     let onRetry: ((String, JSONValue?) -> Void)?
     let onOpenNutrition: (() -> Void)?
+    var onOpenPlan: ((Date) -> Void)? = nil
     /// Nil unless this is the thread's last answer, settled: older suggestions are spent.
     var onFollowUp: ((String) -> Void)? = nil
 
@@ -770,7 +772,8 @@ private struct CoachMessageRow: View {
                         // no context menu here, it would take the long press from the selection.
                         coachProse(text)
                     case .proposal(let proposal):
-                        CoachProposalCard(proposal: proposal, onAnswer: answer(for: proposal))
+                        CoachProposalCard(proposal: proposal, onAnswer: answer(for: proposal), onOpenPlan: onOpenPlan)
+                            .sharpitStreamArrival(isStreaming: isStreaming)
                     case .foodLog(let proposal):
                         CoachFoodLogCard(
                             proposal: proposal,
@@ -779,13 +782,16 @@ private struct CoachMessageRow: View {
                             onOpenNutrition: onOpenNutrition,
                             isReplying: isReplying
                         )
+                        .sharpitStreamArrival(isStreaming: isStreaming)
                     case .workout(_, let workout):
-                        CoachWorkoutCard(workout: workout)
+                        CoachWorkoutCard(workout: workout, onAdd: addToPlan(workout))
+                            .sharpitStreamArrival(isStreaming: isStreaming)
                     case .dataCard(_, let card):
                         CoachDataCardView(card: card)
                     case .followUps(_, let suggestions):
                         if let onFollowUp {
                             CoachFollowUpsView(suggestions: suggestions, onSelect: onFollowUp)
+                                .sharpitStreamArrival(isStreaming: isStreaming)
                         }
                     }
                 }
@@ -802,6 +808,13 @@ private struct CoachMessageRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .animation(SharpitMotion.fade, value: isStreaming ? CoachActivity.current(parts: message.parts ?? []) == nil : true)
         }
+    }
+
+    /// « Ajouter au plan » on a session the coach drew: asked as the athlete's own question, so
+    /// the coach answers with a proposal. Only on the thread's last answer, as the follow-ups.
+    private func addToPlan(_ workout: CoachWorkout) -> (() -> Void)? {
+        guard let onFollowUp else { return nil }
+        return { onFollowUp(String(localized: "Ajoute « \(workout.title) » à mon plan.")) }
     }
 
     private func coachProse(_ markdown: String) -> some View {

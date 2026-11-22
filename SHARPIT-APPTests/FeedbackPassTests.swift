@@ -73,9 +73,8 @@ struct FeedbackPassTests {
         }
         let create = proposal("tool-createPlannedSession", .awaiting(approvalId: "a"))
         let delete = proposal("tool-deletePlannedSession", .awaiting(approvalId: "a"))
-        #expect(CoachProposalReadout.approve(create, confirming: false) == "Ajouter au plan")
-        #expect(CoachProposalReadout.approve(delete, confirming: false) == "Supprimer la séance")
-        #expect(CoachProposalReadout.approve(delete, confirming: true) == "Confirmer la suppression")
+        #expect(CoachProposalReadout.approve(create) == "Ajouter au plan")
+        #expect(CoachProposalReadout.approve(delete) == "Maintenir pour supprimer")
 
         #expect(CoachProposalReadout.facts("Course · 45 min · charge 60") == "Course · 45\u{00A0}min · charge\u{00A0}60")
         #expect(CoachProposalReadout.facts(nil) == nil)

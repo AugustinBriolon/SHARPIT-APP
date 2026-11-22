@@ -99,7 +99,18 @@ window has no reset date to show.
 (`CoachProposalCard`) is a bordered card: what it does as a status pill beside the day, the session
 as the title, its figures on one slate line, the steps as numbered lines between hairlines, then
 one ink button that says what it does (« Ajouter au plan », « Appliquer la modification »,
-« Supprimer la séance » then « Confirmer la suppression » — `CoachProposalReadout.approve`) over
+« Maintenir pour supprimer » — `CoachProposalReadout.approve`) over
 « Modifier » and « Ignorer ». Settled, it is one bordered line: the session, its day (or why it
 failed), and what became of it as a pill (`CoachProposalReadout.outcome`), a spinner while it is
 applied. No tinted chips, numbered discs or coloured wash. `SharpitScreenDemo proposal` shows every state.
+
+**Cards you can act on (the athlete's call, 2026-11-22).** A deletion is confirmed by holding
+its button, not by a second tap: `CliniqueHoldButton` fills with ink from its leading edge for
+1.2 s, its title turning over as the ink passes, and runs back out if the finger lifts early;
+the consequence is said over it from the start. VoiceOver's double tap confirms. No haptic: a
+confirmation is not a notch under the finger. A change carried out is a line with a chevron
+that opens Plan on its day (`CoachProposal.day`, `ShellRouter.openPlan(on:)`); a deletion, a
+refusal or a failure opens nothing. A session the coach drew (`CoachWorkoutCard`) carries
+« Ajouter au plan » while it is the thread's last answer: it sends the request as the athlete's
+own question, and the coach answers with a proposal — the card never writes the plan. Every
+card fades in once as it arrives in an answer being written (`sharpitStreamArrival`).

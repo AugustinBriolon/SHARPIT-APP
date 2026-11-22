@@ -23,9 +23,12 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
     let date: String?
     let intentLine: String?
     let steps: [String]
+    /// The day the change bears on, to open the plan there once it is carried out.
+    let day: Date?
 
     /// As read from the thread (`init?(part:)`), or built whole by a demo or a test.
-    init(id: String, toolType: String, status: Status, headline: String, date: String? = nil, intentLine: String? = nil, steps: [String] = []) {
+    init(id: String, toolType: String, status: Status, headline: String, date: String? = nil, intentLine: String? = nil, steps: [String] = [], day: Date? = nil) {
+        self.day = day
         self.id = id
         self.toolType = toolType
         self.status = status
@@ -143,7 +146,9 @@ nonisolated struct CoachProposal: Equatable, Identifiable {
         }
 
         let title = (output?["title"]?.string ?? input["title"]?.string)?.trimmingCharacters(in: .whitespaces)
-        date = (input["date"]?.string ?? output?["date"]?.string).map(Self.formattedDate)
+        let rawDate = input["date"]?.string ?? output?["date"]?.string
+        date = rawDate.map(Self.formattedDate)
+        day = rawDate.flatMap { APIDate.day(String($0.prefix(10))) }
 
         switch type {
         case "tool-deletePlannedSession":
@@ -288,14 +293,16 @@ private extension String {
 /// quiet ones. Once settled, one line that keeps its place in the thread — the session and what
 /// became of it as a status pill. No hue but a status's.
 ///
-/// Deleting asks twice, as on the web — the first « Supprimer » names the consequence.
+/// Deleting is confirmed by holding its button (`CliniqueHoldButton`), the consequence said over
+/// it — not by a second tap on a button that changed its words (the athlete's call, 2026-11-22).
+/// A change carried out opens the plan on its day.
 struct CoachProposalCard: View {
     let proposal: CoachProposal
     /// Nil while an answer is on its way: the buttons wait with it.
     /// Bool is approval; optional reasonOverride covers « Modifier » (revise).
     let onAnswer: ((Bool, String?) -> Void)?
-
-    @State private var confirmingDelete = false
+    /// Opens the plan on the day of a change carried out.
+    var onOpenPlan: ((Date) -> Void)? = nil
 
     var body: some View {
         Group {
@@ -341,7 +348,7 @@ struct CoachProposalCard: View {
                 steps.padding(.top, 12)
             }
 
-            if proposal.isDelete, confirmingDelete {
+            if proposal.isDelete {
                 Text(
                     proposal.date.map { String(localized: "Cette séance sera retirée du plan (\($0)). Action irréversible.") }
                         ?? String(localized: "Cette séance sera retirée du plan. Action irréversible.")
@@ -350,7 +357,6 @@ struct CoachProposalCard: View {
                 .foregroundStyle(SharpitColor.statusAlertForeground)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12)
-                .transition(.opacity)
             }
 
             actions.padding(.top, 14)
@@ -382,16 +388,14 @@ struct CoachProposalCard: View {
     /// The answer that changes the plan in ink across the card; the ways out side by side under it.
     private var actions: some View {
         VStack(spacing: SharpitSpacing.xs) {
-            Button {
-                if proposal.isDelete, !confirmingDelete {
-                    withAnimation(SharpitMotion.selection) { confirmingDelete = true }
-                    return
+            if proposal.isDelete {
+                CliniqueHoldButton(title: CoachProposalReadout.approve(proposal)) { onAnswer?(true, nil) }
+            } else {
+                Button { onAnswer?(true, nil) } label: {
+                    Text(CoachProposalReadout.approve(proposal)).frame(maxWidth: .infinity)
                 }
-                onAnswer?(true, nil)
-            } label: {
-                Text(CoachProposalReadout.approve(proposal, confirming: confirmingDelete)).frame(maxWidth: .infinity)
+                .buttonStyle(CliniqueButtonStyle(kind: .primary))
             }
-            .buttonStyle(CliniqueButtonStyle(kind: .primary))
 
             HStack(spacing: SharpitSpacing.xs) {
                 if !proposal.isDelete {
@@ -400,10 +404,7 @@ struct CoachProposalCard: View {
                     }
                     .buttonStyle(CliniqueButtonStyle(kind: .outline))
                 }
-                Button {
-                    confirmingDelete = false
-                    onAnswer?(false, nil)
-                } label: {
+                Button { onAnswer?(false, nil) } label: {
                     Text(proposal.isDelete ? String(localized: "Garder la séance") : String(localized: "Ignorer")).frame(maxWidth: .infinity)
                 }
                 .buttonStyle(CliniqueButtonStyle(kind: proposal.isDelete ? .outline : .plain))
@@ -416,7 +417,22 @@ struct CoachProposalCard: View {
     // MARK: Settled
 
     /// What was proposed, and what became of it. Kept in the thread, never collapsed to a chip.
+    /// A session added or changed opens the plan on its day: the line then carries a chevron.
+    @ViewBuilder
     private var receipt: some View {
+        if let day = proposal.day, let onOpenPlan, proposal.status == .applied, !proposal.isDelete {
+            Button { onOpenPlan(day) } label: { receiptLine(opens: true) }
+                .buttonStyle(.sharpitPressable)
+                .accessibilityHint(String(localized: "Ouvre le plan à ce jour"))
+                .transition(.opacity)
+        } else {
+            receiptLine(opens: false)
+                .accessibilityElement(children: .combine)
+                .transition(.opacity)
+        }
+    }
+
+    private func receiptLine(opens: Bool) -> some View {
         let outcome = CoachProposalReadout.outcome(proposal)
         return HStack(alignment: .center, spacing: SharpitSpacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
@@ -424,11 +440,13 @@ struct CoachProposalCard: View {
                     .font(SharpitTypography.system(size: 15, weight: .semibold, relativeTo: .body))
                     .foregroundStyle(outcome.isStruck ? SharpitColor.slate : SharpitColor.foreground)
                     .strikethrough(outcome.isStruck, color: SharpitColor.slate)
+                    .multilineTextAlignment(.leading)
                     .lineLimit(2)
                 if let detail = outcome.detail ?? proposal.date {
                     Text(detail)
                         .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption, digits: true))
                         .foregroundStyle(SharpitColor.slate)
+                        .multilineTextAlignment(.leading)
                         .lineLimit(3)
                 }
             }
@@ -438,11 +456,16 @@ struct CoachProposalCard: View {
             } else {
                 CliniqueStatusPill(outcome.word, status: outcome.status)
             }
+            if opens {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+            }
         }
         .cliniqueCard()
-        .accessibilityElement(children: .combine)
+        .contentShape(Rectangle())
         .accessibilityValue(outcome.word)
-        .transition(.opacity)
     }
 }
 
@@ -464,11 +487,12 @@ nonisolated enum CoachProposalReadout {
     }
 
     /// The ink button says what it does: « Ajouter au plan », never a bare « Appliquer ».
-    static func approve(_ proposal: CoachProposal, confirming: Bool) -> String {
+    /// A deletion says how it is confirmed: by holding.
+    static func approve(_ proposal: CoachProposal) -> String {
         switch proposal.toolType {
         case "tool-createPlannedSession", "tool-createBrickSession": String(localized: "Ajouter au plan")
         case "tool-updatePlannedSession": String(localized: "Appliquer la modification")
-        case "tool-deletePlannedSession": confirming ? String(localized: "Confirmer la suppression") : String(localized: "Supprimer la séance")
+        case "tool-deletePlannedSession": String(localized: "Maintenir pour supprimer")
         default: String(localized: "Enregistrer")
         }
     }
