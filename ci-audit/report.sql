@@ -20,7 +20,7 @@ JOIN runs r ON r.id = j.run_id;
 
 CREATE TEMP TABLE setup_steps AS
 SELECT unnest(['Set up job', 'Checkout', 'Select the newest Xcode', 'Pick a simulator',
-  'Cache Swift packages', 'Restore Swift packages', 'Restore the compilation cache']) AS name;
+  'Cache Swift packages', 'Restore Swift packages', 'Restore the compilation cache', 'Boot the simulator']) AS name;
 
 CREATE TEMP TABLE job_times AS
 SELECT run_id, name, conclusion,
