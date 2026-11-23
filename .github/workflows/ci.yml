@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          filter: blob:none
 
       # The project's format needs a recent Xcode: take the newest the runner has. Its build
       # version keys the compilation cache, since another compiler cannot reuse its outputs.
@@ -61,6 +63,9 @@ jobs:
             | jq -r '[.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
           test -n "$UDID" && test "$UDID" != "null"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          # A cold boot takes minutes on the runner: start it now so it overlaps the build.
+          # smoke-launch.sh waits for it (bootstatus) before installing.
+          nohup xcrun simctl boot "$UDID" > simulator-boot.log 2>&1 &
 
       # Unit tests never cold-launch the app: a crash at launch only shows when it is opened.
       - name: Cold-launch smoke test
@@ -74,7 +79,7 @@ jobs:
             -scheme SHARPIT-APP \
             -destination "id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
-            COMPILATION_CACHE_ENABLE_CACHING=YES \
+            COMPILATION_CACHE_ENABLE_CACHING=YES COMPILER_INDEX_STORE_ENABLE=NO \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
             | tee xcodebuild.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
           APP=~/Library/Developer/Xcode/DerivedData/ci/Build/Products/Debug-iphonesimulator/SharpIt.app
