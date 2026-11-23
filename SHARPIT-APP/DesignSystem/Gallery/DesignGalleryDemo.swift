@@ -728,7 +728,7 @@ struct ScreenDemoHost: View {
                 Color.clear.sheet(isPresented: .constant(true)) {
                     ExercisePickerSheet(library: [
                         V1StrengthExercise(
-                            name: "Développé couché", sessions: 6,
+                            name: "Développé couché", athleteNote: "Omoplates serrées, pieds au sol", sessions: 6,
                             last: .init(date: "2026-11-10", sets: 4, reps: 8, weightKg: 60, durationSec: nil),
                             best: .init(weightKg: 70, reps: 5)
                         ),

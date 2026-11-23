@@ -67,7 +67,7 @@ struct ExercisePickerSheet: View {
                     if !results.own.isEmpty {
                         section(String(localized: "Tes exercices"))
                         ForEach(results.own) { exercise in
-                            row(exercise.name, detail: StrengthHistoryReadout.line(exercise)) {
+                            row(exercise.name, detail: ExercisePickerReadout.detail(exercise)) {
                                 pick(ExercisePick(name: exercise.name, catalogId: exercise.catalogId, note: exercise.note, history: exercise))
                             }
                             CliniqueDivider()
@@ -184,6 +184,11 @@ enum ExercisePickerReadout {
             String(localized: "Bras"), String(localized: "Tronc"), String(localized: "Hanches et fessiers"),
             String(localized: "Cuisses"), String(localized: "Mollets et chevilles"), String(localized: "Corps entier"),
         ]
+    }
+
+    /// « Dernière fois … · Meilleur … », then the athlete's own note on it when there is one.
+    static func detail(_ exercise: V1StrengthExercise) -> String {
+        [StrengthHistoryReadout.line(exercise), exercise.athleteNote].compactMap { $0 }.joined(separator: "\n")
     }
 
     static func zoneNote(_ zone: String) -> String { String(localized: "Zone travaillée : \(zone)") }

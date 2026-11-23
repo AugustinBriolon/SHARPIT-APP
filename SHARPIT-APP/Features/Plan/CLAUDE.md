@@ -208,7 +208,7 @@ sets (« Zone travaillée : … »: the server has no column for it), and found 
 offered in a programmed session too: better noted than left out. `/api/v1/strength-exercises`
 (`StrengthLibraryStore`, read once a launch and after a save) gives each exercise's last session and
 best, computed from the logged sets; a set opens on the last load or hold only where the plan gives
-none (`applyHistory`). The coach's generator does not read these figures yet.
+none (`applyHistory`). The coach's generator reads these figures (SHARPIT `formatStrengthHistoryBlock`).
 
 **Strength session into Apple Santé (2026-11-15).** A session followed on the phone and saved is
 also written to Apple Santé as a traditional strength workout — its start, its end, its name, the
@@ -233,3 +233,11 @@ The history code was read end to end and swaps nothing.
 fois », « Meilleur » and « Volume » as one strip of named columns between hairlines
 (`ExerciseFiguresStrip`): the volume's column is there from the start, « — » until a set is done —
 it used to appear with the first set and push the sets down.
+
+**Standing exercise notes (2026-11-23, SHARPIT ADR-146).** Under an exercise's name its page shows
+« Ma note » — the athlete's note that holds for every session of that exercise (a cue, a setting, a
+pain to watch) — or « Ajouter une note »; either opens `ExerciseNoteSheet`, whose save waits for the
+server (`PUT /api/v1/strength-exercises`, an empty note removes it). `StrengthLibraryStore` keeps the
+notes by exercise key (`athleteNote(of:)`), a note written this launch on an exercise never logged
+included. The picker shows it under the history line. The plan generator reads it beside the history.
+A session's own set notes are unchanged.

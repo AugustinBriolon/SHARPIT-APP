@@ -23,6 +23,8 @@ nonisolated struct V1StrengthExercise: Decodable, Equatable, Sendable, Identifia
     var catalogId: String? = nil
     /// The note last written on it — for an exercise of the athlete's own, the zone it works.
     var note: String? = nil
+    /// The standing note the athlete keeps on it (SHARPIT ADR-146), shown each time it comes back.
+    var athleteNote: String? = nil
     var sessions: Int = 1
     let last: Last
     var best = Best()
@@ -41,6 +43,7 @@ nonisolated struct V1StrengthExercisesResponse: Decodable, Sendable {
 
 nonisolated protocol StrengthExerciseServing: Sendable {
     func exercises(token: String) async throws -> [V1StrengthExercise]
+    func saveNote(name: String, note: String, token: String) async throws
 }
 
 actor StrengthExerciseClient: StrengthExerciseServing {
@@ -61,6 +64,19 @@ actor StrengthExerciseClient: StrengthExerciseServing {
         guard (200...299).contains(status) else { throw SharpitAPIError.server }
         return try JSONDecoder().decode(V1StrengthExercisesResponse.self, from: data).exercises
     }
+
+    /// Writes the standing note on one exercise; an empty note removes it.
+    func saveNote(name: String, note: String, token: String) async throws {
+        var request = URLRequest(url: baseURL.appending(path: "/api/v1/strength-exercises"))
+        request.httpMethod = "PUT"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["name": name, "note": note])
+        let (_, response) = try await session.sharpitData(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 401 { throw SharpitAPIError.unauthorized }
+        guard (200...299).contains(status) else { throw SharpitAPIError.server }
+    }
 }
 
 /// The athlete's exercises, read once and kept for the launch: a session that starts and the
@@ -71,6 +87,8 @@ final class StrengthLibraryStore {
     static let shared = StrengthLibraryStore()
 
     private(set) var exercises: [V1StrengthExercise] = []
+    /// Standing notes by exercise key — also those on an exercise not saved yet, written this launch.
+    private(set) var athleteNotes: [String: String] = [:]
     private var isLoaded = false
     private let client: any StrengthExerciseServing
 
@@ -85,6 +103,7 @@ final class StrengthLibraryStore {
         guard fresh || !isLoaded else { return exercises }
         if let token = try? await tokenProvider(), let read = try? await client.exercises(token: token) {
             exercises = read
+            for exercise in read { athleteNotes[exercise.id] = exercise.athleteNote }
             isLoaded = true
         }
         return exercises
@@ -93,6 +112,21 @@ final class StrengthLibraryStore {
     func history(of name: String) -> V1StrengthExercise? {
         let key = StrengthExerciseKey.of(name)
         return exercises.first { $0.id == key }
+    }
+
+    func athleteNote(of name: String) -> String? {
+        athleteNotes[StrengthExerciseKey.of(name)]
+    }
+
+    /// Saves the note, then keeps it here so the page shows it at once; a failure is thrown.
+    func saveNote(name: String, note: String, tokenProvider: () async throws -> String) async throws {
+        let text = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        try await client.saveNote(name: name, note: text, token: try await tokenProvider())
+        let key = StrengthExerciseKey.of(name)
+        athleteNotes[key] = text.isEmpty ? nil : text
+        if let index = exercises.firstIndex(where: { $0.id == key }) {
+            exercises[index].athleteNote = athleteNotes[key]
+        }
     }
 }
 

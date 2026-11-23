@@ -25,6 +25,7 @@ struct GuidedStrengthWorkoutView: View {
     let finish: GuidedStrengthFinishContext?
     var logging: GuidedStrengthLogging?
     @State private var showingExercisePicker = false
+    @State private var noteTarget: ExerciseNoteTarget?
 
     @Environment(\.dismiss) private var dismiss
     /// Nil when shown on its own (the design gallery): then it is a plain cover.
@@ -132,6 +133,15 @@ struct GuidedStrengthWorkoutView: View {
                 SharpitMotion.run {
                     session.addExercise(name: pick.name, catalogId: pick.catalogId, note: pick.note, history: pick.history)
                 }
+            }
+        }
+        .sheet(item: $noteTarget) { target in
+            ExerciseNoteSheet(
+                name: target.name,
+                initial: StrengthLibraryStore.shared.athleteNote(of: target.name) ?? ""
+            ) { text in
+                guard let tokenProvider else { return }
+                try await StrengthLibraryStore.shared.saveNote(name: target.name, note: text, tokenProvider: tokenProvider)
             }
         }
         // What the athlete last lifted or held opens each set the plan leaves without a figure.
@@ -457,6 +467,9 @@ struct GuidedStrengthWorkoutView: View {
                                 .foregroundStyle(SharpitColor.slate)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
+                        if tokenProvider != nil {
+                            athleteNoteLine(name: name)
+                        }
                         // What was last done, the best, and today's volume: one strip, there from the
                         // start. The volume used to appear with the first set done and push the sets down.
                         ExerciseFiguresStrip(
@@ -512,6 +525,28 @@ struct GuidedStrengthWorkoutView: View {
                 Button("OK") { focusedField = nil }
             }
         }
+    }
+
+    /// « Ma note »: the standing note the athlete keeps on this exercise, or the way to write one.
+    private func athleteNoteLine(name: String) -> some View {
+        let note = StrengthLibraryStore.shared.athleteNote(of: name)
+        return Button { noteTarget = ExerciseNoteTarget(name: name) } label: {
+            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                Image(systemName: note == nil ? "plus" : "pencil")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+                Text(note ?? String(localized: "Ajouter une note"))
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(note == nil ? SharpitColor.slate : SharpitColor.foreground)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.sharpitPressable)
+        .accessibilityLabel(note.map { String(localized: "Ma note : \($0)") } ?? String(localized: "Ajouter une note"))
     }
 
     /// The set being done, as the mock-up's ink-lined card: its number, then the repetitions and
