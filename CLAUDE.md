@@ -41,7 +41,8 @@ compilation cache written by main: its 3-core runner took 17 min with a simulato
 
 TestFlight: `.github/workflows/testflight.yml` archives and uploads every main that passed CI (or on
 demand), signing with an App Store Connect API key and stamping the UTC minute as the build number
-— no hand bump of `CURRENT_PROJECT_VERSION`.
+— no hand bump of `CURRENT_PROJECT_VERSION`. A main that changed nothing shipped in the app since the last upload (CI,
+hooks, scripts, docs — `scripts/ships-in-app.sh`) uploads nothing.
 
 Requirements: Xcode 27 / Swift 6 language mode, iOS 27 simulator (Liquid Glass), Clerk
 Native API enabled with the same publishable key as the web app.

@@ -1,7 +1,9 @@
 name: TestFlight
 
 # Archives the app and uploads it to App Store Connect, where TestFlight picks it up: after CI
-# passed on main, or by hand (Actions › TestFlight › Run workflow, any branch).
+# passed on main, or by hand (Actions › TestFlight › Run workflow, any branch). A main that
+# changed nothing shipped in the app since the last upload (CI, hooks, scripts, docs:
+# scripts/ships-in-app.sh) uploads nothing; a run by hand always uploads.
 #
 # Signing is automatic and cloud-managed: xcodebuild signs with an App Store Connect API key, so
 # no certificate or profile lives in the repository or the secrets. The key needs the Admin role
@@ -21,12 +23,44 @@ concurrency:
   group: testflight
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
-  upload:
+  changes:
     # From CI only when it passed on a push to main — never for a pull request's run.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ship: ${{ steps.ship.outputs.ship }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          filter: blob:none
+
+      # Compared with the last main this workflow finished on: a run that uploaded nothing
+      # counts, since nothing shipped changed up to it either.
+      - name: Did anything shipped change since the last upload
+        id: ship
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          base=$(gh run list -R "$GITHUB_REPOSITORY" --workflow TestFlight --branch main --status success \
+            --limit 1 --json headSha --jq '.[0].headSha // ""')
+          ship=$(scripts/ships-in-app.sh "$base" "${{ github.event.workflow_run.head_sha }}")
+          echo "ship=$ship" >> "$GITHUB_OUTPUT"
+          echo "Since ${base:-nothing}: ship=$ship" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  upload:
+    needs: changes
+    # `changes` is skipped for a run by hand, which always uploads.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      always() && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.ship == 'true')
     runs-on: xcode-27
     timeout-minutes: 60
     steps:
