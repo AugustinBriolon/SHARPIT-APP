@@ -502,7 +502,7 @@ struct ScreenDemoHost: View {
                 NavigationStack { DemoMealsSection() }
             case "describe":
                 NavigationStack {
-                    FoodDescribePage(trainingDayId: TrainingDayId.today(now: .now), meal: .lunch, client: DemoFoodLog(), tokenProvider: { "demo" }, isProOverride: true, initialDescription: "Kebab salade tomate oignon, sauce algérienne, frites") { _, _ in }
+                    FoodDescribePage(trainingDayId: TrainingDayId.today(now: .now), meal: .lunch, client: DemoFoodLog(), tokenProvider: { "demo" }, isProOverride: true, initialDescription: "Un œuf mayo en entrée, un kebab frites et une mousse au chocolat") { _ in }
                 }
             case "portion":
                 NavigationStack {
@@ -557,7 +557,7 @@ struct ScreenDemoHost: View {
                 }
             case "recipe":
                 NavigationStack {
-                    FoodRecipePage(recipe: nil, client: DemoFoodLog(), tokenProvider: { "demo" }, onSave: { _ in DemoFoodLog.pasta }, onSaved: { _ in })
+                    FoodRecipePage(recipe: DemoFoodLog.pasta, client: DemoFoodLog(), tokenProvider: { "demo" }, onSave: { _ in DemoFoodLog.pasta }, onSaved: { _ in })
                 }
             case "forme":
                 ScrollView {
@@ -1411,13 +1411,21 @@ private struct DemoFoodLog: FoodLogServing {
     func deleteSavedMeal(id: String, token: String) async throws { throw SharpitAPIError.server }
     func logSavedMeal(id: String, trainingDayId: String, meal: FoodLogMeal, token: String) async throws -> [V1FoodLogEntry] { [] }
     func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct { throw SharpitAPIError.server }
-    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] {
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedDish] {
         [
-            V1DescribedFood(name: "Pain pita", grams: 90, kcal: 248, protein: 8, carbs: 50, fat: 1, per100g: .init(kcal: 275, protein: 9, carbs: 55, fat: 1.2)),
-            V1DescribedFood(name: "Viande de kebab", grams: 150, kcal: 375, protein: 27, carbs: 3, fat: 28, per100g: .init(kcal: 250, protein: 18, carbs: 2, fat: 19)),
-            V1DescribedFood(name: "Salade, tomate, oignon", grams: 80, kcal: 18, protein: 1, carbs: 3, fat: 0, per100g: .init(kcal: 22, protein: 1, carbs: 4, fat: 0.2)),
-            V1DescribedFood(name: "Sauce algérienne", grams: 40, kcal: 144, protein: 0, carbs: 4, fat: 14, per100g: .init(kcal: 360, protein: 1, carbs: 10, fat: 35)),
-            V1DescribedFood(name: "Frites", grams: 200, kcal: 620, protein: 7, carbs: 76, fat: 30, per100g: .init(kcal: 310, protein: 3.4, carbs: 38, fat: 15)),
+            V1DescribedDish(name: "Œuf mayonnaise", items: [
+                V1DescribedFood(name: "Œuf dur", grams: 55, kcal: 74, protein: 7, carbs: 0, fat: 5, per100g: .init(kcal: 134, protein: 13.5, carbs: 0.5, fat: 8.6)),
+                V1DescribedFood(name: "Mayonnaise", grams: 30, kcal: 207, protein: 0, carbs: 0, fat: 23, per100g: .init(kcal: 690, protein: 1.3, carbs: 1.5, fat: 76)),
+            ]),
+            V1DescribedDish(name: "Kebab frites", items: [
+                V1DescribedFood(name: "Pain pita", grams: 90, kcal: 248, protein: 8, carbs: 50, fat: 1, per100g: .init(kcal: 275, protein: 9, carbs: 55, fat: 1.2)),
+                V1DescribedFood(name: "Viande de kebab", grams: 150, kcal: 375, protein: 27, carbs: 3, fat: 28, per100g: .init(kcal: 250, protein: 18, carbs: 2, fat: 19)),
+                V1DescribedFood(name: "Sauce algérienne", grams: 40, kcal: 144, protein: 0, carbs: 4, fat: 14, per100g: .init(kcal: 360, protein: 1, carbs: 10, fat: 35)),
+                V1DescribedFood(name: "Frites", grams: 200, kcal: 620, protein: 7, carbs: 76, fat: 30, per100g: .init(kcal: 310, protein: 3.4, carbs: 38, fat: 15)),
+            ]),
+            V1DescribedDish(name: "Mousse au chocolat", items: [
+                V1DescribedFood(name: "Mousse au chocolat", grams: 100, kcal: 303, protein: 6, carbs: 26, fat: 19, per100g: .init(kcal: 303, protein: 6, carbs: 26, fat: 19)),
+            ]),
         ]
     }
 }

@@ -678,9 +678,9 @@ private actor StubFoodLog: FoodLogServing {
         return product
     }
 
-    var described: [V1DescribedFood] = []
+    var described: [V1DescribedDish] = []
 
-    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] {
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedDish] {
         if let failure { throw failure }
         return described
     }

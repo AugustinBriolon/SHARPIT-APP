@@ -126,8 +126,8 @@ private struct SavedMealRow: View {
 /// A recipe built from other foods (SHARPIT ADR-071): the ingredients weighed raw, the cooked
 /// weight and servings if known, the label live as it is built. Saved, it is an own food.
 struct FoodRecipePage: View {
-    /// The recipe being edited; nil when one is created.
-    let recipe: V1FoodProduct?
+    /// The recipe being edited: recipes are no longer created, the ones kept stay editable.
+    let recipe: V1FoodProduct
     let onSave: (FoodRecipeDraft) async throws -> V1FoodProduct
     let onSaved: (V1FoodProduct) -> Void
 
@@ -138,7 +138,7 @@ struct FoodRecipePage: View {
     @State private var failure: String?
 
     init(
-        recipe: V1FoodProduct?,
+        recipe: V1FoodProduct,
         client: any FoodLogServing,
         tokenProvider: @escaping () async throws -> String,
         onSave: @escaping (FoodRecipeDraft) async throws -> V1FoodProduct,
@@ -222,18 +222,18 @@ struct FoodRecipePage: View {
                             .foregroundStyle(failure == nil ? SharpitColor.slate : SharpitColor.signalRisk)
                             .multilineTextAlignment(.center)
                     }
-                    SharpitPrimaryButton(title: recipe == nil ? String(localized: "Créer la recette") : String(localized: "Enregistrer")) { save() }
+                    SharpitPrimaryButton(title: String(localized: "Enregistrer")) { save() }
                         .disabled(builder.draft == nil || isSaving)
                 }
             }
         }
-        .navigationTitle(recipe == nil ? String(localized: "Créer une recette") : String(localized: "Modifier la recette"))
+        .navigationTitle("Modifier la recette")
         .navigationBarTitleDisplayMode(.large)
     }
 
     @ViewBuilder
     private var hitsSection: some View {
-        let hits = Self.hits(search.results, excluding: recipe?.id)
+        let hits = Self.hits(search.results, excluding: recipe.id)
         Section {
             if let message = search.failure {
                 Label(message, systemImage: "exclamationmark.triangle")

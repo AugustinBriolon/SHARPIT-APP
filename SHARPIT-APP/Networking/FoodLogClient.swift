@@ -49,7 +49,7 @@ nonisolated protocol FoodLogServing: Sendable {
     /// Creates a recipe, or replaces one's ingredients when `id` is given; entries keep their values.
     func saveRecipe(id: String?, _ draft: FoodRecipeDraft, token: String) async throws -> V1FoodProduct
     /// Pro: free-text meal description → estimated foods (name, grams, per-100 g macros).
-    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood]
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedDish]
 }
 
 actor FoodLogClient: FoodLogServing {
@@ -202,10 +202,10 @@ actor FoodLogClient: FoodLogServing {
         return try decode(V1FoodProductEnvelope.self, from: try await send(request, readsRefusal: true)).product
     }
 
-    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedFood] {
+    func describeMeal(_ description: String, token: String) async throws -> [V1DescribedDish] {
         var request = try request("\(Self.path)/describe", method: "POST", token: token)
         request.httpBody = try JSONSerialization.data(withJSONObject: ["description": description])
-        return try decode(V1DescribedFoodList.self, from: try await sendDescribe(request)).items
+        return try decode(V1DescribedFoodList.self, from: try await sendDescribe(request)).asDishes
     }
 
     // MARK: Bodies

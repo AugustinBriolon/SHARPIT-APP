@@ -164,7 +164,8 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same tests 
 - Nutrition: the food log lives in SHARPIT (web ADR-061). Each meal has its « + »: search
   (`/api/v1/food-log/foods`: the athlete's own foods, « Aliments de base » from the ANSES Ciqual
   table (web ADR-065), then Open Food Facts), a VisionKit barcode
-  scanner, a quick add or a custom food per 100 g; entries are edited or swiped away on the meal's
+  scanner, a custom food per 100 g or a meal described in words and reviewed dish by dish (web
+  ADR-141); entries are edited or swiped away on the meal's
   page and the athlete's targets set from the « … » menu. Open Food Facts is only ever asked by the
   server, so the iPhone sends it nothing; « Données Open Food Facts (ODbL) » is shown where its
   products are listed. Each write goes out behind the tap (`FoodLogStore`), then

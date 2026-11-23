@@ -1,28 +1,26 @@
 import SwiftUI
 
-/// Free-text meal → distinct foods with editable grams (Pro). Adds them as quick-add entries.
+/// Free-text meal → its dishes, each estimated on its own with editable grams (Pro). A dish of
+/// several foods is logged as one named meal (SHARPIT ADR-134); a dish of one food as that food.
 struct FoodDescribePage: View {
     let trainingDayId: String
     let meal: FoodLogMeal
     let client: any FoodLogServing
     let tokenProvider: () async throws -> String
-    /// The foods to log, and the name they are logged under as one meal.
-    let onAdd: ([FoodLogDraft], String?) -> Void
+    /// The dishes to log, each with the name its foods are grouped under.
+    let onAdd: ([DescribedDishDrafts]) -> Void
     /// The Debug screen demo has no Pro store to ask.
     var isProOverride: Bool?
 
     @Environment(ProStore.self) private var pro: ProStore?
     @State private var description = ""
-    @State private var items: [DescribedFoodLine] = []
+    @State private var dishes: [DescribedDish] = []
     @State private var phase: Phase = .compose
     @State private var failure: String?
     @State private var selectedMeal: FoodLogMeal
-    /// The foods under the meal's total: folded while every one is a known food.
-    @State private var showsFoods = false
     /// The food whose grams are being set.
     @State private var editing: DescribedFoodLine.ID?
-    @State private var mealName = ""
-    /// When the meal was eaten: every food of it goes out at that time.
+    /// When the meal was eaten: every food of every dish goes out at that time.
     @State private var eatenTime: FoodEatenTime
 
     init(
@@ -32,7 +30,7 @@ struct FoodDescribePage: View {
         tokenProvider: @escaping () async throws -> String,
         isProOverride: Bool? = nil,
         initialDescription: String = "",
-        onAdd: @escaping ([FoodLogDraft], String?) -> Void
+        onAdd: @escaping ([DescribedDishDrafts]) -> Void
     ) {
         self.isProOverride = isProOverride
         _description = State(initialValue: initialDescription)
@@ -53,14 +51,14 @@ struct FoodDescribePage: View {
 
     private var isPro: Bool { isProOverride ?? (pro?.isPro == true) }
     private var canGenerate: Bool {
-        description.trimmingCharacters(in: .whitespacesAndNewlines).count >= 8 && phase != .loading
+        description.trimmingCharacters(in: .whitespacesAndNewlines).count >= 3 && phase != .loading
     }
 
-    private var readyDrafts: [FoodLogDraft] {
-        items.compactMap {
-            var draft = $0.draft(trainingDayId: trainingDayId, meal: selectedMeal)
-            draft?.eatenMinute = eatenTime.sent
-            return draft
+    private var readyDishes: [DescribedDishDrafts] {
+        dishes.compactMap {
+            guard var dish = $0.drafts(trainingDayId: trainingDayId, meal: selectedMeal) else { return nil }
+            for index in dish.drafts.indices { dish.drafts[index].eatenMinute = eatenTime.sent }
+            return dish
         }
     }
 
@@ -71,7 +69,7 @@ struct FoodDescribePage: View {
                     Section {
                         SharpitProTeaser(
                             title: String(localized: "Décrire un repas"),
-                            message: String(localized: "Décris ce que tu as mangé : SharpIt en tire les aliments et les macros, à ajuster avant d’ajouter.")
+                            message: String(localized: "Décris ce que tu as mangé : SharpIt sépare les plats et estime chacun, à ajuster avant d’ajouter.")
                         )
                         .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: 0, bottom: SharpitSpacing.sm, trailing: 0))
                         .listRowBackground(Color.clear)
@@ -92,9 +90,9 @@ struct FoodDescribePage: View {
                 SharpitBareActions {
                     if phase == .review {
                         SharpitPrimaryButton(title: addTitle) {
-                            onAdd(readyDrafts, DescribedMealTotal.name(mealName))
+                            onAdd(readyDishes)
                         }
-                        .disabled(readyDrafts.isEmpty)
+                        .disabled(readyDishes.isEmpty)
                     } else {
                         SharpitPrimaryButton(title: phase == .loading ? String(localized: "Génération…") : String(localized: "Générer")) {
                             Task { await generate() }
@@ -109,13 +107,13 @@ struct FoodDescribePage: View {
     /// The meal goes in whole: « Ajouter au déjeuner », not a count of foods.
     private var addTitle: String { selectedMeal.addTitle }
 
-    private var total: DescribedMealTotal { DescribedMealTotal(items) }
+    private var total: DescribedMealTotal { DescribedMealTotal(dishes.flatMap(\.lines)) }
 
     private var composeList: some View {
         List {
             Section(
                 eyebrow: String(localized: "Ton repas"),
-                footer: String(localized: "Exemple : ce midi au resto, faux-filet environ 300 g, frites et brocolis.")
+                footer: String(localized: "Exemple : un œuf mayo en entrée, des lasagnes et une mousse au chocolat. Chaque plat est estimé à part.")
             ) {
                 TextField(
                     String(localized: "Ce midi j’ai mangé…"),
@@ -143,7 +141,7 @@ struct FoodDescribePage: View {
                 Section {
                     HStack(spacing: SharpitSpacing.sm) {
                         ProgressView()
-                        Text("Estimation des aliments…")
+                        Text("Estimation des plats…")
                             .foregroundStyle(SharpitColor.slate)
                     }
                 }
@@ -162,17 +160,12 @@ struct FoodDescribePage: View {
             .sharpitListRows()
             .onChange(of: selectedMeal) { _, meal in eatenTime.follow(meal: meal, trainingDayId: trainingDayId) }
 
-            // The meal read as one — its energy and what it is made of — before its foods: five
-            // forms to read back for one kebab was the page's whole cost.
+            // The meal read as one — its energy and what it is made of — before its dishes.
             Section {
                 VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
-                    // The meal's name in the log, opened on the athlete's own words.
-                    TextField("Nom du repas", text: $mealName, axis: .vertical)
+                    Text(DescribedMealTotal.dishesCaption(dishes.count))
                         .font(SharpitTypography.bodyEmphasis)
                         .foregroundStyle(SharpitColor.foreground)
-                        .lineLimit(1...2)
-                        .textInputAutocapitalization(.sentences)
-                        .accessibilityLabel("Nom du repas")
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(NutritionReadout.kcal(total.kcal))
                             .font(SharpitTypography.system(size: 44, weight: .semibold, relativeTo: .largeTitle, digits: true))
@@ -194,31 +187,29 @@ struct FoodDescribePage: View {
             }
             .sharpitListRows()
 
-            Section {
-                Button {
-                    SharpitMotion.run(SharpitMotion.reveal) { showsFoods.toggle() }
-                } label: {
-                    HStack(spacing: SharpitSpacing.xs) {
-                        Text(DescribedMealTotal.foodsCaption(items.count))
+            // One section a dish: its name as it will be logged, its energy, then its foods.
+            ForEach($dishes) { $dish in
+                Section {
+                    HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.xs) {
+                        TextField("Nom du plat", text: $dish.name, axis: .vertical)
                             .font(SharpitTypography.bodyEmphasis)
                             .foregroundStyle(SharpitColor.foreground)
-                        if DescribedMealTotal.hasEstimate(items) {
+                            .lineLimit(1...2)
+                            .textInputAutocapitalization(.sentences)
+                            .accessibilityLabel("Nom du plat")
+                        if DescribedMealTotal.hasEstimate(dish.lines) {
                             CliniqueStatusPill(String(localized: "À vérifier"), status: .watch)
                         }
-                        Spacer(minLength: SharpitSpacing.xs)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 13, weight: .semibold))
+                        Text("\(NutritionReadout.kcal(DescribedMealTotal(dish.lines).kcal)) kcal")
+                            .font(SharpitTypography.meta)
+                            .monospacedDigit()
                             .foregroundStyle(SharpitColor.slate)
-                            .rotationEffect(.degrees(showsFoods ? 180 : 0))
-                            .accessibilityHidden(true)
                     }
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .accessibilityValue(showsFoods ? String(localized: "Ouvert") : String(localized: "Fermé"))
+                    .swipeActions {
+                        Button("Supprimer", role: .destructive) { dishes.removeAll { $0.id == dish.id } }
+                    }
 
-                if showsFoods {
-                    ForEach($items) { $line in
+                    ForEach($dish.lines) { $line in
                         VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
                             Button {
                                 SharpitMotion.run(SharpitMotion.selection) { editing = editing == line.id ? nil : line.id }
@@ -253,15 +244,15 @@ struct FoodDescribePage: View {
                         }
                         .padding(.vertical, 2)
                     }
-                    .onDelete { items.remove(atOffsets: $0) }
+                    .onDelete { removeFoods(at: $0, from: dish.id) }
                 }
+                .sharpitListRows()
             }
-            .sharpitListRows()
 
             Section {
                 Button("Modifier la description") {
                     phase = .compose
-                    items = []
+                    dishes = []
                 }
             }
             .sharpitListRows()
@@ -271,18 +262,18 @@ struct FoodDescribePage: View {
 
     private func generate() async {
         let text = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard text.count >= 8 else { return }
+        guard text.count >= 3 else { return }
         phase = .loading
         failure = nil
         do {
             let token = try await tokenProvider()
-            let described = try await SharpitRetry.run {
+            // Only a request that never arrived is sent again: a server failure here is a model
+            // that gave up, and each try is another estimate paid for.
+            let described = try await SharpitRetry.run(attempts: 2, retryingOn: { ($0 as? SharpitAPIError) == .transport }) {
                 try await client.describeMeal(text, token: token)
             }
-            items = described.map { DescribedFoodLine(from: $0) }
-            // A guessed food is not folded away: its grams are the meal's likeliest error.
-            showsFoods = DescribedMealTotal.hasEstimate(items)
-            mealName = DescribedMealTotal.name(text) ?? ""
+            // A server that answers the foods flat names no dish: the athlete's words name it.
+            dishes = described.map { DescribedDish(from: $0, fallbackName: text) }
             editing = nil
             phase = .review
         } catch {
@@ -290,6 +281,37 @@ struct FoodDescribePage: View {
             phase = .compose
         }
     }
+
+    /// A dish whose last food is removed goes with it.
+    private func removeFoods(at offsets: IndexSet, from dishId: DescribedDish.ID) {
+        guard let index = dishes.firstIndex(where: { $0.id == dishId }) else { return }
+        dishes[index].lines.remove(atOffsets: offsets)
+        if dishes[index].lines.isEmpty { dishes.remove(at: index) }
+    }
+}
+
+/// One dish of a described meal under review: its name, editable, and its foods.
+struct DescribedDish: Identifiable, Equatable {
+    let id = UUID()
+    var name: String
+    var lines: [DescribedFoodLine]
+
+    init(from dish: V1DescribedDish, fallbackName: String = "") {
+        name = DescribedMealTotal.name(dish.name.isEmpty ? fallbackName : dish.name) ?? ""
+        lines = dish.items.map { DescribedFoodLine(from: $0) }
+    }
+
+    /// The dish ready to log; nil when none of its foods has a weight.
+    func drafts(trainingDayId: String, meal: FoodLogMeal) -> DescribedDishDrafts? {
+        let drafts = lines.compactMap { $0.draft(trainingDayId: trainingDayId, meal: meal) }
+        return drafts.isEmpty ? nil : DescribedDishDrafts(name: DescribedMealTotal.name(name), drafts: drafts)
+    }
+}
+
+/// A dish as it is logged: its foods, and the name they are grouped under (nil: on their own).
+struct DescribedDishDrafts: Equatable {
+    var name: String?
+    var drafts: [FoodLogDraft]
 }
 
 /// Editable review row: name + grams; macros from per-100 g. Logs a product when matched.
@@ -396,6 +418,10 @@ struct DescribedMealTotal: Equatable {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let first = trimmed.first else { return nil }
         return String((first.uppercased() + trimmed.dropFirst()).prefix(80))
+    }
+
+    static func dishesCaption(_ count: Int) -> String {
+        count == 1 ? String(localized: "1 plat") : String(localized: "\(count) plats")
     }
 
     static func foodsCaption(_ count: Int) -> String {

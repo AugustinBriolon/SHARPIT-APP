@@ -16724,22 +16724,6 @@
         }
       }
     },
-    "Créer la recette" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create the recipe"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Créer la recette"
-          }
-        }
-      }
-    },
     "Créer un aliment" : {
       "localizations" : {
         "en" : {
@@ -16768,22 +16752,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Créer un objectif de poids"
-          }
-        }
-      }
-    },
-    "Créer une recette" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create a recipe"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Créer une recette"
           }
         }
       }
@@ -17556,22 +17524,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Décrire un repas"
-          }
-        }
-      }
-    },
-    "Décris ce que tu as mangé : SharpIt en tire les aliments et les macros, à ajuster avant d’ajouter." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Describe what you ate: SharpIt works out the foods and macros, to adjust before adding."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Décris ce que tu as mangé : SharpIt en tire les aliments et les macros, à ajuster avant d’ajouter."
           }
         }
       }
@@ -21891,22 +21843,6 @@
         }
       }
     },
-    "Estimation des aliments…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estimating the foods…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estimation des aliments…"
-          }
-        }
-      }
-    },
     "Estimation partielle" : {
       "localizations" : {
         "en" : {
@@ -22321,22 +22257,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Exemple"
-          }
-        }
-      }
-    },
-    "Exemple : ce midi au resto, faux-filet environ 300 g, frites et brocolis." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Example: lunch at a restaurant, sirloin about 300 g, fries and broccoli."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exemple : ce midi au resto, faux-filet environ 300 g, frites et brocolis."
           }
         }
       }
@@ -31014,22 +30934,6 @@
         }
       }
     },
-    "Macronutriments" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Macronutrients"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Macronutriments"
-          }
-        }
-      }
-    },
     "Magnésium" : {
       "localizations" : {
         "en" : {
@@ -33503,22 +33407,6 @@
         }
       }
     },
-    "Nom (ex. Sandwich jambon-beurre)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name (e.g. Ham sandwich)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nom (ex. Sandwich jambon-beurre)"
-          }
-        }
-      }
-    },
     "Nom (facultatif)" : {
       "localizations" : {
         "en" : {
@@ -35071,22 +34959,6 @@
         }
       }
     },
-    "Open Food Facts ne connaît pas ce code-barres. Saisis l'aliment rapidement ou crée-le avec son étiquette." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Food Facts doesn't know this barcode. Enter the food quickly or create it with its label."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Food Facts ne connaît pas ce code-barres. Saisis l'aliment rapidement ou crée-le avec son étiquette."
-          }
-        }
-      }
-    },
     "Open Food Facts ne répond pas pour l'instant." : {
       "localizations" : {
         "en" : {
@@ -35228,22 +35100,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OPTIONNEL. TU POURRAS AUSSI LES ACTIVER PLUS TARD"
-          }
-        }
-      }
-    },
-    "Optionnels. Les valeurs sont celles de la portion entière." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Optional. The values are for the whole serving."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Optionnels. Les valeurs sont celles de la portion entière."
           }
         }
       }
@@ -38159,22 +38015,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Poids de forme"
-          }
-        }
-      }
-    },
-    "Poids de la portion" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Serving weight"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Poids de la portion"
           }
         }
       }
@@ -43776,22 +43616,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Saisie des macros"
-          }
-        }
-      }
-    },
-    "Saisie rapide" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quick entry"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saisie rapide"
           }
         }
       }
@@ -55638,6 +55462,118 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Épaules"
+          }
+        }
+      }
+    },
+    "Décris ce que tu as mangé : SharpIt sépare les plats et estime chacun, à ajuster avant d’ajouter." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what you ate: SharpIt tells the dishes apart and estimates each one, for you to adjust before adding."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Décris ce que tu as mangé : SharpIt sépare les plats et estime chacun, à ajuster avant d’ajouter."
+          }
+        }
+      }
+    },
+    "Exemple : un œuf mayo en entrée, des lasagnes et une mousse au chocolat. Chaque plat est estimé à part." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Example: egg mayo to start, lasagne and a chocolate mousse. Each dish is estimated on its own."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exemple : un œuf mayo en entrée, des lasagnes et une mousse au chocolat. Chaque plat est estimé à part."
+          }
+        }
+      }
+    },
+    "Estimation des plats…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimating the dishes…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimation des plats…"
+          }
+        }
+      }
+    },
+    "Nom du plat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dish name"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom du plat"
+          }
+        }
+      }
+    },
+    "1 plat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 dish"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 plat"
+          }
+        }
+      }
+    },
+    "%lld plats" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dishes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld plats"
+          }
+        }
+      }
+    },
+    "Open Food Facts ne connaît pas ce code-barres. Crée l'aliment avec son étiquette." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Food Facts doesn't know this barcode. Create the food with its label."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Food Facts ne connaît pas ce code-barres. Crée l'aliment avec son étiquette."
           }
         }
       }

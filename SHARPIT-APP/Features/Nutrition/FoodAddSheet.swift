@@ -49,13 +49,11 @@ struct FoodAddSheet: View {
                 search: search,
                 query: $query,
                 onPick: { path.append(.portion($0)) },
-                onQuickAdd: { path.append(.quick(name: query)) },
                 onCreate: { path.append(.custom(name: query)) },
                 onScan: { path.append(.scanner) },
                 onDescribe: { path.append(.describe) },
                 onOwnFoods: { path.append(.ownFoods) },
-                onSavedMeals: { path.append(.savedMeals) },
-                onRecipe: { path.append(.recipe(nil)) }
+                onSavedMeals: { path.append(.savedMeals) }
             )
             .navigationTitle(meal.label)
             // The page carries its own name and its way out; pushed pages keep the bar.
@@ -80,13 +78,6 @@ struct FoodAddSheet: View {
                 log(FoodLogDraft(
                     trainingDayId: store.trainingDayId, meal: meal, grams: grams,
                     source: .product(product), eatenMinute: eatenMinute
-                ))
-            }
-        case .quick(let name):
-            FoodQuickAddPage(initialName: name, meal: meal, trainingDayId: store.trainingDayId) { meal, grams, quick, eatenMinute in
-                log(FoodLogDraft(
-                    trainingDayId: store.trainingDayId, meal: meal, grams: grams,
-                    source: .quick(quick), eatenMinute: eatenMinute
                 ))
             }
         case .custom(let name):
@@ -123,22 +114,16 @@ struct FoodAddSheet: View {
                 recipe: recipe,
                 client: store.client,
                 tokenProvider: store.tokenProvider,
-                onSave: { try await ownFoods.saveRecipe(id: recipe?.id, $0) },
+                onSave: { try await ownFoods.saveRecipe(id: recipe.id, $0) },
                 onSaved: { product in
                     store.productChanged(product)
-                    // A new recipe goes on to its portion; an edited one returns to the list.
-                    if recipe == nil {
-                        path.append(.portion(product))
-                    } else {
-                        path.removeLast()
-                    }
+                    path.removeLast()
                 }
             )
         case .scanner:
             FoodScannerPage(search: search) { outcome in
                 switch outcome {
                 case .found(let product): path = [.portion(product)]
-                case .quickAdd: path = [.quick(name: "")]
                 case .create: path = [.custom(name: "")]
                 }
             }
@@ -148,8 +133,8 @@ struct FoodAddSheet: View {
                 meal: meal,
                 client: store.client,
                 tokenProvider: store.tokenProvider
-            ) { drafts, name in
-                logMany(drafts, as: name)
+            ) { dishes in
+                logDishes(dishes)
             }
         }
     }
@@ -159,23 +144,25 @@ struct FoodAddSheet: View {
         dismiss()
     }
 
-    private func logMany(_ drafts: [FoodLogDraft], as name: String?) {
-        Task { await store.add(drafts, groupLabel: name) }
+    /// One request a dish, in the order described: each is stored whole or not at all.
+    private func logDishes(_ dishes: [DescribedDishDrafts]) {
+        Task {
+            for dish in dishes { await store.add(dish.drafts, groupLabel: dish.name) }
+        }
         dismiss()
     }
 }
 
 enum FoodAddRoute: Hashable {
     case portion(V1FoodProduct)
-    case quick(name: String)
     case custom(name: String)
     case scanner
     case describe
     case ownFoods
     case editFood(V1FoodProduct)
     case savedMeals
-    /// A recipe to build, or one to edit (SHARPIT ADR-071).
-    case recipe(V1FoodProduct?)
+    /// A recipe to edit (SHARPIT ADR-071); none is built here any more.
+    case recipe(V1FoodProduct)
 }
 
 // MARK: - Search
@@ -191,13 +178,11 @@ private struct FoodSearchPage: View {
     let search: FoodSearchStore
     @Binding var query: String
     let onPick: (V1FoodProduct) -> Void
-    let onQuickAdd: () -> Void
     let onCreate: () -> Void
     let onScan: () -> Void
     let onDescribe: () -> Void
     let onOwnFoods: () -> Void
     let onSavedMeals: () -> Void
-    let onRecipe: () -> Void
 
     @State private var filter = Filter.all
 
@@ -270,9 +255,7 @@ private struct FoodSearchPage: View {
                 .overlay(alignment: .trailing) {
                     Menu {
                         Button(String(localized: "Décrire un repas"), systemImage: "text.bubble", action: onDescribe)
-                        Button(String(localized: "Saisie rapide"), systemImage: "bolt", action: onQuickAdd)
                         Button(String(localized: "Créer un aliment"), systemImage: "plus.square.on.square", action: onCreate)
-                        Button(String(localized: "Créer une recette"), systemImage: "frying.pan", action: onRecipe)
                     } label: {
                         chipLabel(String(localized: "Autre…"), isOn: false)
                             .background(SharpitColor.card, in: Capsule())
@@ -640,93 +623,7 @@ struct FoodPortionPage: View {
     }
 }
 
-// MARK: - Quick add
-
-/// A food typed in by hand: its name and energy, the macros if known.
-private struct FoodQuickAddPage: View {
-    let trainingDayId: String
-    let onAdd: (FoodLogMeal, Double, FoodQuickAdd, Int?) -> Void
-
-    @State private var name: String
-    @State private var kcal = ""
-    @State private var protein = ""
-    @State private var carbs = ""
-    @State private var fat = ""
-    @State private var gramsText = ""
-    @State private var meal: FoodLogMeal
-
-    @State private var eatenTime: FoodEatenTime
-
-    init(
-        initialName: String,
-        meal: FoodLogMeal,
-        trainingDayId: String,
-        onAdd: @escaping (FoodLogMeal, Double, FoodQuickAdd, Int?) -> Void
-    ) {
-        self.onAdd = onAdd
-        self.trainingDayId = trainingDayId
-        _eatenTime = State(initialValue: FoodEatenTime.initial(meal: meal, trainingDayId: trainingDayId))
-        _name = State(initialValue: initialName.trimmingCharacters(in: .whitespacesAndNewlines))
-        _meal = State(initialValue: meal)
-    }
-
-    /// The portion's weight is optional: the energy typed is the whole portion's either way.
-    private static let defaultGrams = 100.0
-
-    private var entry: (grams: Double, quick: FoodQuickAdd)? {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, trimmed.count <= 120,
-              let kcalValue = FoodLogForm.amount(kcal, in: 0...10_000),
-              let proteinValue = FoodLogForm.optionalAmount(protein, in: 0...1000),
-              let carbsValue = FoodLogForm.optionalAmount(carbs, in: 0...1000),
-              let fatValue = FoodLogForm.optionalAmount(fat, in: 0...1000)
-        else { return nil }
-        let grams = gramsText.trimmingCharacters(in: .whitespaces).isEmpty ? Self.defaultGrams : FoodLogForm.grams(gramsText)
-        guard let grams else { return nil }
-        return (grams, FoodQuickAdd(name: trimmed, kcal: kcalValue, protein: proteinValue, carbs: carbsValue, fat: fatValue))
-    }
-
-    var body: some View {
-        List {
-            Section(eyebrow: String(localized: "Aliment")) {
-                TextField("Nom (ex. Sandwich jambon-beurre)", text: $name)
-                    .textInputAutocapitalization(.sentences)
-                FoodNumberRow(title: String(localized: "Énergie"), unit: "kcal", text: $kcal)
-            }
-            .sharpitListRows()
-
-            Section(
-                eyebrow: String(localized: "Macronutriments"),
-                footer: String(localized: "Optionnels. Les valeurs sont celles de la portion entière.")
-            ) {
-                FoodNumberRow(title: String(localized: "Protéines"), unit: "g", text: $protein)
-                FoodNumberRow(title: String(localized: "Glucides"), unit: "g", text: $carbs)
-                FoodNumberRow(title: String(localized: "Lipides"), unit: "g", text: $fat)
-                FoodNumberRow(title: String(localized: "Poids de la portion"), unit: "g", placeholder: String(localized: "Optionnel"), text: $gramsText)
-            }
-            .sharpitListRows()
-
-            Section {
-                FoodMealPicker(meal: $meal)
-                FoodEatenTimePicker(time: $eatenTime)
-            }
-            .sharpitListRows()
-        }
-        .sharpitGroupedList()
-        .onChange(of: meal) { _, meal in eatenTime.follow(meal: meal, trainingDayId: trainingDayId) }
-        .safeAreaInset(edge: .bottom) {
-            SharpitBareActions {
-                SharpitPrimaryButton(title: String(localized: "Ajouter")) {
-                    guard let entry else { return }
-                    onAdd(meal, entry.grams, entry.quick, eatenTime.sent)
-                }
-                .disabled(entry == nil)
-            }
-        }
-        .navigationTitle("Saisie rapide")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
+// MARK: - Form rows
 
 /// A labelled number with its unit, typed on the decimal pad.
 struct FoodNumberRow: View {
@@ -793,12 +690,11 @@ nonisolated enum FoodCustomForm {
 /// What the athlete chose after a scan.
 enum FoodScanOutcome {
     case found(V1FoodProduct)
-    case quickAdd
     case create
 }
 
 /// The camera, full page. A code read is looked up at once; one Open Food Facts does not know
-/// offers to type the food in or create it, never a dead end.
+/// offers to create it, never a dead end.
 private struct FoodScannerPage: View {
     let search: FoodSearchStore
     let onOutcome: (FoodScanOutcome) -> Void
@@ -818,11 +714,10 @@ private struct FoodScannerPage: View {
         .navigationTitle("Scanner")
         .navigationBarTitleDisplayMode(.inline)
         .alert("Produit inconnu", isPresented: $isUnknown) {
-            Button("Saisie rapide") { onOutcome(.quickAdd) }
             Button("Créer l'aliment") { onOutcome(.create) }
             Button("Scanner un autre", role: .cancel) {}
         } message: {
-            Text("Open Food Facts ne connaît pas ce code-barres. Saisis l'aliment rapidement ou crée-le avec son étiquette.")
+            Text("Open Food Facts ne connaît pas ce code-barres. Crée l'aliment avec son étiquette.")
         }
     }
 

@@ -142,3 +142,21 @@ without Xcode: not built or seen yet.
 alone, across the width (`SharpitBareActions`): the portion's « Ajouter au dîner », quick add,
 describe, a recipe, an own food, a meal's page. The glass bar (`SharpitActionDock`) stays for
 onboarding and the paywall. Seen on the simulator: the portion page.
+
+**A described meal is read dish by dish (SHARPIT ADR-141, the athlete's request, 2026-11-23).** This
+replaces « reads as one » and the single « Nom du repas » above. The server answers `dishes`
+(`V1DescribedDish`; the flat `items` of an older server read as one dish named by the athlete's
+words). The review opens on the meal's total and « N plats », then one section a dish
+(`DescribedDish`): its name, editable, « À vérifier » when a food is an estimate, its energy, its
+foods always shown, grams set on a tap; a swipe removes a food or the dish, and a dish left without a
+food goes. Logged one batch a dish, in order (`FoodAddSheet.logDishes`): several foods are a group
+named by the dish (ADR-134), one food a plain entry; « Heure » applies to every dish. A request that
+never arrived is sent once more; a server failure is not, each try being a paid estimate. Seen on the
+simulator with the demo's three dishes (`SharpitScreenDemo describe`).
+
+**No quick add, no new recipe (the athlete's call, 2026-11-23).** « Autre… » offers « Décrire un
+repas » and « Créer un aliment » only, and an unknown barcode offers to create the food. Wherever
+this file says quick add or « Créer une recette », that entry is gone: a recipe already kept still
+logs and opens on its ingredients from « Mes aliments » (`FoodRecipePage`, edit only), and
+`FoodQuickAdd` stays as the shape of an estimated food of a described dish. The menu was not seen on
+screen (it needs a signed-in session).

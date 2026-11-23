@@ -512,7 +512,7 @@ nonisolated struct V1FoodProductList: Decodable, Sendable, Equatable {
     let foods: [V1FoodProduct]
 }
 
-/// Typed in by hand: a name and its energy, macros optional.
+/// A food no catalog knows, logged on its estimated figures: a name and its energy, macros optional.
 nonisolated struct FoodQuickAdd: Sendable, Equatable, Hashable {
     var name: String
     var kcal: Double
@@ -521,7 +521,7 @@ nonisolated struct FoodQuickAdd: Sendable, Equatable, Hashable {
     var fat: Double?
 }
 
-/// One food line from `POST /api/v1/food-log/describe` (portion macros + per-100 g for edits).
+/// One food of a dish from `POST /api/v1/food-log/describe` (portion macros + per-100 g for edits).
 /// `product` is set when the server linked the name to eaten / own / Ciqual / OFF.
 nonisolated struct V1DescribedFood: Decodable, Sendable, Equatable, Identifiable {
     var id: String { product?.id ?? "\(name)-\(grams)" }
@@ -566,11 +566,22 @@ nonisolated struct V1DescribedFoodPer100g: Decodable, Sendable, Equatable {
     let fat: Double
 }
 
-nonisolated struct V1DescribedFoodList: Decodable, Sendable, Equatable {
+/// One dish of a described meal — a starter, a main, a dessert — with its foods.
+nonisolated struct V1DescribedDish: Decodable, Sendable, Equatable {
+    let name: String
     let items: [V1DescribedFood]
 }
 
-/// What a new entry is made of: a known food (scanned, searched, own) or a quick add.
+nonisolated struct V1DescribedFoodList: Decodable, Sendable, Equatable {
+    /// Absent from a server that does not tell dishes apart yet.
+    let dishes: [V1DescribedDish]?
+    let items: [V1DescribedFood]
+
+    /// The foods flat read as one unnamed dish.
+    var asDishes: [V1DescribedDish] { dishes ?? [V1DescribedDish(name: "", items: items)] }
+}
+
+/// What a new entry is made of: a known food (scanned, searched, own) or an estimated one.
 nonisolated enum FoodLogEntrySource: Sendable, Equatable, Hashable {
     case product(V1FoodProduct)
     case quick(FoodQuickAdd)
