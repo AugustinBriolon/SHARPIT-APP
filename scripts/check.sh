@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# The checks that gate main, shared by CI (.github/workflows/ci.yml, one step each, so the audit
-# times them apart) and the pre-push hook (scripts/pre-push.sh, all three):
+# The checks that gate main. The pre-push hook (scripts/pre-push.sh) runs all three; CI
+# (.github/workflows/ci.yml) runs the build only, its runner being too small for a simulator:
 #
 #   scripts/check.sh build <udid> <derived-data>   one signed build for the tests and the launch
 #   scripts/check.sh launch <udid> <derived-data>  cold-launch the app five times
 #   scripts/check.sh test <udid> <derived-data>    the whole unit suite, serial
 #
 # Run them in that order. The launch comes before the tests: xcodebuild shuts the simulator down
-# some time after a test run, and a launch caught in that shutdown hung CI until its timeout and
-# failed a push with « Unable to lookup in current state: Shutting Down ».
+# some time after a test run, and a launch caught in that shutdown failed a push with
+# « Unable to lookup in current state: Shutting Down ».
 set -euo pipefail
 
 step=$1

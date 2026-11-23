@@ -34,10 +34,10 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
 ```
 
 A push waits for the smoke test and the unit tests: `.githooks/pre-push` runs `scripts/pre-push.sh` on a clean
-worktree of the commit, so ignored files cannot make it greener than a runner. Both it and CI
-(`.github/workflows/ci.yml`) run `scripts/check.sh`: one signed build, the cold-launch smoke test, then the serial
-unit tests — launch before tests, since xcodebuild shuts the simulator down some time after a test run. CI reuses
-Xcode's compilation cache, written by main only; `ci-audit/report.sh` measures it. Once per clone: `git config core.hooksPath .githooks`.
+worktree of the commit, so ignored files cannot make it greener than a runner. It runs `scripts/check.sh`: one
+signed build, the cold-launch smoke test, then the serial unit tests — launch before tests, since xcodebuild shuts
+the simulator down some time after a test run. CI (`.github/workflows/ci.yml`) runs the build only, with Xcode's
+compilation cache written by main: its 3-core runner took 17 min with a simulator. `ci-audit/report.sh` measures it. Once per clone: `git config core.hooksPath .githooks`.
 
 TestFlight: `.github/workflows/testflight.yml` archives and uploads every main that passed CI (or on
 demand), signing with an App Store Connect API key and stamping the UTC minute as the build number
@@ -234,7 +234,7 @@ queue. `FrameworkCallbackIsolationTests` fails on a HealthKit query, a speech or
 silhouette, activity curves) as PNGs in `SHARPIT-APPTests/__Snapshots__`, hosted in a real window
 (`Snapshot.swift`, no dependency). A missing reference is recorded and fails once; re-record them
 all with `TEST_RUNNER_SNAPSHOT_RECORD=1` on the `xcodebuild test` line, and look at every PNG
-before committing it. CI also cold-launches the built app five times (`scripts/smoke-launch.sh`):
+before committing it. Pre-push also cold-launches the built app five times (`scripts/smoke-launch.sh`):
 unit tests never open it, so a crash at launch only shows there.
 
 ## Design system
