@@ -43,6 +43,14 @@ nonisolated enum AppleCalendarPull {
         return fields
     }
 
+    /// The athlete moved an event only when it no longer stands where the app last wrote it.
+    /// An event never recorded (written before the record existed) is not read as moved: the
+    /// plan wins, since an old slot cannot be told from a deliberate one.
+    static func eventWasMoved(event: Date, lastWritten: Date?, tolerance: TimeInterval = 60) -> Bool {
+        guard let lastWritten else { return false }
+        return abs(event.timeIntervalSince(lastWritten)) > tolerance
+    }
+
     /// The start to use when reconciling plan vs calendar; `event` wins when present.
     static func resolveStart(plan: Date, event: Date?) -> Date {
         event ?? plan
