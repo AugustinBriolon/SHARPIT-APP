@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs, before a push, the checks that gate it: the unit tests (serial, unsigned), then the
-# signed cold-launch smoke test, on the commit being pushed. CI only builds and launches the app
-# (.github/workflows/ci.yml), so the tests run here and nowhere else.
+# signed cold-launch smoke test, on the commit being pushed. CI runs the same checks again
+# (.github/workflows/ci.yml), so a red push is caught here, minutes before the runner would.
 #
 # Why a clean worktree: the checks passed here while CI failed, because ignored files
 # (Config/Local.xcconfig) and a warm working copy satisfied them. The commit is checked out

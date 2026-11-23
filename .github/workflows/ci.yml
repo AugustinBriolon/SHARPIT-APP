@@ -1,8 +1,9 @@
 name: CI
 
-# Builds the app and cold-launches it on a simulator, on each push to main and each pull request.
-# The unit tests run before each push, in .githooks/pre-push (scripts/pre-push.sh), not here.
-# No signing: CI needs no team, and Config/Local.xcconfig (gitignored) is an optional include,
+# Builds the app once, runs the whole unit suite on it, then cold-launches it on a simulator, on
+# each push to main and each pull request: what reaches main has passed every test here, not only
+# on the pusher's Mac (.githooks/pre-push runs the same checks before the push).
+# No team: CI signs to run locally, and Config/Local.xcconfig (gitignored) is an optional include,
 # so the Debug build reaches its default origins.
 on:
   push:
@@ -67,21 +68,38 @@ jobs:
           # smoke-launch.sh waits for it (bootstatus) before installing.
           nohup xcrun simctl boot "$UDID" > simulator-boot.log 2>&1 &
 
-      # Unit tests never cold-launch the app: a crash at launch only shows when it is opened.
-      - name: Cold-launch smoke test
+      # One signed build serves the tests and the launch. An unsigned app dies at launch on Clerk's
+      # Keychain (-34018): the simulator reads the entitlements linked into the binary, so a
+      # signature added afterwards is not enough. Sign to run locally, as Xcode does.
+      - name: Build
         run: |
-          # An unsigned app dies at launch on Clerk's Keychain (-34018): the simulator reads the
-          # entitlements linked into the binary, so a signature added afterwards is not enough.
-          # Rebuild signed to run locally, as Xcode does.
           set -o pipefail
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project SHARPIT-APP.xcodeproj \
             -scheme SHARPIT-APP \
             -destination "id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
+            -showBuildTimingSummary \
             COMPILATION_CACHE_ENABLE_CACHING=YES COMPILER_INDEX_STORE_ENABLE=NO \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
-            | tee xcodebuild.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
+            | tee xcodebuild.log | grep -E "error:|TEST BUILD (SUCCEEDED|FAILED)"
+          sed -n '/Build Timing Summary/,/TEST BUILD/p' xcodebuild.log | head -25
+
+      # Serial, as in pre-push: parallel runners once killed the simulator mid-suite.
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project SHARPIT-APP.xcodeproj \
+            -scheme SHARPIT-APP \
+            -destination "id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
+            -parallel-testing-enabled NO \
+            | tee tests.log | grep -E "error:|✘|Test run with|TEST EXECUTE (SUCCEEDED|FAILED)"
+
+      # Unit tests never cold-launch the app: a crash at launch only shows when it is opened.
+      - name: Cold-launch smoke test
+        run: |
           APP=~/Library/Developer/Xcode/DerivedData/ci/Build/Products/Debug-iphonesimulator/SharpIt.app
           scripts/smoke-launch.sh "${{ steps.simulator.outputs.udid }}" "$APP"
 
@@ -109,9 +127,14 @@ jobs:
           # not the file list nor the addresses.
           awk '/Stack dump:/{on=1} on' xcodebuild.log | grep -E "^[0-9]+\.|for |While |at /" | grep -vE "0x[0-9a-f]{8,}" | head -60 || true
 
-      - name: Upload the build log on failure
-        if: failure()
+      # Every run keeps its logs a week: a slow build is read from its timings, not guessed.
+      - name: Upload the logs
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: xcodebuild-log
-          path: xcodebuild.log
+          path: |
+            xcodebuild.log
+            tests.log
+          if-no-files-found: ignore
+          retention-days: 7

@@ -33,9 +33,10 @@ xcodebuild -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
   test -only-testing:SHARPIT-APPTests/TodayStoreTests
 ```
 
-A push waits for the unit tests and the smoke test, which CI no longer runs (CI only builds and launches the app): `.githooks/pre-push` runs `scripts/pre-push.sh` (serial unit tests, then the
-signed cold-launch smoke test) on a clean worktree of the commit, so ignored files cannot make it greener than a
-runner. Once per clone: `git config core.hooksPath .githooks`.
+A push waits for the unit tests and the smoke test: `.githooks/pre-push` runs `scripts/pre-push.sh` (serial unit
+tests, then the signed cold-launch smoke test) on a clean worktree of the commit, so ignored files cannot make it
+greener than a runner. CI runs the same checks again on one signed build (`.github/workflows/ci.yml`), with Xcode's
+compilation cache written by main only; `ci-audit/report.sh` measures it. Once per clone: `git config core.hooksPath .githooks`.
 
 TestFlight: `.github/workflows/testflight.yml` archives and uploads every main that passed CI (or on
 demand), signing with an App Store Connect API key and stamping the UTC minute as the build number
