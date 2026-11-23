@@ -13,17 +13,7 @@ on:
       - '**/*.md'
   pull_request:
     paths-ignore: *docs-only
-  # The inputs exist to measure a change on one commit (ci-audit/report.sh): push runs keep both on.
   workflow_dispatch:
-    inputs:
-      compilation_cache:
-        description: Use Xcode's compilation cache
-        type: boolean
-        default: true
-      early_boot:
-        description: Boot the simulator while the app builds
-        type: boolean
-        default: true
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -74,11 +64,6 @@ jobs:
             | jq -r '[.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
           test -n "$UDID" && test "$UDID" != "null"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-          # A cold boot takes minutes on the runner: start it now so it overlaps the build.
-          # smoke-launch.sh waits for it (bootstatus) before installing.
-          if [ "${{ inputs.early_boot }}" != false ]; then
-            nohup xcrun simctl boot "$UDID" > simulator-boot.log 2>&1 &
-          fi
 
       # One signed build serves the tests and the launch. An unsigned app dies at launch on Clerk's
       # Keychain (-34018): the simulator reads the entitlements linked into the binary, so a
@@ -92,7 +77,7 @@ jobs:
             -destination "id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
             -showBuildTimingSummary \
-            COMPILATION_CACHE_ENABLE_CACHING=${{ inputs.compilation_cache == false && 'NO' || 'YES' }} \
+            COMPILATION_CACHE_ENABLE_CACHING=YES \
             COMPILER_INDEX_STORE_ENABLE=NO \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
             | tee xcodebuild.log | grep -E "error:|TEST BUILD (SUCCEEDED|FAILED)"
