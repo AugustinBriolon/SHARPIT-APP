@@ -477,6 +477,9 @@ extension TodayView {
 }
 
 private struct TodayFoldView: View {
+    /// How far above its row the date's backdrop reaches: more than any pull can travel.
+    private static let pullReach: CGFloat = 1_600
+
     @Environment(ShellRouter.self) private var router
     @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
     @Environment(\.features) private var features
@@ -566,6 +569,10 @@ private struct TodayFoldView: View {
                         .padding(.horizontal, SharpitSpacing.lg)
                         .padding(.top, SharpitSpacing.xxs)
                         .padding(.bottom, SharpitSpacing.md)
+                        // A pull carries this row down with the sheet, past the page's fixed
+                        // backdrop band: its own backdrop reaches up from it, so the date never
+                        // lands on the card's white.
+                        .background(alignment: .bottom) { CliniqueBackdrop().frame(height: Self.pullReach) }
                         // Held in place while the page scrolls, so the sheet rises over it and
                         // hides it; a pull down still carries it with the page.
                         .visualEffect { content, proxy in
