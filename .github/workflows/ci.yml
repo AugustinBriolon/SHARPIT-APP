@@ -65,6 +65,17 @@ jobs:
           test -n "$UDID" && test "$UDID" != "null"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
+      # What the machine is doing, every 10 s, for the whole job: cores, memory, swap and the
+      # busiest processes. Step durations say where the time goes, not why; this does.
+      - name: Sample the runner
+        run: |
+          echo "cores=$(sysctl -n hw.ncpu) memory=$(( $(sysctl -n hw.memsize) / 1073741824 )) GB" | tee runner-samples.log
+          nohup bash -c 'while true; do
+            echo "=== $(date -u +%T) swap: $(sysctl -n vm.swapusage)"
+            top -l 2 -s 2 -n 8 -o cpu -stats command,cpu,mem | awk "/^Processes:/ {n++} n == 2" | grep -vE "^(SharedLibs|MemRegions|VM:|Networks|Disks|Processes):"
+            sleep 8
+          done' >> runner-samples.log 2>&1 &
+
       # scripts/check.sh is what pre-push runs too; one step per check so the audit times each.
       - name: Build
         run: scripts/check.sh build "${{ steps.simulator.outputs.udid }}" ~/Library/Developer/Xcode/DerivedData/ci
@@ -73,7 +84,8 @@ jobs:
       - name: Boot the simulator
         run: |
           xcrun simctl boot "${{ steps.simulator.outputs.udid }}"
-          xcrun simctl bootstatus "${{ steps.simulator.outputs.udid }}" -b > /dev/null
+          xcrun simctl bootstatus "${{ steps.simulator.outputs.udid }}" -b \
+            | perl -MPOSIX -pe 'BEGIN { $| = 1 } print strftime("%H:%M:%S ", gmtime)' | tee simulator-boot.log
 
       - name: Cold-launch smoke test
         run: scripts/check.sh launch "${{ steps.simulator.outputs.udid }}" ~/Library/Developer/Xcode/DerivedData/ci
@@ -114,5 +126,7 @@ jobs:
           path: |
             xcodebuild.log
             tests.log
+            runner-samples.log
+            simulator-boot.log
           if-no-files-found: ignore
           retention-days: 7

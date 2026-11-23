@@ -43,6 +43,7 @@ case "$step" in
       -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
       -destination "id=$udid" -derivedDataPath "$derived" \
       -parallel-testing-enabled NO \
+      | perl -MPOSIX -pe 'BEGIN { $| = 1 } print strftime("%H:%M:%S ", gmtime)' \
       | tee tests.log | grep -E "error:|✘|Test run with|TEST EXECUTE (SUCCEEDED|FAILED)"
     ;;
   *)

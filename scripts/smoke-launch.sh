@@ -14,7 +14,9 @@ BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.pl
 
 xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b >/dev/null
+echo "Simulator ready after ${SECONDS}s"
 xcrun simctl install "$UDID" "$APP"
+echo "App installed after ${SECONDS}s"
 
 for launch in $(seq 1 "$LAUNCHES"); do
   xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
