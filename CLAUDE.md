@@ -40,7 +40,8 @@ the simulator down some time after a test run. CI (`.github/workflows/ci.yml`) r
 compilation cache written by main: its 3-core runner took 17 min with a simulator. `ci-audit/report.sh` measures it. Once per clone: `git config core.hooksPath .githooks`.
 
 TestFlight: `.github/workflows/testflight.yml` archives and uploads every main that passed CI (or on
-demand), signing with an App Store Connect API key and stamping the UTC minute as the build number
+demand), signing with an App Store Connect API key and one development certificate kept in the secrets
+(`SIGNING_CERT_P12`, renewed yearly), and stamping the UTC minute as the build number
 — no hand bump of `CURRENT_PROJECT_VERSION`. A main that changed nothing shipped in the app since the last upload (CI,
 hooks, scripts, docs — `scripts/ships-in-app.sh`) uploads nothing.
 
