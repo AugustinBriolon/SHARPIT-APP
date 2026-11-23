@@ -109,6 +109,15 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           test "$(security find-identity -v -p codesigning "$KEYCHAIN" | grep -c 'Apple Development')" = 1 \
             || { echo "::error::the .p12 holds no valid Apple Development identity"; exit 1; }
+          # Which certificate this run signs with: the serial matches the portal's (asc certificates
+          # list), and the expiry says when the secrets need renewing. Public data, no secret.
+          CERT=$(security find-certificate -c "Apple Development" -p "$KEYCHAIN")
+          {
+            echo "### Signing certificate"
+            echo "- name: $(openssl x509 -noout -subject <<<"$CERT" | sed -n 's/.*CN *= *\([^,\/]*\).*/\1/p')"
+            echo "- serial: $(openssl x509 -noout -serial <<<"$CERT" | cut -d= -f2)"
+            echo "- expires: $(openssl x509 -noout -enddate <<<"$CERT" | cut -d= -f2)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       # The build number is the UTC minute, as the hand bumps wrote it (202610231720): always
       # higher than the last, and the same for the app and its widgets.
