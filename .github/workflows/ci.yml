@@ -83,6 +83,14 @@ jobs:
             | tee xcodebuild.log | grep -E "error:|TEST BUILD (SUCCEEDED|FAILED)"
           sed -n '/Build Timing Summary/,/TEST BUILD/p' xcodebuild.log | head -25
 
+      # Booted here, once, after the build: booting during it starved the compiler (67 s → 1100 s),
+      # and a device xcodebuild boots itself is shut down after the tests, so the launch check
+      # paid a second cold boot (3.5 min).
+      - name: Boot the simulator
+        run: |
+          xcrun simctl boot "${{ steps.simulator.outputs.udid }}"
+          xcrun simctl bootstatus "${{ steps.simulator.outputs.udid }}" -b > /dev/null
+
       # Serial, as in pre-push: parallel runners once killed the simulator mid-suite.
       - name: Unit tests
         run: |
