@@ -724,6 +724,14 @@ struct ScreenDemoHost: View {
                     finish: nil,
                     logging: GuidedStrengthLogging(tokenProvider: { "demo" }) { _ in }
                 )
+            case "exercise-progression":
+                NavigationStack {
+                    ExerciseProgressionPage(name: "Développé couché", tokenProvider: { "demo" }, preloaded: [
+                        ("2026-09-20", 50.0), ("2026-10-01", 55), ("2026-10-12", 55), ("2026-10-24", 60), ("2026-11-08", 62.5), ("2026-11-20", 65),
+                    ].map { day, kg in
+                        V1ExerciseSession(date: day, blocks: [.init(sets: 4, reps: 8, weightKg: kg, durationSec: nil)], bestWeightKg: kg, bestDurationSec: nil, volumeKg: kg * 32)
+                    })
+                }
             case "exercise-picker":
                 Color.clear.sheet(isPresented: .constant(true)) {
                     ExercisePickerSheet(library: [

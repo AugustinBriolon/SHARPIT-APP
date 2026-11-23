@@ -241,3 +241,10 @@ server (`PUT /api/v1/strength-exercises`, an empty note removes it). `StrengthLi
 notes by exercise key (`athleteNote(of:)`), a note written this launch on an exercise never logged
 included. The picker shows it under the history line. The plan generator reads it beside the history.
 A session's own set notes are unchanged.
+
+**Exercise progression (2026-11-23).** An exercise already logged carries « Voir la progression »
+under its figures, which pushes `ExerciseProgressionPage` (`Route.progression`): « 50 kg → 65 kg
+depuis le 20 sept. », the best load of each day as a line (the longest hold for an exercise never
+loaded; the Y axis does not start at zero), then every day's sets, newest first. Read from
+`/api/v1/strength-exercises/progression?name=` (the last 60 days the exercise was done, folded name).
+`SharpitScreenDemo exercise-progression` shows it on fixed days.

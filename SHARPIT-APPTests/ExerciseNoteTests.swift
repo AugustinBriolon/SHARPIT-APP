@@ -16,6 +16,8 @@ private actor RecordingExerciseClient: StrengthExerciseServing {
         saved.append((name, note))
     }
 
+    func progression(name: String, token: String) async throws -> [V1ExerciseSession] { [] }
+
     func failNextSaves() { failsOnSave = true }
 }
 

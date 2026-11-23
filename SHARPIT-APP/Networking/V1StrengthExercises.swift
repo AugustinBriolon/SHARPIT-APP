@@ -41,9 +41,33 @@ nonisolated struct V1StrengthExercisesResponse: Decodable, Sendable {
     let exercises: [V1StrengthExercise]
 }
 
+/// `/api/v1/strength-exercises/progression?name=` — one day an exercise was done.
+nonisolated struct V1ExerciseSession: Decodable, Equatable, Sendable, Identifiable {
+    struct Block: Decodable, Equatable, Sendable {
+        let sets: Int
+        let reps: Int
+        let weightKg: Double?
+        let durationSec: Int?
+    }
+
+    /// `yyyy-MM-dd`, the day it was done.
+    let date: String
+    let blocks: [Block]
+    let bestWeightKg: Double?
+    let bestDurationSec: Int?
+    let volumeKg: Double
+
+    var id: String { date }
+}
+
+nonisolated struct V1ExerciseProgressionResponse: Decodable, Sendable {
+    let sessions: [V1ExerciseSession]
+}
+
 nonisolated protocol StrengthExerciseServing: Sendable {
     func exercises(token: String) async throws -> [V1StrengthExercise]
     func saveNote(name: String, note: String, token: String) async throws
+    func progression(name: String, token: String) async throws -> [V1ExerciseSession]
 }
 
 actor StrengthExerciseClient: StrengthExerciseServing {
@@ -63,6 +87,19 @@ actor StrengthExerciseClient: StrengthExerciseServing {
         if status == 401 { throw SharpitAPIError.unauthorized }
         guard (200...299).contains(status) else { throw SharpitAPIError.server }
         return try JSONDecoder().decode(V1StrengthExercisesResponse.self, from: data).exercises
+    }
+
+    func progression(name: String, token: String) async throws -> [V1ExerciseSession] {
+        var components = URLComponents(url: baseURL.appending(path: "/api/v1/strength-exercises/progression"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "name", value: name)]
+        guard let url = components?.url else { throw SharpitAPIError.server }
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.sharpitData(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 401 { throw SharpitAPIError.unauthorized }
+        guard (200...299).contains(status) else { throw SharpitAPIError.server }
+        return try JSONDecoder().decode(V1ExerciseProgressionResponse.self, from: data).sessions
     }
 
     /// Writes the standing note on one exercise; an empty note removes it.
@@ -116,6 +153,11 @@ final class StrengthLibraryStore {
 
     func athleteNote(of name: String) -> String? {
         athleteNotes[StrengthExerciseKey.of(name)]
+    }
+
+    /// The days one exercise was done, oldest first; a failure is thrown for the page to say.
+    func progression(of name: String, tokenProvider: () async throws -> String) async throws -> [V1ExerciseSession] {
+        try await client.progression(name: name, token: try await tokenProvider())
     }
 
     /// Saves the note, then keeps it here so the page shows it at once; a failure is thrown.

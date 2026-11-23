@@ -67,6 +67,8 @@ struct GuidedStrengthWorkoutView: View {
         case rest
         /// A timed hold's countdown, both sides for a one-sided move.
         case hold(UUID)
+        /// Every day the exercise was done, from its page.
+        case progression(String)
     }
 
     private var focusedExercise: String? {
@@ -108,6 +110,10 @@ struct GuidedStrengthWorkoutView: View {
                     case let .exercise(name): exercisePage(name: name)
                     case .rest: restPage
                     case let .hold(id): holdPage(id: id)
+                    case let .progression(name):
+                        if let tokenProvider {
+                            ExerciseProgressionPage(name: name, tokenProvider: tokenProvider)
+                        }
                     }
                 }
                 .cliniqueSheet(wash: .coach, height: 220)
@@ -477,6 +483,9 @@ struct GuidedStrengthWorkoutView: View {
                             volume: volume > 0 ? "\(GuidedStrengthSetTarget.volumeFigure(volume)) kg" : nil
                         )
                         .padding(.top, SharpitSpacing.xs)
+                        if tokenProvider != nil, StrengthLibraryStore.shared.history(of: name) != nil {
+                            progressionLink(name: name)
+                        }
                     }
                 }
                 .listRowInsets(EdgeInsets(top: SharpitSpacing.sm, leading: 24, bottom: SharpitSpacing.sm, trailing: 24))
@@ -525,6 +534,29 @@ struct GuidedStrengthWorkoutView: View {
                 Button("OK") { focusedField = nil }
             }
         }
+    }
+
+    /// « Voir la progression »: every day the exercise was done, pushed over its page.
+    private func progressionLink(name: String) -> some View {
+        NavigationLink(value: Route.progression(name)) {
+            HStack(spacing: SharpitSpacing.xs) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+                Text("Voir la progression")
+                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                    .foregroundStyle(SharpitColor.foreground)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SharpitColor.slate)
+                    .accessibilityHidden(true)
+            }
+            .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.sharpitPressable)
     }
 
     /// « Ma note »: the standing note the athlete keeps on this exercise, or the way to write one.
