@@ -19,6 +19,8 @@ struct ActivityView: View {
     @State private var hasMore = false
     @State private var isLoadingMore = false
     @Environment(ShellRouter.self) private var router: ShellRouter?
+    @Environment(GuidedWorkoutDock.self) private var workoutDock: GuidedWorkoutDock?
+    @Environment(SharpitToastCenter.self) private var toastCenter: SharpitToastCenter?
 
     var body: some View {
         NavigationStack {
@@ -47,7 +49,16 @@ struct ActivityView: View {
                 if client is any ActivityMutating {
                     SharpitBarGap()
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Saisir une séance", systemImage: "plus") { isLogging = true }
+                        if workoutDock == nil {
+                            Button("Saisir une séance", systemImage: "plus") { isLogging = true }
+                        } else {
+                            Menu("Ajouter", systemImage: "plus") {
+                                Button("Démarrer une séance de renfo", systemImage: "figure.strengthtraining.traditional") {
+                                    startFreeStrengthSession()
+                                }
+                                Button("Saisir une séance passée", systemImage: "square.and.pencil") { isLogging = true }
+                            }
+                        }
                     }
                 }
             }
@@ -627,5 +638,27 @@ private struct ActivityFilterMenu: View {
         .tint(SharpitColor.foreground)
         .accessibilityLabel("Période et durée")
         .accessibilityValue(narrows ? String(localized: "Filtres actifs") : String(localized: "Aucun filtre"))
+    }
+}
+
+extension ActivityView {
+    /// « Séance libre »: a strength session followed live with nothing planned — empty, the
+    /// athlete adds exercises as they go; run by the dock like a planned one, saved as an activity.
+    fileprivate func startFreeStrengthSession() {
+        guard let workoutDock, let mutator = client as? any ActivityMutating else { return }
+        let finish = GuidedStrengthFinishContext(
+            client: mutator,
+            tokenProvider: tokenProvider,
+            onFinished: { _ in
+                toastCenter?.show(
+                    String(localized: "Séance muscu enregistrée"),
+                    symbol: "checkmark.circle.fill",
+                    tone: .success,
+                    autoDismissAfter: 3.0
+                )
+                router?.noteActivitiesChanged()
+            }
+        )
+        workoutDock.start(.logging(title: String(localized: "Séance libre"), exercises: []), finish: finish)
     }
 }

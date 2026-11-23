@@ -4,7 +4,8 @@ import SwiftUI
 /// Creates the logged STRENGTH activity and links it back to the planned session.
 struct GuidedStrengthFinishContext {
     let client: any ActivityMutating
-    let linker: any PlannedSessionLinking
+    /// Nil for a session started on its own (Activité's « Séance libre »): nothing to link.
+    var linker: (any PlannedSessionLinking)? = nil
     let tokenProvider: () async throws -> String
     /// Called once the activity exists (and the link was attempted).
     var onFinished: (String) -> Void = { _ in }
@@ -1133,7 +1134,7 @@ struct GuidedStrengthWorkoutView: View {
                 try await finish.client.createActivity(draft.creation(), token: token)
             }
             if let plannedId = session.plannedSessionId {
-                try? await finish.linker.link(sessionId: plannedId, activityId: activityId, token: token)
+                try? await finish.linker?.link(sessionId: plannedId, activityId: activityId, token: token)
             }
             finish.onFinished(activityId)
             // Mirrored into Apple Santé behind: the session is saved either way.

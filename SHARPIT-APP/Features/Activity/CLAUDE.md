@@ -164,3 +164,9 @@ another app recorded (no `activities` push for them in `GarminPushInbox`; every 
 developer programme is `strava`). It is not the order of arrival: a Garmin push that lands after
 Strava's merges into the same row (`garminEnrichmentUpdate`) and the reading is then asked. The
 row « Non analysée : reçue de Strava seul » opens a notice that says so (`stravaOnlyNotice`).
+
+**Séance libre (2026-11-23).** Activité's « + » is a menu where the guided session dock exists:
+« Démarrer une séance de renfo » starts an empty strength session followed live — clock, rest,
+heart rate, « Réduire » — run by `GuidedWorkoutDock` like a planned one, the athlete adding exercises
+as they go; saved, it is a STRENGTH activity linked to nothing (`GuidedStrengthFinishContext.linker`
+nil). « Saisir une séance passée » is the hand log as before.
