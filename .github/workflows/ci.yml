@@ -65,49 +65,21 @@ jobs:
           test -n "$UDID" && test "$UDID" != "null"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
-      # One signed build serves the tests and the launch. An unsigned app dies at launch on Clerk's
-      # Keychain (-34018): the simulator reads the entitlements linked into the binary, so a
-      # signature added afterwards is not enough. Sign to run locally, as Xcode does.
+      # scripts/check.sh is what pre-push runs too; one step per check so the audit times each.
       - name: Build
-        run: |
-          set -o pipefail
-          xcodebuild build-for-testing \
-            -project SHARPIT-APP.xcodeproj \
-            -scheme SHARPIT-APP \
-            -destination "id=${{ steps.simulator.outputs.udid }}" \
-            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
-            -showBuildTimingSummary \
-            COMPILATION_CACHE_ENABLE_CACHING=YES \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
-            | tee xcodebuild.log | grep -E "error:|TEST BUILD (SUCCEEDED|FAILED)"
-          sed -n '/Build Timing Summary/,/TEST BUILD/p' xcodebuild.log | head -25
+        run: scripts/check.sh build "${{ steps.simulator.outputs.udid }}" ~/Library/Developer/Xcode/DerivedData/ci
 
-      # Booted here, once, after the build: booting during it starved the compiler (67 s → 1100 s),
-      # and a device xcodebuild boots itself is shut down after the tests, so the launch check
-      # paid a second cold boot (3.5 min).
+      # Booted here, once, after the build: booting during it starved the compiler (67 s → 1100 s).
       - name: Boot the simulator
         run: |
           xcrun simctl boot "${{ steps.simulator.outputs.udid }}"
           xcrun simctl bootstatus "${{ steps.simulator.outputs.udid }}" -b > /dev/null
 
-      # Serial, as in pre-push: parallel runners once killed the simulator mid-suite.
-      - name: Unit tests
-        run: |
-          set -o pipefail
-          xcodebuild test-without-building \
-            -project SHARPIT-APP.xcodeproj \
-            -scheme SHARPIT-APP \
-            -destination "id=${{ steps.simulator.outputs.udid }}" \
-            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/ci \
-            -parallel-testing-enabled NO \
-            | tee tests.log | grep -E "error:|✘|Test run with|TEST EXECUTE (SUCCEEDED|FAILED)"
-
-      # Unit tests never cold-launch the app: a crash at launch only shows when it is opened.
       - name: Cold-launch smoke test
-        run: |
-          APP=~/Library/Developer/Xcode/DerivedData/ci/Build/Products/Debug-iphonesimulator/SharpIt.app
-          scripts/smoke-launch.sh "${{ steps.simulator.outputs.udid }}" "$APP"
+        run: scripts/check.sh launch "${{ steps.simulator.outputs.udid }}" ~/Library/Developer/Xcode/DerivedData/ci
+
+      - name: Unit tests
+        run: scripts/check.sh test "${{ steps.simulator.outputs.udid }}" ~/Library/Developer/Xcode/DerivedData/ci
 
       - name: Save Swift packages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

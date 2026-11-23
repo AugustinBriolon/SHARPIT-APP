@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Runs, before a push, the checks that gate it: the unit tests (serial, unsigned), then the
-# signed cold-launch smoke test, on the commit being pushed. CI runs the same checks again
+# Runs, before a push, the checks that gate it (scripts/check.sh: one signed build, the
+# cold-launch smoke test, then the serial unit tests), on the commit being pushed. CI runs the same checks again
 # (.github/workflows/ci.yml), so a red push is caught here, minutes before the runner would.
 #
 # Why a clean worktree: the checks passed here while CI failed, because ignored files
@@ -26,18 +26,10 @@ cd "$worktree"
 udid=${PREPUSH_SIMULATOR_UDID:-$(xcrun simctl list devices available -j \
   | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print([x['udid'] for k,v in sorted(d.items()) if 'iOS' in k for x in v if x['name'].startswith('iPhone')][-1])")}
 
-echo "pre-push 1/2 · unit tests, serial and unsigned"
-xcodebuild test \
-  -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
-  -destination "id=$udid" -derivedDataPath "$derived" \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO \
-  | grep -E "error:|✘|Test run with|TEST (SUCCEEDED|FAILED)" | tee /dev/stderr | grep -q "TEST SUCCEEDED"
-
-echo "pre-push 2/2 · cold-launch smoke test"
-xcodebuild build \
-  -project SHARPIT-APP.xcodeproj -scheme SHARPIT-APP \
-  -destination "id=$udid" -derivedDataPath "$derived" \
-  CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
-  | grep -E "error:|BUILD (SUCCEEDED|FAILED)" | tee /dev/stderr | grep -q "BUILD SUCCEEDED"
-scripts/smoke-launch.sh "$udid" "$derived/Build/Products/Debug-iphonesimulator/SharpIt.app"
+echo "pre-push 1/3 · one signed build"
+scripts/check.sh build "$udid" "$derived"
+echo "pre-push 2/3 · cold-launch smoke test"
+scripts/check.sh launch "$udid" "$derived"
+echo "pre-push 3/3 · unit tests, serial"
+scripts/check.sh test "$udid" "$derived"
 echo "pre-push: all green"
