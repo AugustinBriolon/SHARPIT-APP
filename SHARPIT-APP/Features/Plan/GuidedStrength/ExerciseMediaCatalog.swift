@@ -91,8 +91,8 @@ enum ExerciseMediaCatalog {
         return found
     }
 
-    /// Every exercise of the catalog once, under its French alias when it has one, for the
-    /// picker's A-to-Z list. Built once: the index never changes while the app runs.
+    /// Every exercise of the catalog once, under its first alias when it has one (the French
+    /// names are aliases; so are some English ones), for the picker's A-to-Z list. Built once: the index never changes while the app runs.
     static let browse: [Entry] = {
         var seen = Set<String>()
         var entries: [Entry] = []

@@ -21,6 +21,11 @@ struct ExercisePickerSheet: View {
     /// The name being created, once « Créer » is tapped: the sheet then asks for its zone.
     @State private var creating: String?
     @FocusState private var isSearching: Bool
+
+    /// The rows end on a « + » only while the index is away, that is while a search is typed.
+    private var showsAddGlyph: Bool {
+        !ExerciseMediaCatalog.normalize(query).isEmpty || creating != nil
+    }
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -65,64 +70,66 @@ struct ExercisePickerSheet: View {
 
             let browsed = results.isBrowsing ? ExercisePickerReadout.browseSections : []
             ScrollViewReader { proxy in
-            ScrollView {
-                // Lazy: browsing lists the whole catalog, over a thousand lines with a picture each.
-                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
-                    if !results.own.isEmpty {
-                        section(String(localized: "Tes exercices"))
-                            .id(ExercisePickerReadout.ownIndexTitle)
-                        ForEach(results.own) { exercise in
-                            row(exercise.name, detail: ExercisePickerReadout.detail(exercise), catalogId: exercise.catalogId) {
-                                pick(ExercisePick(name: exercise.name, catalogId: exercise.catalogId, note: exercise.note, history: exercise))
+                ScrollView {
+                    // Lazy: browsing lists the whole catalog, over a thousand lines with a picture each.
+                    LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
+                        if !results.own.isEmpty {
+                            // In a `ForEach` for its identity: a lazy stack can scroll to an identity it
+                            // has not laid out, which a plain `.id` on a row far above cannot promise.
+                            ForEach([ExercisePickerReadout.ownIndexTitle], id: \.self) { _ in
+                                section(String(localized: "Tes exercices"))
                             }
-                            CliniqueDivider()
+                            ForEach(results.own) { exercise in
+                                row(exercise.name, detail: ExercisePickerReadout.detail(exercise), catalogId: exercise.catalogId) {
+                                    pick(ExercisePick(name: exercise.name, catalogId: exercise.catalogId, note: exercise.note, history: exercise))
+                                }
+                                CliniqueDivider()
+                            }
                         }
-                    }
-                    ForEach(browsed) { letter in
-                        Section {
-                            ForEach(letter.entries) { entry in
+                        ForEach(browsed) { letter in
+                            Section {
+                                ForEach(letter.entries) { entry in
+                                    row(entry.name, detail: nil, catalogId: entry.id) { pick(ExercisePick(name: entry.name, catalogId: entry.id)) }
+                                    CliniqueDivider()
+                                }
+                            } header: {
+                                letterHeader(letter.title)
+                            }
+                        }
+                        if !results.catalog.isEmpty {
+                            section(String(localized: "Catalogue"))
+                            ForEach(results.catalog) { entry in
                                 row(entry.name, detail: nil, catalogId: entry.id) { pick(ExercisePick(name: entry.name, catalogId: entry.id)) }
                                 CliniqueDivider()
                             }
-                        } header: {
-                            letterHeader(letter.title)
                         }
-                        .id(letter.title)
-                    }
-                    if !results.catalog.isEmpty {
-                        section(String(localized: "Catalogue"))
-                        ForEach(results.catalog) { entry in
-                            row(entry.name, detail: nil, catalogId: entry.id) { pick(ExercisePick(name: entry.name, catalogId: entry.id)) }
-                            CliniqueDivider()
-                        }
-                    }
-                    if let name = results.creatable {
-                        Button { creating = name } label: {
-                            Label("Créer « \(name) »", systemImage: "plus").frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(CliniqueButtonStyle(kind: .outline))
-                        .padding(.top, 18)
-                    } else if results.own.isEmpty, results.catalog.isEmpty, !results.isBrowsing {
-                        Text("Tape le nom d'un exercice. S'il n'existe pas, tu pourras le créer.")
-                            .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                            .foregroundStyle(SharpitColor.slate)
+                        if let name = results.creatable {
+                            Button { creating = name } label: {
+                                Label("Créer « \(name) »", systemImage: "plus").frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(CliniqueButtonStyle(kind: .outline))
                             .padding(.top, 18)
+                        } else if results.own.isEmpty, results.catalog.isEmpty, !results.isBrowsing {
+                            Text("Tape le nom d'un exercice. S'il n'existe pas, tu pourras le créer.")
+                                .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
+                                .foregroundStyle(SharpitColor.slate)
+                                .padding(.top, 18)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, SharpitSpacing.lg)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .overlay(alignment: .trailing) {
+                    if !browsed.isEmpty {
+                        ExerciseIndexBar(
+                            titles: ExercisePickerReadout.indexTitles(hasOwn: !results.own.isEmpty, sections: browsed)
+                        ) { title in
+                            isSearching = false
+                            proxy.scrollTo(title, anchor: .top)
+                        }
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, SharpitSpacing.lg)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .overlay(alignment: .trailing) {
-                if !browsed.isEmpty {
-                    ExerciseIndexBar(
-                        titles: ExercisePickerReadout.indexTitles(hasOwn: !results.own.isEmpty, sections: browsed)
-                    ) { title in
-                        isSearching = false
-                        proxy.scrollTo(title, anchor: .top)
-                    }
-                }
-            }
             }
         }
     }
@@ -194,10 +201,14 @@ struct ExercisePickerSheet: View {
                     }
                 }
                 Spacer(minLength: SharpitSpacing.xs)
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
-                    .accessibilityHidden(true)
+                // No « + » beside the index: letters and a trailing glyph compete for the same
+                // edge (HIG, Lists and tables). The whole line is the button either way.
+                if showsAddGlyph {
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(SharpitColor.slate)
+                        .accessibilityHidden(true)
+                }
             }
             .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
             .contentShape(.rect)
@@ -217,18 +228,20 @@ struct ExerciseIndexBar: View {
     let titles: [String]
     let onJump: (String) -> Void
 
+    /// The letter last jumped to; kept after the finger lifts, for VoiceOver's value.
     @State private var current: String?
+    @State private var isSliding = false
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(titles, id: \.self) { title in
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(title == current ? SharpitColor.foreground : SharpitColor.slate)
+                    .font(SharpitTypography.system(size: 11, weight: .semibold, relativeTo: .caption2))
+                    .foregroundStyle(isSliding && title == current ? SharpitColor.foreground : SharpitColor.slate)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(width: 24)
+        .frame(width: 28)
         .frame(maxHeight: CGFloat(titles.count) * 18)
         .contentShape(.rect)
         .overlay {
@@ -238,12 +251,15 @@ struct ExerciseIndexBar: View {
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { value in
-                                if current == nil { SharpitHaptics.prepare() }
+                                if !isSliding {
+                                    isSliding = true
+                                    SharpitHaptics.prepare()
+                                }
                                 jump(to: ExercisePickerReadout.indexTitle(
                                     at: value.location.y / max(geometry.size.height, 1), in: titles
                                 ))
                             }
-                            .onEnded { _ in current = nil }
+                            .onEnded { _ in isSliding = false }
                     )
             }
         }
