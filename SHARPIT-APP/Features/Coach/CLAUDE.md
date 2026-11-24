@@ -61,9 +61,7 @@ bordered cards. The history, the usage sheet and the memory are not swept.
 
 **Chrome.** « Coach » sits in the bar's row; the clock opens a menu (Conversations, Mémoire,
 Consommation) and the pencil starts a new conversation. Neither the athlete's bubble nor the
-coach's answer carries a name over it: the side and the bubble say who speaks. The composer is one glass field: « + » (the starting points), the question, the
-microphone while the field is empty, and the ink button — send, dimmed until there are words,
-stop while the coach answers.
+coach's answer carries a name over it: the side and the bubble say who speaks. The composer is one glass box (see « Composer, second pass »).
 
 **Mémoire du coach, Clinique.** `CoachMemoryView` follows its mock-up (`docs/adr/0035`): how many
 things are kept under the title (`CoachMemoryReadout.lead`), kinds as chips with their count, each
@@ -114,3 +112,21 @@ refusal or a failure opens nothing. A session the coach drew (`CoachWorkoutCard`
 « Ajouter au plan » while it is the thread's last answer: it sends the request as the athlete's
 own question, and the coach answers with a proposal — the card never writes the plan. Every
 card fades in once as it arrives in an answer being written (`sharpitStreamArrival`).
+
+**Composer, second pass (the athlete's call, 2026-11-24).** One glass box on two floors
+(`composerBox`, `composerIsExpanded`): at rest a single line — « + », the question, the trailing
+control; written in, carrying a subject, listening or past a short line, the words take the whole
+width and the controls drop to a row under them. The `TextField` is one view on both floors — only
+its insets move — so the box opening never drops the keyboard. One trailing control
+(`composerButton`): the microphone as a plain glyph while the field is empty, then the ink button —
+send once there are words, stop while listening or while the coach answers — the ink growing under
+the glyph as the symbol morphs. « + » opens the starting points as one bordered card growing from
+its corner (`quickActionsPanel`, `CoachQuickActionList`: lines split by hairlines), no longer five
+floating pills. A subject brought from another screen sits inside the box, over the words
+(`CoachContextTag(isInline:)`). Dictation keeps the box: the wave and « Écoute… » take the « + »'s
+corner and the words land in the field. The budget is one quiet line under the box (`quotaLine`: a
+short gauge, the count, « Passer Pro » for a Free athlete), in the watch ink once spent; the card
+and its cross are gone. Every control in the box is pressable (`.sharpitPressable`) and the box in
+hand shows a hairline edge. An empty thread lays the same starting points on the page
+(`CoachEmptyState`) and so shows no « + », nor the arrow down. Unchanged rules: nothing animates as the page opens, no bounce, no haptic,
+`SharpitMotion` only.

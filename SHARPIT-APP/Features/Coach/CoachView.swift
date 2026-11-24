@@ -22,7 +22,6 @@ struct CoachView: View {
     @FocusState private var composerIsFocused: Bool
     @State private var showsJumpToLatest = false
     /// The quota card, closed by the athlete; it comes back with the next question typed.
-    @State private var isQuotaNoticeHidden = false
     @State private var showsQuickActions = false
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var scrollPosition = ScrollPosition(idType: String.self)
@@ -66,7 +65,7 @@ struct CoachView: View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 thread
-                if showsJumpToLatest, !showsQuickActions {
+                if showsJumpToLatest, !showsQuickActions, !store.isEmpty {
                     jumpToLatestButton
                         .padding(.bottom, SharpitSpacing.sm)
                 }
@@ -205,7 +204,7 @@ struct CoachView: View {
             // was scrolled to whenever a row it had not laid out changed.
             VStack(alignment: .leading, spacing: SharpitSpacing.md) {
                 if store.isEmpty {
-                    CoachEmptyState()
+                    CoachEmptyState(onPick: start)
                 }
                 ForEach(turns.earlier) { message in
                     messageRow(message)
@@ -355,51 +354,29 @@ struct CoachView: View {
     /// composer — its own surface, so it never reads through the thread — with a thin bar of
     /// what remains, « Passer Pro » for a Free athlete, and a close that holds until the next
     /// keystroke, since the budget matters again the moment a question is being written.
-    private func quotaGauge(_ quota: V1CoachQuota, line: String) -> some View {
+    /// The budget, said quietly under the field: a short gauge and one line, in the watch ink
+    /// once it is spent. No card, no cross: it takes a line, not the composer's place.
+    private func quotaLine(_ quota: V1CoachQuota, line: String) -> some View {
         let spent = quota.retryAfterSeconds != nil
-        let tone = spent ? SharpitColor.statusWatchForeground : SharpitColor.foreground
-        return HStack(alignment: .top, spacing: SharpitSpacing.sm) {
-            Image(systemName: spent ? "hourglass" : "gauge.with.dots.needle.33percent")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(tone)
-                .frame(width: 20)
-                .padding(.top, 1)
+        return HStack(spacing: SharpitSpacing.xs) {
+            ProgressView(value: 1 - quota.usedRatio)
+                .tint(spent ? SharpitColor.statusWatchMark : SharpitColor.foreground)
+                .frame(width: 36)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-                Text(line)
-                    .font(SharpitTypography.system(size: 15, weight: .regular, relativeTo: .subheadline))
-                    .foregroundStyle(tone)
-                    .fixedSize(horizontal: false, vertical: true)
-                ProgressView(value: 1 - quota.usedRatio)
-                    .tint(spent ? SharpitColor.statusWatchMark : SharpitColor.foreground)
-                    .accessibilityHidden(true)
-                if CoachQuotaReadout.offersPro(quota) {
-                    Button("Passer Pro") { router.openSettings(on: .pro) }
-                        .font(SharpitTypography.meta.weight(.semibold))
-                        .foregroundStyle(SharpitColor.foreground)
-                }
-            }
+            Text(line)
+                .font(SharpitTypography.meta)
+                .foregroundStyle(spent ? SharpitColor.statusWatchForeground : SharpitColor.slate)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
-            Button {
-                withAnimation(SharpitMotion.fade) { isQuotaNoticeHidden = true }
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(SharpitColor.slate)
-                    .frame(width: 28, height: 28)
-                    .background(SharpitColor.tile, in: Circle())
-                    .frame(width: SharpitSpacing.minimumTouchTarget, height: SharpitSpacing.minimumTouchTarget)
-                    .contentShape(Rectangle())
+            if CoachQuotaReadout.offersPro(quota) {
+                Button("Passer Pro") { router.openSettings(on: .pro) }
+                    .font(SharpitTypography.meta.weight(.semibold))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .buttonStyle(.sharpitPressable)
             }
-            .buttonStyle(.plain)
-            .padding(.top, -10)
-            .padding(.trailing, -10)
-            .accessibilityLabel("Masquer")
         }
-        .padding(SharpitSpacing.md)
+        .padding(.horizontal, SharpitSpacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sharpitSurface(.panel)
-        // A fade: sliding up from the field read as the composer taking itself apart.
         .transition(.opacity)
     }
 
@@ -422,7 +399,14 @@ struct CoachView: View {
     }
 
     private var showsQuotaNotice: Bool {
-        !isQuotaNoticeHidden && store.quota.flatMap { CoachQuotaReadout.line($0) } != nil
+        store.quota.flatMap { CoachQuotaReadout.line($0) } != nil
+    }
+
+    /// The field opens into two floors — the words over the whole width, the controls on a row
+    /// under them — as soon as it is written in, carries a subject or listens. At rest it is one line.
+    private var composerIsExpanded: Bool {
+        composerIsFocused || dictation.isListening || store.pendingContext != nil
+            || store.draft.count > 26 || store.draft.contains("\n")
     }
 
     private var questionComposer: some View {
@@ -433,75 +417,22 @@ struct CoachView: View {
                     .foregroundStyle(SharpitColor.statusWatchForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            if showsQuotaNotice, let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
-                quotaGauge(quota, line: line)
-            }
             if showsQuickActions, !dictation.isListening {
-                quickActionsList
-            }
-            if let context = store.pendingContext {
-                CoachContextTag(context: context) {
-                    SharpitMotion.run { store.dropContext() }
-                }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .transition(.opacity)
+                quickActionsPanel
             }
 
-            SharpitGlassGroup {
-                if dictation.isListening {
-                    dictationBar
-                } else {
-                    // One glass field, as the mock-up draws it: the question, the microphone and the
-                    // ink send button inside it; « + » opens the starting points.
-                    HStack(alignment: .bottom, spacing: 0) {
-                        quickActionsMenu
+            SharpitGlassGroup { composerBox }
 
-                        TextField(
-                            store.hasPendingApproval ? String(localized: "Réponds à la proposition, ou écris pour l'ignorer") : String(localized: "Écris au coach"),
-                            text: $store.draft,
-                            axis: .vertical
-                        )
-                            .font(SharpitTypography.body)
-                            .foregroundStyle(SharpitColor.foreground)
-                            .lineLimit(1...6)
-                            .focused($composerIsFocused)
-                            // Return at end of a clean line = send. Paste with newlines stays editable.
-                            .onChange(of: store.draft) { old, new in
-                                if old.isEmpty, !new.isEmpty, isQuotaNoticeHidden {
-                                    withAnimation(SharpitMotion.fade) { isQuotaNoticeHidden = false }
-                                }
-                                guard new.contains("\n") else { return }
-                                if CoachComposerDraft.shouldSendOnNewline(old: old, new: new) {
-                                    store.draft = String(new.dropLast())
-                                    submit()
-                                }
-                            }
-                            .padding(.vertical, SharpitSpacing.xs + 2)
-                            .frame(minHeight: Self.controlHeight)
-                            .animation(SharpitMotion.selection, value: store.draft.count / 40)
-                            .submitLabel(.send)
-
-                        if composerAction == .dictate {
-                            microphoneButton
-                        }
-                        composerButton
-                    }
-                    .padding(.leading, 2)
-                    .padding(.trailing, 6)
-                    .padding(.vertical, 6)
-                    .sharpitGlassControl(
-                        in: RoundedRectangle(cornerRadius: 28, style: .continuous),
-                        fallback: SharpitColor.tile
-                    )
-                }
+            if showsQuotaNotice, let quota = store.quota, let line = CoachQuotaReadout.line(quota) {
+                quotaLine(quota, line: line)
             }
         }
         .padding(.horizontal, SharpitSpacing.pageInset)
         .padding(.top, SharpitSpacing.xs)
         .padding(.bottom, SharpitSpacing.sm)
-        .animation(SharpitMotion.reveal, value: composerIsFocused)
+        .animation(SharpitMotion.reveal, value: composerIsExpanded)
         .animation(SharpitMotion.reveal, value: dictation.isListening)
-        // The budget card fades in when an answer takes the budget past half — never as the
+        // The budget line fades in when an answer takes the budget past half — never as the
         // page opens, and a subject is animated only by the tap that sets or drops it.
         .animation(composerIsSettled ? SharpitMotion.fade : nil, value: showsQuotaNotice)
         .transaction { transaction in
@@ -514,9 +445,69 @@ struct CoachView: View {
         }
     }
 
-    /// « + », the mirror of the microphone: starting points that tag the conversation and open
+    /// One glass box. The field is one view whatever the floor it is on — only its insets move —
+    /// so opening the box never drops the keyboard; the controls sit on its bottom corners.
+    private var composerBox: some View {
+        let expanded = composerIsExpanded
+        return VStack(alignment: .leading, spacing: 0) {
+            if let context = store.pendingContext {
+                // Inside the box: the subject leaves with the question.
+                CoachContextTag(context: context, isInline: true) {
+                    SharpitMotion.run { store.dropContext() }
+                }
+                .padding(.leading, SharpitSpacing.xs)
+                .padding(.top, SharpitSpacing.xxs)
+                .transition(.opacity)
+            }
+
+            TextField(
+                store.hasPendingApproval ? String(localized: "Réponds à la proposition, ou écris pour l'ignorer") : String(localized: "Écris au coach"),
+                text: $store.draft,
+                axis: .vertical
+            )
+                .font(SharpitTypography.body)
+                .foregroundStyle(SharpitColor.foreground)
+                .lineLimit(1...6)
+                .focused($composerIsFocused)
+                // Return at end of a clean line = send. Paste with newlines stays editable.
+                .onChange(of: store.draft) { old, new in
+                    guard new.contains("\n") else { return }
+                    if CoachComposerDraft.shouldSendOnNewline(old: old, new: new) {
+                        store.draft = String(new.dropLast())
+                        submit()
+                    }
+                }
+                .padding(.vertical, SharpitSpacing.xs + 2)
+                .frame(minHeight: Self.controlHeight)
+                .padding(.leading, expanded || store.isEmpty ? SharpitSpacing.sm : Self.controlHeight)
+                .padding(.trailing, expanded ? SharpitSpacing.sm : Self.controlHeight)
+                .padding(.bottom, expanded ? Self.controlHeight : 0)
+                .animation(SharpitMotion.selection, value: store.draft.count / 40)
+                .submitLabel(.send)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottomLeading) {
+            // An empty thread already lays the starting points on the page.
+            if dictation.isListening { listeningMark } else if !store.isEmpty { quickActionsButton }
+        }
+        .overlay(alignment: .bottomTrailing) { composerButton }
+        .padding(6)
+        .sharpitGlassControl(
+            in: RoundedRectangle(cornerRadius: 28, style: .continuous),
+            fallback: SharpitColor.tile
+        )
+        // The box in hand is told by its edge.
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(SharpitColor.foreground.opacity(composerIsFocused ? 0.22 : 0), lineWidth: 1)
+                .allowsHitTesting(false)
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    /// « + », opposite the ink button: starting points that tag the conversation and open
     /// the question, for the asks the coach answers best (adjusting a session or the week).
-    private var quickActionsMenu: some View {
+    private var quickActionsButton: some View {
         Button {
             SharpitMotion.run(SharpitMotion.selection) { showsQuickActions.toggle() }
         } label: {
@@ -527,51 +518,49 @@ struct CoachView: View {
                 .frame(width: Self.controlHeight, height: Self.controlHeight)
                 .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.sharpitPressable)
         .disabled(store.isReplying)
         .accessibilityLabel(showsQuickActions ? "Fermer les demandes" : "Démarrer une demande")
+        .transition(.opacity)
     }
 
-    /// The choices, rising from the « + » one after another; a pick closes them.
-    private var quickActionsList: some View {
+    /// While the coach listens the « + » gives its corner to the wave; the words land in the field.
+    private var listeningMark: some View {
+        HStack(spacing: SharpitSpacing.xs) {
+            Image(systemName: "waveform")
+                .font(SharpitTypography.bodyEmphasis)
+                .foregroundStyle(SharpitColor.foreground)
+                .symbolEffect(.variableColor.iterative, isActive: true)
+            Text("Écoute…")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
+        }
+        .padding(.leading, SharpitSpacing.sm)
+        .frame(height: Self.controlHeight)
+        .transition(.opacity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Dictée en cours")
+    }
+
+    /// The starting points as one card over the box, growing from the « + »; a pick closes it.
+    private var quickActionsPanel: some View {
         // Capped and scrolled: at the largest text the five choices ran past the top of the screen.
         Group {
             if typeSize.isAccessibilitySize {
-                ScrollView { quickActionsStack }
+                ScrollView { CoachQuickActionList(onPick: start) }
                     .frame(height: 320)
             } else {
-                quickActionsStack
+                CoachQuickActionList(onPick: start)
             }
         }
-    }
-
-    private var quickActionsStack: some View {
-        VStack(alignment: .leading, spacing: SharpitSpacing.xs) {
-            ForEach(Array(CoachQuickAction.allCases.enumerated()), id: \.element) { index, action in
-                Button { start(action) } label: {
-                    Label(action.label, systemImage: action.symbol)
-                        .font(SharpitTypography.bodyEmphasis)
-                        .foregroundStyle(SharpitColor.foreground)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, SharpitSpacing.md)
-                        .padding(.vertical, SharpitSpacing.xs)
-                        .frame(minHeight: SharpitSpacing.minimumTouchTarget)
-                        // Opaque: glass let the thread's text show through the choices.
-                        .background(
-                            SharpitColor.tile,
-                            in: RoundedRectangle(cornerRadius: SharpitSpacing.minimumTouchTarget / 2, style: .continuous)
-                        )
-                        .sharpitShadow(.control)
-                }
-                .buttonStyle(.sharpitPressable)
-                .transition(
-                    .move(edge: .bottom).combined(with: .opacity)
-                        .animation(SharpitMotion.reveal.delay(SharpitMotion.staggerDelay(index: CoachQuickAction.allCases.count - 1 - index)))
-                )
-            }
+        .padding(.vertical, SharpitSpacing.xxs)
+        // Opaque: glass let the thread's text show through the choices.
+        .background(SharpitColor.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(SharpitColor.outline, lineWidth: 1)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .sharpitShadow(.control)
+        .transition(.scale(scale: 0.92, anchor: .bottomLeading).combined(with: .opacity))
     }
 
     private func start(_ action: CoachQuickAction) {
@@ -581,35 +570,6 @@ struct CoachView: View {
             showsQuickActions = false
         }
         composerIsFocused = true
-    }
-
-    /// Full-width listening bar (field morphs away) — stop sits on the trailing edge.
-    private var dictationBar: some View {
-        HStack(alignment: .center, spacing: SharpitSpacing.xs) {
-            HStack(spacing: SharpitSpacing.sm) {
-                Image(systemName: "waveform")
-                    .font(SharpitTypography.bodyEmphasis)
-                    .foregroundStyle(SharpitColor.primary)
-                    .symbolEffect(.variableColor.iterative, isActive: true)
-                Text(store.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                     ? String(localized: "Écoute…")
-                     : store.draft)
-                    .font(SharpitTypography.body)
-                    .foregroundStyle(SharpitColor.foreground)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, SharpitSpacing.md)
-            .frame(maxWidth: .infinity, minHeight: Self.controlHeight, alignment: .leading)
-            .sharpitGlassControl(
-                in: RoundedRectangle(cornerRadius: Self.controlHeight / 2, style: .continuous),
-                fallback: SharpitColor.tile
-            )
-
-            composerButton
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Dictée en cours")
     }
 
     /// Small, and glass as the composer under it. Plain glass: interactive glass, on the label
@@ -652,39 +612,32 @@ struct CoachView: View {
         CoachComposerAction(isReplying: store.isReplying, isDictating: dictation.isListening, draft: store.draft)
     }
 
-    /// The microphone, shown while the field is empty: a plain glyph inside the field.
-    private var microphoneButton: some View {
-        Button { perform(.dictate) } label: {
-            Image(systemName: CoachComposerAction.dictate.symbol)
-                .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.slate)
-                .frame(width: Self.controlHeight, height: Self.controlHeight)
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(CoachComposerAction.dictate.accessibilityLabel)
-    }
-
-    /// The field's ink button: send — dimmed until there are words — stop while listening or
-    /// while the coach answers. The symbol morphs from one to the other.
+    /// The box's one trailing control: the microphone while the field is empty — a plain glyph —
+    /// then the ink button, send once there are words, stop while listening or while the coach
+    /// answers. The ink arrives under the glyph; the symbol morphs from one to the other.
     private var composerButton: some View {
         let action = composerAction
-        let sends = action == .dictate || action == .send
-        let isIdle = action == .dictate || (action == .send && store.isOutOfQuota)
-        return Button { perform(action == .dictate ? .send : action) } label: {
-            Image(systemName: sends ? CoachComposerAction.send.symbol : action.symbol)
+        let isInk = action != .dictate
+        let waits = action == .send && store.isOutOfQuota
+        return Button { perform(action) } label: {
+            Image(systemName: action == .dictate || action == .send ? action.symbol : "stop.fill")
                 .font(SharpitTypography.bodyEmphasis)
-                .foregroundStyle(SharpitColor.primaryForeground)
-                .symbolEffect(.variableColor.iterative, isActive: action == .stopDictation)
-                .frame(width: Self.controlHeight, height: Self.controlHeight)
+                .foregroundStyle(isInk ? SharpitColor.primaryForeground : SharpitColor.slate)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
-                .background(SharpitColor.primary, in: Circle())
+                .frame(width: Self.controlHeight, height: Self.controlHeight)
+                .background {
+                    Circle()
+                        .fill(SharpitColor.primary)
+                        .scaleEffect(isInk ? 1 : 0.6)
+                        .opacity(isInk ? 1 : 0)
+                }
+                .contentShape(.rect)
         }
-        .buttonStyle(.plain)
-        // Nothing to send, or a spent budget: the button waits.
-        .disabled(isIdle)
-        .opacity(isIdle ? 0.35 : 1)
-        .accessibilityLabel(sends ? CoachComposerAction.send.accessibilityLabel : action.accessibilityLabel)
+        .buttonStyle(.sharpitPressable)
+        // A spent budget: the button waits.
+        .disabled(waits)
+        .opacity(waits ? 0.35 : 1)
+        .accessibilityLabel(action.accessibilityLabel)
         .animation(SharpitMotion.selection, value: action)
     }
 
@@ -978,24 +931,61 @@ nonisolated enum CoachSegment: Identifiable, Equatable {
     }
 }
 
+/// An empty conversation offers where to start: the same starting points as the « + », laid on
+/// the page, so the first question is one tap and a few words away.
 private struct CoachEmptyState: View {
+    let onPick: (CoachQuickAction) -> Void
+
     var body: some View {
         VStack(alignment: .leading, spacing: SharpitSpacing.sm) {
             Text("Demande ce que tu veux comprendre")
                 .font(SharpitTypography.sectionTitle)
                 .tracking(SharpitTypography.sectionTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
-            Text(
-                String(localized: """
-                Une séance, ta semaine, un signal du jour. \
-                Depuis un écran, le bouton « discuter » joint le sujet à ta question.
-                """)
-            )
-            .font(SharpitTypography.body)
-            .foregroundStyle(SharpitColor.slate)
-            .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 0) {
+                CliniqueDivider()
+                CoachQuickActionList(onPick: onPick, inset: 0)
+                CliniqueDivider()
+            }
+            Text("Depuis un écran, le bouton « discuter » joint le sujet à ta question.")
+                .font(SharpitTypography.meta)
+                .foregroundStyle(SharpitColor.slate)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The coach's starting points as lines split by hairlines: in the « + » card and on an empty thread.
+struct CoachQuickActionList: View {
+    let onPick: (CoachQuickAction) -> Void
+    var inset: CGFloat = SharpitSpacing.md
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(CoachQuickAction.allCases.enumerated()), id: \.element) { index, action in
+                if index > 0 { CliniqueDivider().padding(.leading, inset + 34) }
+                Button { onPick(action) } label: {
+                    HStack(spacing: SharpitSpacing.sm) {
+                        Image(systemName: action.symbol)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundStyle(SharpitColor.slate)
+                            .frame(width: 22)
+                            .accessibilityHidden(true)
+                        Text(action.label)
+                            .font(SharpitTypography.body)
+                            .foregroundStyle(SharpitColor.foreground)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, inset)
+                    .frame(maxWidth: .infinity, minHeight: SharpitSpacing.minimumTouchTarget + 4, alignment: .leading)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.sharpitPressable)
+            }
+        }
     }
 }
 

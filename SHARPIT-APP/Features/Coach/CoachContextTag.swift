@@ -7,6 +7,8 @@ import SwiftUI
 /// the context only says what they were looking at when they asked.
 struct CoachContextTag: View {
     let context: CoachDiscussContext
+    /// Inside the composer's box: flat on the glass, no shadow of its own.
+    var isInline = false
     var onDismiss: (() -> Void)?
 
     var body: some View {
@@ -41,7 +43,13 @@ struct CoachContextTag: View {
         .padding(.leading, SharpitSpacing.xs)
         .padding(.trailing, onDismiss == nil ? SharpitSpacing.sm : SharpitSpacing.xxs)
         .padding(.vertical, SharpitSpacing.xxs)
-        .background(Capsule().fill(SharpitColor.tile).sharpitShadow(.control))
+        .background {
+            if isInline {
+                Capsule().fill(SharpitColor.card).overlay(Capsule().strokeBorder(SharpitColor.outline, lineWidth: 1))
+            } else {
+                Capsule().fill(SharpitColor.tile).sharpitShadow(.control)
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Contexte joint : \(context.label)")
     }
