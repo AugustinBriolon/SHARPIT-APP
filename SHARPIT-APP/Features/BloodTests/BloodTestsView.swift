@@ -67,7 +67,6 @@ struct BloodTestsView: View {
             .padding(.vertical, SharpitSpacing.md)
         }
         .refreshable { await store.load() }
-        .redacted(reason: store.phase == .loading ? .placeholder : [])
     }
 
     private var emptyState: some View {

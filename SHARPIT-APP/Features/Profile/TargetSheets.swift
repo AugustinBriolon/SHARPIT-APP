@@ -65,6 +65,7 @@ struct SleepTargetsSheet: View {
                 symbol: "moon.zzz.fill",
                 showsChevron: false
             )
+            .unredacted()
             HStack {
                 stepButton("minus", label: String(localized: "Moins 15 minutes"), delta: -15)
                 Spacer(minLength: 0)
@@ -102,6 +103,7 @@ struct SleepTargetsSheet: View {
                     symbol: "bed.double.fill",
                     showsChevron: false
                 )
+                .unredacted()
             }
             .tint(SharpitColor.primary)
 

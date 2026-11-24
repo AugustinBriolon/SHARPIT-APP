@@ -29,14 +29,18 @@ final class CoachHistoryStore {
         self.onDeleted = onDeleted
     }
 
+    /// Reads the list. Conversations already shown stay while it is read again, and when the
+    /// read fails: only a history never read opens on its skeleton or its error.
     func load() async {
-        phase = .loading
+        let shown: [CoachConversationSummary]? = if case .loaded(let list) = phase { list } else { nil }
+        if shown == nil { phase = .loading }
         do {
             phase = .loaded(try await conversations.conversations(token: try await tokenProvider()))
         } catch is CancellationError {
         } catch let error as SharpitAPIError where error == .unauthorized {
             phase = .failed(String(localized: "Session expirée. Reconnecte-toi."))
         } catch {
+            guard shown == nil else { return }
             phase = .failed(String(localized: "L'historique n'a pas pu être chargé."))
         }
     }

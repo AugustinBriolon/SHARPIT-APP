@@ -54,9 +54,9 @@ struct SourcePrioritiesView: View {
                     }
                     primaryRow(among: connected, in: sourceClass)
                 } header: {
-                    SharpitEyebrow(sourceClass.label)
+                    SharpitEyebrow(sourceClass.label).unredacted()
                 } footer: {
-                    SharpitListFooter(footer(for: sourceClass))
+                    SharpitListFooter(footer(for: sourceClass)).unredacted()
                 }
                 .sharpitListRows()
             }

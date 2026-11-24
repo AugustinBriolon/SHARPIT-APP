@@ -32,7 +32,14 @@ the iPhone before reading again.
 - `GoalStore.load(keptIn:)` paints the goals last read (`ResponseCacheKey.goals`) on its first
   read and keeps the goals on every change, a write's included. A refresh that fails under them
   is a toast, and a kept empty list is not a skeleton.
-- `BloodTestsView` takes the store Santé already read instead of building its own.
+- `BloodTestsView` takes the store Santé already read instead of building its own, and
+  `BloodTestsStore` keeps the tests on every change (`ResponseCacheKey.bloodTests`): they paint
+  after a relaunch, offline too.
+- `CoachView` holds one `CoachHistoryStore` for the tab; reopened, the list stands while it is
+  read again, and when that read fails.
+- The other pages that redacted names the app already knew keep them sharp: the journal's own
+  lines (`journalNamesStaySharp`, the answers alone wait), the kinds of notification, Priorités'
+  classes, the sleep targets' cards, Matériel and Analyses de sang.
 - `AthleteProfileStore.keptProfile()` hands the profile kept on the iPhone to a page that draws
   it on its first frame, without making the store `loaded`. `EquipmentView` fills from it at once
   and takes the server's profile when it arrives, unless the athlete already changed something
@@ -49,14 +56,18 @@ The kept answers live in the `CachedResponse` table, which stays on the iPhone
 - **Keep the server's raw bytes** as `DayReadCache` does. The store changes the day on every
   write, so the bytes would be stale after the first food added. Rejected: `V1FoodLogDay`
   becomes `Codable` and the store keeps what it shows.
-- **Keep the blood tests on disk.** Santé reads them on every visit of its tab, so sharing its
-  store removes the second read without another copy of health data. Not done.
+- **Share Santé's store and keep nothing of the blood tests.** First chosen, to avoid another
+  copy of health data. It left the page failing after a relaunch offline, so the tests are kept
+  after all, in the same on-device table as the rest (`docs/adr/0009`).
 
 ## Consequences
 
-- A visit to Nutrition, Objectifs or Matériel after a first read shows content on its first
-  frame, offline and after a relaunch included; a refresh that fails under it stays quiet or is a
-  toast. Analyses de sang does so while the app runs: after a relaunch it waits for Santé's read.
+- A visit to Nutrition, Objectifs, Analyses de sang or Matériel after a first read shows content
+  on its first frame, offline and after a relaunch included; a refresh that fails under it stays
+  quiet or is a toast.
+- Three skeletons are still grey blocks of guessed sizes, against the root rule, each seen only
+  on a first read ever: Plan's (`PlanLoadingView`), the day screens' (`DayDetailSkeleton`) and
+  Corps' chart (`CorpsDrawer`).
 - A skeleton remains only where nothing was ever read, and there it redacts values, not names.
 - The forms that wait for the profile before they can be edited (`SettingsPages`, `TargetSheets`)
   keep their wait: they write what they show, and must not start from a stale value.

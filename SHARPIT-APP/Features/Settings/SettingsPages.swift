@@ -541,10 +541,9 @@ struct NotificationPrefsView: View {
             .tint(SharpitColor.primary)
         }
         .sharpitListRows()
-        // Placeholders only while the very first read is under way; a failure says so below
-        // with a retry instead of leaving the switches greyed out.
+        // The kinds are the app's own list: named at once, switched once the profile is read
+        // (`docs/adr/0038`). A failure says so below with a retry.
         .disabled(store.phase != .loaded)
-        .redacted(reason: store.phase == .loading ? .placeholder : [])
         .transition(.opacity)
     }
 

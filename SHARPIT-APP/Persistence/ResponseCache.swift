@@ -37,6 +37,7 @@ nonisolated enum ResponseCacheKey {
     static let healthOverview = "health-overview"
     static let sensitiveZones = "sensitive-zones"
     static let goals = "goals"
+    static let bloodTests = "blood-tests"
 
     /// The day's food log as Résumé's nutrition card shows it.
     static func nutritionDay(_ trainingDayId: String) -> String { "nutrition:\(trainingDayId)" }

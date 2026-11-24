@@ -11,8 +11,8 @@ nonisolated struct BloodTestResultInput: Codable, Equatable, Sendable {
 
 /// A stored blood test as `GET /api/v1/blood-tests` returns it: the sampling time and the results,
 /// nothing of the document.
-nonisolated struct V1BloodTest: Decodable, Identifiable, Equatable, Sendable {
-    struct Result: Decodable, Equatable, Sendable {
+nonisolated struct V1BloodTest: Codable, Identifiable, Equatable, Sendable {
+    struct Result: Codable, Equatable, Sendable {
         let markerKey: String
         let value: Double
         let unit: String
@@ -46,6 +46,14 @@ nonisolated struct V1BloodTest: Decodable, Identifiable, Equatable, Sendable {
             throw DecodingError.dataCorruptedError(forKey: .sampledAt, in: container, debugDescription: "Not an instant")
         }
         sampledAt = date
+    }
+
+    /// Written as the API writes it, so a test kept on the iPhone reads back through `init(from:)`.
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(results, forKey: .results)
+        try container.encode(APIDate.string(from: sampledAt), forKey: .sampledAt)
     }
 
     /// Results outside the lab's own bounds.

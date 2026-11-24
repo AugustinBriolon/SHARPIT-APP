@@ -39,7 +39,7 @@ struct SanteView: View {
         self.modelContext = modelContext
         _store = State(initialValue: SanteStore(tokenProvider: tokenProvider, modelContext: modelContext))
         _zones = State(initialValue: SensitiveZonesStore(tokenProvider: tokenProvider, modelContext: modelContext))
-        _blood = State(initialValue: BloodTestsStore(tokenProvider: tokenProvider))
+        _blood = State(initialValue: BloodTestsStore(tokenProvider: tokenProvider, modelContext: modelContext))
         _history = State(initialValue: CorpsStore(
             profileClient: profileClient,
             bodyClient: profileClient,

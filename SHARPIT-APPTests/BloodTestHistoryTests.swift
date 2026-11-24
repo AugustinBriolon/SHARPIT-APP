@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import Sharpit
 
@@ -139,4 +140,24 @@ private actor StubReadingServer: BloodTestReading {
     await store.load(testId: "t1")
 
     #expect(store.phase == .proRequired)
+}
+
+@MainActor
+@Test func theHistoryIsKeptOnTheIPhoneAndFollowsADeletion() async throws {
+    let context = ModelContext(try SharpitPersistence.makeContainer(inMemory: true))
+    let first = BloodTestsStore(client: StubBloodTestServer(tests: [newer, older]), tokenProvider: { "token" }, modelContext: context)
+    #expect(first.phase == .loading)
+    await first.load()
+    await first.delete("t1")
+
+    // A new launch, the session gone: the tests stand as they were left, the deleted one gone.
+    let again = BloodTestsStore(
+        client: StubBloodTestServer(tests: []), tokenProvider: { throw SharpitAPIError.transport }, modelContext: context
+    )
+    #expect(again.phase == .loaded)
+    #expect(again.tests.map(\.id) == ["t2"])
+    #expect(again.tests.first?.sampledAt == older.sampledAt || again.tests.first?.sampledAt == newer.sampledAt)
+    await again.load()
+    #expect(again.phase == .loaded)
+    #expect(again.tests.map(\.id) == ["t2"])
 }

@@ -376,7 +376,6 @@ struct EquipmentView: View {
         }
         .cliniqueSheet(wash: .neutral, height: 240)
         .disabled(!hasLoaded)
-        .redacted(reason: hasLoaded ? [] : .placeholder)
         .navigationTitle("Matériel")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

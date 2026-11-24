@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 
 /// The athlete's blood tests, read from `/api/v1/blood-tests`: the history, each test, each marker.
 @MainActor
@@ -10,14 +11,31 @@ final class BloodTestsStore {
     }
 
     private(set) var phase: Phase = .loading
-    private(set) var tests: [V1BloodTest] = []
+    /// Kept on every change, a deletion's included: the next launch paints them before the
+    /// server answers, offline too (`docs/adr/0038`).
+    private(set) var tests: [V1BloodTest] = [] {
+        didSet {
+            guard tests != oldValue else { return }
+            ResponseCache.write(tests, key: ResponseCacheKey.bloodTests, context: modelContext)
+        }
+    }
 
     private let client: any BloodTestServing
     private let tokenProvider: () async throws -> String
+    private let modelContext: ModelContext?
 
-    init(client: any BloodTestServing = BloodTestClient(), tokenProvider: @escaping () async throws -> String) {
+    init(
+        client: any BloodTestServing = BloodTestClient(),
+        tokenProvider: @escaping () async throws -> String,
+        modelContext: ModelContext? = nil
+    ) {
         self.client = client
         self.tokenProvider = tokenProvider
+        self.modelContext = modelContext
+        if let kept = ResponseCache.read([V1BloodTest].self, key: ResponseCacheKey.bloodTests, context: modelContext) {
+            tests = kept
+            phase = .loaded
+        }
     }
 
     func load() async {
@@ -27,6 +45,8 @@ final class BloodTestsStore {
             }
             tests = fresh
             phase = .loaded
+            // An athlete with no test yet is kept too: an empty history is an answer.
+            if fresh.isEmpty { ResponseCache.write(fresh, key: ResponseCacheKey.bloodTests, context: modelContext) }
         } catch SharpitAPIError.unauthorized {
             phase = .unauthorized
         } catch {

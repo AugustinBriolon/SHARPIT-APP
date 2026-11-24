@@ -17,6 +17,8 @@ struct CoachView: View {
     @Environment(Clerk.self) private var clerk: Clerk?
     @State private var store: CoachStore
     @State private var showingHistory = false
+    /// The past conversations, held for the tab: reopened, the list is there and refreshes behind.
+    @State private var history: CoachHistoryStore?
     /// What the coach keeps about the athlete — free context, trips, constraints — moved here
     /// from Moi, beside the conversation that reads it.
     @State private var showingMemory = false
@@ -92,7 +94,16 @@ struct CoachView: View {
                 // separate circles ran past the three groups a bar should hold (HIG, Toolbars).
                 ToolbarItem(placement: .principal) { Text("") }
                 ToolbarItem(placement: .topBarLeading) {
-                    barButton("Conversations", symbol: "clock.arrow.circlepath") { showingHistory = true }
+                    barButton("Conversations", symbol: "clock.arrow.circlepath") {
+                        if history == nil, let tokenProvider {
+                            history = CoachHistoryStore(
+                                conversations: conversations,
+                                tokenProvider: tokenProvider,
+                                onDeleted: { store.forget(conversationId: $0) }
+                            )
+                        }
+                        showingHistory = true
+                    }
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -134,13 +145,9 @@ struct CoachView: View {
                 .task { await store.refreshQuota(force: true) }
             }
             .sheet(isPresented: $showingHistory) {
-                if let tokenProvider {
+                if let history {
                     CoachHistoryView(
-                        store: CoachHistoryStore(
-                            conversations: conversations,
-                            tokenProvider: tokenProvider,
-                            onDeleted: { store.forget(conversationId: $0) }
-                        ),
+                        store: history,
                         currentConversationId: store.conversationId
                     ) { summary in
                         Task { await store.open(conversationId: summary.id) }

@@ -224,6 +224,7 @@ struct JournalView: View {
                 }
             }
         }
+        .environment(\.journalNamesStaySharp, true)
         .redacted(reason: pending ? .placeholder : [])
         .allowsHitTesting(!pending)
     }
@@ -502,6 +503,8 @@ struct JournalGroup<Content: View>: View {
                 .tracking(SharpitTypography.sectionTitleTracking)
                 .foregroundStyle(SharpitColor.foreground)
                 .accessibilityAddTraits(.isHeader)
+                // A group's name is the page's own: never redacted.
+                .unredacted()
             if let hint {
                 Text(hint)
                     .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .caption))
@@ -535,6 +538,9 @@ struct JournalRowIcon: View {
 extension EnvironmentValues {
     /// The hue a journal group lends its lines' glyphs.
     @Entry var journalHue: Color? = nil
+    /// The lines are the athlete's own, known before the day's answers are: their names and
+    /// glyphs stay sharp under a redaction, which then hides the answers alone (`docs/adr/0038`).
+    @Entry var journalNamesStaySharp = false
 }
 
 /// A journal line: a name over what it holds, its control at the trailing edge. The words open
@@ -547,10 +553,15 @@ struct JournalLine<Control: View>: View {
     var onOpen: (() -> Void)? = nil
     @ViewBuilder let control: Control
     @Environment(\.journalHue) private var hue
+    @Environment(\.journalNamesStaySharp) private var namesStaySharp
+    @Environment(\.redactionReasons) private var redaction
+
+    /// What the name and glyph are drawn under: nothing when they must stay sharp.
+    private var nameRedaction: RedactionReasons { namesStaySharp ? [] : redaction }
 
     var body: some View {
         HStack(alignment: .center, spacing: SharpitSpacing.sm) {
-            if let symbol { JournalRowIcon(symbolName: symbol, hue: hue) }
+            if let symbol { JournalRowIcon(symbolName: symbol, hue: hue).redacted(reason: nameRedaction) }
             if let onOpen {
                 Button(action: onOpen) { words.contentShape(.rect) }
                     .buttonStyle(.sharpitPressable)
@@ -568,6 +579,7 @@ struct JournalLine<Control: View>: View {
             Text(title)
                 .font(SharpitTypography.system(size: 16, weight: .semibold, relativeTo: .callout))
                 .foregroundStyle(SharpitColor.foreground)
+                .redacted(reason: nameRedaction)
             if let detail {
                 Text(detail)
                     .font(SharpitTypography.system(size: 13, weight: .regular, relativeTo: .footnote, digits: true))

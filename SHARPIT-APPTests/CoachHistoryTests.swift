@@ -400,6 +400,18 @@ private func history(
 }
 
 @MainActor
+@Test func aHistoryAlreadyShownStaysWhenReadingItAgainFails() async {
+    let server = StubConversations(list: [summary("a")])
+    let store = CoachHistoryStore(conversations: server, tokenProvider: { "token" }, onDeleted: { _ in })
+    await store.load()
+
+    // Reopened with the network gone: the list stands, no skeleton and no error over it.
+    server.failing = true
+    await store.load()
+    #expect(store.phase == .loaded([summary("a")]))
+}
+
+@MainActor
 @Test func historyReportsWhenItCannotLoad() async {
     let store = history(list: [], failing: true)
     await store.load()
