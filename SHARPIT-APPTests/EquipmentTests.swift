@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UIKit
 @testable import Sharpit
 
 @Test func equipmentPatchCarriesExpectedJsonShape() throws {
@@ -91,4 +92,11 @@ import Testing
     #expect(profile.equipment?.owned == ["bike_power_meter", "swim_fins"])
     #expect(profile.practicedSports != nil)
     #expect(profile.practicedSports?.sports == ["run", "bike", "swim", "triathlon", "strength"])
+}
+
+@Test func everyPieceOfEquipmentIsDrawnOrHasAGlyph() {
+    let undrawn = EquipmentCatalog.all.filter { UIImage(named: $0.imageName) == nil }
+    // The four the athlete has not drawn yet stand on their glyph.
+    #expect(Set(undrawn.map(\.id)) == ["run_track", "bike_home_trainer", "bike_outdoor", "strength_rings"])
+    #expect(undrawn.allSatisfy { !$0.symbolName.isEmpty })
 }

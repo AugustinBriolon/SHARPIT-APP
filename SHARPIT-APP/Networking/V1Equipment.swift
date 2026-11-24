@@ -143,6 +143,10 @@ nonisolated struct EquipmentCatalogItem: Identifiable, Sendable, Equatable {
     let impact: String
     let symbolName: String
     var requiresHomeStrength: Bool = false
+
+    /// The item's drawing in the asset catalog (`Assets.xcassets/Equipment`), named by its id.
+    /// Not every item has one yet: the row falls back on `symbolName`.
+    var imageName: String { "Equipment/\(id)" }
 }
 
 nonisolated enum EquipmentCatalog {
@@ -277,7 +281,7 @@ nonisolated enum EquipmentCatalog {
             sport: .strength,
             label: String(localized: "Anneaux de gymnastique"),
             impact: String(localized: "Tirage et poussée instables."),
-            symbolName: "",
+            symbolName: "circle.circle",
             requiresHomeStrength: true
         ),
         EquipmentCatalogItem(

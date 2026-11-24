@@ -204,7 +204,6 @@ struct EquipmentBySport: View {
                         symbol: chip.symbolName,
                         isSelected: venue.toggles.contains(chip)
                     ) {
-                        SharpitHaptics.play(.notch(major: false))
                         SharpitMotion.run(SharpitMotion.selection) {
                             onVenue(V1AthleteEquipment.StrengthVenue.toggling(chip, in: venue))
                         }
@@ -219,8 +218,8 @@ struct EquipmentBySport: View {
     }
 }
 
-/// One piece of equipment as a line: what it is, what it changes for the coach, and whether it is
-/// owned, in a word. A tap flips it.
+/// One piece of equipment as a line: its drawing, what it is, what it changes for the coach, and
+/// whether it is owned, in a word. A tap flips it.
 struct EquipmentChoiceRow: View {
     let item: EquipmentCatalogItem
     let isOwned: Bool
@@ -230,7 +229,8 @@ struct EquipmentChoiceRow: View {
         Button {
             SharpitMotion.run(SharpitMotion.selection) { onToggle() }
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: SharpitSpacing.sm) {
+            HStack(alignment: .center, spacing: SharpitSpacing.sm) {
+                EquipmentThumb(item: item)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.label)
                         .font(SharpitTypography.system(size: 16, weight: .regular, relativeTo: .callout))
@@ -255,6 +255,36 @@ struct EquipmentChoiceRow: View {
     }
 }
 
+/// An item's drawing in a rounded tile; its glyph on the neutral tile while it has no drawing.
+private struct EquipmentThumb: View {
+    let item: EquipmentCatalogItem
+
+    @ScaledMetric(relativeTo: .callout) private var side: CGFloat = 60
+    private static let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+
+    var body: some View {
+        Group {
+            if let drawing = UIImage(named: item.imageName) {
+                Image(uiImage: drawing)
+                    .resizable()
+                    .scaledToFill()
+                    // The drawings are opaque, on white: the tile is their paper in both appearances.
+                    .background(Color.white)
+            } else {
+                Image(systemName: item.symbolName)
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundStyle(SharpitColor.foreground)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(SharpitColor.tile)
+            }
+        }
+        .frame(width: side, height: side)
+        .clipShape(Self.shape)
+        .overlay { Self.shape.strokeBorder(SharpitColor.divider, lineWidth: 1) }
+        .accessibilityHidden(true)
+    }
+}
+
 /// Réglages › Matériel: one page — the sports practiced, each a line with what the athlete owns
 /// for it, then the kit by sport, a line a tap flips. « Ajouter » adds a sport. Saved as it
 /// changes (`docs/adr/0014`); the onboarding keeps its tiles.
@@ -273,11 +303,32 @@ struct EquipmentView: View {
         tokenProvider: @escaping () async throws -> String,
         modelContext: ModelContext? = nil
     ) {
-        _store = State(initialValue: AthleteProfileStore(
+        let store = AthleteProfileStore(
             client: client,
             tokenProvider: tokenProvider,
             modelContext: modelContext
-        ))
+        )
+        _store = State(initialValue: store)
+        // A profile kept on the iPhone fills the page at once: no redacted frame on a revisit.
+        guard store.phase == .loaded else { return }
+        let kit = Kit(store.profile)
+        _practicedSports = State(initialValue: kit.sports)
+        _strengthVenue = State(initialValue: kit.venue)
+        _owned = State(initialValue: kit.owned)
+        _hasLoaded = State(initialValue: true)
+    }
+
+    /// What the page edits, as the profile holds it.
+    private struct Kit {
+        let sports: Set<String>
+        let venue: V1AthleteEquipment.StrengthVenue
+        let owned: Set<String>
+
+        init(_ profile: V1AthleteProfile) {
+            sports = Set(profile.practicedSports?.sports ?? [])
+            venue = profile.equipment?.strengthVenue.flatMap(V1AthleteEquipment.StrengthVenue.init(rawValue:)) ?? .bodyweight
+            owned = Set(profile.equipment?.owned ?? [])
+        }
     }
 
     private var hasEndurance: Bool { PracticedSportCatalog.hasEnduranceSport(practicedSports) }
@@ -412,13 +463,14 @@ struct EquipmentView: View {
         scheduleAutoSave()
     }
 
+    /// Takes the profile just read, unless the athlete already changed something here: the
+    /// kept profile shown on arrival gives way to the server's, never an edit in hand.
     private func syncFromProfile() {
-        guard !hasLoaded, store.phase == .loaded else { return }
-        practicedSports = Set(store.profile.practicedSports?.sports ?? [])
-        if let equipment = store.profile.equipment {
-            strengthVenue = equipment.strengthVenue.flatMap(V1AthleteEquipment.StrengthVenue.init(rawValue:)) ?? .bodyweight
-            owned = Set(equipment.owned)
-        }
+        guard store.phase == .loaded, autoSaveTask == nil else { return }
+        let kit = Kit(store.profile)
+        practicedSports = kit.sports
+        strengthVenue = kit.venue
+        owned = kit.owned
         hasLoaded = true
     }
 
